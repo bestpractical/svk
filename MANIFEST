@@ -35,6 +35,7 @@ lib/SVK/Command/Log.pm
 lib/SVK/Command/Merge.pm
 lib/SVK/Command/Mirror.pm
 lib/SVK/Command/Mkdir.pm
+lib/SVK/Command/Propdel.pm
 lib/SVK/Command/Propedit.pm
 lib/SVK/Command/Proplist.pm
 lib/SVK/Command/Propset.pm
