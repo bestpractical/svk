@@ -267,7 +267,7 @@ sub _x {
     ($^O eq 'MSWin32') ? 1 : -x $_[0];
 }
 
-sub _not_x {
+sub not_x {
     ($^O eq 'MSWin32') ? 1 : not -x $_[0];
 }
 

@@ -18,7 +18,7 @@ my $suuid = $srepos->fs->get_uuid;
 
 $svk->copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for (1..20);
 
-$svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->mirror ('//m', uri ($srepospath.($spath eq '/' ? '' : $spath)));
 
 $svk->sync ('//m');
 

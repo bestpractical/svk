@@ -1,6 +1,13 @@
 #!/usr/bin/perl -w
-# XXX: skip on platform not supporting symlinks
-use Test::More tests => 19;
+use Test::More;
+use Config;
+
+if (!$Config{d_symlink}) {
+    plan 'skip_all';
+    exit;
+}
+
+plan tests => 19;
 use strict;
 use File::Path;
 require 't/tree.pl';
