@@ -20,6 +20,8 @@ sub new {
     my ($class, @arg) = @_;
     my $self = bless {}, $class;
     %$self = @arg;
+    $self->{revision} = $self->{repos}->fs->youngest_rev
+	unless defined $self->{revision};
     return $self;
 }
 

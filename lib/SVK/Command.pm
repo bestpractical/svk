@@ -168,7 +168,7 @@ sub arg_condensed {
 
 sub arg_co_maybe {
     my ($self, $arg) = @_;
-
+    my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     return SVK::Target->new
@@ -178,12 +178,12 @@ sub arg_co_maybe {
 	  copath => $copath,
 	  report => $arg,
 	  path => $path,
+	  revision => $rev,
 	);
 }
 
 sub arg_copath {
     my ($self, $arg) = @_;
-
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     return SVK::Target->new
 	( repos => $repos,
@@ -198,12 +198,14 @@ sub arg_copath {
 
 sub arg_depotpath {
     my ($self, $arg) = @_;
+    my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
 
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  path => $path,
+	  revision => $rev,
 	  depotpath => $arg,
 	);
 }

@@ -120,7 +120,6 @@ sub get_editor {
 		       $callback->($m->find_local_rev ($rev), @_)
 			   if $callback }
 		);
-	    $base_rev = $m->{fromrev};
 	}
     }
 

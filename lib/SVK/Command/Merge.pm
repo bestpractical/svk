@@ -48,8 +48,6 @@ sub run {
 
     if ($self->{auto}) {
 	# XXX: these should come from parse_arg
-	$src->{revision} ||= $yrev;
-	$dst->{revision} ||= $yrev;
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos,
 				   ticket => !$self->{no_ticket},

@@ -1,3 +1,27 @@
+[Changes for 0.18 - ]
+
+* More code cleanup, documentation and test suites.
+
+* Fix <cmd> --help regression.
+
+* Fix cmerge regression.
+
+* Fix ls -f with non-default depot. [#3943] [Kang-min Liu]
+
+* Import into checkout path should remove scheduleanchor after commit.
+
+* svn-1.1 compatible symlink (svn:special) support.
+
+* Performance improvement for import by avoiding unnecessary prop check.
+
+* Allow import to commit to remote repository directly.
+
+* make checkout_delta and import call abort_edit upon SIGINT.
+
+* svk mirror --list and --upgrade commands.
+
+* Make SVN::Mirror required when it already exists. [Ruslan U. Zakirov]
+
 [Changes for 0.17 - 17 Jul, 2004]
 
 * Optimize checkout_delta with mtime/inode/size signatures.

@@ -249,7 +249,7 @@ sub get_new_ticket {
 
 sub log {
     my ($self, $verbatim) = @_;
-    my $sep = $verbatim ? "\n" : ('-' x 70)."\n";
+    my $sep = $verbatim ? '' : ('-' x 70)."\n";
     open my $buf, '>', \ (my $tmp);
     SVK::Command::Log::do_log ($self->{repos}, $self->{src}{path}, $self->{fromrev}+1,
 			       $self->{src}{revision}, 0, 0, 0, 1, $buf, $sep);

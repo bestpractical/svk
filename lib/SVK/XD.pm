@@ -1330,6 +1330,7 @@ my $globaldestroy;
 
 sub DESTROY {
     # XXX: maybe just for 5.8.0 ?
+    warn "===> attempt to destroy root $_[0]" if $globaldestroy;
     return if $globaldestroy;
     $_[0][0]->abort if $_[0][0];
 }
