@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Delay;
 use SVK::Command::Log;
 use SVK::Merge;
-use SVK::Util qw( get_buffer_from_editor find_svm_source );
+use SVK::Util qw( get_buffer_from_editor find_svm_source resolve_svm_source );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -86,7 +86,8 @@ sub run {
         require SVK::Command::Sync;
         my $sync = SVK::Command::Sync->new;
         %$sync = (%$self, %$sync);
-        $sync->run($src);
+	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));
+        $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
         $src->refresh_revision;
     }
 

@@ -202,8 +202,11 @@ is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/
 
 $svk->ps ('-m', 'prop on A/be', 'proponly', 'proponly', '/test/A/be');
 
-is_output ($svk, 'smerge', ['-m', 'merge down prop only with --sync and --to', '-st' '/client2/m-all/A-cp'],
-	   ['Auto-merging (8, 10) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
+is_output ($svk, 'smerge', ['-m', 'merge down prop only with --sync and --to', '-st', '/client2/m-all/A-cp'],
+	   ["Syncing $uri",
+            'Retrieving log information from 9 to 9',
+            'Committed revision 10 from revision 9.',
+	    'Auto-merging (8, 10) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
 	    "Merging back to SVN::Mirror source $uri.",
 	    ' U  be',
 	    "New merge ticket: $suuid:/A:9",
