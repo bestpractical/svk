@@ -68,6 +68,7 @@ $ENV{USER} ||= (
 ) || $ENV{USERNAME} || (getpwuid($<))[0];
 
 my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
+my $ret;
 {
     my $xd = SVK::XD->new ( giantlock => catfile($svkpath, 'lock'),
 			    statefile => catfile($svkpath, 'config'),
@@ -82,13 +83,13 @@ my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 	$xd->{svnconfig} = SVN::Core::config_get_config (undef);
     }
 
-    SVK::Command->invoke ($xd, $cmd, undef, @ARGV);
+    $ret = SVK::Command->invoke ($xd, $cmd, undef, @ARGV);
     $xd->store ();
 }
 
 1;
 
-exit;
+exit (defined $ret ? $ret : 1);
 
 require PerlIO;
 require PerlIO::via;

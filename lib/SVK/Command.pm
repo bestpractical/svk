@@ -190,10 +190,13 @@ sub invoke {
 
     $ofh = select STDERR unless $output;
     unless ($error and $cmd->handle_error ($error)) {
-	print $ret if $ret;
+	print $ret if $ret && $ret !~ /^\d+$/;
 	print $@ if $@;
+	$ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
     }
-    select $ofh if $ofh
+    select $ofh if $ofh;
+
+    return ($ret || 0);
 }
 
 =head3 getopt ($argv, %opt)

@@ -29,13 +29,14 @@ sub AUTOLOAD {
     no warnings 'redefine';
     *$cmd = sub {
         my $self = shift;
-        my ($buf, $output) = ('');
+        my ($buf, $output, $ret) = ('');
         open $output, '>', \$buf if $self->{output};
-        eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
+        eval { $ret = SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
         if ($output) {
             close $output;
             ${$self->{output}} = $buf;
         }
+        return $ret;
     };
     goto &$cmd;
 }
