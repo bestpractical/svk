@@ -37,4 +37,4 @@ $ENV{SVKMERGE} = 'utils/svk-merge theirs';
 $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
 is_output ($svk, 'up', ["$copath"],
 	   ["Syncing //local(/local) in $corpath to 6.",
-	    'U   test.pl'], 'svk-merge theirs');
+	    "U   $copath/test.pl"], 'svk-merge theirs');

@@ -486,21 +486,21 @@ sub do_update {
     my $fs = $arg{repos}->fs;
 
     my $xdroot = $self->xdroot (%arg);
-    my ($anchor, $target) = ($arg{path}, '');
+    my ($anchor, $target, $report) = ($arg{path}, '', $arg{report});
     $arg{target_path} ||= $arg{path};
     my ($tanchor, $ttarget) = ($arg{target_path}, '');
 
     print loc("Syncing %1(%2) in %3 to %4.\n", @arg{qw( depotpath path copath rev )});
     unless ($xdroot->check_path ($arg{path}) == $SVN::Node::dir) {
-	($anchor, $target, $tanchor, $ttarget) =
-	    get_anchor (1, $arg{path}, $arg{target_path});
+	($anchor, $target, $tanchor, $ttarget, $report) =
+	    get_anchor (1, $arg{path}, $arg{target_path}, $arg{report});
     }
     else {
 	# no anchor
 	mkdir ($arg{copath})
 	    unless $arg{check_only};
     }
-
+    # XXX: use SVK::Merge
     my $newroot = $fs->revision_root ($arg{rev});
     my ($storage, %cb) = $self->get_editor (%arg,
 					    oldroot => $xdroot,
@@ -510,7 +510,9 @@ sub do_update {
 					    update => 1);
 
     $storage = SVK::Editor::Delay->new ($storage);
+    $report .= '/' if $report ne '' && substr($report, -1, 1) ne '/';
     my $editor = SVK::Editor::Merge->new (send_fulltext => 1,
+					  report => $report,
 					  anchor => $tanchor,
 					  target => $ttarget,
 					  base_anchor => $anchor,

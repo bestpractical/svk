@@ -10,10 +10,7 @@ sub new {
     my $self = $class->SUPER::new (@arg);
     $self->{report} ||= '';
     $self->{notify} ||= SVK::Notify->new
-	(cb_flush => sub {
-	     my $path = $_[0] ? "$self->{report}$_[0]" : '.';
-	     SVK::Notify::flush_print ($path, $_[1]);
-	 });
+	(cb_flush => SVK::Notify::flush_print_report ($self->{report}));
     return $self;
 }
 

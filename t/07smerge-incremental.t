@@ -66,4 +66,3 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    "Syncing file://$srepospath/A",
 	    'Retrieving log information from 5 to 5',
 	    'Committed revision 9 from revision 5.']);
-

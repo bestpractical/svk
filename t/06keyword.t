@@ -34,7 +34,7 @@ $svk->commit ('-m', 'some more modifications', $copath);
 $svk->update ('-r', 3, $copath);
 ok (-x "$copath/A/be", 'take care of svn:executable after update');
 
-is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  A/be$|m,
+is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  \Q$copath\E/A/be$|m,
 		'keyword does not cause merge');
 
 ok (!-x "$copath/A/be", 'take care of removing svn:executable after update');

@@ -29,10 +29,10 @@ overwrite_file ("$copath/A/foo", "some local mods\nfoobar\n");
 
 is_output ($svk, 'update', [$copath],
 	   ["Syncing //(/) in $corpath to 3.",
-	    'GU  A/foo',
-	    'A   B',
-	    'A   B/foo',
-	    'A   B/bar'], 'merge via update');
+	    "GU  $copath/A/foo",
+	    "A   $copath/B",
+	    "A   $copath/B/foo",
+	    "A   $copath/B/bar"], 'merge via update');
 is_file_content ("$copath/A/foo",
 		 "some local mods\nfoobar\n\nsome more foobar\nzz\n",
 		 'merge via update');

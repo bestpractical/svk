@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 8;
+use Test::More tests => 9;
 use strict;
 require 't/tree.pl';
 use SVK::Command;
@@ -12,7 +12,9 @@ my $tree2 = create_basic_tree ($xd, '//V-3.1');
 my ($copath, $corpath) = get_copath ('checkout');
 mkdir ($copath);
 
-$svk->checkout ('//', "$copath/co-root");
+is_output_like ($svk, 'checkout', ['//', "$copath/co-root"],
+		qr"A   \Q$copath\E/co-root/V-3.1/A/Q/qz",
+		'checkout - report path');
 ok (-e "$copath/co-root/V/A/Q/qu");
 
 $svk->checkout ('//V/A', "$copath/co-root-a");

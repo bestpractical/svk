@@ -2,6 +2,7 @@
 use Test::More tests => 7;
 use strict;
 use File::Path;
+use Cwd;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test();
@@ -29,7 +30,9 @@ $svk->rm ('-m', 'rm A on trunk', '//trunk/A');
 $svk->rm ('-m', 'rm B on trunk', '//trunk/B');
 append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
-is_output ($svk, 'up', ["$copath"],
+my $oldwd = getcwd;
+chdir ($copath);
+is_output ($svk, 'up', [],
 	   ["Syncing //trunk(/trunk) in $corpath to 5.",
 	    'C   A',
 	    'D   A/bar',
@@ -40,6 +43,7 @@ is_output ($svk, 'up', ["$copath"],
 	    'Empty merge.',
 	    '2 conflicts found.'
 	   ], 'delete entry but modified on checkout');
+chdir ($oldwd);
 ok (-e "$copath/A/foo", 'local file not deleted');
 ok (!-e "$copath/B/foo", 'unmodified dir deleted');
 rmtree (["$copath/A"]);

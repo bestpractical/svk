@@ -31,6 +31,15 @@ sub skip_print {
     print "    ", loc("%1 - skipped\n", $path);
 }
 
+sub flush_print_report {
+    my $report = shift;
+    return \&flush_print unless defined $report;
+    sub {
+	my $path = $_[0] ? "$report$_[0]" : '.';
+	flush_print ($path, $_[1]);
+    };
+}
+
 sub new {
     my ($class, @arg) = @_;
     my $self = bless {}, $class;
