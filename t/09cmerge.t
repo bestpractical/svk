@@ -94,8 +94,26 @@ sub fnord {}
 
 $svk->commit ('-m', 'more features unreleated to c14', "$copath/feature");
 
-$svk->cmerge ('-m', 'merge change 14,16 from feature to work', '-c', '14,16', '//feature', '//work');
+my (undef, undef, $repos) = $xd->find_repos ('//', 1);
+my $uuid = $repos->fs->get_uuid;
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-c', '14,16', '//feature', '//work'],
+['Committed revision 17.',
+ 'Merging with base /trunk 9: applying /feature 13:14.',
+ 'G   test.pl',
+ 'Empty merge.',
+ 'Merging with base /trunk 9: applying /feature 15:16.',
+ 'G   test.pl',
+ 'Empty merge.',
+ 'Committed revision 18.',
+ 'Committed revision 19.',
+ "Auto-merging (9, 19) /feature-merge-$$ to /work (base /trunk:9).",
+ 'G   test.pl',
+ "New merge ticket: $uuid:/feature-merge-$$:18",
+ 'Committed revision 20.']);
 
 $svk->update ("$copath/work");
-
-ok (1);
+$svk->desc ('19');
+our $output;
+warn $output;

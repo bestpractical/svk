@@ -34,26 +34,29 @@ sub run {
 
     die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
     my $repos = $src->{repos};
-    $self->{merge} = SVK::Merge->new (%$self);
-    my ($base_path, $base_rev) = $self->{merge}->find_merge_base ($repos, $src->{path}, $dst->{path});
-
+    my $fs = $repos->fs;
+    $src->{revision} ||= $fs->youngest_rev;
+    $dst->{revision} ||= $fs->youngest_rev;
+    my $base = SVK::Merge->auto (%$self, repos => $repos, src => $src, dst => $dst,
+				 ticket => 1)->{base};
     # find a branch target
-    die loc("cannot find a path for temporary branch") if $base_path eq '/';
+    die loc("cannot find a path for temporary branch")
+	if $base->{path} eq '/';
     my $tmpbranch = "$src->{path}-merge-$$";
 
     $self->do_copy_direct
 	( %$src,
-	  path => $base_path,
+	  path => $base->{path},
 	  dpath => $tmpbranch,
 	  message => "preparing for cherry picking merging",
-	  rev => $base_rev,
+	  rev => $base->{revision},
 	) unless $self->{check_only};
 
-    my $fs = $repos->fs;
-    my $ceditor = SVK::Editor::Combine->new(tgt_anchor => $base_path, #$check_only ? $base_path : $tmpbranch,
-					  base_root  => $fs->revision_root ($base_rev),
-					  pool => SVN::Pool->new,
-					 );
+    my $ceditor = SVK::Editor::Combine->new(tgt_anchor => $base->{path},
+					    #$check_only ? $base_path : $tmpbranch,
+					    base_root => $base->root,
+					    pool => SVN::Pool->new,
+					   );
 
     my @chgs = split ',', $self->{chgspec};
     for (@chgs) {
@@ -69,7 +72,8 @@ sub run {
 	    die loc("chgspec not recognized");
 	}
 
-	print loc("Merging with base %1 %2: applying %3 %4:%5.\n", $base_path, $base_rev, $src->{path}, $fromrev, $torev);
+	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
+		  @{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev);
 
 	my $editor = SVK::Editor::Merge->new
 	    ( anchor => $src->{path},
@@ -103,23 +107,22 @@ sub run {
     my $uuid = $fs->get_uuid;
 
     # give ticket to src
-    my $ticket = $self->{merge}->find_merge_sources ($repos, $src->{path}, $fs->youngest_rev, 1, 1);
-
-    $ticket .= "\n$uuid:$tmpbranch:$newrev";
+    my $ticket = SVK::Merge->find_merge_sources ($repos, $src->{path}, $newrev, 1, 1);
+    $ticket->{"$uuid:$tmpbranch"} = $newrev;
 
     $self->do_propset_direct
 	( author => $ENV{USER},
 	  %$src,
 	  propname => 'svk:merge',
-	  propvalue => $ticket,
-	  message => "cherry picking merge $self->{chgspec} to $dst",
+	  propvalue => join ("\n", map {"$_:$ticket->{$_}"} sort keys %$ticket),
+	  message => "cherry picking merge $self->{chgspec} to $dst->{path}",
 	) unless $self->{check_only};
     my ($depot) = $self->{xd}->find_depotname ($src->{depotpath});
-
-    $src->{path} = $tmpbranch;
-    $src->{depotpath} = "/$depot$tmpbranch";
-    $self->{auto}++;
-    $self->SUPER::run ($src, $dst);
+    ++$self->{auto};
+    $self->SUPER::run (SVK::Target->new (%$src, path => $tmpbranch,
+					 depotpath => "/$depot$tmpbranch",
+					 revision => $fs->youngest_rev),
+		       $dst);
     return;
 }
 
