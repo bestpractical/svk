@@ -102,6 +102,9 @@ sub run {
 	$src->anchorify; $dst->anchorify;
     }
 
+    die loc ("Can't merge to checkout path incrementally.\n")
+	if $dst->{copath} and $self->{incremental};
+
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};

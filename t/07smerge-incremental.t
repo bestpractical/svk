@@ -6,7 +6,7 @@ our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
 
-plan tests => 4;
+plan tests => 5;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'new');
@@ -32,6 +32,9 @@ $svk->checkout ('//l', $copath);
 append_file ("$copath/Q/qu", "modified on local branch\n");
 append_file ("$copath/Q/qz", "modified on local branch\n");
 $svk->commit ('-m', 'commit on local branch', $copath);
+
+is_output ($svk, 'smerge', ['-CI', '//m', $copath],
+	   ["Can't merge to checkout path incrementally."]);
 
 is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
