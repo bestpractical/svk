@@ -47,10 +47,12 @@ sub run {
 	    mkdir $_[1] unless -e $_[1];
 	}
 	else {
+	    # XXX: PerlIO::via::symlink should take care of this
+	    unlink $_[1] if -l $_[1];
 	    my $fh = SVK::XD::get_fh ($xdroot, '>', $_[0], $_[1]);
 	    my $content = $xdroot->file_contents ($_[0]);
 	    slurp_fh ($content, $fh);
-	    close $fh;
+	    close $fh or die $!;
 	}
 	$unschedule->(@_);
     };
@@ -71,7 +73,8 @@ sub run {
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
 		      my $st = $status->[0];
-		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
+		      my $dpath = $path ?
+			  File::Spec->catfile ($target->{path}, $path) : $target->{path};
 		      my $copath = $path ? "$target->{copath}/$path" : $target->{copath};
 		      if ($st eq 'M' || $st eq 'D' || $st eq '!' || $st eq 'R') {
 			  $revert->($dpath, $copath);

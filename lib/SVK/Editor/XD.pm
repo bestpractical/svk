@@ -115,7 +115,8 @@ sub apply_textdelta {
 	    seek $base, 0, 0;
 	}
 	rename ($copath, $basename);
-	$self->{base}{$path} = [$base, $basename];
+	$self->{base}{$path} = [$base, $basename,
+				-l $basename ? () : [stat($base)]];
     }
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>',
 			      "$self->{anchor}/$path", $copath)
@@ -130,10 +131,10 @@ sub close_file {
     my ($self, $path) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    if ($self->{base}{$path}) {
-	chmod ((stat ($self->{base}{$path}[0]))[2], $copath);
-	close $self->{base}{$path}[0];
-	unlink $self->{base}{$path}[1];
+    if ((my $base = $self->{base}{$path})) {
+	close $base->[0];
+	unlink $base->[1];
+	chmod $base->[2][2], $copath if $base->[2];
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {

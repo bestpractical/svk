@@ -501,7 +501,11 @@ sub do_add {
 				delete_verbose => 1,
 				unknown_verbose => 1,
 				cb_unknown => sub {
-				    $self->{checkout}->store ($_[1], { '.schedule' => 'add' });
+				    # XXX: generic auto-prop things and reporting here
+				    $self->{checkout}->store
+					($_[1], { '.schedule' => 'add',
+						  -l $_[1] ? ('.newprop' => { 'svn:special' => '*'}) : ()
+						});
 				    print "A   $arg{report}$_[0]\n" unless $arg{quiet};
 				},
 			      );
@@ -730,23 +734,23 @@ sub _unknown_verbose {
     find ({ preprocess => sub { sort @_ },
 	    wanted =>
 	    sub {
-	      return if m/$ignore/;
-	      my $dpath = $File::Find::name;
-	      my $copath = $dpath;
-	      my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
-	      return if $schedule eq 'delete';
-	      if ($arg{entry}) {
-		  $dpath =~ s/^\Q$arg{copath}\E/$arg{entry}/;
-	      }
-	      else {
-		  if ($dpath eq $arg{copath}) {
-		      $dpath = '';
-		  }
-		  else {
-		      $dpath =~ s|^\Q$arg{copath}\E/||;
-		  }
-	      }
-	      $arg{cb_unknown}->($dpath, $File::Find::name);
+		$File::Find::prune = 1, return if m/$ignore/;
+		my $dpath = $File::Find::name;
+		my $copath = $dpath;
+		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
+		return if $schedule eq 'delete';
+		if ($arg{entry}) {
+		    $dpath =~ s/^\Q$arg{copath}\E/$arg{entry}/;
+		}
+		else {
+		    if ($dpath eq $arg{copath}) {
+			$dpath = '';
+		    }
+		    else {
+			$dpath =~ s|^\Q$arg{copath}\E/||;
+		    }
+		}
+		$arg{cb_unknown}->($dpath, $File::Find::name);
 	  }}, defined $arg{targets} ?
 	  map {"$arg{copath}/$_"} @{$arg{targets}} : $arg{copath});
 }
@@ -775,7 +779,7 @@ sub _node_deleted_or_absent {
 	return 1 if $schedule eq 'delete';
     }
 
-    unless (-e $arg{copath}) {
+    unless (-e $arg{copath} || -l $arg{copath}) {
 	return 1 if $arg{absent_ignore};
 	if ($arg{absent_as_delete}) {
 	    $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
@@ -949,7 +953,8 @@ sub _delta_dir {
 	    }
 	    next;
 	}
-	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
+	my $delta = (-d $newpaths{copath} && !-l $newpaths{copath})
+	    ? \&_delta_dir : \&_delta_file;
 	my $kind = $ccinfo->{'.copyfrom'} ?
 	    $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'}) : $SVN::Node::none;
 	$self->$delta ( %arg,
@@ -1125,8 +1130,31 @@ sub get_keyword_layer {
 	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g});
 }
 
+sub _fh_symlink {
+    my ($mode, $fname) = @_;
+    my $fh;
+    if ($mode eq '>') {
+	use PerlIO::via::symlink;
+	open $fh, '>:via(symlink)', $fname;
+    }
+    elsif ($mode eq '<') {
+	# XXX: make PerlIO::via::symlink also do the reading
+	my $lnk = 'link '.readlink $fname;
+	open $fh, '<', \$lnk;
+    }
+    else {
+	die "unknown mode $mode for symlink fh";
+    }
+    return $fh;
+}
+
 sub get_fh {
     my ($root, $mode, $path, $fname, $layer) = @_;
+    # XXX: it seems symlinks are not using the SVN::Node::special node type
+    # need to confirm this
+    local $@;
+    return _fh_symlink ($mode, $fname)
+	if -l $fname || defined eval {$root->node_prop ($path, 'svn:special')};
     $layer ||= get_keyword_layer ($root, $path);
     open my ($fh), $mode, $fname;
     $layer->via ($fh) if $layer;
