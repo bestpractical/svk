@@ -47,7 +47,7 @@ sub run_resolver {
     my ($self, $cmd, @args) = @_;
 
     local $SIG{$self->{signal}} = sub {
-        print loc("Emerge %1 done\n");
+        print loc("Emerge %1 done.\n");
         $self->{finished} = 1;
     };
 
@@ -65,6 +65,8 @@ sub run_resolver {
     else {
         exec($cmd, @args) or die loc("Could not run %1: %2", $cmd, $!);
     }
+
+    return $self->{finished};
 }
 
 1;

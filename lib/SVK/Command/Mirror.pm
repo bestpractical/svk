@@ -74,7 +74,8 @@ sub run {
 			     );
 
     if ($self->{relocate}) {
-        return $m->relocate;
+        $m->relocate;
+        return;
     }
 
     $m->init or die loc("%1 already mirrored, use 'svk mirror --delete' to remove it first.\n", $target->{depotpath});

@@ -86,7 +86,7 @@ sub _do_edit {
 sub _do_add {
     my ($self, $depot, $path) = @_;
 
-    die loc("Depot '$depot' already exists; use --delete to remove it first.\n")
+    die loc("Depot '%1' already exists; use 'svk depotmap --delete' to remove it first.\n", $depot)
         if $self->{xd}{depotmap}{$depot};
 
     $self->{xd}{depotmap}{$depot} = $path;
@@ -99,7 +99,7 @@ sub _do_delete {
     my ($self, $depot) = @_;
 
     delete $self->{xd}{depotmap}{$depot}
-        or die loc("Depot '$depot' does not exist in the depot map.\n");
+        or die loc("Depot '%1' does not exist in the depot map.\n", $depot);
 
     print loc("New depot map saved.\n");
     return;

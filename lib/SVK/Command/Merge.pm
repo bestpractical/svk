@@ -46,11 +46,11 @@ sub parse_arg {
         die loc("Cannot specify both 'to' and 'from'.\n");
     }
 
-    my $target1 = $self->arg_co_maybe ($arg[0] || "");
+    my $target1 = $self->arg_co_maybe ($arg[0]);
     my $target2 = $target1->copied_from;
 
     if (!defined ($target2)) {
-        die loc ("This path has not been branched.\n");
+        die loc ("Cannot find the path which '%1' copied from.\n", $arg[0]);
     }
 
     if ($self->{from}) {
@@ -178,8 +178,8 @@ SVK::Command::Merge - Apply differences between two sources
  -a [--auto]            : merge from the previous merge point
  -l [--log]             : use logs of merged revisions as commit message
  -s [--sync]            : synchronize mirrored sources before update
- -t [--to]:             : merge to the specified path
- -f [--from]:           : merge from the specified path
+ -t [--to]              : merge to the specified path
+ -f [--from]            : merge from the specified path
  -S [--sign]            : sign this change
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node

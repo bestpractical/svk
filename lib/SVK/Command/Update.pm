@@ -119,7 +119,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -N [--non-recursive]   : do not descend recursively
  -s [--sync]            : synchronize mirrored sources before update
- -m [--merge]           : star merge from copied sources before update
+ -m [--merge]           : smerge from copied sources before update
 
 =head1 DESCRIPTION
 

@@ -91,7 +91,7 @@ sub load {
         $/ = "\n="; <$fh>;
     };
 
-    die loc("Cannot find a patch block in $file.\n") unless $content;
+    die loc("Cannot find a patch block in %1.\n", $file) unless $content;
     chop $content; # remove the final '='. look, a use of chop()!
 
     my ($self) = thaw (uncompress (decode_base64 ( $content ) ) );

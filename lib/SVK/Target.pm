@@ -182,7 +182,7 @@ sub depotname {
     my $self = shift;
 
     $self->{depotpath} =~ m!^/([^/]*)!
-      or die loc("depotpath '$self->{depotpath}' does not contain a depot!");
+      or die loc("'%1' does not contain a depot name.\n", $self->{depotpath});
 
     return $1;
 }

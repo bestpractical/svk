@@ -41,8 +41,8 @@ SVK::Command::Smerge - Automatic merge all changes between branches
  -B [--baseless]        : use the earliest revision as the merge point
  -b [--base] arg        : use revision ARG as the merge point
  -s [--sync]            : synchronize mirrored sources before update
- -t [--to]:             : merge to the specified path
- -f [--from]:           : merge from the specified path
+ -t [--to]              : merge to the specified path
+ -f [--from]            : merge from the specified path
  -S [--sign]            : sign this change
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node

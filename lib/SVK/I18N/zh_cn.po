@@ -36,12 +36,22 @@ msgstr "    举例来说，这样会显示取出路径的信息："
 
 #: lib/SVK/Command.pod:9
 msgid ""
+"    If both --sync and --merge are specified, like in svk up -sm, it will\n"
+"    first synchronize the mirrored copy source path, and then smerge from\n"
+"    it."
+msgstr ""
+"    如果同时指定 --sync 及 --merge，像‘svk up -sm’这样，则会先同步化映像"
+"的\n"
+"    来源目录，然后再以它为来源进行 smerge。"
+
+#: lib/SVK/Command.pod:12
+msgid ""
 "    If the target is a depot path, or the corresponding depot path of the\n"
 "    target checkout path is actually a mirroring path, the output of this\n"
 "    command will look like this:"
 msgstr "    如果指定的目标是档案库路径或取出的映像目录，显示的信息会像这样："
 
-#: lib/SVK/Command.pod:16
+#: lib/SVK/Command.pod:19
 msgid ""
 "    Note that the revision numbers on Copied From: and Merge From: lines\n"
 "    are for the source path (//svk/trunk), not the target path\n"
@@ -58,20 +68,24 @@ msgstr ""
 "    svk log -r 434 //svk/local 这个指令，svk 会告诉你，在第 434 版时，\n"
 "    //svk/local 路径并不存在。"
 
-#: lib/SVK/Command.pod:18
+#: lib/SVK/Command.pod:21
 msgid ""
 "    Put files and directories under version control, scheduling them for\n"
 "    addition to repository. They will be added in next commit."
 msgstr "    安排档案、目录加入版本控制系统之中，在下次送交时放进档案库里。"
 
-#: lib/SVK/Command.pod:20
+#: lib/SVK/Command.pod:23
 msgid ""
 "    Run this command without any options would bring up your $EDITOR, and\n"
 "    let you edit your depot-directory mapping."
 msgstr ""
 "    不加参数直接执行此命令时，会呼叫你的 $EDITOR 来编辑档案库的对映表。"
 
-#: lib/SVK/Command.pod:22
+#: lib/SVK/Command.pod:24
+msgid "    SVK::Resolve - Interactively resolve conflicts"
+msgstr "    SVK::Resolve - 互动式解决差异"
+
+#: lib/SVK/Command.pod:26
 msgid ""
 "    So far there is no easy way to tell the actual revision number of\n"
 "    //svk/local right after a copy or merge."
@@ -79,7 +93,7 @@ msgstr ""
 "    目前为止，还没有办法直接显示在经过复制或合并之后，最新的\n"
 "    //svk/local 版号是多少。"
 
-#: lib/SVK/Command.pod:24
+#: lib/SVK/Command.pod:28
 msgid ""
 "    So you can see this depot path is mirror from a remote repository, and\n"
 "    so far mirrored up to revision 1774."
@@ -87,17 +101,17 @@ msgstr ""
 "    上面显示了，这个档案库路径，实际上是某个远程仓储的映像路径，\n"
 "    并且目前已经映像到了第 1774 版。"
 
-#: lib/SVK/Command.pod:26
+#: lib/SVK/Command.pod:30
 msgid ""
 "    Synchronize checkout copies to revision given by -r or to HEAD revision\n"
 "    by default."
 msgstr "    将取出路径的工作复本更新到指定的更动编号，预设为最新版本（HEAD）。"
 
-#: lib/SVK/Command.pod:27
+#: lib/SVK/Command.pod:31
 msgid "    The depotname may then be used as part of a DEPOTPATH:"
 msgstr "    设定完成之后，档案库名称就可以当作档案库路径的一部份来使用："
 
-#: lib/SVK/Command.pod:30
+#: lib/SVK/Command.pod:34
 msgid ""
 "    The result of svk info //svk/local is almost the same as above, except\n"
 "    for the Checkout Path: line is not there, because you are not referring\n"
@@ -106,7 +120,7 @@ msgstr ""
 "    执行 svk info //svk/local 所显示的讯息跟刚刚很相似，但是没有取出路径\n"
 "    那栏，因为指定的参数并不是取出路径。"
 
-#: lib/SVK/Command.pod:33
+#: lib/SVK/Command.pod:37
 msgid ""
 "    You can see the result has some basic information: the actual depot\n"
 "    path, and current revision. Next are advanced information about copy\n"
@@ -115,15 +129,15 @@ msgstr ""
 "    在这讯息之中，可看到一些基本信息，像是实际档案库路径，以及目前版号。\n"
 "    也有一些比较进阶的信息，像是此档案库复制与合并的路径。"
 
-#: lib/SVK/Command.pod:34
+#: lib/SVK/Command.pod:38
 msgid "# You may also list the target part first:"
 msgstr "# 目标也可以写在来源前面："
 
-#: lib/SVK/Command.pod:35
+#: lib/SVK/Command.pod:39
 msgid "% svk info //svk/trunk"
 msgstr "% svk info //svk/trunk"
 
-#: lib/SVK/Command.pod:36
+#: lib/SVK/Command.pod:40
 msgid "% svk info ~/dev/svk"
 msgstr "% svk info ~/dev/svk"
 
@@ -133,23 +147,23 @@ msgid "%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n"
 msgstr "侦测到 %1 项冲突。请在解决后执行‘svk resolved’。\n"
 
 #. ($conflicts)
-#: lib/SVK/Command/Patch.pm:80
+#: lib/SVK/Command/Patch.pm:79
 msgid "%*(%1,conflict) found, patch aborted.\n"
 msgstr "找到 %1 项冲突，已停止补缀。\n"
 
 #. ($conflicts)
-#: lib/SVK/Command/Patch.pm:91
+#: lib/SVK/Command/Patch.pm:90
 msgid "%*(%1,conflict) found, update aborted.\n"
 msgstr "找到 %1 项冲突，已停止补缀。\n"
 
 #. ($editor->{conflicts})
 #. ($conflicts)
-#: lib/SVK/Command/Patch.pm:69 lib/SVK/Merge.pm:389
+#: lib/SVK/Command/Patch.pm:68 lib/SVK/Merge.pm:394
 msgid "%*(%1,conflict) found.\n"
 msgstr "找到 %1 项冲突。\n"
 
 #. ($editor->{skipped})
-#: lib/SVK/Merge.pm:391
+#: lib/SVK/Merge.pm:396
 msgid ""
 "%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n"
 msgstr "略过 %1 个档案；请考虑用 --track-rename 选项重新执行合并。\n"
@@ -164,6 +178,11 @@ msgstr "%1 - 略过\n"
 msgid "%1 already locked, use 'svk cleanup' if lock is stalled\n"
 msgstr "%1 已被锁定，若卡住时请用‘svk cleanup’解除\n"
 
+#. ($target->{depotpath})
+#: lib/SVK/Command/Mirror.pm:79
+msgid "%1 already mirrored, use 'svk mirror --delete' to remove it first.\n"
+msgstr "%1 已经是映像路径，请先用‘svk mirror --delete’移除原本的映像设定。\n"
+
 #. ($report)
 #: lib/SVK/XD.pm:559
 msgid "%1 changed"
@@ -173,6 +192,11 @@ msgstr "%1 已更动"
 #: lib/SVK/XD.pm:617
 msgid "%1 is already scheduled for delete"
 msgstr "%1 已被排程纳入下次要删除的项目"
+
+#. ($target->{depotpath})
+#: lib/SVK/Command/Mirror.pm:58
+msgid "%1 is inside a mirrored path.\n"
+msgstr "%1 位于映像路径之下。\n"
 
 #. ($target->copath ($_[0])
 #: lib/SVK/Command/Copy.pm:96
@@ -188,6 +212,11 @@ msgstr "%1 已修改。\n"
 #: lib/SVK/Command/Copy.pm:121
 msgid "%1 is not a directory.\n"
 msgstr "路径 %1 不是一个目录。\n"
+
+#. ($target->{depotpath})
+#: lib/SVK/Command/Mirror.pm:57
+msgid "%1 is not a mirrored path.\n"
+msgstr "%1 不是一个映像路径。\n"
 
 #. ($_[0])
 #: lib/SVK/XD.pm:569
@@ -224,164 +253,211 @@ msgstr "%1并未修改：a)取消，e)编辑，c)送交？"
 msgid "%1(%2) is not under version control"
 msgstr "%1(%2) 未受版本控制"
 
+#. ($self->{depotpath})
+#: lib/SVK/Target.pm:184
+msgid "'%1' does not contain a depot name.\n"
+msgstr "‘%1’里没有档案库名称。\n"
+
 #. ($copyfrom_path, $copyfrom_rev)
 #: lib/SVK/Command/Log.pm:120
 msgid "(from %1:%2)"
 msgstr "(来自 %1:%2)"
 
-#: lib/SVK/Command.pod:37
+#. ('SVKMERGE',)
+#: lib/SVK/Resolve.pm:222
+msgid ""
+"(to skip this question, set the %1 environment variable to one of them)\n"
+msgstr "(如果不想再看到这个问题，请将 %1 环境变数设为上列名称之一)\n"
+
+#: lib/SVK/Command.pod:41
 msgid "--direct: commit directly even if the path is mirrored"
 msgstr "--direct: 即使路径是映像目录，还是直接送交更动"
 
-#: lib/SVK/Command.pod:38
+#: lib/SVK/Command.pod:42
 msgid "--force: force import from a checkout path"
 msgstr "--force: 强制使用取出的路径作为汇入来源"
 
-#: lib/SVK/Command.pod:39
+#: lib/SVK/Command.pod:43
 msgid "--host arg: use ARG as the hostname shown in merge log"
 msgstr "--host arg: 指定显示在合并纪录里的计算机名称"
 
-#: lib/SVK/Command.pod:40
+#: lib/SVK/Command.pod:44
 msgid "--import: import mode; automatically add and delete nodes"
 msgstr "--import: 汇入模式；自动进行新增及删除"
 
-#: lib/SVK/Command.pod:41
-msgid "--list: list mirrored paths"
-msgstr "--list: 列出所有的映像路径"
-
-#: lib/SVK/Command.pod:42
+#: lib/SVK/Command.pod:45
 msgid "--no-ticket: do not record this merge point"
 msgstr "--no-ticket: 不留下此次合并的历史纪录"
 
-#: lib/SVK/Command.pod:43
+#: lib/SVK/Command.pod:46
+msgid "--relocate: relocate the mirror to another URI"
+msgstr "--relocate: 将映像路径指向另一个网址"
+
+#: lib/SVK/Command.pod:47
 msgid "--remoterev: use remote revision numbers in merge log"
 msgstr "--remoterev: 在合并纪录里，使用远程的更动编号"
 
-#: lib/SVK/Command.pod:44
+#: lib/SVK/Command.pod:48
+msgid "--revprop: operate on a revision property (use with -r)"
+msgstr "--revprop: 操作修订版性质 (与 -r 一同使用)"
+
+#: lib/SVK/Command.pod:49
 msgid "--strict: do not print an extra newline at the end of the"
 msgstr "--strict: 不要在显示的属性值后面加上换列符号；"
 
-#: lib/SVK/Command.pod:45
+#: lib/SVK/Command.pod:50
 msgid "--track-rename: track changes made to renamed node"
 msgstr "--track-rename: 对于改名过的项目，一并追踪改名前的更动"
 
-#: lib/SVK/Command.pod:46
+#: lib/SVK/Command.pod:51
 msgid "--upgrade: upgrade mirror state to the latest version"
 msgstr "--upgrade: 更新映像状态信息的储存格式"
 
-#: lib/SVK/Command.pod:47
+#: lib/SVK/Command.pod:52
 msgid "-B [--baseless]: use the earliest revision as the merge point"
 msgstr "-B [--baseless]: 使用最早的更动当作合并点"
 
-#: lib/SVK/Command.pod:48
+#: lib/SVK/Command.pod:53
 msgid "-C [--check-only]: try operation but make no changes"
 msgstr "-C [--check-only]: 不真的执行写入，只做检查"
 
-#: lib/SVK/Command.pod:49
+#: lib/SVK/Command.pod:54
 msgid "-I [--incremental]: apply each change individually"
 msgstr "-I [--incremental]: 渐进式合并；逐一套用每项更动"
 
-#: lib/SVK/Command.pod:50
+#: lib/SVK/Command.pod:55
 msgid "-K [--keep-local]: do not remove the local file"
 msgstr "-K [--keep-local]: 不要删除本地端的档案"
 
-#: lib/SVK/Command.pod:51
+#: lib/SVK/Command.pod:56
 msgid "-N [--non-recursive]: do not descend recursively"
 msgstr "-N [--non-recursive]: 不要递回处理子目录"
 
-#: lib/SVK/Command.pod:52
+#: lib/SVK/Command.pod:57
 msgid "-R [--recursive]: descend recursively"
 msgstr "-R [--recursive]: 递回处理子目录"
 
-#: lib/SVK/Command.pod:53
+#: lib/SVK/Command.pod:58
+msgid "-S [--sign]: sign this change"
+msgstr "-S [--sign]: 签署送交更动"
+
+#: lib/SVK/Command.pod:59
+msgid "-a [--add]: add a depot to the mapping"
+msgstr "-a [--add]: 将档案库加进对映表中"
+
+#: lib/SVK/Command.pod:60
 msgid "-a [--all]: synchronize all mirrored paths"
 msgstr "-a [--all]: 同步化所有的映像路径"
 
-#: lib/SVK/Command.pod:54
+#: lib/SVK/Command.pod:61
 msgid "-a [--auto]: merge from the previous merge point"
 msgstr "-a [--auto]: 使用上次的合并点"
 
-#: lib/SVK/Command.pod:55
+#: lib/SVK/Command.pod:62
 msgid "-b [--base] arg: use revision ARG as the merge point"
 msgstr "-b [--base] arg: 使用指定的更动当作合并点"
 
-#: lib/SVK/Command.pod:56
+#: lib/SVK/Command.pod:63
 msgid "-c [--change] arg: act on comma-separated revisions ARG"
 msgstr "-c [--change] arg: 指定一系列要处理的更动，编号之间用逗号隔开"
 
-#: lib/SVK/Command.pod:57
+#: lib/SVK/Command.pod:64
+msgid "-d [--delete]: mark a path as no longer mirrored"
+msgstr "-d [--delete]: 解除路径的映像状态"
+
+#: lib/SVK/Command.pod:65
+msgid "-d [--delete]: remove a depot from the mapping"
+msgstr "-d [--delete]: 将档案库从对映表中移除"
+
+#: lib/SVK/Command.pod:66
 msgid "-d [--depth] arg: recurse at most ARG levels deep; use with -R"
 msgstr "-d [--depth] arg: 指定递回层数的上限；仅在指定 -R 时适用"
 
-#: lib/SVK/Command.pod:58
+#: lib/SVK/Command.pod:67
+msgid "-f [--from]: merge from the specified path"
+msgstr "-f [--from]: 从指定的路径合并到它的复制来源"
+
+#: lib/SVK/Command.pod:68
 msgid "-f [--full-path]: show pathname for each entry, instead of a tree"
 msgstr "-f [--full-path]: 显示每个项目的完整路径，而不是树状结构"
 
-#: lib/SVK/Command.pod:59
-msgid "-i [--init]: initialize a default deopt"
+#: lib/SVK/Command.pod:69
+msgid "-i [--init]: initialize a default depot"
 msgstr "-i [--init]: 初始化预设的档案库"
 
-#: lib/SVK/Command.pod:60
+#: lib/SVK/Command.pod:70
 msgid "-l [--limit] arg: stop after displaying ARG revisions"
 msgstr "-l [--limit] arg: 指定显示更动数的上限"
 
-#: lib/SVK/Command.pod:61
+#: lib/SVK/Command.pod:71
 msgid "-l [--list]: list current depot mappings"
 msgstr "-l [--list]: 列出现有的档案库对映"
 
-#: lib/SVK/Command.pod:62
+#: lib/SVK/Command.pod:72
+msgid "-l [--list]: list mirrored paths"
+msgstr "-l [--list]: 列出所有的映像路径"
+
+#: lib/SVK/Command.pod:73
 msgid "-l [--log]: use logs of merged revisions as commit message"
 msgstr "-l [--log]: 采用各更动的纪录做为合并纪录"
 
-#: lib/SVK/Command.pod:63
+#: lib/SVK/Command.pod:74
+msgid "-m [--merge]: smerge from copied sources before update"
+msgstr "-m [--merge]: 在更新之前，先从复制来源执行 smerge"
+
+#: lib/SVK/Command.pod:75
 msgid "-m [--message] arg: specify commit message ARG"
 msgstr "-m [--message] arg: 指定送交更动的描述"
 
-#: lib/SVK/Command/Merge.pm:85
+#: lib/SVK/Command/Merge.pm:127
 msgid "-m ignored in incremental merge\n"
 msgstr "渐进式合并；已忽略 -m 选项\n"
 
-#: lib/SVK/Command.pod:64
+#: lib/SVK/Command.pod:76
 msgid "-q [--quiet]: do not display changed nodes"
 msgstr "-q [--quiet]: 不要显示更动的项目"
 
-#: lib/SVK/Command.pod:65
+#: lib/SVK/Command.pod:77
 msgid "-r [--revision] N:M: act on revisions between N and M"
 msgstr "-r [--revision] N:M: 指定要处理的更动编号范围"
 
-#: lib/SVK/Command.pod:66
+#: lib/SVK/Command.pod:78
 msgid "-r [--revision] arg: act on revision ARG instead of the head revision"
 msgstr "-r [--revision] arg: 指定要处理的更动编号；预设为最新版本"
 
-#: lib/SVK/Command.pod:67
-msgid "-s [--sign]: sign this change"
-msgstr "-s [--sign]: 签署送交更动"
-
-#: lib/SVK/Command.pod:68
+#: lib/SVK/Command.pod:79
 msgid "-s [--skipto] arg: start synchronization at revision ARG"
 msgstr "-s [--skipto] arg: 指定开始同步的更动编号"
 
-#: lib/SVK/Command.pod:69
+#: lib/SVK/Command.pod:80
 msgid "-s [--summarize]: show summary only"
 msgstr "-s [--summarize]: 仅显示摘要信息"
 
-#: lib/SVK/Command.pod:70
+#: lib/SVK/Command.pod:81
+msgid "-s [--sync]: synchronize mirrored sources before update"
+msgstr "-s [--sync]: 在更新前，先同步化来源映像路径"
+
+#: lib/SVK/Command.pod:82
+msgid "-t [--to]: merge to the specified path"
+msgstr "-t [--to]: 从指定路径的复制来源，合并到指定的路径"
+
+#: lib/SVK/Command.pod:83
 msgid "-t [--torev] arg: stop synchronization at revision ARG"
 msgstr "-t [--torev] arg: 指定结束同步的更动编号"
 
-#: lib/SVK/Command.pod:71
+#: lib/SVK/Command.pod:84
 msgid "-v [--verbose]: print extra information"
 msgstr "-v [--verbose]: 印出额外的信息"
 
-#: lib/SVK/Command.pod:72
+#: lib/SVK/Command.pod:85
 msgid "-x [--cross]: track revisions copied from elsewhere"
 msgstr "-x [--cross]: 追踪从别处复制来的版本"
 
-#: lib/SVK/Command.pod:73
+#: lib/SVK/Command.pod:86
 msgid "/depotname/path/inside/repos"
 msgstr "/档案库名称/内部的/路径"
 
-#: lib/SVK/Command.pod:74
+#: lib/SVK/Command.pod:87
 msgid "A  Added"
 msgstr "A  新增"
 
@@ -394,8 +470,12 @@ msgstr "取消。\n"
 msgid "Aborted: %1\n"
 msgstr "已中止：%1\n"
 
+#: lib/SVK/Command.pod:88
+msgid "Accept:"
+msgstr "接受："
+
 #. ($target->{path}, scalar @revs)
-#: lib/SVK/Command/Annotate.pm:38
+#: lib/SVK/Command/Annotate.pm:40
 msgid "Annotations for %1 (%2 active revisions):\n"
 msgstr "%1 的眉批 (%2 份有效的更动)：\n"
 
@@ -408,9 +488,13 @@ msgstr "自动合并 (%1, %2) %3 到 %4 (源头为 %5:%6)\n"
 msgid "Available commands:\n"
 msgstr "可用的命令：\n"
 
-#: lib/SVK/Command.pod:75
+#: lib/SVK/Command.pod:89
 msgid "C  Conflict"
 msgstr "C  冲突"
+
+#: lib/SVK/Command/Switch.pm:23
+msgid "Can only switch checkout root.\n"
+msgstr "只能切换取出路径的根目录。\n"
 
 #. ($src->path, $dst->path)
 #: lib/SVK/Merge.pm:113
@@ -431,6 +515,35 @@ msgstr "无法于‘%1’建立 SVK 的设定目录：%2"
 msgid "Cannot display: file marked as a binary type.\n"
 msgstr "无法显示二进制档案的差异。\n"
 
+#. ($file)
+#: lib/SVK/Patch.pm:93
+msgid "Cannot find a patch block in %1.\n"
+msgstr "在 %1 里找不到补缀区段。\n"
+
+#. ($arg[0])
+#: lib/SVK/Command/Merge.pm:52
+msgid "Cannot find the path which '%1' copied from.\n"
+msgstr "找不到 %1 的复制源头。\n"
+
+#. ($!)
+#: lib/SVK/Resolve/Emacs.pm:56
+msgid "Cannot fork: %1"
+msgstr "无法分岔程序： %1"
+
+#. ($path)
+#: lib/SVK/Resolve.pm:139
+msgid "Cannot launch an external merge tool for %1.\n"
+msgstr "无法激活外部合并工具来编辑 %1。\n"
+
+#: lib/SVK/Command/Merge.pm:41
+msgid ""
+"Cannot specify 'to' or 'from' when specifying a source and destination.\n"
+msgstr "来源和目标都已指定时，不能同时指定‘to’及‘from’。\n"
+
+#: lib/SVK/Command/Merge.pm:45
+msgid "Cannot specify both 'to' and 'from'.\n"
+msgstr "不能同时指定‘to’及‘from’。\n"
+
 #: lib/SVK/Command/Log.pm:108
 msgid "Changed paths:\n"
 msgstr "已修改路径：\n"
@@ -444,7 +557,7 @@ msgstr "正在检查本地端的映像目录。\n"
 msgid "Checkout Path: %1\n"
 msgstr "取出路径：%1\n"
 
-#: lib/SVK/Command.pod:76
+#: lib/SVK/Command.pod:90
 msgid "Checkout Path: /Users/gugod/dev/svk"
 msgstr "取出路径：/Users/gugod/dev/svk"
 
@@ -460,16 +573,25 @@ msgstr "送交进映像路径：正在直接合并回去。\n"
 #. ($_[0])
 #: lib/SVK/Command/Cmerge.pm:93 lib/SVK/Command/Commit.pm:127
 #: lib/SVK/Command/Copy.pm:28 lib/SVK/Command/Delete.pm:46
-#: lib/SVK/Command/Mkdir.pm:21 lib/SVK/Command/Propset.pm:28
+#: lib/SVK/Command/Mkdir.pm:21 lib/SVK/Command/Propset.pm:46
 msgid "Committed revision %1.\n"
 msgstr "已送交编号 %1 的更动。\n"
+
+#. ($self->{path}, $default)
+#: lib/SVK/Resolve.pm:60
+msgid ""
+"Conflict found in %1:\n"
+"e)dit, d)iff, m)erge, s)kip, t)heirs, y)ours, h)elp? [%2] "
+msgstr ""
+"%1 尚有冲突：\n"
+"e)编辑，d)差异，m)合并，s)略过，t)依他，y)依你，h)说明？[%2] "
 
 #. ((split/:/)
 #: lib/SVK/Command/Info.pm:41
 msgid "Copied From: %1, Rev. %2\n"
 msgstr "复制来源：%1，更动编号 %2\n"
 
-#: lib/SVK/Command.pod:77
+#: lib/SVK/Command.pod:91
 msgid "Copied From: /svk/trunk, Rev. 434"
 msgstr "复制来源：/svk/trunk，更动编号 434"
 
@@ -478,26 +600,46 @@ msgstr "复制来源：/svk/trunk，更动编号 434"
 msgid "Copying more than one source requires %1 to be directory.\n"
 msgstr "复制超过一项来源时，%1 必须是目录。\n"
 
-#: lib/SVK/Command.pod:78
+#. ($cmd, $!)
+#: lib/SVK/Resolve/Emacs.pm:66
+msgid "Could not run %1: %2"
+msgstr "无法执行 %1：%2"
+
+#: lib/SVK/Command.pod:92
 msgid "D  Deleted"
 msgstr "D  删除"
 
-#: lib/SVK/Command.pod:79
+#: lib/SVK/Command.pod:93
 msgid "DESCRIPTION"
 msgstr "说明"
+
+#. ($depot)
+#: lib/SVK/Command/Depotmap.pm:88
+msgid ""
+"Depot '%1' already exists; use 'svk depotmap --delete' to remove it first.\n"
+msgstr "档案库‘%1’已经存在，请先用‘svk depotmap --delete’将它移除。\n"
+
+#. ($depot)
+#: lib/SVK/Command/Depotmap.pm:101
+msgid "Depot '%1' does not exist in the depot map.\n"
+msgstr "档案库‘%1’不存在于对映表中。\n"
 
 #. ($depotpath)
 #: lib/SVK/Command/Info.pm:32
 msgid "Depot Path: %1\n"
 msgstr "档案库路径：%1\n"
 
-#: lib/SVK/Command.pod:80
+#: lib/SVK/Command.pod:94
 msgid "Depot Path: //svk/local"
 msgstr "档案库路径：//svk/local"
 
-#: lib/SVK/Command.pod:81
+#: lib/SVK/Command.pod:95
 msgid "Depot Path: //svk/trunk"
 msgstr "档案库路径：//svk/trunk"
+
+#: lib/SVK/Command.pod:96
+msgid "Diff:"
+msgstr "差异："
 
 #: lib/SVK/Command/Copy.pm:112
 msgid "Different depots.\n"
@@ -508,15 +650,31 @@ msgstr "不同的档案库。\n"
 msgid "Directory %1 imported to depotpath %2 as revision %3.\n"
 msgstr "目录 %1 已汇入档案库路径 %2，更动编号为 %3。\n"
 
-#: lib/SVK/Editor/Merge.pm:587
+#: lib/SVK/Command.pod:97
+msgid "EDITOR: Editor to use for 'e'."
+msgstr "EDITOR: 要在 'e' 时采用的编辑器。"
+
+#: lib/SVK/Command.pod:98
+msgid "Edit:"
+msgstr "编辑："
+
+#: lib/SVK/Resolve/Emacs.pm:49
+msgid "Emerge %1 done.\n"
+msgstr "Emerge %1 执行完毕。\n"
+
+#: lib/SVK/Editor/Merge.pm:586
 msgid "Empty merge.\n"
 msgstr "合并后无任何更动。\n"
+
+#: lib/SVK/Command.pod:99
+msgid "Environment variables:"
+msgstr "环境变数："
 
 #: lib/SVK/Command/Patch.pm:26
 msgid "Filename required.\n"
 msgstr "需要指定档名。\n"
 
-#: lib/SVK/Command.pod:82
+#: lib/SVK/Command.pod:100
 msgid "G  Merged"
 msgstr "G  合并"
 
@@ -534,32 +692,37 @@ msgstr "汇入路径 (%1) 与取出路径 (%2) 不同\n"
 msgid "Import source cannot be a checkout path"
 msgstr "不可以用已取出的路径作为汇入来源"
 
-#: lib/SVK/Command/Merge.pm:108
+#: lib/SVK/Command/Merge.pm:150
 msgid "Incremental merge not guaranteed even if check is successful\n"
 msgstr "即使检查成功，也不保证渐进式合并能顺利完成\n"
 
-#: lib/SVK/Command/Merge.pm:66
+#: lib/SVK/Command/Merge.pm:108
 msgid "Incremental merge not supported\n"
 msgstr "不支持渐进式合并\n"
 
-#: bin/svk:82 lib/SVK/XD.pm:1105
+#: bin/svk:83 lib/SVK/XD.pm:1105
 msgid "Interrupted.\n"
 msgstr "已中断。\n"
+
+#. ($resolver->name, $path)
+#: lib/SVK/Resolve.pm:144
+msgid "Invoking merge tool '%1' for %2.\n"
+msgstr "激活合并工具‘%1’来编辑 %2。\n"
 
 #. ($repos->fs->revision_root($rev)
 #: lib/SVK/Command/Info.pm:36
 msgid "Last Changed Rev.: %1\n"
 msgstr "前次改变的更动编号：%1\n"
 
-#: lib/SVK/Command.pod:83
+#: lib/SVK/Command.pod:101
 msgid "Last Changed Rev.: 445"
 msgstr "前次改变的更动编号：445"
 
-#: lib/SVK/Command.pod:84
+#: lib/SVK/Command.pod:102
 msgid "Last Changed Rev.: 447"
 msgstr "前次改变的更动编号：447"
 
-#: lib/SVK/Command.pod:85
+#: lib/SVK/Command.pod:103
 msgid "Merge From: /svk/trunk, Rev. 445"
 msgstr "合并来源：/svk/trunk，更动编号 445"
 
@@ -568,10 +731,23 @@ msgstr "合并来源：/svk/trunk，更动编号 445"
 msgid "Merge back committed as revision %1.\n"
 msgstr "合并已送交为更动编号 %1。\n"
 
+#. ($self->{path}, $default)
+#: lib/SVK/Resolve.pm:67
+msgid ""
+"Merged %1:\n"
+"a)ccept, e)dit, d)iff, m)erge, s)kip, t)heirs, y)ours, h)elp? [%2] "
+msgstr ""
+"%1 已合并：\n"
+"a)接受，e)编辑，d)差异，m)合并，s)略过，t)依他，y)依你，h)说明？[%2] "
+
 #. ((split/:/)
 #: lib/SVK/Command/Info.pm:44
 msgid "Merged From: %1, Rev. %2\n"
 msgstr "合并来源：%1，更动编号 %2\n"
+
+#: lib/SVK/Resolve.pm:88
+msgid "Merged file"
+msgstr "合并后的档案"
 
 #. ($m->{source})
 #: lib/SVK/Command/Commit.pm:97
@@ -588,20 +764,37 @@ msgstr "与 %1 %2 合并：正在套用 %3 %4:%5。\n"
 msgid "Mirrored From: %1, Rev. %2\n"
 msgstr "映像来源：%1，更动编号 %2\n"
 
-#: lib/SVK/Command.pod:86
+#: lib/SVK/Command.pod:104
 msgid "Mirrored From: svn://svn.clkao.org/svk, Rev. 1744"
 msgstr "映像来源：svn://svn.clkao.org/svk，更动编号 1744"
 
-#: lib/SVK/Command.pod:87
+#: lib/SVK/Command.pod:105
+msgid "Misc:"
+msgstr "其它："
+
+#: lib/SVK/Resolve.pm:218
+msgid "Multiple merge tools found, choose one:\n"
+msgstr "找到几项合并工具，请选择一种：\n"
+
+#: lib/SVK/Command.pod:106
 msgid "NAME"
 msgstr "名称"
 
 #. ($_)
-#: lib/SVK/Editor/Diff.pm:126
+#: lib/SVK/Editor/Diff.pm:147
 msgid "Name: %1\n"
 msgstr "名称：%1\n"
 
-#: lib/SVK/Command/Depotmap.pm:46
+#: lib/SVK/Command/Depotmap.pm:23
+msgid "Need to specify a depot name"
+msgstr "请先指定档案库名称"
+
+#: lib/SVK/Command/Depotmap.pm:28
+msgid "Need to specify a repository path"
+msgstr "请先指定档案库路径"
+
+#: lib/SVK/Command/Depotmap.pm:103 lib/SVK/Command/Depotmap.pm:78
+#: lib/SVK/Command/Depotmap.pm:93
 msgid "New depot map saved.\n"
 msgstr "已储存新的档案库对映表。\n"
 
@@ -610,7 +803,7 @@ msgstr "已储存新的档案库对映表。\n"
 msgid "New merge ticket: %1:%2\n"
 msgstr "新的合并历史纪录：%1:%2\n"
 
-#: lib/SVK/Command/Merge.pm:56
+#: lib/SVK/Command/Merge.pm:98
 msgid "No need to track rename for smerge\n"
 msgstr "smerge 时不需要追踪改名\n"
 
@@ -618,15 +811,15 @@ msgstr "smerge 时不需要追踪改名\n"
 msgid "No targets to commit.\n"
 msgstr "没有送交更动的目标。\n"
 
-#: lib/SVK/Command.pod:88
+#: lib/SVK/Command.pod:107
 msgid "None"
 msgstr "无"
 
-#: lib/SVK/Command/Merge.pm:83
+#: lib/SVK/Command/Merge.pm:125
 msgid "Not possible to do incremental merge without a merge ticket.\n"
 msgstr "没有合并的历史纪录，无法执行渐进式合并。\n"
 
-#: lib/SVK/Command.pod:89
+#: lib/SVK/Command.pod:108
 msgid "OPTIONS"
 msgstr "选项"
 
@@ -634,6 +827,10 @@ msgstr "选项"
 #: lib/SVK/Command/Patch.pm:48
 msgid "Patch %1 created.\n"
 msgstr "补缀 %1 建立成功。\n"
+
+#: lib/SVK/Command/Mirror.pm:44
+msgid "Path"
+msgstr "路径"
 
 #. ($dst->{copath})
 #: lib/SVK/Command/Copy.pm:46
@@ -659,35 +856,40 @@ msgstr "未锁定路径 %1。\n"
 msgid "Please add the parent directory first.\n"
 msgstr "请先加入上层目录。\n"
 
-#: lib/SVK/Command/Patch.pm:70
+#: lib/SVK/Command/Patch.pm:69
 msgid "Please do a merge to resolve conflicts and regen the patch.\n"
 msgstr "请执行合并以解决冲突，之后再用 regen 重建这份补缀。\n"
 
 #. ($target->{report} || '.')
-#: lib/SVK/Command/Proplist.pm:30
+#: lib/SVK/Command/Proplist.pm:55
 msgid "Properties on %1:\n"
 msgstr "%1 的属性列表：\n"
 
+#. ($arg{propname}, $rev)
+#: lib/SVK/Command/Propset.pm:36
+msgid "Property '%1' set on repository revision %2.\n"
+msgstr "已设定更动编号 %2 的性质 '%1'。\n"
+
 #. ($rpath)
-#: lib/SVK/Editor/Diff.pm:124
+#: lib/SVK/Editor/Diff.pm:145
 msgid "Property changes on: %1\n"
 msgstr "%1 的属性更动：\n"
 
 #. ($path)
-#: lib/SVK/Command/Depotmap.pm:53
+#: lib/SVK/Command/Depotmap.pm:113
 msgid "Repository %1 does not exist, create? (y/n)"
 msgstr "档案库 %1 不存在。要建立吗？(y/n)"
 
 #. ($copath)
-#: lib/SVK/Command/Revert.pm:108
+#: lib/SVK/Command/Revert.pm:109
 msgid "Reverted %1\n"
 msgstr "已复原 %1\n"
 
-#: lib/SVK/Command/Merge.pm:69
+#: lib/SVK/Command/Merge.pm:111
 msgid "Revision must be N:M\n"
 msgstr "更动编号的格式必需为 N:M\n"
 
-#: lib/SVK/Command/Merge.pm:67
+#: lib/SVK/Command/Merge.pm:109
 msgid "Revision required\n"
 msgstr "需要指定更动编号\n"
 
@@ -696,49 +898,66 @@ msgstr "需要指定更动编号\n"
 msgid "Revision: %1\n"
 msgstr "更动编号：%1\n"
 
-#: lib/SVK/Command.pod:90
+#: lib/SVK/Command.pod:109
 msgid "Revision: 447"
 msgstr "更动编号：447"
 
-#: lib/SVK/Command.pod:91
+#: lib/SVK/Command.pod:110
+msgid "SVKMERGE: External merge tool to always use for 'm'."
+msgstr "SVKMERGE: 要在 'm' 时采用的外部合并工具。"
+
+#: lib/SVK/Command.pod:111
+msgid "SVKRESOLVE: The resolve action to take, instead of asking."
+msgstr "SVKRESOLVE: 在解决冲突时预设要采取的动作。"
+
+#: lib/SVK/Command.pod:112
 msgid "SYNOPSIS"
 msgstr "用法"
 
+#: lib/SVK/Command/Mirror.pm:44
+msgid "Source"
+msgstr "来源"
+
+#. ($pid, $self->{signal}, $$,)
+#: lib/SVK/Resolve/Emacs.pm:61
+msgid "Started %1, Try 'kill -%2 %3' to terminate if things mess up.\n"
+msgstr "已激活 %1，如果发生错误，请试著键入‘kill -%2 %3’以中止程序。\n"
+
 #. (@{$cotarget}{qw( depotpath path copath)
-#: lib/SVK/Command/Update.pm:51
+#: lib/SVK/Command/Update.pm:73
 msgid "Syncing %1(%2) in %3 to %4.\n"
 msgstr "同步化 %1(%2) 于 %3 到第 %4 版。\n"
 
-#: lib/SVK/Patch.pm:222
+#: lib/SVK/Patch.pm:272
 msgid "Target not local nor mirrored, unable to regen patch.\n"
 msgstr "目标不是本地或映像路径，无法重建补缀。\n"
 
-#: lib/SVK/Patch.pm:177
+#: lib/SVK/Patch.pm:227
 msgid "Target not local nor mirrored, unable to test patch.\n"
 msgstr "目标不是本地或映像路径，无法测试补缀。\n"
 
-#: lib/SVK/Patch.pm:196
+#: lib/SVK/Patch.pm:246
 msgid "Target not local nor mirrored, unable to update patch.\n"
 msgstr "目标不是本地或映像路径，无法更新补缀。\n"
 
-#: lib/SVK/Patch.pm:145
+#: lib/SVK/Patch.pm:178
 msgid "Target not local nor mirrored, unable to view patch.\n"
 msgstr "目标不是本地或映像路径，无法检视补缀。\n"
 
 #. ($VERSION)
-#: bin/svk:58
+#: bin/svk:69
 msgid "This is svk, version %1.\n"
 msgstr "这是 svk，第 %1 版。\n"
 
-#: bin/svk:64
+#: bin/svk:54
 msgid "Type 'svk help' for usage.\n"
 msgstr "请键入‘svk help’以取得说明信息。\n"
 
-#: lib/SVK/Command.pod:92
+#: lib/SVK/Command.pod:113
 msgid "U  Updated"
 msgstr "U  更新"
 
-#: lib/SVK/Command.pm:126
+#: lib/SVK/Command.pm:186
 msgid "Unknown options.\n"
 msgstr "末知的选项。\n"
 
@@ -747,23 +966,32 @@ msgstr "末知的选项。\n"
 msgid "Unknown target: %1.\n"
 msgstr "末知的目标：%1。\n"
 
+#. ($rev)
+#: lib/SVK/Command/Proplist.pm:52
+msgid "Unversioned properties on revision %1:\n"
+msgstr "更动编号 %1 上未纳入版本控制的性质：\n"
+
 #: lib/SVK/Util.pm:155
 msgid "Waiting for editor...\n"
 msgstr "呼叫编辑器…\n"
 
-#: lib/SVK/Command.pod:93
+#: lib/SVK/Command.pod:114
+msgid "a: Accept the merged/edited file."
+msgstr "a: 接受合并/编辑过的档案。"
+
+#: lib/SVK/Command.pod:115
 msgid "add - Put files and directories under version control"
 msgstr "add - 将档案及目录纳入版本控制"
 
-#: lib/SVK/Command.pod:94
+#: lib/SVK/Command.pod:116
 msgid "add [PATH...]"
 msgstr "add [路径...]"
 
-#: lib/SVK/Command.pod:95
+#: lib/SVK/Command.pod:117
 msgid "annotate - Display per-line revision and author info"
 msgstr "annotate - 显示档案里每一列的更动编号与作者信息"
 
-#: lib/SVK/Command.pod:96
+#: lib/SVK/Command.pod:118
 msgid "annotate FILE"
 msgstr "annotate 档案"
 
@@ -775,10 +1003,6 @@ msgstr "可能另有 svk 执行中。若无则请删除 %1"
 #: lib/SVK/Command/Sync.pm:32
 msgid "argument skipto not allowed when multiple target specified"
 msgstr "指定多个目标时不可加上 skipto 参数"
-
-#: lib/SVK/Command/Switch.pm:24
-msgid "can only switch checkout root"
-msgstr "只能切换取出的根目录"
 
 #: lib/SVK/XD.pm:218
 msgid "cannot acquire giant lock"
@@ -793,7 +1017,7 @@ msgstr "找不到 %1，放弃签署"
 msgid "cannot find a path for temporary branch"
 msgstr "找不到可用于暂存分支的路径"
 
-#: lib/SVK/Command/Mirror.pm:30 lib/SVK/Command/Sync.pm:30
+#: lib/SVK/Command/Mirror.pm:32 lib/SVK/Command/Sync.pm:30
 msgid "cannot load SVN::Mirror"
 msgstr "无法加载 SVN::Mirror"
 
@@ -802,19 +1026,19 @@ msgstr "无法加载 SVN::Mirror"
 msgid "cannot open %1: %2"
 msgstr "无法开启 %1：%2"
 
-#: lib/SVK/Command.pod:97
+#: lib/SVK/Command.pod:119
 msgid "cat - Output the file from depot"
 msgstr "cat - 由档案库输出档案"
 
-#: lib/SVK/Command.pod:98
+#: lib/SVK/Command.pod:120
 msgid "cat [DEPOTPATH|PATH...]"
 msgstr "cat [档案库路径|路径...]"
 
-#: lib/SVK/Command.pod:99
+#: lib/SVK/Command.pod:121
 msgid "checkout - Checkout the depotpath"
 msgstr "checkout - 取出档案库指定路径的内容"
 
-#: lib/SVK/Command.pod:100
+#: lib/SVK/Command.pod:122
 msgid "checkout DEPOTPATH [PATH]"
 msgstr "checkout 档案库路径 [路径]"
 
@@ -827,43 +1051,43 @@ msgstr "指定取出的路径 %1 已存在\n"
 msgid "chgspec not recognized"
 msgstr "无法辨识的更动语法"
 
-#: lib/SVK/Command.pod:101
+#: lib/SVK/Command.pod:123
 msgid "cleanup - Remove stalled locks"
 msgstr "cleanup - 移除卡住的锁定"
 
-#: lib/SVK/Command.pod:102
+#: lib/SVK/Command.pod:124
 msgid "cleanup [PATH...]"
 msgstr "cleanup [路径...]"
 
-#: lib/SVK/Command.pod:103
+#: lib/SVK/Command.pod:125
 msgid "cmerge - Merge specific changes"
 msgstr "cmerge - 合并指定的更动"
 
-#: lib/SVK/Command.pod:104
+#: lib/SVK/Command.pod:126
 msgid "cmerge -c CHGSPEC DEPOTPATH [PATH]"
 msgstr "cmerge -c 合并方式 档案库路径 [路径]"
 
-#: lib/SVK/Command.pod:105
+#: lib/SVK/Command.pod:127
 msgid "cmerge -c CHGSPEC DEPOTPATH1 DEPOTPATH2"
 msgstr "cmerge -c 合并方式 档案库路径1 档案库路径2"
 
-#: lib/SVK/Command.pod:106
+#: lib/SVK/Command.pod:128
 msgid "commit - Commit changes to depot"
 msgstr "commit - 送交更动至档案库"
 
-#: lib/SVK/Command.pod:107
+#: lib/SVK/Command.pod:129
 msgid "commit [PATH...]"
 msgstr "commit [路径...]"
 
-#: lib/SVK/Command.pod:108
+#: lib/SVK/Command.pod:130
 msgid "copy - Make a versioned copy"
 msgstr "copy - 复制一份版本"
 
-#: lib/SVK/Command.pod:109
+#: lib/SVK/Command.pod:131
 msgid "copy DEPOTPATH PATH"
 msgstr "copy 档案库路径 路径"
 
-#: lib/SVK/Command.pod:110
+#: lib/SVK/Command.pod:132
 msgid "copy DEPOTPATH1 DEPOTPATH2"
 msgstr "copy 档案库路径1 档案库路径2"
 
@@ -882,59 +1106,71 @@ msgstr "无法呼叫 gpg：%1"
 msgid "could not write to %1"
 msgstr "无法写入 %1"
 
-#: lib/SVK/Command.pod:111
+#: lib/SVK/Command.pod:133
+msgid "d: Diff your file against merged file."
+msgstr "d: 检视已方与合并后的差异。"
+
+#: lib/SVK/Command.pod:134
 msgid "delete - Remove versioned item"
 msgstr "delete - 移除纳入版本控制的项目"
 
-#: lib/SVK/Command.pod:112
+#: lib/SVK/Command.pod:135
 msgid "delete [DEPOTPATH...]"
 msgstr "delete [路径...]"
 
-#: lib/SVK/Command.pod:113
+#: lib/SVK/Command.pod:136
 msgid "delete [PATH...]"
 msgstr "delete [路径...]"
 
-#: lib/SVK/Command/Depotmap.pm:42
+#: lib/SVK/Command/Depotmap.pm:74
 msgid "depot map"
 msgstr "档案库对映表"
 
-#: lib/SVK/Command.pod:114
+#: lib/SVK/Command.pod:137
 msgid "depotmap - Create or edit the depot mapping configuration"
 msgstr "depotmap - 建立或编辑档案库对映表"
 
-#: lib/SVK/Command.pod:115
+#: lib/SVK/Command.pod:138
+msgid "depotmap --add DEPOT /path/to/repository"
+msgstr "depotmap --add 档案库 /磁盘上的/档案库/路径"
+
+#: lib/SVK/Command.pod:139
+msgid "depotmap --delete DEPOT"
+msgstr "depotmap --delete 档案库"
+
+#: lib/SVK/Command.pod:140
 msgid "depotmap [OPTIONS]"
 msgstr "depotmap [选项]"
 
-#: lib/SVK/Command.pod:116
+#: lib/SVK/Command.pod:141
 msgid "depotname: '/path/to/repos'"
 msgstr "档案库名称: '/磁盘上的/档案库/路径'"
 
-#: lib/SVK/Command.pod:117
+#: lib/SVK/Command.pod:142
 msgid "describe - Describe a change"
 msgstr "describe - 描述更动内容"
 
-#: lib/SVK/Command.pod:118
+#: lib/SVK/Command.pod:143
 msgid "describe REV [DEPOTPATH | COPATH]"
 msgstr "describe 更动编号 [档案库路径 | 取出路径]"
 
-#: lib/SVK/Command.pod:119
+#: lib/SVK/Command.pod:144
 msgid "diff - Display diff between revisions or checkout copies"
 msgstr "diff - 显示两次更动之间或与工作复本的差异处"
 
-#: lib/SVK/Command.pod:120
+#: lib/SVK/Command.pod:145
 msgid "diff -r N[:M] DEPOTPATH"
 msgstr "diff -r N[:M] 档案库路径"
 
-#: lib/SVK/Command.pod:121
+#: lib/SVK/Command.pod:146
 msgid "diff DEPOTPATH PATH"
 msgstr "diff 档案库路径 [路径]"
 
-#: lib/SVK/Command.pod:122
+#: lib/SVK/Command.pod:147
 msgid "diff DEPOTPATH1 DEPOTPATH2"
 msgstr "diff 档案库路径1 档案库路径2"
 
-#: lib/SVK/Command.pod:123
+#: lib/SVK/Command.pod:148
 msgid "diff [-r REV] [PATH]"
 msgstr "diff [-r 更动编号] [路径]"
 
@@ -942,28 +1178,48 @@ msgstr "diff [-r 更动编号] [路径]"
 msgid "different depot"
 msgstr "不同的档案库"
 
+#: lib/SVK/Command.pod:149
+msgid "dm: See merged changes."
+msgstr "dm: 检视源头与合并后的差异。"
+
 #. ($arg[0])
 #: lib/SVK/Command/Checkout.pm:13
 msgid "don't know where to checkout %1\n"
 msgstr "不知道要将 %1 取出到哪里\n"
 
-#: lib/SVK/Command.pod:124
+#: lib/SVK/Command.pod:150
+msgid "dt: See their changes alone."
+msgstr "dt: 显示对方的更动。"
+
+#: lib/SVK/Command.pod:151
+msgid "dy: See your changes alone."
+msgstr "dy: 显示已方的更动。"
+
+#: lib/SVK/Command.pod:152
+msgid "e: Edit merged file with an editor."
+msgstr "e: 用编辑器来编辑合并的档案。"
+
+#: lib/SVK/Command.pod:153
 msgid "g  Merged without actual change"
 msgstr "g  合并但毋须更新"
 
-#: lib/SVK/Command.pod:125
+#: lib/SVK/Command.pod:154
+msgid "h: Print this help message."
+msgstr "h: 显示这份说明讯息。"
+
+#: lib/SVK/Command.pod:155
 msgid "help - Show help"
 msgstr "help - 显示说明"
 
-#: lib/SVK/Command.pod:126
+#: lib/SVK/Command.pod:156
 msgid "help COMMAND"
 msgstr "help 命令"
 
-#: lib/SVK/Command.pod:127
+#: lib/SVK/Command.pod:157
 msgid "import - Import directory into depot"
 msgstr "import - 把已有目录汇入档案库"
 
-#: lib/SVK/Command.pod:128
+#: lib/SVK/Command.pod:158
 msgid "import DEPOTPATH [PATH]"
 msgstr "import 档案库路径 [路径]"
 
@@ -971,11 +1227,11 @@ msgstr "import 档案库路径 [路径]"
 msgid "import destination cannot be a file"
 msgstr "不能用档案作为汇入的目的地"
 
-#: lib/SVK/Command.pod:129
+#: lib/SVK/Command.pod:159
 msgid "info - Display information about a file or directory"
 msgstr "info - 显示档案或目录的信息"
 
-#: lib/SVK/Command.pod:130
+#: lib/SVK/Command.pod:160
 msgid "info [PATH | DEPOTPATH]"
 msgstr "info [路径 | 档案库路径]"
 
@@ -987,27 +1243,27 @@ msgstr "错误的参数"
 msgid "invalid depot spec"
 msgstr "错误的档案库指定方式"
 
-#: lib/SVK/Command.pod:131
+#: lib/SVK/Command.pod:161
 msgid "involved, do not prefix path names before values"
 msgstr " "
 
-#: lib/SVK/Command.pod:132
+#: lib/SVK/Command.pod:162
 msgid "list - List entries in a directory from depot"
 msgstr "list - 列出档案库目录内的项目"
 
-#: lib/SVK/Command.pod:133
+#: lib/SVK/Command.pod:163
 msgid "list [DEPOTPATH|PATH...]"
 msgstr "list [档案库路径|路径...]"
 
-#: lib/SVK/Command.pod:134
+#: lib/SVK/Command.pod:164
 msgid "log - Show log messages for revisions"
 msgstr "log - 显示各项更动的记录讯息"
 
-#: lib/SVK/Command.pod:135
+#: lib/SVK/Command.pod:165
 msgid "log DEPOTPATH"
 msgstr "log 档案库路径"
 
-#: lib/SVK/Command.pod:136
+#: lib/SVK/Command.pod:166
 msgid "log PATH"
 msgstr "log 路径"
 
@@ -1015,63 +1271,79 @@ msgstr "log 路径"
 msgid "log message"
 msgstr "纪录讯息"
 
-#: lib/SVK/Command.pod:137
+#: lib/SVK/Command.pod:167
+msgid "m: Run an external merge tool to edit merged file."
+msgstr "m: 执行外部合并工具，来编辑合并的档案。"
+
+#: lib/SVK/Command.pod:168
 msgid "merge - Apply differences between two sources"
 msgstr "merge - 合并两份来源之间的差异"
 
-#: lib/SVK/Command.pod:138
+#: lib/SVK/Command.pod:169
 msgid "merge -r N:M DEPOTPATH [PATH]"
 msgstr "merge -r N:M 档案库路径 [路径]"
 
-#: lib/SVK/Command.pod:139
+#: lib/SVK/Command.pod:170
 msgid "merge -r N:M DEPOTPATH1 DEPOTPATH2"
 msgstr "merge -r N:M 档案库路径1 档案库路径2"
 
-#: lib/SVK/Command.pod:140
+#: lib/SVK/Command.pod:171
+msgid "merge -r N:M [--to|--from] [PATH]"
+msgstr "merge -r N:M [--to|--from] [路径]"
+
+#: lib/SVK/Command.pod:172
 msgid "mirror - Initialize a mirrored depotpath"
 msgstr "mirror - 初始化映像的档案库路径"
 
-#: lib/SVK/Command.pod:141
+#: lib/SVK/Command.pod:173
+msgid "mirror --delete DEPOTPATH"
+msgstr "mirror --delete 档案库路径"
+
+#: lib/SVK/Command.pod:174
 msgid "mirror --list"
 msgstr "mirror --list"
 
-#: lib/SVK/Command.pod:142
+#: lib/SVK/Command.pod:175
+msgid "mirror --relocate DEPOTPATH [http|svn]://host/path "
+msgstr "mirror --relocate 档案库路径 [http|svn]://服务器/路径"
+
+#: lib/SVK/Command.pod:176
 msgid "mirror --upgrade //"
 msgstr "mirror --upgrade //"
 
-#: lib/SVK/Command.pod:143
+#: lib/SVK/Command.pod:177
 msgid "mirror --upgrade /DEPOT/"
 msgstr "mirror --upgrade /档案库/"
 
-#: lib/SVK/Command.pod:144
+#: lib/SVK/Command.pod:178
 msgid "mirror DEPOTPATH [http|svn]://host/path"
 msgstr "mirror 档案库路径 [http|svn]://服务器/路径"
 
-#: lib/SVK/Command.pod:145
+#: lib/SVK/Command.pod:179
 msgid "mirror [http|svn]://host/path DEPOTPATH"
 msgstr "mirror [http|svn]://服务器/路径 档案库路径"
 
-#: lib/SVK/Command.pod:146
+#: lib/SVK/Command.pod:180
 msgid "mirror cvs::pserver:user@host:/cvsroot:module/... DEPOTPATH"
 msgstr "mirror cvs::pserver:使用者@服务器:/cvsroot:module/... 档案库路径"
 
-#: lib/SVK/Command.pod:147
+#: lib/SVK/Command.pod:181
 msgid "mirror p4:user@host:1666://path/... DEPOTPATH"
 msgstr "mirror p4:使用者@服务器:1666://路径/... 档案库路径"
 
-#: lib/SVK/Command.pod:148
+#: lib/SVK/Command.pod:182
 msgid "mkdir - Create a versioned directory"
 msgstr "mkdir - 建立纳入版本控制的目录"
 
-#: lib/SVK/Command.pod:149
+#: lib/SVK/Command.pod:183
 msgid "mkdir DEPOTPATH"
 msgstr "mkdir 档案库路径"
 
-#: lib/SVK/Command.pod:150
+#: lib/SVK/Command.pod:184
 msgid "move - Move a file or directory"
 msgstr "move - 移动档案或目录"
 
-#: lib/SVK/Command.pod:151
+#: lib/SVK/Command.pod:185
 msgid "move DEPOTPATH1 DEPOTPATH2"
 msgstr "move 档案库路径1 档案库路径2"
 
@@ -1089,39 +1361,39 @@ msgstr "无此档案库：%1"
 msgid "overlapping checkout path not supported yet (%1)"
 msgstr "目前尚不支持重叠的取出路径 (%1)"
 
-#: lib/SVK/Command.pod:152
+#: lib/SVK/Command.pod:186
 msgid "patch - Manage patches"
 msgstr "patch - 管理补缀档"
 
-#: lib/SVK/Command.pod:153
+#: lib/SVK/Command.pod:187
 msgid "patch apply PATCHNAME"
 msgstr "patch apply 补缀名称"
 
-#: lib/SVK/Command.pod:154
+#: lib/SVK/Command.pod:188
 msgid "patch create PATCHNAME DEPOTPATH1 DEPOTPATH2"
 msgstr "patch create 补缀名称 档案库路径1 档案库路径2"
 
-#: lib/SVK/Command.pod:155
+#: lib/SVK/Command.pod:189
 msgid "patch delete PATCHNAME"
 msgstr "patch delete 补缀名称"
 
-#: lib/SVK/Command.pod:156
+#: lib/SVK/Command.pod:190
 msgid "patch list"
 msgstr "patch list"
 
-#: lib/SVK/Command.pod:157
+#: lib/SVK/Command.pod:191
 msgid "patch regen PATCHNAME"
 msgstr "patch regen 补缀名称"
 
-#: lib/SVK/Command.pod:158
+#: lib/SVK/Command.pod:192
 msgid "patch send PATCHNAME"
 msgstr "patch send 补缀名称"
 
-#: lib/SVK/Command.pod:159
+#: lib/SVK/Command.pod:193
 msgid "patch update PATCHNAME"
 msgstr "patch update 补缀名称"
 
-#: lib/SVK/Command.pod:160
+#: lib/SVK/Command.pod:194
 msgid "patch view PATCHNAME"
 msgstr "patch view 补缀名称"
 
@@ -1138,8 +1410,8 @@ msgstr "路径 %1 不存在。"
 
 #. ($arg{path})
 #. ($update_target->{path})
-#: lib/SVK/Command/Delete.pm:35 lib/SVK/Command/Propset.pm:25
-#: lib/SVK/Command/Update.pm:48
+#: lib/SVK/Command/Delete.pm:35 lib/SVK/Command/Propset.pm:43
+#: lib/SVK/Command/Update.pm:70
 msgid "path %1 does not exist.\n"
 msgstr "路径 %1 不存在。\n"
 
@@ -1154,52 +1426,52 @@ msgstr "路径 %1 不是已取出的路径\n"
 msgid "path %1 not found"
 msgstr "找不到路径 %1"
 
-#: lib/SVK/Command.pod:161
+#: lib/SVK/Command.pod:195
 msgid "propdel - Delete a property on files or dirs"
-msgstr "proplist - 列出档案或目录的所有属性"
+msgstr "propdel - 删除档案或目录的属性"
 
-#: lib/SVK/Command.pod:162
-msgid "propdel PROPNAME PATH..."
+#: lib/SVK/Command.pod:196
+msgid "propdel PROPNAME [PATH|DEPOTPATH...]"
 msgstr "propdel 属性名称 [路径|档案库路径...]"
 
-#: lib/SVK/Command.pod:163
+#: lib/SVK/Command.pod:197
 msgid "propedit - Edit a property on path"
 msgstr "propedit - 编辑某路径的属性"
 
-#: lib/SVK/Command.pod:164
+#: lib/SVK/Command.pod:198
 msgid "propedit PROPNAME [PATH|DEPOTPATH...]"
 msgstr "propedit 属性名称 [路径|档案库路径...]"
 
 #. ($pname)
-#: lib/SVK/Command/Propedit.pm:25
+#: lib/SVK/Command/Propedit.pm:28
 msgid "property %1"
 msgstr "属性 %1"
 
-#: lib/SVK/Command.pod:165
+#: lib/SVK/Command.pod:199
 msgid "property values; when there are multiple paths"
 msgstr "即使指定的路径不止一个，也不要在每项之前显示路径名称"
 
-#: lib/SVK/Command.pod:166
+#: lib/SVK/Command.pod:200
 msgid "propget - Display a property on path"
 msgstr "propget - 显示某路径的属性"
 
-#: lib/SVK/Command.pod:167
+#: lib/SVK/Command.pod:201
 msgid "propget PROPNAME [PATH|DEPOTPATH...]"
 msgstr "propget 属性名称 [路径|档案库路径...]"
 
-#: lib/SVK/Command.pod:168
+#: lib/SVK/Command.pod:202
 msgid "proplist - List all properties on files or dirs"
 msgstr "proplist - 列出档案或目录的所有属性"
 
-#: lib/SVK/Command.pod:169
+#: lib/SVK/Command.pod:203
 msgid "proplist PATH..."
 msgstr "proplist 路径..."
 
-#: lib/SVK/Command.pod:170
+#: lib/SVK/Command.pod:204
 msgid "propset - Set a property on path"
 msgstr "propset - 设定路径的某项属性"
 
-#: lib/SVK/Command.pod:171
+#: lib/SVK/Command.pod:205
 msgid "propset PROPNAME PROPVAL [PATH|DEPOTPATH...]"
 msgstr "propset 属性名称 属性值 [路径|档案库路径...]"
 
@@ -1208,24 +1480,24 @@ msgstr "propset 属性名称 属性值 [路径|档案库路径...]"
 msgid "rename %1 to %2 failed: %3"
 msgstr "无法将 %1 改名成 %2：%3"
 
-#: lib/SVK/Command/Cmerge.pm:35 lib/SVK/Command/Merge.pm:47
+#: lib/SVK/Command/Cmerge.pm:35 lib/SVK/Command/Merge.pm:80
 #: lib/SVK/Command/Patch.pm:43
 msgid "repos paths mismatch"
 msgstr "档案库路径彼此不符"
 
-#: lib/SVK/Command.pod:172
+#: lib/SVK/Command.pod:206
 msgid "resolved - Remove conflict mark from checkout items"
 msgstr "resolved - 移除已取出项目上的冲突标记"
 
-#: lib/SVK/Command.pod:173
+#: lib/SVK/Command.pod:207
 msgid "resolved PATH..."
 msgstr "resolved 路径..."
 
-#: lib/SVK/Command.pod:174
+#: lib/SVK/Command.pod:208
 msgid "revert - Revert changes made in checkout copies"
 msgstr "revert - 复原对已取出的复本所作过的更动"
 
-#: lib/SVK/Command.pod:175
+#: lib/SVK/Command.pod:209
 msgid "revert PATH..."
 msgstr "revert 路径..."
 
@@ -1237,66 +1509,82 @@ msgstr "更动编号的格式必需为 N:M"
 msgid "revision required"
 msgstr "未指定更动编号"
 
-#: lib/SVK/Command.pod:176
+#: lib/SVK/Command.pod:210
+msgid "s: Skip this file."
+msgstr "s: 略过这个档案。"
+
+#: lib/SVK/Command.pod:211
 msgid "smerge - Automatic merge all changes between branches"
 msgstr "smerge - 自动合并不同分支的所有差异"
 
-#: lib/SVK/Command.pod:177
+#: lib/SVK/Command.pod:212
 msgid "smerge DEPOTPATH [PATH]"
 msgstr "smerge 档案库路径 [路径]"
 
-#: lib/SVK/Command.pod:178
+#: lib/SVK/Command.pod:213
 msgid "smerge DEPOTPATH1 DEPOTPATH2"
 msgstr "smerge 档案库路径1 档案库路径2"
+
+#: lib/SVK/Command.pod:214
+msgid "smerge [--to|--from] [PATH]"
+msgstr "smerge [--to|--from] [路径]"
 
 #: lib/SVK/Editor/XD.pm:126
 msgid "source checksum mismatch"
 msgstr "来源的检查值不符"
 
-#: lib/SVK/Command.pod:179
+#: lib/SVK/Command.pod:215
 msgid "status - Display the status of items in the checkout copy"
 msgstr "status - 显示已取出复本的状态"
 
-#: lib/SVK/Command.pod:180
+#: lib/SVK/Command.pod:216
 msgid "status [PATH..]"
 msgstr "status [路径..]"
 
-#: lib/SVK/Command.pod:181
+#: lib/SVK/Command.pod:217
 msgid "switch - Switch to another branch and keep local changes"
 msgstr "switch - 切换到另一个分支，并保留本地版本"
 
-#: lib/SVK/Command.pod:182
+#: lib/SVK/Command.pod:218
 msgid "switch DEPOTPATH [PATH]"
 msgstr "switch 档案库路径 [路径]"
 
-#: lib/SVK/Command.pod:183
+#: lib/SVK/Command.pod:219
 msgid "sync - Synchronize a mirrored depotpath"
 msgstr "sync - 同步化映像的档案库路径"
 
-#: lib/SVK/Command.pod:184
+#: lib/SVK/Command.pod:220
 msgid "sync -a"
 msgstr "sync -a"
 
-#: lib/SVK/Command.pod:185
+#: lib/SVK/Command.pod:221
 msgid "sync DEPOTPATH"
 msgstr "sync 档案库路径"
+
+#: lib/SVK/Command.pod:222
+msgid "t: Keep only changes to their file."
+msgstr "t: 仅保留对方更动，舍弃已方的更动。"
 
 #: lib/SVK/Command/Commit.pm:288
 msgid "unexpected error: commit to mirrored path but no mirror object"
 msgstr "未预期的错误：送交更动至映像的路径，但找不到映像对象"
 
-#: lib/SVK/Command.pod:186
+#: lib/SVK/Command.pod:223
 msgid "update - Bring changes from repository to checkout copies"
 msgstr "update - 将档案库里的更动更新到取出的工作复本上"
 
-#: lib/SVK/Command.pod:187
+#: lib/SVK/Command.pod:224
 msgid "update [PATH...]"
 msgstr "update [路径...]"
 
-#: lib/SVK/Command.pod:188
+#: lib/SVK/Command.pod:225
 msgid "verify - Verify change signatures"
 msgstr "verify - 检验更动的签章"
 
-#: lib/SVK/Command.pod:189
+#: lib/SVK/Command.pod:226
 msgid "verify CHANGE [DEPOTNAME]"
 msgstr "verify 更动 档案库名称"
+
+#: lib/SVK/Command.pod:227
+msgid "y: Keep only changes to your file."
+msgstr "y: 仅保留已方更动，舍弃对方的更动。"

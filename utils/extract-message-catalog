@@ -11,6 +11,7 @@ chdir "$FindBin::Bin/..";
 my (@files, @pms, @pods);
 find(sub { push @files, $File::Find::name if -f }, 'lib', 'bin'); 
 find(sub { push @pms, $File::Find::name if -f }, 'lib/SVK/Command');
+push @pms, 'lib/SVK/Resolve.pm';
 
 my %strings;
 foreach my $pm (@pms) {

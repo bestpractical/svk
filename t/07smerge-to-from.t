@@ -55,4 +55,4 @@ is_output ($svk, 'smerge', ['-m', 'failed merge', '--from', '//local', '//remote
 is_output_like ($svk, 'smerge', [], qr/SYNOPSIS/);
 
 is_output ($svk, 'smerge', ['-m', 'failed merge', '--from', '//random'],
-                ["This path has not been branched."]);
+                ["Cannot find the path which '//random' copied from."]);
