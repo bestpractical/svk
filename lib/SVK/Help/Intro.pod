@@ -1,0 +1,54 @@
+=head1 NAME
+
+SVK::Help::Intro - Introduction to svk
+
+=head1 DESCRIPTION
+
+svk is a I<client> program that makes distributed version control
+possible.  While version control systems like CVS and Subversion are
+cool and sine qua non for most of us, they rely on centralized
+repository: one can't do much without being online.  SVK will make
+your offline life easier and offer more.
+
+svk makes distributed and offline work possible by introducing the
+concept of I<local depots>.  Before, there are only your working
+directory and (mostly remote) central repository. By introducing this
+middle layer, which resides in your own local storage, you can commit,
+checkout, diff with your local depot, which you can later I<sync> with
+the remote repository via very simple pair of commands, C<svk push>
+and C<svk pull>.
+
+We say svk is a client because svk makes uses of existing version
+control systems.  By default it uses Subversion, and Subversion users
+will immediately find similarities in the look and feel of svk.  In
+addition to Subversion, svk also works with other version control
+systems such as cvs and Perforce.  This means you can use svk as your
+local version control client even if your source tree resides in a
+repository that is not using Subversion.  What's more, you can use svk
+to work with all the different repositories, like Subversion, cvs and
+Perforce, with only one client program.
+
+Local depot is one of the key ideas of svk.  Mirrored from a remote
+repository, it offers many benefits in addition to making offline and
+distributed work possible.  For example, a non-committer can copy
+(mirror) the source tree of a project and then work on his or her own
+local copy--ci, co, diff, file manipulations, everything that before
+would require rights to commit.  As you can see, the concept of local
+copy is actually that of local branch.  If the non-committer now
+obtains rights to commit, she or he can merge with the repository with
+no effort.  C<svk push> will do the trick.
+
+Another powerful feature of svk is its patch management. Instead of
+merging different versions between different depots, branches or
+repositories, svk can generate history-sensitive patch files.  Take
+the example of the non-committer we mentioned above.  Now instead of
+commit-and-merge, which would require rights to commit, he or she can
+generate patch files and send them to project admins. The admins can
+later examine and apply these patches. This feature greatly expands
+the version control model and at the same time makes access control
+more flexible.
+
+See also L<http://svk.elixus.org>
+
+=cut
+
