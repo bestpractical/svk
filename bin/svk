@@ -7,7 +7,7 @@ require SVN::Repos;
 require SVN::Fs;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw(get_anchor);
+use SVK::Util qw(get_anchor catfile catdir);
 use Getopt::Long qw(:config no_ignore_case bundling);
 use Cwd;
 use File::Spec;
@@ -71,7 +71,8 @@ if ($cmd eq 'help') {
     exit 0;
 }
 
-my $svkpath = $ENV{SVKROOT} || "$ENV{HOME}/.svk";
+$ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
+my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 {
     my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
 			    statefile => "$svkpath/config",
