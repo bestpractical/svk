@@ -1080,7 +1080,7 @@ sub _delta_dir {
     }
 
     if (defined $targets) {
-	print loc ("Unknown target: %1.\n", $_) for keys %$targets;
+	print loc ("Unknown target: %1.\n", $_) for sort keys %$targets;
     }
 
     $arg{editor}->close_directory ($baton, $pool)

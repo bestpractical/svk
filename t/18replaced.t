@@ -36,7 +36,7 @@ is_output ($svk, 'status', ["$copath"],
 	    __"D   $copath/A/Q/qz"]);
 
 is_output ($svk, 'add', ['-N', "$copath/A"],
-	   ["$copath/A already added."]);
+	   [__("$copath/A already added.")]);
 $svk->revert ('-R', $copath);
 is_output ($svk, 'status', [$copath],
 	   [__"?   $copath/A/neu",

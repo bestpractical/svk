@@ -6,7 +6,6 @@ use SVK::Util qw(
     read_file can_run is_executable
 );
 use File::Copy ();
-use Text::Diff ();
 
 use constant Actions => {qw(
     a   accept      e   edit        d   diff
