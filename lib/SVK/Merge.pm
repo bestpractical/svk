@@ -66,6 +66,18 @@ sub auto {
     return $self;
 }
 
+sub _is_merge_from {
+    my ($self, $path, $target, $rev) = @_;
+    my $fs = $self->{repos}->fs;
+    my $u = $target->universal;
+    my $resource = join (':', $u->{uuid}, $u->{path});
+    my ($merge, $pmerge) =
+	map {SVK::Merge::Info->new (eval { $fs->revision_root ($_)->node_prop
+					       ($path, 'svk:merge') })->{$resource}{rev} || 0}
+	    ($rev, $rev-1);
+    return ($merge != $pmerge);
+}
+
 sub _next_is_merge {
     my ($self, $repos, $path, $rev, $checkfrom) = @_;
     return if $rev == $checkfrom;
@@ -239,8 +251,11 @@ sub log {
 	($self->{repos}, $self->{src}->path, $self->{remoterev},
 	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
     my $sep = $verbatim ? '' : ('-' x 70)."\n";
-    my $cb_log = sub { SVK::Command::Log::_show_log
-	    (@_, $sep, $buf, 1, $print_rev) };
+    my $cb_log = sub {
+	SVK::Command::Log::_show_log
+		(@_, $sep, $buf, 1, $print_rev)
+		    unless $self->_is_merge_from ($self->{src}->path, $self->{dst}, $_[0]);
+    };
 
     print $buf " $sep" if $sep;
     SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{src}->path,

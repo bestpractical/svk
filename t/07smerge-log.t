@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 7;
 BEGIN { require 't/tree.pl' };
 our $output;
 
@@ -39,13 +39,12 @@ is_output ($svk, 'log', ['-r7', '//'],
 	   ['-' x 70,
 	    qr'r7: .*', '',
 	    'Merge from local to trunk',
+	    # we should get rid of the copy rev too
 	    qr' r3@svk: .*',
 	    ' branch for local',
 	    qr' r4@svk: .*',
 	    ' add fileb on local',
-	    qr' r6@svk: .*',
-	    ' merge down',
-	    ' ', ' ', '', '',# why so many empty lines?
+	    '', '',# why so many empty lines?
 	    '-' x 70,
 	   ]);
 
@@ -65,3 +64,35 @@ is_output ($svk, 'log', ['-r9', '//'],
 	    ' modify fileb on local',
 	    '', '',
 	    '-' x 70]);
+$svk->cp ('-m', 'branch for local', '//local', '//fix');
+$svk->update ($copath);
+append_file (copath ('fix/fileb.txt'), "fileb fixes on branch\n");
+$svk->commit ('-m', 'modify fileb on fix', $copath);
+$svk->smerge ('-lm', 'Merge from fix to local', '--host', 'fix', '-f', '//fix');
+$svk->smerge ('-lm', 'Merge from local to trunk', '--host', 'svk', '-f', '//local');
+
+is_output ($svk, 'log', ['-r12', '//'],
+	   ['-' x 70,
+	    qr'r12: .*', '',
+	    'Merge from fix to local',
+	    qr' r10@fix: .*',
+	    ' branch for local',
+	    qr' r11@fix: .*',
+	    ' modify fileb on fix',
+	    '', '',
+	    '-' x 70]);
+is_output ($svk, 'log', ['-r13', '//'],
+	   ['-' x 70,
+	    qr'r13: .*', '',
+	    'Merge from local to trunk',
+	    qr' r12@svk: .*',
+	    ' Merge from fix to local',
+	    qr'  r10@fix: .*',
+	    '  branch for local',
+	    qr'  r11@fix: .*',
+	    '  modify fileb on fix',
+	    ' ', ' ',
+	    '', '',
+	    '-' x 70]);
+
+# XXX: may lose something if we do "local -> fix merge" first
