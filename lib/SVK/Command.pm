@@ -608,11 +608,13 @@ sub parse_revlist {
     if ($self->{chgspec}) {
 	my @revlist;
 	for (split (',', $self->{chgspec})) {
+	    my $reverse;
 	    if (($fromrev, $torev) = m/^(\d+)-(\d+)$/) {
 		--$fromrev;
 	    }
-	    elsif (($torev) = m/^(\d+)$/) {
+	    elsif (($reverse, $torev) = m/^(-?)(\d+)$/) {
 		$fromrev = $torev - 1;
+		($fromrev, $torev) = ($torev, $fromrev) if $reverse;
 	    }
 	    else {
 		die loc("Change spec %1 not recognized.\n", $_);
