@@ -456,18 +456,40 @@ usually good enough.
 
     my $target = $self->arg_depotpath($path);
     $self->command ('mirror')->run ($target, $base_uri);
+  
+    # If we're mirroring via svn::mirror, not mirroring the whole history
+    # is an option
+    my ($m, $answer);
+    ($m,undef) = SVN::Mirror::is_mirrored ($target->{'repos'}, 
+                                           $target->{'path'}) if (HAS_SVN_MIRROR);
+    # If the user is mirroring from svn                                       
+    if (UNIVERSAL::isa($m,'SVN::Mirror::Ra'))  {                                
+        print loc("
+svk needs to mirror the remote repository so you can work locally.
+If you're mirroring a single branch, it's safe to use any of the options
+below.
 
-    print loc("Synchronizing the mirror for the first time:\n");
-    print loc("  a        : Retrieve all revisions (default)\n");
-    print loc("  h        : Only the most recent revision\n");
-    print loc("  -count   : At most 'count' recent revisions\n");
-    print loc("  revision : Start from the specified revision\n");
+If the repository you're mirroring contains multiple branches, svk will
+work best if you choose to retrieve all revisions.  Choosing to start
+with a recent revision can result in a larger local repository and will
+break history-sensitive merging within the mirrored path.
 
-    my $answer = lc(get_prompt(
-        loc("a)ll, h)ead, -count, revision? [a] "),
-        qr(^[ah]?|^-?\d+$)
-    ));
-    $answer = 'a' unless length $answer;
+");
+
+        print loc("Synchronizing the mirror for the first time:\n");
+        print loc("  a        : Retrieve all revisions (default)\n");
+        print loc("  h        : Only the most recent revision\n");
+        print loc("  -count   : At most 'count' recent revisions\n");
+        print loc("  revision : Start from the specified revision\n");
+
+        $answer = lc(get_prompt(
+            loc("a)ll, h)ead, -count, revision? [a] "),
+            qr(^[ah]?|^-?\d+$)
+            ));
+        $answer = 'a' unless length $answer;
+    } else { # The user is mirroring with VCP. gotta mirror everything
+        $answer = 'a';
+    }
 
     $self->command(
         sync => {
