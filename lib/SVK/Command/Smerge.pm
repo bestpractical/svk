@@ -8,6 +8,7 @@ use SVK::XD;
 sub options {
     ($_[0]->SUPER::options,
      'B|baseless'	=> 'baseless',
+     'b|base:i'		=> 'base',
     );
 }
 

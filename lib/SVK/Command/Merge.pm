@@ -13,7 +13,6 @@ use SVK::Util qw (get_buffer_from_editor find_svm_source svn_mirror);
 sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
-     'b|base:i'		=> 'base',
      'l|log'		=> 'log',
      'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
@@ -78,7 +77,7 @@ sub run {
 	print loc ("-m ignored in incremental merge\n") if $self->{message};
 	my @rev;
 	my $hist = $src->root->node_history ($src->{path});
-	my $spool = SVN::Pool->new;
+	my $spool = SVN::Pool->new_default;
 	while ($hist = $hist->prev (0)) {
 	    my $rev = ($hist->location)[1];
 	    last if $rev <= $merge->{fromrev};
