@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 20;
+plan tests => 21;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -32,6 +32,15 @@ overwrite_file ("A/deep/la/no", "fnord");
 overwrite_file ("A/deep/X", "fnord");
 overwrite_file ("A/deep/new", "fnord");
 $svk->add ('A/deep/new');
+$svk->ps ('dirprop', 'myvalue', 'A');
+$svk->commit ('-N', '-m', 'trying -N', 'A');
+is_output ($svk, 'status', [],
+	   [__('M   A/bar'),
+	    __('M   A/deep/baz'),
+	    __('M   A/deep/la/no'),
+	    __('?   A/deep/X'),
+	    __('A   A/deep/new')],
+	   'commit -N');
 $svk->commit ('-m', 'commit from deep anchor', 'A/deep');
 
 $svk->update ('-r', 1);
@@ -65,10 +74,11 @@ is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 
 # The '--sync' and '--merge' below would have no effect.
 is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
-            "Syncing //(/) in $corpath to 4.",
+            "Syncing //(/) in $corpath to 5.",
             __"A   $corpath/A/deep/new",
             __"U   $corpath/A/deep/baz",
             __"U   $corpath/A/deep/la/no",
+            __" U  $corpath/A",
            ]);
 
 $svk->commit ('-m', 'the rest');
@@ -92,23 +102,23 @@ overwrite_file ("A/forimport/ss..", "fnord");
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
 			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',
 			    'A/barnew', 'A/forimport/ss..'],
-	   ['Committed revision 7.']);
+	   ['Committed revision 8.']);
 
 is_output ($svk, 'status', [],
 	   [__('?   A/deep/X')]);
 
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/deep/X'],
-	   ['Committed revision 8.']);
+	   ['Committed revision 9.']);
 
 is_output ($svk, 'status', [], []);
 unlink ('A/forimport/foo');
 
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/forimport/foo'],
-	   ['Committed revision 9.']);
+	   ['Committed revision 10.']);
 mkdir ('A/newdir');
 overwrite_file ("A/newdir/bar", "fnord");
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/newdir/bar'],
-	   ['Committed revision 10.']);
+	   ['Committed revision 11.']);
 is_output ($svk, 'status', [], [], 'import finds anchor');
 $svk->update ('-r9');
 

@@ -48,10 +48,7 @@ is_output ($svk, 'revert', ['-R', 'A/deep'],
 is_output ($svk, 'revert', ['A/foo'],
 	   [__("Reverted $corpath/A/foo")], 'revert a modified file');
 
-TODO: {
-    local $TODO = 'should inhibit redundant message if nothing was changed';
-    is_output ($svk, 'revert', ['A/foo'], [], 'do it again');
-}
+is_output ($svk, 'revert', ['A/foo'], [], 'do it again');
 
 append_file ("A/foo", "modified");
 $svk->commit ('-m', 'modify A/foo');

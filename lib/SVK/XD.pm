@@ -955,7 +955,6 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($self, %arg) = @_;
-    return if defined $arg{depth} && $arg{depth} == 0;
     my $pool = SVN::Pool->new_default (undef);
     my $cinfo = $arg{cinfo} ||= $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
@@ -975,6 +974,8 @@ sub _delta_dir {
 	    $targets->{$file} = undef;
 	}
     }
+    # don't use depth when we are still traversing through targets
+    my $descend = defined $targets || !(defined $arg{depth} && $arg{depth} == 0);
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
 	if $arg{cb_conflict} && $cinfo->{'.conflict'};
 
@@ -995,6 +996,12 @@ sub _delta_dir {
     $baton ||= $arg{root} ? $arg{baton}
 	: $arg{editor}->open_directory ($arg{entry}, $arg{baton},
 					$arg{cb_rev}->($arg{entry}), $pool);
+
+    # check scheduled addition
+    # XXX: does this work with copied directory?
+    my ($newprops, $fullprops) = $self->_node_props (%arg);
+
+    if ($descend) {
 
     my $signature;
     if ($self->{signature} && $arg{xdroot} eq $arg{base_root}) {
@@ -1028,7 +1035,7 @@ sub _delta_dir {
 			type => $type,
 			# if copath exist, we have base only if they are of the same type
 			base => !$obs,
-			depth => $arg{depth} ? $arg{depth} - 1: undef,
+			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($newpath),
 			base_kind => $kind,
@@ -1046,10 +1053,6 @@ sub _delta_dir {
 	$signature->flush;
 	undef $signature;
     }
-
-    # check scheduled addition
-    # XXX: does this work with copied directory?
-    my ($newprops, $fullprops) = $self->_node_props (%arg);
     my $ignore = ignore (split ("\n", $fullprops->{'svn:ignore'} || ''));
 
     my @direntries;
@@ -1096,6 +1099,7 @@ sub _delta_dir {
 	$self->$delta ( %arg, %newpaths, add => 1, baton => $baton,
 			root => 0, base => 0, cinfo => $ccinfo,
 			type => $type,
+			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			$copyfrom ?
 			( base => 1,
 			  in_copy => $arg{expand_copy},
@@ -1105,13 +1109,14 @@ sub _delta_dir {
 		      );
     }
 
-    unless (defined $targets) {
-	$arg{editor}->change_dir_prop ($baton, $_, ref ($newprops->{$_}) ? undef : $newprops->{$_}, $pool)
-	    for sort keys %$newprops;
     }
 
     if (defined $targets) {
 	print loc ("Unknown target: %1.\n", $_) for sort keys %$targets;
+    }
+    else {
+	$arg{editor}->change_dir_prop ($baton, $_, ref ($newprops->{$_}) ? undef : $newprops->{$_}, $pool)
+	    for sort keys %$newprops;
     }
 
     $arg{editor}->close_directory ($baton, $pool)
