@@ -63,6 +63,7 @@ sub handle_co_item {
     die loc ("Path %1 already exists.\n", $dst->{copath})
 	if -e $dst->{copath};
     my ($copath, $report) = @{$dst}{qw/copath report/};
+    $src->normalize;
     $src->anchorify; $dst->anchorify;
     # if SVK::Merge could take src being copath to do checkout_delta
     # then we have 'svk cp copath... copath' for free.
