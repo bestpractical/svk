@@ -601,9 +601,9 @@ sub annotate {
     my $root = $fs->revision_root ($fs->youngest_rev);
     my $ann = Algorithm::Annotate->new;
     my @revs;
-    my $hist = $root->node_history ($path);
 
     my $pool = SVN::Pool->new_default_sub;
+    my $hist = $root->node_history ($path);
     while ($hist = $hist->prev($cross)) {
 	$pool->clear;
 	my ($path, $rev) = $hist->location;
@@ -619,7 +619,7 @@ sub annotate {
 	my $content = $fs->revision_root($_)->file_contents($path);
 	$content = [split "[\n\r]", <$content>];
 	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $_,
-			    $fs->revision_prop ($_, 'svn:author'),
+			    $fs->revision_prop ($_, 'svn:author') || '',
 			    substr($fs->revision_prop ($_, 'svn:date'),0,10)),
 		    $content);
     }
@@ -650,6 +650,8 @@ them for addition to repository.  They will be added in next commit.
 
 =cut
 
+*get_anchor = *SVN::XD::get_anchor;
+
 sub condense {
     my @targets = map {Cwd::abs_path ($_ || '')} @_;
     my ($anchor, $report);
@@ -663,10 +665,7 @@ sub condense {
 	if ($anchor ne $_ || -f $anchor ||
 	    $schedule eq 'add' || $schedule eq 'delete') {
 	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
-		(undef, $anchor, undef) = File::Spec->splitpath ($anchor);
-		chop $anchor;
-		(undef, $report, undef) = File::Spec->splitpath ($report);
-		chop $report;
+		($anchor, $report) = get_anchor (0, $anchor, $report);
 	    }
 	}
     }

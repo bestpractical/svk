@@ -23,6 +23,15 @@ sub new {
     return $self;
 }
 
+sub get_anchor {
+    my $needtarget = shift;
+    map {
+	my (undef,$anchor,$target) = File::Spec->splitpath ($_);
+	chop $anchor if length ($anchor) > 1;
+	($anchor, $needtarget ? ($target) : ())
+    } @_;
+}
+
 sub create_xd_root {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
@@ -64,22 +73,22 @@ sub translator {
 }
 
 sub xd_storage_cb {
-    my ($info, $anchor, $target, $copath, $xdroot, $check_only) = @_;
-    my $t = translator ($target, $copath);
+    my ($info, %arg) = @_;
+    my $t = translator ($arg{target});
 
     # translate to abs path before any check
     return
-	( cb_exist => sub { $_ = shift; s|$t|$copath/|; -e $_},
-	  cb_rev => sub { $_ = shift; s|$t|$copath/|;
+	( cb_exist => sub { $_ = shift; s|$t|$arg{copath}/|; -e $_},
+	  cb_rev => sub { $_ = shift; s|$t|$arg{copath}/|;
 			  $info->{checkout}->get ($_)->{revision} },
-	  cb_conflict => sub { $_ = shift; s|$t|$copath/|;
+	  cb_conflict => sub { $_ = shift; s|$t|$arg{copath}/|;
 			       $info->{checkout}->store ($_, {conflict => 1})
-				   unless $check_only;
+				   unless $arg{check_only};
 			   },
 	  cb_localmod => sub { my ($path, $checksum) = @_;
-			       $_ = $path; s|$t|$copath/|;
-			       my $base = get_fh ($xdroot, '<',
-						  "$anchor/$path", $_);
+			       $_ = $path; s|$t|$arg{copath}/|;
+			       my $base = get_fh ($arg{oldroot}, '<',
+						  "$arg{anchor}/$arg{path}", $_);
 			       my $md5 = SVN::MergeEditor::md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
@@ -87,42 +96,48 @@ sub xd_storage_cb {
 			   });
 }
 
+sub get_editor {
+    my ($info, %arg) = @_;
+
+    my $storage = SVN::XD::Editor->new
+	( %arg,
+	  get_copath => sub { my $t = translator($arg{target});
+			      $_[0] = $arg{copath}, return
+				  if $arg{target} eq $_[0];
+			      $_[0] =~ s|$t|$arg{copath}/|
+				  or die "unable to translate $_[0] with $t";
+			      $_[0] =~ s|/$||;
+			  },
+	  checkout => $info->{checkout},
+	  info => $info,
+	);
+
+    return $storage unless wantarray;
+
+    return ($storage, xd_storage_cb ($info, %arg));
+}
+
 sub do_update {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
 
     my ($txn, $xdroot) = create_xd_root ($info, %arg);
-    my ($anchor, $target, $copath) = ($arg{path}, '');
+    my ($anchor, $target) = ($arg{path}, '');
     $arg{target_path} ||= $arg{path};
     my ($tanchor, $ttarget) = ($arg{target_path}, '');
 
     print "syncing $arg{depotpath}($arg{path}) to $arg{copath} to $arg{rev}\n";
     unless ($xdroot->check_path ($arg{path}) == $SVN::Node::dir) {
-	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
-	chop $anchor if length($anchor) > 1;
-
-	(undef,$tanchor,$ttarget) = File::Spec->splitpath ($arg{target_path});
-	chop $tanchor if length($tanchor) > 1;
-
-	(undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
+	($anchor, $target, $tanchor, $ttarget) = 
+	    get_anchor (1, $arg{path}, $arg{target_path});
     }
 
-    my $storage = SVN::XD::Editor->new
-	( copath => $arg{copath},
-	  get_copath => sub { my $t = translator($target);
-			      $_[0] = $arg{copath}, return
-				  if $target eq $_[0];
-			      $_[0] =~ s|$t|$arg{copath}/|
-				  or die "unable to translate $_[0] with $t";
-			      $_[0] =~ s|/$||;
-			  },
-	  oldroot => $xdroot,
-	  newroot => $fs->revision_root ($arg{rev}),
-	  anchor => $anchor,
-	  checkout => $info->{checkout},
-	  info => $info,
-	  update => 1,
-	);
+    my ($storage, %cb) = get_editor ($info, %arg,
+				     oldroot => $xdroot,
+				     newroot => $fs->revision_root ($arg{rev}),
+				     anchor => $anchor,
+				     target => $target,
+				     update => 1);
 
     my $editor = SVN::MergeEditor->new
 	(_debug => 0,
@@ -134,7 +149,7 @@ sub do_update {
 	 base_root => $xdroot,
 	 storage => $storage,
 # SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
-	 xd_storage_cb ($info, $anchor, $target, $arg{copath}, $xdroot),
+	 %cb
 	);
 
 #    $editor = SVN::Delta::Editor->new(_debug=>1),
@@ -664,45 +679,17 @@ sub do_merge {
 
     # decide anchor / target
     if ($findanchor) {
-	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
-	(undef,$base_anchor,$base_target) = File::Spec->splitpath ($base_anchor);
-	chop $anchor if length($anchor) > 1;
-	chop $base_anchor if length($base_anchor) > 1;
-
-	(undef,$tgt_anchor,$tgt) = File::Spec->splitpath ($arg{dpath});
-	unless ($arg{copath}) {
-	    # XXX: merge into repos requiring anchor is not tested yet
-	    $storage = SVN::XD::TranslateEditor->new
-		( translate => sub { return unless $tgt;
-				     my $t = translator($target);
-				     $_[0] = $tgt, return
-					 if $target && $target eq $_[0];
-				     $_[0] =~ s|$t|$tgt/|
-					 or die "unable to translate $_[0] with $t" },
-		);
-	}
+	die "FIXME: need to rethink about the logic here";
     }
 
     # setup editor and callbacks
     if ($arg{copath}) {
-	$storage = SVN::XD::Editor->new
-	    ( copath => $arg{copath},
-	      oldroot => $xdroot,
-	      newroot => $xdroot,
-	      anchor => $tgt_anchor,
-	      get_copath => sub { my $t = translator($target);
-				  $_[0] = $arg{copath}, return
-				     if $target && $target eq $_[0];
-				  $_[0] =~ s|$t|$arg{copath}/|
-				      or die "unable to translate $_[0] with $t";
-				  $_[0] =~ s|/$||;
-			      },
-	      checkout => $info->{checkout},
-	      info => $info,
-	      check_only => $arg{check_only},
-	    );
-	%cb = xd_storage_cb ($info, $tgt_anchor, $tgt,
-			     $arg{copath}, $xdroot, $arg{check_only}),
+	($storage, %cb) = get_editor ($info, %arg,
+				      oldroot => $xdroot,
+				      newroot => $xdroot,
+				      anchor => $tgt_anchor,
+				      target => $tgt,
+				      check_only => $arg{check_only});
     }
     else {
 	my $editor = $arg{editor};
@@ -888,15 +875,12 @@ sub do_commit {
     my ($coanchor, $copath) = $arg{copath};
 
     unless (-d $coanchor) {
-	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
-	chop $anchor if length ($anchor) > 1;
+	($anchor,$target,
+	 $coanchor, $copath) = get_anchor (1, $arg{path}, $arg{copath});
     }
     elsif (!$anchor) {
 	$coanchor .= '/';
     }
-
-    (undef,$coanchor,$copath) = File::Spec->splitpath ($arg{copath})
-	if $target;
 
     print "commit from $arg{path} (anchor $anchor) <- $arg{copath}\n";
     print "targets:\n";
@@ -1105,40 +1089,6 @@ sub md5file {
     return $ctx->hexdigest;
 }
 
-package SVN::XD::TranslateEditor;
-use base qw/SVN::Delta::Editor/;
-
-sub add_file {
-    my ($self, $path, @arg) = @_;
-    &{$self->{translate}} ($path);
-    $self->{_editor}->add_file ($path, @arg);
-}
-
-sub open_file {
-    my ($self, $path, @arg) = @_;
-    &{$self->{translate}} ($path);
-    $self->{_editor}->open_file ($path, @arg);
-}
-
-sub add_directory {
-    my ($self, $path, @arg) = @_;
-    &{$self->{translate}} ($path);
-    $self->{_editor}->add_directory ($path, @arg);
-}
-
-sub open_directory {
-    my ($self, $path, @arg) = @_;
-    &{$self->{translate}} ($path);
-    $self->{_editor}->open_directory ($path, @arg);
-}
-
-sub delete_entry {
-    my $self = shift;
-    my $path = shift;
-    &{$self->{translate}} ($path);
-    $self->{_editor}->delete_entry ($path, @_);
-}
-
 package SVN::XD::CheckEditor;
 our @ISA = qw(SVN::Delta::Editor);
 
@@ -1194,7 +1144,7 @@ sub apply_textdelta {
     my $copath = $path;
     $self->{get_copath}($copath);
     if (-e $copath) {
-	my (undef,$dir,$file) = File::Spec->splitpath ($copath);
+	my ($dir,$file) = SVN::XD::get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
 	$base = SVN::XD::get_fh ($self->{oldroot}, '<',
 				 "$self->{anchor}/$path", $copath);
