@@ -4,8 +4,8 @@ require Test::More;
 require 't/tree.pl';
 use Test::More;
 eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
-plan tests => 3;
-
+plan tests => 4;
+our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
 
@@ -56,3 +56,7 @@ $svk->copy ('-m', 'branch in source', '/test/A-98', '/test/A-99');
 
 $svk->mirror ('//m-99', "file://${srepospath}/A-99");
 $svk->sync ('//m-99');
+
+$svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
+# has some output
+ok ($output =~ /under mirrored path/);

@@ -69,6 +69,7 @@ sub run {
 			       1, 1, 0, 1);
     }
     else {
+	return unless $self->check_mirrored_path ($dst);
 	$self->get_commit_message ();
 	$self->do_copy_direct ( author => $ENV{USER},
 				%$src,

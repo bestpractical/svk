@@ -50,6 +50,7 @@ sub do_propset {
 	    );
     }
     else {
+	return unless $self->check_mirrored_path ($target);
 	$self->get_commit_message ();
 	$self->do_propset_direct ( author => $ENV{USER},
 				   %$target,

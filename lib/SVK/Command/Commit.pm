@@ -54,6 +54,21 @@ sub path_is_mirrored {
     return (grep {m/^svm:headrev:/} sort keys %{$fs->revision_proplist ($rev)});
 }
 
+sub under_mirror {
+    my ($self, $target) = @_;
+    svn_mirror && SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
+}
+
+sub check_mirrored_path {
+    my ($self, $target) = @_;
+    if (!$self->{direct} && $self->under_mirror ($target)) {
+	print loc ("%1 is under mirrored path, use --force to override.\n",
+		    $target->{depotpath});
+	return;
+    }
+    return 1;
+}
+
 sub get_commit_editor {
     my ($self, $xdroot, $committed, $path, %arg) = @_;
     ${$arg{callback}} = $committed if $arg{editor};
