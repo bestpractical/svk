@@ -3,16 +3,21 @@ use strict;
 our $VERSION = '0.12';
 our @ISA = qw(SVN::Delta::Editor);
 
+sub _latest_baton {
+    my ($self) = @_;
+    return (@{$self->{bstack}} && $self->{bstack}[-1][0]) || ($self->{root});
+}
+
 sub _open_pdir {
     my ($self) = @_;
     my $baton;
     for (@{$self->{stack}}) {
 	my ($path, $pbaton, @arg) = @$_;
-	$baton = $self->SUPER::open_directory ($path, $pbaton || $baton, @arg);
+	$baton = $self->SUPER::open_directory ($path, $pbaton || $self->_latest_baton, @arg);
 	push @{$self->{bstack}}, [$baton, $arg[-1]];
     }
     @{$self->{stack}} = ();
-    return $baton || (@{$self->{bstack}} && $self->{bstack}[-1][0]) || ($self->{root});
+    return $self->_latest_baton;
 }
 
 sub open_root {
