@@ -477,7 +477,7 @@ sub _delta_dir {
 	if ($schedule ne 'delete') {
 	    return if $arg{absent_ignore};
 	    if ($arg{absent_as_delete}) {
-		$arg{editor}->delete_entry ($arg{entry}, $arg{baton}, $rev, $pool);
+		$arg{editor}->delete_entry ($arg{entry}, $rev, $arg{baton}, $pool);
 	    }
 	    else {
 		$arg{editor}->absent_directory ($arg{entry}, $arg{baton}, $pool);
@@ -701,24 +701,13 @@ sub do_import {
 	$root = $fs->revision_root ($yrev);
     }
 
-    my $editor = SVN::MergeEditor->new
-	(anchor => $arg{path},
-	 base_anchor => $arg{path},
-	 base_root => $root,
-	 storage => SVN::Delta::Editor->new
-	 ( SVN::Repos::get_commit_editor($arg{repos},
-					 "file://$arg{repospath}",
-					 $arg{path}, $ENV{USER},
-					 $arg{message},
-					 sub {print "Directory $arg{copath} imported to depotpath $arg{depotpath} as revision $_[0].\n"})),
-	 cb_exist =>
-		sub { my $path = $arg{path}.'/'.shift;
-		      $root->check_path ($path) != $SVN::Node::none;
-		  },
-	 cb_rev => sub { $yrev },
-	 cb_localmod => sub {},
-	 cb_conflict => sub { die "fatal error: conflict in import" },
-	);
+    my $editor = SVN::Delta::Editor->new
+	( SVN::Repos::get_commit_editor
+	  ( $arg{repos},
+	    "file://$arg{repospath}",
+	    $arg{path}, $ENV{USER},
+	    $arg{message},
+	    sub {print "Directory $arg{copath} imported to depotpath $arg{depotpath} as revision $_[0].\n"}));
 
     $editor = SVN::XD::CheckEditor->new ($editor)
 	if $arg{check_only};
@@ -738,7 +727,7 @@ sub do_import {
 			       revision =>0});
 
     _delta_dir ($info, %arg,
-		cb_rev => sub { 0 },
+		cb_rev => sub { $yrev },
 		editor => $editor,
 		baseroot => $root,
 		xdroot => $root,
