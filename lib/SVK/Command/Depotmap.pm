@@ -25,11 +25,9 @@ sub _do_list {
     my $map = $self->{xd}{depotmap};
     local $\ = "\n";
     my $fmt = "%-20s %-s\n";
-    printf($fmt,'Depot','Path');
+    printf ($fmt, 'Depot', 'Path');
     print '=' x 60;
-    for(keys %$map) {
-	printf($fmt,"/$_/",$map->{$_});
-    }
+    printf ($fmt, "/$_/", $map->{$_}) for keys %$map;
     print '=' x 60;
 }
 

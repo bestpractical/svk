@@ -3,7 +3,7 @@ use Test::More;
 use strict;
 require 't/tree.pl';
 
-jam("n\n") ? plan tests => 2 : plan skip_all => 'no tty or tiocsti';
+jam("n\n") ? plan tests => 3 : plan skip_all => 'no tty or tiocsti';
 
 our ($output, @TOCLEAN);
 
@@ -48,3 +48,5 @@ ok (!-e $repospath);
 jam("y\n");
 $svk->depotmap ('--init');
 ok (-d $repospath);
+is_output_like ($svk, 'depotmap', ['--list'],
+	       qr"//.*$repospath", 'depotpath - list');
