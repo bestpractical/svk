@@ -1,9 +1,10 @@
 #!/usr/bin/perl
-use Test::More tests => 1;
+use Test::More tests => 5;
 use strict;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test();
+our $output;
 my ($copath, $corpath) = get_copath ('multimerge');
 
 $svk->checkout ('//', $copath);
@@ -59,10 +60,10 @@ append_file ("$copath/trunk/test.pl", q|
 
 $svk->commit ('-m', 'more mod on trunk', "$copath/trunk");
 
-$svk->smerge ('-m', 'mergeback from //work', '//work', '//trunk');
-
-$svk->smerge ('-m', 'mergeback from //trunk', '//trunk', '//work');
-
+is_output_like ($svk, 'smerge', ['-m', 'mergeback from //work', '//work', '//trunk'],
+		qr|base /trunk:5|);
+is_output_like ($svk, 'smerge', ['-m', 'mergeback from //trunk', '//trunk', '//work'],
+		qr|base /work:7|);
 $svk->update ($copath);
 
 `$^X -pi -e 's|#!/usr/bin/|#!env |' $copath/trunk/test.pl`;
@@ -84,19 +85,12 @@ sub newfeature {}
 
 $svk->commit ('-m', 'some new feature', "$copath/feature");
 
-$svk->proplist ('-v', "$copath/work");
-
-$svk->smerge ('-m', 'merge from //feature', '//feature', '//work');
-
-$svk->update ($copath);
-
-$svk->proplist ('-v', "$copath/work");
-$svk->proplist ('-v', "$copath/feature");
-
-$svk->smerge ('-m', 'merge from //work to //trunk', '//work', '//trunk');
-$svk->smerge ('-m', 'merge from //trunk to //feature', '//trunk', '//feature');
-
-ok (1);
+is_output_like ($svk, 'smerge', ['-m', 'merge from //feature', '//feature', '//work'],
+		qr|base /trunk:9|);
+is_output_like ($svk, 'smerge', ['-m', 'merge from //work to //trunk', '//work', '//trunk'],
+		qr|base /trunk:9|);
+is_output_like ($svk, 'smerge', ['-m', 'merge from //trunk to //feature', '//trunk', '//feature'],
+	        qr|base /feature:14|);
 
 __END__
 

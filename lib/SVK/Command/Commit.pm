@@ -29,10 +29,7 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
-sub lock {
-    my ($self, $arg) = @_;
-    $arg->{copath} ? $self->lock_target ($arg) : $self->lock_none;
-}
+sub lock { $_[0]->lock_target ($_[1]) }
 
 sub target_prompt { $target_prompt }
 
@@ -265,7 +262,7 @@ sub run {
 	    my $fname = "$cpath.svk.old";
 	    rename $cpath, $fname;
 	    open my ($newfh), ">", $cpath;
-	    $layer->via ($newfh) if $layer;
+	    $layer->via ($newfh);
 	    slurp_fh ($fh, $newfh);
 	    close $fh;
 	    unlink $fname;
