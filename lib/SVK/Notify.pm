@@ -102,7 +102,7 @@ sub flush {
 
 sub flush_dir {
     my ($self, $path) = @_;
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : $_}
+    for (grep {$path ? index($_, "$path/") == 0 : $_}
 	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }
