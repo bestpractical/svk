@@ -198,6 +198,7 @@ sub ensure_open {
     $self->{storage_baton}{$path} ||=
 	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
 				     $self->{cb_rev}->($path), $pool);
+    ++$self->{changes};
     delete $self->{info}{$path}{open};
 }
 
@@ -375,6 +376,7 @@ sub add_directory {
 					 @arg);
     $self->{notify}->node_status ($path, 'A');
     $self->{notify}->flush ($path, 1);
+    ++$self->{changes};
     return $path;
 }
 
@@ -400,7 +402,7 @@ sub close_directory {
     $self->{notify}->flush_dir ($path);
 
     $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{''}, $pool)
-	if $path eq '' && $self->{cb_merged};
+	if $path eq '' && $self->{changes} && $self->{cb_merged};
 
     $self->{storage}->close_directory ($self->{storage_baton}{$path}, $pool);
 }
@@ -492,11 +494,12 @@ sub change_dir_prop {
     return if $arg[0] eq 'svk:merge';
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
     $self->{notify}->prop_status ($path, 'U');
+    ++$self->{changes};
 }
 
 sub close_edit {
     my ($self, @arg) = @_;
-    if (defined $self->{storage_baton}{''} && !$self->{conflicts}) {
+    if (defined $self->{storage_baton}{''} && !$self->{conflicts} && $self->{changes}) {
 	$self->{storage}->close_edit(@arg);
     }
     else {

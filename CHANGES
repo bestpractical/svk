@@ -1,4 +1,4 @@
-[Changes for 0.17 - ]
+[Changes for 0.17 - 17 Jul, 2004]
 
 * Optimize checkout_delta with mtime/inode/size signatures.
 

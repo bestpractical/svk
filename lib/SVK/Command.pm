@@ -1,6 +1,6 @@
 package SVK::Command;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 # XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
 use SVN::Simple::Edit;

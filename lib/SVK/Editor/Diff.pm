@@ -1,7 +1,7 @@
 package SVK::Editor::Diff;
 use strict;
 use SVN::Delta;
-our $VERSION = '0.09';
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;

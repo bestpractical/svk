@@ -58,7 +58,6 @@ is_output ($svk, 'smerge', ['//trunk', $copath],
 	    'C   A/foo',
 	    'D   A/normal',
 	    'D   B',
-	    "New merge ticket: $uuid:/trunk:5",
 	    'Empty merge.',
 	    '2 conflicts found.'
 	   ]);
@@ -79,7 +78,6 @@ is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	    'C   A/foo',
 	    'D   A/normal',
 	    'D   B',
-	    "New merge ticket: $uuid:/trunk:5",
 	    'Empty merge.',
 	    '2 conflicts found.']);
 

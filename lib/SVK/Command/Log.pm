@@ -46,11 +46,11 @@ sub run {
 
     $self->{cross} ||= 0;
 
-    print ('-' x 70);
-    print "\n";
+    my $sep = ('-' x 70)."\n";
+    print $sep;
     _get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, undef, '', 1)} );
+	       sub {_show_log (@_, $sep, undef, '', 1)} );
     return;
 }
 
@@ -91,7 +91,7 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log { 
-    my ($rev, $root, $paths, $props, $output, $host, $remote) = @_;
+    my ($rev, $root, $paths, $props, $sep, $output, $host, $remote) = @_;
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     no warnings 'uninitialized';
@@ -114,21 +114,20 @@ sub _show_log {
 		    )."\n");
 	}
     }
-    $output->print ("\n$message\n".('-' x 70). "\n");
+    $output->print ("\n$message\n$sep");
 }
 
 sub do_log {
     my ($repos, $path, $fromrev, $torev, $verbose,
-	$cross, $remote, $showhost, $output) = @_;
+	$cross, $remote, $showhost, $output, $sep) = @_;
     $output ||= \*STDOUT;
-    print $output ('-' x 70);
-    print $output "\n";
+    print $output $sep if $sep;
     no warnings 'uninitialized';
     use Sys::Hostname;
     my ($host) = split ('\.', hostname, 2);
     $host = $showhost ? '@'.$host : '';
     _get_logs ($repos->fs, -1, $path, $fromrev, $torev, $verbose, $cross,
-	       sub {_show_log (@_, $output, $host, $remote)} )
+	       sub {_show_log (@_, $sep, $output, $host, $remote)} )
 }
 
 1;

@@ -1,0 +1,23 @@
+* signal handling
+  - SIGINT should be handled gracefully.
+
+* svk diff
+  - use tmp files and libsvn_diff's output_diff function instead of non-streamy Text::Diff.
+
+* better tree merger
+  - Merge added directories.
+  - Merge moved files and directories.
+
+* properties
+  - Support svn:eol-style.
+  - Support svn:special.
+
+* checkout maintenance
+  - move checkouts.
+  - purge dead checkouts.
+
+* checkout signatures
+  - command to purge cache.
+  - cache for modified files also, but the gain is marginal.
+
+* finalize SVK::Patch interface

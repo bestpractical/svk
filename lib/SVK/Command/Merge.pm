@@ -89,7 +89,7 @@ sub run {
 	    $merge = SVK::Merge->auto (%$self, repos => $repos, ticket => 1,
 				       src => $src, dst => $dst);
 	    print '===> '.$merge->info;
-	    $self->{message} = $merge->log;
+	    $self->{message} = $merge->log (1);
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
 	    $dst->{revision} = $fs->youngest_rev;

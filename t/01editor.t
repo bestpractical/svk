@@ -31,7 +31,7 @@ rm -f $2.tmp
 TMP
 $tmp->close;
 chmod 0755, $tmp->filename;
-$ENV{EDITOR} = "$tmp props";
+$ENV{SVN_EDITOR} = "$tmp props";
 
 $svk->ps ('someprop', 'somevalue', "$copath/B/nor");
 $svk->commit ( $copath);

@@ -4,7 +4,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile find_local_mirror);
-our $VERSION   = '0.09';
+our $VERSION = $SVK::VERSION;
 
 use SVK::I18N;
 use Digest::MD5 qw(md5_hex);

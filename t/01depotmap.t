@@ -42,7 +42,7 @@ TMP
 $tmp->close;
 chmod 0755, $tmp->filename;
 my $repospath = "/tmp/svk-$$";
-$ENV{EDITOR} = "$tmp $repospath";
+$ENV{SVN_EDITOR} = "$tmp $repospath";
 $svk->depotmap;
 ok (!-e $repospath);
 jam("y\n");

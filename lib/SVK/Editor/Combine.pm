@@ -3,7 +3,7 @@ use strict;
 use File::Temp;
 use SVN::Simple::Edit;
 
-our $VERSION = '0.08';
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 =head1 NAME
