@@ -354,7 +354,7 @@ sub arg_condensed {
     return $target;
 }
 
-=head3 arg_uri_maybe ($arg)
+=head3 arg_uri_maybe ($arg, $no_new_mirror)
 
 Argument might be a URI or a depotpath.  If it is a URI, try to find it
 at or under one of currently mirrored paths.  If not found, prompts the
@@ -363,7 +363,7 @@ user to mirror and sync it.
 =cut
 
 sub arg_uri_maybe {
-    my ($self, $arg) = @_;
+    my ($self, $arg, $no_new_mirror) = @_;
 
     is_uri($arg) or return $self->arg_depotpath($arg);
     HAS_SVN_MIRROR or die loc("cannot load SVN::Mirror");
@@ -374,14 +374,13 @@ sub arg_uri_maybe {
     my $uri = URI->new($arg)->canonical or die loc("%1 is not a valid URI.\n", $arg);
     my $map = $self->{xd}{depotmap};
     foreach my $depot (sort keys %$map) {
-        local $@;
         my $repos = eval { ($self->{xd}->find_repos ("/$depot/", 1))[2] } or next;
 	foreach my $path ( SVN::Mirror::list_mirror ($repos) ) {
-	    my $m = SVN::Mirror->new (
+	    my $m = eval {SVN::Mirror->new (
                 repos => $repos,
                 get_source => 1,
                 target_path => $path,
-            );
+            ) } or next;
 
             my $rel_uri = $uri->rel(URI->new("$m->{source}/")->canonical) or next;
             next if $rel_uri->eq($uri);
@@ -392,6 +391,9 @@ sub arg_uri_maybe {
             return $self->arg_depotpath($depotpath);
 	}
     }
+
+    die loc ("URI not allowed here: %1.\n", $no_new_mirror)
+	if $no_new_mirror;
 
     print loc("New URI encountered: %1\n", $uri);
 
@@ -479,7 +481,7 @@ usually good enough.
     return $self->arg_depotpath($depotpath);
 }
 
-=head3 arg_co_maybe ($arg)
+=head3 arg_co_maybe ($arg, $no_new_mirror)
 
 Argument might be a checkout path or a depotpath. If argument is URI then
 handles it via C<arg_uri_maybe>.
@@ -487,9 +489,10 @@ handles it via C<arg_uri_maybe>.
 =cut
 
 sub arg_co_maybe {
-    my ($self, $arg) = @_;
+    my ($self, $arg, $no_new_mirror) = @_;
 
-    $arg = $self->arg_uri_maybe($arg)->{depotpath} if is_uri($arg);
+    $arg = $self->arg_uri_maybe($arg, $no_new_mirror)->{depotpath}
+	if is_uri($arg);
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =

@@ -2,7 +2,7 @@ package SVK::Command::Copy;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
-use SVK::Util qw( get_anchor get_prompt abs2rel splitdir );
+use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri );
 use SVK::I18N;
 
 sub options {
@@ -17,12 +17,23 @@ sub parse_arg {
     push @arg, '' if @arg == 1;
 
     my $dst = pop(@arg);
-    my @src = (map {$self->arg_co_maybe ($_)} @arg);
+    die loc ("Copy destination can't be URI.\n")
+	if is_uri ($dst);
+
+    die loc ("More than one URI found.\n")
+	if (grep {is_uri($_)} @arg) > 1;
+    my @src;
 
     if ( my $target = eval { $self->arg_co_maybe ($dst) }) {
         $dst = $target;
+	# don't allow new uri in source when target is copath
+	@src = (map {$self->arg_co_maybe
+			 ($_, $dst->{copath}
+			  ? loc ("path '%1' is already a checkout", $dst->{report})
+			  : undef)} @arg);
     }
     else {
+	@src = (map {$self->arg_co_maybe ($_)} @arg);
         # Asking the user for copy destination.
         # In this case, first magically promote ourselves to "cp -p".
         # (otherwise it hurts when user types //deep/directory/name)
@@ -36,7 +47,7 @@ sub parse_arg {
 
         my $path = $self->prompt_depotpath("copy", $default);
 
-        if ($dst =~ /^\.?$/) {
+        if ($dst eq '.') {
             $self->{_checkout_path} = (splitdir($path))[-1];
         }
         else {

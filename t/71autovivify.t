@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 10;
+plan_svm tests => 14;
 
 our ($answer, $output);
 my ($xd, $svk) = build_test();
@@ -32,6 +32,9 @@ my ($srepospath, $spath, $srepos) = $xd2->find_repos ('/test/B', 1);
 my $suuid = $srepos->fs->get_uuid;
 my $uri = uri($srepospath);
 
+is_output($svk, 'cp', ["$uri/C", "$uri/D"],
+	  ["Copy destination can't be URI."]);
+
 $answer = ['', 'C', ''];
 is_output($svk, 'checkout', ["$uri/C"], [
             "New URI encountered: $uri/C/",
@@ -47,6 +50,15 @@ is_output($svk, 'checkout', ["$uri/C"], [
 	    "Syncing //mirror/C(/mirror/C) in ".__("$corpath/C to 6."),
             __("A   C/R"),
             ]);
+chdir ('C');
+is_output($svk, 'cp', ["$uri/A"],
+	  ["URI not allowed here: path '' is already a checkout."]);
+is_output($svk, 'checkout', ["$uri/A"],
+	  ["URI not allowed here: path '' is already a checkout."]);
+chdir ('..');
+is_output($svk, 'cp', ["$uri/C", "$uri/D", 'C'],
+	  ['More than one URI found.']);
+
 rmtree ['C'];
 # unused
 $answer = ['', '', ''];

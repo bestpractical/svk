@@ -19,15 +19,22 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    @arg or return;
-    my $depotpath = $self->arg_uri_maybe ($arg[0]);
-    die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
+    return if $#arg < 0 || $#arg > 1;
 
-    $arg[1] =~ s|/$|| if $arg[1];
-    $arg[1] = (splitdir($depotpath->{path}))[-1]
-        if !defined($arg[1]) or $arg[1] =~ /^\.?$/;
+    my ($src, $dst) = @arg;
+    $dst = '' unless defined $dst;
 
-    return ($depotpath, $arg[1]);
+    my $depotpath = $self->arg_uri_maybe
+	($src,
+	 eval { $self->arg_co_maybe ($dst, 'Checkout destination') }
+	 ? "path '$dst' is already a checkout" : undef);
+    die loc("don't know where to checkout %1\n", $src) unless length ($dst) || $depotpath->{path} ne '/';
+
+    $dst =~ s|/$|| if length $dst;
+    $dst = (splitdir($depotpath->{path}))[-1]
+        if !length($dst) or $dst =~ /^\.?$/;
+
+    return ($depotpath, $dst);
 }
 
 sub lock {
