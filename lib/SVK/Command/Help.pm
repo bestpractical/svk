@@ -42,7 +42,7 @@ sub run {
             print $encoder->encode($buf);
         }
         else {
-            warn loc("Cannot find help topic '%1'.\n", $topic);
+            die loc("Cannot find help topic '%1'.\n", $topic);
         }
     }
     return;

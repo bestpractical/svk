@@ -103,6 +103,7 @@ sub _unmodified {
 	    ( cb_flush => sub {
 		  die loc ("%1 is modified.\n", $target->copath ($_[0]));
 	      })),
+	  # need tests: only useful for move killing the src with unknown entries
 	  cb_unknown => sub {
 	      die loc ("%1 is missing.\n", $target->copath ($_[0]))});
 }

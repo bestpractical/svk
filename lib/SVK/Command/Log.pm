@@ -6,6 +6,7 @@ use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR traverse_history );
+use List::Util qw(max min);
 use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
 
@@ -40,18 +41,31 @@ sub parse_arg {
 
 sub run {
     my ($self, $target) = @_;
-    $target->as_depotpath;
+    # as_depotpath, but use the base revision rather than youngest
+    # for the target.
+    $target->as_depotpath ($self->{xd}{checkout}->get($target->copath)->{revision})
+	if defined $target->{copath};
     my $fs = $target->{repos}->fs;
     my ($fromrev, $torev);
-    ($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
-	or $fromrev = $torev = $self->{revspec}
-	    if $self->{revspec};
-    $fromrev ||= $fs->youngest_rev;
+    # move to general revspec parser in svk::command
+    if ($self->{revspec}) {
+	($fromrev, $torev) = split /:/, $self->{revspec};
+	$torev ||= $fromrev;
+	for ($fromrev, $torev) {
+	    die loc ("%1 is not a number.\n", $_) unless m/^\d+$/;
+	}
+    }
+    $fromrev ||= $target->{revision};
     $torev ||= 0;
     $self->{cross} ||= 0;
 
     my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
 
+    if ($target->{revision} < max ($fromrev, $torev)) {
+	print loc ("Revision too large, show log from %1.\n", $target->{revision});
+	$fromrev = min ($target->{revision}, $fromrev);
+	$torev = min ($target->{revision}, $torev);
+    }
     my $sep = ('-' x 70)."\n";
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
