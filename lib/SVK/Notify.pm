@@ -43,7 +43,7 @@ sub print_report {
 		$path = '';
 	    }
 	    else {
-		$path = abs2rel($path, $target => '', $is_copath ? () : '/');
+		$path = abs2rel($path, $target => undef, $is_copath ? () : '/');
 	    }
 	}
 	$print->((

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 41;
+use Test::More tests => 42;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -21,7 +21,8 @@ is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   [__"$corpath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
 	   [__"A   $copath/me-copy"]);
-$svk->copy ('//V/D/de', "$copath/de-copy");
+is_output ($svk, 'copy', ['//V/D/de', "$copath/de-copy"],
+	   [__"A   $copath/de-copy"]);
 is_output ($svk, 'copy', ['//V/D', "$copath/D-copy"],
 	   [__"A   $copath/D-copy",
 	    __"A   $copath/D-copy/de"]);
