@@ -79,7 +79,10 @@ is_output ($svk, 'verify', [5],
 is_output ($svk, 'verify', [4],
 	  ['No signature found for change 4 at //.']);
 
-$svk->propset ('--revprop', '-r3', 'svk:signature', 'bad signature', '/test/');
+$svk->pg ('--revprop', '-r3', 'svk:signature', '/test/');
+$svk->propset ('--revprop', '-r3', 'svk:signature', '--',
+	       "-----BEGIN PGP SIGNED MESSAGE-----\nMD5 e17fdaa833db6a48b9183fd2f61d304a Q/qu\n".$output, '/test/');
+$svk->pg ('--revprop', '-r3', 'svk:signature', '/test/');
 is_output ($svk, 'verify', [3, '/test/'],
 	  ["Can\'t verify signature",
        "Signature verification failed."]);

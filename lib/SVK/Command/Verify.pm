@@ -81,6 +81,8 @@ sub close_edit {
 	return;
     }
     # verify the content
+    my $header = '-----BEGIN PGP SIGNED MESSAGE-----';
+    $sig =~ s/^.*$header/$header/s;
     my ($anchor) = $sig =~ m/^ANCHOR: (.*)$/m;
     my ($path) = resolve_svm_source ($self->{repos}, split (':', $anchor));
     while ($sig =~ m/^MD5\s(.*?)\s(.*?)$/gm) {
