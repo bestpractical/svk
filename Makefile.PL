@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-my $required_svn = '0.36.0';
+my $required_svn = '1.0.2';
 
 use inc::Module::Install;
 
