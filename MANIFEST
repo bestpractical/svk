@@ -124,3 +124,4 @@ utils/svk-merge-filemerge
 utils/svk-merge-guiffy.bat
 utils/svk-merge-meld
 utils/svk-merge-p4winmrg.bat
+utils/svk-merge-tortoisemerge.bat
