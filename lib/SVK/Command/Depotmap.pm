@@ -12,21 +12,19 @@ use File::Path;
 sub options {
     ('l|list' => 'list',
      'i|init' => 'init',
-     'd|delete|detach' => 'detach',
-     'a|add' => 'add');
+     'd|delete|detach' => 'detach',);
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
+
+    $self->{add} = 1 if @arg >= 2;
 
     if ($self->{add} or $self->{detach}) {
         @arg or die loc("Need to specify a depot name");
 
         my $depot = shift(@arg);
         $depot =~ s{/}{}go;
-
-        @arg or die loc("Need to specify a repository path")
-            if $self->{add};
 
         return ($depot, @arg);
     }
@@ -140,15 +138,13 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 =head1 SYNOPSIS
 
  depotmap [OPTIONS]
-
- depotmap --add DEPOT /path/to/repository
+ depotmap DEPOT /path/to/repository
  depotmap --detach DEPOT
 
 =head1 OPTIONS
 
- -a [--add]             : add a depot to the mapping
- -d [--detach]          : remove a depot from the mapping
  -l [--list]            : list current depot mappings
+ -d [--detach]          : remove a depot from the mapping
  -i [--init]            : initialize a default depot
 
 =head1 DESCRIPTION

@@ -110,8 +110,8 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
  -l [--list]            : list mirrored paths
  -d [--detach]          : mark a path as no longer mirrored
- --upgrade              : upgrade mirror state to the latest version
  --relocate             : relocate the mirror to another URI
+ --upgrade              : upgrade mirror state to the latest version
 
 =head1 AUTHORS
 

@@ -40,8 +40,8 @@ is_output ($svk, 'depotmap', ['--detach', '//'],
 	   ['New depot map saved.'], 'depotpath - detach');
 is_output ($svk, 'depotmap', ['--detach', '//'],
 	   ["Depot '' does not exist in the depot map."], 'depotpath - detach again');
-is_output ($svk, 'depotmap', ['--add', '//', $repospath],
+is_output ($svk, 'depotmap', ['//', $repospath],
 	   ['New depot map saved.'], 'depotpath - add');
-is_output ($svk, 'depotmap', ['--add', '//', $repospath],
+is_output ($svk, 'depotmap', ['//', $repospath],
 	   ["Depot '' already exists; use 'svk depotmap --detach' to remove it first."], 'depotpath - add again');
 rmtree [$repospath];
