@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 23;
+plan tests => 24;
 
 use Cwd;
 use File::Path;
@@ -123,5 +123,9 @@ is_output ($svk, 'import', ['-m', 'import into mirrored path from noncheckout', 
 our $answer = ['//m/hate'];
 $svk->import (-m => 'via prompt', $copath);
 is ($srepos->fs->youngest_rev, 27);
+
+rmtree [$copath];
+is_output ($svk, 'import', ['-m', 'bad copath', '//m/more', $copath],
+	   [__"Path $corpath does not exist."]);
 
 }

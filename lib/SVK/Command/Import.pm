@@ -59,6 +59,8 @@ sub _mkpdir {
 
 sub run {
     my ($self, $target, $copath) = @_;
+    lstat ($copath);
+    die loc ("Path %1 does not exist.\n", $copath) unless -e $copath;
     my $root = $target->root;
     my $kind = $root->check_path ($target->{path});
 
