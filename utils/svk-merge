@@ -18,5 +18,5 @@ else {
     die "need to specify mode: theirs or mine.";
 }
 
-print "Accpeted $mode\n";
+print "Accepted $mode\n";
 exit 0;
