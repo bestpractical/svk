@@ -53,10 +53,8 @@ sub _do_list {
 	print $_.($isdir ? '/' : '')."\n";
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
-	    _do_list($self, $level+1,
-		     SVK::Target->new (%$target,
-				       path => "$target->{path}/$_",
-				       depotpath => "$target->{depotpath}/$_"));
+	    _do_list($self, $level+1, $target->new (path => "$target->{path}/$_",
+						    depotpath => "$target->{depotpath}/$_"));
 	}
     }
 }

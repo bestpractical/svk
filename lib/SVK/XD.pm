@@ -400,18 +400,11 @@ sub create_xd_root {
 
 =cut
 
-sub translator {
-    my ($target) = @_;
-    $target .= '/' if $target;
-    $target ||= '';
-    return qr/^\Q$target\E/;
-}
-
 sub xd_storage_cb {
-    my ($self, %arg) = @_;
+    my ($self, $translate, %arg) = @_;
     # translate to abs path before any check
-    return
-	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -l $_ || -e $_},
+    my %cb =
+	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_ || -l $_ },
 	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
 			  $self->{checkout}->get ($_)->{revision} },
 	  cb_conflict => sub { $_ = shift; $arg{get_copath} ($_);
@@ -422,7 +415,7 @@ sub xd_storage_cb {
 			       my $copath = $path;
 			       # XXX: make use of the signature here too
 			       $arg{get_copath} ($copath);
-			       $path = $arg{anchor} eq '/' ? "/$path" : "$arg{anchor}/$path";
+			       $arg{get_path} ($path);
 			       my $base = get_fh ($arg{oldroot}, '<',
 						  $path, $copath);
 			       my $md5 = md5 ($base);
@@ -433,6 +426,7 @@ sub xd_storage_cb {
 	  cb_dirdelta => sub { my ($path, $base_root, $base_path, $pool) = @_;
 			       my $copath = $path;
 			       $arg{get_copath} ($copath);
+			       $arg{get_path} ($path);
 			       my $modified;
 			       my $editor =  SVK::Editor::Status->new
 				   ( notify => SVK::Notify->new
@@ -443,7 +437,7 @@ sub xd_storage_cb {
 			       $self->checkout_delta
 				   ( %arg,
 				     # XXX: proper anchor handling
-				     path => "$arg{path}/$path",
+				     path => $path,
 				     copath => $copath,
 				     base_root => $base_root,
 				     base_path => $base_path,
@@ -459,6 +453,9 @@ sub xd_storage_cb {
 			       return $modified;
 			   },
 	);
+    SVK::Editor::Merge::cb_translate (\%cb, $translate)
+	    if $translate;
+    return %cb;
 }
 
 =item get_editor
@@ -471,17 +468,27 @@ L<SVK::Editor::Merge> when called in array context.
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my $t = translator($arg{target});
-    my ($copath, $target) = @arg{qw/copath target/};
-    $arg{get_copath} = sub { $_[0] = $copath, return
-				 if $target eq $_[0];
-			     $_[0] =~ s|$t|$copath/|
-				 or die loc("unable to translate %1 with %2", $_[0], $t);
-			     $_[0] =~ s|/$||;
-			 };
+    my ($copath, $anchor, $target) = @arg{qw/copath anchor target/};
+    $anchor = '' if $anchor eq '/';
+    my ($cotarget, $translate);
+    if ($target) {
+	($copath, $cotarget) = get_anchor (1, $copath);
+	$translate = sub { $_[0] =~ s/^\Q$target\E/$cotarget/ };
+    }
+    $arg{get_copath} =
+	sub { $_[0] = File::Spec->catfile
+		  ($copath,  $_[0] ? File::Spec->splitdir ($_[0]) : ());
+	  };
+    $arg{get_path} =
+	sub { $_[0] =~ s/^\Q$cotarget\E/$target/ if $target && $target ne $cotarget;
+	      $_[0] = "$anchor/$_[0]";
+	  };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
-    return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
+    $storage = SVK::Editor::Translate->new (_editor => [$storage], translate => $translate)
+	if $target && $target ne $cotarget;
+
+    return wantarray ? ($storage, $self->xd_storage_cb ($translate, %arg)) : $storage;
 }
 
 =item auto_prop
@@ -579,7 +586,7 @@ sub do_delete {
 			  );
 
     # actually remove it from checkout path
-    my @paths = grep {-l $_ || -e $_} ($arg{targets} ?
+    my @paths = grep {-l $_ || -e $_} (exists $arg{targets}[0] ?
 			      map { "$arg{copath}/$_" } @{$arg{targets}}
 			      : $arg{copath});
     find(sub {

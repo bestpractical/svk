@@ -86,7 +86,7 @@ sub get_editor {
 
     # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->{copath}) {
-	my $xdroot = $self->{xd}->xdroot (%$target);
+	my $xdroot = $target->root ($self->{xd});
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
 	      quiet => 1,
@@ -161,7 +161,7 @@ sub run {
 	if $is_mirrored;
 
     my ($fh, $file);
-    my $xdroot = $self->{xd}->xdroot (%$target);
+    my $xdroot = $target->root ($self->{xd});
 
     unless (defined $self->{message}) {
 	($fh, $file) = tmpfile ('commit', UNLINK => 0);

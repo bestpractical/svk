@@ -49,12 +49,16 @@ sub run {
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
 
+    if ($dst->root ($self->{xd})->check_path ($dst->path) != $SVN::Node::dir) {
+	$src->anchorify; $dst->anchorify;
+    }
+
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
 	# XXX: these should come from parse_arg
 	$src->normalize; $dst->normalize;
-	$merge = SVK::Merge->auto (%$self, repos => $repos,
+	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
 				   src => $src, dst => $dst);
 	print $merge->info;
@@ -67,7 +71,7 @@ sub run {
 	$src->{revision} = $torev;
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src, dst => $dst,
-	     base => SVK::Target->new (%$src, revision => $baserev));
+	     base => $src->new (revision => $baserev), target => '');
     }
 
     $self->get_commit_message ($self->{log} ? $merge->log : '')

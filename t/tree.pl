@@ -11,6 +11,7 @@ use File::Path;
 use SVK;
 use SVK::XD;
 use strict;
+use Carp;
 
 our @TOCLEAN;
 END {
@@ -92,14 +93,14 @@ sub append_file {
 
 sub overwrite_file {
     my ($file, $content) = @_;
-    open my ($fh), '>:raw', $file or die $!;
+    open my ($fh), '>:raw', $file or confess $!;
     print $fh $content;
     close $fh;
 }
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
-    open my ($fh), '<:raw', $file or die $!;
+    open my ($fh), '<:raw', $file or confess $!;
     local $/;
     is (<$fh>, $content, $test);
 }

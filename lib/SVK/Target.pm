@@ -3,7 +3,7 @@ use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
 use SVK::Util qw( get_anchor );
-
+use Clone;
 
 =head1 NAME
 
@@ -18,11 +18,19 @@ SVK::Target - SVK targets
 
 sub new {
     my ($class, @arg) = @_;
-    my $self = bless {}, $class;
-    %$self = @arg;
+    my $self = ref $class ? clone ($class) :
+	bless {}, $class;
+    %$self = (%$self, @arg);
     $self->{revision} = $self->{repos}->fs->youngest_rev
 	unless defined $self->{revision};
     return $self;
+}
+
+sub clone {
+    my ($self) = @_;
+    my $cloned = Clone::clone ($self);
+    $cloned->{repos} = $self->{repos};
+    return $cloned;
 }
 
 sub root {
@@ -46,11 +54,14 @@ sub same_repos {
 
 sub anchorify {
     my ($self) = @_;
-    die "anchorify $self->{depotpath} already with targets"
-	if $self->{targets};
+    die "anchorify $self->{depotpath} already with targets: ".join(',', @{$self->{targets}})
+	if exists $self->{targets}[0];
+    use Carp;
+    confess unless defined $self->{report};
     ($self->{path}, $self->{targets}[0], $self->{depotpath}, undef, $self->{report}) =
 	get_anchor (1, $self->{path}, $self->{depotpath}, $self->{report});
-    ($self->{copath}) = get_anchor (0, $self->{copath}) if $self->{copath};
+    ($self->{copath}, $self->{copath_target}) = get_anchor (1, $self->{copath})
+	if $self->{copath};
 }
 
 =head2 normalize
@@ -63,15 +74,26 @@ sub normalize {
     my ($self) = @_;
     my $fs = $self->{repos}->fs;
     my $root = $fs->revision_root ($self->{revision});
-    $self->{revision} = ($root->node_history ($self->{path})->prev(0)->location)[1]
-	unless $self->{revision} == $root->node_created_rev ($self->{path});
-
+    $self->{revision} = ($root->node_history ($self->path)->prev(0)->location)[1]
+	unless $self->{revision} == $root->node_created_rev ($self->path);
 }
 
 sub depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
     $self->{revision} = $revision if defined $revision;
+}
+
+=head2 path
+
+Returns the full path of the target even if anchorified.
+
+=cut
+
+sub path {
+    my ($self) = @_;
+    $self->{targets}[0]
+	? "$self->{path}/$self->{targets}[0]" : $self->{path};
 }
 
 =head1 AUTHORS

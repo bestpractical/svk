@@ -40,7 +40,7 @@ sub run {
     $self->{rev} ||= $src->{repos}->fs->youngest_rev;
     my $fs = $src->{repos}->fs;
     if ($dst->{copath}) {
-	my $xdroot = $self->{xd}->xdroot (%$dst);
+	my $xdroot = $dst->root ($self->{xd});
 	# XXX: prevent recursion, etc
 	if (-d $dst->{copath}) {
 	    my ($name) = $src->{depotpath} =~ m|(/[^/]+)/?$|;

@@ -205,6 +205,7 @@ sub arg_depotpath {
 	( repos => $repos,
 	  repospath => $repospath,
 	  path => $path,
+	  report => $arg,
 	  revision => $rev,
 	  depotpath => $arg,
 	);

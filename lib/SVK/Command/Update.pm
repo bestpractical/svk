@@ -41,8 +41,7 @@ sub run {
 
 sub do_update {
     my ($self, $cotarget, $update_target) = @_;
-    my $xdroot = $cotarget->root ($self->{xd});
-    my $newroot = $update_target->root;
+    my ($xdroot, $newroot) = map { $_->root ($self->{xd}) } ($cotarget, $update_target);
     # unanchorified
     my ($path, $copath) = @{$cotarget}{qw/path copath/};
     my $report = $update_target->{report};
@@ -57,8 +56,8 @@ sub do_update {
 	$update_target->anchorify;
     }
     else {
-	mkdir ($cotarget->{copath})
-	    unless $self->{check_only};
+	mkdir ($cotarget->{copath}) or die $!
+	    unless $self->{check_only} || -e $cotarget->{copath};
     }
 
     my $merge = SVK::Merge->new

@@ -41,9 +41,8 @@ sub run {
 					       });
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 
-    return $self->SUPER::run (SVK::Target->new (%$target,
-						report => $report,
-						copath => $copath));
+    return $self->SUPER::run ($target->new (report => $report,
+					    copath => $copath));
 }
 
 1;

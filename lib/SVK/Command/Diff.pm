@@ -45,13 +45,13 @@ sub run {
     else {
 	$target->depotpath if $r1 && $r2;
 	if ($target->{copath}) {
-	    $target2 = SVK::Target->new (%$target);
+	    $target2 = $target->new;
 	    $target->depotpath;
 	    $report = $target->{report};
 	}
 	else {
 	    # XXX: require revspec;
-	    $target2 = SVK::Target->new (%$target);
+	    $target2 = $target->new;
 	}
     }
 

@@ -102,9 +102,9 @@ sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     my $base;
     return if $self->{check_only};
-    my $copath = $path;
+    my ($copath, $dpath) = ($path, $path);
     $self->{get_copath}($copath);
-    my $dpath = $self->{anchor} eq '/' ? "/$path" : "$self->{anchor}/$path";
+    $self->{get_path}($dpath);
     if (-l $copath || -e $copath) {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
@@ -173,6 +173,7 @@ sub delete_entry {
     my ($self, $path, $revision) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
+    $self->{get_path}($path);
     # XXX: check if everyone under $path is sane for delete";
     return if $self->{check_only};
     if ($self->{update}) {
@@ -180,7 +181,7 @@ sub delete_entry {
     }
     else {
 	$self->{xd}->do_delete (%$self,
-				path => "$self->{anchor}/$path",
+				path => $path,
 				copath => $copath,
 				quiet => 1);
     }
@@ -188,9 +189,9 @@ sub delete_entry {
 
 sub close_directory {
     my ($self, $path) = @_;
+    return if $self->{target} && !$path;
     my $copath = $path;
-    eval {$self->{get_copath}($copath)};
-    undef $@, return if $@;
+    $self->{get_copath}($copath);
     $self->{xd}{checkout}->store_recursively ($copath,
 					      {revision => $self->{revision},
 					       '.deleted' => undef})

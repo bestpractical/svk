@@ -119,9 +119,9 @@ sub run {
 	) unless $self->{check_only};
     my ($depot) = $self->{xd}->find_depotname ($src->{depotpath});
     ++$self->{auto};
-    $self->SUPER::run (SVK::Target->new (%$src, path => $tmpbranch,
-					 depotpath => "/$depot$tmpbranch",
-					 revision => $fs->youngest_rev),
+    $self->SUPER::run ($src->new (path => $tmpbranch,
+				  depotpath => "/$depot$tmpbranch",
+				  revision => $fs->youngest_rev),
 		       $dst);
     return;
 }

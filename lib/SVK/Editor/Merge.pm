@@ -143,6 +143,17 @@ sub cb_for_root {
 	   );
 }
 
+# translate the path before passing to cb_*
+sub cb_translate {
+    my ($cb, $translate) = @_;
+    for (qw/cb_exist cb_rev cb_conflict cb_localmod cb_dirdelta/) {
+	my $sub = $cb->{$_};
+	next unless $sub;
+	$cb->{$_} = sub { my $path = shift; $translate->($path);
+			  $sub->($path, @_)};
+    }
+}
+
 sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;
@@ -367,6 +378,10 @@ sub close_file {
 	}
     }
 
+    $self->{notify}->flush ($path, 1);
+    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, $pool)
+	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
+
     $self->ensure_close ($path, $checksum, $pool);
 }
 
@@ -407,8 +422,8 @@ sub close_directory {
 
     $self->{notify}->flush_dir ($path);
 
-    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{''}, $pool)
-	if $path eq '' && $self->{changes} && $self->{cb_merged};
+    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, $pool)
+	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
 
     $self->{storage}->close_directory ($self->{storage_baton}{$path}, $pool);
 }
@@ -525,6 +540,7 @@ sub change_dir_prop {
     # there should be a magic flag indicating if svk:merge prop should
     # be dealt.
     return if $arg[0] eq 'svk:merge';
+    return if $arg[0] =~ m/^svm:/;
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
     $self->{notify}->prop_status ($path, 'U');
     ++$self->{changes};
