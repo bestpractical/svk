@@ -1,6 +1,6 @@
 package SVK::Command::Depotmap;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;

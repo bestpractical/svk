@@ -1,6 +1,6 @@
 package SVK::XD;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
@@ -209,7 +209,7 @@ sub xd_storage_cb {
 }
 
 sub get_editor {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
 
     my $storage = SVK::XD::Editor->new
 	( %arg,
@@ -220,20 +220,20 @@ sub get_editor {
 				  or die "unable to translate $_[0] with $t";
 			      $_[0] =~ s|/$||;
 			  },
-	  checkout => $info->{checkout},
-	  info => $info,
+	  checkout => $self->{checkout},
+	  xd => $self,
 	);
 
     return $storage unless wantarray;
 
-    return ($storage, xd_storage_cb ($info, %arg));
+    return ($storage, $self->xd_storage_cb (%arg));
 }
 
 sub do_update {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $fs = $arg{repos}->fs;
 
-    my ($txn, $xdroot) = create_xd_root ($info, %arg);
+    my $xdroot = $self->xdroot (%arg);
     my ($anchor, $target) = ($arg{path}, '');
     $arg{target_path} ||= $arg{path};
     my ($tanchor, $ttarget) = ($arg{target_path}, '');
@@ -245,12 +245,12 @@ sub do_update {
     }
 
     my $newroot = $fs->revision_root ($arg{rev});
-    my ($storage, %cb) = get_editor ($info, %arg,
-				     oldroot => $xdroot,
-				     newroot => $newroot,
-				     anchor => $anchor,
-				     target => $target,
-				     update => 1);
+    my ($storage, %cb) = $self->get_editor (%arg,
+					    oldroot => $xdroot,
+					    newroot => $newroot,
+					    anchor => $anchor,
+					    target => $target,
+					    update => 1);
 
     my $editor = SVK::MergeEditor->new
 	(_debug => 0,
@@ -265,65 +265,58 @@ sub do_update {
 	);
 
 
-    SVN::Repos::dir_delta ($xdroot, $anchor, $target,
+    SVN::Repos::dir_delta ($xdroot->[1], $anchor, $target,
 			   $newroot, $arg{target_path},
 			   $editor, undef,
 			   1, 1, 0, 1);
-
-    $txn->abort if $txn;
 }
 
 sub do_add {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
 
     if ($arg{recursive}) {
-	my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
-	SVK::XD::checkout_delta ($info,
-				 %arg,
-				 baseroot => $xdroot,
-				 xdroot => $xdroot,
-				 editor => SVN::Delta::Editor->new (),
-				 targets => $arg{targets},
-				 unknown_verbose => 1,
-				 cb_unknown => sub {
-				     $info->{checkout}->store ($_[1], { '.schedule' => 'add' });
-				     print "A  $_[1]\n" unless $arg{quiet};
-				 },
-			    );
-	$txn->abort if $txn;
+	my $xdroot = $self->xdroot (%arg);
+	$self->checkout_delta ( %arg,
+				baseroot => $xdroot,
+				xdroot => $xdroot,
+				editor => SVN::Delta::Editor->new (),
+				targets => $arg{targets},
+				unknown_verbose => 1,
+				cb_unknown => sub {
+				    $self->{checkout}->store ($_[1], { '.schedule' => 'add' });
+				    print "A  $_[1]\n" unless $arg{quiet};
+				},
+			      );
     }
     else {
-	$info->{checkout}->store ($arg{copath}, { '.schedule' => 'add' });
+	$self->{checkout}->store ($arg{copath}, { '.schedule' => 'add' });
 	print "A  $arg{copath}\n" unless $arg{quiet};
     }
 }
 
 sub do_delete {
-    my ($info, %arg) = @_;
-    my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
+    my ($self, %arg) = @_;
+    my $xdroot = $self->xdroot (%arg);
     my @deleted;
 
     # check for if the file/dir is modified.
-    SVK::XD::checkout_delta ($info,
-			     %arg,
-			     baseroot => $xdroot,
-			     xdroot => $xdroot,
-			     absent_as_delete => 1,
-			     delete_verbose => 1,
-			     absent_verbose => 1,
-			     editor => SVK::DeleteEditor->new
-			     (copath => $arg{copath},
+    $self->checkout_delta ( %arg,
+			    baseroot => $xdroot,
+			    xdroot => $xdroot,
+			    absent_as_delete => 1,
+			    delete_verbose => 1,
+			    absent_verbose => 1,
+			    editor => SVK::DeleteEditor->new
+			    ( copath => $arg{copath},
 			      dpath => $arg{path},
 			      cb_delete => sub {
 				  push @deleted, $_[1];
 			      }
-			     ),
-			     cb_unknown => sub {
-				 die "$_[0] is not under version control";
-			     }
-			    );
-
-    $txn->abort if $txn;
+			    ),
+			    cb_unknown => sub {
+				die "$_[0] is not under version control";
+			    }
+			  );
 
     # actually remove it from checkout path
     my @paths = grep {-e $_} ($arg{targets} ?
@@ -332,37 +325,29 @@ sub do_delete {
     find(sub {
 	     my $cpath = $File::Find::name;
 	     no warnings 'uninitialized';
-	     return if $info->{checkout}->get ($cpath)->{'.schedule'}
+	     return if $self->{checkout}->get ($cpath)->{'.schedule'}
 		 eq 'delete';
 	     push @deleted, $cpath;
 	 }, @paths) if @paths;
 
     for (@deleted) {
 	print "D  $_\n";
-	$info->{checkout}->store ($_, {'.schedule' => 'delete'});
+	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
 
     rmtree (\@paths) if @paths;
 }
 
 sub do_proplist {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
 
-    my ($txn, $xdroot);
     my $props = {};
+    my $xdroot = $arg{rev} ? $arg{repos}->fs->revision_root ($arg{rev})
+	: $self->xdroot (%arg);
 
-    if ($arg{rev}) {
-	$xdroot = $arg{repos}->fs->revision_root ($arg{rev});
-    }
-    else {
-	($txn, $xdroot) = create_xd_root ($info, %arg);
-    }
-
-    $props = get_props ($info, $xdroot, $arg{path},
-			$arg{rev} ? undef : $arg{copath})
+    $props = $self->get_props ($xdroot, $arg{path},
+			       $arg{rev} ? undef : $arg{copath})
 	if $xdroot;
-
-    $txn->abort if $txn;
 
     return $props;
 }
@@ -400,9 +385,9 @@ sub do_propset {
 }
 
 sub do_revert {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
 
-    my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
+    my $xdroot = $self->xdroot (%arg);
 
     my $revert = sub {
 	my $kind = $xdroot->check_path ($_[0]);
@@ -419,38 +404,37 @@ sub do_revert {
 	    slurp_fh ($content, $fh);
 	    close $fh;
 	}
-	$info->{checkout}->store ($_[1],
+	$self->{checkout}->store ($_[1],
 				  {'.schedule' => undef});
 	print "Reverted $_[1]\n";
     };
 
     my $unschedule = sub {
-	$info->{checkout}->store ($_[1],
+	$self->{checkout}->store ($_[1],
 				  {'.schedule' => undef,
 				   '.newprop' => undef});
 	print "Reverted $_[1]\n";
     };
 
     my $revert_item = sub {
-	exists $info->{checkout}->get ($_[1])->{'.schedule'} ?
+	exists $self->{checkout}->get ($_[1])->{'.schedule'} ?
 	    &$unschedule (@_) : &$revert (@_);
     };
 
     if ($arg{recursive}) {
-	SVK::XD::checkout_delta ($info,
-				 %arg,
-				 baseroot => $xdroot,
-				 xdroot => $xdroot,
-				 targets => $arg{targets},
-				 delete_verbose => 1,
-				 absent_verbose => 1,
-				 editor => SVK::RevertEditor->new
-				 (copath => $arg{copath},
+	$self->checkout_delta ( %arg,
+				baseroot => $xdroot,
+				xdroot => $xdroot,
+				targets => $arg{targets},
+				delete_verbose => 1,
+				absent_verbose => 1,
+				editor => SVK::RevertEditor->new
+				( copath => $arg{copath},
 				  dpath => $arg{path},
 				  cb_revert => $revert,
 				  cb_unschedule => $unschedule,
-				 ),
-				);
+				),
+			      );
     }
     else {
 	if ($arg{targets}) {
@@ -461,9 +445,6 @@ sub do_revert {
 	    &$revert_item ($arg{path}, $arg{copath});
 	}
     }
-
-    $txn->abort if $txn;
-
 }
 
 use Regexp::Shellish qw( :all ) ;
@@ -1029,7 +1010,7 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	SVK::XD::do_add ($self->{info}, copath => $copath, quiet => 1);
+	$self->{xd}->do_add (copath => $copath, quiet => 1);
     }
     $self->{checkout}->store ($copath, {revision => $self->{revision}})
 	if $self->{update};
@@ -1079,13 +1060,12 @@ sub change_file_prop {
     # XXX: do executable unset also.
     $self->{exe}{$path}++
 	if $name eq 'svn:executable' && defined $value;
-    SVK::XD::do_propset ($self->{info},
-			 quiet => 1,
-			 copath => $copath,
-			 propname => $name,
-			 propvalue => $value,
-			)
-	    unless $self->{update};
+    $self->{xd}->do_propset ( quiet => 1,
+			      copath => $copath,
+			      propname => $name,
+			      propvalue => $value,
+			    )
+	unless $self->{update};
 }
 
 sub change_dir_prop {
@@ -1118,7 +1098,8 @@ sub DESTROY {
     $_[0][0]->abort if $_[0][0];
 }
 
-END { $globaldestroy = 1;
+END {
+    $globaldestroy = 1;
 }
 
 =head1 AUTHORS

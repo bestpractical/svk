@@ -1,6 +1,6 @@
 package SVK::Command::Merge;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;
@@ -18,7 +18,13 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
+    $self->usage if $#arg < 0 || $#arg > 1;
     return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
+}
+
+sub lock {
+    my $self = shift;
+    $_[1]->{copath} ? $self->lock_target ($_[1]) : $self->lock_none;
 }
 
 sub run {
@@ -195,3 +201,36 @@ sub get_new_ticket {
 }
 
 1;
+
+=head1 NAME
+
+merge - Apply the differences between two sources.
+
+=head1 SYNOPSIS
+
+    merge -r N:M DEPOTPATH [PATH]
+    merge -r N:M DEPOTPATH1 DEPOTPATH2
+
+=head1 OPTIONS
+
+    -r [--revision]:        revision
+    -m message:             commit message
+    -C [--check-only]:      don't perform actual writes
+    -a [--auto]:            automatically find merge points
+    -l [--log]:             brings the logs of merged revs to the message buffer
+    --no-ticket:            don't associate the ticket tracking merge history
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut

@@ -6,12 +6,14 @@ use SVK::XD;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return (@arg[0,1], $self->arg_co_maybe ($arg[2]));
+    $self->usage if $#arg < 2;
+    return (@arg[0,1], map {$self->arg_co_maybe ($_)} @arg[2..$#arg]);
 }
 
 sub lock {
     my $self = shift;
-    $_[2]->{copath} ? $self->lock_target ($_[2]) : $self->lock_none;
+    $_->{copath} ? $self->lock_target ($_) : $self->lock_none
+	for (@_[2..$#_]);
 }
 
 sub do_propset_direct {
@@ -36,7 +38,7 @@ sub do_propset_direct {
     $edit->close_edit();
 }
 
-sub run {
+sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
     if ($target->{copath}) {
@@ -55,7 +57,11 @@ sub run {
 				   message => $self->{message},
 				 );
     }
+}
 
+sub run {
+    my ($self, $pname, $pvalue, @targets) = @_;
+    $self->do_propset ($pname, $pvalue, $_) for @targets;
     return;
 }
 
@@ -67,7 +73,7 @@ propset - Set a property on path.
 
 =head1 SYNOPSIS
 
-    propset PROPNAME PROPVAL [PATH|DEPOTPATH]
+    propset PROPNAME PROPVAL [PATH|DEPOTPATH...]
 
 =head1 AUTHORS
 

@@ -1,22 +1,23 @@
 package SVK::Command::Diff;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::DiffEditor;
 
 sub options {
-    ("v|verbose"	=> 'verbose',
+    ("v|verbose"    => 'verbose',
      "r|revision=s" => 'revspec');
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
-
     return map {$self->arg_co_maybe ($_)} @arg;
 }
+
+sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target, $target2) = @_;
@@ -71,13 +72,13 @@ sub run {
 	die "revision should be N:M or N"
 	    if $self->{revspec} && $self->{revspec} !~ /^\d+$/;
 
-	my ($txn, $xdroot) = SVK::XD::create_xd_root ($self->{info}, %$target);
+	my $xdroot = $self->{xd}->xdroot (%$target);
 	my $baseroot = $self->{revspec} ? $fs->revision_root ($self->{revspec}) : $xdroot;
 
 	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
 	    SVK::DiffEditor::output_diff (\*STDOUT, $target->{path},
 					  'revision '.
-					  ($self->{revspec} || $self->{info}->{checkout}->get
+					  ($self->{revspec} || $self->{xd}{checkout}->get
 					   ($target->{copath})->{revision}),
 					  "local",
 					  $target->{path}, $target->{path},
@@ -100,20 +101,44 @@ sub run {
 	      sub { my ($rpath) = @_;
 		    $self->{revspec} ||
 		    'revision '.
-			$self->{info}->{checkout}->get ("$target->{copath}/$rpath")->{revision};
+			$self->{xd}{checkout}->get ("$target->{copath}/$rpath")->{revision};
 	      },
 	      rlabel => "local",
 	    );
 
-	SVK::XD::checkout_delta ($self->{info},
-				 %$target,
-				 baseroot => $baseroot,
-				 xdroot => $xdroot,
-				 editor => $editor,
-				);
-	$txn->abort if $txn;
+	$self->{xd}->checkout_delta
+	    ( %$target,
+	      baseroot => $baseroot,
+	      xdroot => $xdroot,
+	      editor => $editor,
+	    );
     }
     return;
 }
 
 1;
+
+=head1 NAME
+
+diff - Display diff between revisions or checkout copies.
+
+=head1 SYNOPSIS
+
+    diff [-r REV] [PATH]
+    diff -r N:M DEPOTPATH
+    diff DEPOTPATH1 DEPOTPATH2
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut
