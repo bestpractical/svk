@@ -122,10 +122,9 @@ sub apply_textdelta {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = catpath (undef, $dir, ".svk.$file.base");
 
-	rename ($copath, $basename)
-	  or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
+	rename ($copath, $basename) or return undef;
 
-	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
+	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename) or return undef;
 	if (!$self->{ignore_checksum} && $checksum) {
 	    my $md5 = md5_fh ($base);
 	    die loc("source checksum mismatch") if $md5 ne $checksum;

@@ -405,11 +405,15 @@ sub _overwrite_local_file {
 	    my $txstream = SVN::TxDelta::new($fh->{local}[FH], $nfh, $pool);
 	    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	}
+	return 1;
     }
-    elsif ($self->{storage_has_unwritable}) {
+
+    if ($self->{storage_has_unwritable}) {
 	delete $self->{notify}{status}{$path};
 	$self->{notify}->flush ($path);
+	return 0;
     }
+    return 1;
 }
 
 sub _merge_file_unchanged {
@@ -456,12 +460,11 @@ sub close_file {
 
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
-	$self->_overwrite_local_file ($fh, $path, $mfh, $pool);
-
-	undef $fh->{base}[FILENAME] if $info->{addmerge};
+	if ($self->_overwrite_local_file ($fh, $path, $mfh, $pool)) {
+	    undef $fh->{base}[FILENAME] if $info->{addmerge};
+	    $self->node_conflict ($path) if $conflict;
+	}
 	$self->cleanup_fh ($fh);
-
-	$self->node_conflict ($path) if $conflict;
     }
     elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
 	# open but prop edit only, load local checksum
