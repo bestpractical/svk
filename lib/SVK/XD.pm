@@ -504,7 +504,7 @@ sub _load_svn_autoprop {
     eval {
 	$self->{svnconfig}{config}->
 	    enumerate ('auto-props',
-		       sub { $self->{svnautoprop}{compile_shellish $_[0]} = $_[1]} );
+		       sub { $self->{svnautoprop}{compile_shellish $_[0]} = $_[1]; 1} );
     };
     warn "Your svn is too old, auto-prop in svn config is not supported: $@\n" if $@;
 }
