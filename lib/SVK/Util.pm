@@ -194,7 +194,7 @@ sub mimetype {
         require File::MimeInfo::Magic;
         \&File::MimeInfo::Magic::magic;
     };
-    *mimetype = $mimetype || sub { undef };
+    *mimetype = $mimetype ||= sub { undef };
     goto &$mimetype;
 }
 
