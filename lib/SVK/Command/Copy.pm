@@ -2,7 +2,7 @@ package SVK::Command::Copy;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
-use SVK::Util qw( get_anchor get_prompt abs2rel );
+use SVK::Util qw( get_anchor get_prompt abs2rel splitdir );
 use SVK::I18N;
 
 sub options {
@@ -34,11 +34,11 @@ sub parse_arg {
         $path = "//$path" unless $path =~ m!^/!;
         $path =~ s{/$}{};
 
-        if (length $dst) {
-            $self->{_checkout_path} = $dst;
+        if ($dst =~ /^\.?$/) {
+            $self->{_checkout_path} = (splitdir($path))[-1];
         }
         else {
-            $self->{_checkout_path} = (splitdir($path))[-1];
+            $self->{_checkout_path} = $dst;
         }
 
         $dst = $self->arg_depotpath("$path/");
@@ -198,7 +198,7 @@ SVK::Command::Copy - Make a versioned copy
 =head1 SYNOPSIS
 
  copy DEPOTPATH1 DEPOTPATH2
- copy DEPOTPATH PATH
+ copy DEPOTPATH [PATH]
 
 =head1 OPTIONS
 

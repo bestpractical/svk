@@ -5,8 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( abs_path move_path is_empty_path $SEP );
-use File::Spec;
+use SVK::Util qw( abs_path move_path is_empty_path splitdir $SEP );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -27,7 +26,8 @@ sub parse_arg {
     die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
 
     $arg[1] =~ s|/$|| if $arg[1];
-    $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
+    $arg[1] = (splitdir($depotpath->{path}))[-1]
+        if !defined($arg[1]) or $arg[1] =~ /^\.?$/;
 
     return ($depotpath, $arg[1]);
 }

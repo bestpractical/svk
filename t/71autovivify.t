@@ -13,18 +13,19 @@ my $tree = create_basic_tree ($xd, '//V');
 my ($copath, $corpath) = get_copath ('autovivify');
 mkdir $corpath;
 
-$answer = '//new';
-is_output($svk, 'copy', [-m => '', '//V/A', "$corpath/A"], [
+$answer = '//new/A';
+chdir($corpath);
+is_output($svk, 'copy', [-m => 'copy to current dir', '//V/A'], [
             'Committed revision 4.',
-            "Syncing //new(/new) in ".__("$corpath/A to 4."),
-            __("A   $corpath/A/Q"),
-            __("A   $corpath/A/Q/qu"),
-            __("A   $corpath/A/Q/qz"),
-            __("A   $corpath/A/be"),
+            "Syncing //new/A(/new/A) in ".__("$corpath/A to 4."),
+            __("A   A/Q"),
+            __("A   A/Q/qu"),
+            __("A   A/Q/qz"),
+            __("A   A/be"),
             ]);
 
 is_output($svk, 'update', ["$corpath/A"], [
-            "Syncing //new(/new) in ".__("$corpath/A to 4."),
+            "Syncing //new/A(/new/A) in ".__("$corpath/A to 4."),
             ]);
 
 my ($xd2, $svk2) = build_test('test');
