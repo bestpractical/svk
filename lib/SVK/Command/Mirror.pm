@@ -72,14 +72,15 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  mirror DEPOTPATH cvs::pserver:user@host:/cvsroot:module/...
  mirror DEPOTPATH p4:user@host:1666://depot/module/...
 
+ mirror --list
+ mirror --upgrade /DEPOT/
+
 =head1 DESCRIPTION
 
 =head1 OPTIONS
 
- -m [--message] arg:    Needs description
- -C [--check-only]:     Needs description
- -s [--sign]:           Needs description
- --force:               Needs description
+ --list:               List mirrored path
+ --upgrade:            Upgrade mirror state to latest version
 
 =head1 AUTHORS
 

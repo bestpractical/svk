@@ -145,8 +145,8 @@ sub create_basic_tree {
     $edit->modify_file ($edit->add_file ('/me'),
 			"first line in me\n2nd line in me\n");
     $edit->modify_file ($edit->add_file ('/A/be'),
-			"\$Rev\$ \$Rev\$\nfirst line in be\n2nd line in be\n");
-    $edit->change_file_prop ('/A/be', 'svn:keywords', 'Rev URL');
+			"\$Rev\$ \$Rev\$\n\$Revision\$\nfirst line in be\n2nd line in be\n");
+    $edit->change_file_prop ('/A/be', 'svn:keywords', 'Rev URL Revision');
     $edit->modify_file ($edit->add_file ('/A/P/pe'),
 			"first line in pe\n2nd line in pe\n");
     $edit->add_directory ('/B');
