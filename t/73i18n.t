@@ -8,7 +8,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 
-plan tests => 23;
+plan tests => 25;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -102,6 +102,20 @@ is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	    'Committed revision 7.']);
 is_output ($svk, 'st', ["$copath/$msg-dir"],
 	   [], 'clean checkout after commit');
+
+setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.ISO8859-1');
+rmtree [$copath];
+TODO: {
+local $TODO = 'gracefully handle characters not in this locale';
+is_output ($svk, 'checkout', ['//A', $copath],
+	   ["Syncing //A(/A) in $corpath to 7.",
+	    __"A   $copath/Q",
+	    __"A   $copath/Q/qu",
+	    __"A   $copath/Q/qz",
+	    __"A   $copath/be",
+	    __"    $copath/?-dir - skipped"],
+	   'gracefully handle characters not in this locale');
+}
 
 # reset
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8');
