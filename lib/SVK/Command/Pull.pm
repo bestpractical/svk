@@ -19,13 +19,14 @@ sub parse_arg {
         # If the last argument is a depot path, rather than a copath
         # then we should do a merge to the local depot, rather than 
         # an update to the path
-        require SVK::Command::Smerge;
-        bless ($self,'SVK::Command::Smerge') ;
-        $self->{log}++;
-        $self->{to}++;
-        $self->{incremental} = !$self->{lump};
-        $self->{message} ||= '' if !$self->{incremental};
-        return $self->parse_arg (@arg);
+        return $self->rebless (
+            smerge => {
+                to => 1,
+                log => 1,
+                message => '',
+                incremental => !$self->{lump},
+            }
+        )->parse_arg (@arg);
     }
 
     if ($self->{all}) {

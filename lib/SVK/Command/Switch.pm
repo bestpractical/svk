@@ -17,9 +17,7 @@ sub parse_arg {
     my ($self, @arg) = @_;
 
     if ($self->{detach}) {
-        require SVK::Command::Checkout;
-        bless($self, 'SVK::Command::Checkout');
-        goto &{ $self->can('parse_arg') };
+        goto &{ $self->rebless ('checkout')->can ('parse_arg') };
     }
 
     return if $#arg < 0 || $#arg > 1;

@@ -92,6 +92,9 @@ sub new {
 Load the command subclass specified in C<$cmd>, and return a new
 instance of it, populated with C<$xd>.  Command aliases are handled here.
 
+To construct a command object from another command object, use the
+C<command> instance method instead.
+
 =cut
 
 sub get_cmd {
@@ -687,16 +690,41 @@ sub msg_handler {
 	 });
 }
 
+=head3 command ($cmd, \%args)
+
+Construct a command object of the C<$cmd> subclass and return it.
+
+The new object will share the C<xd> from the calling command object;
+contents in C<%args> is also assigned into the new object.
+
+=cut
+
 sub command {
-    my ($self, $command, $args) = @_;
+    my ($self, $command, $args, $is_rebless) = @_;
 
     $command = ucfirst(lc($command));
-
     require "SVK/Command/$command.pm";
-    my $cmd = "SVK::Command::$command"->new ($self->{xd});
+
+    my $cmd = (
+        $is_rebless ? bless($self, "SVK::Command::$command")
+                    : "SVK::Command::$command"->new ($self->{xd})
+    );
     $cmd->{$_} = $args->{$_} for sort keys %$args;
 
     return $cmd;
+}
+
+=head3 rebless ($cmd, \%args)
+
+Like C<command> above, but modifies the calling object instead
+of creating a new one.  Useful for a command object to recast
+itself into another command class.
+
+=cut
+
+sub rebless {
+    my ($self, $command, $args) = @_;
+    return $self->command($command, $args, 1);
 }
 
 1;
