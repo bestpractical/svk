@@ -62,8 +62,8 @@ is_output ($svk, 'merge', ["-r", "3:2", '//', $copath],
 is_file_content (copath ("A/foo"), "late modification...\nfoobar\n",
 		 'basic merge for revert');
 
-$svk->merge (qw/-C -r 4:3/, '//A', '//B');
-is_output ($svk, 'merge', ['-r4:3', '-m', 'merge from //A to //B', '//A', '//B'],
+$svk->merge (qw/-C -r HEAD:3/, '//A', '//B');
+is_output ($svk, 'merge', ['-rHEAD:3', '-m', 'merge from //A to //B', '//A', '//B'],
 	   ['G   foo',
 	    'Committed revision 5.']);
 is_output ($svk, 'update', [$copath],
