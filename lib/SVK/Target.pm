@@ -44,10 +44,30 @@ sub root {
     }
 }
 
+=head2 same_repos
+
+=cut
+
 sub same_repos {
     my ($self, @other) = @_;
     for (@other) {
 	return 0 if $self->{repos} ne $_->{repos};
+    }
+    return 1;
+}
+
+=head2 same_source
+
+=cut
+
+sub same_source {
+    my ($self, @other) = @_;
+    return 0 unless $self->same_repos (@other);
+    my $mself = SVN::Mirror::is_mirrored ($self->{repos}, $self->{path});
+    for (@other) {
+	my $m = SVN::Mirror::is_mirrored ($_->{repos}, $_->{path});
+	return 0 if $m xor $mself;
+	return 0 if $m && $m->{target_path} ne $m->{target_path};
     }
     return 1;
 }
@@ -92,6 +112,24 @@ sub path {
     my ($self) = @_;
     $self->{targets}[0]
 	? "$self->{path}/$self->{targets}[0]" : $self->{path};
+}
+
+=head2 copath
+
+Return the checkout path of the target, optionally with additional
+path component.
+
+=cut
+
+sub copath {
+    my $self = shift;
+    my $copath = ref ($self) ? $self->{copath} : shift;
+    my $paths = shift;
+    return $copath unless $paths;
+
+    return File::Spec->catfile ($copath, $^O eq 'MSWin32' ?
+				File::Spec::Unix->splitdir ($paths) :
+				$paths);
 }
 
 =head2 descend

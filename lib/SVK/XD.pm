@@ -467,8 +467,7 @@ sub get_editor {
     my ($copath, $anchor) = @arg{qw/copath path/};
     $anchor = '' if $anchor eq '/';
     $arg{get_copath} =
-	sub { $_[0] = File::Spec->catfile
-		  ($copath,  $_[0] ? File::Spec::Unix->splitdir ($_[0]) : ()) };
+	sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) };
     $arg{get_path} = sub { $_[0] = "$anchor/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
@@ -509,8 +508,8 @@ sub do_add {
 				( notify => SVK::Notify->new
 				  ( cb_flush => sub {
 					my ($path, $status) = @_;
-					my $copath = $path ? "$arg{copath}/$path" : $arg{copath};
-					my $report = $path ? "$arg{report}/$path" : $arg{report};
+					my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
+					    @arg{qw/copath report/};
 					if ($status->[0] eq 'D' && -e $copath) {
 					    $self->{checkout}->store ($copath, { '.schedule' => 'replace' });
 					    print "R   $report\n" unless $arg{quiet};
@@ -524,7 +523,7 @@ sub do_add {
 						  -d $_[1] ? () :
 						  ('.newprop'  => $self->auto_prop ($_[1]))
 						});
-				    my $report = $_[0] ? "$arg{report}/$_[0]" : $arg{report};
+				    my $report = SVK::Target->copath ($arg{report}, $_[0]);
 				    print "A   $report\n" unless $arg{quiet};
 				},
 			      );
@@ -554,16 +553,17 @@ sub do_delete {
 			    ( notify => SVK::Notify->new
 			      ( cb_flush => sub {
 				    my ($path, $status) = @_;
-				    my $rpath = $path ? "$arg{report}/$path" : $arg{report};
+				    my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
+					@arg{qw/copath report/};
 				    my $st = $status->[0];
 				    if ($st eq 'M') {
-					die loc("%1 changed", $rpath);
+					die loc("%1 changed", $report);
 				    }
 				    elsif ($st eq 'D') {
-					push @deleted, "$arg{copath}/$path";
+					push @deleted, $copath;
 				    }
-				    elsif (-f $rpath) {
-					die loc("%1 is scheduled, use 'svk revert'", $rpath);
+				    elsif (-f $copath) {
+					die loc("%1 is scheduled, use 'svk revert'", $report);
 				    }
 				})),
 			    cb_unknown => sub {
@@ -1193,11 +1193,13 @@ sub get_fh {
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
 	    if defined $prop->{'svn:special'} || -l $fname;
-	$layer ||= get_keyword_layer ($root, $path, $prop);
-	$eol ||= get_eol_layer($root, $path, $prop);
+	if (keys %$prop) {
+	    $layer ||= get_keyword_layer ($root, $path, $prop);
+	    $eol ||= get_eol_layer($root, $path, $prop);
+	}
     }
     $eol ||= ':raw';
-    open my ($fh), $mode.$eol, $fname;
+    open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!";
     $layer->via ($fh) if $layer;
     return $fh;
 }

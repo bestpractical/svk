@@ -83,11 +83,12 @@ sub open_root {
 }
 
 sub add_file {
-    my ($self, $path) = @_;
+    my ($self, $path, $pdir) = @_;
     my $copath = $path;
-    ++$self->{added}{$path};
+    $self->{added}{$path} = 1;
     $self->{get_copath}($copath);
-    die loc("path %1 already exists", $path) if -l $copath || -e $copath;
+    die loc("path %1 already exists", $path)
+	if !$self->{added}{$pdir} && (-l $copath || -e _);
     return $path;
 }
 
@@ -95,7 +96,7 @@ sub open_file {
     my ($self, $path) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    die loc("path %1 does not exist", $path) unless -l $copath || -e $copath;
+    die loc("path %1 does not exist", $path) unless -l $copath || -e _;
     return $path;
 }
 
@@ -106,7 +107,7 @@ sub apply_textdelta {
     my ($copath, $dpath) = ($path, $path);
     $self->{get_copath}($copath);
     $self->{get_path}($dpath);
-    if (-l $copath || -e $copath) {
+    unless ($self->{added}{$path}) {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $copath);
@@ -151,19 +152,22 @@ sub close_file {
 	    if exists $self->{exe}{$path};
     }
     delete $self->{props}{$path};
+    delete $self->{added}{$path};
+
 }
 
 sub add_directory {
-    my ($self, $path) = @_;
+    my ($self, $path, $pdir) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    die loc("path %1 already exists", $copath) if -e $copath;
+    die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
     mkdir ($copath) unless $self->{check_only};
     my $report = $path;
     $report =~ s/^\Q$self->{target}\E/$self->{report}/ if $self->{report};
     $self->{xd}->do_add (report => $report,
 			 copath => $copath, quiet => $self->{quiet})
 	if !$self->{update} && !$self->{check_only};
+    $self->{added}{$path} = 1;
     return $path;
 }
 
@@ -200,6 +204,7 @@ sub close_directory {
 					      {revision => $self->{revision},
 					       '.deleted' => undef})
 	if $self->{update};
+    delete $self->{added}{$path};
 }
 
 sub change_file_prop {

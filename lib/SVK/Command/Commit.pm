@@ -174,7 +174,7 @@ sub run {
 	( notify => SVK::Notify->new
 	  ( cb_flush => sub {
 		my ($path, $status) = @_;
-		my $copath = $path ? "$target->{copath}/$path" : $target->{copath};
+		my $copath = $target->copath ($path);
 		push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
 				 $copath];
 		    no warnings 'uninitialized';
@@ -283,9 +283,8 @@ sub run {
 	  ( send_delta => 1,
 	    cb_rev => sub {
 		my $revtarget = shift;
-		my $cotarget = $revtarget;
+		my $cotarget = $target->copath ($revtarget);
 		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
-		$cotarget = $cotarget ? "$target->{copath}/$cotarget" : $target->{copath};
 		my $corev = $self->{xd}{checkout}->get($cotarget)->{revision};
 		return $revcache{$corev} if exists $revcache{corev};
 		my $rev = ($xdroot->node_history ($revtarget)->prev (0)->location)[1];
