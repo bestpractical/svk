@@ -13,6 +13,7 @@ sub options {
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
      'q|quiet'         => 'quiet',
+     'C|check-only'    => 'check_only',
      'I|incremental'   => 'incremental', # -- XXX unsafe -- undocumented XXX --
     );
 }
@@ -30,6 +31,9 @@ sub lock {
 
 sub run {
     my ($self, @arg) = @_;
+
+    die loc ("--check-only cannot be used in conjunction with --sync or --merge.\n")
+        if defined $self->{check_only} && ($self->{merge} || $self->{sync});
 
     die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
@@ -115,12 +119,13 @@ sub do_update {
 	 src => $update_target, dst => $cotarget,
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+					  check_only => $self->{check_only},
 					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
 					  revision => $update_target->{revision},
 					  anchor => $cotarget->{path},
 					  target => $cotarget->{targets}[0] || '',
-					  update => 1));
+					  update => $self->{check_only} ? 0 : 1));
 }
 
 1;
@@ -139,6 +144,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -N [--non-recursive]   : do not descend recursively
+ -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
  -q [--quiet]           : quiet mode
