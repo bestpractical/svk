@@ -1,6 +1,6 @@
 package SVK::Command::Import;
 use strict;
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;

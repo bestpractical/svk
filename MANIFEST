@@ -53,6 +53,7 @@ lib/SVK/DeleteEditor.pm
 lib/SVK/DiffEditor.pm
 lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
+lib/SVK/I18N/zh_cn.po
 lib/SVK/I18N/zh_tw.po
 lib/SVK/MergeEditor.pm
 lib/SVK/Notify.pm

@@ -1,6 +1,6 @@
 package SVK::Command::Merge;
 use strict;
-our $VERSION = '0.11';
+our $VERSION = '0.13';
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;

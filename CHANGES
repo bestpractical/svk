@@ -1,3 +1,22 @@
+[Changes for 0.13 - 11 Apr, 2004]
+
+* Fix svk checkout anchor problems for creating and checking.
+
+* Fix a bug that file is not closed for unchanged and merged (g) but
+  prop change.
+
+* Baseless smerge via -B / --baseless. [Autrijus]
+
+* Arbitary-based smerge via -b / --base. [ Autrijus]
+
+* Get rid of IO::String.
+
+* Cleanup invocation interface, move things from bin/svk to SVK.pm.
+
+* Improve PPerl friendliness.
+
+* New commands: svk propdel, svk depotmap -l.
+
 [Changes for 0.12 - 28 Mar, 2004 - YAPC::Taipei::2004 Release Party]
 
 * Report hostname when doing smerge -l.

@@ -1,6 +1,6 @@
 package SVK::Command::Checkout;
 use strict;
-our $VERSION = '0.11';
+our $VERSION = '0.13';
 
 use base qw( SVK::Command::Update );
 use SVK::XD;
