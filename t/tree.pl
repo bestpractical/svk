@@ -21,7 +21,9 @@ use Test::More;
 our $answer = 's'; # skip
 BEGIN {
     no warnings 'redefine';
-    *SVK::Util::get_prompt = sub {
+    # override get_prompt in XD so devel::cover is happy for
+    # already-exported symbols being overridden
+    *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
         ref($answer) ? shift(@$answer) : $answer
     } unless $ENV{DEBUG_INTERACTIVE};
 
