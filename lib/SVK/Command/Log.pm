@@ -1,6 +1,6 @@
 package SVK::Command::Log;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
@@ -14,6 +14,7 @@ sub options {
 }
 
 sub log_remote_rev {
+    # XXX: Use an api instead
     my ($repos, $rev) = @_;
     my $revprops = $repos->fs->revision_proplist ($rev);
 
@@ -29,6 +30,8 @@ sub parse_arg {
 
     return $self->arg_co_maybe (@arg);
 }
+
+sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target) = @_;

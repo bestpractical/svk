@@ -1,6 +1,6 @@
 package SVK::Command::Import;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;
@@ -15,6 +15,8 @@ sub parse_arg {
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));
 }
 
+sub lock { $_[0]->lock_none }
+
 sub run {
     my ($self, $target, $source) = @_;
 
@@ -24,12 +26,39 @@ sub run {
 	     "\n".$self->target_prompt."\n", "svk-commitXXXXX");
     }
 
-    SVK::XD::do_import ( $self->{info},
-			 %$self,
-			 %$target,
-			 copath => $source,
-		       );
+    $self->{xd}->do_import ( %$self,
+			     %$target,
+			     copath => $source,
+			   );
     return;
 }
 
 1;
+
+=head1 NAME
+
+smerge - Import directory into depot.
+
+=head1 SYNOPSIS
+
+  import DEPOTPATH [PATH]
+
+=head1 OPTIONS
+
+    -m message:        commit message
+    -C [--check-only]: don't perform actual writes
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut

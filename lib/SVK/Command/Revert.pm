@@ -1,6 +1,6 @@
 package SVK::Command::Revert;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
@@ -17,14 +17,41 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
+sub lock {
+    $_[0]->lock_target ($_[1]);
+}
+
 sub run {
     my ($self, $target) = @_;
 
-    SVK::XD::do_revert ( $self->{info},
-			 %$target,
-			 recursive => $self->{rec},
-		       );
+    $self->{xd}->do_revert ( %$target,
+			     recursive => $self->{rec},
+			   );
     return;
 }
 
 1;
+
+=head1 NAME
+
+revert - Revert changes made in checkout copies.
+
+=head1 SYNOPSIS
+
+    revert PATH...
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut
+

@@ -1,6 +1,6 @@
 package SVK::Command::Proplist;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
@@ -17,6 +17,8 @@ sub parse_arg {
     return map {$self->arg_co_maybe ($_)} @arg;
 }
 
+sub lock { $_[0]->lock_none }
+
 sub run {
     my ($self, @arg) = @_;
 
@@ -25,10 +27,9 @@ sub run {
 	$rev ||= $target->{repos}->fs->youngest_rev
 	    unless $target->{copath};
 
-	my $props = SVK::XD::do_proplist ($self->{info},
-					  %$target,
-					  rev => $rev,
-					 );
+	my $props = $self->{xd}->do_proplist ( %$target,
+					       rev => $rev,
+					     );
 	return unless %$props;
 	my $report = $target->{copath} || $target->{depotpath};
 	print "Properties on $report:\n";
@@ -41,3 +42,31 @@ sub run {
 }
 
 1;
+
+=head1 NAME
+
+switch - List all properties on files or dirs.
+
+=head1 SYNOPSIS
+
+    proplist PATH...
+
+=head1 OPTIONS
+
+    -r [--revision]:        revision
+    -v [--verbose]:         print extra information
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut
