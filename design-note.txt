@@ -1,0 +1,41 @@
+svn aims to be the compelling replacement for cvs, svk will be the
+replacement for others, including people who already switched from svn
+to other scm, and people who had not started using scm.
+
+usage scenario:
+
+svk mirror //projectA/fromcvs vcp+cvs://...
+svk branch //projectA/fromcvs //projectA/trunk
+
+svk mirror //svn/trunk http://svn.collab.net/repos/svn/trunk
+svk branch //svn/trunk/subversion/libsvn_fs //svn/local-fs
+svk branch //svn/trunk //svn/local-works
+
+svk sync //svn/trunk
+svk sync //svn/local-works # does automatic mergedown
+
+svk merge //svn/trunk //svn/local-works
+
+=================
+resource definition
+
+/<depot_name>/<path>
+
+depot_name default to something like SVK_DEPOT if ignored 
+
+name mapping stored in .svk/<someting>
+
+=================
+
+svk co //svn/local-works svn
+  => stores co information
+svk ci 
+svk diff
+svk 
+
+=> is it easy to put scheduled info in fs txn directly?
+
+
+==== notes
+* svn wc is too slow and generally an overkill when used with ra_local
+* 

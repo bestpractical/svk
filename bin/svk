@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+use strict;
+require SVN::Core;
+use SVN::XD;
+use YAML qw(LoadFile DumpFile);
+
+use vars qw/$xd/;
+use subs qw/co up/;
+
+my $info;
+
+if (-d "$ENV{HOME}/.svk") {
+    $info = LoadFile ("$ENV{HOME}/.svk/config");
+}
+else {
+    mkdir "$ENV{HOME}/.svk";
+}
+
+$info ||= {depotmap =>  {'' => '/home/clkao/svn/svm' }};
+
+sub checkout {
+    $xd->checkout (@_);
+}
+
+*co = *checkout;
+
+sub update {
+    $xd->update (@_);
+}
+
+*up = *update;
+
+my $cmd = shift;
+
+no strict 'refs';
+
+$xd = SVN::XD->new (%$info);
+
+die "command not recognized" unless main->can($cmd);
+&$cmd(@ARGV);
+
+
+%$info = %$xd;
+DumpFile ("$ENV{HOME}/.svk/config", $info)
