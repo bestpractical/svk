@@ -67,7 +67,7 @@ sub cb_localmod {
     $path = $self->{tgt_anchor}.'/'.$path;;
     my $md5 = $self->{base_root}->file_md5_checksum ($path);
     return if $md5 eq $checksum;
-    return [$self->{base_root}->file_contents ($path), undef, $md5];
+    return [$self->{base_root}->file_contents ($path, $self->{pool}), undef, $md5];
 }
 
 sub add_file {

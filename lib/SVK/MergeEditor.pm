@@ -287,8 +287,9 @@ sub close_file {
 	    $checksum = md5 ($mfh);
 	    $conflict = 0;
 	}
-
-	$checksum ||= md5_hex ($merged);
+	else {
+	    $checksum = md5_hex ($merged);
+	}
 
 	my $handle = $self->{storage}->
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],

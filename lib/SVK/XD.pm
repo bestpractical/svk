@@ -548,9 +548,11 @@ sub _delta_content {
     return unless $handle && $#{$handle} > 0;
 
     if ($arg{send_delta} && $arg{base}) {
+	my $spool = SVN::Pool->new_default ($arg{pool});
+	my $source = $arg{xdroot}->file_contents ($arg{path}, $spool);
 	my $txstream = SVN::TxDelta::new
-	    ($arg{xdroot}->file_contents ($arg{path}), $arg{fh}, $arg{pool});
-	SVN::TxDelta::send_txstream ($txstream, @$handle, SVN::Pool->new ($arg{pool}));
+	    ($source, $arg{fh}, $spool);
+	SVN::TxDelta::send_txstream ($txstream, @$handle, $spool);
     }
     else {
 	SVN::TxDelta::send_stream ($arg{fh}, @$handle, SVN::Pool->new ($arg{pool}))
