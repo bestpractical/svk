@@ -33,17 +33,17 @@ $answer = 't'; # yours
 $svk->sm ('//trunk', $copath);
 is_output ($svk, 'diff', ["$copath/test.pl"],
 	   [__"=== $copath/test.pl",
-            __"==================================================================",
+            "==================================================================",
             __"--- $copath/test.pl  (revision 5)",
             __"+++ $copath/test.pl  (local)",
             __('@@ -1,5 +1,5 @@'),
-            __"-#!/usr/bin/perl -w",
-            __"-sub { 'this is sub on trunk' }",
-            __"+#!/usr/bin/perl -T -w",
-            __"+sub { 'this is sub on local' }",
-            __" #common",
-            __" ",
-            __" sub newsub { undef }",
+            "-#!/usr/bin/perl -w",
+            "-sub { 'this is sub on trunk' }",
+            "+#!/usr/bin/perl -T -w",
+            "+sub { 'this is sub on local' }",
+            " #common",
+            " ",
+            " sub newsub { undef }",
            ], 'svk-merge mine');
 
 $answer = 't'; # theirs
