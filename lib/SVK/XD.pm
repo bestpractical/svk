@@ -13,7 +13,7 @@ use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh  traverse_history );
-use Data::Hierarchy 0.18;
+use Data::Hierarchy 0.21;
 use File::Spec;
 use File::Find;
 use File::Path;

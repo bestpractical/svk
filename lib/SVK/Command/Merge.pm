@@ -125,7 +125,13 @@ sub run {
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
-	     dst => $dst, base => $src->new (revision => $baserev), target => '');
+	     dst => $dst, base => $src->new (revision => $baserev), target => '',
+	     fromrev => $baserev);
+    }
+
+    if ($merge->{fromrev} == $merge->{src}{revision}) {
+	print loc ("Empty merge.\n");
+	return;
     }
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
@@ -203,6 +209,7 @@ SVK::Command::Merge - Apply differences between two sources
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node

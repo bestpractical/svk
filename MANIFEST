@@ -68,6 +68,7 @@ lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/XD.pm
 lib/SVK/Help/Index.pod
+lib/SVK/Help/zh_cn/Index.pod
 lib/SVK/Help/zh_tw/Index.pod
 lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
@@ -136,8 +137,8 @@ t/19cleanup.t
 t/20add.t
 t/21delete.t
 t/22status.t
-t/23commit.t
 t/23commit-mirror.t
+t/23commit.t
 t/24diff.t
 t/25log.t
 t/26revert-remove.t

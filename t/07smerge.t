@@ -1,13 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
-BEGIN { require 't/tree.pl' };
+BEGIN { require 't/tree.pl';};
+plan_svm tests => 27 ;
 our $output;
-eval { require SVN::Mirror; 1 } or do {
-    plan skip_all => "SVN::Mirror not installed";
-    exit;
-};
-plan tests => 27;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -213,7 +208,6 @@ is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/
 
 is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
 	   ['Auto-merging (8, 8) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
-	    "Merging back to mirror source $uri.",
 	    'Empty merge.'], 'empty merge');
 
 $svk->ps ('-m', 'prop on A/be', 'proponly', 'proponly', '/test/A/be');

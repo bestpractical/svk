@@ -119,12 +119,12 @@ is_output ($svk, 'add', ['A/mime'],
 	    __('A   A/mime/foo.pl'),
 	    __('A   A/mime/foo.txt'),
 	   ]);
-is_output ($svk, 'pl', ['-v', <A/mime/*>],
-	   ['Properties on A/mime/foo.bin:',
+is_output ($svk, 'pl', ['-v', glob("A/mime/*")],
+	   [__('Properties on A/mime/foo.bin:'),
 	    '  svn:mime-type: application/octet-stream',
-	    'Properties on A/mime/foo.html:',
+	    __('Properties on A/mime/foo.html:'),
 	    '  svn:mime-type: text/html',
-	    'Properties on A/mime/foo.jpg:',
+	    __('Properties on A/mime/foo.jpg:'),
 	    '  svn:mime-type: image/jpeg',
 	   ]);
 
@@ -179,11 +179,11 @@ is_output ($svk, 'add', ['A/autoprop'],
 	    __('A   A/autoprop/foo.pl'),
 	    __('A   A/autoprop/foo.txt')]);
 
-is_output ($svk, 'pl', ['-v', <A/autoprop/*>],
-	   ['Properties on A/autoprop/foo.pl:',
+is_output ($svk, 'pl', ['-v', glob("A/autoprop/*")],
+	   [__('Properties on A/autoprop/foo.pl:'),
 	    '  svn:eol-style: native',
 	    '  svn:mime-type: text/perl',
-	    'Properties on A/autoprop/foo.txt:',
+	    __('Properties on A/autoprop/foo.txt:'),
 	    '  svn:eol-style: native',
 	    '  svn:keywords: Revision Id'
 	   ]);

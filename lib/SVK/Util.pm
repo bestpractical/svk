@@ -425,7 +425,7 @@ sub abs_path {
 
 =head3 abs2rel ($pathname, $old_basedir, $new_basedir, $sep)
 
-Replace the base directory in the pathname to another base directory
+Replace the base directory in the native pathname to another base directory
 and return the result.
 
 If the pathname is not under C<$old_basedir>, it is not unmodified.

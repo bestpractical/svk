@@ -43,6 +43,7 @@ SVK::Command::Smerge - Automatically merge all changes between branches
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node

@@ -117,6 +117,7 @@ SVK::Command::Cmerge - Merge specific changes
  -l [--log]             : use logs of merged revisions as commit message
  -r [--revision] N:M    : act on revisions between N and M
  -a [--auto]            : merge from the previous merge point
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --no-ticket            : do not record this merge point
 

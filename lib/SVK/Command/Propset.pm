@@ -111,6 +111,8 @@ SVK::Command::Propset - Set a property on path
  -S [--sign]            : sign this change
  -R [--recursive]       : descend recursively
  -r [--revision] arg    : act on revision ARG instead of the head revision
+ -P [--patch] arg       : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
  --revprop              : operate on a revision property (use with -r)
  --direct               : commit directly even if the path is mirrored
 

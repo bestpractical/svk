@@ -115,8 +115,11 @@ sub _show_log {
     my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime) = @_;
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
-    no warnings 'uninitialized';
-    $date = time2str("%Y-%m-%d %T %z", str2time ($date)) if defined $use_localtime;
+    if (defined $use_localtime) {
+	no warnings 'uninitialized';
+	local $^W; # shut off uninitialized warnings in Time::Local
+	$date = time2str("%Y-%m-%d %T %z", str2time ($date));
+    }
     $indent = (' ' x $indent);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n");
     if ($paths) {

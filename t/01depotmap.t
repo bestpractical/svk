@@ -2,8 +2,8 @@
 use strict;
 use SVK::Util qw( catdir tmpdir );
 use File::Spec;
-use Test::More tests => 17;
 BEGIN { require 't/tree.pl' };
+plan tests => 17;
 
 our ($answer, $output, @TOCLEAN);
 my $xd = SVK::XD->new (depotmap => {},

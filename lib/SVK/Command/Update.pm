@@ -141,7 +141,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
  -N [--non-recursive]   : do not descend recursively
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
- -m [--quiet]           : quiet mode
+ -q [--quiet]           : quiet mode
 
 =head1 DESCRIPTION
 

@@ -5,7 +5,7 @@ use Cwd;
 
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 6;
+plan tests => 7;
 
 my $initial_cwd = getcwd;
 
@@ -116,3 +116,25 @@ is_output ($svk, "pull", ['--lump', "//l"], [
         "U   new-file",
         "New merge ticket: $test_uuid:/A:7",
         "Committed revision 14."]);
+
+
+my ($copath_subir, $corpath_subdir) = get_copath ('pull-subdir-test');
+$svk->sync ('//m');
+$svk->mkdir('-m', 'just dir', '//l-sub');
+$svk->copy ('-m', 'branch', '//m/T', '//l-sub/sub');
+$svk->checkout ('//l-sub', $corpath_subdir);
+
+append_file ("$corpath_default/T/xd", "local changed file\n");
+$svk->commit ('-m', 'local modification from branch', "$corpath_default");
+
+chdir ($corpath_subdir);
+is_output ($svk, "pull", ["sub"], [
+	"Syncing $uri".($test_a_path eq '/' ? '' : $test_a_path),
+	"Auto-merging (6, 17) /m/T to /l-sub/sub (base /m/T:6).",
+	__("U   xd"),
+	"New merge ticket: $test_uuid:/A/T:8",
+	"Committed revision 18.",
+	"Syncing //l-sub(/l-sub/sub) in ".__("$corpath_subdir/sub to 18."),
+       __("U   sub/xd")]);
+chdir ($initial_cwd);
+

@@ -49,7 +49,7 @@ $svk->commit ('-m', 'and some prop', "$copath");
 $svk->copy ('-m', 'branch //work', '//trunk', '//work');
 $svk->update ($copath);
 
-`$^X -pi.bak -e "s/is main/is local main/" $copath/work/test.pl`;
+system {$^X} ($^X, "-pi.bak", "-e", "s/is main/is local main/", "$copath/work/test.pl");
 
 $svk->commit ('-m', 'local mod', "$copath/work");
 
@@ -67,14 +67,14 @@ is_output_like ($svk, 'smerge', ['-m', 'mergeback from //trunk', '//trunk', '//w
 		qr|base /work:7|);
 $svk->update ($copath);
 
-`$^X -pi.bak -e "s|#!/usr/bin/|#!env |" $copath/trunk/test.pl`;
+system {$^X} ($^X, "-pi.bak", "-e", "s|#!/usr/bin/|#!env |", "$copath/trunk/test.pl");
 
 $svk->commit ('-m', 'mod on trunk before branch to featre', "$copath/trunk");
 
 $svk->copy ('-m', 'branch //feature', '//trunk', '//feature');
 $svk->update ($copath);
 
-`$^X -pi.bak -e "s/^#test/    test();/" $copath/work/test.pl`;
+system {$^X} ($^X, "-pi.bak", "-e", "s/^#test/    test();/", "$copath/work/test.pl");
 
 $svk->commit ('-m', 'call test() in main', "$copath/work");
 

@@ -2,7 +2,7 @@ package SVK::Command::Copy;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
-use SVK::Util qw( get_anchor get_prompt abs2rel );
+use SVK::Util qw( get_anchor get_prompt abs2rel splitdir );
 use SVK::I18N;
 
 sub options {
@@ -23,13 +23,25 @@ sub parse_arg {
         $dst = $target;
     }
     else {
-        $self->{_checkout_path} = $dst;
+        # Asking the user for copy destination.
+        # In this case, first magically promote ourselves to "cp -p".
+        # (otherwise it hurts when user types //deep/directory/name)
+        $self->{parent} = 1;
+
         my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
         $path =~ s{^//+}{};
         $path =~ s{//+}{/};
         $path = "//$path" unless $path =~ m!^/!;
-        $path = "$path/" unless $path =~ m!/\z!;
-        $dst = $self->arg_depotpath($path);
+        $path =~ s{/$}{};
+
+        if ($dst =~ /^\.?$/) {
+            $self->{_checkout_path} = (splitdir($path))[-1];
+        }
+        else {
+            $self->{_checkout_path} = $dst;
+        }
+
+        $dst = $self->arg_depotpath("$path/");
     }
 
     return (@src, $dst);
@@ -99,6 +111,7 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
+    # XXX: this anchorification is bad on checkout root
     $target->anchorify;
     $self->{xd}->checkout_delta
 	( %$target,
@@ -164,7 +177,7 @@ sub run {
 	$self->finalize_dynamic_editor ($editor);
     }
 
-    if (my $copath = $self->{_checkout_path}) {
+    if (defined( my $copath = $self->{_checkout_path} )) {
         my $checkout = $self->command ('checkout');
 	$checkout->getopt ([]);
         my @arg = $checkout->parse_arg ($dst->{report}, $copath);
@@ -186,13 +199,14 @@ SVK::Command::Copy - Make a versioned copy
 =head1 SYNOPSIS
 
  copy DEPOTPATH1 DEPOTPATH2
- copy DEPOTPATH PATH
+ copy DEPOTPATH [PATH]
 
 =head1 OPTIONS
 
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -m [--message] arg     : specify commit message ARG
  -p [--parent]          : create intermediate directories as required
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
 

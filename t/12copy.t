@@ -84,11 +84,11 @@ $svk->ps ('newprop', 'prop after cp', "$copath/be-alone");
 $svk->ps ('newprop', 'prop after cp', "$copath/A-prop/be");
 
 is_output ($svk, 'pl', ["$copath/be-alone"],
-	   ["Properties on $copath/be-alone:",
+	   [__("Properties on $copath/be-alone:"),
 	    '  newprop', '  svn:keywords']);
 
 is_output ($svk, 'pl', ["$copath/A-prop/be"],
-	   ["Properties on $copath/A-prop/be:",
+	   [__("Properties on $copath/A-prop/be:"),
 	    '  newprop', '  svn:keywords']);
 
 mkdir ("$copath/newdir");

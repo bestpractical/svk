@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw ( abs2rel );
+use SVK::Util qw( abs2rel );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -49,6 +49,7 @@ SVK::Command::Mkdir - Create a versioned directory
  -m [--message] arg     : specify commit message ARG
  -p [--parent]          : create intermediate directories as required
  -C [--check-only]      : try operation but make no changes
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
 
 =head1 AUTHORS

@@ -5,6 +5,7 @@ use SVK::I18N;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;
 use SVK::Editor::Translate;
+use List::Util qw(min);
 
 =head1 NAME
 
@@ -115,7 +116,7 @@ sub find_merge_base {
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
-	my $rev = $srcinfo->{$_} < $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
+	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
 	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
 	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
 	    if !$basepath || $rev > $baserev;
