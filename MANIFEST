@@ -77,6 +77,7 @@ t/03import.t
 t/04merge.t
 t/05svm.t
 t/06keyword.t
+t/07smerge-anchor.t
 t/07smerge-foreign.t
 t/07smerge-multi.t
 t/07smerge.t
