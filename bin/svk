@@ -9,7 +9,7 @@ use File::Spec;
 use Data::Hierarchy;
 
 use vars qw/$xd/;
-use subs qw/co up st blame/;
+use subs qw/co up st blame ci/;
 
 my $info;
 
@@ -98,6 +98,12 @@ sub update {
     $info->{checkout}->store_recursively ($copath, {revision => $rev});
 }
 
+=head2 checkout / co
+
+    svk checkout
+
+=cut
+
 sub checkout {
     local @ARGV = @_;
     my $rev;
@@ -117,6 +123,12 @@ sub checkout {
 
     update ($copath, $rev)
 }
+
+=head2 diff
+
+    svk diff
+
+=cut
 
 use Text::Diff ();
 
@@ -144,6 +156,12 @@ sub diff {
 
 }
 
+=head2 status / st
+
+    svk status
+
+=cut
+
 sub status {
     my ($copath) = @_;
     $copath = File::Spec->rel2abs ($copath);
@@ -166,6 +184,12 @@ sub status {
 			      );
 
 }
+
+=head2 annotate / blame
+
+    svk annotate
+
+=cut
 
 use Algorithm::Annotate;
 
@@ -216,10 +240,62 @@ sub annotate {
 
 }
 
+=head2 add
+
+=cut
+
+sub add {
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    die "no dir yet" if -d $copath;
+
+    $info->{checkout}->store ($copath, { schedule => 'add' });
+    print "A  $copath\n";
+}
+
+=head2 commit / ci
+
+    svk commit
+
+=cut
+
+sub commit {
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    for ($info->{checkout}->find ($copath, {schedule => qr'.*'})) {
+	my $action = $info->{checkout}->get ($_)->{schedule};
+	print "A  $_ ($action)\n";
+    }
+
+    SVN::XD::checkout_crawler ($info,
+			       repos => $repos,
+			       copath => $copath,
+			       path => $path,
+			       rev => $cinfo->{revision},
+			       root => $repos->fs->revision_root ($cinfo->{revision}),
+			       cb_unknown =>
+			       sub {},
+			       cb_changed =>
+			       sub {
+				   print "M  $_[1]\n";
+			       },
+			      );
+
+}
+
 *co = *checkout;
 *up = *update;
 *st = *status;
 *blame = *annotate;
+*ci = *commit;
+
+my $defaultdepot;
+
+die unless GetOptions ("depot=s"  => \$defaultdepot);
 
 my $cmd = shift;
 
