@@ -99,11 +99,11 @@ sub update {
 sub list {
     my ($self) = @_;
     my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
-    opendir DIR, "$self->{xd}{svkpath}/patch";
-    for (readdir (DIR)) {
-	next if m/^\./;
-	s/\.svkpatch$//;
-	my $patch = $self->_load ($_);
+    opendir my $dir, "$self->{xd}{svkpath}/patch";
+    foreach my $file (readdir ($dir)) {
+	next if $file =~ /^\./;
+	$file =~ s/\.svkpatch$//;
+	my $patch = $self->_load ($file);
 	print "$patch->{name}\@$patch->{level}: \n";
     }
     return;
