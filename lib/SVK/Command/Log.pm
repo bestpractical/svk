@@ -60,16 +60,19 @@ sub run {
 }
 
 sub do_log {
-    my ($repos, $path, $fromrev, $torev, $verbose, $cross, $remote, $output)
-	= @_;
+    my ($repos, $path, $fromrev, $torev, $verbose,
+	$cross, $remote, $showhost, $output) = @_;
     $output ||= \*STDOUT;
     print $output ('-' x 70);
     print $output "\n";
     no warnings 'uninitialized';
+    use Sys::Hostname;
+    my ($host) = split ('\.', hostname, 2);
+    warn $host;
     $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
 		     sub { my ($paths, $rev, $author, $date, $message) = @_;
 			   no warnings 'uninitialized';
-			   print $output "r$rev".
+			   print $output "r$rev".($showhost ? "\@$host" : '').
 			       ($remote ? log_remote_rev($repos, $rev): '').
 				   ":  $author | $date\n";
 			   if ($paths) {

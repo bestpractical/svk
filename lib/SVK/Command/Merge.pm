@@ -90,7 +90,7 @@ sub run {
 sub log_for_merge {
     my $self = shift;
     my $buf = IO::String->new (\my $tmp);
-    SVK::Command::Log::do_log (@_, 0, 0, 0, $buf);
+    SVK::Command::Log::do_log (@_, 0, 0, 0, 1, $buf);
     return $tmp;
 }
 
