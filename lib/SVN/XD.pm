@@ -301,14 +301,12 @@ sub do_propset {
 	if $entry->{schedule} eq 'delete';
     %values = %{$entry->{newprop}}
 	if exists $entry->{schedule};
-    $info->{checkout}->store_single ($arg{copath},
-				     {%{$info->{checkout}->get_single ($arg{copath})},
-				      schedule =>
-				      $entry->{schedule} || 'prop',
-				      newprop => {%values,
-						  $arg{propname} =>
-						  $arg{propvalue},
-						 }});
+    $info->{checkout}->store ($arg{copath},
+			      { schedule => $entry->{schedule} || 'prop',
+				newprop => {%values,
+					    $arg{propname} =>
+					    $arg{propvalue},
+					   }});
     print " M $arg{copath}\n" unless $arg{quiet};
 
     $txn->abort if $txn;
@@ -508,7 +506,7 @@ sub _delta_dir {
     }
     else {
 	$entries = $arg{xdroot}->dir_entries ($arg{path})
-	    if $arg{xdroot}->check_path ($arg{path}) == $SVN::Node::dir;
+	    if $arg{kind} == $SVN::Node::dir;
 	$baton = $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton}, $rev, $pool);
     }
 
@@ -519,10 +517,11 @@ sub _delta_dir {
     }
 
     for (keys %{$entries}) {
-	my $delta = $entries->{$_}->kind == $SVN::Node::file
-	    ? \&_delta_file : \&_delta_dir;
+	my $kind = $entries->{$_}->kind;
+	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
 	&{$delta} ($info, %arg,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+		   kind => $kind,
 		   targets => $targets->{$_},
 		   baton => $baton,
 		   root => 0,
@@ -538,7 +537,7 @@ sub _delta_dir {
 
     my $svn_ignore = get_props ($info, $arg{xdroot}, $arg{path},
 				$arg{copath})->{'svn:ignore'}
-        if $arg{xdroot}->check_path ($arg{path}) == $SVN::Node::dir;
+        if $arg{kind} == $SVN::Node::dir;
     my $ignore = ignore (split ("\n", $svn_ignore || ''));
     for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
 	next if m/$ignore/;
@@ -570,6 +569,7 @@ sub _delta_dir {
 	&{$delta} ($info, %arg,
 		   add => 1,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+		   kind => $arg{xdroot}->check_path ("$arg{path}/$_"),
 		   baton => $baton,
 		   targets => $targets->{$_},
 		   root => 0,
@@ -609,6 +609,7 @@ sub checkout_delta {
 			   $target = $target ? "$arg{copath}/$target" : $arg{copath};
 			   _get_rev($info, $target);
 		       };
+    $arg{kind} = $kind;
     my $rev = &{$arg{cb_rev}} ('');
     my $baton = $arg{editor}->open_root ($rev);
 
@@ -731,6 +732,7 @@ sub do_import {
 		editor => $editor,
 		baseroot => $root,
 		xdroot => $root,
+		kind => $SVN::Node::dir,
 		absent_as_delete => 1,
 		baton => $baton, root => 1);
 
