@@ -247,22 +247,21 @@ sub run {
 	my $root = $fs->revision_root ($rev);
 	# update keyword-trnslated files
 	for (@$targets) {
-	    next if $_->[0] eq 'D';
-	    my ($action, $tpath) = @$_;
-	    my $cpath = $tpath;
-	    $tpath =~ s|^\Q$target->{copath}\E||;
-	    my $layer = SVK::XD::get_keyword_layer ($root, "$target->{path}/$tpath");
-	    next unless $layer;
+	    my ($action, $copath) = @$_;
+	    next if $action eq 'D' || -d $copath;
+	    my $dpath = $copath;
+	    $dpath =~ s|^\Q$target->{copath}\E/|$target->{path}|;
+	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath);
+	    my $eol = SVK::XD::get_eol_layer ($root, $dpath);
+	    next unless $layer || ($eol ne ':raw' && $eol ne '');
 
-	    my $fh = SVK::XD::get_fh ($xdroot, '<', "$target->{path}/$tpath", $cpath, $layer);
-	    # XXX: beware of collision
-	    # XXX: fix permission etc also
-	    my $fname = "$cpath.svk.old";
-	    rename $cpath, $fname;
-	    open my ($newfh), ">", $cpath;
-	    $layer->via ($newfh);
+	    my $fh = SVK::XD::get_fh ($xdroot, '<', $dpath, $copath, 0, $layer, $eol);
+	    my $fname = "$copath.svk.old";
+	    rename $copath, $fname or die $!;
+	    open my ($newfh), ">$eol", $copath or die $!;
+	    $layer->via ($newfh) if $layer;
 	    slurp_fh ($fh, $newfh);
-	    chmod ((stat ($fh))[2], $cpath);
+	    chmod ((stat ($fh))[2], $copath);
 	    close $fh;
 	    unlink $fname;
 	}

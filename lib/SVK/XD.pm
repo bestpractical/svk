@@ -835,7 +835,7 @@ sub _delta_file {
     lstat ($arg{copath});
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, undef, $arg{add} && !-l _);
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l _);
     my $mymd5 = md5($fh);
     my $md5;
 
@@ -1088,6 +1088,17 @@ sub do_resolved {
     }
 }
 
+sub get_eol_layer {
+    my ($root, $path) = @_;
+    my $pool = SVN::Pool->new_default;
+    local $@;
+    my $k = eval { $root->node_prop ($path, 'svn:eol-style') };
+    return ':raw' unless $k;
+    return ':crlf' if $k eq 'CRLF';
+    return '' if $k eq 'native';
+    return ':raw'; # unsupported or lf
+}
+
 sub get_keyword_layer {
     my ($root, $path) = @_;
     my $pool = SVN::Pool->new_default;
@@ -1182,17 +1193,23 @@ sub _fh_symlink {
     return $fh;
 }
 
+=item get_fh
+
+Returns a file handle with keyword translation and line-ending layers attached.
+
+=cut
+
 sub get_fh {
-    my ($root, $mode, $path, $fname, $layer, $raw) = @_;
-    # XXX: it seems symlinks are not using the SVN::Node::special node type
-    # need to confirm this
+    my ($root, $mode, $path, $fname, $raw, $layer, $eol) = @_;
     local $@;
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
 	    if -l $fname || defined eval {$root->node_prop ($path, 'svn:special')};
 	$layer ||= get_keyword_layer ($root, $path);
+	$eol ||= get_eol_layer($root, $path);
     }
-    open my ($fh), $mode, $fname;
+    $eol ||= ':raw';
+    open my ($fh), $mode.$eol, $fname;
     $layer->via ($fh) if $layer;
     return $fh;
 }

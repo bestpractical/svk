@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 12;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test();
@@ -38,3 +38,20 @@ is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  \Q$copath\E/A/be$|m,
 		'keyword does not cause merge');
 
 ok (!-x "$copath/A/be", 'take care of removing svn:executable after update');
+mkdir ("$copath/le");
+overwrite_file ("$copath/le/dos", "dos\n");
+overwrite_file ("$copath/le/lf", "unix\n");
+overwrite_file ("$copath/le/native", "native\n");
+$svk->add ("$copath/le");
+$svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
+$svk->ps ('svn:eol-style', 'native', "$copath/le/native");
+$svk->ps ('svn:eol-style', 'LF', "$copath/le/unix");
+$svk->commit ('-m', 'test line ending', $copath);
+is_file_content ("$copath/le/dos", "dos\r\n");
+is_file_content ("$copath/le/lf", "unix\n");
+if ($^O eq 'MSWin32') {
+    is_file_content ("$copath/le/native", "native\r\n");
+}
+else {
+    is_file_content ("$copath/le/native", "native\n");
+}

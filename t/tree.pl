@@ -85,21 +85,21 @@ sub cleanup_test {
 
 sub append_file {
     my ($file, $content) = @_;
-    open my ($fh), '>>', $file or die "can't append $file: $!";
+    open my ($fh), '>>:raw', $file or die "can't append $file: $!";
     print $fh $content;
     close $fh;
 }
 
 sub overwrite_file {
     my ($file, $content) = @_;
-    open my ($fh), '>', $file or die $!;
+    open my ($fh), '>:raw', $file or die $!;
     print $fh $content;
     close $fh;
 }
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
-    open my ($fh), '<', $file or die $!;
+    open my ($fh), '<:raw', $file or die $!;
     local $/;
     is (<$fh>, $content, $test);
 }
