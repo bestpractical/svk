@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
-		  from_native to_native get_encoder );
+		  from_native to_native get_encoder get_depot_anchor );
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML'	 => qw(LoadFile DumpFile);
@@ -611,8 +611,16 @@ sub do_delete {
     # check for if the file/dir is modified.
     unless ($arg{targets}) {
 	my $target;
-	($arg{path}, $target, $arg{copath}, undef, $arg{report}) =
-	    get_anchor (1, @arg{qw/path copath report/});
+	($arg{path}, $target, $arg{copath}) =
+	    get_anchor (1, @arg{qw/path copath/});
+	# XXX: This logic is flawed; whether this is target has a copath
+	# doesn't actually tell us whether the report is a copath or depot
+	# path. (See also SVK::Target::anchorify.)
+	if ($arg{copath}) {
+	    ($arg{report}) = get_anchor (0, $arg{report});
+	} else {
+	    ($arg{report}) = get_depot_anchor (0, $arg{report});
+	}
 	$arg{targets} = [$target];
     }
 

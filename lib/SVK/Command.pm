@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
-		  $SEP IS_WIN32 HAS_SVN_MIRROR );
+		  $SEP IS_WIN32 HAS_SVN_MIRROR catdepot );
 use SVK::I18N;
 use Encode;
 
@@ -386,7 +386,7 @@ sub arg_uri_maybe {
             next if $rel_uri->eq($uri);
             next if $rel_uri =~ /^\.\./;
 
-            my $depotpath = catdir('/', $depot, $path, $rel_uri);
+            my $depotpath = catdepot($depot, $path, $rel_uri);
             $depotpath = "/$depotpath" if !length($depot);
             return $self->arg_depotpath($depotpath);
 	}

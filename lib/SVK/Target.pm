@@ -3,7 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
-			       IS_WIN32 find_prev_copy );
+			       IS_WIN32 find_prev_copy get_depot_anchor );
 
 
 =head1 NAME
@@ -92,13 +92,21 @@ sub anchorify {
     my ($self) = @_;
     die "anchorify $self->{depotpath} already with targets: ".join(',', @{$self->{targets}})
 	if exists $self->{targets}[0];
-    ($self->{path}, $self->{targets}[0], $self->{depotpath}) =
-	get_anchor (1, $self->{path}, $self->{depotpath});
+    ($self->{path}, $self->{targets}[0]) = get_anchor (1, $self->{path});
+    ($self->{depotpath}) = get_depot_anchor (0, $self->{depotpath});
     ($self->{copath}, $self->{copath_target}) = get_anchor (1, $self->{copath})
 	if $self->{copath};
     # XXX: prepend .. if exceeded report?
-    ($self->{report}) = get_anchor (0, $self->{report})
-	if $self->{report}
+    if ($self->{report}) {
+	# XXX: This logic is flawed; whether this is target has a copath
+	# doesn't actually tell us whether the report is a copath or depot
+	# path. (See also SVK::XD::do_delete)
+	if ($self->{copath}) {
+	    ($self->{report}) = get_anchor (0, $self->{report});
+	} else {
+	    ($self->{report}) = get_depot_anchor (0, $self->{report});
+	}
+    }
 }
 
 =head2 normalize

@@ -15,7 +15,8 @@ our @EXPORT_OK = qw(
     read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
-    move_path make_path splitpath splitdir tmpdir tmpfile
+    move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
+    catdepot
 
     is_symlink is_executable is_uri can_run
 );
@@ -596,9 +597,10 @@ sub devnull () {
              : File::Spec::Functions::devnull();
 }
 
-=head3 get_anchor ($need_target)
+=head3 get_anchor ($need_target, @paths)
 
-XXX Undocumented
+Returns the (anchor, target) pairs for native path @paths.  Discard
+the targets being returned unless $need_target.
 
 =cut
 
@@ -609,6 +611,30 @@ sub get_anchor {
 	chop $anchor if length ($anchor) > 1;
 	($volume.$anchor, $need_target ? ($target) : ())
     } @_;
+}
+
+=head3 get_depot_anchor ($need_target, @paths)
+
+Returns the (anchor, target) pairs for depotpaths @paths.  Discard the
+targets being returned unless $need_target.
+
+=cut
+
+sub get_depot_anchor {
+    my $need_target = shift;
+    map {
+	my (undef, $anchor, $target) = File::Spec::Unix->splitpath ($_);
+	chop $anchor if length ($anchor) > 1;
+	($anchor, $need_target ? ($target) : ())
+    } @_;
+}
+
+=head3 catdepot ($depot_name, @paths)
+
+=cut
+
+sub catdepot {
+    return File::Spec::Unix->catdir('/', @_);
 }
 
 =head3 make_path ($path)
