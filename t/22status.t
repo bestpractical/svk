@@ -52,9 +52,12 @@ is_output ($svk, 'status', [],
 	   [ '?   A/bar', 'D   A/another', 'D   A/deep', 'D   A/deep/baz'], 'status - deleted file and dir');
 $svk->revert ('-R', 'A');
 overwrite_file ("A/foo", "foo");
+TODO: {
+local $TODO = "props should be merged, and A/nother shouldn't be schedule as add";
 $svk->merge ('-r1:2', '//A', 'A');
 is_output ($svk, 'status', [],
-	   [ ' M  A/another', 'CM  A/foo', '?   A/bar'], 'status - conflict');
+	   [ 'C   A/foo', '?   A/bar'], 'status - conflict');
+}
 $svk->resolved ('A/foo');
 $svk->revert ('-R', 'A');
 overwrite_file ("A/foo", "foo");

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # XXX: skip on platform not supporting symlinks
-use Test::More tests => 19;
+use Test::More tests => 20;
 use strict;
 use File::Path;
 require 't/tree.pl';
@@ -65,7 +65,8 @@ $svk->revert ('-R', $copath);
 is_output ($svk, 'status', [$copath], [], 'revert');
 $svk->cp ('//A/non.lnk', "$copath/non.lnk.cp");
 ok (-l "$copath/non.lnk.cp", 'copy');
-$svk->commit ('-m', 'add copied symlink', $copath);
+is_output ($svk, 'commit', ['-m', 'add copied symlink', $copath],
+	   ['Committed revision 2.']);
 $svk->cp ('-m', 'make branch', '//A', '//B');
 # XXX: commit and then update will break checkout optimization,
 # make a separate test for that

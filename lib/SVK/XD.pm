@@ -833,6 +833,27 @@ sub _node_deleted_or_absent {
     return 0;
 }
 
+sub _prop_delta {
+    my ($baseprop, $newprop) = @_;
+    return $newprop unless $baseprop && keys %$baseprop;
+    return { map {$_ => undef} keys %$baseprop } unless $newprop && keys %$newprop;
+    my $changed;
+    for my $propname (keys %{ { %$baseprop, %$newprop } }) {
+	# deref propvalue
+	my @value = map { $_ ? ref ($_) ? '' : $_ : '' }
+	    map {$_->{$propname}} ($baseprop, $newprop);
+	$changed->{$propname} = $newprop->{$propname}
+	    unless $value[0] eq $value[1];
+    }
+    return $changed;
+}
+
+sub _prop_changed {
+    my ($root1, $path1, $root2, $path2) = @_;
+    ($root1, $root2) = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} ($root1, $root2);
+    return SVN::Fs::props_changed ($root1, $path1, $root2, $path2);
+}
+
 sub _delta_file {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
@@ -849,13 +870,21 @@ sub _delta_file {
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
-    my $prop = $arg{add} ? {} : $arg{base_root}->node_proplist ($arg{base_path});
-    my $newprop = $cinfo->{'.newprop'};
-    $newprop = $self->auto_prop ($arg{copath})
-	if !$schedule && $arg{auto_add} && $arg{base_kind} == $SVN::Node::none;
-    # symlink needs get_fh to append special prop
+    # This is getting too complicated, must make _delta_dir simpler.
+    my $props = $arg{kind} ? $schedule eq 'replace' ? {} : $arg{xdroot}->node_proplist ($arg{path}) :
+	$arg{base_kind} ? $arg{base_root}->node_proplist ($arg{base_path}) : {};
+    my $newprops = (!$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none)
+	? $self->auto_prop ($arg{copath}) : $cinfo->{'.newprop'};
+    my $fullprop = _combine_prop ($props, $newprops);
+    if ($arg{add}) {
+	$newprops = $fullprop;
+    }
+    elsif ($arg{base_root} ne $arg{xdroot} && $arg{base}) {
+	$newprops = _prop_delta ($arg{base_root}->node_proplist ($arg{base_path}), $fullprop)
+	    if $arg{kind} && $arg{base_kind} && _prop_changed (@arg{qw/base_root base_path xdroot path/});
+    }
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, 0, undef, undef,
-		     _combine_prop ($prop, $newprop));
+		     $fullprop);
     my $mymd5 = md5($fh);
     my ($baton, $md5);
 
@@ -871,10 +900,10 @@ sub _delta_file {
 	if $arg{add};
 
     $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool)
-	if keys %$newprop;
+	if keys %$newprops;
 
-    $arg{editor}->change_file_prop ($baton, $_, ref ($newprop->{$_}) ? undef : $newprop->{$_}, $pool)
-	for sort keys %$newprop;
+    $arg{editor}->change_file_prop ($baton, $_, ref ($newprops->{$_}) ? undef : $newprops->{$_}, $pool)
+	for sort keys %$newprops;
 
     if (!$arg{base} ||
 	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
