@@ -2,7 +2,8 @@ package SVK::Command;
 use strict;
 our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case);
-use Pod::Text ();
+use Pod::Simple::SimpleTree;
+use Pod::Text;
 use File::Find ();
 use Cwd;
 
@@ -63,13 +64,12 @@ sub help {
 	$dir =~ s/\.pm$//;
 	print "Available commands:\n";
 	File::Find::find (sub {
-			      push @cmd, lc($_) if s/\.pm$//;
+			      push @cmd, $File::Find::name if m/\.pm$/;
 			  }, $dir);
-	print "  $_\n" for sort @cmd;
+	$pkg->brief_usage ($_) for sort @cmd;
 	return;
     }
-    $cmd = get_cmd ($pkg, $cmd);
-    $cmd->usage (1);
+    get_cmd ($pkg, $cmd)->usage(1);
 }
 
 sub invoke {
@@ -86,6 +86,20 @@ sub invoke {
     my $ret = $cmd->run (@args);
     $xd->unlock ();
     return $ret;
+}
+
+sub brief_usage {
+    my ($self, $file) = @_;
+    my $fname = ref($self);
+    $fname =~ s|::|/|g;
+    my $parser = Pod::Simple::SimpleTree->new;
+    my @rows = @{$parser->parse_file($file || $INC{"$fname.pm"})->root};
+    while (my $row = shift @rows) {
+        if ( ref($row) eq 'ARRAY' && $row->[0] eq 'head1' && $row->[2] eq 'NAME')  {
+            print "\t". $rows[0]->[2]."\n";
+            last;
+        }
+    }
 }
 
 sub usage {
