@@ -122,7 +122,7 @@ sub recover_headrev {
               $fs->revision_prop ($rev, 'svn:log'), "\n";
         if ( $headrev = $fs->revision_prop ($rev, 'svm:headrev') ) {
             ($uuid, $rrev) = split(/[:\n]/, $headrev);
-            $props = $fs->revision_proplist($rev),
+            $props = $fs->revision_proplist($rev);
             get_prompt(loc(
                 "Found merge ticket at revision %1 (remote %2); use it? [y] ",
                 $rev, $rrev
