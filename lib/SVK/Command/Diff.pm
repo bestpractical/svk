@@ -1,6 +1,6 @@
 package SVK::Command::Diff;
 use strict;
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use base qw( SVK::Command );
 use SVK::XD;
@@ -61,6 +61,7 @@ sub run {
 	      rlabel => "revision $torev",
 	      lpath  => $target->{path},
 	      rpath  => $target2->{path},
+	      external => $ENV{SVKDIFF},
 	    );
 
 	SVN::Repos::dir_delta ($baseroot, $target->{path}, '',
@@ -105,6 +106,7 @@ sub run {
 			$self->{xd}{checkout}->get ("$target->{copath}/$rpath")->{revision};
 	      },
 	      rlabel => "local",
+	      external => $ENV{SVKDIFF},
 	    );
 
 	$self->{xd}->checkout_delta

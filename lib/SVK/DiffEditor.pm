@@ -6,6 +6,7 @@ our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;
 use IO::String;
+use SVK::Util qw( slurp_fh );
 use Text::Diff;
 
 sub set_target_revision {
@@ -34,8 +35,24 @@ sub apply_textdelta {
     $self->{info}{$path}{base} = $self->{cb_basecontent} ($path)
 	unless $self->{info}{$path}{added};
 
-    return [SVN::TxDelta::apply ($self->{info}{$path}{base},
-				 IO::String->new (\$self->{info}{$path}{new}),
+    my $new;
+    if ($self->{external}) {
+	my $tmp = File::Temp->new ( TEMPLATE => 'svk-diffXXXXX',
+				    DIR => '/tmp',
+				  );
+	slurp_fh ($self->{info}{$path}{base}, $tmp);
+	seek $tmp, 0, 0;
+	$self->{info}{$path}{base} = $tmp;
+	$self->{info}{$path}{new} = $new =
+	    File::Temp->new ( TEMPLATE => 'svk-diffXXXXX',
+			      DIR => '/tmp',
+			    );
+    }
+    else {
+	$new = IO::String->new (\$self->{info}{$path}{new});
+    }
+
+    return [SVN::TxDelta::apply ($self->{info}{$path}{base}, $new,
 				 undef, undef, $pool)];
 }
 
@@ -47,9 +64,18 @@ sub close_file {
 	my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
 	my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
 
-	output_diff ($self->{fh} || \*STDOUT, $path, $llabel, $rlabel,
-		     $self->{lpath} || '', $self->{rpath} || '',
-		     $base, \$self->{info}{$path}{new});
+	if ($self->{external}) {
+	    system (split (' ', $self->{external}),
+		    '-L', $llabel,
+		    $self->{info}{$path}{base}->filename,
+		    '-L', $rlabel,
+		    $self->{info}{$path}{new}->filename);
+	}
+	else {
+	    output_diff ($self->{fh} || \*STDOUT, $path, $llabel, $rlabel,
+			 $self->{lpath} || '', $self->{rpath} || '',
+			 $base, \$self->{info}{$path}{new});
+	}
     }
 
     $self->output_prop_diff ($path, $pool);

@@ -19,6 +19,7 @@ requires(
         'IO::String'            => '0',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.17',
+        'File::Temp'            => '0.14',
         'Clone'	                => '0',
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.02',

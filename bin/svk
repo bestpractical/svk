@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
@@ -112,29 +112,6 @@ sub find_depotname {
     find_repos ($target, 0);
     return ($target =~ m|^/(.*?)/|);
 }
-
-sub condense {
-    my @targets = map {Cwd::abs_path ($_ || '')} @_;
-    my ($anchor, $report);
-    $report = $_[0];
-    for (@targets) {
-	if (!$anchor) {
-	    $anchor = $_;
-	    $report = $_[0]
-	}
-	my $schedule = $info->{checkout}->get ($anchor)->{'.schedule'} || '';
-	if ($anchor ne $_ || -f $anchor ||
-	    $schedule eq 'add' || $schedule eq 'delete') {
-	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
-		($anchor, $report) = get_anchor (0, $anchor, $report);
-	    }
-	}
-    }
-    $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
-    return ($report, $anchor,
-	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
-}
-
 
 my $show_version;
 

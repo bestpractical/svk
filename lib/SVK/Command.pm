@@ -154,7 +154,7 @@ sub lock {
 sub arg_condensed {
     my ($self, @arg) = @_;
     $self->usage if $#arg < 0;
-    my ($report, $copath, @targets )= main::condense (@arg);
+    my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
     my ($repospath, $path, $cinfo, $repos) = main::find_repos_from_co ($copath, 1);
     return { repos => $repos,
