@@ -735,7 +735,7 @@ sub _delta_content {
 
     if ($arg{send_delta} && $arg{base}) {
 	my $spool = SVN::Pool->new_default ($arg{pool});
-	my $source = $arg{xdroot}->file_contents ($arg{path}, $spool);
+	my $source = $arg{base_root}->file_contents ($arg{base_path}, $spool);
 	my $txstream = SVN::TxDelta::new
 	    ($source, $arg{fh}, $spool);
 	SVN::TxDelta::send_txstream ($txstream, @$handle, $spool);
@@ -799,7 +799,7 @@ sub _node_deleted_or_absent {
 	    # XXX: should still be recursion since the entries
 	    # XXX: check with xdroot since this might be deleted when from base_root to xdroot
 	    if ($arg{delete_verbose}) {
-		foreach my $file ($self->{checkout}->find
+		foreach my $file (sort $self->{checkout}->find
 		     ($arg{copath}, {'.schedule' => 'delete'})) {
 		    $file = abs2rel($file, $arg{copath} => undef, '/');
 		    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
@@ -855,7 +855,7 @@ sub _delta_file {
     my $cinfo = $arg{cinfo} ||= $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
     my $modified;
-    $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none ||
+    $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
 	$schedule eq 'replace';
 
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
@@ -882,6 +882,8 @@ sub _delta_file {
 		     $fullprop);
     my $mymd5 = md5($fh);
     my ($baton, $md5);
+
+    $arg{base} = 0 if $arg{in_copy};
 
     return $modified unless $schedule || $arg{add} ||
 	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
@@ -915,7 +917,7 @@ sub _delta_dir {
     my $pool = SVN::Pool->new_default (undef);
     my $cinfo = $arg{cinfo} ||= $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
-    $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none ||
+    $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
 	$schedule eq 'replace';
 
     # compute targets for children
@@ -946,7 +948,7 @@ sub _delta_dir {
     }
 
     $entries = $arg{base_root}->dir_entries ($arg{base_path})
-	if $arg{base} && $arg{kind} == $SVN::Node::dir;
+	if $arg{base} && $arg{base_kind} == $SVN::Node::dir;
 
     $baton ||= $arg{root} ? $arg{baton}
 	: $arg{editor}->open_directory ($arg{entry}, $arg{baton},
@@ -978,15 +980,13 @@ sub _delta_dir {
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
-	my $expanding = ($arg{expand_copy} && $arg{in_copy});
 	$self->$delta ( %arg,
-			add => $expanding,
-			# when expanding, dir still needs base to read entries,
-			# while file needs non-base to generate text delta
-			base => !($expanding && $kind == $SVN::Node::file),
+			add => $arg{in_copy},
+			base => 1,
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
-			kind => $kind,
+			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($arg{path}),
+			base_kind => $kind,
 			targets => $newtarget,
 			baton => $baton,
 			root => 0,
@@ -1026,12 +1026,12 @@ sub _delta_dir {
 			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			 base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
-			 targets => $newtarget, kind => $SVN::Node::none);
+			 targets => $newtarget, base_kind => $SVN::Node::none);
+	$newpaths{kind} = $arg{xdroot} eq $arg{base_root} ? $SVN::Node::none :
+	    $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none;
 	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
 	my $sche = $ccinfo->{'.schedule'} || '';
-	my $add = ($sche || $arg{auto_add}) ||
-	    ($arg{xdroot} ne $arg{base_root} &&
-	     $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none);
+	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	unless ($add) {
 	    if ($arg{cb_unknown}) {
 		if ($arg{unknown_verbose}) {
@@ -1055,8 +1055,7 @@ sub _delta_dir {
 			$copyfrom ?
 			( base => 1,
 			  in_copy => $arg{expand_copy},
-			  kind => $fromroot->check_path ($copyfrom),
-			  path => $copyfrom,
+			  base_kind => $fromroot->check_path ($copyfrom),
 			  base_root => $fromroot,
 			  base_path => $copyfrom) : (),
 		      );
@@ -1079,7 +1078,8 @@ sub checkout_delta {
     my ($self, %arg) = @_;
     $arg{base_root} ||= $arg{xdroot};
     $arg{base_path} ||= $arg{path};
-    my $kind = $arg{kind} = $arg{base_root}->check_path ($arg{base_path});
+    my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
+    $arg{kind} = $arg{base_root} eq $arg{xdroot} ? $kind : $arg{xdroot}->check_path ($arg{path});
     die "checkout_delta called with non-dir node"
 	unless $kind == $SVN::Node::dir;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
