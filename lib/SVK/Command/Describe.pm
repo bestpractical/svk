@@ -14,11 +14,7 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
-    local $@;
-    $arg[1] = eval { $self->arg_co_maybe ($arg[1] || '')->new (path => '/') }
-	|| $self->arg_depotpath ("//");
-    $arg[1]->depotpath;
-    return @arg;
+    return ($arg[0], $self->arg_depotroot($arg[1]));
 }
 
 sub lock { $_[0]->lock_none }

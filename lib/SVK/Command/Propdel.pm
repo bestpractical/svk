@@ -33,11 +33,14 @@ SVK::Command::Propdel - Delete a property on files or dirs
 
 =head1 SYNOPSIS
 
- propdel PROPNAME PATH...
+ propdel PROPNAME [PATH|DEPOTPATH...]
 
 =head1 OPTIONS
 
- None
+ -R [--recursive]       : descend recursively
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ --revprop              : operate on a revision property (use with -r)
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

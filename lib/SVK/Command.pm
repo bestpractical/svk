@@ -88,9 +88,11 @@ sub get_cmd {
     die "Command not recognized, try $0 help.\n"
 	unless $cmd =~ m/^[a-z]+$/;
     $pkg = join('::', 'SVK::Command', _cmd_map ($cmd));
-    unless (eval "require $pkg; 1" && UNIVERSAL::can($pkg, 'run')) {
-	$pkg =~ s|::|/|g;
-	warn $@ if $@ && exists $INC{"$pkg.pm"};
+    my $file = "$pkg.pm";
+    $file =~ s!::!/!g;
+
+    unless (eval {require $file; 1} and $pkg->can('run')) {
+	warn $@ if $@ and exists $INC{$file};
 	die "Command not recognized, try $0 help.\n";
     }
     $pkg->new ($xd);
@@ -124,6 +126,8 @@ sub invoke {
 	$error = $_[0];
 	SVN::Error::croak_on_error (@_);
     };
+
+    local $@;
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
@@ -352,6 +356,24 @@ sub arg_depotpath {
 	  revision => $rev,
 	  depotpath => $arg,
 	);
+}
+
+=head3 arg_depotroot ($arg)
+
+Argument is a depot root, or a checkout path that needs to be resolved
+into a depot root.
+
+=cut
+
+sub arg_depotroot {
+    my ($self, $arg) = @_;
+
+    local $@;
+    $arg = eval { $self->arg_co_maybe ($arg || '')->new (path => '/') }
+           || $self->arg_depotpath ("//");
+    $arg->depotpath;
+
+    return $arg;
 }
 
 =head3 arg_depotname ($arg)

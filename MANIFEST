@@ -114,6 +114,7 @@ t/30annotate.t
 t/31cat.t
 t/32list.t
 t/33prop.t
+t/34revprop.t
 t/70symlink.t
 t/tree.pl
 TODO

@@ -5,6 +5,15 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'K|keep-local' => 'keep',
+     'R|recursive' => 'recursive',
+     'r|revision=i' => 'rev',
+     'revprop' => 'revprop',
+    );
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 2;
@@ -84,6 +93,10 @@ SVK::Command::Propset - Set a property on path
  -m [--message] arg     : specify commit message ARG
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
+ -R [--recursive]       : descend recursively
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ --revprop              : operate on a revision property (use with -r)
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 
