@@ -5,6 +5,13 @@ our $VERSION = '0.11';
 use base qw( SVK::Command::Merge );
 use SVK::XD;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'B|baseless'	=> 'baseless',
+     'b|base:i'		=> 'base',
+    );
+}
+
 sub run {
     my ($self, @arg) = @_;
     $self->{auto}++;
@@ -28,8 +35,8 @@ SVK::Command::Smerge - Automatic merge all changes between branches
     -C [--check-only]:      don't perform actual writes
     -l [--log]:             brings the logs of merged revs to the message buffer
     --no-ticket:            don't associate the ticket tracking merge history
-    -r [--revision] arg:    Needs description
-    -a [--auto]:	    Needs description
+    -B [--baseless]:        use the oldest revision as the merge point
+    -b [--base] rev:        manually specify source revision as the merge point
     --force:		    Needs description
     -s [--sign]:	    Needs description
 

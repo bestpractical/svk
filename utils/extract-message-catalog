@@ -1,8 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
+use strict;
 use FindBin;
 use File::Find;
+use Text::Wrap;
 use Pod::Simple::Text;
+
+$Text::Wrap::columns = 1024 if $Text::Wrap::columns;
 
 chdir "$FindBin::Bin/..";
 
@@ -26,7 +30,10 @@ foreach my $pm (@pms) {
 	    $strings{$1}++;
 	}
 	elsif (my @lines = $line =~ /^ {8}\s*(.+)\s*$/mg) {
-	    $strings{$_}++ for @lines;
+	    foreach my $chunk (@lines) { 
+		$chunk =~ s/: +/: /;
+		$strings{$chunk}++;
+	    }
 	}
     }
     next unless %strings;
@@ -42,4 +49,5 @@ if (%strings) {
 
 unlink("lib/SVK/I18N/i_default.po");
 system("xgettext.pl", "-u", "-o", "lib/SVK/I18N/i_default.po", @files, @pods);
+system($^X, "-pi", "-es/charset=CHARSET/charset=UTF-8/", "lib/SVK/I18N/i_default.po");
 unlink $_ for @pods;
