@@ -10,12 +10,9 @@ use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
 use File::Temp;
 use Term::ReadLine;
-my $svn_mirror;
+my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 
-sub svn_mirror {
-    return $svn_mirror if defined $svn_mirror;
-    $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
-}
+sub svn_mirror { $svn_mirror }
 
 my $tr;
 sub get_prompt {
