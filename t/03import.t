@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 16;
+plan tests => 17;
 
 use Cwd;
 use File::Path;
@@ -21,6 +21,8 @@ overwrite_file ("$copath/filea", "foobarbazz");
 overwrite_file ("$copath/fileb", "foobarbazz");
 overwrite_file ("$copath/filec", "foobarbazz");
 overwrite_file ("$copath/exe", "foobarbazz");
+overwrite_file ("$copath/filea~","foobarbazz"); # Test for import honoring global ignores
+
 chmod (0755, "$copath/exe");
 mkdir "$copath/dir";
 overwrite_file ("$copath/dir/filed", "foobarbazz");
@@ -46,6 +48,7 @@ ok (!-e copath ('fileb'));
 ok (!-e copath ('filec'));
 ok (-e copath ('dir/filed'));
 ok (_x copath ('exe'), 'executable bit imported');
+ok (!-e copath ('filea~'));
 
 unlink (copath ('exe'));
 

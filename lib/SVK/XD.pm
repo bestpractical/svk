@@ -1093,8 +1093,12 @@ sub _delta_dir {
 	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
 	my $sche = $ccinfo->{'.schedule'} || '';
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
+	# If we are not at intermediate path, process ignore
+	# for unknowns, as well as the case of auto_add (import)
+	if (!defined $targets) {
+	    next if (!$add || $arg{auto_add}) && $entry =~ m/$ignore/ ;
+	}
 	unless ($add) {
-	    next if !defined $targets && $entry =~ m/$ignore/ ;
 	    if ($arg{cb_unknown}) {
 		$arg{cb_unknown}->($newpaths{entry}, $newpaths{copath});
 		$self->_unknown_verbose (%arg, %newpaths)
