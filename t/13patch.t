@@ -57,14 +57,16 @@ my $patch1 = ['',
 	      '+fnord'];
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:3 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch1]);
 
-ok (-e "$xd2->{svkpath}/patch/test-1.svkpatch");
+
+ok (-e "$xd2->{svkpath}/patch/test-1.patch");
 mkdir ("$xd->{svkpath}/patch");
-copy ("$xd2->{svkpath}/patch/test-1.svkpatch" => "$xd->{svkpath}/patch/test-1.svkpatch");
+copy ("$xd2->{svkpath}/patch/test-1.patch" => "$xd->{svkpath}/patch/test-1.patch");
 is_output ($svk, 'patch', ['list'], ['test-1@1: ']);
 
 my ($scopath, $scorpath) = get_copath ('patch1');
@@ -77,7 +79,7 @@ is_output ($svk, 'patch', [qw/test test-1/], ['G   B/fe', 'Empty merge.'],
 	   'patch still applicable from server.');
 
 is_output ($svk, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6",
 	    "Target: $uuid:/trunk:3 [local] [updated]",
 	    @$log1, @$patch1]);
@@ -92,9 +94,10 @@ is_output ($svk2, 'patch', [qw/test test-1/],
 	   'patch still applicable from original.');
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:3 [mirrored] [updated]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch1]);
 
 is_output ($svk2, 'patch', ['update', 'test-1'],
@@ -114,12 +117,13 @@ my $patch2 = [split ("\n", << 'END_OF_DIFF')];
 END_OF_DIFF
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch2]);
 
-copy ("$xd2->{svkpath}/patch/test-1.svkpatch" => "$xd->{svkpath}/patch/test-1.svkpatch");
+copy ("$xd2->{svkpath}/patch/test-1.patch" => "$xd->{svkpath}/patch/test-1.patch");
 
 is_output ($svk, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.'],
 	   'patch applies cleanly on server.');
@@ -132,7 +136,7 @@ is_output ($svk2, 'patch', [qw/test test-1/],
 	   'patch applies cleanly from local.');
 
 is_output ($svk, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6",
 	    "Target: $uuid:/trunk:4 [local]",
 	    @$log1, @$patch2]);
@@ -147,17 +151,19 @@ is_output ($svk, 'patch', [qw/test test-1/],
 overwrite_file ("$copath/B/fe", "file fe added later\nbzzzzz\nfnord\n");
 $svk2->commit ('-m', "catch up on local", $copath);
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local] [updated]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch2]);
 is_output ($svk2, 'patch', [qw/regen test-1/],
 	   ['G   B/fe']);
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 2',
+	   ['==== Patch <test-1> level 2',
 	    "Source: $uuid2:/local:8 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1,
 	    qr'.*',
 	    ' catch up on local',
@@ -175,9 +181,10 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 
 $svk2->sync ('-a');
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 2',
+	   ['==== Patch <test-1> level 2',
 	    "Source: $uuid2:/local:8 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored] [updated]",
+            "        ($uri/trunk)",
 	    @$log1,
 	    qr'.*',
 	    ' catch up on local',

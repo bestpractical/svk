@@ -35,7 +35,7 @@ sub create {
     my ($self, $name, @arg) = @_;
     my $fname = "$self->{xd}{svkpath}/patch";
     mkdir ($fname);
-    $fname .= "/$name.svkpatch";
+    $fname .= "/$name.patch";
     return "file $fname already exists, use $0 patch regen or update $name instead\n"
 	if -e $fname;
 
@@ -53,8 +53,7 @@ sub create {
 
 sub view {
     my ($self, $patch) = @_;
-    $patch->view;
-    return;
+    return $patch->view;
 }
 
 sub dump {
@@ -102,7 +101,7 @@ sub list {
     opendir my $dir, "$self->{xd}{svkpath}/patch";
     foreach my $file (readdir ($dir)) {
 	next if $file =~ /^\./;
-	$file =~ s/\.svkpatch$//;
+	$file =~ s/\.patch$//;
 	my $patch = $self->_load ($file);
 	print "$patch->{name}\@$patch->{level}: \n";
     }
@@ -111,13 +110,13 @@ sub list {
 
 sub _store {
     my ($self, $patch) = @_;
-    $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.svkpatch");
+    $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.patch");
 }
 
 sub _load {
     my ($self, $name) = @_;
     # XXX: support alternative path
-    SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch",
+    SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.patch",
 		      $self->{xd}, $self->{depot} || '');
 }
 

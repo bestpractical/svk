@@ -52,6 +52,7 @@ features(
     'Patch management' => [
 	-default => 1,
 	'Compress::Zlib'    => '0',
+	'FreezeThaw'        => '0',
     ],
 );
 

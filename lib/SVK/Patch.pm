@@ -41,7 +41,7 @@ use SVK::Util qw(find_svm_source find_local_mirror resolve_svm_source);
 use SVK::Merge;
 use SVK::Editor::Diff;
 use SVK::Target::Universal;
-use Storable qw/nfreeze thaw/;
+use FreezeThaw qw(freeze thaw);
 use MIME::Base64;
 use Compress::Zlib;
 
@@ -75,9 +75,29 @@ Load a SVK::Patch object from file.
 
 sub load {
     my ($class, $file, $xd, $depot) = @_;
-    my $self = thaw (uncompress (decode_base64 ( read_file($file) ) ) );
+
+    my $content = do {
+        open my $fh, '<', $file or die "Cannot open $file: $!";
+
+        # Serialized patches always begins with a block marker.
+        # We need the \nVersion: to not trip over inlined block makers.
+        # This is safe because unidiff can't have lines beginning with 'V'.
+        local $/ = "==== BEGIN SVK PATCH BLOCK ====\nVersion:"; <$fh>;
+
+        # Now we ignore header paragraph.
+        $/ = ""; <$fh>;
+        
+        # Slurp everything up to the '=' of the end marker.
+        $/ = "\n="; <$fh>;
+    };
+
+    die loc("Cannot find a patch block in $file.\n") unless $content;
+    chop $content; # remove the final '='. look, a use of chop()!
+
+    my ($self) = thaw (uncompress (decode_base64 ( $content ) ) );
     $self->{_xd} = $xd;
     $self->{_depot} = $depot;
+
     for (qw/source target/) {
 	my $tmp = $self->{"_$_"} = $self->{$_}->local ($xd, $depot) or next;
 	$tmp = $tmp->new (revision => undef);
@@ -98,7 +118,21 @@ Store a SVK::Patch object to file.
 sub store {
     my ($self, $file) = @_;
     my $store = bless {map {m/^_/ ? () : ($_ => $self->{$_})} keys %$self}, ref ($self);
-    write_file( $file, encode_base64(compress (nfreeze ($store))) );
+
+    local $ENV{SVKDIFF} = '';
+    $self->view(\(my $output));
+
+    write_file(
+        $file, join("\n", 
+            $output,
+            '==== BEGIN SVK PATCH BLOCK ====',
+            "Version: svk $SVK::VERSION ($^O)",
+            '',
+            encode_base64(compress (freeze ($store))).
+            '==== END SVK PATCH BLOCK ====',
+            ''
+        )
+    );
 }
 
 =head2 editor
@@ -114,7 +148,7 @@ sub editor {
 }
 
 sub _path_attribute_text {
-    my ($self, $type) = @_;
+    my ($self, $type, $no_label) = @_;
     # XXX: check if source / target is updated
     my ($local, $mirrored, $updated);
     if (my $target = $self->{"_$type"}) {
@@ -122,29 +156,44 @@ sub _path_attribute_text {
 	    ++$local;
 	}
 	else {
-	    ++$mirrored;
+            my ($repos, $path) = @$target{qw/repos path/};
+            (undef, $mirrored) = resolve_svm_source(
+                $repos, find_svm_source($repos, $path)
+            );
 	}
     }
-    return join(
+    my $label = $no_label ? '' : join(
 	' ', '',
 	($local ? '[local]' : ()),
 	($mirrored ? '[mirrored]' : ()),
 	($self->{"_${type}_updated"} ? '[updated]' : ())
     );
+    $label .= "\n        ($mirrored->{source})" if $mirrored;
+    return $label;
 }
 
 sub view {
-    my ($self) = @_;
+    my ($self, $output) = @_;
     my $fs = $self->{_repos}->fs;
-    print "=== Patch <$self->{name}> level $self->{level}\n";
-    print "Source: ".join(':', @{$self->{source}}{qw/uuid path rev/}).
-	$self->_path_attribute_text ('source')."\n";
-    print "Target: ".join(':', @{$self->{target}}{qw/uuid path rev/}).
-	$self->_path_attribute_text ('target')."\n";
-    print "Log:\n".$self->{log}."\n";
 
     die loc("Target not local nor mirrored, unable to view patch.\n")
 	unless $self->{_target};
+
+    my $header = join("\n",
+        "==== Patch <$self->{name}> level $self->{level}",
+        "Source: ".join(':', @{$self->{source}}{qw/uuid path rev/}).
+                   $self->_path_attribute_text ('source', $output),
+        "Target: ".join(':', @{$self->{target}}{qw/uuid path rev/}).
+                   $self->_path_attribute_text ('target', $output),
+        "Log:", $self->{log}, ''
+    );
+
+    if ($output) {
+        $$output .= $header;
+    }
+    else {
+        print $header;
+    }
 
     my $baseroot = $self->{_target}->root;
     my $anchor = $self->{_target}->path;
@@ -160,6 +209,7 @@ sub view {
 	    llabel => "revision $self->{target}{rev}",
 	    rlabel => "patch $self->{name} level $self->{level}",
 	    external => $ENV{SVKDIFF},
+            output => $output,
 	  ));
 }
 

@@ -43,9 +43,11 @@ sub apply_textdelta {
 	    $is_text = !$basetype || mimetype_is_text ($basetype);
 	}
 	unless ($is_text) {
-	    print "=== $path\n";
-	    print '=' x 66,"\n";
-	    print loc("Cannot display: file marked as a binary type.\n");
+	    $self->_print (
+                "=== $path\n",
+                '=' x 66, "\n",
+                loc("Cannot display: file marked as a binary type.\n")
+            );
 	    return undef;
 	}
     }
@@ -90,7 +92,7 @@ sub close_file {
 	else {
 	    my @content = ($base, \$self->{info}{$path}{new});
 	    @content = reverse @content if $self->{reverse};
-	    output_diff ($rpath, @label, @showpath, @content);
+	    $self->output_diff ($rpath, @label, @showpath, @content);
 	}
     }
 
@@ -104,27 +106,29 @@ sub _full_label {
 }
 
 sub output_diff {
-    my ($path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
+    my ($self, $path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
 
     # XXX: this slurp is dangerous. waiting for streamy svndiff routine
     local $/;
     $ltext = \<$ltext> if ref ($ltext) && ref ($ltext) ne 'SCALAR';
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
-    print "=== $path\n";
-    print '=' x 66,"\n";
-    print "--- "._full_label ($path, $lpath, $llabel)."\n";
-    print "+++ "._full_label ($path, $rpath, $rlabel)."\n";
-    print Text::Diff::diff ($ltext, $rtext);
+    $self->_print (
+        "=== $path\n",
+        '=' x 66, "\n",
+        "--- "._full_label ($path, $lpath, $llabel), "\n",
+        "+++ "._full_label ($path, $rpath, $rlabel), "\n",
+        Text::Diff::diff ($ltext, $rtext)
+    );
 }
 
 sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
 	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
-	print "\n", loc("Property changes on: %1\n", $rpath), ('_' x 67), "\n";
+	$self->_print("\n", loc("Property changes on: %1\n", $rpath), ('_' x 67), "\n");
 	for (sort keys %{$self->{info}{$path}{prop}}) {
-	    print loc("Name: %1\n", $_);
+	    $self->_print(loc("Name: %1\n", $_));
 	    my $baseprop;
 	    $baseprop = $self->{cb_baseprop}->($path, $_)
 		unless $self->{info}{$path}{added};
@@ -133,10 +137,11 @@ sub output_prop_diff {
                 map { (length || /\n$/) ? "$_\n" : $_ }
                     ($baseprop||''), ($self->{info}{$path}{prop}{$_}||'');
             @args = reverse @args if $self->{reverse};
-	    print Text::Diff::diff (@args,
-				    { STYLE => 'SVK::Editor::Diff::PropDiff' });
+	    $self->_print(
+                Text::Diff::diff (@args, { STYLE => 'SVK::Editor::Diff::PropDiff' })
+            );
 	}
-	print "\n";
+	$self->_print("\n");
     }
 }
 
@@ -181,6 +186,12 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self, @arg) = @_;
+}
+
+sub _print {
+    my $self = shift;
+    $self->{output} or return print @_;
+    ${ $self->{output} } .= $_ for @_;
 }
 
 package SVK::Editor::Diff::PropDiff;
