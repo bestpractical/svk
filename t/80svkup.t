@@ -21,7 +21,7 @@ my $svkupd_pid;
 {
     $svkupd_pid = fork();
     unless ( $svkupd_pid ) {
-	exec ($^X, '-Ilib', 'bin/svkupd', '--depot', $repospath)
+	exec ($^X, (map "-I$_", @INC), 'bin/svkupd', '--depot', $repospath)
 	    or die "$!";
     }
 }
@@ -52,7 +52,7 @@ is_file_content ("$copath/me", "first line in me\n2nd line in me\n");
 
 sub run_svkup {
 #    my ($path, $target) = @_;
-    system ($^X, '-Ilib', 'bin/svkup', 'localhost', @_);
+    system ($^X, (map "-I$_", @INC), 'bin/svkup', 'localhost', @_);
 #    print `$^X -Ilib bin/svkup localhost $path $target`;
 }
 
