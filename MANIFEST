@@ -103,6 +103,7 @@ t/07smerge-external.t
 t/07smerge-file.t
 t/07smerge-foreign.t
 t/07smerge-incremental.t
+t/07smerge-log.t
 t/07smerge-moved.t
 t/07smerge-multi.t
 t/07smerge-to-from.t

@@ -116,7 +116,7 @@ sub run {
 	     base => $src->new (revision => $baserev), target => '');
     }
 
-    $self->get_commit_message ($self->{log} ? $merge->log : '')
+    $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
 	unless $dst->{copath};
 
     $merge->{notify} = SVK::Notify->new_with_report

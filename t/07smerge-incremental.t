@@ -34,7 +34,7 @@ append_file ("$copath/Q/qz", "modified on local branch\n");
 $svk->commit ('-m', 'commit on local branch', $copath);
 
 is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
-	   ['Auto-merging (3, 6) /l to /m (base /m:3).',
+	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
 	    'Incremental merge not guaranteed even if check is successful',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'Checking against mirrored directory locally.',
@@ -43,11 +43,11 @@ is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 	    'New merge ticket: '.$repos->fs->get_uuid.':/l:6']);
 
 is_output ($svk, 'smerge', ['-I', '//l', '//m'],
-	   ['Auto-merging (3, 6) /l to /m (base /m:3).',
-	    '===> Auto-merging (3, 4) /l to /m (base /m:3).',
+	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
+	    '===> Auto-merging (0, 4) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    "Empty merge.",
-	    '===> Auto-merging (3, 5) /l to /m (base /m:3).',
+	    '===> Auto-merging (0, 5) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'U   Q/qu',
 	    'New merge ticket: '.$repos->fs->get_uuid.':/l:5',

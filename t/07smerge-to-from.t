@@ -41,7 +41,7 @@ is_output ($svk, 'smerge', ['-m', 'merging to local', '--to', '//local'],
 $svk->rm ('-m', 'rm B on local', '//local/B');
 
 is_output ($svk, 'smerge', ['-m', 'merging from local', '--from', '//local'], 
-                ["Auto-merging (4, 7) /local to /trunk (base /trunk:4).",
+                ["Auto-merging (0, 7) /local to /trunk (base /trunk:4).",
                  "D   B",
                  "New merge ticket: $uuid:/local:7",
                  "Committed revision 8."]);

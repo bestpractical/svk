@@ -63,14 +63,14 @@ is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
 is_output ($svk, 'smerge', ['-C', '//l', '//m'],
-	   ['Auto-merging (3, 5) /l to /m (base /m:3).',
+	   ['Auto-merging (0, 5) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'Checking against mirrored directory locally.',
 	    'U   Q/qu',
 	    "New merge ticket: $uuid:/l:5"], 'check merge up');
 
 is_output ($svk, 'smerge', ['-C', '//l', '//m/'],
-	   ['Auto-merging (3, 5) /l to /m (base /m:3).',
+	   ['Auto-merging (0, 5) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'Checking against mirrored directory locally.',
 	    'U   Q/qu',
@@ -91,7 +91,7 @@ is_deeply ($xd->do_proplist (SVK::Target->new
 $rev = $repos->fs->youngest_rev;
 
 is_output ($svk, 'smerge', ['-m', 'simple smerge from local', '//l', '//m'],
-	   ['Auto-merging (6, 7) /l to /m (base /m:6).',
+	   ['Auto-merging (0, 7) /l to /m (base /m:6).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'U   Q/qu',
 	    "New merge ticket: $uuid:/l:7",
@@ -113,10 +113,11 @@ is_deeply ($xd->do_proplist (SVK::Target->new
 
 $svk->smerge ('-C', '//m', '//l');
 is_output ($svk, 'smerge', ['-m', 'mergedown', '//m', '//l'],
-	   ['Auto-merging (7, 8) /m to /l (base /l:7).',
+	   ['Auto-merging (6, 8) /m to /l (base /l:7).',
 	    'Empty merge.'], 'merge down - empty');
+$svk->pl ('-v', '//m');
 is_output ($svk, 'smerge', ['-m', 'mergedown', '//m', '//l'],
-	   ['Auto-merging (7, 8) /m to /l (base /l:7).',
+	   ['Auto-merging (6, 8) /m to /l (base /l:7).',
 	    'Empty merge.'], 'merge up - empty');
 $svk->update ($scopath);
 append_file ("$scopath/A/be", "more modification on trunk\n");
@@ -142,7 +143,7 @@ append_file ("$copath/Q/qu", "modified on local\n");
 $svk->rm ("$copath/Q/qz");
 $svk->commit ('-m', 'commit on local', $copath);
 is_output ($svk, 'smerge', ['-C', '//m', '//l'],
-	   ['Auto-merging (7, 9) /m to /l (base /l:7).',
+	   ['Auto-merging (6, 9) /m to /l (base /l:7).',
 	    ' U  Q/qu',
 	    '    Q/qz - skipped',
 	    'C   be',
@@ -155,7 +156,7 @@ is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 	   'smerge - added file collision');
 $svk->smerge ('-C', '//m', $copath);
 is_output ($svk, 'smerge', ['//m', $copath],
-	   ['Auto-merging (7, 9) /m to /l (base /l:7).',
+	   ['Auto-merging (6, 9) /m to /l (base /l:7).',
 	    __" U  $copath/Q/qu",
 	    __"    $copath/Q/qz - skipped",
 	    __"C   $copath/be",
