@@ -31,7 +31,7 @@ sub run {
             $parser->output_string(\$buf);
             $parser->parse_file($fh);
 
-            $buf =~ s/^NAME\s+SVK::Help::(.+)\s+DESCRIPTION/    $1:/;
+            $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
             require Encode;
             print Encode::encode($self->_find_encoding, $buf);

@@ -51,12 +51,7 @@ variable to your preferred svk depot path.
 
 my $cmd = shift;
 
-unless ($cmd) {
-    print loc("Type 'svk help' for usage.\n");
-    exit 0;
-}
-
-if ($cmd eq 'help' or $cmd eq '--help') {
+if (!$cmd or $cmd =~ /^-{0,2}[Hh](?:elp)?$/) {
     SVK::Command->invoke (undef, 'help', undef, @ARGV);
     exit 0;
 }
