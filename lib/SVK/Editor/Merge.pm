@@ -5,6 +5,7 @@ our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
+use IO::Digest;
 
 =head1 NAME
 
@@ -306,6 +307,7 @@ sub close_file {
     $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
+    my $iod;
 
     no warnings 'uninitialized';
     # let close_directory reports about its children
@@ -324,8 +326,7 @@ sub close_file {
 	$fh->{base}[1] = '/dev/null' if $info->{addmerge};
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
-	# XXX: why do in-memory here? use some tee'ed io to get md5 upon written.
-	open my $mfh, '+>', \ (my $merged);
+	my $mfh = tmpfile ('merged-');
 	SVN::Core::diff_file_output_merge
 		( $mfh, $diff,
 		  (map {
@@ -339,37 +340,40 @@ sub close_file {
 
 	my $conflict = SVN::Core::diff_contains_conflicts ($diff);
 	my $mfn;
-        $self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
 	if ($conflict && $self->{external}) {
 	    $mfn = tmpfile ('merged-', OPEN => 0);
+	    # maybe some message here
+	    print "Invoking external merge tool for $path.\n";
 	    system (split (' ', $self->{external}),
 		    "$path (YOURS)", $fh->{local}[1],
 		    "$path (BASE)", $fh->{base}[1],
 		    "$path (THEIRS)", $fh->{new}[1],
-		    $mfn,
+		    $mfn
 		    );
-	    die "$path not merged" unless -e $mfn;
-	    # XXX: eol layer here?
-	    open $mfh, '<:raw', $mfn or die $!;
-	    $checksum = md5 ($mfh);
-	    $conflict = 0;
+	    if (-e $mfn) {
+		open $mfh, '<:raw', $mfn or die $!;
+		$conflict = 0;
+	    }
+	    else {
+		print "$path not merged.\n"
+	    }
 	}
-	else {
-	    $checksum = md5_hex ($merged);
-	}
+
+	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
+	seek $mfh, 0, 0;
+	$iod = IO::Digest->new ($mfh, 'MD5');
 
 	my $handle = $self->{storage}->
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
 			     $pool);
 
 	if ($handle && $#{$handle} >= 0) {
-	    seek $mfh, 0, 0;
-	    seek $fh->{local}[0], 0, 0;
 	    if ($self->{send_fulltext}) {
 		SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
 			if $handle && $#{$handle} >= 0;
 	    }
 	    else {
+		seek $fh->{local}[0], 0, 0;
 		my $txstream = SVN::TxDelta::new
 		    ($fh->{local}[0], $mfh, $pool);
 		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool)
@@ -394,7 +398,7 @@ sub close_file {
     $self->{notify}->flush ($path, 1);
     $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, $pool)
 	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
-
+    $checksum = $iod->hexdigest if $iod;
     $self->ensure_close ($path, $checksum, $pool);
 }
 
