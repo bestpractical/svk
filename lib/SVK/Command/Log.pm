@@ -77,8 +77,8 @@ sub _get_logs {
 	$callback->($rev, $root, $changed, $props);
     };
 
-    my $pool = SVN::Pool->new_default;
     my $hist = $root->node_history ($path);
+    my $pool = SVN::Pool->new_default;
     while (($hist = $hist->prev ($cross)) && $limit--) {
 	my $rev = ($hist->location)[1];
 	next if $rev > $fromrev;

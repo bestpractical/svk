@@ -133,8 +133,7 @@ sub run {
 	my $hist = $src->root->node_history ($src->{path});
 	my $spool = SVN::Pool->new_default;
 	while ($hist = $hist->prev (0)) {
-	    my ($rpath, $rev) = $hist->location;
- 	    last if $rpath ne $src->{path};
+	    my $rev = ($hist->location)[1];
 	    last if $rev <= $merge->{fromrev};
 	    unshift @rev, $rev;
 	    $spool->clear;

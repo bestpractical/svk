@@ -109,10 +109,10 @@ sub recover_headrev {
     my ($self, $target, $m) = @_;
 
     my $fs = $m->{fs};
-    my $pool = SVN::Pool->new_default ($m->{pool});
     my $hist = $fs->revision_root ($fs->youngest_rev)->
         node_history ($m->{target_path});
 
+    my $pool = SVN::Pool->new_default ($m->{pool});
     my ($props, $headrev, $rev, $firstrev, $skipped, $uuid, $rrev);
     while ($hist = $hist->prev (1)) {
         $rev = ($hist->location)[1];
@@ -130,6 +130,7 @@ sub recover_headrev {
             undef $headrev;
         }
         $skipped++;
+	$pool->clear;
     }
 
     if (!$headrev) {

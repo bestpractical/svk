@@ -181,10 +181,10 @@ sub copy_ancestors {
     my $root = $fs->revision_root ($rev);
     $rev = $root->node_created_rev ($path);
 
-    my $spool = SVN::Pool->new_default_sub;
     my ($found, $hitrev, $source) = (0, 0, '');
     my $myuuid = $fs->get_uuid ();
     my $hist = $root->node_history ($path);
+    my $spool = SVN::Pool->new_default_sub;
     my ($hpath, $hrev);
 
     while ($hist = $hist->prev (1)) {
