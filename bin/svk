@@ -712,6 +712,25 @@ sub do_log {
 
 }
 
+=head2 describe (desc)
+
+Describe a change.
+
+  usage: describe [REVISION]
+
+=cut
+
+sub describe {
+    local @ARGV = @_;
+    my ($rev) = (@ARGV);
+
+    &log ('-r', $rev, '//');
+    &diff ('-r', ($rev-1).":$rev", '//');
+}
+
+
+
+
 =head2 commit (ci)
 
 Commit changes to depot.
