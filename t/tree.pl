@@ -8,6 +8,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use File::Path;
+use File::Temp;
 use SVK;
 use SVK::XD;
 use SVK::Util qw( catdir tmpdir abs_path $SEP $EOL IS_WIN32 );
@@ -288,6 +289,30 @@ sub uri {
     my $file = shift;
     $file =~ s{^|\\}{/}g if IS_WIN32;
     return "file://$file";
+}
+
+my @unlink;
+sub set_editor {
+    my $tmp = File::Temp->new( SUFFIX => '.pl', UNLINK => 0 );
+    print $tmp $_[0];
+    $tmp->close;
+
+    my $perl = $^X;
+    my $tmpfile = $tmp->filename;
+
+    if (defined &Win32::GetShortPathName) {
+	$perl = Win32::GetShortPathName($perl);
+	$tmpfile = Win32::GetShortPathName($tmpfile);
+    }
+
+    chmod 0755, $tmpfile;
+    push @unlink, $tmpfile;
+
+    $ENV{SVN_EDITOR} = "$perl $tmpfile";
+}
+
+END {
+    unlink $_ for @unlink;
 }
 
 1;
