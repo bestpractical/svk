@@ -1198,7 +1198,8 @@ sub get_keyword_layer {
 	Change		    Rev
 	File		    URL
 	DateTime	    Date
-	Revision	    FileRev
+	Revision	    Rev
+	FileRevision	    FileRev
     );
 
     $kmap{$_} = $kmap{$kalias{$_}} for keys %kalias;
