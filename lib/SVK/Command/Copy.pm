@@ -60,9 +60,10 @@ sub handle_co_item {
     my $xdroot = $dst->root ($self->{xd});
     die loc ("Path %1 does not exist.\n", $src->{path})
 	if $src->root->check_path ($src->{path}) == $SVN::Node::none;
-    die loc ("Path %1 already exists.\n", $dst->{copath})
-	if -e $dst->{copath};
     my ($copath, $report) = @{$dst}{qw/copath report/};
+    die loc ("Path %1 already exists.\n", $copath)
+	if -e $copath;
+    my $entry = $self->{xd}{checkout}->get ($copath);
     $src->normalize;
     $src->anchorify; $dst->anchorify;
     # if SVK::Merge could take src being copath to do checkout_delta
@@ -74,7 +75,8 @@ sub handle_co_item {
 
     $self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
 							'.newprop' => undef});
-    $self->{xd}{checkout}->store ($copath, {'.schedule' => 'add',
+    # XXX: can the scheudle be something other than delete ?
+    $self->{xd}{checkout}->store ($copath, {'.schedule' => $entry->{'.schedule'} ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
 					    '.copyfrom_rev' => $src->{revision}});
