@@ -9,7 +9,30 @@ use SVK::Util qw(get_buffer_from_editor get_prompt);
 use YAML;
 use File::Path;
 
+sub options {
+    ('l|list' => 'list');
+}
+
 sub run {
+    my ($self) = @_;
+    return $self->_do_list() if($self->{list});
+    $self->_do_edit();
+}
+
+sub _do_list {
+    my ($self) = @_;
+    my $map = $self->{xd}{depotmap};
+    local $\ = "\n";
+    my $fmt = "%-20s %-s\n";
+    printf($fmt,'Depot','Path');
+    print '=' x 60;
+    for(keys %$map) {
+	printf($fmt,"/$_/",$map->{$_});
+    }
+    print '=' x 60;
+}
+
+sub _do_edit {
     my ($self) = @_;
     my $sep = '===edit the above depot map===';
     my $map = YAML::Dump ($self->{xd}{depotmap});
@@ -47,21 +70,25 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
 =head1 SYNOPSIS
 
-    depotmap
+    depotmap [OPTIONS]
+
+=head1 OPTIONS
+
+    options:
+    -l [--list]:    List current depot mapping
 
 =head1 DESCRIPTION
+
+Run this command with any options would bring up your $EDITOR,
+and let you edit your depot-directory mapping.
 
 Each line contains a map entry, the format is:
 
  depotname: 'path/to/repos'
 
-The depotname could be used in DEPOTPATH as
+The depotname could be used to refer to a DEPOTPATH as
 
  /depotname/path/in/repos
-
-=head1 OPTIONS
-
-   None
 
 =head1 AUTHORS
 
