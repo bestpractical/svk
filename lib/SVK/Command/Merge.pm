@@ -46,20 +46,11 @@ sub parse_arg {
     }
 
     my $target1 = $self->arg_co_maybe ($arg[0] || "");
-    my $merge = SVK::Merge->new (%$target1);
+    my $target2 = $target1->copied_from;
 
-    # evil trick to take the first element from the array
-    my ($ancestor) = $merge->copy_ancestors ($target1->{repos}, 
-        $target1->{path}, $target1->{revision}, 1);
-
-    if (!defined ($ancestor)) {
+    if (!defined ($target2)) {
         die loc ("This path has not been branched.\n");
     }
-
-    my $target2 = $target1->new (path => (split (/:/, $ancestor))[1]);
-
-    # make a depot path
-    $target2->depotpath();
 
     if ($self->{from}) {
         return ($target1, $target2);

@@ -4,7 +4,7 @@ require Test::More;
 require 't/tree.pl';
 use Test::More;
 eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
-plan tests => 13;
+plan tests => 14;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -72,7 +72,17 @@ $svk->copy ('-m', 'branch in source', '/test/A', '/test/A-98');
 $svk->copy ('-m', 'branch in source', '/test/A-98', '/test/A-99');
 
 $svk->mirror ('//m-99', "$uri/A-99");
-$svk->sync ('//m-99');
+$svk->copy ('-m', 'make a copy', '//m-99', '//m-99-copy');
+
+my ($copath2, $corpath2) = get_copath ('svm2');
+$svk->checkout ('//m-99-copy', $copath2);
+is_output($svk, 'update', ['--sync', '--merge', $copath2], [
+            "Syncing $uri/A-99",
+            'Retrieving log information from 1 to 28',
+            'Committed revision 12 from revision 28.',
+            'Auto-merging (10, 10) /m-99 to /m-99-copy (base /m-99:10).',
+            'Empty merge.',
+            "Syncing //m-99-copy(/m-99-copy) in $corpath2 to 11."]);
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 # has some output
@@ -87,7 +97,7 @@ is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');
 
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-	   ['Committed revision 12.', 'Committed revision 13.']);
+	   ['Committed revision 13.', 'Committed revision 14.']);
 
 is_output_like ($svk, 'mirror', ['--delete', '//l'],
 		qr"not a mirrored", '--delete on non-mirrored path');
@@ -96,7 +106,7 @@ is_output_like ($svk, 'mirror', ['--delete', '//m/T'],
 		qr"inside", '--delete inside a mirrored path');
 
 is_output_like ($svk, 'mirror', ['--delete', '//m'],
-		qr"Committed revision 14.", '--delete on mirrored path');
+		qr"Committed revision 15.", '--delete on mirrored path');
 
 is_output_like ($svk, 'mirror', ['--delete', '//m'],
 		qr"not a mirrored", '--delete on non-mirrored path');

@@ -7,8 +7,10 @@ use SVK::XD;
 use SVK::I18N;
 
 sub options {
-    ('r|revision=i'   => 'rev',
-     'N|non-recursive' => 'nonrecursive');
+    ('r|revision=i'    => 'rev',
+     'N|non-recursive' => 'nonrecursive',
+     's|sync'          => 'sync',
+     'm|merge'         => 'merge');
 }
 
 sub parse_arg {
@@ -33,6 +35,24 @@ sub run {
 	      $self->{rev} : $target->{repos}->fs->youngest_rev,
 	      copath => undef
 	    );
+
+        my $sync_target = (
+            $self->{merge} ? $update_target->copied_from : $update_target
+        );
+
+        if ($self->{sync}) {
+            require SVK::Command::Sync;
+            my $sync = SVK::Command::Sync->new;
+            %$sync = (%$self, %$sync);
+            $sync->run($sync_target);
+        }
+
+        if ($self->{merge}) {
+            require SVK::Command::Smerge;
+            my $smerge = SVK::Command::Smerge->new;
+            %$smerge = ( message => '', log => 1, %$self, %$smerge);
+            $smerge->run($sync_target => $update_target);
+        }
 
 	$self->do_update ($target, $update_target);
     }
@@ -96,6 +116,8 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -N [--non-recursive]   : do not descend recursively
+ -s [--sync]            : synchronize mirrored targets before update
+ -m [--merge]           : star merge from copied source before update
 
 =head1 DESCRIPTION
 
@@ -115,6 +137,10 @@ action taken. These characters have the following meaning:
 A character in the first column signifies an update to the actual
 file, while updates to the file's props are shown in the second
 column.
+
+If both C<--sync> and C<--merge> are specified, like in C<svk up -sm>,
+it will first synchronize the mirrored copy source path, and then smerge
+from it.
 
 =head1 AUTHORS
 

@@ -174,6 +174,21 @@ sub contains_copath {
     return 0;
 }
 
+sub copied_from {
+    my $self = shift;
+    my $merge = SVK::Merge->new (%$self);
+
+    # evil trick to take the first element from the array
+    my ($ancestor) = $merge->copy_ancestors (@{$self}{qw( repos path revision )}, 1);
+    return undef if !$ancestor;
+
+    my $target = $self->new (path => (split (/:/, $ancestor))[1]);
+
+    # make a depot path
+    $target->depotpath;
+
+    return $target;
+}
 
 =head1 AUTHORS
 
