@@ -1,9 +1,25 @@
-[Changes for 0.11 - ]
+[Changes for 0.11 - 14 Mar, 2004]
 
-* WANRING * Checkout path schedules incompatible with previous version.
-            Do commit or revert your checkout paths before upgrading.
+***WANRING*** 
+
+Checkout path schedules incompatible with previous versions of SVK. Do
+commit or revert your checkouts before upgrading.
+
+***WANRING*** 
 
 * Fine-grained copath locking.
+
+* Basic commit signing support with merge -s or commit -s.
+
+* When a file is locally modified, merging prop-change on file results 
+  in incorrect checksum. [#2322]
+
+* Fix an incorrect live time of SVN::Stream, which causes crash on OS X.
+  [Matthijs van Duin]
+
+* Help system improvements. [Jesse Vincent]
+
+* ls -R. [hcchien]
 
 * Misc performance enhancements.
 

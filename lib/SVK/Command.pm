@@ -2,8 +2,10 @@ package SVK::Command;
 use strict;
 our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case);
-use Pod::Simple::SimpleTree;
-use Pod::Text;
+# XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
+use SVN::Simple::Edit;
+use Pod::Simple::SimpleTree ();
+use Pod::Text ();
 use File::Find ();
 use Cwd;
 
