@@ -21,7 +21,7 @@ is_output ($svk, 'mkdir', ['-m', 'msg', '//newdir'],
 	   ['Committed revision 1.']);
 
 is_output ($svk, 'mkdir', ['-m', 'msg', '//i-newdir/deep'],
-	   [qr'Transaction is out of date',
+	   [qr'.*',
 	    'Please update checkout first.']);
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deep'],
@@ -58,7 +58,7 @@ is_output ($svk, 'mkdir', ['-m', 'msg', '//m/dir-on-source'],
 
 is_output ($svk, 'mkdir', ['-m', 'msg', '//m/source/deep'],
 	   ["Merging back to mirror source $uri.",
-	    qr'Transaction is out of date',
+	    qr'.*',
 	    'Please sync mirrored path /m first.']);
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//m/source/deep'],

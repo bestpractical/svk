@@ -192,7 +192,9 @@ sub get_editor {
     }
 
     unless ($self->{check_only}) {
-	for ($SVN::Error::FS_TXN_OUT_OF_DATE, $SVN::Error::FS_ALREADY_EXISTS) {
+	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
+	     $SVN::Error::FS_ALREADY_EXISTS,
+	     $SVN::Error::FS_NOT_DIRECTORY) {
 	    # XXX: there's no copath info here
 	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");
