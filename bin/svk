@@ -1063,10 +1063,15 @@ sub find_merge_info {
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
 
+    # XXX: the old code is kept for regression test. use find_merge_base
+    # directly once we're confident.
     my ($mpsrc, $mpdst) = (find_merge_history ($repos, $src, $dst),
 			   find_merge_history ($repos, $dst, $src));
 
-    my ($bpsrc, $bpdst) = find_branch_point ($repos, $src, $dst);
+    my ($bpsrc, $bpdst) = eval { find_branch_point ($repos, $src, $dst) };
+
+    return (find_merge_base ($repos, $src, $dst), $fs->youngest_rev)
+	if $@;
 
     unless ($mpsrc || $mpdst) {
 	return ($src, $bpsrc, $fs->youngest_rev);
@@ -1075,9 +1080,60 @@ sub find_merge_info {
     $mpsrc ||= $bpsrc;
     $mpdst ||= $bpdst;
 
-    return ($mpsrc > $mpdst ? $src : $dst,
-	    $mpsrc > $mpdst ? $mpsrc : $mpdst,
-	    $fs->youngest_rev);
+    my ($path, $rev, $torev) = ($mpsrc > $mpdst ? $src : $dst,
+				$mpsrc > $mpdst ? $mpsrc : $mpdst,
+				$fs->youngest_rev);
+    my ($basepath, $baserev) = find_merge_base ($repos, $src, $dst);
+    die "sm base regression, was $path:$rev, now $basepath:$baserev"
+	unless $path eq $basepath && $rev == $baserev;
+    return ($path, $rev, $torev);
+}
+
+sub find_merge_base {
+    my ($repos, $src, $dst) = @_;
+    my $srcinfo = find_merge_sources ($repos, $src);
+    my $dstinfo = find_merge_sources ($repos, $dst);
+    my ($basepath, $baserev);
+
+    for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}} (keys %{{%$srcinfo,%$dstinfo}})) {
+	my ($path) = m/:(.*)$/;
+	my $rev = $srcinfo->{$_} < $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
+	# XXX: shuold compare revprop svn:date instead, for old dead branch being newly synced back
+	if (!$basepath || $rev > $baserev) {
+	    ($basepath, $baserev) = ($path, $rev);
+	}
+    }
+    return ($basepath, $baserev);
+    warn "merge base $basepath, $baserev";
+}
+
+sub find_merge_sources {
+    my ($repos, $path, $verbatim) = @_;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+    my $minfo = $root->node_prop ($path, 'svk:merge');
+    my $myuuid = $fs->get_uuid ();
+    if ($minfo) {
+	$minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
+			my $m;
+			($verbatim || ($uuid eq $myuuid)) ? ("$uuid:$path" => $rev) :
+			    ($svn_mirror && ($m = SVN::Mirror::has_local ($repos, "$uuid:$path"))) ?
+				("$myuuid:$m->{target_path}" => $m->find_local_rev ($rev)) : ()
+			    } split ("\n", $minfo) };
+    }
+    $minfo->{join(':', $myuuid, $path)} = $fs->youngest_rev;
+
+    my $hist = $root->node_history ($path);
+    while ($hist = $hist->prev (1)) {
+	my ($hpath, $rev) = $hist->location ();
+	if ($hpath ne $path) {
+	    my $source = join(':', $fs->get_uuid (), $hpath);
+	    $minfo->{$source} = $rev
+		unless $minfo->{$source} && $minfo->{$source} > $rev;
+	    last;
+	}
+    }
+    return $minfo;
 }
 
 sub resolve_svm_source {
@@ -1105,16 +1161,25 @@ sub resolve_svm_source {
 }
 
 sub get_new_ticket {
-    my ($root, $dst, $uuid, $path, $rev) = @_;
+    my ($repos, $src, $dst) = @_;
 
-    my $minfo = $root->node_prop ($dst, 'svk:merge') || '';
+    my $srcinfo = find_merge_sources ($repos, $src);
+    my $dstinfo = find_merge_sources ($repos, $dst);
+    my $newinfo;
 
-    $minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
-		    ("$uuid:$path" => $rev);
-		} split ("\n", $minfo) };
-    $minfo->{"$uuid:$path"} = $rev;
+    # bring merge history up to date as from source
+    my $myuuid = $repos->fs->get_uuid ();
 
-    return join ("\n", map {"$_:$minfo->{$_}"} sort keys %$minfo);
+    for (keys %{{%$srcinfo,%$dstinfo}}) {
+	next if $_ eq "$myuuid:$dst";
+	$newinfo->{$_} = $srcinfo->{$_};
+	$newinfo->{$_} = $dstinfo->{$_}
+	    if $dstinfo->{$_} && $dstinfo->{$_} > $newinfo->{$_};
+	print "new merge ticket: $_:$newinfo->{$_}\n"
+	    if !$dstinfo->{$_} || $newinfo->{$_} > $dstinfo->{$_};
+    }
+
+    return join ("\n", map {"$_:$newinfo->{$_}"} sort keys %$newinfo);
 }
 
 sub log_for_merge {
@@ -1158,17 +1223,10 @@ sub merge {
 	($base_path, $fromrev, $torev) =
 	    find_merge_info ($repos, $path, $dpath);
 	print "auto merge ($fromrev, $torev) $path -> $dpath (base $base_path)\n";
-	# XXX: resolve the uuid and torev with source path (see if it's svm'ed)
-	my ($uuid, $path, $rev) = resolve_svm_source ($repos, $path);
-	print "merge ticket: $uuid:$path:$rev\n" unless $no_ticket;
-	# XXX: cb_merged for XD
-	my $root = $repos->fs->revision_root ($repos->fs->youngest_rev);
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
-			   # XXX: have to be multiple-safe
 			   $editor->change_dir_prop
 			       ($baton, 'svk:merge',
-				get_new_ticket ($root, $dpath, $uuid,
-						$path, $rev));
+				get_new_ticket ($repos, $path, $dpath));
 		       } unless $no_ticket;
     }
 
@@ -1176,10 +1234,7 @@ sub merge {
 	$message = get_buffer_from_editor
 	    ('log message', $target_prompt,
 	     ($log ?
-	      log_for_merge ($repos, $path,
-			     (find_merge_history ($repos, $path, $dpath) ||
-			      (find_branch_point ($repos, $src, $dst))[0])+1,
-			     $torev) : '').
+	      log_for_merge ($repos, $path, $fromrev+1, $torev) : '').
 	     "\n$target_prompt\n", "svk-commitXXXXX");
     }
 

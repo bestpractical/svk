@@ -607,7 +607,7 @@ sub do_merge {
 	($txn, $xdroot) = create_xd_root ($info, (%arg, path => $arg{dpath}));
     }
     else {
-	$xdroot = $fs->revision_root ($arg{fromrev});
+	$xdroot = $fs->revision_root ($arg{torev});
     }
 
     $findanchor = 1
