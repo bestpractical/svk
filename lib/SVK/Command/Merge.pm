@@ -134,6 +134,7 @@ merge -r N:M DEPOTPATH1 DEPOTPATH2
  -a [--auto]:               automatically find merge points
  -l [--log]:                brings the logs of merged revs to the message buffer
  --no-ticket:               don't associate the ticket tracking merge history
+ --track-rename:            track the changes made to renamed node
  --force:                   Needs description
  -s [--sign]:               Needs description
 

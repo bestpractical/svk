@@ -1,5 +1,5 @@
-#!/usr/bin/perl
-use Test::More tests => 15;
+#!/usr/bin/perl -w
+use Test::More tests => 17;
 use strict;
 use File::Path;
 use Cwd;
@@ -115,3 +115,19 @@ is_output ($svk, 'merge', ['--track-rename', '-r10:11', '//trunk', $copath],
 
 is_output ($svk, 'status', [$copath],
 	   ["M   $copath/A/deep/test.pl"], 'merge renamed entries to checkout');
+
+$svk->revert ('-R', $copath);
+$svk->mkdir ('-m', 'new', "//trunk/A/new");
+$svk->move ('-m', 'move normal to descent', "//trunk/A/deep.new", '//trunk/A/new/deep.new');
+$svk->move ('-m', 'move normal to descent', "//trunk/A/normal", '//trunk/A/new/normal');
+$svk->switch ('//trunk', $copath);
+append_file ("$copath/A/new/deep.new/bar", "appended after rename\n");
+append_file ("$copath/A/new/normal", "appended after rename\n");
+is_output ($svk, 'commit', ['-m', 'append', $copath],
+	   ['Committed revision 15.']);
+
+is_output ($svk, 'merge', ['-C', '--track-rename', '-r14:15', '//trunk', '//trunk.new'],
+	   ['Collecting renames, this might take a while.',
+	    "U   A/new/deep.new/bar - A/deep.new/bar",
+	    "U   A/new/normal - A/normal"]);
+

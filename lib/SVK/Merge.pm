@@ -376,6 +376,7 @@ sub run {
 	  storage => $storage,
 	  notify => $notify,
 	  allow_conflicts => defined $self->{dst}{copath},
+	  open_nonexist => $self->{track_rename},
 	  cb_merged => $self->{ticket} ?
 	  sub { my ($editor, $baton, $pool) = @_;
 		my $func = $base_root->check_path ($base->path) == $SVN::Node::file ?

@@ -27,7 +27,8 @@ then the method name and its arguments.
 sub baton_at {
     my ($self, $func) = @_;
     return -1
-	if $func eq 'set_target_revision' || $func eq 'open_root' || $func eq 'close_edit';
+	if $func eq 'set_target_revision' || $func eq 'open_root' ||
+	    $func eq 'close_edit' || $func eq 'abort_edit';
     return $func =~ m/^(?:add|open|absent)/ ? 1 : 0;
 }
 

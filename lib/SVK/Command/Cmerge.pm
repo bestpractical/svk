@@ -75,23 +75,14 @@ sub run {
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
 		  @{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev);
 
-	my $editor = SVK::Editor::Merge->new
-	    ( anchor => $src->{path},
-	      base_anchor => $src->{path},
-	      base_root => $fs->revision_root ($fromrev),
-	      target => '',
-	      send_fulltext => 1,
-	      cb_exist => sub { $ceditor->cb_exist (@_) },
-	      cb_localmod => sub { $ceditor->cb_localmod (@_) },
-	      cb_rev => sub { $fs->youngest_rev },
-	      storage => $ceditor,
-	);
-
-	SVN::Repos::dir_delta ($fs->revision_root ($fromrev),
-			       $src->{path}, '',
-			       $fs->revision_root ($torev), $src->{path},
-			       $editor, undef,
-			       1, 1, 0, 1);
+	SVK::Merge->new (%$self, repos => $repos,
+			 base => $src->new (revision => $fromrev),
+			 src => $src->new (revision => $torev), dst => $dst,
+			)->run ($ceditor,
+				cb_exist => sub { $ceditor->cb_exist (@_) },
+				cb_localmod => sub { $ceditor->cb_localmod (@_) },
+				cb_rev => sub { $fs->youngest_rev },
+			       );
     }
 
     $ceditor->replay (SVN::Delta::Editor->new

@@ -59,6 +59,16 @@ External tool that would be called upon textual conflicts.
 
 The editor that will receive the merged callbacks.
 
+=item allow_conflicts
+
+Close the edito instead of abort when there are conflicts.
+
+=item open_nonexist
+
+open the directory even if cb_exist failed. This is for use in
+conjunction with L<SVK::Editor::Rename> for the case that a descendent
+exists but its parent does not.
+
 =back
 
 =head2 callbacks for local tree
@@ -387,7 +397,7 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
-#    return undef unless defined $pdir;
+    return undef unless defined $pdir;
     if ($self->{cb_exist}->($path)) {
 	$self->{notify}->flush ($path) ;
 	return undef;
@@ -403,12 +413,13 @@ sub add_directory {
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
-#    return undef unless defined $pdir;
-    unless ($self->{cb_exist}->($path)) {
-	$self->{notify}->flush ($path) ;
-	return undef;
+    unless ($self->{open_nonexist}) {
+	return undef unless defined $pdir;
+	unless ($self->{cb_exist}->($path) || $self->{open_nonexist}) {
+	    $self->{notify}->flush ($path);
+	    return undef;
+	}
     }
-
     $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);
@@ -505,7 +516,7 @@ sub _partial_delete {
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
-    return unless $self->{cb_exist}->($path);
+    return unless defined $pdir && $self->{cb_exist}->($path);
 
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
     my $torm = $self->_check_delete_conflict ($path, $rpath,
