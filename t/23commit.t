@@ -76,10 +76,11 @@ mkdir ('A/forimport');
 overwrite_file ("A/forimport/foo", "fnord");
 overwrite_file ("A/forimport/bar", "fnord");
 overwrite_file ("A/forimport/baz", "fnord");
+overwrite_file ("A/forimport/ss..", "fnord");
 
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
 			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',
-			    'A/barnew'],
+			    'A/barnew', 'A/forimport/ss..'],
 	   ['Committed revision 7.']);
 
 is_output ($svk, 'status', [],

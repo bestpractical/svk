@@ -401,7 +401,7 @@ sub abs2rel {
 
     my $rel = File::Spec::Functions::abs2rel($pathname, $old_basedir);
 
-    if (index($rel, '..') > -1) {
+    if ($rel =~ /$SEP\.\.$SEP/o) {
         $rel = $pathname;
     }
     elsif (defined $new_basedir) {
