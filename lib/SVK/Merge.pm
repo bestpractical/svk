@@ -200,8 +200,8 @@ sub copy_ancestors {
 	    $found = 1;
 	}
 	last if $found;
+	$spool->clear;
     }
-    $spool->clear;
 
     $source = '' unless $found;
     if (!$found || $hitrev != $hrev) {
