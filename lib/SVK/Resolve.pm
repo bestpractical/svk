@@ -270,8 +270,6 @@ sub DESTROY {
 
     unlink $_ for grep {defined and -f} (
         $self->{merged},
-        $self->{conflict},
-        map $self->{$_}, qw( yours theirs base ),
     );
 }
 

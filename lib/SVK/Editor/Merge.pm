@@ -96,6 +96,11 @@ Called when the merger needs to retrieve the local modification of a
 file. Return an arrayref of filename, filehandle, and md5. Return
 undef if there is no local modification.
 
+=item cb_localprop
+
+Called when the merger needs to retrieve the local modification of a
+property. Return the property value.
+
 =item cb_dirdelta
 
 When C<delete_entry> needs to check if everything to be deleted does
@@ -133,6 +138,12 @@ sub cb_for_root {
 		   return if $md5 eq $checksum;
 		   return [$root->file_contents ($path, $pool),
 			   undef, $md5];
+	       },
+	     cb_localprop =>
+	     sub { my ($path, $propname, $pool) = @_;
+		   $path = "$anchor/$path";
+		   local $@;
+		   return eval { $root->node_prop ($path, $propname, $pool) };
 	       },
 	     cb_dirdelta =>
 	     sub { my ($path, $base_root, $base_path, $pool) = @_;
@@ -202,6 +213,7 @@ sub add_file {
     }
     else {
 	++$self->{changes};
+	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, 'A');
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg);
@@ -314,6 +326,41 @@ sub apply_textdelta {
 					      $checksum, $pool);
 }
 
+sub _merge_text_change {
+    my ($self, $fh, $label, $pool) = @_;
+    my $diff = SVN::Core::diff_file_diff3
+	(map {$fh->{$_}[FILENAME]} qw/base local new/);
+    my $mfh = tmpfile ('merged-');
+    my $marker = time.int(rand(100000));
+    SVN::Core::diff_file_output_merge
+	    ( $mfh, $diff,
+	      (map {
+		  $fh->{$_}[FILENAME]
+	      } qw/base local new/),
+	      "==== ORIGINAL VERSION $label $marker",
+	      ">>>> YOUR VERSION $label $marker",
+	      "<<<< $marker",
+	      "==== THEIR VERSION $label $marker",
+	      1, 0, $pool);
+
+    my $conflict = SVN::Core::diff_contains_conflicts ($diff);
+    if (my $resolve = $self->{resolve}) {
+	$resolve->run
+	    ( fh              => $fh,
+	      mfh             => $mfh,
+	      path            => $label,
+	      marker          => $marker,
+	      # Do not run resolve for diffs with no conflicts
+	      ($conflict ? (has_conflict => 1) : ()),
+            );
+	$conflict = 0 if $resolve->{merged};
+	my $mfn = $resolve->{merged} || $resolve->{conflict};
+	open $mfh, '<:raw', $mfn or die "Cannot read $mfn: $!" if $mfn;
+    }
+    seek $mfh, 0, 0; # for skipped
+    return ($conflict, $mfh);
+}
+
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
@@ -340,43 +387,8 @@ sub close_file {
             $fh->{base}[FILENAME] = devnull;
             open $fh->{base}[FH], '<', $fh->{base}[FILENAME];
         }
-	my $diff = SVN::Core::diff_file_diff3
-	    (map {$fh->{$_}[FILENAME]} qw/base local new/);
-	my $mfh = tmpfile ('merged-');
-        my $marker = time.int(rand(100000));
-	SVN::Core::diff_file_output_merge
-		( $mfh, $diff,
-		  (map {
-		      $fh->{$_}[FILENAME]
-		  } qw/base local new/),
-                  "==== ORIGINAL VERSION $path $marker",
-                  ">>>> YOUR VERSION $path $marker",
-                  "<<<< $marker",
-                  "==== THEIR VERSION $path $marker",
-		  1, 0, $pool);
-
-        my $mfn;
-        my $conflict = SVN::Core::diff_contains_conflicts ($diff);
-
-        if (my $resolve = $self->{resolve}) {
-            $resolve->run(
-                fh              => $fh,
-                mfh             => $mfh,
-                path            => $path,
-                marker          => $marker,
-                diff            => $diff,
-
-                # Do not run resolve for diffs with no conflicts
-                ($conflict ? (has_conflict => 1) : ()),
-            );
-
-            $conflict = 0 if $resolve->{merged};
-            $mfn = $resolve->{merged} || $resolve->{conflict};
-            open $mfh, '<:raw', $mfn or die "Cannot read $mfn: $!" if $mfn;
-        }
-
+	my ($conflict, $mfh) = $self->_merge_text_change ($fh, $path, $pool);
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
-	seek $mfh, 0, 0;
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
 	my $handle = $self->{storage}->
@@ -396,8 +408,6 @@ sub close_file {
 	    }
 	}
 
-	close $mfh;
-	unlink $mfn if $mfn;
 	undef $fh->{base}[FILENAME] if $info->{addmerge};
 	$self->cleanup_fh ($fh);
 
@@ -574,27 +584,75 @@ sub delete_entry {
     ++$self->{changes};
 }
 
+sub _prop_eq {
+    my ($prop1, $prop2) = @_;
+    return 0 if defined $prop1 xor defined $prop2;
+    return defined $prop1 ? ($prop1 eq $prop2) : 1;
+}
+
+sub _merge_prop_change {
+    my $self = shift;
+    my $path = shift;
+    my $pool;
+    return unless defined $path;
+    return if $_[0] eq 'svk:merge';
+    return if $_[0] =~ m/^svm:/;
+    # special case the the root node that was actually been added
+    if ($self->{added}{$path} or
+	(!length ($path) and $self->{base_root}->is_revision_root
+	 and $self->{base_root}->revision_root_revision == 0)) {
+	$self->{notify}->prop_status ($path, 'U');
+	return 1;
+    }
+    my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
+    my $prop;
+    $prop->{new} = $_[1];
+    {
+	local $@;
+	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0]) };
+	$prop->{local} = $self->{cb_exist}->($path) ? $self->{cb_localprop}->($path, $_[0]) : undef;
+    }
+    if (_prop_eq (@{$prop}{qw/base local/})) {
+	$self->{notify}->prop_status ($path, 'U');
+    }
+    elsif (_prop_eq ($prop->{local}, $_[1])) {
+	$self->{notify}->prop_status ($path, 'g');
+    }
+    else {
+	# XXX: only known props should be auto-merged with default resolver
+	$pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
+	my $fh = { map {
+	    my $tgt = defined $prop->{$_} ? \$prop->{$_} : devnull;
+	    open my $f, '<', $tgt;
+	    ($_ => [$f, ref ($tgt) ? undef : $tgt]);
+	} qw/base new local/ };
+	$self->prepare_fh ($fh);
+	my ($conflict, $mfh) = $self->_merge_text_change ($fh, loc ("Property %1 of %2", $_[0], $path), $pool);
+
+	if (!$conflict) {
+	    local $/;
+	    $_[1] = <$mfh>;
+	}
+	if ($conflict) {
+	    $self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
+	    ++$self->{conflicts};
+	}
+	$self->{notify}->prop_status ($path, $conflict ? 'C' : 'G');
+    }
+    return 1;
+}
+
 sub change_file_prop {
     my ($self, $path, @arg) = @_;
-    return unless $path;
+    $self->_merge_prop_change ($path, @arg) or return;
     $self->ensure_open ($path);
     $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{notify}->prop_status ($path, 'U');
 }
 
 sub change_dir_prop {
     my ($self, $path, @arg) = @_;
-    # XXX: need the status-fu like files to track removed / renamed
-    # directories
-    # return unless $self->{info}{$path}{status};
-
-    # there should be a magic flag indicating if svk:merge prop should
-    # be dealt.
-    return if $arg[0] eq 'svk:merge';
-    return if $arg[0] =~ m/^svm:/;
-    $path = '' unless defined $path;
+    $self->_merge_prop_change ($path, @arg) or return;
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{notify}->prop_status ($path, 'U');
     ++$self->{changes};
 }
 

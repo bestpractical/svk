@@ -419,9 +419,9 @@ sub xd_storage_cb {
     return
 	( cb_exist => sub { my $copath = shift; my $path = $copath;
 			    $arg{get_copath} ($copath);
-			    $arg{get_path} ($path);
 			    lstat ($copath);
 			    return $SVN::Node::none unless -e _;
+			    $arg{get_path} ($path);
 			    return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
 				if $self->{checkout}->get ($copath)->{'.schedule'} or
 				    $arg{oldroot}->check_path ($path);
@@ -444,6 +444,12 @@ sub xd_storage_cb {
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
 			       return [$base, undef, $md5];
+			   },
+	  cb_localprop => sub { my ($path, $propname) = @_;
+				my $copath = $path;
+				$arg{get_copath} ($copath);
+				$arg{get_path} ($path);
+				return $self->get_props ($arg{oldroot}, $path, $copath)->{$propname};
 			   },
 	  cb_dirdelta => sub { my ($path, $base_root, $base_path, $pool) = @_;
 			       my $copath = $path;
