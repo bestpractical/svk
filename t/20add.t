@@ -139,6 +139,7 @@ $svk->revert ('-R', 'A');
 mkdir ('Ai');
 overwrite_file ("Ai/foo", "foobar");
 overwrite_file ("Ai/bar", "foobar");
+overwrite_file ("Ai/tilde~", "foobar");
 $svk->add ('-N', 'Ai');
 $svk->propset ('svn:ignore', 'f*', 'Ai');
 is_output ($svk, 'add', ['Ai'],
@@ -147,10 +148,10 @@ $svk->revert ('-R', 'Ai');
 
 $svk->add ('-N', 'Ai');
 $svk->propset ('svn:ignore', 'f*', 'Ai');
-is_output ($svk, 'add', ['Ai/foo', 'Ai/bar'],
-	   [map __($_), 'A   Ai/bar', 'A   Ai/foo']);
+is_output ($svk, 'add', ['Ai/foo', 'Ai/tilde~', 'Ai/bar'],
+	   [map __($_), 'A   Ai/bar', 'A   Ai/foo', 'A   Ai/tilde~']);
 $svk->commit ('-m', 'commit');
-is_output ($svk, 'ls', ['//Ai'], ['bar', 'foo']);
+is_output ($svk, 'ls', ['//Ai'], ['bar', 'foo', 'tilde~']);
 
 # auto-prop
 use File::Temp qw/tempdir/;

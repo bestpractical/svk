@@ -776,9 +776,9 @@ sub _delta_content {
 sub _unknown_verbose {
     my ($self, %arg) = @_;
     my $ignore = ignore;
-    my %seen;
+    # The caller should have processed the entry already.
+    my %seen = ($arg{copath} => 1);
     if ($arg{targets}) {
-	$arg{cb_unknown}->($arg{entry}, $arg{copath});
 	for my $entry (@{$arg{targets}}) {
 	    my $now = '';
 	    for my $dir (splitdir ($entry)) {
@@ -794,12 +794,11 @@ sub _unknown_verbose {
 	    wanted =>
 	    sub {
 		$File::Find::prune = 1, return if m/$ignore/;
-		my $dpath = catdir($File::Find::dir, $_);
-		my $copath = $dpath;
+		my $copath = catdir($File::Find::dir, $_);
 		return if $seen{$copath};
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
-		$dpath = abs2rel($dpath, $arg{copath} => $arg{entry}, '/');
+		my $dpath = abs2rel($copath, $arg{copath} => $arg{entry}, '/');
 		$arg{cb_unknown}->($dpath, $copath);
 	  }}, defined $arg{targets} ?
 	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
@@ -826,6 +825,7 @@ sub _node_deleted_or_absent {
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
 	$self->_node_deleted (%arg);
+	# when doing add over deleted entry, descend into it
 	if ($schedule eq 'delete') {
 	    $self->_unknown_verbose (%arg)
 		if $arg{cb_unknown} && $arg{unknown_verbose};
@@ -1096,12 +1096,9 @@ sub _delta_dir {
 	unless ($add) {
 	    next if !defined $targets && $entry =~ m/$ignore/ ;
 	    if ($arg{cb_unknown}) {
-		if ($arg{unknown_verbose}) {
-		    $self->_unknown_verbose (%arg, %newpaths);
-		}
-		else {
-		    $arg{cb_unknown}->($newpaths{entry}, $newpaths{copath});
-		}
+		$arg{cb_unknown}->($newpaths{entry}, $newpaths{copath});
+		$self->_unknown_verbose (%arg, %newpaths)
+		    if $arg{unknown_verbose};
 	    }
 	    next;
 	}
