@@ -48,8 +48,5 @@ svk::update ($copath);
 
 append_file ("$copath/T/xd", "back to mirror directly\n");
 svk::status ($copath);
-TODO: {
-    local $TODO = 'rev translation for committing to remote';
-    eval { svk::commit ('-m', 'commit to mirrored path', $copath) };
-    ok(!$@);
-};
+svk::commit ('-m', 'commit to mirrored path', $copath);
+ok(1);

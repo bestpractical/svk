@@ -1114,7 +1114,6 @@ sub commit {
 				     sign => $sign,
 				     message => $message,
 				   );
-
     my $committed = sub {
 	my ($rev) = @_;
 	for (reverse @$targets) {
@@ -1154,7 +1153,6 @@ sub commit {
 
     ${$cb{callback}} = $committed;
 
-
     SVN::XD::checkout_delta ($info,
 			     repos => $repos,
 			     copath => $copath,
@@ -1165,6 +1163,14 @@ sub commit {
 			     absent_ignore => 1,
 			     strict_add => 1,
 			     editor => $editor,
+			     $cb{mirror} ?
+			     ( cb_rev => sub {
+				   my $target = shift;
+				   my $fs = $repos->fs;
+				   $target = $target ? "$path/$target" : $path;
+				   $fs->revision_prop ($xdroot->node_created_rev ($target),
+						       "svm:headrev:$cb{mirror}{source}");
+			       }) : (),
 			    );
     $txn->abort if $txn;
 

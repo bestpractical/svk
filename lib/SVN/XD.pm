@@ -407,7 +407,7 @@ sub _delta_content {
 sub _delta_file {
     my ($info, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
-    my $rev = _get_rev($info, $arg{copath});
+    my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry});
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 
     if ($arg{cb_conflict} && $info->{checkout}->get_single ($arg{copath})->{conflict}) {
@@ -450,7 +450,7 @@ sub _delta_file {
 sub _delta_dir {
     my ($info, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
-    my $rev = _get_rev($info, $arg{copath});
+    my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry} || '');
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 
     # compute targets for children
@@ -597,7 +597,11 @@ sub checkout_delta {
     my ($info, %arg) = @_;
 
     my $kind = $arg{xdroot}->check_path ($arg{path});
-    my $rev = _get_rev($info, $arg{copath});
+    $arg{cb_rev} ||= sub { my $target = shift;
+			   $target = $target ? "$arg{copath}/$target" : $arg{copath};
+			   _get_rev($info, $target);
+		       };
+    my $rev = &{$arg{cb_rev}} ('');
     my $baton = $arg{editor}->open_root ($rev);
 
     if ($kind == $SVN::Node::file) {
@@ -726,6 +730,7 @@ sub do_import {
 			       revision =>0});
 
     _delta_dir ($info, %arg,
+		cb_rev => sub { 0 },
 		editor => $editor,
 		baseroot => $root,
 		xdroot => $root,
