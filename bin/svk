@@ -2,6 +2,7 @@
 use strict;
 our $VERSION = '0.07';
 require SVN::Core;
+require SVN::Client;
 require SVN::Repos;
 require SVN::Fs;
 use SVN::XD;
@@ -206,6 +207,9 @@ A character in the first column signifies an update to the actual
 file, while updates to the file's props are shown in the second
 column.
 
+  options:
+    -r [--revision]:      revision
+
 =cut
 
 sub update {
@@ -239,6 +243,9 @@ Check out a copy from depot.
 
 Note: If PATH is omitted, the basename of the DEPOTPATH will be used
 as the destination.
+
+  options:
+    -r [--revision]:      revision
 
 =cut
 
@@ -274,7 +281,9 @@ sub checkout {
 
 =head2 info
 
-    svk info
+Display information about a file or directory.
+
+  usage: info [PATH...]
 
 =cut
 
@@ -295,7 +304,11 @@ sub info {
 
 =head2 diff
 
-    svk diff
+Display the differences between two paths.
+
+  options:
+    -r [--revision]:      revision spec from:to
+    -v [--verbose]:       print changed path in changes
 
 =cut
 
@@ -422,7 +435,7 @@ sub diff {
 
 =head2 status (st)
 
-    svk status
+Print the status of working copy files and directories.
 
 =cut
 
@@ -450,6 +463,7 @@ sub status {
 			     editor => SVN::StatusEditor->new
 			     (copath => $copath, dpath => $path,
 			      rpath => $report),
+			     cb_conflict => \&SVN::StatusEditor::conflict,
 			     cb_unknown => sub {$_[1] =~ s|^$copath/|$report|;
 						print "?  $_[1]\n"}
 			    );
@@ -461,7 +475,10 @@ sub status {
 
 Mark checkout files or directories as resolved from conflict state.
 
-usage: resolved PATH...
+  usage: resolved PATH...
+
+  options:
+    -R [--recursive]:       descend recursively
 
 =cut
 
@@ -486,7 +503,14 @@ sub resolved {
 
 =head2 annotate (blame)
 
-    svk annotate
+Output the content of specified files or DEPOTPATHs with revision and
+author information in-line.
+
+  usage: 1. annotate PATH
+         2. annotate DEPOTPATH
+
+  options:
+    -x [--cross]:           cross copied node
 
 =cut
 
@@ -549,6 +573,12 @@ sub annotate {
 
 =head2 add
 
+Put files and directories under version control, scheduling
+them for addition to repository.  They will be added in next commit.
+
+  options:
+    -N [--non-recursive]:   operate on single directory only
+
 =cut
 
 sub condense {
@@ -594,7 +624,9 @@ sub add {
 		    );
 }
 
-=head2 delete
+=head2 delete (del, rm)
+
+Remove files and directories from version control.
 
 =cut
 
@@ -615,6 +647,14 @@ sub delete {
 }
 
 =head2 proplist (pl)
+
+List all properties on files, or dirs.
+
+  usage: proplist PATH...
+
+  options:
+    -r [--revision]:        revision
+    -v [--verbose]:         print extra information
 
 =cut
 
@@ -648,6 +688,10 @@ sub proplist {
 
 =head2 propedit (pe)
 
+Edit property PROPNAME with $EDITOR on targets.
+
+usage: propedit PROPNAME PATH
+
 =cut
 
 sub propedit {
@@ -677,6 +721,10 @@ sub propedit {
 
 =head2 propset (ps)
 
+Set PROPNAME to PROPVAL on files, or dirs.
+
+  usage: propset PROPNAME PROPVAL PATH
+
 =cut
 
 sub propset {
@@ -694,6 +742,13 @@ sub propset {
 }
 
 =head2 revert
+
+Restore pristine working copy file (undo most local edits).
+
+  usage: revert PATH...
+
+  options:
+    -R [--recursive]:       descend recursively
 
 =cut
 
@@ -724,10 +779,10 @@ Show the log messages for revisions.
          2. log PATH
 
   options:
-    -r [--revision]:      revision spec from:to
-    -l [--limit]:         limit the number of revisions displayed
-    -x [--cross]:         cross copied node
-    -v [--verbose]:       print changed path in changes
+    -r [--revision]:        revision spec from:to
+    -l [--limit]:           limit the number of revisions displayed
+    -x [--cross]:           cross copied node
+    -v [--verbose]:         print changed path in changes
 
 =cut
 
@@ -817,14 +872,15 @@ sub describe {
     &diff ('-r', ($rev-1).":$rev", '//');
 }
 
-
-
-
 =head2 commit (ci)
 
 Commit changes to depot.
 
   usage: commit [PATH...]
+
+  options:
+    --m [--message] ARG:    specify commit message ARG
+    --force:                force validity of log message source
 
 =cut
 
@@ -919,9 +975,19 @@ sub commit {
 			     editor => SVN::CommitStatusEditor->new
 			     (copath => $copath, dpath => $path,
 			      targets => $targets, fh => $fh),
+			     cb_conflict => \&SVN::StatusEditor::conflict,
 			    );
 
     $txn->abort if $txn;
+
+    if (grep {$_->[0] eq 'C'} @$targets) {
+	if ($fh) {
+	    close $fh;
+	    unlink $fh;
+	}
+	print "Conflicts detected. Use svk resolved after resolving the conflicts.\n";
+	return;
+    }
 
     die "no targets to commit" if $#{$targets} < 0;
 
@@ -951,10 +1017,13 @@ sub commit {
 
 =head2 copy (cp)
 
+Duplicate something in working copy or repos, remembering history.
+
   usage: copy DEPOTPATH1 DEPOTPATH2
 
   options:
-    -m message:        commit message
+    -r [--revision]:        revision
+    -m [--message]:         commit message
 
 =cut
 
@@ -999,10 +1068,12 @@ depotpath. Use -a to automatically calculate the revisions to merge
          2. merge -r N:M DEPOTPATH1 DEPOTPATH2
 
   options:
-    -m message:        commit message
-    -C [--check-only]: don't perform actual writes
-    -a [--auto]:       automatically find merge points
-    -l [--log]:        brings the logs of merged revs to the message buffer
+    -r [--revision]:        revision
+    -m message:             commit message
+    -C [--check-only]:      don't perform actual writes
+    -a [--auto]:            automatically find merge points
+    -l [--log]:             brings the logs of merged revs to the message buffer
+    --no-ticket:            don't associate the ticket tracking merge history
 
 =cut
 
@@ -1357,6 +1428,10 @@ sub mirror {
 Syncrhonize a mirrored depotpath.
 
   usage: sync [DEPOTPATH...]
+
+  options:
+    -s [--skipto]:          start revision
+    -t [--torev]:           end revision
 
 =cut
 

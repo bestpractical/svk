@@ -351,6 +351,10 @@ sub _delta_file {
     my $pool = SVN::Pool->new_default (undef);
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 
+    if ($arg{cb_conflict} && $info->{checkout}->get_single ($arg{copath})->{conflict}) {
+	&{$arg{cb_conflict}} ($arg{editor}, $arg{entry}, $arg{baton});
+    }
+
     unless (-e $arg{copath}) {
 	return if $schedule ne 'delete' && $arg{absent_ignore};
 	if ($schedule eq 'delete' || $arg{absent_as_delete}) {

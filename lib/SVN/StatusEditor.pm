@@ -19,7 +19,7 @@ sub add_file {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = ['A', ''];
+    $self->{info}{$path}{status} = [$self->{conflict}{$opath} || 'A', ''];
     return $path;
 }
 
@@ -28,7 +28,7 @@ sub open_file {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = ['', ''];
+    $self->{info}{$path}{status} = [$self->{conflict}{$opath} || '', ''];
     return $path;
 }
 
@@ -103,6 +103,11 @@ sub close_directory {
 sub absent_directory {
     my ($self, $path) = @_;
     print "!  $self->{rpath}$path\n";
+}
+
+sub conflict {
+    my ($self, $path) = @_;
+    $self->{conflict}{$path} = 'C';
 }
 
 1;
