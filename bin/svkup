@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
 use SVN::Core;
-use Storable qw/retrieve_fd/;
 use IO::Socket::INET;
 #use PerlIO::gzip;
 use SVK::XD;
@@ -52,17 +51,23 @@ my $iostat;
 my $done;
 
 sub read_msg {
-    my ($error, $sock, $req) = @_;
+    my ($sock) = @_;
     my ($len, $msg);
     read $sock, $len, 2 or die $!;
     $len = unpack ('n', $len);
     read $sock, $msg, $len or die $!;
-    print "$server: $msg\n";
+    return \$msg;
+}
+
+sub print_msg {
+    my ($error, $sock, $req) = @_;
+    my $msg = read_msg ($sock);
+    print "$server: $$msg\n";
     $done = 1 if $error;
 }
 
-$handler{0} = sub { read_msg (0, @_) };
-$handler{65535} = sub { read_msg (1, @_) };
+$handler{0} = sub { print_msg (0, @_) };
+$handler{65535} = sub { print_msg (1, @_) };
 
 eval { use Time::HiRes qw(time); };
 
@@ -109,7 +114,7 @@ sub send_cmd {
 
 sub init {
     my $sock = shift;
-    send_cmd ($sock, "init version=1a compress transport=storable\n",
+    send_cmd ($sock, "init version=1a compress transport=freezethaw\n",
 	      sub {
 #		  binmode $sock, ':gzip(none)' or die $!;
 #		  warn "binmode on client";
@@ -127,11 +132,17 @@ sub send_delta_request {
     send_cmd ($sock, "delta $resource $target\n", sub { emit_editor_call ($dispatch, @_) });
 }
 
+use FreezeThaw qw(thaw);
+
+sub thaw_fd {
+    my ($sock) = @_;
+    my ($entry) = thaw (${read_msg ($sock)});
+    return $entry;
+}
+
 sub emit_editor_call {
     my ($dispatch, $sock) = @_;
-    my $call = retrieve_fd ($sock);
-#    nstore_fd ($call, \*STDOUT);
-#    warn YAML::Dump ($call);
+    my $call = thaw_fd ($sock);
     $dispatch->emit ($call);
     return unless $call->[1] eq 'close_edit';
     my $rev = $dispatch->{editor}{revision};

@@ -1,11 +1,8 @@
 package SVK::Editor::Network;
 use strict;
-use SVK::Editor::Patch;
 our $VERSION = $SVK::VERSION;
-our @ISA = qw(SVK::Editor::Patch);
-use Storable qw/nstore_fd/;
-
-our $AUTOLOAD;
+use base qr(SVK::Editor::Patch);
+use FreezeThaw qw(freeze);
 
 sub emit {
     my ($self, $call) = @_;
@@ -22,6 +19,20 @@ sub emit {
     $self->{baton_holder}{$ret} = $ret_baton if $ret;
 }
 
+sub freeze_fd {
+    my ($sock, $data) = @_;
+    my $buf = freeze ($data);
+    $sock->print (pack ('n', length ($buf)), $buf);
+}
+
+sub write_call {
+    my ($self, $call) = @_;
+    $self->{sock}->print ($self->{prefix}) if defined $self->{prefix};
+    freeze_fd ($self->{sock}, $self->{textdelta}{$arg[0]}) or die $!;
+}
+
+our $AUTOLOAD;
+
 sub AUTOLOAD {
     my ($self, @arg) = @_;
     my $func = $AUTOLOAD;
@@ -31,17 +42,14 @@ sub AUTOLOAD {
     # flush textdelta
     if ($func eq 'close_file' && $self->{textdelta}{$arg[0]}) {
 	$self->{read_callback}->($self->{sock});
-
-	$self->{sock}->print ($self->{prefix}) if defined $self->{prefix};
-        nstore_fd ($self->{textdelta}{$arg[0]}, $self->{sock});
+	$self->write_call ($self->{textdelta}{$arg[0]});
 	delete $self->{textdelta}{$arg[0]};
     }
 
     pop @arg if ref ($arg[-1]) eq '_p_apr_pool_t';
 
     my $ret = $func =~ m/^(?:add|open)/ ? ++$self->{batons} : undef;
-    $self->{sock}->print ($self->{prefix}) if defined $self->{prefix};
-    nstore_fd ([$ret, $func, @arg], $self->{sock}) or die $!;
+    $self->write_call ([$ret, $func, @arg]);
     return $ret;
 }
 
