@@ -36,16 +36,10 @@ list of functions to import.
 
 =cut
 
-use Config;
+use Config ();
 use SVK::I18N;
-use Digest::MD5;
-use Cwd;
-use File::Copy qw(move);
-use File::Path qw(mkpath);
-use File::Temp 0.14 qw(mktemp);
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
-use ExtUtils::MakeMaker ();
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
@@ -90,7 +84,7 @@ End of line marker: C<\015\012> on Win32, C<\012> otherwise.
 use constant IS_WIN32 => ($^O eq 'MSWin32');
 use constant TEXT_MODE => IS_WIN32 ? ':crlf' : '';
 use constant DEFAULT_EDITOR => IS_WIN32 ? 'notepad.exe' : 'vi';
-use constant HAS_SYMLINK => $Config{d_symlink};
+use constant HAS_SYMLINK => $Config::Config{d_symlink};
 
 sub HAS_SVN_MIRROR () {
     no warnings 'redefine';
@@ -323,8 +317,11 @@ Calculate MD5 checksum for data in the input filehandle.
 
 sub md5_fh {
     my $fh = shift;
+
+    require Digest::MD5;
     my $ctx = Digest::MD5->new;
     $ctx->addfile($fh);
+
     return $ctx->hexdigest;
 }
 
@@ -390,6 +387,7 @@ sub abs_path {
     my $path = shift;
 
     if (!IS_WIN32) {
+        require Cwd;
 	return Cwd::abs_path ($path) unless -l $path;
 	my (undef, $dir, $pathname) = splitpath ($path);
 	return catpath (undef, Cwd::abs_path ($dir), $pathname);
@@ -507,7 +505,9 @@ sub make_path {
     my $path = shift;
 
     return undef if !defined($path) or -d $path;
-    return mkpath([$path]);
+
+    require File::Path;
+    return File::Path::mkpath([$path]);
 }
 
 =head3 splitpath ($path)
@@ -541,7 +541,9 @@ sub tmpfile {
     my $dir = tmpdir;
     my $text = delete $args{TEXT};
     $temp = "svk-${temp}XXXXX";
-    return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
+
+    require File::Temp;
+    return File::Temp::mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
 				DIR => $dir,
 				SUFFIX => '.tmp',
@@ -570,6 +572,7 @@ Unlike C<is_symlink()>, the C<$filename> argument is not optional.
 =cut
 
 sub is_executable {
+    require ExtUtils::MakeMaker;
     defined($_[0]) and length($_[0]) and MM->maybe_command($_[0]);
 }
 
@@ -613,8 +616,9 @@ sub move_path {
     my ($source, $target) = @_;
 
     if (-d $source and (!-d $target or rmdir($target))) {
+        require File::Copy;
         make_path (dirname($target));
-        move ($source => $target) and return;
+        File::Copy::move ($source => $target) and return;
     }
 
     print loc(
