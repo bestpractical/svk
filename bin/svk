@@ -10,6 +10,7 @@ use Getopt::Long;
 use File::Spec;
 use Data::Hierarchy;
 use SVN::DiffEditor;
+use version;
 
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pl cp/;
@@ -77,11 +78,28 @@ sub depotmap {
 	print "$@\n" if $@;
     } while ($@);
     print "New depot map saved.\n";
+    for my $path(values %{$info->{depotmap}}) {
+	my $ans;
+	next if -d $path;
+	print "Repository $path does not exist, create?";
+	while (<STDIN>) {
+	    $ans = $1 if $_ =~ m/^([yn])/i;
+	    last if $ans;
+	}
+	next if $ans eq 'n';
+	SVN::Repos::create($path, undef, undef, undef,
+			   {'bdb-txn-nosync' => '1',
+			    'bdb-log-autoremove' => '1'});
+	if ($SVN::Core::VERSION < '0.35.0') {
+	    print "You might want to enable deltification hook\n";
+	    print "Please take a look at $path/hooks/\n";
+	}
+    }
     $info->{depotmap} = $new;
 }
 
 sub _init {
-    if (-d "$ENV{HOME}/.svk") {
+    if (-e "$ENV{HOME}/.svk/config") {
 	$info = LoadFile ("$ENV{HOME}/.svk/config");
     }
     else {
@@ -259,10 +277,10 @@ sub diff {
 	my $fs = $repos->fs;
 	my $baseroot = $fs->revision_root ($fromrev);
 	my $editor = SVN::DiffEditor->new
-	    ( cb_getbase => sub { my ($rpath) = @_;
-				  my $base = $baseroot->file_contents ("$path/$rpath");
-				  return $base;
-			      }
+	    ( cb_basecontent => sub { my ($rpath) = @_;
+				      my $base = $baseroot->file_contents ("$path/$rpath");
+				      return $base;
+				  }
 	    );
 	SVN::Repos::dir_delta ($baseroot,
 			       $path, undef,
@@ -622,16 +640,21 @@ sub get_buffer_from_editor {
 
 sub commit {
     local @ARGV = @_;
-    my $message;
-    die unless GetOptions ("m|message=s"  => \$message);
+    my ($message, $force);
+    die unless GetOptions ("m|message=s"  => \$message,
+			   "force",	  => \$force,
+			  );
     my ($fh, $file);
 
+    # XXX: support multiple target
     my ($copath) = @ARGV;
     $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
     my $targets;
+    # XXX: test if $path is svm mirrored to prevent repository ruin
+
     # harvest
-    unless ($message) {
+    unless (defined $message) {
 	($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
     }
 
@@ -713,6 +736,10 @@ sub copy {
 
     die "different repos?" if $repospath ne $drepospath;
 
+    $message = get_buffer_from_editor ('log message', $target_prompt,
+				       undef, "/tmp/svk-commitXXXXX")
+	unless defined $message;
+
     SVN::XD::do_copy_direct ($info,
 			     repospath => $repospath,
 			     repos => $repos,
@@ -790,7 +817,6 @@ sub find_merge_history {
     }
 }
 
-# XXX: need to return ancestor path too
 sub find_merge_info {
     my ($repos, $src, $dst) = @_;
     my $fs = $repos->fs;
@@ -812,7 +838,6 @@ sub find_merge_info {
 	    $mpsrc > $mpdst ? $mpsrc : $mpdst,
 	    $fs->youngest_rev);
 }
-
 
 sub resolve_svm_source {
     my ($repos, $path) = @_;
@@ -857,7 +882,7 @@ sub merge {
     my ($repospath, $path, $repos) = find_repos ($src, 1);
     my ($drepospath, $dpath, $editor, $base_rev, $copath);
     if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
-	unless ($message || $check_only) {
+	unless (defined $message || $check_only) {
 	    $message = get_buffer_from_editor
 		('log message', $target_prompt,
 		 "\n$target_prompt\n", "svk-commitXXXXX");
