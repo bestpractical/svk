@@ -80,9 +80,6 @@ $svk->commit ('-m', 'test exe bit');
 unlink ('A/exe');
 $svk->revert ('A/exe');
 ok (_x 'A/exe');
-SKIP: {
-
-skip 'File::MimeInfo not installed', 2 unless eval 'require File::MimeInfo::Magic; 1';
 
 mkdir ('A/mime');
 overwrite_file ("A/mime/foo.pl", "#!/usr/bin/perl\n");
@@ -107,7 +104,7 @@ is_output ($svk, 'pl', ['-v', <A/mime/*>],
 	    'Properties on A/mime/foo.jpg:',
 	    '  svn:mime-type: image/jpeg',
 	   ]);
-}
+
 
 $svk->revert ('-R', 'A');
 

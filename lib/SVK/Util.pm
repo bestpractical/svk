@@ -298,8 +298,11 @@ Calculate MD5 checksum for data in the input filehandle.
 
 =cut
 
-push @EXPORT_OK, qw( md5 ); # deprecated compatibility API
-*md5 = *md5_fh;
+{
+    no warnings 'once';
+    push @EXPORT_OK, qw( md5 ); # deprecated compatibility API
+    *md5 = *md5_fh;
+}
 
 sub md5_fh {
     my $fh = shift;
@@ -316,19 +319,23 @@ is missing on the system.
 =cut
 
 sub mimetype {
-    no strict 'refs';
-    no warnings 'redefine';
+    my $fh = shift;
 
-    local $@;
-    my $mimetype = eval {
-        require File::MimeInfo::Magic;
-        \&File::MimeInfo::Magic::mimetype;
-    } || sub { undef };
+    return 'text/plain' if -z $fh;
 
-    *{caller().'::mimetype'} = $mimetype;
-    *mimetype = $mimetype;
+    binmode($fh);
+    read $fh, my $data, 16*1024 or return undef;
 
-    goto &$mimetype;
+    require File::Type;
+    my $type = File::Type->checktype_contents($data);
+
+    # On fallback, use the same logic as File::MimeInfo to detect text
+    if ($type eq 'application/octet-stream') {
+        substr($data, 0, 10) =~ m/[\x00-\x07\x09\x0B\x0D-\x1F]/
+            or return 'text/plain';
+    }
+
+    return $type;
 }
 
 =head3 mimetype_is_text ($mimetype)

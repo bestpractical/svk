@@ -28,6 +28,7 @@ requires(
         'IO::Digest'		=> '0',
         'SVN::Simple::Edit'     => '0.21',
         'Date::Parse'           => '0',
+        'File::Type'            => '0',
 );
 features(
     'Localized messages' => [
@@ -51,14 +52,6 @@ features(
     'Patch management' => [
 	-default => 1,
 	'Compress::Zlib'    => '0',
-    ],
-);
-
-features(
-    'Automatic mime-type detection' => [
-	-default => 1,
-	'File::BaseDir'     => '0',
-	'File::MimeInfo'    => '0',
     ],
 );
 
