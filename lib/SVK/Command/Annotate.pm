@@ -45,7 +45,7 @@ sub run {
 	local $/;
 	my ($path, $rev) = @$_;
 	my $content = $fs->revision_root ($rev)->file_contents ($path);
-	$content = [split /\n/, <$content>];
+	$content = [split /\015?\012|\015/, <$content>];
 	no warnings 'uninitialized';
 	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $rev,
 			    $fs->revision_prop ($rev, 'svn:author'),
@@ -57,15 +57,18 @@ sub run {
     if ($target->{copath}) {
 	$final = SVK::XD::get_fh ($target->root ($self->{xd}), '<', $target->{path}, $target->{copath});
 	local $/;
-	$ann->add ( "\t(working copy): \t\t", [split /\n/, <$final>]);
-	seek $final, 0, 0;
+	$final = [split /\015?\012|\015/, <$final>];
+	$ann->add ( "\t(working copy): \t\t", $final );
     }
     else {
+	local $/;
 	$final = $fs->revision_root($revs[-1][1])->file_contents($revs[-1][0]);
+	$final = [split /\015?\012|\015/, <$final>];
     }
+
     my $result = $ann->result;
     while (my $info = shift @$result) {
-	print $info.<$final>;
+	print $info, shift(@$final), "\n";
     }
 
 }
