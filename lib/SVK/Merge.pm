@@ -110,7 +110,7 @@ sub find_merge_base {
 	unless ($baserev = $self->{baserev}) {
 	    # baseless merge
 	    my $pool = SVN::Pool->new_default;
-	    my $hist = $fs->revision_root($yrev)->node_history($src->{path});
+	    my $hist = $src->root->node_history($src->{path});
 	    $baserev = ($hist->location)[1], $pool->clear
 		while $hist = $hist->prev (0);
 	}
