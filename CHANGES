@@ -8,6 +8,9 @@
 
 * Use D::H->store_fast. This makes checkout 5% faster.
 
+* Ignore checksum in Editor::XD when they are alrady checked by
+  Editor::Merge.  This makes update and merge to copath 25-30% faster.
+
 * SVNFSTYPE default to bdb with svn 1.0.x, otherwise fsfs.
 
 * Authentication prompts are now handled. [Autrijus]
@@ -18,9 +21,9 @@
   of reading it again.
 
 * Add support to use SVKMERGE on win32, in particular
-  p4winmrg.exe. [Autrijus]
+  p4winmrg, guiffy. [Autrijus]
 
-* Print error messages to STDERR, unless in test mode.
+* Error messages are now printed to STDERR.
 
 * "svk sm --base" and "svk sm --baseless" now always do what
   they are documented to do, overriding existing merge
@@ -30,9 +33,11 @@
 
 * Fix delete_entry in diff editor for external diff tool.
 
-* Delay SVN::Mirror loading.
+* Delay SVN::Mirror loading.  This makes startup time faster.
 
 * Make SVK::Editor::Delay also delays open_file and discard no-op opens.
+  This optimized the consumed bandwidth when committing/merging to
+  remote.
 
 * Fix merge ticket parsing and generation for paths mirrored with vcp.
 
@@ -42,18 +47,22 @@
 * Fix a scary but harmless message after committing copied nodes with
   messages from editor.
 
-* Add expand_copy optiont to checkout_delta.  This allows diff works
+* Add expand_copy option to checkout_delta.  This allows diff works
   correctly (in terms of what svn does) with copied checkout.
 
 * Allow checking out a file with differet name.
-
-* Many checkout_delta cleanups.
 
 * Eliminate repeating mimetype() calls. [Autrijus]
 
 * Fix tests for File::MimeInfo not installed.
 
 * full zh_tw translation for code locs. [Autrijus]
+
+* Transaction errors are now reported nicely.
+
+* Many checkout_delta cleanups.
+
+* Many documentation improvement. [Autrijus] 
 
 [Changes for 0.20 - 4 Sep, 2004]
 

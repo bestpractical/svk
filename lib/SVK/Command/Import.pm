@@ -6,6 +6,11 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'force'	    => 'force'
+    )
+}
 sub parse_arg {
     my $self = shift;
     my @arg = @_;
