@@ -43,18 +43,12 @@ sub lock {
 
 sub mkpdir {
     my ($self, $target, $root, $yrev) = @_;
-    my $edit = SVN::Simple::Edit->new
-	(_editor => [SVN::Repos::get_commit_editor
-		     ( $target->{repos},
-		       "file://$target->{repospath}",
-		       '/', $ENV{USER},
-		       "directory for svk import",
-		       sub { print loc("Import path %1 initialized.\n", $target->{path}) })],
-	 pool => SVN::Pool->new,
-	 missing_handler => &SVN::Simple::Edit::check_missing ($root));
-    $edit->open_root ($yrev);
-    $edit->add_directory ($target->{path});
-    $edit->close_edit;
+    require SVK::Command::Mkdir;
+    my $cmd = SVK::Command::Mkdir->new ($self->{xd});
+    $cmd->{message} = "Directory for svk import.";
+    $cmd->{parent}++;
+    $cmd->run ($target);
+    print loc("Import path %1 initialized.\n", $target->{path});
 }
 
 sub run {
