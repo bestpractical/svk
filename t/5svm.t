@@ -39,5 +39,11 @@ svk::sync ('//m');
 
 $pool = SVN::Pool->new_default; # for some reasons
 
-svk::merge (qw/-r 5:6/, '//m', $copath);
+#svk::merge (qw/-r 5:6/, '//m', $copath);
+svk::switch ('//m', $copath);
+svk::update ($copath);
+
+append_file ("$copath/A/T/xd", "back to mirror directly\n");
 svk::status ($copath);
+
+svk::commit ('-m', 'commit to mirrored path', $copath);

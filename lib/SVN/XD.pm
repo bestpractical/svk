@@ -1,6 +1,6 @@
 package SVN::XD;
 use strict;
-our $VERSION = '0.05';
+our $VERSION = '0.09';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
@@ -148,11 +148,8 @@ sub do_update {
 	 base_anchor => $anchor,
 	 base_root => $xdroot,
 	 storage => $storage,
-# SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
 	 %cb
 	);
-
-#    $editor = SVN::Delta::Editor->new(_debug=>1),
 
     SVN::Repos::dir_delta ($xdroot, $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{target_path},
@@ -656,104 +653,6 @@ sub do_resolved {
     }
 }
 
-sub do_merge {
-    my ($info, %arg) = @_;
-    # XXX: reorganize these shit
-    my ($anchor, $target) = ($arg{path});
-    my ($base_anchor, $base_target) = ($arg{base_path} || $arg{path}, '');
-    my ($txn, $xdroot);
-    my ($tgt_anchor, $tgt) = ($arg{dpath}, '');
-    my ($storage, $findanchor, %cb);
-
-    my $fs = $arg{repos}->fs;
-
-    if ($arg{copath}) {
-	($txn, $xdroot) = create_xd_root ($info, (%arg, path => $arg{dpath}));
-    }
-    else {
-	$xdroot = $fs->revision_root ($arg{torev});
-    }
-
-    $findanchor = 1
-	unless $xdroot->check_path ($arg{path}) == $SVN::Node::dir;
-
-    # decide anchor / target
-    if ($findanchor) {
-	die "FIXME: need to rethink about the logic here";
-    }
-
-    # setup editor and callbacks
-    if ($arg{copath}) {
-	($storage, %cb) = get_editor ($info, %arg,
-				      oldroot => $xdroot,
-				      newroot => $xdroot,
-				      anchor => $tgt_anchor,
-				      target => $tgt,
-				      check_only => $arg{check_only});
-    }
-    else {
-	my $editor = $arg{editor};
-	my $base_rev = $arg{base_rev};
-
-	$editor ||= SVN::Delta::Editor->new
-	    ( SVN::Repos::get_commit_editor
-	      ( $arg{repos},
-		"file://$arg{repospath}",
-		$tgt_anchor,
-		$ENV{USER}, $arg{message},
-		sub { print "Committed revision $_[0].\n" }
-	      ));
-
-	$base_rev ||= $arg{repos}->fs->youngest_rev;
-
-	$editor = SVN::XD::CheckEditor->new ($editor)
-	    if $arg{check_only};
-
-	my $root = $fs->revision_root ($fs->youngest_rev);
-	($storage ? $storage->{_editor} : $storage) = $editor;
-	# XXX: need translator
-	%cb = ( cb_exist => $arg{cb_exist} ||
-		sub { my $path = $tgt_anchor.'/'.shift;
-		      $root->check_path ($path) != $SVN::Node::none;
-		  },
-		cb_rev => sub { $base_rev; },
-		cb_conflict => sub { die "conflict $tgt_anchor/$_[0]"
-					 unless $arg{check_only};
-				     $editor->{conflicts}++;
-				 },
-		cb_localmod => $arg{cb_localmod} ||
-		sub { my ($path, $checksum, $pool) = @_;
-		      $path = "$tgt_anchor/$path";
-		      my $md5 = $root->file_md5_checksum ($path, $pool);
-		      return if $md5 eq $checksum;
-		      return [$root->file_contents ($path, $pool),
-			      undef, $md5];
-		  },
-	      );
-    }
-
-    my $editor = SVN::MergeEditor->new
-	( anchor => $anchor,
-	  base_anchor => $base_anchor,
-	  base_root => $fs->revision_root ($arg{fromrev}),
-	  target => $target,
-	  send_fulltext => $arg{send_fulltext},
-	  cb_merged => $arg{cb_merged},
-	  cb_closed => $arg{cb_closed},
-	  storage => $storage,
-# SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
-	  %cb,
-	);
-
-    SVN::Repos::dir_delta ($fs->revision_root ($arg{fromrev}),
-			   $base_anchor, $base_target,
-			   $fs->revision_root ($arg{torev}), $arg{path},
-			   $editor, undef,
-			   1, 1, 0, 1);
-
-    $txn->abort if $txn;
-}
-
 sub do_import {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
@@ -840,8 +739,10 @@ use SVN::Simple::Edit;
 
 sub get_commit_editor {
     my ($xdroot, $committed, $path, %arg) = @_;
+    ${$arg{callback}} = $committed if $arg{editor};
     return SVN::Simple::Edit->new
-	(_editor => [SVN::Repos::get_commit_editor($arg{repos},
+	(_editor => [$arg{editor} ||
+		     SVN::Repos::get_commit_editor($arg{repos},
 						   "file://$arg{repospath}",
 						   $path,
 						   $arg{author}, $arg{message},

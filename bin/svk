@@ -1037,8 +1037,10 @@ sub path_is_mirrored {
 
 sub commit {
     local @ARGV = @_;
-    my ($message, $force);
+    my ($message, $force, $check_only, $sign);
     die unless GetOptions ("m|message=s"  => \$message,
+			   "C|check-only" => \$check_only,
+			   "s|sign"	  => \$sign,
 			   "force",	  => \$force,
 			  );
 
@@ -1048,9 +1050,8 @@ sub commit {
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    die "Commit into mirrored path will ruin the mirror state!\n".
-	"Use --force to override if you know what you are doing"
-	    unless $force || !path_is_mirrored ($repos, $path);
+    print "Commit into mirrored path, merge back directly\n"
+	if path_is_mirrored ($repos, $path);
 
     my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
 						  path => $path,
@@ -1108,6 +1109,13 @@ sub commit {
 
     $targets = [sort {$a->[1] cmp $b->[1]} @$targets];
 
+    my ($editor, %cb) = get_editor ( repos => $repos,
+				     repospath => $repospath,
+				     path => $path,
+				     check_only => $check_only,
+				     sign => $sign,
+				     message => $message,
+				   );
     SVN::XD::do_commit ($info,
 			author => $ENV{USER},
 			message => $message,
@@ -1117,7 +1125,10 @@ sub commit {
 			path => $path,
 			baserev => $cinfo->{revision},
 			targets => $targets,
-		       );
+			# somehow pass the commit callback out from the editor
+			# to sync and really bumb XD revisions
+			editor => $editor,
+			%cb );
 }
 
 =head2 copy (cp)
@@ -1348,6 +1359,103 @@ sub parse_chgspec {
     }
 }
 
+# Return the editor according to copath, path, and is_mirror (path)
+# It will be XD::Editor, repos_commit_editor, or svn::mirror merge back editor.
+sub get_editor {
+    my (%arg) = @_;
+    my ($callback, $editor, %cb);
+
+    if ($arg{copath}) {
+	# XXX: really need txn auto cleanup!
+	my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+
+	($editor, %cb) = SVN::XD::get_editor ($info, %arg,
+					       oldroot => $xdroot,
+					       newroot => $xdroot,
+					       anchor => $arg{path},
+					       target => '',
+					       check_only => $arg{check_only});
+	return ($editor, %cb, txn => $txn);
+    }
+
+    my ($base_rev, $m);
+    if ($svn_mirror && ($m = SVN::Mirror::is_mirrored ($arg{repos}, $arg{path}))) {
+	print "Merge back to SVN::Mirror source $m->{source}.\n";
+	if ($arg{check_only}) {
+	    print "Check against mirrored directory locally.\n";
+	}
+	else {
+	    $m->{auth} = $auth;
+	    ($base_rev, $editor) = $m->get_merge_back_editor
+		($arg{message},
+		 sub { print "Merge back committed as revision $_[0].\n";
+		       my $rev = shift;
+		       # XXX: some failsafe handler
+		       $m->run ($rev);
+		       &{$callback} ($m->find_local_rev ($rev), @_)
+			   if $callback }
+		);
+	    $base_rev = $m->{fromrev};
+	}
+    }
+
+    $editor ||= SVN::Delta::Editor->new
+	( SVN::Repos::get_commit_editor
+	  ( $arg{repos}, "file://$arg{repospath}",
+	    $arg{path}, $ENV{USER}, $arg{message},
+	    sub { &{$callback} (@_) if $callback}
+	  ));
+    $base_rev ||= $arg{repos}->fs->youngest_rev;
+
+    $editor = SVN::XD::CheckEditor->new ($editor)
+	if $arg{check_only};
+
+    my $fs = $arg{repos}->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    %cb = ( cb_exist => $arg{cb_exist} ||
+	    sub { my $path = $arg{path}.'/'.shift;
+		  $root->check_path ($path) != $SVN::Node::none;
+	      },
+	    cb_rev => sub { $base_rev; },
+	    cb_conflict => sub { die "conflict $arg{path}/$_[0]"
+				     unless $arg{check_only};
+				 $editor->{conflicts}++;
+			     },
+	    cb_localmod => $arg{cb_localmod} ||
+	    sub { my ($path, $checksum, $pool) = @_;
+		  $path = "$arg{path}/$path";
+		  my $md5 = $root->file_md5_checksum ($path, $pool);
+		  return if $md5 eq $checksum;
+		  return [$root->file_contents ($path, $pool),
+			  undef, $md5];
+	      },
+	  );
+
+
+    return ($editor, %cb, mirror => $m, callback => \$callback);
+
+
+=for comment
+
+	    if ($sign && !$check_only) {
+		my $digest = IO::String->new;
+		$cb_closed = sub {
+		    print $digest join(' ', 'MD5', $_[1], $_[0])."\n";
+		};
+		my $old_cb_merged = $cb_merged;
+		$cb_merged = sub { my ($editor, $baton, $pool) = @_;
+				   my $sig =_sign_gpg ('/tmp/svk-sign',
+						       ${$digest->string_ref});
+				   $editor->change_dir_prop
+				       ($baton, 'svk:signature', $sig);
+				   &{$old_cb_merged} (@_) };
+	    }
+
+=cut
+
+}
+
 sub merge {
     local @ARGV = @_;
     my ($check_only, $message, $auto, $sign, $log, $no_ticket, $revspec);
@@ -1360,7 +1468,7 @@ sub merge {
 			   "r|revision=s"	=> \$revspec);
 
     my ($src, $dst) = @ARGV;
-    my ($base_path, $fromrev, $torev, $cb_merged, $cb_closed);
+    my ($fromrev, $torev, $cb_merged, $cb_closed);
     unless ($auto) {
 	die "revision required" unless $revspec;
 	($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
@@ -1372,8 +1480,7 @@ sub merge {
 
     die "different repos?" unless $repospath eq $drepospath;
 
-    my ($editor, $base_rev);
-
+    my $base_path = $path;
     if ($auto) {
 	($base_path, $fromrev, $torev) =
 	    (find_merge_base ($repos, $path, $dpath), $repos->fs->youngest_rev);
@@ -1393,59 +1500,36 @@ sub merge {
 	     "\n$target_prompt\n", "svk-commitXXXXX");
     }
 
-    if ($dest_repos && $svn_mirror) {
-	my $m = SVN::Mirror->new(target_path => $dpath,
-				 target => $repospath,
-				 pool => SVN::Pool->new, auth => $auth,
-				 get_source => 1);
-	eval { $m->init };
-	unless ($@) {
-	    print "Merge back to SVN::Mirror source $m->{source}.\n";
-	    if ($check_only) {
-		print "Check against mirrored directory locally.\n";
-	    }
-	    else {
-		($base_rev, $editor) = $m->get_merge_back_editor
-		    ($message,
-		     sub { print "Merge back committed as revision $_[0].\n" }
-		    );
-		$base_rev = $m->{fromrev};
-	    }
-	    if ($sign && !$check_only) {
-		my $digest = IO::String->new;
-		$cb_closed = sub {
-		    print $digest join(' ', 'MD5', $_[1], $_[0])."\n";
-		};
-		my $old_cb_merged = $cb_merged;
-		$cb_merged = sub { my ($editor, $baton, $pool) = @_;
-				   my $sig =_sign_gpg ('/tmp/svk-sign',
-						       ${$digest->string_ref});
-				   $editor->change_dir_prop
-				       ($baton, 'svk:signature', $sig);
-				   &{$old_cb_merged} (@_) };
-	    }
-	}
-    }
+    # editor for the target
+    my ($storage, %cb) = get_editor ( repos => $repos,
+				      repospath => $repospath,
+				      path => $dpath,
+				      copath => $copath,
+				      check_only => $check_only,
+				      message => $message,
+				    );
 
-    # XXX: support incremental merging (merge one revision by one)
-    # XXX: the options here are really too many!
-    SVN::XD::do_merge ($info,
-		       repos => $repos,
-		       repospath => $repospath,
-		       path => $path,
-		       dpath => $dpath,
-		       copath => $copath,
-		       editor => $editor,
-		       send_fulltext => $editor ? 0 : 1,
-		       base_path => $base_path,
-		       base_rev => $base_rev,
-		       fromrev => $fromrev,
-		       check_only => $check_only,
-		       message => $message,
-		       torev => $torev,
-		       cb_merged => $cb_merged,
-		       cb_closed => $cb_closed,
-		      );
+    my $fs = $repos->fs;
+    my $editor = SVN::MergeEditor->new
+	( anchor => $path,
+	  base_anchor => $base_path,
+	  base_root => $fs->revision_root ($fromrev),
+	  target => '',
+	  send_fulltext => $cb{mirror} ? 0 : 1,
+	  cb_merged => $cb_merged,
+	  storage => $storage,
+	  %cb,
+	);
+
+    SVN::Repos::dir_delta ($fs->revision_root ($fromrev),
+			   $base_path, '',
+			   $fs->revision_root ($torev), $path,
+			   $editor, undef,
+			   1, 1, 0, 1);
+
+    # cleanup txn
+    $cb{txn}->abort if $cb{txn};
+
 }
 
 sub _sign_gpg {
@@ -1553,18 +1637,24 @@ sub cmerge {
 
 	print "merging with base $base_path $base_rev applying $path $fromrev:$torev\n";
 
-	SVN::XD::do_merge ($info,
-			   repos => $repos,
-			   repospath => $repospath,
-			   path => $path,
-			   dpath => $tmpbranch,
-			   send_fulltext => 1,
-			   fromrev => $fromrev,
-			   torev => $torev,
-			   editor => $ceditor,
-			   cb_exist => sub { $ceditor->cb_exist (@_) },
-			   cb_localmod => sub { $ceditor->cb_localmod (@_) },
-			  );
+	my $fs = $repos->fs;
+	my $editor = SVN::MergeEditor->new
+	    ( anchor => $path,
+	      base_anchor => $path,
+	      base_root => $fs->revision_root ($fromrev),
+	      target => '',
+	      send_fulltext => 1,
+	      cb_exist => sub { $ceditor->cb_exist (@_) },
+	      cb_localmod => sub { $ceditor->cb_localmod (@_) },
+	      cb_rev => sub { $fs->youngest_rev },
+	      storage => $ceditor,
+	);
+
+	SVN::Repos::dir_delta ($fs->revision_root ($fromrev),
+			       $path, '',
+			       $fs->revision_root ($torev), $path,
+			       $editor, undef,
+			       1, 1, 0, 1);
     }
 
     $ceditor->replay (SVN::Delta::Editor->new

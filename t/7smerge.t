@@ -53,9 +53,9 @@ ok (eq_hash (SVN::XD::do_proplist ($svk::info,
 	      'svm:source' => 'file://'.$srepos->path.'!/A',
 	      'svm:uuid' => $suuid }), 'simple smerge from source');
 
-svk::smerge ('-m', 'simple smerge from local', '//l', '//m');
-
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
+
+svk::smerge ('-m', 'simple smerge from local', '//l', '//m');
 
 svk::sync ('//m');
 
@@ -68,7 +68,6 @@ ok (eq_hash (SVN::XD::do_proplist ($svk::info,
 	      'svm:source' => 'file://'.$srepos->path.'!/A',
 	      'svm:uuid' => $suuid }),
     'simple smerge back to source');
-
 
 #print `svn diff -r 3:4 file://$srepospath/A/be`;
 
