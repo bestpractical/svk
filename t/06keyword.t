@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 22;
+use Test::More tests => 24;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -98,12 +98,15 @@ $svk->commit ('-m', 'test line ending', $copath);
 is_file_content_raw ("$copath/le/native", "native$CRLF");
 
 
-$svk->ps ('svn:eol-style', 'native', "$copath/le/mixed");
-
-my $raised_exception;
-$SIG{__DIE__} = sub {
-    $raised_exception ||= ($_[0] =~ /Mixed newlines/);
-};
+is_output ($svk, 'ps', ['svn:eol-style', 'native', "$copath/le/mixed"],
+	   [__"File $copath/le/mixed has inconsistent newlines."]);
+overwrite_file_raw ("$copath/le/mixed", '');
+is_output ($svk, 'ps', ['svn:eol-style', 'native', "$copath/le/mixed"],
+	   [__" M  $copath/le/mixed"]);
+overwrite_file_raw ("$copath/le/mixed", "mixed$CRLF...endings$CR...");
 
 $svk->commit ('-m', 'test line ending', $copath);
-ok($raised_exception, 'mixed line endings should raise exceptions');
+SKIP: {
+skip 'fix inconsistent eol-style after commit', 1;
+is_file_content_raw ("$copath/le/mixed", "mixed$Native...endings$Native...");
+}

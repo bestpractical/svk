@@ -1254,17 +1254,19 @@ sub do_resolved {
 }
 
 sub get_eol_layer {
-    my ($root, $path, $prop, $mode) = @_;
+    my ($root, $path, $prop, $mode, $checkle) = @_;
     my $k = $prop->{'svn:eol-style'} or return ':raw';
     # short-circuit no-op write layers on lf platforms
     if (NATIVE eq LF) {
 	return ':raw' if $mode eq '>' && ($k eq 'native' or $k eq 'LF');
     }
     if ($k eq 'native') {
-        return ':raw:eol(LF!-Native!)';
+	$checkle = $checkle ? '!' : '';
+        return ":raw:eol(LF$checkle-Native!)";
     }
     elsif ($k eq 'CRLF' or $k eq 'CR' or $k eq 'LF') {
-        return ":raw:eol($k!)";
+	$k .= '!' if $checkle || $mode eq '>';
+        return ":raw:eol($k)";
     }
     else {
         return ':raw'; # unsupported
@@ -1370,7 +1372,7 @@ Returns a file handle with keyword translation and line-ending layers attached.
 =cut
 
 sub get_fh {
-    my ($root, $mode, $path, $fname, $prop, $layer, $eol) = @_;
+    my ($root, $mode, $path, $fname, $prop, $layer, $eol, $checkle) = @_;
     {
 	local $@;
 	$prop ||= eval { $root->node_proplist ($path) };
@@ -1379,7 +1381,7 @@ sub get_fh {
 	if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
     if (keys %$prop) {
 	$layer ||= get_keyword_layer ($root, $path, $prop);
-	$eol ||= get_eol_layer($root, $path, $prop, $mode);
+	$eol ||= get_eol_layer($root, $path, $prop, $mode, $checkle);
     }
     $eol ||= ':raw';
     open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!\n";
