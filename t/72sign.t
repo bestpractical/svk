@@ -2,8 +2,11 @@
 use strict;
 use SVK::Util qw( is_executable );
 BEGIN { require 't/tree.pl' };
-plan skip_all => 'gnupg not found'
-    unless `gpg --version` =~ /GnuPG/;
+{
+    local $SIG{__WARN__} = sub { 1 };
+    plan skip_all => 'gnupg not found'
+        unless (`gpg --version` || '') =~ /GnuPG/;
+}
 plan_svm tests => 8;
 our $output;
 
