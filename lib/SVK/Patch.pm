@@ -212,7 +212,7 @@ sub applicable {
 }
 
 sub update {
-    my ($self, $merge, $repos) = @_;
+    my ($self, $repos) = @_;
     $repos ||= $self->{_repos};
     die "Target not local nor mirrored, unable to update patch."
 	unless $self->{_target_local} || $self->{_target_path};
@@ -221,29 +221,22 @@ sub update {
     my $fs = $repos->fs;
     unless ($self->{_source_updated}) {
 	print "Source of path <$self->{name}> not updated or not local. No need to update.\n";
-#	return;
+	return;
     }
-
     my $yrev = $fs->youngest_rev;
-    my ($base_path, $baserev, $fromrev, $torev) =
-	($merge->find_merge_base ($repos, $self->{source_path}, $anchor), $yrev);
-    $self->{log} = $merge->log ($repos, $self->{source_path}, $fromrev+1, $torev);
-    my $editor = SVK::Editor::Merge->new
-	( anchor => $self->{source_path},
-	  base_anchor => $base_path,
-	  base_root => $fs->revision_root ($baserev),
-	  target => '',
-	  send_fulltext => 0,
-	  storage => $self->editor,
-	  SVK::Editor::Merge::cb_for_root ($fs->revision_root ($yrev), $anchor, $yrev),
-	);
-    SVN::Repos::dir_delta ($fs->revision_root ($baserev),
-			   $base_path, '',
-			   $fs->revision_root ($torev), $self->{source_path},
-			   $editor, undef,
-			   1, 1, 0, 1);
+    my $merge = SVK::Merge->auto (repos => $repos,
+				  src => SVK::Target->new (repos => $repos,
+							   revision => $yrev,
+							   path => $self->{source_path}),
+				  dst => SVK::Target->new (repos => $repos,
+							   revision => $yrev,
+							   path => $anchor));
+
+    $self->{log} = $merge->log;
     ++$self->{level};
-    return $editor->{conflicts};
+    $merge->run ($self->editor,
+		 SVK::Editor::Merge::cb_for_root ($fs->revision_root ($yrev),
+						  $anchor, $yrev));
 }
 
 =head1 AUTHORS

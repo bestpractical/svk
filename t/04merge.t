@@ -1,12 +1,12 @@
 #!/usr/bin/perl
-use Test::More tests => 6;
+use Test::More tests => 7;
 use strict;
 require 't/tree.pl';
 
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('merge');
-
+is_output_like ($svk, 'merge', [], qr'SYNOPSIS', 'merge - help');
 $svk->checkout ('//', $copath);
 mkdir "$copath/A";
 overwrite_file ("$copath/A/foo", "foobar\n");

@@ -37,8 +37,9 @@ sub create {
 
     my $patch = SVK::Patch->new (name => $name, level => 0, _repos => $repos);
     $patch->from ($src->{path});
-    # XXX: from/to should take rev too
+    # XXX: from/to should just take SVK::Target
     $patch->{source_rev} = 0;
+    $patch->{_source_updated} = 1;
     $patch->applyto ($dst->{path});
 
     $self->_do_update ($name, $patch);
@@ -77,7 +78,7 @@ sub test {
 sub _do_update {
     my ($self, $name, $patch) = @_;
 
-    if (my $conflicts = $patch->update (SVK::Merge->new (%$self))) {
+    if (my $conflicts = $patch->update ()) {
 	return loc("%*(%1,conflict) found, patch abandoned.\n", $conflicts)
     }
     $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.svkpatch");

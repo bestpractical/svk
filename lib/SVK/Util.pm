@@ -99,11 +99,11 @@ sub get_anchor {
 }
 
 sub find_svm_source {
-    my ($repos, $path) = @_;
-    my ($uuid, $m, $mpath);
+    my ($repos, $path, $rev) = @_;
     my $fs = $repos->fs;
-    my $rev = $fs->youngest_rev;
+    $rev ||= $fs->youngest_rev;
     my $root = $fs->revision_root ($rev);
+    my ($uuid, $m, $mpath);
 
     if (svn_mirror) {
 	($m, $mpath) = SVN::Mirror::is_mirrored ($repos, $path);

@@ -4,6 +4,7 @@ our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case bundling);
 # XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
 use SVN::Simple::Edit;
+use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
@@ -156,13 +157,13 @@ sub arg_condensed {
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
-    return { repos => $repos,
-	     repospath => $repospath,
-	     copath => $copath,
-	     path => $path,
-	     report => $report,
-	     targets => @targets ? \@targets : undef,
-	   };
+    return SVK::Target->new
+	( repos => $repos,
+	  repospath => $repospath,
+	  copath => $copath,
+	  path => $path,
+	  report => $report,
+	  targets => @targets ? \@targets : undef );
 }
 
 sub arg_co_maybe {
@@ -170,39 +171,41 @@ sub arg_co_maybe {
 
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
-    return { repos => $repos,
-	     repospath => $repospath,
-	     depotpath => $cinfo->{depotpath} || $arg,
-	     copath => $copath,
-	     report => $arg,
-	     path => $path,
-	   };
+    return SVK::Target->new
+	( repos => $repos,
+	  repospath => $repospath,
+	  depotpath => $cinfo->{depotpath} || $arg,
+	  copath => $copath,
+	  report => $arg,
+	  path => $path,
+	);
 }
 
 sub arg_copath {
     my ($self, $arg) = @_;
 
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
-    return { repos => $repos,
-	     repospath => $repospath,
-	     report => $arg,
-	     copath => Cwd::abs_path ($arg),
-	     path => $path,
-	     cinfo => $cinfo,
-	     depotpath => $cinfo->{depotpath},
-	   };
+    return SVK::Target->new
+	( repos => $repos,
+	  repospath => $repospath,
+	  report => $arg,
+	  copath => Cwd::abs_path ($arg),
+	  path => $path,
+	  cinfo => $cinfo,
+	  depotpath => $cinfo->{depotpath},
+	);
 }
 
 sub arg_depotpath {
     my ($self, $arg) = @_;
-
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
 
-    return { repos => $repos,
-	     repospath => $repospath,
-	     path => $path,
-	     depotpath => $arg,
-	   };
+    return SVK::Target->new
+	( repos => $repos,
+	  repospath => $repospath,
+	  path => $path,
+	  depotpath => $arg,
+	);
 }
 
 sub arg_depotname {
@@ -303,8 +306,8 @@ Argument is a number of checkout paths.
 
 =back
 
-All the methods except C<arg_depotname> returns a hash with the
-following keys:
+All the methods except C<arg_depotname> returns a L<SVK::Target>
+object, which is a hash with the following keys:
 
 =over
 
@@ -354,9 +357,6 @@ Display usage. An optional argument is to display detail or not.
 =back
 
 =head1 TODO
-
-The returned hash of C<arg_*> should really be an object of
-C<SVK::Target> or something like that.
 
 =head1 SEE ALSO
 

@@ -133,9 +133,11 @@ sub cb_for_root {
 			       my ($path, $status) = @_;
 			       $modified->{$path} = $status->[0];
 			   }));
-		   SVN::Repos::dir_delta ($base_root, $base_path, '',
-					  $root, "$anchor/$path",
-					  $editor, undef, 0, 0, 0, 0);
+		   SVK::XD->depot_delta (oldroot => $base_root, newroot => $root,
+					 oldpath => [$base_path, ''],
+					 newpath => "$anchor/$path",
+					 editor => $editor,
+					 no_textdelta => 1, no_recurse => 1);
 		   return $modified;
 	       },
 	   );

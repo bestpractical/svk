@@ -3,10 +3,63 @@ use strict;
 use SVK::Util qw (find_svm_source find_local_mirror svn_mirror);
 use SVK::I18N;
 
+=head1 NAME
+
+SVK::Merge - Merge context class
+
+=head1 SYNOPSIS
+
+  use SVK::Merge;
+
+  SVK::Merge->auto (repos => $repos, src => $src, dst => $dst)->run ($editor, %cb);
+
+=head1 DESCRIPTION
+
+The C<SVK::Merge> class is for representing merge contexts, mainly
+including what delta is used for this merge, and what target the delta
+applies to.
+
+Given the 3 L<SVK::Target> objects:
+
+=over
+
+=item src
+
+=item dst
+
+=item base
+
+=back
+
+C<SVK::Merge> will be applying I<delta> (C<base>, C<src>) to C<dst>.
+
+=head1 CONSTRUCTORS
+
+=head2 new
+
+Takes parameters the usual way.
+
+=head2 auto
+
+Like new, but the C<base> object will be found automatically as the
+nearest ancestor of C<src> and C<dst>.
+
+=head1 METHODS
+
+=over
+
+=cut
+
 sub new {
     my ($class, @arg) = @_;
     my $self = bless {}, $class;
     %$self = @arg;
+    return $self;
+}
+
+sub auto {
+    my $self = new (@_);
+    @{$self}{qw/base fromrev/} = $self->find_merge_base (@{$self}{qw/src dst/});
     return $self;
 }
 
@@ -34,10 +87,11 @@ sub _next_is_merge {
 }
 
 sub find_merge_base {
-    my ($self, $repos, $src, $dst) = @_;
+    my ($self, $src, $dst) = @_;
+    my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($repos, $_, $yrev)} ($src, $dst);
+    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($repos, @{$_}{qw/path revision/})} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
@@ -49,8 +103,8 @@ sub find_merge_base {
     }
 
     if (!$basepath) {
-	die loc("Can't find merge base for %1 and %2\n", $src, $dst)
-	  unless $self->{baseless} or $self->{base};
+	die loc("Can't find merge base for %1 and %2\n", $src->{path}, $dst->{path})
+	    unless $self->{baseless} or $self->{base};
 
 	unless ($baserev = $self->{base}) {
 	    # baseless merge
@@ -59,25 +113,26 @@ sub find_merge_base {
 	    $pool->clear, $baserev = ($hist->location)[1]
 		while $hist = $hist->prev(0);
 	}
-
-	return ($src, $baserev, $baserev);
+	return (SVK::Target->new (%$src, revision => $baserev), $baserev);
     }
 
-    if ($basepath ne $src && $basepath ne $dst) {
+    # XXX: document this, cf t/07smerge-foreign.t
+    if ($basepath ne $src->{path} && $basepath ne $dst->{path}) {
 	my ($fromrev, $torev) = ($srcinfo->{$baseentry}, $dstinfo->{$baseentry});
 	($fromrev, $torev) = ($torev, $fromrev) if $torev < $fromrev;
 	if (my ($mrev, $merge) =
 	    $self->_next_is_merge ($repos, $basepath, $fromrev, $torev)) {
 	    my $minfo = SVK::Merge::Info->new ($merge);
 	    my $root = $fs->revision_root ($yrev);
-	    my ($srcinfo, $dstinfo) = map { SVK::Merge::Info->new ($root->node_prop ($_, 'svk:merge')) }
+	    my ($srcinfo, $dstinfo) = map { SVK::Merge::Info->new ($root->node_prop ($_->{path}, 'svk:merge')) }
 		($src, $dst);
 	    $baserev = $mrev
 		if $minfo->subset_of ($srcinfo) && $minfo->subset_of ($dstinfo);
 	}
     }
 
-    return ($basepath, $baserev, $dstinfo->{$fs->get_uuid.':'.$src} || $baserev);
+    return (SVK::Target->new (%$src, path => $basepath, revision => $baserev),
+	    $dstinfo->{$fs->get_uuid.':'.$src} || $baserev);
 }
 
 sub find_merge_sources {
@@ -98,7 +153,7 @@ sub find_merge_sources {
     }
     if ($verbatim) {
 	unless ($noself) {
-	    my ($uuid, $path, $rev) = find_svm_source ($repos, $path);
+	    my ($uuid, $path, $rev) = find_svm_source ($repos, $path, $rev);
 	    $minfo->{join(':', $uuid, $path)} = $rev;
 	}
 	return $minfo;
@@ -174,16 +229,14 @@ sub copy_ancestors {
 }
 
 sub get_new_ticket {
-    my ($self, $repos, $src, $dst) = @_;
-    my $yrev = $repos->fs->youngest_rev;
-    my $srcinfo = $self->find_merge_sources ($repos, $src, $yrev, 1);
-    my $dstinfo = $self->find_merge_sources ($repos, $dst, $yrev, 1);
-    my ($uuid, $newinfo);
-
+    my ($self) = @_;
+    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($self->{repos}, @{$_}{qw/path revision/}, 1)}
+	@{$self}{qw/src dst/};
+    my ($newinfo);
     # bring merge history up to date as from source
-    ($uuid, $dst) = find_svm_source ($repos, $dst);
+    my ($uuid, $dstpath) = find_svm_source ($self->{repos}, $self->{dst}{path});
     for (sort keys %{ { %$srcinfo, %$dstinfo } }) {
-	next if $_ eq "$uuid:$dst";
+	next if $_ eq "$uuid:$dstpath";
 	no warnings 'uninitialized';
 	$newinfo->{$_} = $srcinfo->{$_} > $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
 	print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_})
@@ -196,9 +249,64 @@ sub get_new_ticket {
 sub log {
     my $self = shift;
     open my $buf, '>', \ (my $tmp);
-    SVK::Command::Log::do_log (@_, 0, 0, 0, 1, $buf);
+    SVK::Command::Log::do_log ($self->{repos}, $self->{src}{path}, $self->{fromrev}+1,
+			       $self->{src}{revision}, 0, 0, 0, 1, $buf);
     $tmp =~ s/^/ /mg;
     return $tmp;
+}
+
+=item info
+
+Return a string about how the merge is done.
+
+=cut
+
+sub info {
+    my $self = shift;
+    return loc("Auto-merging (%1, %2) %3 to %4 (base %5:%6).\n",
+	       $self->{fromrev}, @{$self->{src}}{qw/revision path/},
+	       $self->{dst}{path}, @{$self->{base}}{qw/path revision/});
+}
+
+=item run
+
+Given the storage editor and L<SVK::Editor::Merge> callbacks, apply
+the merge to the storage editor. Returns the number of conflicts.
+
+=back
+
+=cut
+
+sub run {
+    my ($self, $storage, %cb) = @_;
+
+    $storage = SVK::Editor::Delay->new ($storage);
+    my $base_root = $self->{base}->root;
+    my $editor = SVK::Editor::Merge->new
+	( anchor => $self->{src}{path},
+	  base_anchor => $self->{base}{path},
+	  base_root => $base_root,
+	  target => '',
+	  send_fulltext => $cb{mirror} ? 0 : 1,
+	  storage => $storage,
+	  cb_merged => $self->{ticket} ?
+	  sub { my ($editor, $baton, $pool) = @_;
+		$editor->change_dir_prop
+		    ($baton, 'svk:merge', $self->get_new_ticket);
+	    } : undef,
+	  %cb,
+	);
+    $editor->{external} = $ENV{SVKMERGE}
+	if !$self->{check_only} && $ENV{SVKMERGE} && -x (split (' ', $ENV{SVKMERGE}))[0];
+    SVK::XD->depot_delta
+	    ( oldroot => $base_root, newroot => $self->{src}->root,
+	      oldpath => [$self->{base}{path}, ''],
+	      newpath => $self->{src}{path},
+	      editor => $editor
+	    );
+    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
+
+    return $editor->{conflicts};
 }
 
 package SVK::Merge::Info;
@@ -224,5 +332,27 @@ sub subset_of {
     return 1;
 }
 
-1;
+=head1 TODO
 
+Document the merge and ticket tracking mechanism.
+
+=head1 SEE ALSO
+
+L<SVK::Editor::Merge>, L<SVK::Command::Merge>, Star-merge from GNU Arch
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut
+
+1;

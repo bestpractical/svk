@@ -14,13 +14,14 @@ sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
      'l|log'		=> 'log',
+     'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
      'r|revision=s'	=> 'revspec');
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0 || $#arg > 1;
+    return if $#arg < 0 || $#arg > 1;
     return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
 }
 
@@ -29,68 +30,77 @@ sub lock {
     $_[1]->{copath} ? $self->lock_target ($_[1]) : $self->lock_none;
 }
 
+sub get_commit_message {
+    my ($self, $log) = @_;
+    return if $self->{check_only} || $self->{incremental};
+    $self->{message} = defined $self->{message} ?
+	join ("\n", $self->{message}, $log, '')
+	    : $self->SUPER::get_commit_message ($log);
+}
+
 sub run {
     my ($self, $src, $dst) = @_;
-    my ($fromrev, $torev, $baserev, $cb_merged, $cb_closed);
-
-    die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
+    my $merge;
+    die loc("repos paths mismatch") unless $src->same_repos ($dst);
     my $repos = $src->{repos};
     my $fs = $repos->fs;
-    unless ($self->{auto}) {
-	die loc("revision required") unless $self->{revspec};
-	($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
-	    or die loc("revision must be N:M");
-    }
+    my $yrev = $fs->youngest_rev;
 
-    my $base_path = $src->{path};
     if ($self->{auto}) {
-	$self->{merge} = SVK::Merge->new (%$self);
-	($base_path, $baserev, $fromrev, $torev) =
-	    ($self->{merge}->find_merge_base ($repos, $src->{path}, $dst->{path}), $fs->youngest_rev);
-	print loc("Auto-merging (%1, %2) %3 to %4 (base %5:%6).\n",
-		  $fromrev, $torev, $src->{path}, $dst->{path}, $base_path, $baserev);
-	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
-			   $editor->change_dir_prop
-			       ($baton, 'svk:merge',
-				$self->{merge}->get_new_ticket ($repos, $src->{path}, $dst->{path}));
-		       } unless $self->{no_ticket};
+	# XXX: these should come from parse_arg
+	$src->{revision} ||= $yrev;
+	$dst->{revision} ||= $yrev;
+	$merge = SVK::Merge->auto (%$self, repos => $repos,
+				   ticket => !$self->{no_ticket},
+				   src => $src, dst => $dst);
+	print $merge->info;
+    }
+    else {
+	die loc("Incremental merge not supported\n") if $self->{incremental};
+	die loc("Revision required\n") unless $self->{revspec};
+	my ($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
+	    or die loc("Revision must be N:M\n");
+	$src->{revision} = $torev;
+	$dst->{revision} ||= $yrev;
+	# XXX: fix --base= and add regression test
+	$merge = SVK::Merge->new
+	    (%$self, repos => $repos, src => $src, dst => $dst,
+	     base => SVK::Target->new (%$src, revision => $baserev));
     }
 
-    unless ($dst->{copath} || $self->{check_only}) {
-	my $log = ($self->{log} ? $self->{merge}->log ($repos, $src->{path},
-						       $fromrev+1, $torev)
-		   : '')."\n";
-	$self->{message} = defined $self->{message} ?
-	    join ("\n", $self->{message}, $log)
-	    : get_buffer_from_editor ('log message', $self->target_prompt,
-				      join ("\n", $log, $self->target_prompt), 'commit')
+    $self->get_commit_message ($self->{log} ? $merge->log : '')
+	unless $dst->{copath};
+
+    if ($self->{incremental} && !$self->{check_only}) {
+	die loc ("Not possible to do incremental merge without merge ticket.\n")
+	    if $self->{no_ticket};
+	print loc ("-m ignored in incremental merge\n") if $self->{message};
+	my @rev;
+	my $hist = $src->root->node_history ($src->{path});
+	my $spool = SVN::Pool->new;
+	while ($hist = $hist->prev (0)) {
+	    my $rev = ($hist->location)[1];
+	    last if $rev <= $merge->{fromrev};
+	    unshift @rev, $rev;
+	    $spool->clear;
+	}
+	for (@rev) {
+	    $src->{revision} = $_;
+	    $merge = SVK::Merge->auto (%$self, repos => $repos, ticket => 1,
+				       src => $src, dst => $dst);
+	    print '===> '.$merge->info;
+	    $self->{message} = $merge->log;
+	    last if $merge->run ($self->get_editor ($dst));
+	    # refresh dst
+	    $dst->{revision} = $fs->youngest_rev;
+	    $spool->clear;
+	}
     }
-
-    # editor for the target
-    my ($storage, %cb) = $self->get_editor ($dst);
-
-    $storage = SVK::Editor::Delay->new ($storage);
-    my $editor = SVK::Editor::Merge->new
-	( anchor => $src->{path},
-	  base_anchor => $base_path,
-	  base_root => $fs->revision_root ($baserev),
-	  target => '',
-	  send_fulltext => $cb{mirror} ? 0 : 1,
-	  cb_merged => $cb_merged,
-	  storage => $storage,
-	  %cb,
-	);
-    $editor->{external} = $ENV{SVKMERGE}
-	if !$self->{check_only} && $ENV{SVKMERGE} && -x (split (' ', $ENV{SVKMERGE}))[0];
-    SVN::Repos::dir_delta ($fs->revision_root ($baserev),
-			   $base_path, '',
-			   $fs->revision_root ($torev), $src->{path},
-			   $editor, undef,
-			   1, 1, 0, 1);
-
-
-    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
-
+    else {
+	print loc("Incremental merge not guaranteed even if check is successful\n")
+	    if $self->{incremental};
+	$merge->run ($self->get_editor ($dst));
+    }
     return;
 }
 
@@ -112,6 +122,7 @@ SVK::Command::Merge - Apply differences between two sources
     -r [--revision] rev:    revision
     -m [--message] message: commit message
     -C [--check-only]:      don't perform actual writes
+    -I [--incremental]:     apply changes individually
     -a [--auto]:            automatically find merge points
     -l [--log]:             brings the logs of merged revs to the message buffer
     --no-ticket:            don't associate the ticket tracking merge history

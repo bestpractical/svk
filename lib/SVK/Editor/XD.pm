@@ -121,6 +121,7 @@ sub apply_textdelta {
 			      "$self->{anchor}/$path", $copath)
 	or warn "can't open $path";
 
+    # The fh is refed by the current default pool, not the pool here
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
 				 $fh, undef, undef, $pool)];
 }

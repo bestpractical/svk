@@ -1,3 +1,20 @@
+[Changes for 0.17 - ]
+
+* Optimize checkout_delta with mtime/inode/size signatures.
+
+* Implement smerge -I for incremental merging.
+
+* Make smerge -lm <msg> do what you mean.
+
+* When using external merge tools, give local, base, new and merged
+  tmpfiles sane names. [Autrijus]
+
+* Improve documentation.
+
+* Fix cb_rev when commiting to just-moved files in mirrored path.
+
+* Cleanup SVK::Merge and others.
+
 [Changes for 0.16 - 30 Jun, 2004 - German Perl Workshop Release]
 
 * Fix pool usage in svk annotate with svn_fsfs.

@@ -116,6 +116,7 @@ sub is_output_like {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
     $svk->$cmd (@$arg);
     ok ($output =~ m/$expected/, $test || join(' ', $cmd, @$arg));
+    diag $@ if $@;
 }
 
 require SVN::Simple::Edit;
