@@ -23,7 +23,7 @@ sub do_propset_direct {
     my $root = $fs->revision_root ($fs->youngest_rev);
     my $kind = $root->check_path ($arg{path});
 
-    die loc("path %1 does not exist", $arg{path}) if $kind == $SVN::Node::none;
+    die loc("path %1 does not exist.\n", $arg{path}) if $kind == $SVN::Node::none;
 
     my $edit = $self->get_commit_editor
 	($root, sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %arg);

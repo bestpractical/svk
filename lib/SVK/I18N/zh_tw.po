@@ -45,7 +45,7 @@ msgstr "%1 - 略過\n"
 
 #. ($path)
 msgid "%1 already locked, use 'svk cleanup' if lock is stalled\n"
-msgstr "%1 已被鎖定，若已爛掉請用「svk cleanup」解除"
+msgstr "%1 已被鎖定，若卡住時請用「svk cleanup」解除"
 
 #. ($report)
 msgid "%1 changed"
@@ -53,7 +53,7 @@ msgstr "%1 已更動"
 
 #. ($arg{copath})
 msgid "%1 is already scheduled for delete"
-msgstr "%1 已被排程列入下次要刪除的項目"
+msgstr "%1 已被排程納入下次要刪除的項目"
 
 #. ($target->copath ($_[0])
 #: lib/SVK/Command/Copy.pm:96
@@ -63,7 +63,7 @@ msgstr "找不到 %1。\n"
 #. ($target->copath ($_[0])
 #: lib/SVK/Command/Copy.pm:93
 msgid "%1 is modified.\n"
-msgstr "%1 已更動。\n"
+msgstr "%1 已修改。\n"
 
 #. ($dst->{copath})
 #: lib/SVK/Command/Copy.pm:121
@@ -138,7 +138,7 @@ msgid "Can't load statefile, old statefile saved as %1\n"
 msgstr "無法載入狀態檔；舊版狀態檔已存為%1\n"
 
 msgid "Cannot create SVK's config directory at '%1': $!"
-msgstr "無法於 '%1' 建立 SVK 的設定目錄： $!"
+msgstr "無法於「%1」建立 SVK 的設定目錄：$!"
 
 #: lib/SVK/Command/Log.pm:108
 msgid "Changed paths:\n"
@@ -156,7 +156,7 @@ msgstr "取出路徑：%1\n"
 #. ($_->{copath})
 #: lib/SVK/Command/Cleanup.pm:17
 msgid "Cleaned up stalled lock on %1.\n"
-msgstr "己清除 %1 上爛掉的鎖定。\n"
+msgstr "己清除 %1 上卡住的鎖定。\n"
 
 #: lib/SVK/Command/Commit.pm:260
 msgid "Commit into mirrored path: merging back directly.\n"
@@ -167,7 +167,7 @@ msgstr "送交進映射路徑：正在直接合併回去。\n"
 #: lib/SVK/Command/Copy.pm:28 lib/SVK/Command/Delete.pm:45
 #: lib/SVK/Command/Mkdir.pm:21 lib/SVK/Command/Propset.pm:28
 msgid "Committed revision %1.\n"
-msgstr "已送交修訂版號 %1 的變動。\n"
+msgstr "已送交修訂版號 %1 的更動。\n"
 
 #. ((split/:/)
 #: lib/SVK/Command/Info.pm:41
@@ -232,7 +232,7 @@ msgstr "已中斷。\n"
 #. ($repos->fs->revision_root($rev)
 #: lib/SVK/Command/Info.pm:36
 msgid "Last Changed Rev.: %1\n"
-msgstr "最後變動版號: %1\n"
+msgstr "最後更動版本：%1\n"
 
 #. ($_[0])
 #: lib/SVK/Command/Commit.pm:106
@@ -282,7 +282,7 @@ msgstr "smerge 時不需要追蹤改名\n"
 
 #: lib/SVK/Command/Commit.pm:178
 msgid "No targets to commit.\n"
-msgstr "沒有送交變動的目標。\n"
+msgstr "沒有送交更動的目標。\n"
 
 #: lib/SVK/Command/Merge.pm:83
 msgid "Not possible to do incremental merge without merge ticket.\n"
@@ -309,7 +309,7 @@ msgstr "路徑 %1 不存在。\n"
 #. ($target->{path})
 #: lib/SVK/Command/List.pm:38
 msgid "Path %1 is not a versioned directory\n"
-msgstr "路徑 %1 不是受版本控制的目錄\n"
+msgstr "路徑 %1 並未納入版本控制\n"
 
 #. ($_->{copath})
 #: lib/SVK/Command/Cleanup.pm:21
@@ -331,7 +331,7 @@ msgstr "%1 的屬性列表：\n"
 #. ($rpath)
 #: lib/SVK/Editor/Diff.pm:108
 msgid "Property changes on: %1\n"
-msgstr "%1 的屬性變動：\n"
+msgstr "%1 的屬性更動：\n"
 
 #. ($path)
 #: lib/SVK/Command/Depotmap.pm:53
@@ -396,7 +396,7 @@ msgstr "呼叫編輯器...\n"
 
 #: lib/SVK/Command.pod:6
 msgid "add - Put files and directories under version control"
-msgstr "add - 將檔案及目錄列入版本控制"
+msgstr "add - 將檔案及目錄納入版本控制"
 
 #: lib/SVK/Command.pod:7
 msgid "an indented hierarchy"
@@ -456,11 +456,11 @@ msgstr "無法辨識的更動語法"
 
 #: lib/SVK/Command.pod:11
 msgid "cleanup - Remove stalled locks"
-msgstr "cleanup - 移除爛掉的鎖定"
+msgstr "cleanup - 移除卡住的鎖定"
 
 #: lib/SVK/Command.pod:12
 msgid "cmerge - Merge specific changes"
-msgstr "cmerge - 合併指定的變動"
+msgstr "cmerge - 合併指定的更動"
 
 #: lib/SVK/Command.pod:13
 msgid "commit - Commit changes to depot"
@@ -485,7 +485,7 @@ msgstr "無法寫入 %1"
 
 #: lib/SVK/Command.pod:15
 msgid "delete - Remove versioned item"
-msgstr "delete - 移除有版本資訊的物件"
+msgstr "delete - 移除納入版本控制的項目"
 
 #: lib/SVK/Command.pod:16
 msgid "depotmap - Create or edit the depot mapping configuration"
@@ -493,7 +493,7 @@ msgstr "depotmap - 建立或編輯檔案庫列表"
 
 #: lib/SVK/Command.pod:17
 msgid "describe - Describe a change"
-msgstr "describe - 描述變動"
+msgstr "describe - 描述更動"
 
 #: lib/SVK/Command.pod:18
 msgid "diff - Display diff between revisions or checkout copies"
@@ -556,7 +556,7 @@ msgstr "mirror - 初始化映射的檔案庫路徑"
 
 #: lib/SVK/Command.pod:28
 msgid "mkdir - Create a versioned directory"
-msgstr "mkdir - 建立有版本控制的目錄"
+msgstr "mkdir - 建立納入版本控制的目錄"
 
 #: lib/SVK/Command.pod:29
 msgid "move - Move a file or directory"
@@ -586,12 +586,7 @@ msgstr "路徑 %1 已存在"
 
 #. ($path)
 #. ($arg{path})
-#: lib/SVK/Command/Delete.pm:35 lib/SVK/Command/Propset.pm:26
-msgid "path %1 does not exist"
-msgstr "路徑 %1 不存在"
-
-#. ($update_target->{path})
-#: lib/SVK/Command/Update.pm:48
+#: lib/SVK/Command/Delete.pm:35 lib/SVK/Command/Propset.pm:26 lib/SVK/Command/Update.pm:48
 msgid "path %1 does not exist.\n"
 msgstr "路徑 %1 不存在。\n"
 
@@ -644,7 +639,7 @@ msgstr "resolved - 移除已取出項目的衝突標記"
 
 #: lib/SVK/Command.pod:38
 msgid "revert - Revert changes made in checkout copies"
-msgstr "revert - 復原對已取出的複本所作過的變動"
+msgstr "revert - 復原對已取出的複本所作過的更動"
 
 #: lib/SVK/Command/Cmerge.pm:32
 msgid "revision must be N:M"
@@ -659,7 +654,7 @@ msgid "smerge - Automatic merge all changes between branches"
 msgstr "smerge - 自動合併不同分支的所有差異"
 
 msgid "source checksum mismatch"
-msgstr "來源檢查碼不符"
+msgstr "來源的檢查值不符"
 
 #: lib/SVK/Command.pod:40
 msgid "status - Display the status of items in the checkout copy"
@@ -675,234 +670,234 @@ msgstr "sync - 同步化映射的檔案庫路徑"
 
 #: lib/SVK/Command/Commit.pm:278
 msgid "unexpected error: commit to mirrored path but no mirror object"
-msgstr "未預期的錯誤: 送交變動至映射的路徑，但找不到映射物件"
+msgstr "未預期的錯誤: 送交更動至映射的路徑，但找不到映射物件"
 
 #: lib/SVK/Command.pod:43
 msgid "update - Bring changes from the repository into checkout copies"
-msgstr "update - 把檔案庫上已有的變動更新到本地工作複本上"
+msgstr "update - 把檔案庫上已有的更動更新到本地工作複本上"
 
 #: lib/SVK/Command.pod:44
 msgid "verify - Verify change signatures"
-msgstr "verify - 檢驗變動的簽章"
+msgstr "verify - 檢驗更動的簽章"
 
 msgid "%1: %2\n"
 msgstr "%1: %2\n"
 
-#~ msgid "--force: Needs description"
-#~ msgstr "--force: 強制執行"
+msgid "--force: Needs description"
+msgstr "--force: 強制執行"
 
-#~ msgid "--no-ticket: don't associate the ticket tracking merge history"
-#~ msgstr "--no-ticket: 不留下合併的歷史紀錄"
+msgid "--no-ticket: don't associate the ticket tracking merge history"
+msgstr "--no-ticket: 不留下合併的歷史紀錄"
 
-#~ msgid "-B [--baseless]: use the oldest revision as the merge point"
-#~ msgstr "-B [--baseless]: 使用最早的更動作為合併點"
+msgid "-B [--baseless]: use the oldest revision as the merge point"
+msgstr "-B [--baseless]: 使用最早的更動當作合併點"
 
-#~ msgid "-C [--check-only]: Needs description"
-#~ msgstr "-C [--check-only]: 不真的執行寫入，只做檢查"
+msgid "-C [--check-only]: Needs description"
+msgstr "-C [--check-only]: 不真的執行寫入，只做檢查"
 
-#~ msgid "-C [--check-only]: don't perform actual writes"
-#~ msgstr "-C [--check-only]: 不真的執行寫入，只做檢查"
+msgid "-C [--check-only]: don't perform actual writes"
+msgstr "-C [--check-only]: 不真的執行寫入，只做檢查"
 
-#~ msgid "-N [--non-recursive]: operate on single directory only"
-#~ msgstr "-N [--non-recursive]: 僅處理檔案，忽略子目錄"
+msgid "-N [--non-recursive]: operate on single directory only"
+msgstr "-N [--non-recursive]: 僅處理檔案，忽略子目錄"
 
-#~ msgid "-R [--recursive]: recursive"
-#~ msgstr "-R [--recursive]: 遞迴處理子目錄"
+msgid "-R [--recursive]: recursive"
+msgstr "-R [--recursive]: 遞迴處理子目錄"
 
-#~ msgid "-a [--auto]: Needs description"
-#~ msgstr "-a [--auto]: 自動找到合併點"
+msgid "-a [--auto]: Needs description"
+msgstr "-a [--auto]: 自動找到合併點"
 
-#~ msgid "-a [--auto]: automatically find merge points"
-#~ msgstr "-a [--auto]: 自動找到合併點"
+msgid "-a [--auto]: automatically find merge points"
+msgstr "-a [--auto]: 自動找到合併點"
 
-#~ msgid "-b [--base] rev: manually specify source revision as the merge point"
-#~ msgstr "-b [--base] rev: 手動指定來源的更動編號作為合併點"
+msgid "-b [--base] rev: manually specify source revision as the merge point"
+msgstr "-b [--base] rev: 手動指定來源的更動編號作為合併點"
 
-#~ msgid "-c [--change] chgspec: change spec to merge"
-#~ msgstr "-c [--change] chgspec: 要合併的更動"
+msgid "-c [--change] chgspec: change spec to merge"
+msgstr "-c [--change] chgspec: 要合併的更動"
 
-#~ msgid "-l [--limit]: limit the number of revisions displayed"
-#~ msgstr "-l [--limit]: 限制要顯示的版本數"
+msgid "-l [--limit]: limit the number of revisions displayed"
+msgstr "-l [--limit]: 限制要顯示的版本數"
 
-#~ msgid "-l [--log]: brings the logs of merged revs to the message buffer"
-#~ msgstr "-l [--log]: 採用各更動的紀錄做為合併紀錄"
+msgid "-l [--log]: brings the logs of merged revs to the message buffer"
+msgstr "-l [--log]: 採用各更動的紀錄做為合併紀錄"
 
-#~ msgid "-m [--message] ARG: specify commit message ARG"
-#~ msgstr "-m [--message] ARG: 指定送交變動的描述為 ARG"
+msgid "-m [--message] ARG: specify commit message ARG"
+msgstr "-m [--message] ARG: 指定送交更動的描述為 ARG"
 
-#~ msgid "-m [--message] message: commit message"
-#~ msgstr "-m [--message] message: 指定送交變動的描述為 message"
+msgid "-m [--message] message: commit message"
+msgstr "-m [--message] message: 指定送交更動的描述為 message"
 
-#~ msgid "-r [--revision] REV: revision"
-#~ msgstr "-r [--revision] REV: 修訂版號"
+msgid "-r [--revision] REV: revision"
+msgstr "-r [--revision] REV: 修訂版號"
 
-#~ msgid "-r [--revision] arg: Needs description"
-#~ msgstr "-r [--revision] arg: 修訂版號"
+msgid "-r [--revision] arg: Needs description"
+msgstr "-r [--revision] arg: 修訂版號"
 
-#~ msgid "-r [--revision] rev: revision"
-#~ msgstr "-r [--revision] rev: 修訂版號"
+msgid "-r [--revision] rev: revision"
+msgstr "-r [--revision] rev: 修訂版號"
 
-#~ msgid "-r [--revision]: revision"
-#~ msgstr "-r [--revision]: 修訂版號"
+msgid "-r [--revision]: revision"
+msgstr "-r [--revision]: 修訂版號"
 
-#~ msgid "-r [--revision]: revision spec from:to"
-#~ msgstr "-r [--revision]: 指定修訂版號(開始:結束)"
+msgid "-r [--revision]: revision spec from:to"
+msgstr "-r [--revision]: 指定修訂版號(開始:結束)"
 
-#~ msgid "-s [--sign]: Needs description"
-#~ msgstr "-s [--sign]: 簽署送交變動"
+msgid "-s [--sign]: Needs description"
+msgstr "-s [--sign]: 簽署送交更動"
 
-#~ msgid "-s [--sign]: sign the commit"
-#~ msgstr "-s [--sign]: 簽署送交變動"
+msgid "-s [--sign]: sign the commit"
+msgstr "-s [--sign]: 簽署送交更動"
 
-#~ msgid "-v [--verbose]: Needs description"
-#~ msgstr "-v [--verbose]: 印出額外的資訊"
+msgid "-v [--verbose]: Needs description"
+msgstr "-v [--verbose]: 印出額外的資訊"
 
-#~ msgid "-v [--verbose]: print changed path in changes"
-#~ msgstr "-v [--verbose]: 印出變動中更動的路徑"
+msgid "-v [--verbose]: print changed path in changes"
+msgstr "-v [--verbose]: 印出更動中更動的路徑"
 
-#~ msgid "-v [--verbose]: print extra information"
-#~ msgstr "-v [--verbose]: 印出額外的資訊"
+msgid "-v [--verbose]: print extra information"
+msgstr "-v [--verbose]: 印出額外的資訊"
 
-#~ msgid "-x [--cross]: display cross copied nodes"
-#~ msgstr "-x [--cross]: 顯示交叉複製的項目"
+msgid "-x [--cross]: display cross copied nodes"
+msgstr "-x [--cross]: 顯示交叉複製的項目"
 
-#~ msgid "-x [--cross]: trace cross copied revisions"
-#~ msgstr "-x [--cross-copy]: 追蹤交叉複製的版本"
+msgid "-x [--cross]: trace cross copied revisions"
+msgstr "-x [--cross-copy]: 追蹤交叉複製的版本"
 
-#~ msgid "Commit checking finished.\n"
-#~ msgstr "已完成送交變動前的檢查。\n"
+msgid "Commit checking finished.\n"
+msgstr "已完成送交更動前的檢查。\n"
 
-#~ msgid "Index: %1\n"
-#~ msgstr "索引: %1\n"
+msgid "Index: %1\n"
+msgstr "索引: %1\n"
 
-#~ msgid "add [PATH...]"
-#~ msgstr "add [路徑...]"
+msgid "add [PATH...]"
+msgstr "add [路徑...]"
 
-#~ msgid "annotate FILE"
-#~ msgstr "annotate 檔案"
+msgid "annotate FILE"
+msgstr "annotate 檔案"
 
-#~ msgid "cat [DEPOTPATH|PATH...]"
-#~ msgstr "cat [檔案庫路徑|路徑...]"
+msgid "cat [DEPOTPATH|PATH...]"
+msgstr "cat [檔案庫路徑|路徑...]"
 
-#~ msgid "checkout DEPOTPATH [PATH]"
-#~ msgstr "checkout 檔案庫路徑 [路徑]"
+msgid "checkout DEPOTPATH [PATH]"
+msgstr "checkout 檔案庫路徑 [路徑]"
 
-#~ msgid "cleanup [PATH...]"
-#~ msgstr "cleanup [路徑...]"
+msgid "cleanup [PATH...]"
+msgstr "cleanup [路徑...]"
 
-#~ msgid "cmerge -c CHGSPEC DEPOTPATH [PATH]"
-#~ msgstr "cmerge -c 合併方式 檔案庫路徑 [路徑]"
+msgid "cmerge -c CHGSPEC DEPOTPATH [PATH]"
+msgstr "cmerge -c 合併方式 檔案庫路徑 [路徑]"
 
-#~ msgid "cmerge -c CHGSPEC DEPOTPATH1 DEPOTPATH2"
-#~ msgstr "cmerge -c 合併方式 檔案庫路徑1 檔案庫路徑2"
+msgid "cmerge -c CHGSPEC DEPOTPATH1 DEPOTPATH2"
+msgstr "cmerge -c 合併方式 檔案庫路徑1 檔案庫路徑2"
 
-#~ msgid "commit [PATH...]"
-#~ msgstr "commit [路徑...]"
+msgid "commit [PATH...]"
+msgstr "commit [路徑...]"
 
-#~ msgid "conflict on %1"
-#~ msgstr "衝突發生於 %1"
+msgid "conflict on %1"
+msgstr "衝突發生於 %1"
 
-#~ msgid "copy DEPOTPATH1 DEPOTPATH2"
-#~ msgstr "copy 檔案庫路徑1 檔案庫路徑2"
+msgid "copy DEPOTPATH1 DEPOTPATH2"
+msgstr "copy 檔案庫路徑1 檔案庫路徑2"
 
-#~ msgid "delete [DEPOTPATH...]"
-#~ msgstr "delete [路徑...]"
+msgid "delete [DEPOTPATH...]"
+msgstr "delete [路徑...]"
 
-#~ msgid "delete [PATH...]"
-#~ msgstr "delete [路徑...]"
+msgid "delete [PATH...]"
+msgstr "delete [路徑...]"
 
-#~ msgid "depotmap"
-#~ msgstr "depotmap"
+msgid "depotmap"
+msgstr "depotmap"
 
-#~ msgid "describe CHANGE DEPOTNAME"
-#~ msgstr "describe 變動 檔案庫名稱"
+msgid "describe CHANGE DEPOTNAME"
+msgstr "describe 更動 檔案庫名稱"
 
-#~ msgid "describe CHANGE [PATH]"
-#~ msgstr "describe 變動 [路徑]"
+msgid "describe CHANGE [PATH]"
+msgstr "describe 更動 [路徑]"
 
-#~ msgid "diff -r N:M DEPOTPATH"
-#~ msgstr "diff -r N:M 檔案庫路徑"
+msgid "diff -r N:M DEPOTPATH"
+msgstr "diff -r N:M 檔案庫路徑"
 
-#~ msgid "diff [-r REV] [PATH]"
-#~ msgstr "diff [-r 版號] [路徑]"
+msgid "diff [-r REV] [PATH]"
+msgstr "diff [-r 版號] [路徑]"
 
-#~ msgid "different repository"
-#~ msgstr "不同的檔案庫"
+msgid "different repository"
+msgstr "不同的檔案庫"
 
-#~ msgid "help command"
-#~ msgstr "help 命令"
+msgid "help command"
+msgstr "help 命令"
 
-#~ msgid "import DEPOTPATH [PATH]"
-#~ msgstr "import 檔案庫路徑 [路徑]"
+msgid "import DEPOTPATH [PATH]"
+msgstr "import 檔案庫路徑 [路徑]"
 
-#~ msgid "info [PATH]"
-#~ msgstr "info [路徑]"
+msgid "info [PATH]"
+msgstr "info [路徑]"
 
-#~ msgid "list [DEPOTPATH|PATH...]"
-#~ msgstr "list [檔案庫路徑|路徑...]"
+msgid "list [DEPOTPATH|PATH...]"
+msgstr "list [檔案庫路徑|路徑...]"
 
-#~ msgid "log DEPOTPATH"
-#~ msgstr "log 檔案庫路徑"
+msgid "log DEPOTPATH"
+msgstr "log 檔案庫路徑"
 
-#~ msgid "log PATH"
-#~ msgstr "log 路徑"
+msgid "log PATH"
+msgstr "log 路徑"
 
-#~ msgid "merge -r N:M DEPOTPATH [PATH]"
-#~ msgstr "merge -r N:M 檔案庫路徑 [路徑]"
+msgid "merge -r N:M DEPOTPATH [PATH]"
+msgstr "merge -r N:M 檔案庫路徑 [路徑]"
 
-#~ msgid "merge -r N:M DEPOTPATH1 DEPOTPATH2"
-#~ msgstr "merge -r N:M 檔案庫路徑1 檔案庫路徑2"
+msgid "merge -r N:M DEPOTPATH1 DEPOTPATH2"
+msgstr "merge -r N:M 檔案庫路徑1 檔案庫路徑2"
 
-#~ msgid "mirror DEPOTPATH SOURCEURL"
-#~ msgstr "mirror 檔案庫路徑 來源網址"
+msgid "mirror DEPOTPATH SOURCEURL"
+msgstr "mirror 檔案庫路徑 來源網址"
 
-#~ msgid "mkdir DEPOTPATH"
-#~ msgstr "mkdir 檔案庫路徑"
+msgid "mkdir DEPOTPATH"
+msgstr "mkdir 檔案庫路徑"
 
-#~ msgid "move DEPOTPATH1 DEPOTPATH2"
-#~ msgstr "move 檔案庫路徑1 檔案庫路徑2"
+msgid "move DEPOTPATH1 DEPOTPATH2"
+msgstr "move 檔案庫路徑1 檔案庫路徑2"
 
-#~ msgid "options:"
-#~ msgstr "選項："
+msgid "options:"
+msgstr "選項："
 
-#~ msgid "propedit PROPNAME [PATH|DEPOTPATH...]"
-#~ msgstr "propedit 屬性名稱 [路徑|檔案庫路徑...]"
+msgid "propedit PROPNAME [PATH|DEPOTPATH...]"
+msgstr "propedit 屬性名稱 [路徑|檔案庫路徑...]"
 
-#~ msgid "proplist PATH..."
-#~ msgstr "proplist 路徑..."
+msgid "proplist PATH..."
+msgstr "proplist 路徑..."
 
-#~ msgid "propset PROPNAME PROPVAL [PATH|DEPOTPATH...]"
-#~ msgstr "propset 屬性名稱 屬性值 [路徑|檔案庫路徑...]"
+msgid "propset PROPNAME PROPVAL [PATH|DEPOTPATH...]"
+msgstr "propset 屬性名稱 屬性值 [路徑|檔案庫路徑...]"
 
-#~ msgid "resolved PATH..."
-#~ msgstr "resolved 路徑..."
+msgid "resolved PATH..."
+msgstr "resolved 路徑..."
 
-#~ msgid "revert PATH..."
-#~ msgstr "revert 路徑..."
+msgid "revert PATH..."
+msgstr "revert 路徑..."
 
-#~ msgid "revision should be N:M or N"
-#~ msgstr "修訂版號的格式必需為 N:M 或 N"
+msgid "revision should be N:M or N"
+msgstr "修訂版號的格式必需為 N:M 或 N"
 
-#~ msgid "smerge DEPOTPATH [PATH]"
-#~ msgstr "smerge 檔案庫路徑 [路徑]"
+msgid "smerge DEPOTPATH [PATH]"
+msgstr "smerge 檔案庫路徑 [路徑]"
 
-#~ msgid "smerge DEPOTPATH1 DEPOTPATH2"
-#~ msgstr "smerge 檔案庫路徑1 檔案庫路徑2"
+msgid "smerge DEPOTPATH1 DEPOTPATH2"
+msgstr "smerge 檔案庫路徑1 檔案庫路徑2"
 
-#~ msgid "status [PATH..]"
-#~ msgstr "status [路徑..]"
+msgid "status [PATH..]"
+msgstr "status [路徑..]"
 
-#~ msgid "switch DEPOTPATH [PATH]"
-#~ msgstr "switch 檔案庫路徑 [路徑]"
+msgid "switch DEPOTPATH [PATH]"
+msgstr "switch 檔案庫路徑 [路徑]"
 
-#~ msgid "sync DEPOTPATH"
-#~ msgstr "sync 檔案庫路徑"
+msgid "sync DEPOTPATH"
+msgstr "sync 檔案庫路徑"
 
-#~ msgid "unable to translate %1 with %2"
-#~ msgstr "無法轉換 %1 為 %2"
+msgid "unable to translate %1 with %2"
+msgstr "無法轉換 %1 為 %2"
 
-#~ msgid "update [PATH...]"
-#~ msgstr "update [路徑...]"
+msgid "update [PATH...]"
+msgstr "update [路徑...]"
 
-#~ msgid "verify CHANGE [DEPOTNAME]"
-#~ msgstr "verify 變動 檔案庫名稱"
+msgid "verify CHANGE [DEPOTNAME]"
+msgstr "verify 更動 檔案庫名稱"

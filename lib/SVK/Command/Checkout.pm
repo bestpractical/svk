@@ -11,7 +11,7 @@ use File::Spec;
 sub parse_arg {
     my ($self, @arg) = @_;
     my $depotpath = $self->arg_depotpath ($arg[0]);
-    die loc("don't know where to checkout $arg[0]\n") unless $arg[1] || $depotpath->{path} ne '/';
+    die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
 
     $arg[1] =~ s|/$|| if $arg[1];
     $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
