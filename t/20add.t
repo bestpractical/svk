@@ -18,7 +18,7 @@ overwrite_file ("A/deep/baz~", "foobar");
 is_output_like ($svk, 'add', [], qr'SYNOPSIS', 'add - help');
 
 is_output ($svk, 'add', ['A/foo'],
-	   ['A   A/', 'A   A/foo'], 'add - descendent target only');
+	   ['A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['-q', 'A/foo'],
@@ -26,28 +26,28 @@ is_output ($svk, 'add', ['-q', 'A/foo'],
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ["$corpath/A/foo"],
-	   ["A   $corpath/A/", "A   $corpath/A/foo"], 'add - descendent target only - abspath');
+	   ["A   $corpath/A", "A   $corpath/A/foo"], 'add - descendent target only - abspath');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['../add/A/foo'],
-	   ["A   ../add/A/", "A   ../add/A/foo"], 'add - descendent target only - relpath');
+	   ["A   ../add/A", "A   ../add/A/foo"], 'add - descendent target only - relpath');
 $svk->revert ('-R', '.');
 
 TODO: {
 local $TODO = 'get proper anchor';
 is_output ($svk, 'add', ['A/deep/baz'],
-	   ['A   A/', 'A   A/deep', 'A   A/deep/baz'],
+	   ['A   A', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - deep descendent target only');
 }
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['A'],
-	   ['A   A/', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
+	   ['A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', [qw/-N A/],
-	   ['A   A/'],
+	   ['A   A'],
 	   'add - nonrecursive anchor');
 is_output ($svk, 'add', ['A/foo'],
 	   ['A   A/foo'],
@@ -63,7 +63,7 @@ chmod (0755, "A/exe");
 TODO: {
 local $TODO = 'notify that added file has executable bit';
 is_output($svk, 'add', ['A/exe'],
-	  ['A   A/',
+	  ['A   A',
 	   'A   A/exe - (bin)']);
 }
 $svk->commit ('-m', 'test exe bit');

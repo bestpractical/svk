@@ -13,7 +13,6 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
-    $arg[1] = '' if $#arg < 1;
     return ((map {$self->arg_depotpath ($_)} @arg[0..$#arg-1]),
 	    $self->arg_co_maybe ($arg[-1]));
 }
@@ -65,19 +64,19 @@ sub do_copy_co {
 sub run {
     my ($self, @src) = @_;
     my $dst = pop @src;
-    die loc("repos paths mismatch") unless $dst->same_repos (@src);
+    return loc("Different depots.\n") unless $dst->same_repos (@src);
     if (defined $self->{rev}) {
 	$_->{revision} = $self->{rev} for @src;
     }
     my $fs = $dst->{repos}->fs;
     if ($dst->{copath}) {
 	# XXX: check if dst is versioned
-	die loc("%1 is not a directory.", $dst->{copath})
+	return loc("%1 is not a directory.\n", $dst->{copath})
 	    if $#src > 0 && !-d $dst->{copath};
 	$self->do_copy_co ($_, $dst->new) for @src;
     }
     else {
-	die loc("Can't copy more than one depotpath to depotpath")
+	return loc("Can't copy more than one depotpath to depotpath\n")
 	    if $#src > 0;
 	return unless $self->check_mirrored_path ($dst);
 	$self->get_commit_message ();

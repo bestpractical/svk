@@ -356,7 +356,6 @@ sub condense {
 	    }
 	}
     }
-    $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
     return ($report, $anchor,
 	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
 }
@@ -511,9 +510,10 @@ sub do_add {
 				  ( cb_flush => sub {
 					my ($path, $status) = @_;
 					my $copath = $path ? "$arg{copath}/$path" : $arg{copath};
+					my $report = $path ? "$arg{report}/$path" : $arg{report};
 					if ($status->[0] eq 'D' && -e $copath) {
 					    $self->{checkout}->store ($copath, { '.schedule' => 'replace' });
-					    print "R   $arg{report}$path\n" unless $arg{quiet};
+					    print "R   $report\n" unless $arg{quiet};
 					}
 				    })),
 				delete_verbose => 1,
@@ -524,7 +524,8 @@ sub do_add {
 						  -d $_[1] ? () :
 						  ('.newprop'  => $self->auto_prop ($_[1]))
 						});
-				    print "A   $arg{report}$_[0]\n" unless $arg{quiet};
+				    my $report = $_[0] ? "$arg{report}/$_[0]" : $arg{report};
+				    print "A   $report\n" unless $arg{quiet};
 				},
 			      );
     }
@@ -553,7 +554,7 @@ sub do_delete {
 			    ( notify => SVK::Notify->new
 			      ( cb_flush => sub {
 				    my ($path, $status) = @_;
-				    my $rpath = "$arg{report}$path";
+				    my $rpath = $path ? "$arg{report}/$path" : $arg{report};
 				    my $st = $status->[0];
 				    if ($st eq 'M') {
 					die loc("%1 changed", $rpath);
@@ -584,7 +585,7 @@ sub do_delete {
 
     for (@deleted) {
 	my $rpath = $_;
-	$rpath =~ s|^\Q$arg{copath}\E/|$arg{report}|;
+	$rpath =~ s|^\Q$arg{copath}\E|$arg{report}|;
 	print "D   $rpath\n" unless $arg{quiet};
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }

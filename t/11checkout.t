@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
+use Test::More tests => 18;
 use strict;
 require 't/tree.pl';
 use SVK::Command;
@@ -44,12 +44,10 @@ is_output ($svk, 'checkout', ['-Nr5', '//V-3.1', 'V-3.1-nr'],
 ok (!-e 'V-3.1-nr/A');
 ok (-e 'V-3.1-nr/me');
 
-TODO: {
-local $TODO = 'checkout target is file';
-
-$svk->checkout ('//V-3.1/A/Q/qu');
-ok (-e 'Q/qu');
-}
+is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu'],
+	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in $corpath/qu to 6.",
+	    'A   qu']);
+ok (-e 'qu');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
 	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/just-q to 6.",
@@ -62,6 +60,13 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q/', "../checkout/just-q-slash"],
 	    'A   ../checkout/just-q-slash/qu',
 	    'A   ../checkout/just-q-slash/qz',
 	   ], 'checkout report');
+
+is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q-slashco/"],
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/just-q-slashco to 6.",
+	    'A   ../checkout/just-q-slashco/qu',
+	    'A   ../checkout/just-q-slashco/qz',
+	   ], 'checkout report');
+
 
 $svk->checkout ('//V-3.1-non');
 ok ($@ =~ qr'not exist');

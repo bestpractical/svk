@@ -100,11 +100,9 @@ sub run {
 	    ($target->{path}, $target2->{copath}) =
 		get_anchor (0, $target->{path}, $target2->{copath});
 	    $target2->{targets} = [$tgt];
-	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
+	    ($report) = get_anchor (0, $report) if defined $report;
 	}
-	else {
-	    $report .= '/' if $report && $report !~ m|/$|;
-	}
+
 	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
 	    ( %$target2,
@@ -119,7 +117,7 @@ sub run {
 	if ($oldroot->check_path ($target2->{path}) != $SVN::Node::dir) {
 	    ($target->{path}, $tgt) =
 		get_anchor (1, $target->{path});
-	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
+	    ($report) = get_anchor (0, $report) if defined $report;
 	}
 	$editor->{report} = $report;
 	$self->{xd}->depot_delta

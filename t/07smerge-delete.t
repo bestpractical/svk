@@ -114,7 +114,7 @@ is_output ($svk, 'status', [$copath],
 	    "D   $copath/A/normal",
 	    "C   $copath/A",
 	    "D   $copath/B",
-	    " M  $copath/"], 'merge partial deletes to checkout');
+	    " M  $copath"], 'merge partial deletes to checkout');
 
 $svk->revert ('-R', $copath);
 $svk->resolved ('-R', $copath);
@@ -159,7 +159,7 @@ is_output ($svk, 'status', [$copath],
 	    "D   $copath/A/normal",
 	    "C   $copath/A",
 	    "D   $copath/B",
-	    " M  $copath/"], 'merge partial deletes to checkout');
+	    " M  $copath"], 'merge partial deletes to checkout');
 
 $svk->resolved ('-R', $copath);
 $svk->commit ('-m', 'merged', $copath);
@@ -172,7 +172,7 @@ is_output ($svk, 'smerge', ['//trunk', $copath],
 	    "New merge ticket: $uuid:/trunk:9"]);
 is_output ($svk, 'status', [$copath],
 	   ["D   $copath/test.pl",
-	    " M  $copath/"]);
+	    " M  $copath"]);
 
 $svk->revert ('-R', $copath);
 overwrite_file ("$copath/test.pl", "modified\n");

@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
-use Test::More tests => 6;
+use Test::More tests => 9;
 use strict;
 our $output;
 require 't/tree.pl';
 use SVK::Command;
-my ($xd, $svk) = build_test();
+my ($xd, $svk) = build_test('foo');
 $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
 $svk->mkdir ('-m', 'init', '//new');
@@ -14,10 +14,16 @@ is_output_like ($svk, 'copy', [], qr'SYNOPSIS', 'copy - help');
 $svk->checkout ('//new', $copath);
 # XXX: fix and check the output of copy
 $svk->copy ('//V/me', '//V/D/de', $copath);
+is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
+	   ["$corpath/me is not a directory."], 'multi to nondir');
 $svk->copy ('//V/me', "$copath/me-copy");
 $svk->copy ('//V/D/de', "$copath/de-copy");
 $svk->copy ('//V/D', "$copath/D-copy");
 $svk->copy ('//V', "$copath/V-copy");
+is_output ($svk, 'copy', ['//V', '/foo/bar', "$copath/V-copy"],
+	   ['Different depots.']);
+is_output ($svk, 'copy', ['//V/me', '//V/D', '//V/new'],
+	   ["Can't copy more than one depotpath to depotpath"]);
 append_file ("$copath/me-copy", "foobar");
 append_file ("$copath/V-copy/D/de", "foobar");
 $svk->rm ("$copath/V-copy/B/fe");

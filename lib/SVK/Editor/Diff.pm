@@ -55,7 +55,7 @@ sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     if ($self->{info}{$path}{new}) {
 	no warnings 'uninitialized';
-	my $rpath = $self->{report} ? "$self->{report}$path" : $path;
+	my $rpath = $self->{report} ? "$self->{report}/$path" : $path;
 	my $base = $self->{info}{$path}{added} ?
 	    \'' : $self->{cb_basecontent} ($path);
 	my @label = map { $self->{$_} || $self->{"cb_$_"}->($path) } qw/llabel rlabel/;
@@ -103,7 +103,7 @@ sub output_diff {
 sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
-	my $rpath = $self->{report} ? "$self->{report}$path" : $path;
+	my $rpath = $self->{report} ? "$self->{report}/$path" : $path;
 	print "\n", loc("Property changes on: %1\n", $rpath), ('_' x 67), "\n";
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    print loc("Name: %1\n", $_);

@@ -45,7 +45,8 @@ sub print_report {
 		$path =~ s|^\Q$target/||;
 	    }
 	}
-	$print->($path ? "$report$path" : $report || '.', @_);
+	$print->($path ? $report ? "$report/$path" : $path
+		       : $report || '.', @_);
     };
 }
 

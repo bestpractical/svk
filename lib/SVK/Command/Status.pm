@@ -17,6 +17,8 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, $target) = @_;
     my $xdroot = $self->{xd}->xdroot (%$target);
+    my $report = $target->{report};
+    $report .= '/' if $report;
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $xdroot,
@@ -25,7 +27,7 @@ sub run {
 	  editor => SVK::Editor::Status->new (report => $target->{report}),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_unknown =>
-	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$target->{report}|;
+	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$report|;
 		print "?   $_[1]\n" }
 	);
     return;

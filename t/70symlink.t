@@ -15,7 +15,7 @@ symlink ("bar", "$copath/A/bar.lnk");
 symlink ('/tmp', "$copath/A/dir.lnk");
 symlink ('/non-exists', "$copath/A/non.lnk");
 is_output ($svk, 'add', ["$copath/A"],
-	   ["A   $copath/A/",
+	   ["A   $copath/A",
 	    "A   $copath/A/bar",
 	    "A   $copath/A/bar.lnk",
 	    "A   $copath/A/dir.lnk",

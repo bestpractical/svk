@@ -45,20 +45,20 @@ sub do_update {
     # unanchorified
     my ($path, $copath) = @{$cotarget}{qw/path copath/};
     my $report = $update_target->{report};
-
+    my $kind = $newroot->check_path ($update_target->{path});
     die loc("path %1 does not exist.\n", $update_target->{path})
-	if $newroot->check_path ($update_target->{path}) == $SVN::Node::none;
+	if $kind == $SVN::Node::none;
 
     print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
 	      $update_target->{revision});
-    $cotarget = $cotarget->new (path => '/')
-	if $xdroot->check_path ($cotarget->path) == $SVN::Node::none;
-    if ($newroot->check_path ($update_target->path) == $SVN::Node::file ) {
+    if ($kind == $SVN::Node::file ) {
 	$cotarget->anchorify;
 	$update_target->anchorify;
 	# can't use $cotarget->{path} directly since the (rev0, /) hack
 	($path, $copath) = @{$cotarget}{qw/path copath/};
     }
+    $cotarget = $cotarget->new (path => '/')
+	if $xdroot->check_path ($cotarget->path) == $SVN::Node::none;
     mkdir ($cotarget->{copath}) or die $!
 	unless $self->{check_only} || -e $cotarget->{copath};
 

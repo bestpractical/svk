@@ -140,8 +140,8 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	my $report = $path;
-	$report =~ s/^\Q$self->{target}\E/$self->{report}/ if $self->{report};
+	my $report = $copath;
+	$report =~ s/^\Q$self->{copath}\E/$self->{report}/ if $self->{report};
 	$self->{xd}->do_add (report => $report,
 			     copath => $copath, quiet => $self->{quiet});
     }

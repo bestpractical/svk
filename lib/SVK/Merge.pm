@@ -354,8 +354,6 @@ sub run {
 						translate => $translate);
 	SVK::Editor::Merge::cb_translate (\%cb, $translate);
     }
-    $report .= '/'
-	if $report && $report ne '' && substr($report, -1, 1) ne '/';
     $storage = SVK::Editor::Delay->new ($storage)
 	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
