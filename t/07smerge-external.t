@@ -12,17 +12,17 @@ $answer = 's'; # skip
 
 $svk->mkdir ('-m', 'the trunk', '//trunk');
 $svk->co ('//trunk', $copath);
-overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub' }\n#common\n");
+overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub' }\n#common\n#common2\n\n\n");
 $svk->add ("$copath/test.pl");
 $svk->commit ('-m', 'test.pl', $copath);
 
 $svk->cp ('-m', 'local branch of trunk', '//trunk', '//local');
 
-overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub on trunk' }\n#common\n\nsub newsub { undef }\n");
+overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub on trunk' }\n#common\n\nsub newsub { undef }\n#common2\n\n\n#trunk\ntrunk additions (do not kill!)\n");
 $svk->commit ('-m', 'change on trunk', $copath);
 
 $svk->switch ('//local', $copath);
-overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -T -w\nsub { 'this is sub on local' }\n#common\n\nsub newsub { undef }\n");
+overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -T -w\nsub { 'this is sub on local' }\n#common\n\nsub newsub { undef }\n#common2\n\n\n");
 
 $svk->commit ('-m', 'change on local', $copath);
 
@@ -32,13 +32,23 @@ is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 $answer = 'y'; # yours
 $svk->sm ('//trunk', $copath);
 is_output ($svk, 'diff', ["$copath/test.pl"],
-	   [], 'svk-merge mine');
+	   [__"=== $copath/test.pl",
+            __"==================================================================",
+            __"--- $copath/test.pl  (revision 5)",
+            __"+++ $copath/test.pl  (local)",
+            __('@@ -6,3 +6,5 @@'),
+            __" #common2",
+            __" ",
+            __" ",
+            __"+#trunk",
+            __"+trunk additions (do not kill!)",
+           ], 'svk-merge mine');
 
 $answer = 't'; # theirs
 $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
 is_output ($svk, 'up', ["$copath"],
 	   ["Syncing //local(/local) in $corpath to 6.",
-	    __"U   $copath/test.pl"], 'svk-merge theirs');
+	    __"G   $copath/test.pl"], 'svk-merge theirs');
 
 overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -T -w\nsub { 'this is sub on trunk' }\n#local\n#common\n\nsub newsub { undef }\n");
 $svk->commit ('-m', 'change on local', $copath);
