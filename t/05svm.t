@@ -98,11 +98,26 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             __('A   t/checkout/svm2/be'),
             __('A   t/checkout/svm2/N'), ]);
 
-is_output($svk, 'update', ['--sync', '--merge', "$copath2/T"], [
+my ($copath3, $corpath3) = get_copath ('svm3');
+$svk->checkout ('//m-99', $copath3);
+append_file ("$copath3/T/xd", "modify something\n");
+$svk->commit ('-m', 'local modification from mirrored path', "$copath3");
+append_file ("$copath3/T/xd", "modify something again\n");
+$svk->commit ('-m', 'local modification from mirrored path', "$copath3");
+
+is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], [
             "Syncing $uri/A-99",
-            'Auto-merging (12, 12) /m-99 to /m-99-copy (base /m-99:12).',
-            'Empty merge.',
-            "Syncing //m-99-copy(/m-99-copy/T) in $corpath2/T to 13.",
+            'Auto-merging (12, 15) /m-99 to /m-99-copy (base /m-99:12).',
+            '===> Auto-merging (12, 14) /m-99 to /m-99-copy (base /m-99:12).',
+            'U   T/xd',
+            "New merge ticket: $suuid:/A-99:29",
+            'Committed revision 16.',
+            '===> Auto-merging (14, 15) /m-99 to /m-99-copy (base /m-99:14).',
+            'U   T/xd',
+            "New merge ticket: $suuid:/A-99:30",
+            'Committed revision 17.',
+            "Syncing //m-99-copy(/m-99-copy/T) in $corpath2/T to 17.",
+            __('U   t/checkout/svm2/T/xd'),
             ]);
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
@@ -118,7 +133,7 @@ is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');
 
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-	   ['Committed revision 14.', 'Committed revision 15.']);
+	   ['Committed revision 18.', 'Committed revision 19.']);
 
 is_output_like ($svk, 'mirror', ['--detach', '//l'],
 		qr"not a mirrored", '--detach on non-mirrored path');
@@ -127,7 +142,7 @@ is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
 		qr"inside", '--detach inside a mirrored path');
 
 is_output_like ($svk, 'mirror', ['--detach', '//m'],
-		qr"Committed revision 16.", '--detach on mirrored path');
+		qr"Committed revision 20.", '--detach on mirrored path');
 
 is_output_like ($svk, 'mirror', ['--detach', '//m'],
 		qr"not a mirrored", '--detach on non-mirrored path');

@@ -11,7 +11,9 @@ sub options {
     ('r|revision=i'    => 'rev',
      'N|non-recursive' => 'nonrecursive',
      's|sync'          => 'sync',
-     'm|merge'         => 'merge');
+     'm|merge'         => 'merge',
+     'I|incremental'   => 'incremental',
+    );
 }
 
 sub parse_arg {
@@ -138,6 +140,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
  -N [--non-recursive]   : do not descend recursively
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
+ -I [--incremental]     : apply each change individually; use with -m
 
 =head1 DESCRIPTION
 
