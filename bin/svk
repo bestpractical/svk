@@ -8,6 +8,7 @@ require SVN::Fs;
 use SVN::XD;
 use YAML qw(LoadFile DumpFile);
 use Getopt::Long qw(:config no_ignore_case);
+use Cwd;
 use File::Spec;
 use File::Path ();
 use Data::Hierarchy;
@@ -169,7 +170,7 @@ sub find_repos {
 
 sub find_repos_from_co {
     my ($copath, $open) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
+    $copath = Cwd::abs_path ($copath || '');
 
     my ($cinfo, $coroot) = $info->{checkout}->get ($copath);
     die "$copath not a checkout path" unless %$cinfo;
@@ -192,7 +193,7 @@ sub find_repos_from_co_maybe {
     unless (($repospath, $path, $repos) = eval { find_repos ($target, $open) }) {
 	undef $@;
 	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($target, $open);
-	$copath = File::Spec->rel2abs ($target || '');
+	$copath = Cwd::abs_path ($target || '');
     }
     return ($repospath, $path, $copath, $cinfo, $repos);
 }
@@ -233,7 +234,7 @@ sub update {
     push @ARGV, '' if $#ARGV < 0;
     for my $copath (@ARGV) {
 	my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
-	$copath = File::Spec->rel2abs ($copath);
+	$copath = Cwd::abs_path ($copath);
 
 	$rev = $repos->fs->youngest_rev unless defined $rev;
 
@@ -271,7 +272,7 @@ sub checkout {
     my ($repospath, $path) = find_repos ($depotpath, 0);
     die "don't know where to checkout" unless $copath || $path ne '/';
     # FIXME: work on path inside depot should always use UNIX File::Spec
-    $copath = File::Spec->rel2abs ($copath ||
+    $copath = Cwd::abs_path ($copath ||
 				   (File::Spec->splitdir($path))[-1]);
 
     die "checkout path $copath already exists" if -e $copath;
@@ -303,7 +304,7 @@ Display information about a file or directory.
 sub info {
     local @ARGV = @_;
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
+    $copath = Cwd::abs_path ($copath || '');
     my $depotpath = $info->{checkout}->get ($copath)->{depotpath}
 	or die "$copath not a checkout path";
     my ($depot, undef) = $depotpath =~ m|^/(\w*)(/.*)/?$|;
@@ -343,7 +344,7 @@ sub diff {
 	($repospath, $path, $repos) = eval { find_repos ($tgt, 1) };
 	if ($@) {
 	    ($repospath, $path, undef, $repos) =
-		find_repos_from_co (File::Spec->rel2abs ($tgt || ''), 1);
+		find_repos_from_co (Cwd::abs_path ($tgt || ''), 1);
 	    undef $@;
 	    die "Invalid arguments" if $tgt2;
 	}
@@ -390,7 +391,7 @@ sub diff {
     else {
 	die "revision should be N:M or N"
 	    if $revspec && $revspec !~ /^\d+$/;
-	my $copath = File::Spec->rel2abs ($tgt || '');
+	my $copath = Cwd::abs_path ($tgt || '');
 	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
 	my $fs = $repos->fs;
@@ -501,7 +502,7 @@ sub resolved {
     die unless GetOptions ("R|recursive"	=> \$rec);
 
     for my $copath (@ARGV) {
-	$copath = File::Spec->rel2abs ($copath || '');
+	$copath = Cwd::abs_path ($copath || '');
 	my ($repospath, $path, undef, $repos) =
 	    find_repos_from_co ($copath, 1);
 
@@ -595,7 +596,7 @@ them for addition to repository.  They will be added in next commit.
 =cut
 
 sub condense {
-    my @targets = map {File::Spec->rel2abs ($_ || '')} @_;
+    my @targets = map {Cwd::abs_path ($_ || '')} @_;
     my ($anchor, $report);
     $report = $_[0];
     for (@targets) {
@@ -681,7 +682,7 @@ sub proplist {
 
     push @ARGV, '' if $#ARGV < 0;
     for my $copath (@ARGV) {
-	$copath = File::Spec->rel2abs ($copath);
+	$copath = Cwd::abs_path ($copath);
 	my ($repospath, $path, undef, $repos) =
 	    find_repos_from_co ($copath, 1);
 
@@ -709,7 +710,7 @@ usage: propedit PROPNAME PATH
 
 sub propedit {
     my ($pname, $copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
+    $copath = Cwd::abs_path ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     my $pvalue = SVN::XD::do_proplist ($info,
@@ -793,7 +794,7 @@ sub revert {
     die unless GetOptions ("R|recursive"	=> \$rec);
 
     for my $copath (@ARGV) {
-	$copath = File::Spec->rel2abs ($copath || '');
+	$copath = Cwd::abs_path ($copath || '');
 	my ($repospath, $path, undef, $repos) =
 	    find_repos_from_co ($copath, 1);
 
@@ -1658,7 +1659,7 @@ sub import {
 
     my ($src, $dst) = @ARGV;
     my ($repospath, $path, $repos) = find_repos ($src, 1);
-    $dst = File::Spec->rel2abs ($dst || '');
+    $dst = Cwd::abs_path ($dst || '');
 
     unless (defined $message || $check_only) {
 	$message = get_buffer_from_editor
