@@ -23,6 +23,11 @@ sub parse_arg {
         $dst = $target;
     }
     else {
+        # Asking the user for copy destination.
+        # In this case, first magically promote ourselves to "cp -p".
+        # (otherwise it hurts when user types //deep/directory/name)
+        $self->{parent} = 1;
+
         $self->{_checkout_path} = $dst;
         my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
         $path =~ s{^//+}{};
