@@ -29,7 +29,7 @@ requires(
         'Date::Parse'           => '0',
         'File::Type'            => '0',
         'URI'                   => '0',
-        'PerlIO::eol'           => '0.03',
+        'PerlIO::eol'           => '0.05',
 );
 features(
     'Localized messages' => [
