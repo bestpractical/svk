@@ -54,7 +54,9 @@ the tool's name.
 
 =item $SVKRESOLVE
 
-???
+If you set this variable, svk's interactive resolver will I<always>
+perform the command it's set to. For more details about the commands
+available in svk's interactive resolver, type C<perldoc SVK::Resolve>.
 
 =item $SVKPAGER / $PAGER
 
