@@ -255,7 +255,6 @@ sub do_update {
 	 %cb
 	);
 
-
     SVN::Repos::dir_delta ($xdroot->[1], $anchor, $target,
 			   $newroot, $arg{target_path},
 			   $editor, undef,
@@ -1042,7 +1041,7 @@ sub close_directory {
     my ($self, $path) = @_;
     my $copath = $path;
     eval {$self->{get_copath}($copath)};
-    return if $@;
+    undef $@, return if $@;
     $self->{checkout}->store_recursively ($copath,
 					  {revision => $self->{revision},
 					   '.deleted' => undef})
