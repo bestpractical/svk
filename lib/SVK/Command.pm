@@ -125,7 +125,7 @@ sub _cmd_map {
     return $cmd;
 }
 
-# rebless to subcommand class if eixsts
+# rebless to subcommand class if it exists
 sub _subcommand {
     my ($self) = @_;
     no strict 'refs';
@@ -421,9 +421,22 @@ sub arg_uri_maybe {
     }
 
     my $prompt = loc("
-First, you need to choose a depot path to store this mirrored repository,
-usually something like //mirror/your_project/.  Enter a suitable name below
-to place it under //mirror/; you may also press enter and accept the default.
+Before svk start mirroring a remote repository, we would like to
+explain two terms to you: 'depot path' and 'mirrored path'. A depot
+path is like any path in a file system, only that the path is
+stored in svk's internal virtual file system.  To avoid confusion,
+svk's default depot path begins with //, for example //depot or
+//mirror/project.  Now a mirrored path is a depot path with special
+properties, which serves as the 'mirror' of a remote repository and
+is by convention stored under //mirror/.
+
+Now, you have to assign a name to identify the mirrored repository.
+For example, if you name it 'your_project' (without the quotes),
+svk will create a mirrored path called //mirror/your_project.
+Of course, you can assign a 'full path' for it, for example,
+//mymirror/myproject, although this is not really necessary.  If you
+just don't care, simply press enter and use svk's default, which is
+usually good enough.
 
 ");
 
@@ -831,11 +844,17 @@ sub prompt_depotpath {
     if (defined $default and $default =~ m{(^/[^/]*/)}) {
         my $depot = $1;
         my $prompt = loc("
-Next, please choose another depot path to serve as your private branch,
-usually something like %1your_project/.  SVK will copy the mirrored path
-into this new path, so you can commit into it without affecting the remote
-repository.  Enter a suitable name below to place it under %1; you may also
-press enter and accept the default.
+Next, svk will create another depot path, and you have to name it too.
+It is usally something like %1your_project/. svk will copy what's in
+the mirrored path into the new path.  This depot path is where your
+own private branch goes.  You can commit files to it or check out files
+from it without affecting the remote repository.  Which means you can
+work with version control even when you're offline (yes, this is one
+of svk's main features).
+
+Please enter a name for your private branch, and it will be placed
+under %1.  If, again, you just don't care, simply press enter and let
+svk use the default.
 
 ", $depot);
         $path = get_prompt($prompt . loc(
