@@ -18,6 +18,8 @@ overwrite_file ("$copath/A/bar", "foobarbazzz\n");
 svk::add ("$copath/A");
 svk::add ("$copath/A/foo");
 svk::add ("$copath/A/bar");
+svk::ps ('svn:keywords', 'Rev', "$copath/A/foo");
+
 # check output with selecting some io::stringy object?
 #svk::status ("$copath");
 svk::commit ('-m', 'commit message here', "$copath");

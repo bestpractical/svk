@@ -54,7 +54,7 @@ sub translator {
 }
 
 sub xd_storage_cb {
-    my ($info, $target, $copath) = @_;
+    my ($info, $anchor, $target, $copath, $xdroot) = @_;
     my $t = translator ($target, $copath);
 
     return
@@ -65,7 +65,8 @@ sub xd_storage_cb {
 			       $info->{checkout}->store ($_, {conflict => 1})},
 	  cb_localmod => sub { my ($path, $checksum) = @_;
 			       $_ = $path; s|$t|$copath/|;
-			       open my ($base), '<', $_;
+			       my $base = get_fh ($xdroot, '<',
+						  "$anchor/$path", $_);
 			       my $md5 = SVN::XD::MergeEditor::md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
@@ -89,16 +90,16 @@ sub do_update {
 	(undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
     }
 
-    my $storage = SVN::XD::TranslateEditor->new
-	( translate => sub { my $t = translator($target);
-			     $_[0] = $arg{copath}, return
-				 if $target && $target eq $_[0];
-			     $_[0] =~ s|$t|$arg{copath}/|
-				 or die "unable to translate $_[0] with $t" },
-	);
-
-    $storage->{_editor} = SVN::XD::Editor->new
+    my $storage = SVN::XD::Editor->new
 	( copath => $arg{copath},
+	  get_copath => sub { my $t = translator($target);
+			      $_[0] = $arg{copath}, return
+				  if $target && $target eq $_[0];
+			      $_[0] =~ s|$t|$arg{copath}/|
+				  or die "unable to translate $_[0] with $t" },
+	  oldroot => $xdroot,
+	  newroot => $fs->revision_root ($arg{rev}),
+	  anchor => $anchor,
 	  checkout => $info->{checkout},
 	  info => $info,
 	  update => 1,
@@ -111,7 +112,7 @@ sub do_update {
 	 base_root => $xdroot,
 	 target => $target,
 	 storage => $storage,
-	 xd_storage_cb ($info, $target, $arg{copath}),
+	 xd_storage_cb ($info, $anchor, $target, $arg{copath}, $xdroot),
 	);
 
 #    $editor = SVN::Delta::Editor->new(_debug=>1),
@@ -347,9 +348,10 @@ sub checkout_crawler {
 		 return;
 	     }
 
-	     if ($arg{cb_changed} && md5file($File::Find::name) ne
+	     my $fh = get_fh ($xdroot, '<', $cpath, $File::Find::name);
+	     if ($arg{cb_changed} && SVN::XD::MergeEditor::md5($fh) ne
 		 $xdroot->file_md5_checksum ($cpath)) {
-		 &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot)
+		 &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot);
 	     }
 	     elsif ($hasprop &&$arg{cb_prop}) {
 		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot);
@@ -383,9 +385,9 @@ sub do_merge {
 	undef $target unless $target;
 	chop $anchor if length($anchor) > 1;
 
+	(undef,$basepath,$tgt) = File::Spec->splitpath ($arg{dpath});
 	unless ($arg{copath}) {
 	    # XXX: merge into repos requiring anchor is not tested yet
-	    (undef,$basepath,$tgt) = File::Spec->splitpath ($arg{dpath});
 	    $storage = SVN::XD::TranslateEditor->new
 		( translate => sub { return unless $tgt;
 				     my $t = translator($target);
@@ -399,20 +401,21 @@ sub do_merge {
 
     # setup editor and callbacks
     if ($arg{copath}) {
-	$storage = SVN::XD::TranslateEditor->new
-	    ( translate => sub { my $t = translator($target);
-				 $_[0] = $arg{copath}, return
-				     if $target && $target eq $_[0];
-				 $_[0] =~ s|$t|$arg{copath}/|
-				     or die "unable to translate $_[0] with $t" },
-	    );
-	$storage->{_editor} = SVN::XD::Editor->new
+	$storage = SVN::XD::Editor->new
 	    ( copath => $arg{copath},
+	      oldroot => $xdroot,
+	      newroot => $xdroot,
+	      anchor => $basepath,
+	      get_copath => sub { my $t = translator($target);
+				  $_[0] = $arg{copath}, return
+				     if $target && $target eq $_[0];
+				  $_[0] =~ s|$t|$arg{copath}/|
+				      or die "unable to translate $_[0] with $t" },
 	      checkout => $info->{checkout},
 	      info => $info,
 	      check_only => $arg{check_only},
 	    );
-	%cb = xd_storage_cb ($info, $target, $arg{copath}),
+	%cb = xd_storage_cb ($info, $basepath, $tgt, $arg{copath}, $xdroot),
     }
     else {
 	my $editor = $arg{editor};
@@ -554,8 +557,6 @@ sub do_commit {
 	    }
 	    next;
 	}
-	open my ($fh), '<', $cpath;
-	my $md5 = md5file ($cpath);
 	if ($action eq 'A') {
 	    $edit->add_file ($tpath);
 	}
@@ -565,11 +566,61 @@ sub do_commit {
 		$edit->change_file_prop ($tpath, $key, $value);
 	    }
 	}
+	open my ($fh), '<', $cpath if $action eq 'A';
+	$fh ||= get_fh ($xdroot, '<', "$anchor/$tpath", $cpath);
+	my $md5 = SVN::XD::MergeEditor::md5 ($fh);
+	seek $fh, 0, 0;
 	$edit->modify_file ($tpath, $fh, $md5)
 	    unless $action eq 'P';
+	seek $fh, 0, 0;
     }
     $edit->close_edit();
     SVN::Fs::close_txn ($txn) if $txn;
+}
+
+sub get_keyword_layer {
+    my ($root, $path) = @_;
+    my $k = $root->node_prop ($path, 'svn:keywords');
+
+    return '' unless $k;
+
+    my %kmap = ( LastChangedDate =>
+		 sub { my ($root, $path) = @_;
+		       my $rev = $root->node_created_rev ($path);
+		       my $fs = $root->fs;
+		       $fs->revision_prop ($rev, 'svn:date');
+		   },
+		 Rev =>
+		 sub { my ($root, $path) = @_;
+		       $root->node_created_rev ($path);
+		 },
+		 Id =>
+		 sub { my ($root, $path) = @_;
+		       my $rev = $root->node_created_rev ($path);
+		       my $fs = $root->fs;
+		       join( ' ', $path, $rev,
+			     $fs->revision_prop ($rev, 'svn:date'),
+			     $fs->revision_prop ($rev, 'svn:author'), ''
+			   );
+		   },
+	       );
+
+    my @key = grep {exists $kmap{$_}} (split ',',$k);
+    return '' unless $#key >= 0 ;
+
+    my $keyword = '('.join('|', @key).')';
+
+    my $p = PerlIO::via::keyword->new
+	({translate => sub { $_[1] =~ s/\$($keyword)[:\w\s]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).'$'/e },
+	  undo => sub { $_[1] =~ s/\$($keyword)[:\w\s]*\$/\$$1\$/}});
+    return $p->via;
+}
+
+sub get_fh {
+    my ($root, $mode, $path, $fname) = @_;
+    my $via = get_keyword_layer ($root, $path);
+    open my ($fh), "$mode$via", $fname;
+    return $fh;
 }
 
 sub md5file {
@@ -636,18 +687,22 @@ sub set_target_revision {
 sub open_root {
     my ($self, $base_revision) = @_;
     $self->{baserev} = $base_revision;
-    return $self->{copath};
+    return '';
 }
 
 sub add_file {
     my ($self, $path) = @_;
-    die "$path already exists" if -e $path;
+    my $copath = $path;
+    $self->{get_copath}($copath);
+    die "$path already exists" if -e $copath;
     return $path;
 }
 
 sub open_file {
     my ($self, $path) = @_;
-    die "path not exists" unless -e $path;
+    my $copath = $path;
+    $self->{get_copath}($copath);
+    die "path not exists" unless -e $copath;
     return $path;
 }
 
@@ -655,67 +710,83 @@ sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     my $base;
     return if $self->{check_only};
-    if (-e $path) {
-	my (undef,$dir,$file) = File::Spec->splitpath ($path);
+    my $copath = $path;
+    $self->{get_copath}($copath);
+    if (-e $copath) {
+	my (undef,$dir,$file) = File::Spec->splitpath ($copath);
 	my $basename = "$dir.svk.$file.base";
-	open $base, '<', $path;
+	$base = SVN::XD::get_fh ($self->{oldroot}, '<',
+				 "$self->{anchor}/$path", $copath);
 	if ($checksum) {
 	    my $md5 = SVN::XD::MergeEditor::md5($base);
 	    die "source checksum mismatch" if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}
-	rename ($path, $basename);
+	rename ($copath, $basename);
 	$self->{base}{$path} = [$base, $basename];
-
     }
-    open my ($fh), '+>', $path or warn "can't open $path";
+    my $fh = SVN::XD::get_fh ($self->{newroot}, '>',
+			      "$self->{anchor}/$path", $copath)
+	or warn "can't open $path";
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
 				 $fh, undef, undef, $pool)];
 }
 
 sub close_file {
     my ($self, $path) = @_;
+    my $copath = $path;
+    $self->{get_copath}($copath);
     if ($self->{base}{$path}) {
 	close $self->{base}{$path}[0];
 	unlink $self->{base}{$path}[1];
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	SVN::XD::do_add ($self->{info}, copath => $path, quiet => 1);
+	SVN::XD::do_add ($self->{info}, copath => $copath, quiet => 1);
     }
-    $self->{checkout}->store ($path, {revision => $self->{revision}})
+    $self->{checkout}->store ($copath, {revision => $self->{revision}})
 	if $self->{update};
 }
 
 sub add_directory {
     my ($self, $path) = @_;
-    mkdir ($path);
+    my $copath = $path;
+    $self->{get_copath}($copath);
+    mkdir ($copath);
     return $path;
 }
 
 sub open_directory {
     my ($self, $path) = @_;
+    # XXX: test if directory exists
     return $path;
 }
 
 sub delete_entry {
     my ($self, $path, $revision) = @_;
-    # check if everyone under $path is sane for delete";
+    my $copath = $path;
+    $self->{get_copath}($copath);
+    # XXX: check if everyone under $path is sane for delete";
     return if $self->{check_only};
-    -d $path ? rmtree ([$path]) : unlink($path);
+    -d $copath ? rmtree ([$copath]) : unlink($copath);
 }
 
 sub close_directory {
     my ($self, $path) = @_;
-    $self->{checkout}->store_recursively ($path,
+    my $copath = $path;
+    eval {$self->{get_copath}($copath)};
+    return if $@;
+    $self->{checkout}->store_recursively ($copath,
 					  {revision => $self->{revision}})
 	if $self->{update};
 }
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
+    my $copath = $path;
+    $self->{get_copath}($copath);
     SVN::XD::do_propset ($self->{info},
 			 quiet => 1,
-			 copath => $path,
+			 copath => $copath,
 			 propname => $name,
 			 propvalue => $value,
 			)
@@ -916,6 +987,61 @@ sub change_dir_prop {
 sub close_edit {
     my ($self, @arg) = @_;
     $self->{storage}->close_edit(@arg);
+}
+
+#!/usr/bin/perl -w
+use strict;
+package PerlIO::via::keyword;
+
+sub PUSHED {
+    die "this should now be via directly"
+	if $_[0] eq __PACKAGE__;
+    bless \*PUSHED, $_[0];
+}
+
+sub translate {
+}
+
+sub undo {
+}
+
+sub FILL {
+    my $line = readline( $_[1] );
+    $_[0]->undo ($line) if defined $line;
+    $line;
+}
+
+sub WRITE {
+    my $buf = $_[1];
+    $_[0]->translate($buf);
+    (print {$_[2]} $buf) ? length($buf) : -1;
+}
+
+sub SEEK {
+    seek ($_[3], $_[1], $_[2]);
+}
+
+sub new {
+    my ($class, $arg) = @_;
+    my $self = {};
+    my $package = 'PerlIO::via::keyword'.substr("$self", 7, -1);
+    eval qq|
+package $package;
+our \@ISA = qw($class);
+
+1;
+| or die $@;
+
+    no strict 'refs';
+    for (keys %$arg) {
+	*{"$package\::$_"} = $arg->{$_};
+    }
+    bless $self, $package;
+    return $self;
+}
+
+sub via {
+    ':via('.ref ($_[0]).')';
 }
 
 1;

@@ -74,7 +74,8 @@ sub find_repos_from_co {
 	$copath =~ s|^$coroot/|/|;
     }
 
-    return ($repospath, $path.$copath, $cinfo, $repos);
+    return ($repospath, $path eq '/' ? $copath : $path.$copath,
+	    $cinfo, $repos);
 }
 
 
@@ -187,7 +188,9 @@ sub diff {
 				   print "Index: $_[0]\n";
 				   print '=' x 66;
 				   print "\n";
-				   print Text::Diff::diff (\'', $_[1]);
+				   my $fh = SVN::XD::get_fh
+				       ($_[2], '<', $_[0], $_[1]);
+				   print Text::Diff::diff (\'', $fh);
 			       },
 			       cb_changed =>
 			       sub {
@@ -197,7 +200,9 @@ sub diff {
 				   print "\n";
 				   local $/;
 				   $content = <$content>;
-				   print Text::Diff::diff (\$content, $_[1])
+				   my $fh = SVN::XD::get_fh
+				       ($_[2], '<', $_[0], $_[1]);
+				   print Text::Diff::diff (\$content, $fh)
 			       },
 			      );
 
