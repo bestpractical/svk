@@ -16,15 +16,13 @@ $svk->copy ('//V/D/de', $copath);
 $svk->copy ('//V/me', "$copath/me-copy");
 $svk->copy ('//V/D/de', "$copath/de-copy");
 $svk->copy ('//V/D', "$copath/D-copy");
+append_file ("$copath/me-copy", "foobar");
 $svk->status ($copath);
 $svk->commit ('-m', 'commit depot -> checkout copies', $copath);
 is_copied_from ("$copath/me", '/V/me', 3);
 is_copied_from ("$copath/me-copy", '/V/me', 3);
 is_copied_from ("$copath/D-copy/de", '/V/D/de', 3);
-TODO: {
-local $TODO = "respect directory copies";
 is_copied_from ("$copath/D-copy", '/V/D', 3);
-}
 
 sub is_copied_from {
     my ($path, $source, $rev) = @_;

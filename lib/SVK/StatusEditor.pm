@@ -10,7 +10,7 @@ sub set_target_revision {
 
 sub open_root {
     my ($self, $baserev) = @_;
-    $self->{info}{$self->{copath}}{status} = ['', ''];
+    $self->{info}{$self->{copath}}{status} = ['', '', ''];
     return $self->{copath};
 }
 
@@ -19,7 +19,7 @@ sub add_file {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = [$self->{conflict}{$path} || 'A', ''];
+    $self->{info}{$path}{status} = [$self->{conflict}{$path} || 'A', '', $arg[0] ? '+' : ''];
     return $path;
 }
 
@@ -28,13 +28,14 @@ sub open_file {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = [$self->{conflict}{$path} || '', ''];
+    $self->{info}{$path}{status} = [$self->{conflict}{$path} || '', '', ''];
     return $path;
 }
 
 sub apply_textdelta {
     my ($self, $path) = @_;
-    $self->{info}{$path}{status}[0] ||= 'M';
+    $self->{info}{$path}{status}[0] = 'M'
+	if !$self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[2];
     return undef;
 }
 
@@ -48,8 +49,7 @@ sub close_file {
     my ($self, $path) = @_;
     my $rpath = $path;
     $rpath =~ s|^$self->{copath}/|$self->{rpath}|;
-    print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0],
-		   $self->{info}{$path}{status}[1],
+    print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}},
 		   $rpath);
     delete $self->{conflict}{$path};
 }
@@ -69,7 +69,7 @@ sub add_directory {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = ['A', ''];
+    $self->{info}{$path}{status} = ['A', '', $arg[0] ? '+' : ''];
     return $path;
 }
 
@@ -78,7 +78,7 @@ sub open_directory {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = ['', ''];
+    $self->{info}{$path}{status} = ['', '', ''];
     return $path;
 }
 
@@ -95,8 +95,7 @@ sub close_directory {
 	$rpath = $self->{rpath};
 	chop $rpath;
     }
-    print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0] || '',
-		   $self->{info}{$path}{status}[1] || '',
+    print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}},
 		   $rpath)
 	if $self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[1];
 

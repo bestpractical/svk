@@ -555,7 +555,6 @@ sub _delta_file {
     my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry});
     my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
-
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
 	&{$arg{cb_conflict}} ($arg{editor}, $arg{entry}, $arg{baton});
     }
@@ -575,7 +574,7 @@ sub _delta_file {
     my $mymd5 = md5($fh);
     my $md5;
 
-    return unless $schedule || $arg{add}
+    return unless $schedule || ($arg{add} && !$cinfo->{'.copyfrom'})
 	|| $mymd5 ne ($md5 = $arg{xdroot}->file_md5_checksum ($arg{path}));
 
     my $baton = $arg{add} ?
@@ -589,7 +588,8 @@ sub _delta_file {
     $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_}, $pool)
 	for sort keys %$newprop;
 
-    if ($arg{add} || $mymd5 ne ($md5 ||= $arg{xdroot}->file_md5_checksum ($arg{path}))) {
+    if (($arg{add} && !$cinfo->{'.copyfrom'}) || 
+	$mymd5 ne ($md5 ||= $arg{xdroot}->file_md5_checksum ($arg{path}))) {
 	seek $fh, 0, 0;
 	$self->_delta_content (%arg, baton => $baton, fh => $fh, pool => $pool);
     }
@@ -648,7 +648,10 @@ sub _delta_dir {
     }
     elsif ($arg{add}) {
 	$baton = $arg{root} ? $arg{baton} :
-	    $arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1, $pool);
+	    $arg{editor}->add_directory ($arg{entry}, $arg{baton},
+					 $arg{copyfrom} ?
+					 ("file://$arg{repospath}$arg{copyfrom}",
+					  $cinfo->{'.copyfrom_rev'}) : (undef, -1), $pool);
     }
     else {
 	$entries = $arg{xdroot}->dir_entries ($arg{path})
@@ -714,16 +717,22 @@ sub _delta_dir {
 	    next;
 	}
 	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
+	if ($arg{copyfrom}) {
+	    die "replaced copies not implemented yet"
+		if "$arg{copyfrom}/$_" ne $ccinfo->{'.copyfrom'};
+	}
+	# XXX: only the copyroot needs to be added.
 	$self->$delta ( %arg,
-		   add => 1,
-		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
-		   kind => $SVN::Node::none,
-		   baton => $baton,
-		   targets => $targets->{$_},
-		   root => 0,
-		   path => "$arg{path}/$_",
-		   cinfo => $ccinfo,
-		   copath => "$arg{copath}/$_")
+			add => 1,
+			entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+			kind => $SVN::Node::none,
+			baton => $baton,
+			targets => $targets->{$_},
+			root => 0,
+			path => $ccinfo->{'.copyfrom'} || "$arg{path}/$_",
+			copyfrom => $ccinfo->{'.copyfrom'},
+			cinfo => $ccinfo,
+			copath => "$arg{copath}/$_")
 	    if !defined $arg{targets} || exists $targets->{$_};
 
     }
