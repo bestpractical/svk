@@ -2,6 +2,8 @@ package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
+use SVK::Util qw( get_anchor );
+
 
 =head1 NAME
 
@@ -38,6 +40,15 @@ sub same_repos {
 	return 0 if $self->{repos} ne $_->{repos};
     }
     return 1;
+}
+
+sub anchorify {
+    my ($self) = @_;
+    die "anchorify $self->{depotpath} already with targets"
+	if $self->{targets};
+    ($self->{path}, $self->{targets}[0], $self->{depotpath}, undef, $self->{report}) =
+	get_anchor (1, $self->{path}, $self->{depotpath}, $self->{report});
+    ($self->{copath}) = get_anchor (0, $self->{copath}) if $self->{copath};
 }
 
 =head1 AUTHORS

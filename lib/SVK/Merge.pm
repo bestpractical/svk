@@ -2,6 +2,7 @@ package SVK::Merge;
 use strict;
 use SVK::Util qw (find_svm_source find_local_mirror svn_mirror);
 use SVK::I18N;
+use SVK::Editor::Merge;
 
 =head1 NAME
 
@@ -280,14 +281,15 @@ the merge to the storage editor. Returns the number of conflicts.
 
 sub run {
     my ($self, $storage, %cb) = @_;
-
+    # XXX: should deal with all the anchorify here
     $storage = SVK::Editor::Delay->new ($storage);
-    my $base_root = $self->{base}->root;
+    my $base_root = $self->{base_root} || $self->{base}->root ($self->{xd});
     my $editor = SVK::Editor::Merge->new
 	( anchor => $self->{src}{path},
+	  report => $self->{src}{report},
 	  base_anchor => $self->{base}{path},
 	  base_root => $base_root,
-	  target => '',
+	  target => $self->{src}{targets}[0] || '',
 	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  storage => $storage,
 	  cb_merged => $self->{ticket} ?
@@ -301,8 +303,9 @@ sub run {
 	if !$self->{check_only} && $ENV{SVKMERGE} && -x (split (' ', $ENV{SVKMERGE}))[0];
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $self->{src}->root,
-	      oldpath => [$self->{base}{path}, ''],
-	      newpath => $self->{src}{path},
+	      oldpath => [$self->{base}{path}, $self->{base}{targets}[0] || ''],
+	      newpath => $self->{src}{targets}[0]
+	      ? "$self->{src}{path}/$self->{src}{targets}[0]" : $self->{src}{path},
 	      editor => $editor
 	    );
     print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};

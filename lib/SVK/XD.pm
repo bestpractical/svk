@@ -5,7 +5,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
-require SVK::Editor::Merge;
+require SVK::Merge;
 use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
@@ -483,49 +483,34 @@ sub get_editor {
 
 sub do_update {
     my ($self, %arg) = @_;
-    my $fs = $arg{repos}->fs;
+    my ($cotarget, $update_target) = @arg{qw/cotarget update_target/};
+    my $xdroot = $self->xdroot (%$cotarget);
+    my ($path, $copath) = @{$cotarget}{qw/path copath/}; # unanchorified
 
-    my $xdroot = $self->xdroot (%arg);
-    my ($anchor, $target, $report) = ($arg{path}, '', $arg{report});
-    $arg{target_path} ||= $arg{path};
-    my ($tanchor, $ttarget) = ($arg{target_path}, '');
-
-    print loc("Syncing %1(%2) in %3 to %4.\n", @arg{qw( depotpath path copath rev )});
-    unless ($xdroot->check_path ($arg{path}) == $SVN::Node::dir) {
-	($anchor, $target, $tanchor, $ttarget, $report) =
-	    get_anchor (1, $arg{path}, $arg{target_path}, $arg{report});
+    print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
+	      $update_target->{revision});
+    unless ($xdroot->check_path ($cotarget->{path}) == $SVN::Node::dir) {
+	$cotarget->anchorify;
+	$update_target->anchorify;
     }
     else {
-	# no anchor
-	mkdir ($arg{copath})
+	# XXX: should let Editor::XD take care of mkdir with add_directory
+	mkdir ($cotarget->{copath})
 	    unless $arg{check_only};
     }
-    # XXX: use SVK::Merge
-    my $newroot = $fs->revision_root ($arg{rev});
-    my ($storage, %cb) = $self->get_editor (%arg,
-					    oldroot => $xdroot,
-					    newroot => $newroot,
-					    anchor => $anchor,
-					    target => $target,
-					    update => 1);
+    # XXX: this should really be in SVK::Target
+    $update_target->{report} .= '/'
+	if $update_target->{report} ne '' && substr($update_target->{report}, -1, 1) ne '/';
 
-    $storage = SVK::Editor::Delay->new ($storage);
-    $report .= '/' if $report ne '' && substr($report, -1, 1) ne '/';
-    my $editor = SVK::Editor::Merge->new (send_fulltext => 1,
-					  report => $report,
-					  anchor => $tanchor,
-					  target => $ttarget,
-					  base_anchor => $anchor,
-					  base_root => $xdroot,
-					  storage => $storage,
-					  %cb);
-    $editor->{external} = $ENV{SVKMERGE}
-	if $ENV{SVKMERGE} && -x $ENV{SVKMERGE} && !$self->{check_only};
-    $self->depot_delta (oldroot => $xdroot, newroot => $newroot,
-			oldpath => [$anchor, $target], newpath => $arg{target_path},
-			editor => $editor, no_recurse => !$arg{recursive});
-
-    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
+    my $merge = SVK::Merge->new
+	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
+	 src => $update_target, xd => $self);
+    $merge->run ($self->get_editor (copath => $copath, path => $path,
+				    oldroot => $xdroot, newroot => $update_target->root,
+				    revision => $update_target->{revision},
+				    anchor => $cotarget->{path},
+				    target => $cotarget->{targets}[0] || '',
+				    update => 1));
 }
 
 sub do_add {
@@ -1190,7 +1175,6 @@ sub get_props {
     $entry->{'.schedule'} ||= '';
 
     unless ($entry->{'.schedule'} eq 'add') {
-
 	die loc("path %1 not found", $path)
 	    if $root->check_path ($path) == $SVN::Node::none;
 	$props = $root->node_proplist ($path);
@@ -1198,8 +1182,6 @@ sub get_props {
 
     return {%$props,
 	    %{$entry->{'.newprop'}}};
-
-
 }
 
 sub DESTROY {

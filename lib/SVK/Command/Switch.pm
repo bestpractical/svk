@@ -17,21 +17,17 @@ sub parse_arg {
 sub lock { $_[0]->lock_target ($_[2]) }
 
 sub run {
-    my ($self, $target, $depotpath) = @_;
+    my ($self, $target, $cotarget) = @_;
+    die loc("different depot") unless $target->same_repos ($cotarget);
 
-    die loc("different depot") unless $target->{repospath} eq $depotpath->{repospath};
-
-    my ($entry, @where) = $self->{xd}{checkout}->get ($depotpath->{copath});
-
-    die loc("can only switch checkout root") unless $where[0] eq $depotpath->{copath};
-
-    $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
+    my ($entry, @where) = $self->{xd}{checkout}->get ($cotarget->{copath});
+    die loc("can only switch checkout root") unless $where[0] eq $cotarget->{copath};
 
     # XXX: check relation between target_path and path
-    $depotpath->{target_path} = $target->{path};
-    $self->SUPER::run ($depotpath);
+    $self->{update_target_path} = $target->{path};
+    $self->SUPER::run ($cotarget);
 
-    $self->{xd}{checkout}->store ($depotpath->{copath}, {depotpath => $target->{depotpath}});
+    $self->{xd}{checkout}->store ($cotarget->{copath}, {depotpath => $target->{depotpath}});
     return;
 }
 

@@ -25,12 +25,17 @@ sub run {
     my ($self, @arg) = @_;
 
     for my $target (@arg) {
-	$self->{rev} = $target->{repos}->fs->youngest_rev
-	    unless defined $self->{rev};
+	my $update_target = SVK::Target->new
+	    ( %$target,
+	      path => $self->{update_target_path} || $target->{path},
+	      revision => defined $self->{rev} ?
+	      $self->{rev} : $target->{repos}->fs->youngest_rev,
+	      copath => undef
+	    );
 
 	$self->{xd}->do_update
-	    ( %$target,
-	      rev => $self->{rev},
+	    ( cotarget => $target,
+	      update_target => $update_target,
 	      recursive => !$self->{nonrecursive},
 	    );
     }
