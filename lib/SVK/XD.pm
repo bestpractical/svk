@@ -815,6 +815,7 @@ sub get_keyword_layer {
     my ($root, $path) = @_;
     my $pool = SVN::Pool->new_default;
     my $k = eval { $root->node_prop ($path, 'svn:keywords') };
+    undef $@;
     return unless $k;
 
     # XXX: should these respect svm related stuff
