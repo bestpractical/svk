@@ -911,9 +911,9 @@ sub resolv_revision {
         $rev = $self->find_head_rev($target);
     } elsif ($revstr =~ /^BASE$/) {
         $rev = $self->find_base_rev($target);
-    } elsif ($revstr =~ /\{\d\d\d\d-\d\d-\d\d\}/) { 
-        die "DATE revspec is not implemented yet\n";
-#        $rev = $self->find_date_rev($target,$1);
+    } elsif ($revstr =~ /\{(\d\d\d\d-\d\d-\d\d)\}/) { 
+        my $date = $1; $date =~ s/-//g;
+        $rev = $self->find_date_rev($target,$date);
     } elsif ($revstr =~ /\D/) {
         die loc("%1 is not a number",$revstr)
     } else {
@@ -921,6 +921,32 @@ sub resolv_revision {
     }
     return $rev
 }
+
+sub find_date_rev {
+    my ($self,$target,$date) = @_;
+    # $date should be in yyyymmdd format
+    my $fs = $target->{repos}->fs;
+    my $yrev = $fs->youngest_rev;
+
+    my ($rev,$last);
+    traverse_history (
+        root        => $fs->revision_root($yrev),
+        path        => $target->path,
+        callback    => sub {
+            my $props = $fs->revision_proplist($_[1]);
+            my $revdate = $props->{'svn:date'};
+            $revdate =~ s/T.*$//; $revdate =~ s/-//g;
+            if($date > $revdate) {
+                $rev = ($last || $_[1]);
+                return 0;
+            }
+            $last = $_[1];
+            return 1;
+        },
+    );
+    return $rev || $last;
+}
+
 
 sub find_base_rev {
     my ($self,$target) = @_;
@@ -934,17 +960,14 @@ sub find_head_rev {
     my ($self,$target) = @_;
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
-    my $limit = 1;
     my $rev;
-
     traverse_history (
         root        => $fs->revision_root($yrev),
         path        => $target->path,
         cross       => 0,
         callback    => sub {
-            return 0 if !$limit--; # last
             $rev = $_[1];
-            return 1;
+            return 0; # only need this once
         },
     );
     return $rev;
