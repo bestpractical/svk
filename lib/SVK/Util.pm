@@ -40,6 +40,7 @@ use Config;
 use SVK::I18N;
 use Digest::MD5;
 use Cwd;
+use File::Copy qw(move);
 use File::Path qw(mkpath);
 use File::Temp 0.14 qw(mktemp);
 use File::Basename qw(dirname);
@@ -592,9 +593,9 @@ path if neccessary.  If move failed, tell the user to move it manually.
 sub move_path {
     my ($source, $target) = @_;
 
-    if (-d $source and !-d $target) {
-        make_path(dirname($target));
-        rename ($source => $target) and return;
+    if (-d $source and (!-d $target or rmdir($target))) {
+        make_path (dirname($target));
+        move ($source => $target) and return;
     }
 
     print loc(
