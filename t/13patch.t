@@ -96,8 +96,6 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 is_output ($svk2, 'patch', ['update', 'test-1'],
 	   ['G   B/fe']);
 
-copy ("$xd->{svkpath}/patch/test-1.svkpatch" => "$xd2->{svkpath}/patch/test-1.svkpatch");
-
 my $patch2 = [split ("\n", << 'END_OF_DIFF')];
 
 === B/fe

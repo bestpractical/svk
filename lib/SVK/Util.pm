@@ -6,8 +6,8 @@ our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
 		    find_local_mirror abs_path mimetype mimetype_is_text
 		    abs2rel catfile catdir catpath splitpath splitdir tmpdir
-		    devnull is_symlink is_executable $SEP $EOL %Config
-		    HAS_SYMLINK IS_WIN32 TEXT_MODE DEFAULT_EDITOR);
+		    devnull is_symlink is_executable read_file write_file
+		    $SEP $EOL HAS_SYMLINK IS_WIN32 TEXT_MODE DEFAULT_EDITOR);
 our $VERSION = $SVK::VERSION;
 
 use Config;
@@ -267,6 +267,17 @@ sub is_symlink {
 sub is_executable {
     IS_WIN32 ? @_ ? (-f $_[0]) : (-f _)
 	     : @_ ? (-x $_[0]) : (-x _);
+}
+
+sub read_file {
+    local $/;
+    open my $fh, '<', $_[0] or die $!;
+    return <$fh>;
+}
+
+sub write_file {
+    open my $fh, '>', $_[0] or die $!;
+    print $fh $_[1];
 }
 
 1;

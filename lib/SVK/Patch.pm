@@ -1,6 +1,7 @@
 package SVK::Patch;
 use strict;
 use SVK::I18N;
+use SVK::Util qw( read_file write_file );
 our $VERSION = $SVK::VERSION;
 
 =head1 NAME
@@ -74,9 +75,7 @@ Load a SVK::Patch object from file.
 
 sub load {
     my ($class, $file, $xd, $depot) = @_;
-    open FH, '<', $file or die $!;
-    local $/;
-    my $self = thaw (uncompress (decode_base64(<FH>)));
+    my $self = thaw (uncompress (decode_base64 ( read_file($file) ) ) );
     $self->{_xd} = $xd;
     $self->{_depot} = $depot;
     for (qw/source target/) {
@@ -99,8 +98,7 @@ Store a SVK::Patch object to file.
 sub store {
     my ($self, $file) = @_;
     my $store = bless {map {m/^_/ ? () : ($_ => $self->{$_})} keys %$self}, ref ($self);
-    open FH, '>', $file or die $!;
-    print FH encode_base64(compress (nfreeze ($store)));
+    write_file( $file, encode_base64(compress (nfreeze ($store))) );
 }
 
 =head2 editor

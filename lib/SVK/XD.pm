@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config is_symlink splitpath HAS_SYMLINK );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP is_symlink splitpath HAS_SYMLINK );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
