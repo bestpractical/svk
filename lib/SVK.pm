@@ -1,6 +1,6 @@
 package SVK;
 use strict;
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 use SVK::Command;
 our $AUTOLOAD;
 
@@ -27,6 +27,7 @@ sub AUTOLOAD {
     eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
     if ($output) {
 	close $output;
+	print STDERR "[$cmd] $buf";
 	${$self->{output}} = $buf;
     }
 }

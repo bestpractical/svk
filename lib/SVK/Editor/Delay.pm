@@ -3,19 +3,34 @@ use strict;
 our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
-sub _open_pdir {
-    my ($self, $pbaton) = @_;
+sub _open_pbaton {
+    my ($self, $pbaton, $func) = @_;
     my $baton;
 
+    $func = "SUPER::open_$func";
     unless ($self->{opened}{$pbaton}) {
 	my ($path, $ppbaton, @arg) = @{$self->{batoninfo}{$pbaton}};
-	$self->{batons}{$pbaton} = $self->SUPER::open_directory
+	$self->{batons}{$pbaton} = $self->$func
 	    ($path, $self->_open_pdir ($ppbaton), @arg);
 	$self->{opened}{$pbaton} = 1;
     }
 
     return $self->{batons}{$pbaton};
 }
+
+sub _close_baton {
+    my ($self, $func, $baton, $pool) = @_;
+    $func = "SUPER::close_$func";
+    if ($self->{opened}{$baton}) {
+	$self->$func ($self->{batons}{$baton}, $pool);
+	delete $self->{opened}{$baton};
+    }
+    delete $self->{batons}{$baton};
+    delete $self->{batoninfo}{$baton};
+}
+
+sub _open_pdir { _open_pbaton (@_, 'directory') }
+sub _open_file { _open_pbaton (@_, 'file') }
 
 sub open_root {
     my ($self, @arg) = @_;
@@ -27,12 +42,31 @@ sub open_root {
 
 sub add_file {
     my ($self, $path, $pbaton, @arg) = @_;
-    $self->SUPER::add_file ($path, $self->_open_pdir ($pbaton), @arg);
+    my $baton = $self->SUPER::add_file ($path, $self->_open_pdir ($pbaton), @arg);
+    $self->{batons}{$self->{nbaton}} = $baton;
+    $self->{opened}{$self->{nbaton}} = 1;
+    return $self->{nbaton}++;
 }
 
 sub open_file {
     my ($self, $path, $pbaton, @arg) = @_;
-    $self->SUPER::open_file ($path, $self->_open_pdir ($pbaton), @arg);
+    $self->{batoninfo}{$self->{nbaton}} = [$path, $pbaton, @arg];
+    return $self->{nbaton}++;
+}
+
+sub apply_textdelta {
+    my ($self, $baton, @arg) = @_;
+    return $self->SUPER::apply_textdelta ($self->_open_file ($baton), @arg);
+}
+
+sub change_file_prop {
+    my ($self, $baton, @arg) = @_;
+    return $self->SUPER::change_file_prop ($self->_open_file ($baton), @arg);
+}
+
+sub close_file {
+    my $self = shift;
+    $self->_close_baton ('file', @_);
 }
 
 sub add_directory {
@@ -60,13 +94,8 @@ sub open_directory {
 }
 
 sub close_directory {
-    my ($self, $baton, $pool) = @_;
-    if ($self->{opened}{$baton}) {
-	$self->SUPER::close_directory ($self->{batons}{$baton}, $pool);
-	delete $self->{opened}{$baton};
-    }
-    delete $self->{batons}{$baton};
-    delete $self->{batoninfo}{$baton};
+    my $self = shift;
+    $self->_close_baton ('directory', @_);
 }
 
 1;

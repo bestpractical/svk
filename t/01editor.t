@@ -5,11 +5,9 @@ require 't/tree.pl';
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('prop');
-warn "$copath - $corpath\n";
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 
 $svk->checkout ('//', $copath);
-warn "$output\n";
 mkdir ("$copath/A");
 mkdir ("$copath/B");
 overwrite_file ("$copath/A/foo", "foobar\nfnord\n");

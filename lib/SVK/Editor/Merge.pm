@@ -176,6 +176,7 @@ sub open_root {
     $self->{notify} ||= SVK::Notify->new_with_report ($self->{report}, $self->{target});
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
+    $self->{notify}->node_status ('', '');
     return '';
 }
 
@@ -312,6 +313,7 @@ sub close_file {
 	$self->prepare_fh ($fh);
 
 	if ($checksum eq $fh->{local}[2] ||
+	    # XXX: mark this as a change too?
 	    File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0) {
 	    $self->{notify}->node_status ($path, 'g');
 	    $self->ensure_close ($path, $checksum, $pool);
@@ -422,6 +424,7 @@ sub open_directory {
 	    return undef;
 	}
     }
+    $self->{notify}->node_status ($path, '');
     $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);
@@ -469,6 +472,7 @@ sub _check_delete_conflict {
 		++$modified;
 		$self->node_conflict ($cpath);
 	    }
+	    delete $dirmodified->{$name};
 	}
 	else { # dir or unmodified file
 	    my $entry = $entries->{$name};
@@ -491,6 +495,11 @@ sub _check_delete_conflict {
 		++$merged;
 	    }
 	}
+    }
+    for my $name (keys %$dirmodified) {
+	my ($cpath, $crpath) = ("$path/$name", "$rpath/$name");
+	++$modified;
+	$self->node_conflict ($cpath);
     }
     if ($modified || $merged) {
 	# maybe leave the status to _partial delete?

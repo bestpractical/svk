@@ -144,7 +144,7 @@ sub find_merge_sources {
     my $minfo = $root->node_prop ($path, 'svk:merge');
     my $myuuid = $fs->get_uuid ();
     if ($minfo) {
-	$minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
+	$minfo = { map {my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
                         ($uuid, $path, $rev) =
 			    ($myuuid, find_local_mirror ($repos, $uuid, $path, $rev))
 				unless $verbatim || $uuid eq $myuuid;
@@ -248,7 +248,7 @@ sub get_new_ticket {
 
 sub log {
     my ($self, $verbatim) = @_;
-    open my $buf, '>', \ (my $tmp);
+    open my $buf, '>', \ (my $tmp = '');
     no warnings 'uninitialized';
     use Sys::Hostname;
     my $print_rev = SVK::Command::Log::_log_remote_rev
@@ -401,7 +401,7 @@ package SVK::Merge::Info;
 sub new {
     my ($class, $merge) = @_;
 
-    my $minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
+    my $minfo = { map {my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
 		       ("$uuid:$path" => $rev)
 		   } split ("\n", $merge) };
     bless $minfo, $class;

@@ -44,7 +44,7 @@ sub do_update {
     my ($xdroot, $newroot) = map { $_->root ($self->{xd}) } ($cotarget, $update_target);
     # unanchorified
     my ($path, $copath) = @{$cotarget}{qw/path copath/};
-    my $report = $update_target->{report};
+    my $report = $cotarget->{report};
     my $kind = $newroot->check_path ($update_target->{path});
     die loc("path %1 does not exist.\n", $update_target->{path})
 	if $kind == $SVN::Node::none;
@@ -56,18 +56,21 @@ sub do_update {
 	$update_target->anchorify;
 	# can't use $cotarget->{path} directly since the (rev0, /) hack
 	($path, $copath) = @{$cotarget}{qw/path copath/};
+	$cotarget->{targets}[0] = $cotarget->{copath_target};
     }
-    $cotarget = $cotarget->new (path => '/')
-	if $xdroot->check_path ($cotarget->path) == $SVN::Node::none;
+    my $base = $cotarget;
+    $base = $base->new (path => '/')
+	if $xdroot->check_path ($base->path) == $SVN::Node::none;
     mkdir ($cotarget->{copath}) or die $!
 	unless $self->{check_only} || -e $cotarget->{copath};
 
     my $notify = SVK::Notify->new_with_report
-	($report, $update_target->{targets}[0], 1);
+	($report, $cotarget->{targets}[0], 1);
     my $merge = SVK::Merge->new
-	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
+	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => $self->{nonrecursive}, notify => $notify, nodelay => 1,
-	 src => $update_target, xd => $self->{xd}, check_only => $self->{check_only});
+	 src => $update_target, dst => $cotarget,
+	 xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  oldroot => $xdroot, newroot => $newroot,
 					  revision => $update_target->{revision},

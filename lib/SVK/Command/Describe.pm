@@ -12,15 +12,19 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0;
-    return ($arg[0], $self->arg_depotname ($arg[1] || '//'));
+    return if $#arg < 0;
+
+    local $@;
+    $arg[1] = eval { $self->arg_co_maybe ($arg[1] || '')->new (path => '/') }
+	|| $self->arg_depotpath ("//");
+    $arg[1]->depotpath;
+    return @arg;
 }
 
 sub lock { $_[0]->lock_none }
 
 sub run {
-    my ($self, $chg, $depot) = @_;
-    my $target = $self->arg_depotpath ("/$depot/");
+    my ($self, $chg, $target) = @_;
     $self->{revspec} = $chg;
     $self->SVK::Command::Log::run ($target);
     $self->{revspec} = ($chg-1).":$chg";
@@ -37,8 +41,7 @@ SVK::Command::Describe - Describe a change
 
 =head1 SYNOPSIS
 
- describe CHANGE DEPOTNAME
- describe CHANGE [PATH]
+ describe CHANGE [DEPOTPATH | COPATH]
 
 =head1 OPTIONS
 

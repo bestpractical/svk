@@ -14,7 +14,7 @@ SVK::Editor::XD - An editor for modifying checkout copies
 =head1 SYNOPSIS
 
 $editor = SVK::Editor::XD->new
-    ( anchor => $anchor,
+    ( path => $path,
       target => $target,
       oldroot => $fs->revision_root ($fromrev),
       newroot => $fs->revision_root ($torev),
@@ -37,13 +37,13 @@ which is used for bringing changes from depot to checkout copies.
 
 =over
 
-=item anchor
+=item path
 
 The anchor of the editor calls.
 
 =item target
 
-The target path of the editor calls.
+The target path of the editor calls.  Used only for path reporting translation.
 
 =item xd
 
@@ -122,6 +122,7 @@ sub apply_textdelta {
 	$self->{base}{$path} = [$base, $basename,
 				-l $basename ? () : [stat($base)]];
     }
+    # XXX: should test merge to co with keywords
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath, 0, undef, undef,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
@@ -143,19 +144,16 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	my $report = $copath;
-	$report =~ s/^\Q$self->{copath}\E/$self->{report}/ if $self->{report};
-	$self->{xd}->do_add (report => $report, no_autoprop => 1,
-			     copath => $copath, quiet => $self->{quiet});
+	$self->{xd}{checkout}->store ($copath, { '.schedule' => 'add' });
     }
     if ($self->{update}) {
-	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}});
+	# XXX: use store_fast with new data::hierarchy release.
+	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}}, 1);
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
     delete $self->{props}{$path};
     delete $self->{added}{$path};
-
 }
 
 sub add_directory {
@@ -164,10 +162,7 @@ sub add_directory {
     $self->{get_copath}($copath);
     die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
     mkdir ($copath) unless $self->{check_only};
-    my $report = $path;
-    $report =~ s/^\Q$self->{target}\E/$self->{report}/ if $self->{report};
-    $self->{xd}->do_add (report => $report, no_autoprop => 1,
-			 copath => $copath, quiet => $self->{quiet})
+    $self->{xd}{checkout}->store ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
     return $path;

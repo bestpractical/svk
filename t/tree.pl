@@ -8,10 +8,9 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use File::Path;
-use File::Spec;
 use SVK;
 use SVK::XD;
-use SVK::Util qw( $SEP catdir abs_path );
+use SVK::Util qw( catdir tmpdir abs_path $SEP );
 use strict;
 use Carp;
 
@@ -31,7 +30,7 @@ for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
 my $pool = SVN::Pool->new_default;
 
 sub new_repos {
-    my $repospath = catdir(File::Spec->tmpdir, "svk-$$");
+    my $repospath = catdir(tmpdir(), "svk-$$");
     my $reposbase = $repospath;
     my $repos;
     my $i = 0;
@@ -39,8 +38,9 @@ sub new_repos {
 	$repospath = $reposbase . '-'. (++$i);
     }
     my $pool = SVN::Pool->new_default;
+    $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
     $repos = SVN::Repos::create("$repospath", undef, undef, undef,
-				{'fs-type' => $ENV{SVNFSTYPE} || 'bdb'})
+				{'fs-type' => $ENV{SVNFSTYPE}})
 	or die "failed to create repository at $repospath";
     return $repospath;
 }
@@ -62,7 +62,7 @@ sub get_copath {
     my $copath = SVK::Target->copath ('t', "checkout/$name");
     mkpath [$copath] unless -d $copath;
     rmtree [$copath] if -e $copath;
-    return ($copath, abs_path($copath));
+    return ($copath, File::Spec->rel2abs($copath));
 }
 
 sub rm_test {
@@ -96,14 +96,14 @@ sub append_file {
 
 sub overwrite_file {
     my ($file, $content) = @_;
-    open my ($fh), '>:raw', $file or confess "$file: $!";
+    open my ($fh), '>:raw', $file or confess "Cannot overwrite $file: $!";
     print $fh $content;
     close $fh;
 }
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
-    open my ($fh), '<:raw', $file or confess "$file: $!";
+    open my ($fh), '<:raw', $file or confess "Cannot read from $file: $!";
     local $/;
     is (<$fh>, $content, $test);
 }
@@ -181,6 +181,7 @@ sub create_basic_tree {
 
     my $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();
+
     $edit->modify_file ($edit->add_file ('/me'),
 			"first line in me\n2nd line in me\n");
     $edit->modify_file ($edit->add_file ('/A/be'),
@@ -191,6 +192,7 @@ sub create_basic_tree {
     $edit->add_directory ('/B');
     $edit->add_directory ('/C');
     $edit->add_directory ('/A/Q');
+    $edit->change_dir_prop ('/A/Q', 'foo', 'prop on A/Q');
     $edit->modify_file ($edit->add_file ('/A/Q/qu'),
 			"first line in qu\n2nd line in qu\n");
     $edit->modify_file ($edit->add_file ('/A/Q/qz'),
@@ -242,6 +244,12 @@ sub tree_from_fsroot {
 
 sub tree_from_xdroot {
     # generate a hash describing the content in an xdroot
+}
+
+sub __ {
+    my $path = shift;
+    $path =~ s{/}{$SEP}go;
+    return $path;
 }
 
 1;

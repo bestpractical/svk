@@ -5,25 +5,24 @@ our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
 		    find_local_mirror abs_path mimetype mimetype_is_text
-		    abs2rel catfile catdir $SEP);
+		    abs2rel catfile catdir catpath splitpath splitdir tmpdir $SEP %Config);
 our $VERSION = $SVK::VERSION;
 our $SEP = catdir('');
 
+use Config;
 use SVK::I18N;
-use Digest::MD5 qw(md5_hex);
-use File::Spec;
+use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
+use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir tmpdir);
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
 
-use constant TEXT_MODE => ($^O eq 'MSWin32') ? ':crlf' : '';
-use constant DEFAULT_EDITOR => ($^O eq 'MSWin32') ? 'notepad.exe' : 'vi';
+use constant IS_WIN32 => ($^O eq 'MSWin32');
+use constant TEXT_MODE => IS_WIN32 ? ':crlf' : '';
+use constant DEFAULT_EDITOR => IS_WIN32 ? 'notepad.exe' : 'vi';
 
-# loading svn::mirror on-the-fly causes output stream not respected,
-# failing #1 in t/23commit. possibly because VCP calls select.
-my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 sub svn_mirror () {
     no warnings 'redefine';
     local $@;
@@ -97,7 +96,7 @@ sub get_buffer_from_editor {
     # XXX: test suites for this
     my $old_targets = (split (/\n\Q$sep\E\n/, $content, 2))[1];
     my @new_targets = map {s/^\s+//; # proponly change will have leading spacs
-			   [split(/\s+/, $_, 2)]} grep /\S/, split(/\n+/, $ret[1]);
+			   [split(/[\s\+]+/, $_, 2)]} grep /\S/, split(/\n+/, $ret[1]);
     if ($old_targets ne $ret[1]) {
 	@$targets_ref = map $_->[1], @new_targets;
 	s|^\Q$anchor\E/|| for @$targets_ref;
@@ -116,7 +115,7 @@ sub slurp_fh {
 sub get_anchor {
     my $needtarget = shift;
     map {
-	my ($volume,$anchor,$target) = File::Spec->splitpath ($_);
+	my ($volume,$anchor,$target) = splitpath ($_);
 	chop $anchor if length ($anchor) > 1;
 	($volume.$anchor, $needtarget ? ($target) : ())
     } @_;
@@ -140,8 +139,7 @@ sub find_svm_source {
 	$rev = $m->find_remote_rev ($rev);
 	$path =~ s/\Q$mpath\E$//;
 	$uuid = $m->{source_uuid};
-	$path = $m->{source}.$mpath;
-	$path =~ s/^\Q$m->{source_root}\E//;
+	$path = $m->{source_path}.$mpath;
 	$path ||= '/';
     }
     else {
@@ -157,7 +155,8 @@ sub find_local_mirror {
     my $myuuid = $repos->fs->get_uuid;
     return unless svn_mirror && $uuid ne $myuuid;
     my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
-    return ("$m->{target_path}$mpath", $m->find_local_rev ($rev)) if $m;
+    return ("$m->{target_path}$mpath",
+	    $rev ? $m->find_local_rev ($rev) : $rev) if $m;
 }
 
 sub resolve_svm_source {
@@ -172,7 +171,7 @@ sub resolve_svm_source {
 
 sub tmpfile {
     my ($temp, %args) = @_;
-    my $dir = File::Spec->tmpdir;
+    my $dir = tmpdir;
     $temp = "svk-${temp}XXXXX";
     return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
@@ -194,8 +193,8 @@ sub abs_path {
 	return scalar Win32::GetFullPathName($path)
     }
     return Cwd::abs_path ($path) unless -l $path;
-    my (undef, $dir, $pathname) = File::Spec->splitpath ($path);
-    return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
+    my (undef, $dir, $pathname) = splitpath ($path);
+    return catpath (undef, Cwd::abs_path ($dir), $pathname);
 }
 
 sub mimetype {
@@ -222,24 +221,20 @@ sub mimetype_is_text {
 }
 
 sub abs2rel {
-    my ($child, $parent, $new_parent) = @_;
-    my $rel = File::Spec->abs2rel($child, $parent);
+    my ($child, $parent, $new_parent, $slash) = @_;
+    if (IS_WIN32 and $child =~ /^\W/) {
+	print STDERR "*********Called: $child <=> $parent\n";
+	exit;
+    }
+    my $rel = File::Spec::Functions::abs2rel($child, $parent);
     if (index($rel, '..') > -1) {
         $rel = $child;
     }
     elsif (defined $new_parent) {
-        $rel = "$new_parent/$rel";
+        $rel = catdir($new_parent, $rel);
     }
-    $rel =~ s{\Q$SEP\E}{/}go if $SEP ne '/';
+    $rel =~ s/\Q$SEP/$slash/g if $slash and $SEP ne $slash;
     return $rel;
-}
-
-sub catfile {
-    File::Spec->catfile(@_);
-}
-
-sub catdir {
-    File::Spec->catdir(@_);
 }
 
 1;

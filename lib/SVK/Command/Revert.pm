@@ -26,14 +26,9 @@ sub lock {
 sub run {
     my ($self, $target) = @_;
     my $xdroot = $self->{xd}->xdroot (%$target);
-    my $storeundef = {'.schedule' => undef,
-		      scheduleanchor => undef,
-		      '.copyfrom' => undef,
-		      '.copyfrom_rev' => undef,
-		      '.newprop' => undef};
 
     my $unschedule = sub {
-	$self->{xd}{checkout}->store ($_[1], $storeundef);
+	$self->{xd}{checkout}->store ($_[1], {$self->_schedule_empty});
 	print loc("Reverted %1\n", $_[1]);
     };
     my $revert = sub {
@@ -76,9 +71,8 @@ sub run {
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
 		      my $st = $status->[0];
-		      my $dpath = $path ?
-			  File::Spec->catfile ($target->{path}, $path) : $target->{path};
-		      my $copath = $path ? "$target->{copath}/$path" : $target->{copath};
+		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
+		      my $copath = $target->copath ($path);
 		      if ($st eq 'M' || $st eq 'D' || $st eq '!' || $st eq 'R') {
 			  $revert->($dpath, $copath);
 		      }
@@ -91,7 +85,7 @@ sub run {
     }
     else {
 	if ($target->{targets}) {
-	    &$revert_item ("$target->{path}/$_", "$target->{copath}/$_")
+	    &$revert_item ("$target->{path}/$_", $target->copath ($_))
 		for @{$target->{targets}};
 	}
 	else {

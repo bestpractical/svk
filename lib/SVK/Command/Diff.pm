@@ -63,7 +63,7 @@ sub run {
 	$cb_llabel =
 	    sub { my ($rpath) = @_;
 		  'revision '.($lrev ||
-			       $self->{xd}{checkout}->get ("$target2->{copath}/$rpath")->{revision});
+			       $self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision});
 	      },
     }
 
@@ -109,6 +109,7 @@ sub run {
 	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
 	    ( %$target2,
+	      expand_copy => 1,
 	      base_root => $oldroot,
 	      base_path => $target->{path},
 	      xdroot => $newroot,

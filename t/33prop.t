@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 37;
+use Test::More tests => 42;
 use strict;
 use File::Temp;
 require 't/tree.pl';
@@ -37,6 +37,10 @@ is_output ($svk, 'pl', ["$copath/A"],
 is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   ["Properties on $copath/A:",
 	    '  myprop: myvalue']);
+
+is_output ($svk, 'pg', ['myprop', "$copath/A"],
+	   ['myvalue']);
+
 $svk->commit ('-m', 'commit', $copath);
 
 is_output ($svk, 'ps', ['myprop', 'myvalue2', "$copath/A"],
@@ -44,9 +48,18 @@ is_output ($svk, 'ps', ['myprop', 'myvalue2', "$copath/A"],
 is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   ["Properties on $copath/A:",
 	    '  myprop: myvalue2']);
+is_output ($svk, 'pg', ['myprop', "$copath/A"],
+	   ['myvalue2']);
 is_output ($svk, 'pl', ['-v', "//A"],
 	   ["Properties on //A:",
 	    '  myprop: myvalue']);
+is_output ($svk, 'pg', ['myprop', "//A"],
+	   ['myvalue']);
+is_output ($svk, 'pg', ['myprop', "$copath/A", "//A"],
+	   ['/A - myvalue2',
+            '/A - myvalue']);
+is_output ($svk, 'pg', ['--strict', 'myprop', "$copath/A", "//A"],
+	   ['myvalue2myvalue']);
 $svk->revert ("$copath/A");
 is_output ($svk, 'ps', ['myprop2', 'myvalue2', "$copath/A"],
 	   [" M  $copath/A"]);

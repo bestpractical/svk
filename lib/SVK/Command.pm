@@ -8,9 +8,8 @@ use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
-use Cwd;
-use SVK::I18N;
 use SVK::Util qw( abs_path );
+use SVK::I18N;
 
 my %alias = qw( co checkout
 		up update
@@ -18,6 +17,7 @@ my %alias = qw( co checkout
 		ci commit
 		del delete
 		rm delete
+		pg propget
 		ps propset
 		pe propedit
 		pl proplist
@@ -78,21 +78,25 @@ sub invoke {
     $ofh = select $output if $output;
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
+	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
 	die loc ("Unknown options.\n")
 	    unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
 
 	if ($help || !(@args = $cmd->parse_arg(@ARGV))) {
+	    select STDERR unless $output;
 	    $cmd->usage;
 	}
 	else {
-	    eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
+	    eval { $cmd->lock (@args); warn "Running $cmd\n"; $ret = $cmd->run (@args) };
+	    print STDERR "======>[$@]\n";
 	    $xd->unlock if $xd;
 	    die $@ if $@;
 	}
     };
+    $ofh = select STDERR unless $output;
     print $ret if $ret;
     print $@ if $@;
-    select $ofh if $output;
+    select $ofh if $ofh
 }
 
 sub brief_usage {
@@ -159,13 +163,22 @@ sub arg_condensed {
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
-    return SVK::Target->new
+    my $target = SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
+	  depotpath => $cinfo->{depotpath},
 	  copath => $copath,
 	  path => $path,
 	  report => $report,
 	  targets => @targets ? \@targets : undef );
+    my $root = $target->root ($self->{xd});
+    until ($root->check_path ($target->{path}) == $SVN::Node::dir) {
+	my $targets = delete $target->{targets};
+	$target->anchorify;
+	$target->{targets} = [map {"$target->{targets}[0]/$_"} @$targets]
+	    if $targets;
+    }
+    return $target;
 }
 
 sub arg_co_maybe {
@@ -224,6 +237,9 @@ sub arg_path {
 
     return abs_path ($arg);
 }
+
+my %empty = map { ($_ => undef) } qw/.schedule copyfrom copyfrom_rev .newprop scheduleanchor/;
+sub _schedule_empty { %empty };
 
 1;
 

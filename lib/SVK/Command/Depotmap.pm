@@ -54,8 +54,9 @@ sub _do_edit {
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;
+        $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 	SVN::Repos::create($path, undef, undef, undef,
-			   {'fs-type' => $ENV{SVNFSTYPE} || 'bdb',
+			   {'fs-type' => $ENV{SVNFSTYPE},
 			    'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
     }
@@ -81,7 +82,7 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
 =head1 DESCRIPTION
 
-Run this command with any options would bring up your $EDITOR,
+Run this command without any options would bring up your C<$EDITOR>,
 and let you edit your depot-directory mapping.
 
 Each line contains a map entry, the format is:

@@ -65,8 +65,7 @@ is_output ($svk, 'merge', ['-r4:3', '-m', 'merge from //A to //B', '//A', '//B']
 	   ['G   foo',
 	    'Committed revision 5.']);
 is_output ($svk, 'update', [$copath],
-	   ["Syncing //(/) in $corpath to 5.",
-	    'Empty merge.']);
+	   ["Syncing //(/) in $corpath to 5."]);
 
 is_file_content (copath ("B/foo"), "foobar\n",
 		 'merge via update');

@@ -1,3 +1,25 @@
+[Changes for 0.20 - 4 Sep, 2004]
+
+*** First Beta Release ***
+
+* svk commit --import for automatically add and remove entries.
+
+* When yaml loading error, save the old file to a backup location.
+
+* Fix $FileRev$ on non-latest checkout.
+
+* Support svn's auto-prop configration.
+
+* svk rm --keep-local (or -K). [#4652]
+
+* Fix deep recursion of _delta_dir when there's a directory entry '0'.
+
+* Allow patch regen, update, and apply.
+
+* Make File::MimeInfo really optional. [Autrijus Tang]
+
+* Many paths translating cleanups toward a win32 port.
+
 [Changes for 0.19 - 21 Aug, 2004]
 
 * Support merge --track-rename.

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 30;
+use Test::More tests => 41;
 use strict;
 our $output;
 require 't/tree.pl';
@@ -7,7 +7,7 @@ my ($xd, $svk) = build_test('foo');
 $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
 $svk->mkdir ('-m', 'init', '//new');
-my ($copath, $corpath) = get_copath ('copy');
+our ($copath, $corpath) = get_copath ('copy');
 is_output_like ($svk, 'copy', [], qr'SYNOPSIS', 'copy - help');
 
 $svk->checkout ('//new', $copath);
@@ -56,6 +56,57 @@ is_output ($svk, 'copy', ['-m', 'more than one', '//V/me', '//V/D', '//V/new'],
 is_copied_from ("//V/new/me", '/V/me', 3);
 is_copied_from ("//V/new/D", '/V/D', 3);
 
+is_output ($svk, 'rm', ['-m', 'die!', '//V/D/de'],
+	   ["Committed revision 8."]);
+$svk->update ($copath);
+
+is_output ($svk, 'copy', ["//V/D/de", "$copath/de-revive"],
+	   ['Path /V/D/de does not exist.']);
+
+is_output ($svk, 'copy', ['-r7', "//V/D/de", "$copath/de-revive"],
+	   ['A   t/checkout/copy/de-revive']);
+is_output ($svk, 'status', [$copath],
+	   ["A + $copath/de-revive"]
+	  );
+is_output ($svk, 'commit', ['-m', 'commit file copied from entry removed later', $copath],
+	   ['Committed revision 9.']);
+is_copied_from ("//new/de-revive", '/V/D/de', 3);
+
+# proper anchoring
+$svk->copy ('//V/A/be', "$copath/be-alone");
+$svk->copy ('//V/A', "$copath/A-prop");
+$svk->ps ('newprop', 'prop after cp', "$copath/be-alone");
+$svk->ps ('newprop', 'prop after cp', "$copath/A-prop/be");
+
+is_output ($svk, 'pl', ["$copath/be-alone"],
+	   ["Properties on $copath/be-alone:",
+	    '  newprop', '  svn:keywords']);
+
+is_output ($svk, 'pl', ["$copath/A-prop/be"],
+	   ["Properties on $copath/A-prop/be:",
+	    '  newprop', '  svn:keywords']);
+
+mkdir ("$copath/newdir");
+$svk->add ("$copath/newdir");
+my $status = [status_native ($copath, 'A  ', 'newdir/A',
+			     'A  ', 'newdir/A/Q',
+			     'A  ', 'newdir/A/Q/qu',
+			     'A  ', 'newdir/A/Q/qz',
+			     'A  ', 'newdir/A/be')];
+
+is_output ($svk, 'copy', ['//V/A', "$copath/newdir"],
+	   $status);
+is_output ($svk, 'status', ["$copath/newdir/A", "$copath/A-prop"],
+	   [status_native ($copath, 'A +', 'A-prop', ' M ', 'A-prop/be',
+			   'A  ', 'newdir', 'A +', 'newdir/A')]);
+
+$svk->status ("$copath/newdir/A");
+$svk->revert ('-R', $copath);
+TODO: {
+local $TODO = 'revert removes known nodes copied';
+is_output ($svk, 'status', [$copath], []);
+}
+# copy on mirrored paths
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/foo/', 1);
 create_basic_tree ($xd, '/foo/');
 $svk->mirror ('//foo-remote', "file://$srepospath");
@@ -65,8 +116,8 @@ $svk->update ($copath);
 is_output ($svk, 'cp', ['//V/new', '//foo-remote/new'],
 	   ['Different sources.']);
 
-is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/me-dcopied'],
-	   ['Committed revision 11.']);
+is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/me-dcopied'],
+	   ['Committed revision 13.']);
 is_copied_from ("//V/me-dcopied", '/V/me', 3);
 
 is_output ($svk, 'cp', ['-m', 'copy for remote', '//foo-remote/me', '//foo-remote/me-rcopied'],
@@ -75,9 +126,9 @@ is_output ($svk, 'cp', ['-m', 'copy for remote', '//foo-remote/me', '//foo-remot
 	    'Merge back committed as revision 3.',
 	    "Syncing file://$srepospath",
 	    'Retrieving log information from 3 to 3',
-	    'Committed revision 12 from revision 3.']);
+	    'Committed revision 14 from revision 3.']);
 
-is_copied_from ("//foo-remote/me-rcopied", '/foo-remote/me', 10);
+is_copied_from ("//foo-remote/me-rcopied", '/foo-remote/me', 12);
 is_copied_from ("/foo/me-rcopied", '/me', 2);
 
 
@@ -87,7 +138,7 @@ $svk->checkout ('//foo-remote', $copath);
 is_output ($svk, 'cp', ['//V/me', "$copath/me-rcopied"],
 	   ['Different sources.']);
 $svk->copy ('-m', 'from co', "$copath/me", '//foo-remote/me-rcopied.again');
-is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 10);
+is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 12);
 is_copied_from ("/foo/me-rcopied.again", '/me', 2);
 
 append_file ("$copath/me", "bzz\n");
@@ -103,7 +154,7 @@ $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
 
 is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/A/Q/'],
-	   ['Committed revision 15.']);
+	   ['Committed revision 17.']);
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 sub is_copied_from {

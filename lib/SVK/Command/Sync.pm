@@ -45,7 +45,8 @@ sub run {
 	my $m = SVN::Mirror->new (target_path => $target->{path},
 				  target => $target->{repospath},
 				  repos => $target->{repos},
-				  pool => SVN::Pool->new, auth => $self->auth,
+				  pool => SVN::Pool->new,
+				  config => $self->{svnconfig},
 				  cb_copy_notify => \&copy_notify,
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});

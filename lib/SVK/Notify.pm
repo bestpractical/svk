@@ -73,8 +73,9 @@ sub node_status {
 
 sub prop_status {
     my ($self, $path, $s) = @_;
-    $self->{status}{$path}[1] = $s if defined $s
-	&& (!exists $self->{status}{$path}[0] || $self->{status}{$path}[0] ne 'A');
+    my $st = $self->{status}{$path};
+    $st->[1] = $s if defined $s
+	&& (!$st->[0] || $st->[0] ne 'A' );
     return $self->{status}{$path}[1];
 }
 

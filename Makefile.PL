@@ -26,21 +26,22 @@ requires(
         'PerlIO::via::dynamic'  => '0.02',
         'PerlIO::via::symlink'  => '0.01',
         'SVN::Simple::Edit'     => '0.21',
+        'Date::Parse'           => '0',
 );
 features(
     'Localized messages' => [
 	-default => 1,
-        'Locale::Maketext::Lexicon' => '0.36',
+        'Locale::Maketext::Lexicon' => '0.42',
         'Locale::Maketext::Simple'  => '0.12',
     ],
 );
 
 if( eval{ require SVN::Mirror } ) {
-    requires( 'SVN::Mirror' => '0.43' );
+    requires( 'SVN::Mirror' => '0.45' );
 } else {
     features( 'SVN::Mirror support' => [
                -default => 1,
-               'SVN::Mirror'    => '0.43',
+               'SVN::Mirror'    => '0.45',
            ],
 	    );
 }
