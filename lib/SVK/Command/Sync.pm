@@ -26,6 +26,18 @@ sub copy_notify {
     return find_local_mirror ($m->{repos}, $m->{rsource_uuid}, $from_path, $from_rev);
 }
 
+sub lock_message {
+    my $i = 0;
+    sub {
+	my ($mirror, $what, $who) = @_;
+	print loc("Waiting for %1 lock on %2: %3.\n", $what, $mirror->{target_path}, $who);
+	if (++$i > 3) {
+	    print loc ("If the mirror lock is stalled, please interrupt and run svk mirror --unlock %1\nTo check if the mirror lock is stalled, see if $who is a running pid.\n",
+		       $mirror->{target_path});
+	}
+    }
+}
+
 sub run {
     my ($self, @arg) = @_;
     die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
@@ -61,6 +73,7 @@ sub run {
 				  pool => SVN::Pool->new,
 				  config => $self->{svnconfig},
 				  cb_copy_notify => sub { $self->copy_notify (@_) },
+				  lock_message => lock_message(),
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();

@@ -28,7 +28,6 @@ while ($repos->fs->youngest_rev < 23 ) {
     sleep 1;
 }
 waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
-sleep 2;
 is_output_like ($svk, 'sync', ['-a'],
 		qr"Waiting for (sync|mirror) lock on /remote: .*:$pid.*Retrieving log information from 222 to 261"s);
 
