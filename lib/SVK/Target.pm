@@ -189,24 +189,40 @@ sub depotname {
 }
 
 sub copied_from {
-    my $self = shift;
+    my ($self, $want_mirror) = @_;
     my $merge = SVK::Merge->new (%$self);
 
     # evil trick to take the first element from the array
-    my ($ancestor) = $merge->copy_ancestors (@{$self}{qw( repos path revision )}, 1);
-    return undef if !$ancestor;
+    my @ancestors = $merge->copy_ancestors (@{$self}{qw( repos path revision )}, 1);
+    while (my $ancestor = shift(@ancestors)) {
+        shift(@ancestors);
 
-    my $path = (split (/:/, $ancestor))[1];
-    my $target = $self->new (
-        path => $path,
-        depotpath => '/' . $self->depotname . $path,
-        revision => undef,
-    );
+        my $path = (split (/:/, $ancestor))[1];
+        my $target = $self->new (
+            path => $path,
+            depotpath => '/' . $self->depotname . $path,
+            revision => undef,
+        );
 
-    # make a depot path
-    $target->as_depotpath;
+        # make a depot path
+        $target->as_depotpath;
 
-    return $target;
+        next if $target->root->check_path (
+            $target->{path}
+        ) == $SVN::Node::none;
+
+        if ($want_mirror) {
+            my ($m, $mpath) = SVN::Mirror::is_mirrored (
+                $target->{repos},
+                $target->{path}
+            );
+            $m->{source} or next;
+        }
+
+        return $target;
+    }
+
+    return undef;
 }
 
 =head1 AUTHORS

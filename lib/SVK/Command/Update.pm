@@ -46,7 +46,7 @@ sub run {
         my $sync_target = $merge_target;
 
         if ($self->{merge}) {
-            my $copied_from = $merge_target->copied_from;
+            my $copied_from = $merge_target->copied_from($self->{sync});
             if ($copied_from) {
                 $sync_target = $copied_from;
             }
@@ -72,7 +72,9 @@ sub run {
                 ($self->{incremental} ? () : (message => '', log => 1)),
                 %$self, %$smerge, sync => 0,
             );
-            $smerge->run($merge_target->copied_from => $merge_target);
+            $smerge->run(
+                $merge_target->copied_from($self->{sync}) => $merge_target
+            );
             $update_target->refresh_revision;
         }
 

@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 15;
+plan tests => 16;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -71,15 +71,16 @@ $svk->copy ('-m', 'branch in source', '/test/A', '/test/A-98');
 $svk->copy ('-m', 'branch in source', '/test/A-98', '/test/A-99');
 
 $svk->mirror ('//m-99', "$uri/A-99");
-$svk->copy ('-m', 'make a copy', '//m-99', '//m-99-copy');
+$svk->copy ('-m', 'make a copy', '//m-99', '//m-99-intermediate');
+$svk->move ('-m', 'move the copy', '//m-99-intermediate', '//m-99-copy');
 
 my ($copath2, $corpath2) = get_copath ('svm2');
 $svk->checkout ('//m-99-copy', $copath2);
 is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             "Syncing $uri/A-99",
             'Retrieving log information from 1 to 28',
-            'Committed revision 12 from revision 28.',
-            'Auto-merging (10, 12) /m-99 to /m-99-copy (base /m-99:10).',
+            'Committed revision 13 from revision 28.',
+            'Auto-merging (10, 13) /m-99 to /m-99-copy (base /m-99:10).',
             'A   Q',
             'A   Q/qz',
             'A   T',
@@ -88,8 +89,8 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             'A   be',
             'A   N',
             "New merge ticket: $suuid:/A-99:28",
-            'Committed revision 13.',
-            "Syncing //m-99-copy(/m-99-copy) in $corpath2 to 13.",
+            'Committed revision 14.',
+            "Syncing //m-99-copy(/m-99-copy) in $corpath2 to 14.",
             __('A   t/checkout/svm2/Q'),
             __('A   t/checkout/svm2/Q/qz'),
             __('A   t/checkout/svm2/T'),
@@ -97,6 +98,12 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             __('A   t/checkout/svm2/T/xd'),
             __('A   t/checkout/svm2/be'),
             __('A   t/checkout/svm2/N'), ]);
+
+is_output($svk, 'smerge', ['-m', '', '--from', $copath2], [
+            "Auto-merging (0, 14) /m-99-copy to /m-99 (base /m-99:13).",
+            "Merging back to SVN::Mirror source $uri/A-99.",
+            "Empty merge.",
+            ]);
 
 my ($copath3, $corpath3) = get_copath ('svm3');
 $svk->checkout ('//m-99', $copath3);
@@ -107,16 +114,16 @@ $svk->commit ('-m', 'local modification from mirrored path', "$copath3");
 
 is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], [
             "Syncing $uri/A-99",
-            'Auto-merging (12, 15) /m-99 to /m-99-copy (base /m-99:12).',
-            '===> Auto-merging (12, 14) /m-99 to /m-99-copy (base /m-99:12).',
+            'Auto-merging (13, 16) /m-99 to /m-99-copy (base /m-99:13).',
+            '===> Auto-merging (13, 15) /m-99 to /m-99-copy (base /m-99:13).',
             'U   T/xd',
             "New merge ticket: $suuid:/A-99:29",
-            'Committed revision 16.',
-            '===> Auto-merging (14, 15) /m-99 to /m-99-copy (base /m-99:14).',
+            'Committed revision 17.',
+            '===> Auto-merging (15, 16) /m-99 to /m-99-copy (base /m-99:15).',
             'U   T/xd',
             "New merge ticket: $suuid:/A-99:30",
-            'Committed revision 17.',
-            "Syncing //m-99-copy(/m-99-copy/T) in ".__("$corpath2/T to 17."),
+            'Committed revision 18.',
+            "Syncing //m-99-copy(/m-99-copy/T) in ".__("$corpath2/T to 18."),
             __("U   $copath2/T/xd"),
             ]);
 
@@ -133,7 +140,7 @@ is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');
 
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-	   ['Committed revision 18.', 'Committed revision 19.']);
+	   ['Committed revision 19.', 'Committed revision 20.']);
 
 is_output_like ($svk, 'mirror', ['--detach', '//l'],
 		qr"not a mirrored", '--detach on non-mirrored path');
@@ -142,7 +149,7 @@ is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
 		qr"inside", '--detach inside a mirrored path');
 
 is_output ($svk, 'mirror', ['--detach', '//m'], [
-                "Committed revision 20.",
+                "Committed revision 21.",
                 "Mirror path '//m' detached.",
                 ], '--detach on mirrored path');
 
