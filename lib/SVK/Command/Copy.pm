@@ -141,9 +141,12 @@ sub run {
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
     if ($dst->{copath}) {
-	# XXX: check if dst is versioned
-	return loc("%1 is not a directory.\n", $dst->{copath})
+	return loc("%1 is not a directory.\n", $dst->{report})
 	    if $#src > 0 && !-d $dst->{copath};
+	return loc("%1 is not a versioned directory.\n", $dst->{report})
+	    if -d $dst->{copath} &&
+		!($dst->root($self->{xd})->check_path ($dst->path) ||
+		  $self->{xd}{checkout}->get ($dst->{copath})->{'.schedule'});
 	my @cpdst;
 	for (@src) {
 	    my $cpdst = $dst->new;

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 50;
+plan_svm tests => 51;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -20,7 +20,7 @@ is_output ($svk, 'cp', ['//V/me', $copath],
 	   [__"Path $copath/me already exists."]);
 
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
-	   [__"$corpath/me is not a directory."], 'multi to nondir');
+	   [__"$copath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
 	   [__"A   $copath/me-copy"]);
 is_output ($svk, 'copy', ['//V/D/de', "$copath/de-copy"],
@@ -195,6 +195,11 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    "Syncing $uri",
 	    'Retrieving log information from 6 to 6',
 	    'Committed revision 20 from revision 6.']);
+
+mkdir "$copath/foo";
+is_output ($svk, 'cp', ['//foo-remote', "$copath/foo"],
+	   [__"$copath/foo is not a versioned directory."]);
+$svk->st ($copath);
 
 sub is_copied_from {
     unshift @_, $svk;
