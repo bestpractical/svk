@@ -629,13 +629,27 @@ sub find_merge_history {
     my ($repos, $src, $dst) = @_;
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
+    my ($m, $uuid);
+    if ($svn_mirror) {
+	$m = eval 'SVN::Mirror::is_mirrored ($repos, $src)';
+    }
+
+    if ($m) {
+	$uuid = $root->node_prop ($src, 'svm:uuid');
+	$src = $m->{source};
+	$src =~ s/^$m->{source_root}//;
+    }
+
+    $uuid ||= $repos->fs->get_uuid ();
 
     if (my $minfo = $root->node_prop ($dst, 'svk:merge')) {
 	$minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
 			("$uuid:$path" => $rev);
 		    } split ("\n", $minfo) };
 	# resolve the rev to local rev if it's svm'ed
-	if (my $r = $minfo->{join (':', $repos->fs->get_uuid (), $src)}) {
+	if (my $r = $minfo->{join (':', $uuid, $src)}) {
+	    $r = $m->find_local_rev ($r)
+		if $m;
 	    return $r;
 	}
     }
@@ -647,9 +661,12 @@ sub find_merge_info {
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
 
+    my ($mpsrc, $mpdst) = (find_merge_history ($repos, $src, $dst),
+			   find_merge_history ($repos, $dst, $src));
+
     my ($bpsrc, $bpdst) = find_branch_point ($repos, $src, $dst);
 
-    return ($bpsrc, $fs->youngest_rev);
+    return ($mpsrc || $bpsrc, $fs->youngest_rev);
 }
 
 

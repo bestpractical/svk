@@ -121,10 +121,10 @@ sub do_update {
 
     SVN::Repos::dir_delta ($xdroot, $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
-			   $editor,
+			   $editor, undef,
 			   1, 1, 0, 1);
 
-    $txn->close if $txn;
+    $txn->abort if $txn;
 }
 
 sub do_add {
@@ -195,7 +195,7 @@ sub do_proplist {
 	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
     }
 
-    $txn->close if $txn;
+    $txn->abort if $txn;
 
     $props = $xdroot->node_proplist ($arg{path}) if $xdroot;
 
@@ -235,7 +235,7 @@ sub do_propset {
 						 }});
     print " M $arg{copath}\n" unless $arg{quiet};
 
-    $txn->close if $txn;
+    $txn->abort if $txn;
 }
 
 sub do_revert {
@@ -361,7 +361,7 @@ sub checkout_crawler {
 		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot);
 	     }
 	  }, $arg{copath});
-    $txn->close if $txn;
+    $txn->abort if $txn;
 }
 
 sub do_merge {
@@ -476,10 +476,10 @@ sub do_merge {
     SVN::Repos::dir_delta ($fs->revision_root ($arg{fromrev}),
 			   $base_anchor, $base_target,
 			   $fs->revision_root ($arg{torev}), $arg{path},
-			   $editor,
+			   $editor, undef,
 			   1, 1, 0, 1);
 
-    $txn->close if $txn;
+    $txn->abort if $txn;
 }
 
 use SVN::Simple::Edit;
@@ -618,7 +618,7 @@ sub do_commit {
 	    unless $action eq 'P';
     }
     $edit->close_edit();
-    $txn->close if $txn;
+    $txn->abort if $txn;
 }
 
 sub get_keyword_layer {
@@ -943,6 +943,11 @@ sub close_file {
 	}
 
 	if ($new eq $local) {
+	    close $fh->{base}[0];
+	    unlink $fh->{base}[1];
+	    close $fh->{new}[0];
+	    unlink $fh->{new}[1];
+
 	    delete $self->{info}{$path};
 	    $self->{storage}->close_file ($self->{storage_baton}{$path},
 					  $checksum, $pool);
@@ -1044,6 +1049,8 @@ sub close_directory {
 
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
+    return unless &{$self->{cb_exist}}($path);
+
     $self->{storage}->delete_entry ($path, $revision,
 				    $self->{storage_baton}{$pdir}, @arg);
     $self->{info}{$path}{status} = ['D'];
