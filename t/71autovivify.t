@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 5;
+plan_svm tests => 10;
 
 our ($answer, $output);
 my ($xd, $svk) = build_test();
@@ -56,3 +56,30 @@ is_output($svk, 'checkout', ["$uri/C"],
 is_output($svk, 'update', ["$corpath/C"], [
             "Syncing //mirror/C(/mirror/C) in ".__("$corpath/C to 6.")
             ]);
+
+rmtree ['C'];
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
+            "Committed revision 7.",
+	    "Syncing //C(/C) in ".__("$corpath/C to 7."),
+            __("A   C/R"),
+            ]);
+is_ancestor ($svk, "C", '/mirror/C', 6);
+
+$answer = 'C-hate';
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
+            "Committed revision 8.",
+	    "Syncing //C-hate(/C-hate) in ".__("$corpath/C-hate to 8."),
+            __("A   C-hate/R"),
+            ]);
+is_ancestor ($svk, "C-hate", '/mirror/C', 6);
+
+TODO: {
+local $TODO = 'forbid autovivify copying to existing local path';
+rmtree ['C'];
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
+            "Committed revision 7.",
+	    "Syncing //C(/C) in ".__("$corpath/C to 7."),
+            __("A   C/R"),
+            ]);
+}
+
