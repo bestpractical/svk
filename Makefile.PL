@@ -29,7 +29,7 @@ requires(
         'Date::Parse'           => '0',
         'File::Type'            => '0',
         'URI'                   => '0',
-        'PerlIO::eol'           => '0.10',
+        'PerlIO::eol'           => '0.12',
 );
 features(
     'Localized messages' => [
@@ -40,11 +40,11 @@ features(
 );
 
 if( eval{ require SVN::Mirror } ) {
-    requires( 'SVN::Mirror' => '0.48' );
+    requires( 'SVN::Mirror' => '0.49' );
 } else {
     features( 'SVN::Mirror support' => [
                -default => 1,
-               'SVN::Mirror'    => '0.48',
+               'SVN::Mirror'    => '0.49',
            ],
 	    );
 }
