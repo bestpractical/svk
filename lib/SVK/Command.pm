@@ -49,6 +49,8 @@ my %alias = qw( ann		annotate
 		depot		depotmap
 		desc		describe
 		di		diff
+                h               help
+                ?               help
 		ls		list
 		mi		mirror
 		mv		move
@@ -95,7 +97,7 @@ instance of it, populated with C<$xd>.  Command aliases are handled here.
 sub get_cmd {
     my ($pkg, $cmd, $xd) = @_;
     die "Command not recognized, try $0 help.\n"
-	unless $cmd =~ m/^[a-z]+$/;
+	unless $cmd =~ m/^[?a-z]+$/;
     $pkg = join('::', 'SVK::Command', _cmd_map ($cmd));
     my $file = "$pkg.pm";
     $file =~ s!::!/!g;
@@ -140,7 +142,7 @@ sub invoke {
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
-	$cmd->getopt (\@args, '?|h|help' => \$help);
+	$cmd->getopt (\@args, 'h|help|?' => \$help);
 
 	# Fake shell globbing on Win32 if we are called from main
 	if (IS_WIN32 and caller(1) eq 'main') {
