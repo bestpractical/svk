@@ -139,15 +139,15 @@ sub is_deeply_like {
 	if (ref ($expected->[$_]) eq 'Regexp' ) {
 	    unless ($got->[$_] =~ m/$expected->[$_]/) {
 		diag "Different at $_:\n$got->[$_]";
-		ok (0, $test);
-		return;
+		@_ = (0, $test);
+		goto &ok;
 	    }
 	}
 	else {
 	    if ($got->[$_] ne $expected->[$_]) {
 		diag "Different at $_:\n$got->[$_]\n$expected->[$_]";
-		ok (0, $test);
-		return;
+		@_ = (0, $test);
+		goto &ok;
 	    }
 	}
     }

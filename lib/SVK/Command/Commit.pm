@@ -228,7 +228,6 @@ sub committed_commit {
 	    next if $action eq 'D' || -d $copath;
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
-	    # XXX: translate SEP to /
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
 	    my $prop = $root->node_proplist ($dpath);
 	    # XXX: some mode in get_fh for modification only

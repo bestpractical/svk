@@ -35,6 +35,6 @@ sub is_annotate {
     $svk->annotate (@$arg);
     my @out = map {m/(\d+).*\(/; $1}split ("\n", $output);
     splice @out, 0, 2,;
-    is_deeply (\@out, $annotate,
-	       $test);
+    @_ = (\@out, $annotate, $test);
+    goto &is_deeply;
 }

@@ -53,7 +53,11 @@ sub _do_list {
 
             my $svn_date =
                 $fs->revision_prop ($rev, 'svn:date');
-            # Additional fields for verbose: revision author size datetime
+
+	    # The author name may be undef
+            no warnings 'uninitialized';
+
+	    # Additional fields for verbose: revision author size datetime
             printf "%7ld %-8.8s %10s %12s ", $rev,
                 $fs->revision_prop ($rev, 'svn:author'),
                 ($isdir) ? "" : $root->file_length ("$target->{path}/$_"),

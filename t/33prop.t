@@ -111,21 +111,28 @@ is_output ($svk, 'pl', ['-v', '-r2', "$copath/A"],
 	   ["Properties on $copath/A:",
 	    '  myprop: myvalue']);
 
-my $tmp = File::Temp->new;
+my $tmp = File::Temp->new( SUFFIX => '.pl' );
 
 print $tmp (<< 'TMP');
-#!/bin/sh
-sleep 1
-mv $2 $2.tmp
-echo $1 > $2
-cat $2.tmp >> $2
-rm -f $2.tmp
-
+$_ = shift;
+open _ or die $!;
+@_ = ("prepended_prop\n", <_>);
+close _;
+unlink $_;
+sleep 2;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
 TMP
 $tmp->close;
 chmod 0755, $tmp->filename;
 
-$ENV{SVN_EDITOR} = "$tmp prepended_prop";
+my ($perl, $tmpfile) = ($^X, $tmp->filename);
+if (defined &Win32::GetShortPathName) {
+    $perl = Win32::GetShortPathName($perl);
+    $tmpfile = Win32::GetShortPathName($tmpfile);
+}
+$ENV{SVN_EDITOR} = "$perl $tmp";
 
 is_output ($svk, 'pe', ['newprop', "$copath/A"],
 	   ['Waiting for editor...',
