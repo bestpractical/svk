@@ -958,6 +958,7 @@ sub _delta_dir {
 	    }
 	    next;
 	}
+	next unless -r $newpaths{copath};
 	my $delta = (-d $newpaths{copath} && !-l $newpaths{copath})
 	    ? \&_delta_dir : \&_delta_file;
 	my $kind = $ccinfo->{'.copyfrom'} ?
