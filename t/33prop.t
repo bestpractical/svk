@@ -112,9 +112,7 @@ is_output ($svk, 'pl', ['-v', '-r2', "$copath/A"],
 	   ["Properties on $copath/A:",
 	    '  myprop: myvalue']);
 
-my $tmp = File::Temp->new( SUFFIX => '.pl' );
-
-print $tmp (<< 'TMP');
+set_editor(<< 'TMP');
 $_ = shift;
 open _ or die $!;
 @_ = ("prepended_prop\n", <_>);
@@ -125,15 +123,6 @@ open _, '>', $_ or die $!;
 print _ @_;
 close _;
 TMP
-$tmp->close;
-chmod 0755, $tmp->filename;
-
-my ($perl, $tmpfile) = ($^X, $tmp->filename);
-if (defined &Win32::GetShortPathName) {
-    $perl = Win32::GetShortPathName($perl);
-    $tmpfile = Win32::GetShortPathName($tmpfile);
-}
-$ENV{SVN_EDITOR} = "$perl $tmp";
 
 is_output ($svk, 'pe', ['newprop', "$copath/A"],
 	   ['Waiting for editor...',

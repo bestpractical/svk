@@ -7,8 +7,9 @@ use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 1;
-    return ($arg[0], map {$self->arg_co_maybe ($_)} @arg[1..$#arg]);
+    return if @arg < 1;
+    push @arg, ('') if @arg == 1;
+    return ($arg[0], map {$self->_arg_revprop ($_)} @arg[1..$#arg]);
 }
 
 sub lock {

@@ -1,7 +1,7 @@
 package SVK::Command::Propset;
 use strict;
 our $VERSION = $SVK::VERSION;
-use base qw( SVK::Command::Commit );
+use base qw( SVK::Command::Commit SVK::Command::Proplist );
 use SVK::XD;
 use SVK::I18N;
 
@@ -16,8 +16,9 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 2;
-    return (@arg[0,1], map {$self->arg_co_maybe ($_)} @arg[2..$#arg]);
+    return if @arg < 2;
+    push @arg, ('') if @arg == 2;
+    return (@arg[0,1], map {$self->_arg_revprop ($_)} @arg[2..$#arg]);
 }
 
 sub lock {
@@ -29,6 +30,15 @@ sub lock {
 sub do_propset_direct {
     my ($self, %arg) = @_;
     my $fs = $arg{repos}->fs;
+
+    if ($self->{revprop}) {
+        $fs->change_rev_prop (
+            (defined($self->{rev}) ? $self->{rev} : $arg{revision}),
+            $arg{propname} => $arg{propvalue},
+        );
+        return;
+    }
+
     my $root = $fs->revision_root ($fs->youngest_rev);
     my $kind = $root->check_path ($arg{path});
 
@@ -60,7 +70,7 @@ sub do_propset {
     }
     else {
 	return unless $self->check_mirrored_path ($target);
-	$self->get_commit_message ();
+	$self->get_commit_message () unless $self->{revprop};
 	$self->do_propset_direct ( author => $ENV{USER},
 				   %$target,
 				   propname => $pname,
