@@ -182,6 +182,10 @@ msgstr "  更動編號 : 從指定的更動編號開始同步\n"
 msgid "# You may also list the target part first:"
 msgstr "# 目標也可以寫在來源前面："
 
+#: lib/SVK/Command/Switch.pm:42
+msgid "%1 is not related to %2.\n"
+msgstr "找不到 %1 和 %2 的共同來源。\n"
+
 #: lib/SVK/Command.pod:49
 msgid "% svk info //svk/trunk"
 msgstr "% svk info //svk/trunk"
@@ -223,7 +227,7 @@ msgid "%1 - skipped\n"
 msgstr "%1 - 略過\n"
 
 #. ($target->{report})
-#: lib/SVK/Command/Mirror.pm:181
+#: lib/SVK/Command/Mirror.pm:183
 msgid "%1 added back to the list of mirrored paths.\n"
 msgstr "已將 %1 加回映射路徑列表中。\n"
 
@@ -232,13 +236,18 @@ msgstr "已將 %1 加回映射路徑列表中。\n"
 msgid "%1 already added.\n"
 msgstr "已經準備加入 %1。\n"
 
+#. ($target->path)
+#: lib/SVK/Command/Mirror.pm:100
+msgid "%1 already exists.\n"
+msgstr "路徑 %1 已存在。\n"
+
 #. ($path)
 #: lib/SVK/XD.pm:182
 msgid "%1 already locked, use 'svk cleanup' if lock is stalled\n"
 msgstr "%1 已被鎖定，若卡住時請用「svk cleanup」解除\n"
 
 #. ($target->{depotpath})
-#: lib/SVK/Command/Mirror.pm:100
+#: lib/SVK/Command/Mirror.pm:102
 msgid "%1 already mirrored, use 'svk mirror --detach' to remove it first.\n"
 msgstr "%1 已經是映射路徑，請先用「svk mirror --detach」移除原本的映射設定。\n"
 
@@ -274,12 +283,12 @@ msgid "%1 is inside a mirrored path.\n"
 msgstr "%1 位於映射路徑之下。\n"
 
 #. ($target->copath ($_[0])
-#: lib/SVK/Command/Copy.pm:110
+#: lib/SVK/Command/Copy.pm:106
 msgid "%1 is missing.\n"
 msgstr "找不到 %1。\n"
 
 #. ($target->copath ($_[0])
-#: lib/SVK/Command/Copy.pm:107
+#: lib/SVK/Command/Copy.pm:103
 msgid "%1 is modified.\n"
 msgstr "%1 已修改。\n"
 
@@ -289,7 +298,7 @@ msgid "%1 is not a depot path.\n"
 msgstr "%1 不是檔案庫路徑。\n"
 
 #. ($dst->{copath})
-#: lib/SVK/Command/Copy.pm:135
+#: lib/SVK/Command/Copy.pm:131
 msgid "%1 is not a directory.\n"
 msgstr "路徑 %1 不是一個目錄。\n"
 
@@ -308,8 +317,8 @@ msgstr "%1 不是一個網址。\n"
 msgid "%1 is not under version control"
 msgstr "%1 未受版本控制"
 
-#. ($copath)
-#: lib/SVK/Command/Revert.pm:36
+#. ($target->report_copath ($copath)
+#: lib/SVK/Command/Revert.pm:38
 msgid "%1 is not versioned; ignored.\n"
 msgstr "%1 無版本資訊；略過。\n"
 
@@ -324,7 +333,7 @@ msgid "%1 is under mirrored path.\n"
 msgstr "%1 位於映射路徑之下。\n"
 
 #. ($entry)
-#: lib/SVK/XD.pm:1180
+#: lib/SVK/XD.pm:1181
 msgid "%1 marked as resolved.\n"
 msgstr "%1 已標記為已解決。\n"
 
@@ -642,7 +651,7 @@ msgstr "=== Targets to commit (you may delete items from it) ==="
 msgid "A  Added"
 msgstr "A  新增"
 
-#: lib/SVK/Command/Mirror.pm:148 lib/SVK/Util.pm:171
+#: lib/SVK/Command/Mirror.pm:150 lib/SVK/Util.pm:172
 msgid "Aborted.\n"
 msgstr "取消。\n"
 
@@ -656,12 +665,12 @@ msgid "Accept:"
 msgstr "接受："
 
 #. ($rev)
-#: lib/SVK/Command/Mirror.pm:118
+#: lib/SVK/Command/Mirror.pm:120
 msgid "Analyzing revision %1...\n"
 msgstr "正在分析編號 %1 的更動...\n"
 
 #. ($target->{path}, scalar @revs)
-#: lib/SVK/Command/Annotate.pm:40
+#: lib/SVK/Command/Annotate.pm:42
 msgid "Annotations for %1 (%2 active revisions):\n"
 msgstr "%1 的眉批 (%2 份有效的更動)：\n"
 
@@ -686,7 +695,7 @@ msgstr "只能切換取出路徑的根目錄。\n"
 msgid "Can't assign --revision and --change at the same time.\n"
 msgstr "無法同時指定 --revision 與 --change。\n"
 
-#. ($anchor)
+#. ($anchor, $!)
 #: lib/SVK/Command/Checkout.pm:134
 msgid "Can't create checkout path %1: %2\n"
 msgstr "無法建立取出路徑 %1：%2\n"
@@ -724,7 +733,7 @@ msgstr "在 %1 裡找不到補綴區段。\n"
 msgid "Cannot find help topic '%1'.\n"
 msgstr "找不到說明主題「%1」。\n"
 
-#: lib/SVK/Util.pm:180
+#: lib/SVK/Util.pm:181
 msgid "Cannot find separator; aborted.\n"
 msgstr "找不到分隔線，放棄編輯。\n"
 
@@ -744,7 +753,7 @@ msgid "Cannot launch an external merge tool for %1.\n"
 msgstr "無法啟動外部合併工具來編輯 %1。\n"
 
 #. (catfile($source)
-#: lib/SVK/Util.pm:637
+#: lib/SVK/Util.pm:638
 msgid "Cannot rename %1 to %2; please move it manually.\n"
 msgstr "無法將 %1 改名為 %2；請自行移動此路徑。\n"
 
@@ -831,8 +840,8 @@ msgstr ""
 msgid "Conflicts.\n"
 msgstr "發現衝突。\n"
 
-#. ((split/:/)
-#: lib/SVK/Command/Info.pm:41
+#. ((split/:/,$apath)
+#: lib/SVK/Command/Info.pm:42
 msgid "Copied From: %1, Rev. %2\n"
 msgstr "複製來源：%1，更動編號 %2\n"
 
@@ -841,7 +850,7 @@ msgid "Copied From: /svk/trunk, Rev. 434"
 msgstr "複製來源：/svk/trunk，更動編號 434"
 
 #. ($dst->{report})
-#: lib/SVK/Command/Copy.pm:151
+#: lib/SVK/Command/Copy.pm:147
 msgid "Copying more than one source requires %1 to be directory.\n"
 msgstr "複製超過一項來源時，%1 必須是目錄。\n"
 
@@ -907,12 +916,12 @@ msgstr "檔案庫路徑：//svk/trunk"
 msgid "Diff:"
 msgstr "差異："
 
-#: lib/SVK/Command/Copy.pm:126
+#: lib/SVK/Command/Copy.pm:122
 msgid "Different depots.\n"
 msgstr "不同的檔案庫。\n"
 
 #. ($copath, $target->{depotpath}, $yrev)
-#: lib/SVK/Command/Import.pm:83
+#: lib/SVK/Command/Import.pm:88
 msgid "Directory %1 imported to depotpath %2 as revision %3.\n"
 msgstr "目錄 %1 已匯入檔案庫路徑 %2，更動編號為 %3。\n"
 
@@ -932,9 +941,10 @@ msgstr "Emerge %1 執行完畢。\n"
 msgid "Empty merge.\n"
 msgstr "合併後無任何更動。\n"
 
-#: lib/SVK/Command/Copy.pm:31
-msgid "Enter a depot path to copy into (under // if no leading '/'): "
-msgstr "要複製到的檔案庫路徑名稱（若不以「/」開頭，則置於 // 之下）："
+#. (loc($action)
+#: lib/SVK/Command.pm:790
+msgid "Enter a depot path to %1 into (under // if no leading '/'): "
+msgstr "要%1到的檔案庫路徑名稱（若不以「/」開頭，則置於 // 之下）："
 
 #: lib/SVK/Command.pod:125
 msgid "Environment variables:"
@@ -945,7 +955,7 @@ msgid "Filename required.\n"
 msgstr "需要指定檔名。\n"
 
 #. ($rev, $rrev)
-#: lib/SVK/Command/Mirror.pm:129
+#: lib/SVK/Command/Mirror.pm:131
 msgid "Found merge ticket at revision %1 (remote %2); use it? (y/n) "
 msgstr "在更動編號 %1 發現了合併歷史紀錄（遠端為 %2）；要採用嗎？(y/n) "
 
@@ -959,17 +969,17 @@ msgid "Illegal patch name: %1.\n"
 msgstr "%1 不是合理的補綴名稱。\n"
 
 #. ($target->{path})
-#: lib/SVK/Command/Import.pm:50
+#: lib/SVK/Command/Import.pm:55
 msgid "Import path %1 initialized.\n"
 msgstr "匯入路徑 %1 已初始化。\n"
 
 #. ($target->{path}, $source->{path})
-#: lib/SVK/Command/Import.pm:38
+#: lib/SVK/Command/Import.pm:43
 msgid "Import path (%1) is different from the copath (%2)\n"
 msgstr "匯入路徑 (%1) 與取出路徑 (%2) 不同\n"
 
 #. ($source->{copath})
-#: lib/SVK/Command/Import.pm:36
+#: lib/SVK/Command/Import.pm:41
 msgid "Import source (%1) is a checkout path; use --from-checkout.\n"
 msgstr "匯入來源 (%1) 是取出路徑；請使用 --from-checkout 選項。\n"
 
@@ -981,7 +991,7 @@ msgstr "即使檢查成功，也不保證漸進式合併能順利完成\n"
 msgid "Incremental merge not supported\n"
 msgstr "不支援漸進式合併\n"
 
-#: bin/svk:84 lib/SVK/XD.pm:1166
+#: bin/svk:84 lib/SVK/XD.pm:1167
 msgid "Interrupted.\n"
 msgstr "已中斷。\n"
 
@@ -1022,7 +1032,7 @@ msgstr ""
 "a)接受，e)編輯，d)差異，m)合併，s)略過，t)依他，y)依你，h)說明？[%2] "
 
 #. ((split/:/)
-#: lib/SVK/Command/Info.pm:44
+#: lib/SVK/Command/Info.pm:45
 msgid "Merged From: %1, Rev. %2\n"
 msgstr "合併來源：%1，更動編號 %2\n"
 
@@ -1045,7 +1055,7 @@ msgstr "與 %1 %2 合併：正在套用 %3 %4:%5。\n"
 msgid "Mirror path '%1' detached.\n"
 msgstr "成功解除路徑「%1」的映射狀態。\n"
 
-#: lib/SVK/Command/Mirror.pm:165
+#: lib/SVK/Command/Mirror.pm:167
 msgid "Mirror state successfully recovered.\n"
 msgstr "成功修復路徑的映射狀態。\n"
 
@@ -1101,11 +1111,11 @@ msgstr "已儲存新的檔案庫對映表。\n"
 msgid "New merge ticket: %1:%2\n"
 msgstr "新的合併歷史紀錄：%1:%2\n"
 
-#: lib/SVK/Command/Mirror.pm:137
+#: lib/SVK/Command/Mirror.pm:139
 msgid "No mirror history found; cannot recover.\n"
 msgstr "找不到映射紀錄；無法回復。\n"
 
-#: lib/SVK/Command/Mirror.pm:141
+#: lib/SVK/Command/Mirror.pm:143
 msgid "No need to revert; it is already the head revision.\n"
 msgstr "這已經是最新的版本；毋須回復。\n"
 
@@ -1153,12 +1163,12 @@ msgstr "路徑"
 
 #. ($dst->{copath})
 #. ($cpdst->{report})
-#: lib/SVK/Command/Copy.pm:142 lib/SVK/Command/Copy.pm:60
+#: lib/SVK/Command/Copy.pm:138 lib/SVK/Command/Copy.pm:56
 msgid "Path %1 already exists.\n"
 msgstr "路徑 %1 已存在。\n"
 
 #. ($src->{path})
-#: lib/SVK/Command/Copy.pm:58
+#: lib/SVK/Command/Copy.pm:54
 msgid "Path %1 does not exist.\n"
 msgstr "路徑 %1 不存在。\n"
 
@@ -1207,12 +1217,12 @@ msgid "Repository %1 does not exist, create? (y/n)"
 msgstr "檔案庫 %1 不存在。要建立嗎？(y/n)"
 
 #. ($rev, $skipped)
-#: lib/SVK/Command/Mirror.pm:147
+#: lib/SVK/Command/Mirror.pm:149
 msgid "Revert to revision %1 and discard %*(%2,revision)? (y/n) "
 msgstr "確定要回復到更動編號 %1，並取消 %2 份之後的更動？(y/n) "
 
-#. ($copath)
-#: lib/SVK/Command/Revert.pm:89
+#. ($target->report_copath ($copath)
+#: lib/SVK/Command/Revert.pm:92
 msgid "Reverted %1\n"
 msgstr "已復原 %1\n"
 
@@ -1306,7 +1316,7 @@ msgid "Unknown options.\n"
 msgstr "未知的選項。\n"
 
 #. ($_)
-#: lib/SVK/XD.pm:1134
+#: lib/SVK/XD.pm:1135
 msgid "Unknown target: %1.\n"
 msgstr "未知的目標：%1。\n"
 
@@ -1424,8 +1434,8 @@ msgstr "指定多個目標時不可加上 skipto 參數"
 msgid "cannot acquire giant lock"
 msgstr "無法取得主控鎖定"
 
-#. ("$sigfile.sig")
-#: lib/SVK/Editor/Sign.pm:51
+#. ($sigfile)
+#: lib/SVK/Editor/Sign.pm:46
 msgid "cannot find %1, signing aborted"
 msgstr "找不到 %1，放棄簽署"
 
@@ -1440,8 +1450,8 @@ msgstr "無法載入 SVN::Mirror"
 
 #. ($file, $!)
 #. ($dir, $!)
-#. ("$sigfile.sig", $!)
-#: lib/SVK/Command/Admin.pm:32 lib/SVK/Editor/Sign.pm:54 lib/SVK/Patch.pm:80
+#. ($sigfile, $!)
+#: lib/SVK/Command/Admin.pm:32 lib/SVK/Editor/Sign.pm:49 lib/SVK/Patch.pm:80
 msgid "cannot open %1: %2"
 msgstr "無法開啟 %1：%2"
 
@@ -1519,14 +1529,9 @@ msgid "copy_notify: %1"
 msgstr "copy_notify：%1"
 
 #. ($!)
-#: lib/SVK/Editor/Sign.pm:45
+#: lib/SVK/Editor/Sign.pm:40
 msgid "could not call gpg: %1"
 msgstr "無法呼叫 gpg：%1"
-
-#. ($sigfile)
-#: lib/SVK/Editor/Sign.pm:40
-msgid "could not write to %1"
-msgstr "無法寫入 %1"
 
 #: lib/SVK/Command.pod:179
 msgid "d: Diff your file against merged file."
@@ -1662,7 +1667,7 @@ msgstr "import 檔案庫路徑 [路徑]"
 msgid "import [PATH] DEPOTPATH"
 msgstr "import [路徑] 檔案庫路徑"
 
-#: lib/SVK/Command/Import.pm:63
+#: lib/SVK/Command/Import.pm:68
 msgid "import destination cannot be a file"
 msgstr "不能用檔案作為匯入的目的地"
 
@@ -1856,7 +1861,7 @@ msgid "path %1 is not a checkout path.\n"
 msgstr "路徑 %1 不是已取出的路徑。\n"
 
 #. ($path)
-#: lib/SVK/XD.pm:1373
+#: lib/SVK/XD.pm:1374
 msgid "path %1 not found"
 msgstr "找不到路徑 %1"
 
