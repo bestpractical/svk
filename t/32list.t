@@ -31,7 +31,7 @@ foreach my $depot ('','bob') {
     is_output ($svk, 'ls', ['-f',"/$depot/A/"],
 	       ["/$depot/A/B/","/$depot/A/foo"]);
     is_output ($svk, 'ls', ['-f','-R',"/$depot/A/"], ["/$depot/A/B/","/$depot/A/B/foo", "/$depot/A/foo"]);
-    is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap/ is not a versioned directory']);
+    is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap is not a versioned directory']);
     chdir("..");
 }
 
