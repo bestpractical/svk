@@ -150,6 +150,20 @@ sub ensure_open {
     delete $self->{info}{$path}{open};
 }
 
+sub ensure_close {
+    my ($self, $path, $checksum, $pool) = @_;
+
+    $self->cleanup_fh ($self->{info}{$path}{fh});
+    $self->{notify}->flush ($path, 1);
+    &{$self->{cb_closed}} ($path, $checksum, $pool)
+        if $self->{cb_closed};
+    $self->{storage}->close_file ($self->{storage_baton}{$path},
+				  $checksum, $pool)
+        if $self->{storage_baton}{$path};
+
+    delete $self->{info}{$path};
+}
+
 sub cleanup_fh {
     my ($self, $fh) = @_;
     for (qw/base new local/) {
@@ -219,9 +233,8 @@ sub close_file {
 
 	if (File::Compare::compare ($fh->{new}[1], $fh->{base}[1]) == 0 ||
 	    ($fh->{local}[0] && File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0)) {
-	    $self->cleanup_fh ($fh);
 	    $self->{notify}->node_status ($path) = 'g';
-
+	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
 	}
 
@@ -244,11 +257,7 @@ sub close_file {
 		}
 	    }
 
-	    &{$self->{cb_closed}} ($path, $checksum, $pool)
-		if $self->{cb_closed};
-	    $self->{storage}->close_file ($self->{storage_baton}{$path},
-					  $checksum, $pool);
-	    $self->cleanup_fh ($fh);
+	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
 	}
 
@@ -303,15 +312,7 @@ sub close_file {
 	}
     }
 
-    $self->{notify}->flush ($path, 1);
-    &{$self->{cb_closed}} ($path, $checksum, $pool)
-        if $self->{cb_closed};
-
-    $self->{storage}->close_file ($self->{storage_baton}{$path},
-				  $checksum, $pool)
-        if $self->{storage_baton}{$path};
-
-    delete $self->{info}{$path};
+    $self->ensure_close ($path, $checksum, $pool);
 }
 
 sub add_directory {
