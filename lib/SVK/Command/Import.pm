@@ -52,15 +52,11 @@ sub run {
 	$root = $fs->revision_root ($yrev);
     }
 
-    my $editor = $self->{check_only} ? SVN::Delta::Editor->new :
-	SVN::Delta::Editor->new
-	( $target->{repos}->get_commit_editor
-	  ( "file://$target->{repospath}",
-	    $target->{path}, $ENV{USER},
-	    $self->{message},
-	    sub { $yrev = $_[0];
-		  print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
-			    $copath, $target->{depotpath}, $yrev) }));
+    my ($editor, %cb) = $self->get_editor ($target);
+    $cb{callback} =
+	sub { $yrev = [0];
+	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
+			$copath, $target->{depotpath}, $yrev) };
 
     my $baton = $editor->open_root ($yrev);
 
