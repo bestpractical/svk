@@ -1,28 +1,23 @@
 #!/usr/bin/perl
 
 END {
-    main::cleanup_test($svk::info)
+    cleanup_test($_) for @TOCLEAN;
 }
 
-package svk;
-require 'bin/svk';
-package main;
 require Data::Hierarchy;
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
+use SVK;
+use SVK::XD;
 use strict;
 no warnings 'once';
-
-for (qw/find_repos find_repos_from_co find_repos_from_co_maybe find_depotname condense/) {
-    no strict 'refs';
-    *{$_} = *{'svk::'.$_};
-}
 
 my $output = '';
 #select IO::Scalar->new (\$output);
 
 my $pool = SVN::Pool->new_default;
+our @TOCLEAN;
 
 sub new_repos {
     my $repospath = "/tmp/svk-$$";
@@ -41,8 +36,10 @@ sub build_test {
     my (@depot) = @_;
 
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
-    return SVK::XD->new (depotmap => $depotmap,
-			 checkout => Data::Hierarchy->new);
+    my $xd = SVK::XD->new (depotmap => $depotmap,
+			   checkout => Data::Hierarchy->new);
+    push @TOCLEAN, $xd;
+    return ($xd, SVK->new (xd => $xd));
 }
 
 sub get_copath {
@@ -104,9 +101,9 @@ sub get_editor {
 }
 
 sub create_basic_tree {
-    my ($depot) = @_;
+    my ($xd, $depot) = @_;
     my $pool = SVN::Pool->new_default;
-    my ($repospath, $path, $repos) = svk::find_repos ($depot, 1);
+    my ($repospath, $path, $repos) = $xd->find_repos ($depot, 1);
 
     my $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();

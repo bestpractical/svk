@@ -1,7 +1,30 @@
 package SVK;
 use strict;
-our $VERSION = '0.12';
+our $VERSION = '0.13';
+use SVK::Command;
+our $AUTOLOAD;
 
+sub import {
+    return unless ref ($_[0]);
+    $AUTOLOAD = 'import';
+    goto &AUTOLOAD;
+}
+
+sub new {
+    my $class = shift;
+    my $self = bless {}, $class;
+    %$self = @_;
+    return $self;
+}
+
+sub AUTOLOAD {
+    my $self = shift;
+    my $cmd = $AUTOLOAD;
+    $cmd =~ s/^SVK:://;
+    return if $cmd =~ /^[A-Z]+$/;
+    my $msg = SVK::Command->invoke ($self->{xd}, $cmd, @_);
+    print $msg if $msg;
+}
 
 1;
 

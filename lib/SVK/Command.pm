@@ -76,8 +76,9 @@ sub invoke {
     die unless GetOptions ($cmd, _opt_map($cmd, $cmd->options));
     my @args = $cmd->parse_arg(@ARGV);
     $cmd->lock (@args);
-    my $ret = $cmd->run (@args);
+    my $ret = eval { $cmd->run (@args) };
     $xd->unlock () if $xd;
+    die $@ if $@;
     return $ret;
 }
 
@@ -144,7 +145,7 @@ sub arg_condensed {
     $self->usage if $#arg < 0;
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
-    my ($repospath, $path, $cinfo, $repos) = main::find_repos_from_co ($copath, 1);
+    my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
     return { repos => $repos,
 	     repospath => $repospath,
 	     copath => $copath,
@@ -158,7 +159,7 @@ sub arg_co_maybe {
     my ($self, $arg) = @_;
 
     my ($repospath, $path, $copath, $cinfo, $repos) =
-	main::find_repos_from_co_maybe ($arg, 1);
+	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     return { repos => $repos,
 	     repospath => $repospath,
 	     depotpath => $cinfo->{depotpath} || $arg,
@@ -170,7 +171,7 @@ sub arg_co_maybe {
 sub arg_copath {
     my ($self, $arg) = @_;
 
-    my ($repospath, $path, $cinfo, $repos) = main::find_repos_from_co ($arg, 1);
+    my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     return { repos => $repos,
 	     repospath => $repospath,
 	     copath => Cwd::abs_path ($arg),
@@ -183,7 +184,7 @@ sub arg_copath {
 sub arg_depotpath {
     my ($self, $arg) = @_;
 
-    my ($repospath, $path, $repos) = main::find_repos ($arg, 1);
+    my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
 
     return { repos => $repos,
 	     repospath => $repospath,
@@ -195,7 +196,7 @@ sub arg_depotpath {
 sub arg_depotname {
     my ($self, $arg) = @_;
 
-    return main::find_depotname ($arg, 1);
+    return $self->{xd}->find_depotname ($arg, 1);
 }
 
 sub arg_path {

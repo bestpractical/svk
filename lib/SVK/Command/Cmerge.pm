@@ -114,7 +114,7 @@ sub run {
 	  propvalue => $ticket,
 	  message => "cherry picking merge $self->{chgspec} to $dst",
 	) unless $self->{check_only};
-    my ($depot) = main::find_depotname ($src->{depotpath});
+    my ($depot) = $self->{xd}->find_depotname ($src->{depotpath});
 
     $src->{path} = $tmpbranch;
     $src->{depotpath} = "/$depot$tmpbranch";

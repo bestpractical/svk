@@ -16,7 +16,6 @@ requires(
         'Text::Diff'            => '0',
         'Algorithm::Diff'       => '0',
         'YAML'                  => '0',
-        'IO::String'            => '0',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.17',
         'File::Temp'            => '0.14',

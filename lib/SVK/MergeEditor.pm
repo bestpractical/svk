@@ -96,7 +96,6 @@ Called after each file close call.
 
 use Digest::MD5 qw(md5_hex);
 use File::Compare ();
-use IO::String;
 use File::Temp qw/:mktemp/;
 
 sub set_target_revision {

@@ -45,76 +45,7 @@ Run C<svk help> to access the built-in tool documentation.
 
 =cut
 
-use vars qw/$xd $info/;
-
-my %REPOS;
-my $REPOSPOOL = SVN::Pool->new;
-
-sub open_repos {
-    my ($repospath) = @_;
-    $REPOS{$repospath} ||= SVN::Repos::open ($repospath, $REPOSPOOL);
-}
-
-sub find_repos {
-    my ($depotpath, $open) = @_;
-    die loc("no depot spec") unless $depotpath;
-    my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|
-	or die loc("invalid depot spec");
-
-    my $repospath = $info->{depotmap}{$depot} or die loc("no such depot: %1", $depot);
-
-    return ($repospath, $path, $open && open_repos ($repospath));
-}
-
-sub find_repos_from_co {
-    my ($copath, $open) = @_;
-    $copath = Cwd::abs_path ($copath || '');
-
-    my ($cinfo, $coroot) = $info->{checkout}->get ($copath);
-    die loc("path %1 is not a checkout path", $copath) unless %$cinfo;
-    my ($repospath, $path, $repos) = find_repos ($cinfo->{depotpath}, $open);
-
-    if ($copath eq $coroot) {
-	$copath = '';
-    }
-    else {
-	$copath =~ s|^\Q$coroot\E/|/|;
-    }
-
-    return ($repospath, $path eq '/' ? $copath || '/' : $path.$copath,
-	    $cinfo, $repos);
-}
-
-sub find_repos_from_co_maybe {
-    my ($target, $open) = @_;
-    my ($repospath, $path, $copath, $cinfo, $repos);
-    unless (($repospath, $path, $repos) = eval { find_repos ($target, $open) }) {
-	undef $@;
-	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($target, $open);
-	$copath = Cwd::abs_path ($target || '');
-    }
-    return ($repospath, $path, $copath, $cinfo, $repos);
-}
-
-sub find_depotname {
-    my ($target, $can_be_co) = @_;
-    my ($cinfo);
-    if ($can_be_co) {
-	(undef, undef, $cinfo) = eval { find_repos_from_co ($target, 0) };
-	if ($@) {
-	    undef $@;
-	}
-	else {
-	    $target = $cinfo->{depotpath};
-	}
-    }
-
-    find_repos ($target, 0);
-    return ($target =~ m|^/(.*?)/|);
-}
-
 my $show_version;
-
 my $cmd = shift;
 
 GetOptions ("version"  => \$show_version) unless $cmd;
@@ -124,54 +55,32 @@ if ($show_version) {
     exit 0;
 }
 
-my $updated;
+unless ($cmd) {
+    print loc("Type 'svk help' for usage.\n");
+    exit 0;
+}
 
-if ($0 eq __FILE__) {
-    unless ($cmd) {
-	print loc("Type 'svk help' for usage.\n");
-	exit 0;
-    }
+if ($cmd eq 'help') {
+    SVK::Command->invoke (undef, $cmd, @ARGV);
+    exit 0;
+}
 
-    if ($cmd eq 'help') {
-	SVK::Command->invoke(undef, $cmd, @ARGV);
-	exit 0;
-    }
+my $svkpath = "$ENV{HOME}/.svk";
 
-    my $svkpath = "$ENV{HOME}/.svk";
-    $info = SVK::XD->new (giantlock => "$svkpath/lock",
-			  statefile => "$svkpath/config",
-			 );
+{
 
-    $info->load();
+    my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
+			    statefile => "$svkpath/config",
+			  );
+    $xd->load();
     $SIG{INT} = sub {
-	$info->unlock ();
-	$info->store ();
 	die loc("Interrupted.\n");
     };
-
-    my $msg = SVK::Command->invoke ($info, $cmd, @ARGV);
+    my $msg = SVK::Command->invoke ($xd, $cmd, @ARGV);
     print $msg if $msg;
-    $info->store ();
-    $updated = 1;
+    $xd->store ();
 }
 
-END {
-    return unless $info;
-    return if $updated;
-    $info->unlock ();
-    $info->store ();
-}
-
-our $AUTOLOAD;
-
-sub AUTOLOAD {
-    my $cmd = $AUTOLOAD;
-    $cmd =~ s/^svk:://;
-    my $msg = SVK::Command->invoke ($info, $cmd, @_);
-    print $msg if $msg;
-}
-
-#%$info = %$xd;
 1;
 
 =head1 AUTHORS

@@ -5,7 +5,6 @@ our $VERSION = '0.09';
 our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;
-use IO::String;
 use SVK::Util qw( slurp_fh );
 use Text::Diff;
 
@@ -49,7 +48,7 @@ sub apply_textdelta {
 			    );
     }
     else {
-	$new = IO::String->new (\$self->{info}{$path}{new});
+	open $new, '>', \$self->{info}{$path}{new};
     }
 
     return [SVN::TxDelta::apply ($self->{info}{$path}{base}, $new,
@@ -67,9 +66,9 @@ sub close_file {
 	if ($self->{external}) {
 	    # XXX: the 2nd file could be - and save some disk IO
 	    system (split (' ', $self->{external}),
-		    '-L', $llabel,
+		    '-L', _full_label ($path, undef, $llabel),
 		    $self->{info}{$path}{base}->filename,
-		    '-L', $rlabel,
+		    '-L', _full_label ($path, undef, $rlabel),
 		    $self->{info}{$path}{new}->filename);
 	}
 	else {
@@ -83,6 +82,11 @@ sub close_file {
     delete $self->{info}{$path};
 }
 
+sub _full_label {
+    my ($path, $mypath, $label) = @_;
+    return "$path ".($mypath ? "  ($mypath)  " : '')." ($label)";
+}
+
 sub output_diff {
     my ($fh, $path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
 
@@ -94,8 +98,8 @@ sub output_diff {
     my $showpath = ($lpath ne $rpath);
     print $fh loc("Index: %1\n", $path);
     print $fh '=' x 66,"\n";
-    print $fh "--- $path ".($showpath ? "  ($lpath)  " : '')." ($llabel)\n";
-    print $fh "+++ $path ".($showpath ? "  ($rpath)  " : '')." ($rlabel)\n";
+    print $fh "--- "._full_label ($path, $showpath ? $lpath : undef, $llabel)."\n";
+    print $fh "+++ "._full_label ($path, $showpath ? $rpath : undef, $rlabel)."\n";
     print $fh Text::Diff::diff ($ltext, $rtext);
 }
 

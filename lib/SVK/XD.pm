@@ -48,6 +48,7 @@ sub load {
 
 sub store {
     my ($self) = @_;
+    $self->{updated} = 1;
     return unless $self->{statefile};
     if ($self->{giantlocked}) {
 	DumpFile ($self->{statefile}, { checkout => $self->{checkout},
@@ -81,7 +82,6 @@ sub lock {
 
 sub unlock {
     my ($self) = @_;
-
     my @paths = $self->{checkout}->find ('/', {lock => $$});
     $self->{checkout}->store ($_, {lock => undef})
 	for @paths;
@@ -91,8 +91,10 @@ sub giant_lock {
     my ($self) = @_;
     return unless $self->{giantlock};
 
-    die loc("another svk might be running; remove %1 if not", $self->{giantlock})
-	if -e $self->{giantlock};
+    if (-e $self->{giantlock}) {
+	$self->{updated} = 1;
+	die loc("another svk might be running; remove %1 if not", $self->{giantlock});
+    }
 
     open my ($lock), '>', $self->{giantlock};
     print $lock $$;
@@ -105,6 +107,72 @@ sub giant_unlock {
     return unless $self->{giantlock};
     unlink ($self->{giantlock});
     delete $self->{giantlocked};
+}
+
+my %REPOS;
+my $REPOSPOOL = SVN::Pool->new;
+
+sub open_repos {
+    my ($repospath) = @_;
+    $REPOS{$repospath} ||= SVN::Repos::open ($repospath, $REPOSPOOL);
+}
+
+sub find_repos {
+    my ($self, $depotpath, $open) = @_;
+    die loc("no depot spec") unless $depotpath;
+    my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|
+	or die loc("invalid depot spec");
+
+    my $repospath = $self->{depotmap}{$depot} or die loc("no such depot: %1", $depot);
+
+    return ($repospath, $path, $open && open_repos ($repospath));
+}
+
+sub find_repos_from_co {
+    my ($self, $copath, $open) = @_;
+    $copath = Cwd::abs_path ($copath || '');
+
+    my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
+    die loc("path %1 is not a checkout path", $copath) unless %$cinfo;
+    my ($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, $open);
+
+    if ($copath eq $coroot) {
+	$copath = '';
+    }
+    else {
+	$copath =~ s|^\Q$coroot\E/|/|;
+    }
+
+    return ($repospath, $path eq '/' ? $copath || '/' : $path.$copath,
+	    $cinfo, $repos);
+}
+
+sub find_repos_from_co_maybe {
+    my ($self, $target, $open) = @_;
+    my ($repospath, $path, $copath, $cinfo, $repos);
+    unless (($repospath, $path, $repos) = eval { $self->find_repos ($target, $open) }) {
+	undef $@;
+	($repospath, $path, $cinfo, $repos) = $self->find_repos_from_co ($target, $open);
+	$copath = Cwd::abs_path ($target || '');
+    }
+    return ($repospath, $path, $copath, $cinfo, $repos);
+}
+
+sub find_depotname {
+    my ($self, $target, $can_be_co) = @_;
+    my ($cinfo);
+    if ($can_be_co) {
+	(undef, undef, $cinfo) = eval { $self->find_repos_from_co ($target, 0) };
+	if ($@) {
+	    undef $@;
+	}
+	else {
+	    $target = $cinfo->{depotpath};
+	}
+    }
+
+    $self->find_repos ($target, 0);
+    return ($target =~ m|^/(.*?)/|);
 }
 
 sub condense {
@@ -921,6 +989,12 @@ sub get_props {
 	    %{$entry->{'.newprop'}}};
 
 
+}
+
+sub DESTROY {
+    my ($self) = @_;
+    return if $self->{updated};
+    $self->store ();
 }
 
 package SVK::XD::CheckEditor;
