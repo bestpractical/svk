@@ -27,6 +27,7 @@ use SVK::XD;
 
 our @TOCLEAN;
 END {
+    $SIG{__WARN__} = sub { 1 };
     cleanup_test($_) for @TOCLEAN;
 }
 

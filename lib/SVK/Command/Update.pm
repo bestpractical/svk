@@ -75,8 +75,8 @@ sub run {
             $smerge->run(
                 $merge_target->copied_from($self->{sync}) => $merge_target
             );
-            $update_target->refresh_revision;
         }
+	$update_target->refresh_revision;
 
 	$self->do_update ($target, $update_target);
     }
