@@ -3,19 +3,22 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
 
 sub options {
-    ('v|verbose'    => 'verbose',
-     'r|revision=i' => 'rev');
+    ('v|verbose' => 'verbose',
+     'r|revision=i' => 'rev',
+     'revprop' => 'revprop',
+    );
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    @arg = ('') if $#arg < 0;
 
-    return map {$self->arg_co_maybe ($_)} @arg;
+    @arg = ('') if $#arg < 0;
+    return map { $self->_arg_revprop ($_) } @arg;
 }
 
 sub lock { $_[0]->lock_none }
@@ -23,20 +26,64 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, @arg) = @_;
 
+    die loc ("Revision required.\n")
+	if $self->{revprop} && !defined $self->{rev};
+
     for my $target (@arg) {
-	$target->depotpath ($self->{rev})
-	    if defined $self->{rev};
-	my $props = $self->{xd}->do_proplist ( $target );
-	next unless %$props;
-	print loc("Properties on %1:\n", $target->{report} || '.');
-	for my $key (sort keys %$props) {
-	    my $value = $props->{$key};
-	    print $self->{verbose} ? "  $key: $value\n" : "  $key\n";
-	}
+        if ($self->{revprop}) {
+            $self->show_props
+		( $target,
+		  $target->{repos}->fs->revision_proplist($self->{rev}),
+		  $self->{rev}
+		);
+            next;
+        }
+
+	$target->as_depotpath ($self->{rev}) if defined $self->{rev};
+        $self->show_props ($target, $self->{xd}->do_proplist ( $target ));
     }
 
     return;
 }
+
+sub show_props {
+    my ($self, $target, $props, $rev) = @_;
+
+    %$props or return;
+
+    if ($self->{revprop}) {
+        print loc("Unversioned properties on revision %1:\n", $rev);
+    }
+    else {
+        print loc("Properties on %1:\n", $target->{report} || '.');
+    }
+
+    for my $key (sort keys %$props) {
+        my $value = $props->{$key};
+        print $self->{verbose} ? "  $key: $value\n" : "  $key\n";
+    }
+}
+
+sub _arg_revprop {
+    my $self = $_[0];
+    goto &{$self->can($self->{revprop} ? 'arg_depotroot' : 'arg_co_maybe')};
+}
+
+sub _proplist {
+    my ($self, $target) = @_;
+
+    if ($self->{revprop}) {
+        return $target->{repos}->fs->revision_proplist(
+            (defined($self->{rev}) ? $self->{rev} : $target->{revision})
+        )
+    }
+
+    if (defined $self->{rev}) {
+        $target->as_depotpath ($self->{rev});
+    }
+    return $self->{xd}->do_proplist ($target);
+}
+
 
 1;
 
@@ -52,8 +99,11 @@ SVK::Command::Proplist - List all properties on files or dirs
 
 =head1 OPTIONS
 
- -r [--revision] rev:    revision
- -v [--verbose]:         print extra information
+ -R [--recursive]       : descend recursively
+ -v [--verbose]         : print extra information
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ --revprop              : operate on a revision property (use with -r)
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

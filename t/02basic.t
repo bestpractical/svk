@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 12;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -15,23 +15,23 @@ overwrite_file ("$copath/A/bar", "foobarbazz");
 $svk->add ("$copath/A");
 overwrite_file ("$copath/A/notused", "foobarbazz");
 ok(exists $xd->{checkout}->get
-   ("$corpath/A/foo")->{'.schedule'}, 'add recursively');
+   (__"$corpath/A/foo")->{'.schedule'}, 'add recursively');
 ok(!exists $xd->{checkout}->get
-   ("$corpath/A/notused")->{'.schedule'}, 'add works on specified target only');
+   (__"$corpath/A/notused")->{'.schedule'}, 'add works on specified target only');
 $svk->commit ('-m', 'commit message here', "$copath");
 unlink ("$copath/A/notused");
 $svk->revert ('-R', $copath);
 ok(!-e "$copath/A/notused", 'non-targets not committed');
 is ($xd->{checkout}->get ("$corpath")->{revision}, 1,
-    'checkout optimzation after commit');
+    'checkout optimization after commit');
 mkdir "$copath/A/new";
 mkdir "$copath/A/new/newer";
 $svk->add ("$copath/A/new");
 $svk->revert ('-R', "$copath/A/new");
 
-ok(!$xd->{checkout}->get ("$corpath/A/new")->{'.schedule'});
+ok(!$xd->{checkout}->get (__"$corpath/A/new")->{'.schedule'});
 
-ok($xd->{checkout}->get ("$corpath/A/foo")->{revision} == 1);
+ok($xd->{checkout}->get (__"$corpath/A/foo")->{revision} == 1);
 $svk->update ("$copath");
 ok($xd->{checkout}->get ("$corpath")->{revision} == 1);
 
@@ -81,5 +81,5 @@ overwrite_file ("$copath/B/foo", "foobar");
 $svk->update ('-r', 3, "$copath/A");
 $svk->add ("$copath/B");
 $svk->commit ('-m', 'blah', "$copath/B");
-ok ($xd->{checkout}->get ("$corpath/A")->{revision} == 3,
+ok ($xd->{checkout}->get (__"$corpath/A")->{revision} == 3,
     'checkout optimzation respects existing state');

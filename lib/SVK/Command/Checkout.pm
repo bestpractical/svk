@@ -5,13 +5,26 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use Cwd;
+use SVK::Util qw( abs_path move_path is_empty_path $SEP );
 use File::Spec;
+
+sub options {
+    ($_[0]->SUPER::options,
+     'l|list' => 'list',
+     'd|delete|detach' => 'detach',
+     'relocate' => 'relocate');
+}
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    my $depotpath = $self->arg_depotpath ($arg[0]);
-    die loc("don't know where to checkout $arg[0]\n") unless $arg[1] || $depotpath->{path} ne '/';
+
+    return undef if $self->{list};
+    return (@arg ? @arg : '') if $self->{detach};
+    return (@arg >= 2 ? @arg : ('', @arg)) if $self->{relocate};
+    @arg or return;
+
+    my $depotpath = $self->arg_uri_maybe ($arg[0]);
+    die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
 
     $arg[1] =~ s|/$|| if $arg[1];
     $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
@@ -19,16 +32,99 @@ sub parse_arg {
     return ($depotpath, $arg[1]);
 }
 
-sub lock { $_[0]->{xd}->lock (Cwd::abs_path ($_[2])) }
+sub lock {
+    my ($self, $src, $dst) = @_;
+
+    return if $self->{detach} or $self->{relocate}; # hold giant
+    return $self->lock_none if $self->{list};
+
+    my $abs_path = abs_path ($dst) or return;
+    $self->{xd}->lock ($abs_path);
+}
+
+sub _remove_entry { {depotpath => undef, revision => undef} }
 
 sub run {
-    my ($self, $target, $report) = @_;
-    my $copath = Cwd::abs_path ($report);
+    my ($self) = @_;
 
-    die loc("checkout path %1 already exists\n", $copath) if -e $copath;
+    # Dispatch to one of the three methods
+    foreach my $op (qw( list detach relocate )) {
+        $self->{$op} or next;
+        goto &{ $self->can("_do_$op") };
+    }
+
+    # Defaults to _do_checkout
+    goto &{ $self->can('_do_checkout') };
+}
+
+sub _do_detach {
+    my ($self, $path) = @_;
+
+    my @copath = $self->_find_copath($path)
+        or die loc("'%1' is not a checkout path.\n", $path);
+
+    my $checkout = $self->{xd}{checkout};
+    foreach my $copath (sort @copath) {
+        $checkout->store ($copath, _remove_entry);
+        print loc("Checkout path '%1' detached.\n", $copath);
+    }
+
+    return;
+}
+
+sub _do_list {
+    my ($self) = @_;
+    my $map = $self->{xd}{checkout}{hash};
+    my $fmt = "%-20s\t%-s\n";
+    printf $fmt, loc('Depot Path'), loc('Path');
+    print '=' x 60, "\n";
+    print sort(map sprintf($fmt, $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
+    return;
+}
+
+sub _do_relocate {
+    my ($self, $path, $report) = @_;
+
+    my @copath = $self->_find_copath($path)
+        or die loc("'%1' is not a checkout path.\n", $path);
+    @copath == 1
+        or die loc("'%1' maps to multiple checkout paths.\n", $path);
+
+    my $target = abs_path ($report);
+    if (defined $target) {
+        my ($entry, @where) = $self->{xd}{checkout}->get ($target);
+        die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
+            if exists $entry->{depotpath};
+    }
+
+    # Manually relocate all paths
+    my $map = $self->{xd}{checkout}{hash};
+
+    my $abs_path = abs_path($path);
+    if ($map->{$abs_path} and -d $abs_path) {
+        move_path($path => $report);
+        $target = abs_path ($report);
+    }
+
+    my $prefix = $copath[0].$SEP;
+    my $length = length($copath[0]);
+    foreach my $key (sort grep { index("$_$SEP", $prefix) == 0 } keys %$map) {
+        $map->{$target . substr($key, $length)} = delete $map->{$key};
+    }
+
+    print loc("Checkout '%1' relocated to '%2'.\n", $path, $target);
+
+    return;
+}
+
+sub _do_checkout {
+    my ($self, $target, $report) = @_;
+
+    my $copath = abs_path ($report);
+    die loc("Checkout path %1 already exists.\n", $copath) if -e $copath;
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
-    die loc("overlapping checkout path not supported yet (%1)", $where[0])
+    die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 
     $self->{xd}{checkout}->store_recursively ( $copath,
@@ -45,6 +141,22 @@ sub run {
 					    copath => $copath));
 }
 
+sub _find_copath {
+    my ($self, $path) = @_;
+    my $abs_path = abs_path($path);
+    my $map = $self->{xd}{checkout}{hash};
+
+    # Check if this is a checkout path
+    return $abs_path if defined $abs_path and $map->{$abs_path};
+
+    # Find all copaths that matches this depotpath
+    return sort grep {
+        defined $map->{$_}{depotpath}
+            and $map->{$_}{depotpath} eq $path
+    } keys %$map;
+}
+
+
 1;
 
 __DATA__
@@ -56,10 +168,17 @@ SVK::Command::Checkout - Checkout the depotpath
 =head1 SYNOPSIS
 
  checkout DEPOTPATH [PATH]
+ checkout --list
+ checkout --detach [DEPOTPATH | PATH]
+ checkout --relocate [DEPOTPATH | PATH] PATH
 
 =head1 OPTIONS
 
- -r [--revision] rev:      revision
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -l [--list]            : list checkout paths
+ -d [--detach]          : mark a path as no longer checked out
+ -m [--quiet]           : quiet mode
+ --relocate             : relocate the checkout to another path
 
 =head1 AUTHORS
 

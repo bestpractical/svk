@@ -1,7 +1,10 @@
 #!/usr/bin/perl -w
-use Test::More tests => 4;
 use strict;
-require 't/tree.pl';
+use Test::More;
+BEGIN { require 't/tree.pl' };
+eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
+plan tests => 4;
+
 our $output;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('commit');
@@ -31,7 +34,7 @@ r1.*\Q  A  /A
   A  /A/bar
   A  /A/foo\E|s);
 
-$svk->mirror ('/test/A', "file://$repospath/A");
+$svk->mirror ('/test/A', uri("$repospath/A"));
 $svk->sync ('/test/A');
 
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],

@@ -1,8 +1,8 @@
 package SVK::Command::Copy;
 use strict;
 our $VERSION = $SVK::VERSION;
-use base qw( SVK::Command::Commit );
-use SVK::Util qw( get_anchor );
+use base qw( SVK::Command::Mkdir );
+use SVK::Util qw( get_anchor get_prompt abs2rel );
 use SVK::I18N;
 
 sub options {
@@ -12,8 +12,27 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 0;
-    return (map {$self->arg_co_maybe ($_)} @arg);
+    return if @arg < 1;
+
+    push @arg, '' if @arg == 1;
+
+    my $dst = pop(@arg);
+    my @src = (map {$self->arg_co_maybe ($_)} @arg);
+
+    if ( my $target = eval { $self->arg_co_maybe ($dst) }) {
+        $dst = $target;
+    }
+    else {
+        $self->{_checkout_path} = $dst;
+        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
+        $path =~ s{^//+}{};
+        $path =~ s{//+}{/};
+        $path = "//$path" unless $path =~ m!^/!;
+        $path = "$path/" unless $path =~ m!/\z!;
+        $dst = $self->arg_depotpath($path);
+    }
+
+    return (@src, $dst);
 }
 
 sub lock {
@@ -37,11 +56,8 @@ sub do_copy_direct {
 
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
-    $src->depotpath;
+    $src->as_depotpath;
     my $xdroot = $dst->root ($self->{xd});
-    if (-d $dst->{copath}) {
-	$dst->descend ($src->{path} =~ m|/([^/]+)/?$|);
-    }
     die loc ("Path %1 does not exist.\n", $src->{path})
 	if $src->root->check_path ($src->{path}) == $SVN::Node::none;
     die loc ("Path %1 already exists.\n", $dst->{copath})
@@ -64,7 +80,7 @@ sub handle_co_item {
 }
 
 sub handle_direct_item {
-    my ($self, $editor, $m, $src, $dst) = @_;
+    my ($self, $editor, $anchor, $m, $src, $dst) = @_;
     $src->normalize;
     my ($path, $rev) = @{$src}{qw/path revision/};
     if ($m) {
@@ -75,11 +91,9 @@ sub handle_direct_item {
     else {
 	$path = "file://$src->{repospath}$path";
     }
-    my $dstpath = $dst->path;
-    $dstpath =~ s|^\Q$m->{target_path}\E/?|| if $m;
     $editor->close_directory
-	($editor->add_directory ($dstpath, 0, $path, $rev));
-    $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
+	($editor->add_directory (abs2rel ($dst->path, $anchor => undef, '/'), 0, $path, $rev));
+    $self->adjust_anchor ($editor);
 }
 
 sub _unmodified {
@@ -121,27 +135,42 @@ sub run {
 	# XXX: check if dst is versioned
 	return loc("%1 is not a directory.\n", $dst->{copath})
 	    if $#src > 0 && !-d $dst->{copath};
-	$self->handle_co_item ($_, $dst->new) for @src;
+	my @cpdst;
+	for (@src) {
+	    my $cpdst = $dst->new;
+	    $cpdst->descend ($_->{path} =~ m|/([^/]+)/?$|)
+		if -d $cpdst->{copath};
+	    die loc ("Path %1 already exists.\n", $cpdst->{report})
+		if -e $cpdst->{copath};
+	    push @cpdst, $cpdst;
+	}
+	$self->handle_co_item ($_, shift @cpdst) for @src;
     }
     else {
-	$self->get_commit_message ();
 	my $root = $dst->root;
 	if ($root->check_path ($dst->{path}) != $SVN::Node::dir) {
 	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->{report})
 		if $#src > 0;
 	    $dst->anchorify;
 	}
-	my ($storage, %cb) = $self->get_editor ($dst->new (path => $m ? $m->{target_path} : '/'));
-	my $editor = SVK::Editor::Rename->new ( editor => $storage );
-	my $baton = $editor->open_root ($cb{cb_rev}->(''));
+	$self->get_commit_message ();
+	my ($anchor, $editor) = $self->get_dynamic_editor ($dst);
 	for (@src) {
-	    $self->handle_direct_item ($editor, $m, $_,
+	    $self->handle_direct_item ($editor, $anchor, $m, $_,
 				       $dst->{targets} ? $dst :
 				       $dst->new (targets => [$_->{path} =~ m|/([^/]+)/?$|]));
 	}
-	$editor->close_directory ($baton);
-	$editor->close_edit;
+	$self->finalize_dynamic_editor ($editor);
     }
+
+    if (my $copath = $self->{_checkout_path}) {
+        my $checkout = $self->command ('checkout');
+	$checkout->getopt ([]);
+        my @arg = $checkout->parse_arg ($dst->{report}, $copath);
+        $checkout->lock (@arg);
+        $checkout->run (@arg);
+    }
+
     return;
 }
 
@@ -156,15 +185,15 @@ SVK::Command::Copy - Make a versioned copy
 =head1 SYNOPSIS
 
  copy DEPOTPATH1 DEPOTPATH2
- copy DEPOTPATH1 PATH
+ copy DEPOTPATH PATH
 
 =head1 OPTIONS
 
- -m [--message] arg:     Needs description
- -C [--check-only]:      Needs description
- -s [--sign]:            Needs description
- -r [--revision] arg:    Needs description
- --force:                Needs description
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -m [--message] arg     : specify commit message ARG
+ -p [--parent]          : create intermediate directories as required
+ -C [--check-only]      : try operation but make no changes
+ -S [--sign]            : sign this change
 
 =head1 AUTHORS
 

@@ -7,8 +7,9 @@ use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 1;
-    return ($arg[0], map {$self->arg_co_maybe ($_)} @arg[1..$#arg]);
+    return if @arg < 1;
+    push @arg, ('') if @arg == 1;
+    return ($arg[0], map {$self->_arg_revprop ($_)} @arg[1..$#arg]);
 }
 
 sub lock {
@@ -33,11 +34,14 @@ SVK::Command::Propdel - Delete a property on files or dirs
 
 =head1 SYNOPSIS
 
- propdel PROPNAME PATH...
+ propdel PROPNAME [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 
- None
+ -R [--recursive]       : descend recursively
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ --revprop              : operate on a revision property (use with -r)
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

@@ -5,30 +5,69 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw(get_buffer_from_editor get_prompt);
+use SVK::Util qw( get_buffer_from_editor get_prompt dirname abs_path move_path make_path $SEP );
 use YAML;
 use File::Path;
 
 sub options {
     ('l|list' => 'list',
-     'i|init' => 'init');
+     'i|init' => 'init',
+     'd|delete|detach' => 'detach',
+     'relocate' => 'relocate');
+}
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    $self->{add} = 1 if @arg >= 2 and !$self->{relocate};
+
+    if ($self->{add} or $self->{detach} or $self->{relocate}) {
+        @arg or die loc("Need to specify a depot name");
+
+        my $depot = shift(@arg);
+        @arg or die loc("Need to specify a path name") unless $self->{detach};
+
+        my $map = $self->{xd}{depotmap};
+        my $path = $depot;
+        my $abs_path = abs_path($path);
+        $depot =~ s{/}{}go;
+
+        return ($depot, @arg) if $self->{add} or $map->{$depot} or !$abs_path;
+
+        # Translate repospath into depotname
+        foreach my $name (sort keys %$map) {
+            (abs_path($map->{$name}) eq $abs_path) or next;
+            move_path($path => $arg[0]) if $self->{relocate} and -d $path;
+            return ($name, @arg);
+        }
+
+        return ($depot, @arg);
+    }
+    else {
+        return undef;
+    }
 }
 
 sub run {
     my ($self) = @_;
-    return $self->_do_list() if($self->{list});
-    $self->_do_edit();
+
+    # Dispatch to one of the four methods
+    foreach my $op (qw( list add detach relocate )) {
+        $self->{$op} or next;
+        goto &{ $self->can("_do_$op") };
+    }
+
+    return $self->_do_edit();
 }
 
 sub _do_list {
     my ($self) = @_;
     my $map = $self->{xd}{depotmap};
-    local $\ = "\n";
-    my $fmt = "%-20s %-s\n";
-    printf $fmt, 'Depot', 'Path';
-    print '=' x 60;
-    printf $fmt, "/$_/", $map->{$_} for keys %$map;
-    print '=' x 60;
+    my $fmt = "%-20s\t%-s\n";
+    printf $fmt, loc('Depot'), loc('Path');
+    print '=' x 60, "\n";
+    printf $fmt, "/$_/", $map->{$_} for sort keys %$map;
+    return;
 }
 
 sub _do_edit {
@@ -39,7 +78,7 @@ sub _do_edit {
     if ( !$self->{'init'} ) {
         do {
             $map =
-              get_buffer_from_editor( 'depot map', $sep, "$map\n$sep\n",
+              get_buffer_from_editor( loc('depot map'), $sep, "$map\n$sep\n",
                 'depotmap' );
             $new = eval { YAML::Load($map) };
             print "$@\n" if $@;
@@ -47,13 +86,58 @@ sub _do_edit {
         print loc("New depot map saved.\n");
         $self->{xd}{depotmap} = $new;
     }
+    $self->create_depots;
+    return;
+}
+
+sub _do_add {
+    my ($self, $depot, $path) = @_;
+
+    die loc("Depot '%1' already exists; use 'svk depotmap --detach' to remove it first.\n", $depot)
+        if $self->{xd}{depotmap}{$depot};
+
+    $self->{xd}{depotmap}{$depot} = $path;
+
+    print loc("New depot map saved.\n");
+    $self->create_depots;
+}
+
+sub _do_relocate {
+    my ($self, $depot, $path) = @_;
+
+    die loc("Depot '%1' does not exist in the depot map.\n", $depot)
+        if !$self->{xd}{depotmap}{$depot};
+
+    $self->{xd}{depotmap}{$depot} = $path;
+
+    print loc("Depot '%1' relocated to '%2'.\n", $depot, $path);
+    $self->create_depots;
+}
+
+sub _do_detach {
+    my ($self, $depot) = @_;
+
+    delete $self->{xd}{depotmap}{$depot}
+        or die loc("Depot '%1' does not exist in the depot map.\n", $depot);
+
+    print loc("Depot '%1' detached.\n", $depot);
+    return;
+}
+
+sub create_depots {
+    my ($self) = @_;
     for my $path (values %{$self->{xd}{depotmap}}) {
+        $path =~ s{[$SEP/]+$}{}go;
+
 	next if -d $path;
 	my $ans = get_prompt(
 	    loc("Repository %1 does not exist, create? (y/n)", $path),
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;
+
+        make_path(dirname($path));
+
         $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 	SVN::Repos::create($path, undef, undef, undef,
 			   {'fs-type' => $ENV{SVNFSTYPE},
@@ -74,11 +158,18 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 =head1 SYNOPSIS
 
  depotmap [OPTIONS]
+ depotmap DEPOTNAME /path/to/repository
+
+ depotmap --list
+ depotmap --detach [DEPOTNAME | PATH]
+ depotmap --relocate [DEPOTNAME | PATH] PATH
 
 =head1 OPTIONS
 
- -l [--list]:    List current depot mapping
- -i [--init]:    Initialize a default deopt
+ -i [--init]            : initialize a default depot
+ -l [--list]            : list current depot mappings
+ -d [--detach]          : remove a depot from the mapping
+ --relocate             : relocate the depot to another path
 
 =head1 DESCRIPTION
 
@@ -87,11 +178,11 @@ and let you edit your depot-directory mapping.
 
 Each line contains a map entry, the format is:
 
- depotname: 'path/to/repos'
+ depotname: '/path/to/repos'
 
-The depotname could be used to refer to a DEPOTPATH as
+The depotname may then be used as part of a DEPOTPATH:
 
- /depotname/path/in/repos
+ /depotname/path/inside/repos
 
 =head1 AUTHORS
 

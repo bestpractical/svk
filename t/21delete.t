@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 10;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('delete');
@@ -21,23 +21,29 @@ $svk->add ('A');
 $svk->commit ('-m', 'init');
 
 is_output ($svk, 'delete', ['A/foo'],
-	   ['D   A/foo'], 'delete - file');
+	   [__('D   A/foo')], 'delete - file');
 ok (!-e 'A/foo', 'delete - copath deleted');
 is_output ($svk, 'status', [],
-	   ['D   A/foo'], 'delete - status');
+	   [__('D   A/foo')], 'delete - status');
 
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'delete', ['--keep-local', 'A/foo'],
-	   ['D   A/foo'], '');
+	   [__('D   A/foo')], '');
 ok (-e 'A/foo', 'copath not deleted');
 is_output ($svk, 'status', [],
-	   ['D   A/foo'], 'copath not deleted');
+	   [__('D   A/foo')], 'copath not deleted');
 
 
 is_output ($svk, 'delete', ["$corpath/A/foo"],
-	   ["D   $corpath/A/foo"], 'delete - file - abspath');
+	   [__("D   $corpath/A/foo")], 'delete - file - abspath');
 $svk->revert ('-R', '.');
+
+overwrite_file ("A/deep/baz~", "foobar");
+is_output ($svk, 'delete', ['A/deep'],
+	   [map __($_),
+	    'D   A/deep',
+	    'D   A/deep/baz'], 'delete - ignore files');
 
 is_output ($svk, 'delete', ['-m', 'rm directly', '//A/deep'],
 	  ['Committed revision 2.'], 'rm directly');

@@ -1,5 +1,6 @@
 package SVK::Notify;
 use SVK::I18N;
+use SVK::Util qw( abs2rel $SEP );
 use strict;
 
 =head1 NAME
@@ -42,13 +43,16 @@ sub print_report {
 		$path = '';
 	    }
 	    else {
-		$path =~ s|^\Q$target\E/||;
+		$path = abs2rel($path, $target => undef, $is_copath ? () : '/');
 	    }
 	}
-	$print->($path ? $report ? $is_copath ? SVK::Target->copath ($report, $path)
-		                              : "$report/$path"
-                                 : $path
-		       : $report || '.', @_);
+	$print->((
+	    $path ? $is_copath ? SVK::Target->copath ($report, $path)
+			       : $report ? "$report/$path"
+					 : $path
+		  : $is_copath ? SVK::Target->copath('', $report || '.')
+			       : ($report || '.')
+	), @_);
     };
 }
 
@@ -61,6 +65,7 @@ sub new {
 
 sub new_with_report {
     my ($class, $report, $target, $is_copath) = @_;
+    $report =~ s/\Q$SEP\E$//o if $report; # strip trailing slash
     $class->new	( cb_skip => print_report (\&skip_print, $is_copath, $report),
 		  cb_flush => print_report (\&flush_print, $is_copath, $report, $target));
 }
@@ -71,11 +76,16 @@ sub node_status {
     return $self->{status}{$path}[0];
 }
 
+my %prop = ( 'U' => 0, 'g' => 1, 'G' => 2, 'M' => 3, 'C' => 4);
+
 sub prop_status {
     my ($self, $path, $s) = @_;
     my $st = $self->{status}{$path};
     $st->[1] = $s if defined $s
-	&& (!$st->[0] || $st->[0] ne 'A' );
+	# node status allow prop
+	&& !($st->[0] && ($st->[0] eq 'A' || $st->[0] eq 'R'))
+	    # not overriding things more informative
+	    && (!$st->[1] || $prop{$s} > $prop{$st->[1]});
     return $self->{status}{$path}[1];
 }
 
@@ -87,6 +97,7 @@ sub hist_status {
 
 sub flush {
     my ($self, $path, $anchor) = @_;
+    return if $self->{quiet};
     my $status = $self->{status}{$path};
     if ($status && grep {$_} @{$status}[0..2]) {
 	$self->{cb_flush}->($path, $status) if $self->{cb_flush};
@@ -99,11 +110,12 @@ sub flush {
 
 sub flush_dir {
     my ($self, $path) = @_;
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : $_}
+    return if $self->{quiet};
+    for (grep {$path ? index($_, "$path/") == 0 : $_}
 	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }
-    $self->flush ($path, 1) unless $path;
+    $self->flush ($path, 1);
 }
 
 =head1 AUTHORS

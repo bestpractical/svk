@@ -6,7 +6,7 @@ our $output;
 
 my ($xd, $svk) = build_test('bob');
 
-is_output_like ($svk, 'ls', ['http://foobar'], qr|not a checkout path|, 'bad path');
+is_output_like ($svk, 'ls', ["there/is/no/spoon"], qr|not a checkout path|, 'bad path');
 
 foreach my $depot ('','bob') {
     my ($copath) = get_copath ("list$depot");
@@ -14,6 +14,7 @@ foreach my $depot ('','bob') {
     chdir ("$copath");
     mkdir ('A');
     overwrite_file ("A/foo", "foobar\n");
+    my $size = -s "A/foo";
     $svk->add ('A');
     $svk->commit ('-m', 'init');
     mkdir('A/B');
@@ -36,7 +37,7 @@ foreach my $depot ('','bob') {
     is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap is not a versioned directory']);
 
     my $re_date = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{2} \\d{2}:\\d{2}";
-    my $re_user = "(?:\\w+\\s+)";
+    my $re_user = "(?:\\w*\\s+)";
     is_output ($svk, 'ls', ['-v'],
                [qr"      2 $re_user          $re_date A/"]);
     is_output ($svk, 'ls', ['-v', '-r1'],
@@ -44,16 +45,16 @@ foreach my $depot ('','bob') {
     is_output ($svk, 'ls', ['-v', 'A/foo'], []);
     is_output ($svk, 'ls', ['-v', '-r1', '-R'],
                [qr"      1 $re_user          $re_date A/",
-                qr"      1 $re_user        7 $re_date  foo"]);
+                qr"      1 $re_user        $size $re_date  foo"]);
     is_output ($svk, 'ls', ['-v', '-R'],
                [qr"      2 $re_user          $re_date A/",
                 qr"      2 $re_user          $re_date  B/",
-                qr"      2 $re_user        7 $re_date   foo",
-                qr"      1 $re_user        7 $re_date  foo"]);
+                qr"      2 $re_user        $size $re_date   foo",
+                qr"      1 $re_user        $size $re_date  foo"]);
     is_output ($svk, 'ls', ['-v', '-R', '-d1'],
                [qr"      2 $re_user          $re_date A/",
                 qr"      2 $re_user          $re_date  B/",
-                qr"      1 $re_user        7 $re_date  foo"]);
+                qr"      1 $re_user        $size $re_date  foo"]);
     is_output ($svk, 'ls', ['-v', '-f'],
                [qr"      2 $re_user          $re_date /$depot/A/"]);
     is_output ($svk, 'ls', ['-v', '-f', 'A/foo'], []);
@@ -61,11 +62,11 @@ foreach my $depot ('','bob') {
                [qr"      2 $re_user          $re_date /$depot/A/"]);
     is_output ($svk, 'ls', ['-v', '-f', "/$depot/A/"],
                [qr"      2 $re_user          $re_date /$depot/A/B/",
-                qr"      1 $re_user        7 $re_date /$depot/A/foo"]);
+                qr"      1 $re_user        $size $re_date /$depot/A/foo"]);
     is_output ($svk, 'ls', ['-v', '-f', '-R', "/$depot/A/"],
                [qr"      2 $re_user          $re_date /$depot/A/B/",
-                qr"      2 $re_user        7 $re_date /$depot/A/B/foo",
-                qr"      1 $re_user        7 $re_date /$depot/A/foo"]);
+                qr"      2 $re_user        $size $re_date /$depot/A/B/foo",
+                qr"      1 $re_user        $size $re_date /$depot/A/foo"]);
     is_output ($svk, 'ls', ['-v', '-f',"/$depot/crap/"],
                ['Path /crap is not a versioned directory']);
 

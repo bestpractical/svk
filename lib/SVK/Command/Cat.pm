@@ -21,7 +21,7 @@ sub run {
     my $pool = SVN::Pool->new_default;
     for my $target (@arg) {
 	$pool->clear;
-	$target->depotpath ($self->{rev});
+	$target->as_depotpath ($self->{rev});
 	my $root = $target->root ($self->{xd});
 	my $stream = $root->file_contents ($target->{path});
 	# XXX: the keyword layer interface should also have reverse
@@ -46,11 +46,11 @@ SVK::Command::Cat - Output the file from depot
 
 =head1 SYNOPSIS
 
- cat [DEPOTPATH|PATH...]
+ cat [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 
- -r [--revision] REV:    revision
+ -r [--revision] arg    : act on revision ARG instead of the head revision
 
 =head1 AUTHORS
 

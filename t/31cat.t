@@ -27,5 +27,5 @@ is_output ($svk, 'cat', ['-r1', 'A/foo'], ['foobar'],
 	   'cat -rN copath');
 is_output ($svk, 'cat', ['-r1', '//A/foo'], ['foobar'],
 	  'cat -rN depotpath');
-is_output ($svk, 'cat', ['A/bar'], ['$Revision: #2 $', 'barbar'],
+is_output ($svk, 'cat', ['A/bar'], ['$Revision: 2 $', 'barbar'],
 	  'cat - with keyword');

@@ -5,7 +5,9 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util 'svn_mirror';
+use SVK::Util qw( HAS_SVN_MIRROR traverse_history );
+use Date::Parse qw(str2time);
+use Date::Format qw(time2str);
 
 sub options {
     ('l|limit=i'	=> 'limit',
@@ -18,7 +20,7 @@ sub options {
 sub _log_remote_rev {
     my ($repos, $path, $remoteonly, $host) = @_;
     $host ||= '';
-    return sub {"r$_[0]$host"} unless svn_mirror and SVN::Mirror::list_mirror ($repos);
+    return sub {"r$_[0]$host"} unless HAS_SVN_MIRROR and SVN::Mirror::list_mirror ($repos);
     # save some initialization
     my $m = SVN::Mirror::is_mirrored ($repos, $path) || 'SVN::Mirror';
     sub {
@@ -40,7 +42,7 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target) = @_;
-    $target->depotpath;
+    $target->as_depotpath;
     my $fs = $target->{repos}->fs;
     my ($fromrev, $torev);
     ($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
@@ -56,7 +58,7 @@ sub run {
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, 0, $print_rev)} );
+	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1)} );
     return;
 }
 
@@ -77,18 +79,29 @@ sub _get_logs {
 	$callback->($rev, $root, $changed, $props);
     };
 
-    my $pool = SVN::Pool->new_default;
-    my $hist = $root->node_history ($path);
-    while (($hist = $hist->prev ($cross)) && $limit--) {
-	my $rev = ($hist->location)[1];
-	next if $rev > $fromrev;
-	last if $rev < $torev;
-	$reverse ?  unshift @revs, $rev : $docall->($rev);
-	$pool->clear;
-    }
+    traverse_history (
+        root        => $root,
+        path        => $path,
+        cross       => $cross,
+        callback    => sub {
+            return 0 if !$limit--; # last
+
+            my $rev = $_[1];
+            return 1 if $rev > $fromrev; # next
+            return 0 if $rev < $torev;   # last
+
+            if ($reverse) {
+                unshift @revs, $rev;
+            }
+            else {
+                $docall->($rev);
+            }
+            return 1;
+        },
+    );
 
     if ($reverse) {
-	$docall->($_), $pool->clear for @revs;
+	$docall->($_) for @revs;
     }
 }
 
@@ -99,10 +112,11 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log {
-    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev) = @_;
+    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime) = @_;
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     no warnings 'uninitialized';
+    $date = time2str("%Y-%m-%d %T %z", str2time ($date)) if defined $use_localtime;
     $indent = (' ' x $indent);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n");
     if ($paths) {
@@ -151,10 +165,10 @@ SVK::Command::Log - Show log messages for revisions
 
 =head1 OPTIONS
 
- -r [--revision]:        revision spec from:to
- -l [--limit]:           limit the number of revisions displayed
- -x [--cross]:           display cross copied nodes
- -v [--verbose]:         print changed path in changes
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -l [--limit] arg       : stop after displaying ARG revisions
+ -x [--cross]           : track revisions copied from elsewhere
+ -v [--verbose]         : print extra information
 
 =head1 AUTHORS
 

@@ -6,13 +6,12 @@ use File::Find;
 use Text::Wrap;
 use Pod::Simple::Text;
 
-$Text::Wrap::columns = 1024 if $Text::Wrap::columns;
-
 chdir "$FindBin::Bin/..";
 
 my (@files, @pms, @pods);
 find(sub { push @files, $File::Find::name if -f }, 'lib', 'bin'); 
 find(sub { push @pms, $File::Find::name if -f }, 'lib/SVK/Command');
+push @pms, 'lib/SVK/Resolve.pm';
 
 my %strings;
 foreach my $pm (@pms) {
@@ -29,18 +28,20 @@ foreach my $pm (@pms) {
 	elsif ($line =~ /^([A-Z_]+)/) {
 	    $strings{$1}++;
 	}
-	elsif (my @lines = $line =~ /^ {8}\s*(.+)\s*$/mg) {
+	elsif (my @lines = $line =~ /^ {4}\s+(.+)\s*$/mg) {
 	    foreach my $chunk (@lines) { 
-		$chunk =~ s/: +/: /;
+		$chunk =~ s/ +: /: /;
 		$strings{$chunk}++;
 	    }
 	}
+        else {
+            $strings{$line}++;
+        }
     }
     next unless %strings;
 }
 
 if (%strings) {
-    die if -e "lib/SVK/Command.pod";
     open my $fh, ">", "lib/SVK/Command.pod" or die $!;
     print $fh "{{$_}}\n" for sort keys %strings;
     close $fh;

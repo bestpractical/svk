@@ -1,5 +1,7 @@
 package SVK::Patch;
 use strict;
+use SVK::I18N;
+use SVK::Util qw( read_file write_file );
 our $VERSION = $SVK::VERSION;
 
 =head1 NAME
@@ -39,7 +41,7 @@ use SVK::Util qw(find_svm_source find_local_mirror resolve_svm_source);
 use SVK::Merge;
 use SVK::Editor::Diff;
 use SVK::Target::Universal;
-use Storable qw/nfreeze thaw/;
+use FreezeThaw qw(freeze thaw);
 use MIME::Base64;
 use Compress::Zlib;
 
@@ -60,7 +62,7 @@ sub new {
 		       _source => $src,
 		       _target => $dst }, $class;
     (undef, undef, $self->{_repos}) = $self->{_xd}->find_repos ("/$self->{_depot}/", 1);
-    $self->{source} = $self->{_source}->universal;
+    $self->{source} = $self->{_source}->universal if $self->{_source};
     $self->{target} = $self->{_target}->universal;
     return $self;
 }
@@ -73,12 +75,30 @@ Load a SVK::Patch object from file.
 
 sub load {
     my ($class, $file, $xd, $depot) = @_;
-    open FH, '<', $file or die $!;
-    local $/;
-    my $self = thaw (uncompress (decode_base64(<FH>)));
+
+    my $content = do {
+        open my $fh, "< $file" or die loc("cannot open %1: %2", $file, $!);
+
+        # Serialized patches always begins with a block marker.
+        # We need the \nVersion: to not trip over inlined block makers.
+        # This is safe because unidiff can't have lines beginning with 'V'.
+        local $/ = "==== BEGIN SVK PATCH BLOCK ====\nVersion:"; <$fh>;
+
+        # Now we ignore header paragraph.
+        $/ = ""; <$fh>;
+        # Slurp everything up to the '=' of the end marker.
+        $/ = "\n="; <$fh>;
+    };
+
+    die loc("Cannot find a patch block in %1.\n", $file) unless $content;
+    chop $content; # remove the final '='. look, a use of chop()!
+
+    my ($self) = thaw (uncompress (decode_base64 ( $content ) ) );
     $self->{_xd} = $xd;
     $self->{_depot} = $depot;
+
     for (qw/source target/) {
+	next unless $self->{$_};
 	my $tmp = $self->{"_$_"} = $self->{$_}->local ($xd, $depot) or next;
 	$tmp = $tmp->new (revision => undef);
 	$tmp->normalize;
@@ -98,8 +118,21 @@ Store a SVK::Patch object to file.
 sub store {
     my ($self, $file) = @_;
     my $store = bless {map {m/^_/ ? () : ($_ => $self->{$_})} keys %$self}, ref ($self);
-    open FH, '>', $file or die $!;
-    print FH encode_base64(compress (nfreeze ($store)));
+
+    local $ENV{SVKDIFF} = '';
+    $self->view(\(my $output));
+
+    write_file(
+        $file, join("\n", 
+            $output,
+            '==== BEGIN SVK PATCH BLOCK ====',
+            "Version: svk $SVK::VERSION ($^O)",
+            '',
+            encode_base64(compress (freeze ($store))).
+            '==== END SVK PATCH BLOCK ====',
+            ''
+        )
+    );
 }
 
 =head2 editor
@@ -115,7 +148,7 @@ sub editor {
 }
 
 sub _path_attribute_text {
-    my ($self, $type) = @_;
+    my ($self, $type, $no_label) = @_;
     # XXX: check if source / target is updated
     my ($local, $mirrored, $updated);
     if (my $target = $self->{"_$type"}) {
@@ -123,25 +156,46 @@ sub _path_attribute_text {
 	    ++$local;
 	}
 	else {
-	    ++$mirrored;
+            my ($repos, $path) = @$target{qw/repos path/};
+            (undef, $mirrored) = resolve_svm_source(
+                $repos, find_svm_source($repos, $path)
+            );
 	}
     }
-    return ($local ? ' [local]' : '').($mirrored ? ' [mirrored]' : '').
-	($self->{"_${type}_updated"} ? ' [updated]' : '');
+    my $label = $no_label ? '' : join(
+	' ', '',
+	($local ? '[local]' : ()),
+	($mirrored ? '[mirrored]' : ()),
+	($self->{"_${type}_updated"} ? '[updated]' : ())
+    );
+    $label .= "\n        ($mirrored->{source})" if $mirrored;
+    return $label;
 }
 
 sub view {
-    my ($self) = @_;
+    my ($self, $output) = @_;
     my $fs = $self->{_repos}->fs;
-    print "=== Patch <$self->{name}> level $self->{level}\n";
-    print "Source: ".join(':', @{$self->{source}}{qw/uuid path rev/}).
-	$self->_path_attribute_text ('source')."\n";
-    print "Target: ".join(':', @{$self->{target}}{qw/uuid path rev/}).
-	$self->_path_attribute_text ('target')."\n";
-    print "Log:\n".$self->{log}."\n";
 
-    die "Target not local nor mirrored, unable to view patch."
+    die loc("Target not local nor mirrored, unable to view patch.\n")
 	unless $self->{_target};
+
+    my $header = join("\n",
+        "==== Patch <$self->{name}> level $self->{level}",
+        "Source: ".($self->{source} ?
+		    join(':', @{$self->{source}}{qw/uuid path rev/}).
+		    $self->_path_attribute_text ('source', $output)
+		    : '[No source]'),
+        "Target: ".join(':', @{$self->{target}}{qw/uuid path rev/}).
+                   $self->_path_attribute_text ('target', $output),
+        "Log:", $self->{log}, ''
+    );
+
+    if ($output) {
+        $$output .= $header;
+    }
+    else {
+        print $header;
+    }
 
     my $baseroot = $self->{_target}->root;
     my $anchor = $self->{_target}->path;
@@ -157,6 +211,7 @@ sub view {
 	    llabel => "revision $self->{target}{rev}",
 	    rlabel => "patch $self->{name} level $self->{level}",
 	    external => $ENV{SVKDIFF},
+            output => $output,
 	  ));
 }
 
@@ -172,26 +227,30 @@ sub apply {
 sub apply_to {
     my ($self, $target, $storage, %cb) = @_;
     my $base = $self->{_target}
-	or die "Target not local nor mirrored, unable to test patch.";
-    # XXX: cb_merged
+	or die loc("Target not local nor mirrored, unable to test patch.\n");
+
     my $editor = SVK::Editor::Merge->new
 	( base_anchor => $base->path,
 	  base_root => $base->root,
-	  send_fulltext => 0,
 	  storage => $storage,
 	  anchor => $target->path,
 	  target => '',
 	  send_fulltext => !$cb{patch} && !$cb{mirror},
+	  ($target->{copath}
+	      ? (notify => SVK::Notify->new_with_report
+		    ($target->{report}, $target, 1))
+	      : ()
+	  ),
 	  %cb,
 	);
     $self->{editor}->drive ($editor);
     return $editor->{conflicts};
 }
 
-# XXX: update and regen are identify.  the only difference is soruce or target to be updated
+# XXX: update and regen are identical.  the only difference is soruce or target to be updated
 sub update {
     my ($self) = @_;
-    die "Target not local nor mirrored, unable to update patch."
+    die loc("Target not local nor mirrored, unable to update patch.\n")
 	unless $self->{_target};
 
     return unless $self->{_target_updated};
@@ -204,7 +263,7 @@ sub update {
 				     SVK::Editor::Merge::cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
 
-	print "Conflicts.\n";
+	print loc("Conflicts.\n");
 	return $conflict;
     }
 
@@ -217,29 +276,55 @@ sub update {
 sub regen {
     my ($self) = @_;
     my $target = $self->{_target}
-	or die "Target not local nor mirrored, unable to regen patch.";
+	or die loc("Target not local nor mirrored, unable to regen patch.\n");
     unless ($self->{level} == 0 || $self->{_source_updated}) {
-	print "Source of path <$self->{name}> not updated or not local. No need to update.\n";
+	print loc("Source of patch %1 not updated or not local, no need to regen patch.\n", $self->{name});
 	return;
     }
     my $source = $self->{_source}->new (revision => undef);
     $source->normalize;
-    my $merge = SVK::Merge->auto (repos => $self->{_repos},
-				  src => $source,
-				  dst => $target);
+    my $merge = SVK::Merge->auto (repos => $self->{_repos}, xd => $self->{_xd},
+				  src => $source, dst => $target);
     my $conflict;
     my $patch = SVK::Editor::Patch->new;
     # XXX: handle empty
     unless ($conflict = $merge->run ($patch,
 				     SVK::Editor::Merge::cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
-	$self->{log} = $merge->log;
+	$self->{log} = $merge->log (1);
 	++$self->{level};
 	$self->{_source} = $source;
 	$self->{source} = $source->universal;
 	$self->{editor} = $patch;
+	$self->{ticket} = $merge->merge_info ($source)->add_target ($source)->as_string;
     }
     return $conflict;
+}
+
+=head2 commit_editor
+
+Returns a editor that finalize the patch object upon close_edit.
+
+=cut
+
+sub commit_editor {
+    SVK::Patch::CommitEditor->new ( patch => $_[0], filename => $_[1]);
+}
+
+package SVK::Patch::CommitEditor;
+use base qw(SVK::Editor::Patch);
+use SVK::I18N;
+
+sub close_edit {
+    my $self = shift;
+    $self->SUPER::close_edit (@_);
+    my $patch = delete $self->{patch};
+    my $filename = delete $self->{filename};
+    $patch->{editor} = bless $self, 'SVK::Editor::Patch';
+    ++$patch->{level};
+    $patch->store ($filename);
+    return if $filename eq '-';
+    print loc ("Patch %1 created.\n", $patch->{name});
 }
 
 =head1 AUTHORS

@@ -33,16 +33,14 @@ sub baton_at {
     return $func =~ m/^(?:add|open|absent)/ ? 1 : 0;
 }
 
-our $AUTOLOAD;
-
 sub AUTOLOAD {
     my ($self, @arg) = @_;
-    my $func = $AUTOLOAD;
+    my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
     return if $func =~ m/^[A-Z]+$/;
     my $baton;
 
-    pop @arg if ref ($arg[-1]) eq '_p_apr_pool_t';
+    pop @arg if ref ($arg[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
 
     if ((my $baton_at = $self->baton_at ($func)) >= 0) {
 	$baton = $arg[$baton_at];

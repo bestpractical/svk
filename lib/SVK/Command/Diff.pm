@@ -35,7 +35,9 @@ sub run {
     # translate to target and target2
     if ($target2) {
 	if ($target->{copath}) {
-	    die loc("invalid arguments");
+	    die loc("invalid arguments") if !$target2->{copath};
+            $self->run($_) foreach @_[1..$#_];
+            return;
 	}
 	if ($target2->{copath}) {
 	    die loc("invalid arguments") if $target->{copath};
@@ -44,10 +46,10 @@ sub run {
 	}
     }
     else {
-	$target->depotpath if $r1 && $r2;
+	$target->as_depotpath if $r1 && $r2;
 	if ($target->{copath}) {
 	    $target2 = $target->new;
-	    $target->depotpath;
+	    $target->as_depotpath;
 	    $report = $target->{report};
 	}
 	else {
@@ -92,7 +94,6 @@ sub run {
 	  ( lpath  => $target->{path},
 	    rpath  => $target2->{path} ) : (),
 	  # XXX: for delete_entry, clean up these
-	  xd => $self->{xd}, newtarget => $target2,
 	  oldtarget => $target, oldroot => $oldroot,
 	);
 
@@ -146,16 +147,16 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
 =head1 SYNOPSIS
 
- diff [-r REV] [PATH]
- diff -r N:M DEPOTPATH
+ diff [-r REV] [PATH...]
+ diff -r N[:M] DEPOTPATH
  diff DEPOTPATH1 DEPOTPATH2
  diff DEPOTPATH PATH
 
 =head1 OPTIONS
 
- -r [--revision] rev|old:new :    Needs description
- -s [--summarize] :               Show summary only
- -v [--verbose]:                  Needs description
+ -r [--revision] N:M    : act on revisions between N and M
+ -s [--summarize]       : show summary only
+ -v [--verbose]         : print extra information
 
 =head1 AUTHORS
 

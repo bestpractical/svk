@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 5;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -49,7 +49,7 @@ $svk->commit ('-m', 'and some prop', "$copath");
 $svk->copy ('-m', 'branch //work', '//trunk', '//work');
 $svk->update ($copath);
 
-`$^X -pi -e 's/is main/is local main/' $copath/work/test.pl`;
+`$^X -pi.bak -e "s/is main/is local main/" $copath/work/test.pl`;
 
 $svk->commit ('-m', 'local mod', "$copath/work");
 
@@ -62,18 +62,19 @@ $svk->commit ('-m', 'more mod on trunk', "$copath/trunk");
 
 is_output_like ($svk, 'smerge', ['-m', 'mergeback from //work', '//work', '//trunk'],
 		qr|base /trunk:5|);
+
 is_output_like ($svk, 'smerge', ['-m', 'mergeback from //trunk', '//trunk', '//work'],
 		qr|base /work:7|);
 $svk->update ($copath);
 
-`$^X -pi -e 's|#!/usr/bin/|#!env |' $copath/trunk/test.pl`;
+`$^X -pi.bak -e "s|#!/usr/bin/|#!env |" $copath/trunk/test.pl`;
 
 $svk->commit ('-m', 'mod on trunk before branch to featre', "$copath/trunk");
 
 $svk->copy ('-m', 'branch //feature', '//trunk', '//feature');
 $svk->update ($copath);
 
-`$^X -pi -e 's/^#test/    test();/' $copath/work/test.pl`;
+`$^X -pi.bak -e "s/^#test/    test();/" $copath/work/test.pl`;
 
 $svk->commit ('-m', 'call test() in main', "$copath/work");
 

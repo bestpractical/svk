@@ -7,8 +7,19 @@ use SVK::XD;
 use SVK::I18N;
 use File::Spec;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'd|delete|detach' => 'detach',
+    );
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
+
+    if ($self->{detach}) {
+        goto &{ $self->rebless ('checkout')->can ('parse_arg') };
+    }
+
     return if $#arg < 0 || $#arg > 1;
     my $depotpath = $self->arg_depotpath ($arg[0]);
     return ($depotpath, $self->arg_copath ($arg[1] || ''));
@@ -21,7 +32,8 @@ sub run {
     die loc("different depot") unless $target->same_repos ($cotarget);
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($cotarget->{copath});
-    die loc("can only switch checkout root") unless $where[0] eq $cotarget->{copath};
+    die loc("Can only switch checkout root.\n")
+	unless $where[0] eq $cotarget->{copath};
 
     $self->{update_target_path} = $target->{path};
     # check if the switch has a base at all
@@ -40,7 +52,7 @@ __DATA__
 
 =head1 NAME
 
-SVK::Command::Switch - Switch to another branch and keep local modifications
+SVK::Command::Switch - Switch to another branch and keep local changes
 
 =head1 SYNOPSIS
 
@@ -48,7 +60,8 @@ SVK::Command::Switch - Switch to another branch and keep local modifications
 
 =head1 OPTIONS
 
- -r [--revision]:        revision
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -d [--detach]          : mark a path as no longer checked out
 
 =head1 AUTHORS
 

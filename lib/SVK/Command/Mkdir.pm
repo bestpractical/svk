@@ -5,7 +5,12 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Command::Log;
+use SVK::Util qw ( abs2rel );
+
+sub options {
+    ($_[0]->SUPER::options,
+     'p|parent' => 'parent');
+}
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -15,27 +20,15 @@ sub parse_arg {
 
 sub lock { return $_[0]->lock_none }
 
-sub do_mkdir_direct {
-    my ($self, %arg) = @_;
-    my $fs = $arg{repos}->fs;
-    my $edit = $self->get_commit_editor ($fs->revision_root ($fs->youngest_rev),
-					 sub { print loc("Committed revision %1.\n", $_[0]) },
-					 '/', %arg);
-    # XXX: check parent, check isfile, check everything...
-    $edit->open_root();
-    $edit->add_directory ($arg{path});
-    $edit->close_edit();
-
-}
-
 sub run {
     my ($self, $target) = @_;
-    return unless $self->check_mirrored_path ($target);
     $self->get_commit_message ();
-    $self->do_mkdir_direct ( author => $ENV{USER},
-			     %$target,
-			     %$self,
-			   );
+    my ($anchor, $editor) = $self->get_dynamic_editor ($target);
+    $editor->close_directory
+	($editor->add_directory (abs2rel ($target->path, $anchor => undef, '/'),
+				 0, undef, -1));
+    $self->adjust_anchor ($editor);
+    $self->finalize_dynamic_editor ($editor);
     return;
 }
 
@@ -53,10 +46,10 @@ SVK::Command::Mkdir - Create a versioned directory
 
 =head1 OPTIONS
 
- -m [--message] message:    Commit message
- -C [--check-only]:         Needs description
- -s [--sign]:               Needs description
- --force:                   Needs description
+ -m [--message] arg     : specify commit message ARG
+ -p [--parent]          : create intermediate directories as required
+ -C [--check-only]      : try operation but make no changes
+ -S [--sign]            : sign this change
 
 =head1 AUTHORS
 

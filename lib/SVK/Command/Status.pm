@@ -5,6 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::Editor::Status;
+use SVK::Util qw( abs2rel );
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -24,11 +25,15 @@ sub run {
 	  xdroot => $xdroot,
 	  nodelay => 1,
 	  delete_verbose => 1,
-	  editor => SVK::Editor::Status->new (report => $target->{report}),
+	  editor => SVK::Editor::Status->new (
+	      report => $target->{report},
+	      notify => SVK::Notify->new_with_report ($target->{report}, undef, 1)
+	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
+	  cb_obstruct => \&SVK::Editor::Status::obstruct,
 	  cb_unknown =>
-	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$report|;
-		print "?   $_[1]\n" }
+	  sub { my $path = abs2rel($_[1], $target->{copath} => length($report) ? $report : undef);
+		print "?   $path\n" }
 	);
     return;
 }
@@ -47,7 +52,7 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
 =head1 OPTIONS
 
-None.
+ None
 
 =head1 AUTHORS
 

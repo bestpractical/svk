@@ -6,41 +6,54 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'f|from-checkout|force'    => 'from_checkout',
+     't|to-checkout'	        => 'to_checkout',
+    )
+}
 sub parse_arg {
     my $self = shift;
-    my @arg = @_;
-    $arg[1] = '' if $#arg < 1;
+    my @arg = @_ or return;
+
+    return if @arg > 2;
+    unshift @arg, '' while @arg < 2;
+
+    if (eval { $self->{xd}->find_repos($arg[1]); 1 }) {
+        # Reorder to put DEPOTPATH before PATH
+        @arg[0,1] = @arg[1,0];
+    }
 
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));
 }
 
 sub lock {
     my ($self, $target, $source) = @_;
-    return $self->lock_none
-	unless $self->{xd}{checkout}->get ($source)->{depotpath};
+    unless ($self->{xd}{checkout}->get ($source)->{depotpath}) {
+	return $self->{to_checkout} ? $self->{xd}->lock ($source)
+	    : $self->lock_none;
+    }
     $source = $self->arg_copath ($source);
-    ($self->{force} && $target->{path} eq $source->{path}) ?
-	$self->lock_target ($source) : $self->lock_none;
+    die loc("Import source (%1) is a checkout path; use --from-checkout.\n", $source->{copath})
+	unless $self->{from_checkout};
+    die loc("Import path (%1) is different from the copath (%2)\n", $target->{path}, $source->{path})
+	unless $source->{path} eq $target->{path};
+    $self->lock_target ($source);
 }
 
 sub mkpdir {
     my ($self, $target, $root, $yrev) = @_;
-    my $edit = SVN::Simple::Edit->new
-	(_editor => [SVN::Repos::get_commit_editor
-		     ( $target->{repos},
-		       "file://$target->{repospath}",
-		       '/', $ENV{USER},
-		       "directory for svk import",
-		       sub { print loc("Import path %1 initialized.\n", $target->{path}) })],
-	 pool => SVN::Pool->new,
-	 missing_handler => &SVN::Simple::Edit::check_missing ($root));
-    $edit->open_root ($yrev);
-    $edit->add_directory ($target->{path});
-    $edit->close_edit;
+
+    $self->command (
+        mkdir => { message => "Directory for svk import.", parent => 1 },
+    )->run ($target);
+
+    print loc("Import path %1 initialized.\n", $target->{path});
 }
 
 sub run {
     my ($self, $target, $copath) = @_;
+    return unless $self->check_mirrored_path ($target) || $self->{from_checkout};
 
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
@@ -55,32 +68,31 @@ sub run {
 	$root = $fs->revision_root ($yrev);
     }
 
-    if (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
-	$self->{is_checkout}++;
-	die loc("Import source cannot be a checkout path")
-	    unless $self->{force};
-	# XXX: check if anchor matches
-	my (undef, $path) = $self->{xd}->find_repos_from_co ($copath, 0);
-	die loc("Import path ($target->{path}) is different from the copath ($path)\n")
-	    unless $path eq $target->{path};
-
-    }
-    else {
+    unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{xd}{checkout}->store
 	    ($copath, {depotpath => $target->{depotpath},
 		       '.newprop' => undef,
 		       '.conflict' => undef,
 		       revision => $target->{revision}});
+        delete $self->{from_checkout};
     }
 
     $self->get_commit_message () unless $self->{check_only};
-    my ($editor, %cb) = $self->get_editor ($target);
-    ${$cb{callback}} =
+    my $committed =
 	sub { $yrev = $_[0];
 	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
 			$copath, $target->{depotpath}, $yrev);
 
-	      if ($self->{is_checkout}) {
+	      if ($self->{to_checkout}) {
+                  $self->{xd}{checkout}->store_recursively (
+                      $copath, {
+                          depotpath => $target->{depotpath},
+                          revision => $yrev,
+                          $self->_schedule_empty,
+                      }
+                  );
+              }
+              elsif ($self->{from_checkout}) {
 		  $self->committed_import ($copath)->($yrev);
 	      }
 	      else {
@@ -90,12 +102,11 @@ sub run {
 				 '.schedule' => undef});
 	      }
 	  };
+    my ($editor, %cb) = $self->get_editor ($target, $committed);
 
     $self->{import} = 1;
     $self->run_delta ($target->new (copath => $copath), $root, $editor, %cb);
-    return;
 }
-
 
 1;
 
@@ -107,14 +118,18 @@ SVK::Command::Import - Import directory into depot
 
 =head1 SYNOPSIS
 
+ import [PATH] DEPOTPATH
+
+ # You may also list the target part first:
  import DEPOTPATH [PATH]
 
 =head1 OPTIONS
 
- -m [--message] message:    commit message
- -C [--check-only]:         don't perform actual writes
- -s [--sign]:               Needs description
- --force:                   Needs description
+ -m [--message] arg     : specify commit message ARG
+ -C [--check-only]      : try operation but make no changes
+ -S [--sign]            : sign this change
+ -f [--from-checkout]   : import from a checkout path
+ -t [--to-checkout]     : turn the source into a checkout path
 
 =head1 AUTHORS
 

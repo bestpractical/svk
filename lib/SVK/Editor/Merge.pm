@@ -4,7 +4,11 @@ our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
+use SVK::Util qw( slurp_fh md5_fh get_anchor tmpfile devnull );
+use IO::Digest;
+use constant FH => 0;
+use constant FILENAME => 1;
+use constant CHECKSUM => 2;
 
 =head1 NAME
 
@@ -51,10 +55,6 @@ The anchor of the base tree.
 
 The root object of the base tree.
 
-=item external
-
-External tool that would be called upon textual conflicts.
-
 =item storage
 
 The editor that will receive the merged callbacks.
@@ -96,6 +96,11 @@ Called when the merger needs to retrieve the local modification of a
 file. Return an arrayref of filename, filehandle, and md5. Return
 undef if there is no local modification.
 
+=item cb_localprop
+
+Called when the merger needs to retrieve the local modification of a
+property. Return the property value.
+
 =item cb_dirdelta
 
 When C<delete_entry> needs to check if everything to be deleted does
@@ -123,7 +128,7 @@ sub cb_for_root {
     my ($root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my $path = $anchor.'/'.shift;
-		   $root->check_path ($path) != $SVN::Node::none;
+		   return $root->check_path ($path);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
@@ -133,6 +138,12 @@ sub cb_for_root {
 		   return if $md5 eq $checksum;
 		   return [$root->file_contents ($path, $pool),
 			   undef, $md5];
+	       },
+	     cb_localprop =>
+	     sub { my ($path, $propname, $pool) = @_;
+		   $path = "$anchor/$path";
+		   local $@;
+		   return eval { $root->node_prop ($path, $propname, $pool) };
 	       },
 	     cb_dirdelta =>
 	     sub { my ($path, $base_root, $base_path, $pool) = @_;
@@ -177,25 +188,37 @@ sub open_root {
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     $self->{notify}->node_status ('', '');
+
+    my $ticket = $self->{ticket};
+    $self->{cb_merged} =
+	sub { my ($editor, $baton, $type, $pool) = @_;
+	      my $func = "change_${type}_prop";
+	      $editor->$func ($baton, 'svk:merge', $ticket->(), $pool);
+	  } if $ticket;
+
     return '';
 }
 
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
-    ++$self->{changes};
-    if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+	unless ($kind == $SVN::Node::file) {
+	    $self->{notify}->flush ($path) ;
+	    return undef;
+	}
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
 	$self->{info}{$path}{fpool} = pop @arg;
-	return $path;
     }
     else {
+	++$self->{changes};
+	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, 'A');
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg);
-	return $path;
     }
+    return $path;
 }
 
 sub open_file {
@@ -231,6 +254,8 @@ sub ensure_close {
     $self->{notify}->flush ($path, 1);
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
+    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool)
+	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
 
     if (my $baton = $self->{storage_baton}{$path}) {
 	$self->{storage}->close_file ($baton, $checksum, $pool);
@@ -250,8 +275,8 @@ sub node_conflict {
 sub cleanup_fh {
     my ($self, $fh) = @_;
     for (qw/base new local/) {
-	close $fh->{$_}[0]
-	    if $fh->{$_}[0];
+	close $fh->{$_}[FH]
+	    if $fh->{$_}[FH];
     }
 }
 
@@ -260,19 +285,20 @@ sub prepare_fh {
     # XXX: need to respect eol-style here?
     for my $name (qw/base new local/) {
 	my $entry = $fh->{$name};
-	next unless $entry->[0];
-	next if $entry->[1];
-	my $tmp = [tmpfile("$name-"), $entry->[2]];
-	slurp_fh ($entry->[0], $tmp->[0]);
-	close $entry->[0];
+	next unless $entry->[FH];
+	next if $entry->[FILENAME];
+	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
+	slurp_fh ($entry->[FH], $tmp->[FH]);
+	close $entry->[FH];
 	$entry = $fh->{$name} = $tmp;
-	seek $entry->[0], 0, 0;
+	seek $entry->[FH], 0, 0;
     }
 }
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
+
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
     $pool->default if $pool && $pool->can ('default');
@@ -284,13 +310,13 @@ sub apply_textdelta {
 	    $fh->{base} = [tmpfile('base-')];
 	    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
 	    slurp_fh ($self->{base_root}->file_contents ($path, $pool),
-		      $fh->{base}[0]);
-	    $base = $fh->{base}[0];
+		      $fh->{base}[FH]);
+	    $base = $fh->{base}[FH];
 	    seek $base, 0, 0;
 	}
 	# get new
 	$fh->{new} = [tmpfile('new-')];
-	return [SVN::TxDelta::apply ($base, $fh->{new}[0], undef, undef, $pool)];
+	return [SVN::TxDelta::apply ($base, $fh->{new}[FH], undef, undef, $pool)];
     }
     $self->{notify}->node_status ($path, 'U')
 	unless $self->{notify}->node_status ($path);
@@ -300,85 +326,89 @@ sub apply_textdelta {
 					      $checksum, $pool);
 }
 
+sub _merge_text_change {
+    my ($self, $fh, $label, $pool) = @_;
+    my $diff = SVN::Core::diff_file_diff3
+	(map {$fh->{$_}[FILENAME]} qw/base local new/);
+    my $mfh = tmpfile ('merged-');
+    my $marker = time.int(rand(100000));
+    SVN::Core::diff_file_output_merge
+	    ( $mfh, $diff,
+	      (map {
+		  $fh->{$_}[FILENAME]
+	      } qw/base local new/),
+	      "==== ORIGINAL VERSION $label $marker",
+	      ">>>> YOUR VERSION $label $marker",
+	      "<<<< $marker",
+	      "==== THEIR VERSION $label $marker",
+	      1, 0, $pool);
+
+    my $conflict = SVN::Core::diff_contains_conflicts ($diff);
+    if (my $resolve = $self->{resolve}) {
+	$resolve->run
+	    ( fh              => $fh,
+	      mfh             => $mfh,
+	      path            => $label,
+	      marker          => $marker,
+	      # Do not run resolve for diffs with no conflicts
+	      ($conflict ? (has_conflict => 1) : ()),
+            );
+	$conflict = 0 if $resolve->{merged};
+	my $mfn = $resolve->{merged} || $resolve->{conflict};
+	open $mfh, '<:raw', $mfn or die "Cannot read $mfn: $!" if $mfn;
+    }
+    seek $mfh, 0, 0; # for skipped
+    return ($conflict, $mfh);
+}
+
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
     $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
+    my $iod;
 
     no warnings 'uninitialized';
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
 	$self->prepare_fh ($fh);
 
-	if ($checksum eq $fh->{local}[2] ||
-	    # XXX: mark this as a change too?
-	    File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0) {
+	if ($checksum eq $fh->{local}[CHECKSUM] ||
+	    File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0) {
+	    ++$self->{changes};
 	    $self->{notify}->node_status ($path, 'g');
 	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
 	}
 
 	$self->ensure_open ($path);
-	$fh->{base}[1] = '/dev/null' if $info->{addmerge};
-	my $diff = SVN::Core::diff_file_diff3
-	    (map {$fh->{$_}[1]} qw/base local new/);
-	# XXX: why do in-memory here? use some tee'ed io to get md5 upon written.
-	open my $mfh, '+>', \ (my $merged);
-	SVN::Core::diff_file_output_merge
-		( $mfh, $diff,
-		  (map {
-		      $fh->{$_}[1]
-		  } qw/base local new/),
-		  "||||||| base",
-		  "<<<<<<< local",
-		  ">>>>>>> new",
-		  "=======",
-		  1, 0, $pool);
-
-	my $conflict = SVN::Core::diff_contains_conflicts ($diff);
-	my $mfn;
-        $self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
-	if ($conflict && $self->{external}) {
-	    $mfn = tmpfile ('merged-', OPEN => 0);
-	    system (split (' ', $self->{external}),
-		    "$path (YOURS)", $fh->{local}[1],
-		    "$path (BASE)", $fh->{base}[1],
-		    "$path (THEIRS)", $fh->{new}[1],
-		    $mfn,
-		    );
-	    die "$path not merged" unless -e $mfn;
-	    # XXX: eol layer here?
-	    open $mfh, '<:raw', $mfn or die $!;
-	    $checksum = md5 ($mfh);
-	    $conflict = 0;
-	}
-	else {
-	    $checksum = md5_hex ($merged);
-	}
+        if ($info->{addmerge}) {
+            $fh->{base}[FILENAME] = devnull;
+            open $fh->{base}[FH], '<', $fh->{base}[FILENAME];
+        }
+	my ($conflict, $mfh) = $self->_merge_text_change ($fh, $path, $pool);
+	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
+	$iod = IO::Digest->new ($mfh, 'MD5');
 
 	my $handle = $self->{storage}->
-	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
+	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
 			     $pool);
 
 	if ($handle && $#{$handle} >= 0) {
-	    seek $mfh, 0, 0;
-	    seek $fh->{local}[0], 0, 0;
 	    if ($self->{send_fulltext}) {
 		SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
 			if $handle && $#{$handle} >= 0;
 	    }
 	    else {
+		seek $fh->{local}[FH], 0, 0;
 		my $txstream = SVN::TxDelta::new
-		    ($fh->{local}[0], $mfh, $pool);
-		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool)
+		    ($fh->{local}[FH], $mfh, $pool);
+		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	    }
 	}
 
-	close $mfh;
-	unlink $mfn if $mfn;
-	undef $fh->{base}[1] if $info->{addmerge};
+	undef $fh->{base}[FILENAME] if $info->{addmerge};
 	$self->cleanup_fh ($fh);
 
 	$self->node_conflict ($path) if $conflict;
@@ -386,31 +416,36 @@ sub close_file {
     elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
 	# open but prop edit only, load local checksum
 	if (my $local = $self->{cb_localmod}->($path, $checksum, $pool)) {
-	    $checksum = $local->[2];
-	    close $local->[0];
+	    $checksum = $local->[CHECKSUM];
+	    close $local->[FH];
 	}
     }
 
-    $self->{notify}->flush ($path, 1);
-    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, $pool)
-	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
-
+    $checksum = $iod->hexdigest if $iod;
     $self->ensure_close ($path, $checksum, $pool);
 }
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
-    if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
-	$self->{notify}->flush ($path) ;
-	return undef;
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+	unless ($kind == $SVN::Node::dir) {
+	    $self->{notify}->flush ($path) ;
+	    return undef;
+	}
+	$self->{storage_baton}{$path} =
+	    $self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
+					      $self->{cb_rev}->($path), $arg[2]);
+	$self->{notify}->node_status ($path, 'G');
     }
-    $self->{added}{$path} = 1;
-    $self->{storage_baton}{$path} =
-	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
-					 @arg);
-    $self->{notify}->node_status ($path, 'A');
-    $self->{notify}->flush ($path, 1);
+    else {
+	$self->{added}{$path} = 1;
+	$self->{storage_baton}{$path} =
+	    $self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
+					     @arg);
+	$self->{notify}->node_status ($path, 'A');
+	$self->{notify}->flush ($path, 1);
+    }
     ++$self->{changes};
     return $path;
 }
@@ -440,7 +475,7 @@ sub close_directory {
     $self->{notify}->flush_dir ($path);
 
     my $baton = $self->{storage_baton}{$path};
-    $self->{cb_merged}->($self->{storage}, $baton, $pool)
+    $self->{cb_merged}->($self->{storage}, $baton, 'dir', $pool)
 	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
 
     $self->{storage}->close_directory ($baton, $pool);
@@ -549,27 +584,92 @@ sub delete_entry {
     ++$self->{changes};
 }
 
+sub _prop_eq {
+    my ($prop1, $prop2) = @_;
+    return 0 if defined $prop1 xor defined $prop2;
+    return defined $prop1 ? ($prop1 eq $prop2) : 1;
+}
+
+sub _merge_prop_content {
+    my ($self, $path, $propname, $prop, $pool) = @_;
+
+    if (my $resolver = $self->{prop_resolver}{$propname}) {
+	return $resolver->($path, $prop, $pool);
+    }
+
+    if (_prop_eq (@{$prop}{qw/base local/})) {
+	return ('U', $prop->{new});
+    }
+    elsif (_prop_eq (@{$prop}{qw/new local/})) {
+	return ('g', $prop->{local});
+    }
+
+    my $fh = { map {
+	my $tgt = defined $prop->{$_} ? \$prop->{$_} : devnull;
+	open my $f, '<', $tgt;
+	($_ => [$f, ref ($tgt) ? undef : $tgt]);
+    } qw/base new local/ };
+    $self->prepare_fh ($fh);
+
+    my ($conflict, $mfh) = $self->_merge_text_change ($fh, loc ("Property %1 of %2", $propname, $path), $pool);
+    if (!$conflict) {
+	local $/;
+	$mfh = <$mfh>;
+    }
+    return ($conflict ? 'C' : 'G', $mfh);
+}
+
+sub _merge_prop_change {
+    my $self = shift;
+    my $path = shift;
+    my $pool;
+    return unless defined $path;
+    return if $_[0] =~ m/^svm:/;
+    # special case the the root node that was actually been added
+    if ($self->{added}{$path} or
+	(!length ($path) and $self->{base_root}->is_revision_root
+	 and $self->{base_root}->revision_root_revision == 0)) {
+	$self->{notify}->prop_status ($path, 'U');
+	return 1;
+    }
+    my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
+    my $prop;
+    $prop->{new} = $_[1];
+    {
+	local $@;
+	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0]) };
+	$prop->{local} = $self->{cb_exist}->($path) ? $self->{cb_localprop}->($path, $_[0]) : undef;
+    }
+    # XXX: only known props should be auto-merged with default resolver
+    $pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
+    my ($status, $merged, $skipped) =
+	$self->_merge_prop_content ($path, $_[0], $prop, $pool);
+
+    return if $skipped;
+
+    if ($status eq 'C') {
+	$self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
+	++$self->{conflicts};
+    }
+    else {
+	$_[1] = $merged;
+    }
+    $self->{notify}->prop_status ($path, $status);
+    ++$self->{changes};
+    return 1;
+}
+
 sub change_file_prop {
     my ($self, $path, @arg) = @_;
-    return unless $path;
+    $self->_merge_prop_change ($path, @arg) or return;
     $self->ensure_open ($path);
     $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{notify}->prop_status ($path, 'U');
 }
 
 sub change_dir_prop {
     my ($self, $path, @arg) = @_;
-    # XXX: need the status-fu like files to track removed / renamed
-    # directories
-    # return unless $self->{info}{$path}{status};
-
-    # there should be a magic flag indicating if svk:merge prop should
-    # be dealt.
-    return if $arg[0] eq 'svk:merge';
-    return if $arg[0] =~ m/^svm:/;
+    $self->_merge_prop_change ($path, @arg) or return;
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{notify}->prop_status ($path, 'U');
-    ++$self->{changes};
 }
 
 sub close_edit {

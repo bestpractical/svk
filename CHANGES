@@ -1,3 +1,209 @@
+[Changes for 0.25 - 25 Oct, 2004]
+
+* Fix the mkdir sequence which causes first-time svk users fatal error.
+  [Autrijus]
+
+[Changes for 0.24 - 24 Oct, 2004]
+
+* Fix svk ps regression for svn 1.0.x.
+
+* Fallback to getpwuid($<) in case $ENV{HOME} or $ENV{USER} is not
+  set, as is the case in Fink.  Reported by Christian Schaffner.
+  [Autrijus]
+
+* Fix "svk pull -a" when the current directory is not a
+  checkout path. [Autrijus]
+
+* Fix checkout_delta cache on win32. [Autrijus]
+
+* Fix svk move copath destination with trailing slash.
+
+* Make svk move checks if the target already exists before doing
+  anything that might leave the checkout in an inconsistent state.
+
+* "svk cp //depotpath" should be parsed as "svk cp //depotpath .",
+  not "svk cp . //depotpath".  Reported by Jesse Vincent. [Autrijus]
+
+* New: svk admin rmcache.
+
+* The old commit message prompt is now split into two:
+ - Those with editable target list now shows:
+   "=== Targets to commit (you may delete items from it) ==="
+ - Those without editable targets now shows:
+   "=== Please enter your commit message above this line ==="
+ [Autrijus]
+ 
+* If SVN::Core version is too old, die with a meaningful message.
+  [Autrijus]
+
+[Changes for 0.23 - 18 Oct, 2004]
+
+* New: commit / smerge -P creats patch, and obsoletes unintuitive svk
+  patch create.
+
+* New: svk merge now supports -cN which means -r N-1:N.
+
+* New: svk mirror --recover. [Autrijus]
+
+* New: svk mkdir -p and svk copy -p to create intermediate directories.
+
+* New: svk pull DEPOTPATH. [Jesse Vincent]
+
+* Proper svn:eol-style support with the same semantics as svn. [Autrijus]
+
+* Proper upper/lower case normalization for Win32 filesystems. [Autrijus]
+
+* The SVK Help system, as SVK/Help/[lang/]/*.pod. [Autrijus]
+
+* The log produced by smerge -l no longer contains the duplicated logs
+  that were merged from the current target.
+
+* smerge -I and repeated smerge now works on checkout.
+
+* commit --import or import now treats obstructed items as replaced.
+
+* Don't skip explicit targets on svk add.
+
+* Correctly obtain the user name on non-unix platforms. [Autrijus]
+
+* Fix pool abuse in history tracing code. [Autrijus]
+
+* Fix smerge -IB.
+
+* svk patch delete now works.
+
+* svk delete now works within mirrored paths.
+
+* svk annotate now works on files with CR/CRLF line endings. [Autrijus]
+
+[Changes for 0.22 - 4 Oct, 2004]
+
+* Interactive merge support is now default. [Autrijus]
+
+* svk patch apply.
+
+* Modular external merge tool support, with the following supported:
+  AraxisMerge, Emacs, FileMerge, GtkDiff, Guiffy, KDiff3, Meld,
+  P4WinMerge, TkDiff, TortoiseMerge, XXDiff. [Autrijus]
+
+* Patch format changed, it's now unidiff with FreezeThaw-serialized
+  SVK::Patch. [Autrijus]
+
+* merge and smerge now supports -f and -t options to deduce copy
+  source as target. [Eric Lindvall]
+
+* Experimental depotpath auto-vivification from URL. [Autrijus]
+  This allows you to svk checkout URL and svk cp URL local-branch.
+
+* Experimental svk push and pull support.
+
+* sync and update now supports -s and -m to sync and/or merge from
+  branch source. [Autrijus]
+
+* revert now also marks nodes as resolved.
+
+* mirror, checkout and switch now all support --list, --detach and
+  --relocate. [Autrijus]
+
+* New aliases: cm => cmerge, depot => depotmap, sw => switch.
+
+* Implement "svk depot --add", "svk depot --delete". [Autrijus]
+
+* prop{get,set,edit,del} on revprops. [Autrijus]
+
+* Fix smerge -l that trims logs before another smerge in the other
+  direction.
+
+* Use svn's internal streamy diff library instead of
+  Text::Diff. [Autrijus]
+
+* svk import --to-checkout can import a directory and turn it to a
+  checkout path in-place . [Autrijus]
+
+* -s (--sign) is renamed to -S.
+
+* rename import --force to --from-checkout.
+
+* $Revision$ now means $Rev$, not $FileRev$, to agree with Subversion.
+
+* "svk mirror --list" and "svk sync --all" now operates on all depots,
+  if no arguments is given, instead of on //. [Autrijus]
+
+* svk admin to wrap svnadmin. [Autrijus]
+
+* svk cleanup --all. [Autrijus]
+
+* "svk diff PATH1 PATH2 PATH3 ..." works as svn does. [Autrijus]
+
+* We now use the self-contained File::Type instead of
+  File::MimeInfo. [Autrijus]
+
+[Changes for 0.21 - 20 Sep, 2004]
+
+* svk now runs natively on win32. [Autrijus]
+
+* New: svk ls -v. [Plasma]
+
+* New: svk propget (pg). [Autrijus]
+
+* Use D::H->store_fast. This makes checkout 5% faster.
+
+* Ignore checksum in Editor::XD when they are alrady checked by
+  Editor::Merge.  This makes update and merge to copath 25-30% faster.
+
+* SVNFSTYPE default to bdb with svn 1.0.x, otherwise fsfs.
+
+* Authentication prompts are now handled. [Autrijus]
+
+* For internal differ, Don't output diff for binary nodes. [Plasma]
+
+* Use IO::Digest to get the md5 while reading the merged file, instead
+  of reading it again.
+
+* Add support to use SVKMERGE on win32, in particular
+  p4winmrg, guiffy. [Autrijus]
+
+* Error messages are now printed to STDERR.
+
+* "svk sm --base" and "svk sm --baseless" now always do what
+  they are documented to do, overriding existing merge
+  tickets. [Autrijus]
+
+* Prepend depot name before svk mi --list. [Autrijus]
+
+* Fix delete_entry in diff editor for external diff tool.
+
+* Delay SVN::Mirror loading.  This makes startup time faster.
+
+* Make SVK::Editor::Delay also delays open_file and discard no-op opens.
+  This optimized the consumed bandwidth when committing/merging to
+  remote.
+
+* Fix merge ticket parsing and generation for paths mirrored with vcp.
+
+* Make describe work on current copath, otherwise fallback to '//'.
+  [Ruslan U. Zakirov]
+
+* Fix a scary but harmless message after committing copied nodes with
+  messages from editor.
+
+* Add expand_copy option to checkout_delta.  This allows diff works
+  correctly (in terms of what svn does) with copied checkout.
+
+* Allow checking out a file with differet name.
+
+* Eliminate repeating mimetype() calls. [Autrijus]
+
+* Fix tests for File::MimeInfo not installed.
+
+* full zh_tw and zh_cn translation. [Autrijus]
+
+* Transaction errors are now reported nicely.
+
+* Many checkout_delta cleanups.
+
+* Many documentation improvement. [Autrijus] 
+
 [Changes for 0.20 - 4 Sep, 2004]
 
 *** First Beta Release ***

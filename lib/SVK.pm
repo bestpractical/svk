@@ -1,12 +1,11 @@
 package SVK;
 use strict;
-our $VERSION = '0.20';
+our $VERSION = '0.25';
 use SVK::Command;
-our $AUTOLOAD;
 
 sub import {
     return unless ref ($_[0]);
-    $AUTOLOAD = 'import';
+    our $AUTOLOAD = 'import';
     goto &AUTOLOAD;
 }
 
@@ -18,17 +17,23 @@ sub new {
 }
 
 sub AUTOLOAD {
-    my $self = shift;
-    my $cmd = $AUTOLOAD;
+    my $cmd = our $AUTOLOAD;
     $cmd =~ s/^SVK:://;
     return if $cmd =~ /^[A-Z]+$/;
-    my ($buf, $output) = ('');
-    open $output, '>', \$buf if $self->{output};
-    eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
-    if ($output) {
-	close $output;
-	${$self->{output}} = $buf;
-    }
+
+    no strict 'refs';
+    no warnings 'redefine';
+    *$cmd = sub {
+        my $self = shift;
+        my ($buf, $output) = ('');
+        open $output, '>', \$buf if $self->{output};
+        eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
+        if ($output) {
+            close $output;
+            ${$self->{output}} = $buf;
+        }
+    };
+    goto &$cmd;
 }
 
 1;
@@ -42,11 +47,8 @@ SVK - A Distributed Version Control System
 =head1 SYNOPSIS
 
   use SVK;
-  use XD;
-
-  $xd = SVK::XD->new
-      (depotmap => { '' => '/path/to/repos'},
-       checkout => Data::Hierarchy->new);
+  use SVK::XD;
+  $xd = SVK::XD->new (depotmap => { '' => '/path/to/repos'});
 
   $svk = SVK->new (xd => $xd, output => \$output);
   # serialize the $xd object for future use.

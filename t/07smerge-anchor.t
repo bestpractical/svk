@@ -18,7 +18,7 @@ my ($scopath, $scorpath) = get_copath ('smerge-anchor-source');
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 
-$svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->mirror ('//m', uri($srepospath).($spath eq '/' ? '' : $spath));
 $svk->sync ('//m');
 
 $svk->copy ('-m', 'branch', '//m/A', '//l');

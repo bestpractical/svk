@@ -2,19 +2,22 @@ package SVK::Command::Propget;
 use strict;
 our $VERSION = $SVK::VERSION;
 
-use base qw( SVK::Command );
+use base qw( SVK::Command::Proplist );
+use constant opt_recursive => 0;
 use SVK::XD;
-use SVK::Util qw(get_buffer_from_editor);
 
 sub options {
-    ('strict'	=> 'strict',
+    ('strict' => 'strict',
+     'r|revision=i' => 'rev',
+     'revprop' => 'revprop',
     );
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 1;
-    return ($arg[0], map {$self->arg_co_maybe ($_)} @arg[1..$#arg]);
+    return if @arg < 1;
+    push @arg, '' if @arg == 1;
+    return ($arg[0], map { $self->_arg_revprop ($_) } @arg[1..$#arg]);
 }
 
 sub lock { $_[0]->lock_none }
@@ -23,8 +26,11 @@ sub run {
     my ($self, $pname, @targets) = @_;
 
     foreach my $target (@targets) {
+        my $proplist = $self->_proplist($target);
+        exists $proplist->{$pname} or next;
+
         print $target->path, ' - ' if @targets > 1 and !$self->{strict};
-        print $self->{xd}->do_proplist ($target)->{$pname};
+        print $proplist->{$pname};
         print "\n" if !$self->{strict};
     }
 
@@ -41,13 +47,16 @@ SVK::Command::Propget - Display a property on path
 
 =head1 SYNOPSIS
 
- propget PROPNAME [PATH|DEPOTPATH...]
+ propget PROPNAME [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 
- --strict:                  Do not print an extra newline at the end of the
-                            property values; when there are multiple paths
-                            involved, do not prefix path names before values.
+ -R [--recursive]       : descend recursively
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ --revprop              : operate on a revision property (use with -r)
+ --strict               : do not print an extra newline at the end of the
+                          property values; when there are multiple paths
+                          involved, do not prefix path names before values
 
 =head1 AUTHORS
 

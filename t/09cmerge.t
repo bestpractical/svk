@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 1;
+use Test::More tests => 5;
 use strict;
 require 't/tree.pl';
 
@@ -48,7 +48,7 @@ $svk->commit ('-m', 'and some prop', "$copath");
 $svk->copy ('-m', 'branch //work', '//trunk', '//work');
 $svk->update ($copath);
 
-`$^X -pi -e 's/is main/is local main/' $copath/work/test.pl`;
+replace_file("$copath/work/test.pl", 'is main' => 'is local main');
 
 $svk->commit ('-m', 'local mod', "$copath/work");
 
@@ -65,14 +65,14 @@ $svk->smerge ('-m', 'mergeback from //trunk', '//trunk', '//work');
 
 $svk->update ($copath);
 
-`$^X -pi -e 's|#!/usr/bin/|#!env |' $copath/trunk/test.pl`;
+replace_file("$copath/trunk/test.pl", '#!/usr/bin/' => '#!env ');
 
 $svk->commit ('-m', 'mod on trunk before branch to featre', "$copath/trunk");
 
 $svk->copy ('-m', 'branch //feature', '//trunk', '//feature');
 $svk->update ($copath);
 
-`$^X -pi -e 's/^#test/    test();/' $copath/work/test.pl`;
+replace_file("$copath/work/test.pl", '^#test' => '    test();');
 
 $svk->commit ('-m', 'call test() in main', "$copath/work");
 
@@ -84,7 +84,7 @@ sub newfeature {}
 
 $svk->commit ('-m', 'some new feature', "$copath/feature");
 
-`$^X -pi -e 's/newfeature/newnewfeature/' $copath/feature/test.pl`;
+replace_file("$copath/feature/test.pl", 'newfeature' => 'newnewfeature');
 
 $svk->commit ('-m', 'rename feature depends on c14', "$copath/feature");
 append_file ("$copath/feature/test.pl", q|
@@ -98,6 +98,22 @@ my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
 
 is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-c14:16', '//feature', '//work'],
+           ['Change spec 14:16 not recognized.']);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-c14,16', '-r15', '//feature', '//work'],
+	   ["Can't assign --revision and --change at the same time."]);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '//feature', '//work'],
+	   ['Revision required.']);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-r16', '//feature', '//work'],
+	   ['Revision spec must be N:M.']);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
                             '-c', '14,16', '//feature', '//work'],
 ['Committed revision 17.',
  'Merging with base /trunk 9: applying /feature 13:14.',
@@ -106,7 +122,7 @@ is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
  'G   test.pl',
  'Committed revision 18.',
  'Committed revision 19.',
- "Auto-merging (9, 18) /feature-merge-$$ to /work (base /trunk:9).",
+ "Auto-merging (0, 18) /feature-merge-$$ to /work (base /trunk:9).",
  'G   test.pl',
  "New merge ticket: $uuid:/feature-merge-$$:18",
  'Committed revision 20.']);

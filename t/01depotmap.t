@@ -1,52 +1,72 @@
 #!/usr/bin/perl -w
-use Test::More;
 use strict;
-require 't/tree.pl';
+use SVK::Util qw( catdir tmpdir );
+use File::Spec;
+use Test::More tests => 17;
+BEGIN { require 't/tree.pl' };
 
-jam("n\n") ? plan tests => 3 : plan skip_all => 'no tty or tiocsti';
-
-our ($output, @TOCLEAN);
-
+our ($answer, $output, @TOCLEAN);
 my $xd = SVK::XD->new (depotmap => {},
 		       checkout => Data::Hierarchy->new);
 my $svk = SVK->new (xd => $xd, output => \$output);
 push @TOCLEAN, [$xd, $svk];
 
-use File::Temp;
-sub jam {
-    local $SIG{TTOU} = "IGNORE"; # "Stopped for tty output"
-    my $TIOCSTI = 0x80017472;
-    local *TTY;
-    open(TTY, '<', '/dev/tty') or return undef;
-    for (split(//, $_[0])) {
-        ioctl(TTY, $TIOCSTI, $_) or return undef;
-    }
-    close(TTY);
-    return 1;
-}
+my $repospath = catdir(tmpdir(), "svk-$$-".int(rand(1000)));
+my $quoted = quotemeta($repospath);
 
-my $tmp = File::Temp->new;
-
-print $tmp (<< 'TMP');
-#!/bin/sh
-sleep 1
-echo $1 $2
-cat > $2 << EOF
-'': '$1'
+set_editor(<< "TMP");
+\$_ = shift;
+open _, ">\$_" or die $!;
+print _ << "EOF";
+'': '$quoted/'
 
 ===edit the above depot map===
 
 EOF
 
 TMP
-$tmp->close;
-chmod 0755, $tmp->filename;
-my $repospath = "/tmp/svk-$$";
-$ENV{SVN_EDITOR} = "$tmp $repospath";
+
+$answer = 'n';
 $svk->depotmap;
-ok (!-e $repospath);
-jam("y\n");
+ok (!-e $repospath, '... did not initialize a repospath');
+
+$answer = 'y';
 $svk->depotmap ('--init');
 ok (-d $repospath);
 is_output_like ($svk, 'depotmap', ['--list'],
-	       qr"//.*$repospath", 'depotpath - list');
+	       qr"//.*\Q$repospath\E", 'depotpath - list');
+is_output ($svk, 'depotmap', ['--detach', '//'],
+	   ["Depot '' detached."], 'depotpath - detach');
+is_output ($svk, 'depotmap', ['--detach', '//'],
+	   ["Depot '' does not exist in the depot map."], 'depotpath - detach again');
+is_output ($svk, 'depotmap', ['//', $repospath],
+	   ['New depot map saved.'], 'depotpath - add');
+is_output ($svk, 'depotmap', ['--detach', $repospath],
+	   ["Depot '' detached."], 'depotpath - detach with repospath');
+is_output_like ($svk, 'depotmap', ['--detach', $repospath],
+           qr/Depot '.+' does not exist in the depot map/,
+           'depotpath - detach with repospath again');
+is_output ($svk, 'depotmap', ['//', $repospath],
+	   ['New depot map saved.'], 'depotpath - add again');
+is_output ($svk, 'depotmap', ['//', $repospath],
+	   ["Depot '' already exists; use 'svk depotmap --detach' to remove it first."], 'depotpath - add again');
+
+$answer = 'n';
+is_output ($svk, 'depotmap', ['--relocate', '//', "$repospath.new"],
+	   [__("Depot '' relocated to '$repospath.new'.")], 'depotpath - relocate');
+ok (!-e "$repospath.new", '... did not create a new repospath');
+is_output ($svk, 'depotmap', ['--relocate', '//', $repospath],
+	   [__("Depot '' relocated to '$repospath'.")], 'depotpath - relocate back');
+
+is_output ($svk, 'depotmap', ['--relocate', $repospath => "$repospath.new"],
+	   [__("Depot '' relocated to '$repospath.new'.")], 'depotpath - relocate from path');
+ok (-e "$repospath.new", '... did create a new repospath');
+is_output ($svk, 'depotmap', ['--relocate', "$repospath.new" => $repospath],
+	   [__("Depot '' relocated to '$repospath'.")], 'depotpath - relocate back');
+is_output ($svk, 'depotmap', ['--relocate', $repospath => catdir($repospath, 'db')], [
+            __("Cannot rename $repospath to $repospath/db; please move it manually."),
+            __("Depot '' relocated to '$repospath/db'."),
+           ], 'depotpath - relocate impossibly');
+
+rmtree [$repospath];
+rmtree ["$repospath.new"];

@@ -3,6 +3,7 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
 use Date::Parse qw(str2time);
@@ -12,8 +13,7 @@ sub options {
     ('r|revision=i'  => 'rev',
      'v|verbose'	   => 'verbose',
      'f|full-path'      => 'fullpath',
-     'd|depth=i'      => 'depth',
-     'R|recursive'   => 'recursive');
+     'd|depth=i'      => 'depth');
 }
 
 sub parse_arg {
@@ -33,7 +33,7 @@ sub run {
 sub _do_list {
     my ($self, $level, $target) = @_;
     my $pool = SVN::Pool->new_default;
-    $target->depotpath ($self->{rev});
+    $target->as_depotpath ($self->{rev});
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
        print loc("Path %1 is not a versioned directory\n", $target->{path})
@@ -53,7 +53,11 @@ sub _do_list {
 
             my $svn_date =
                 $fs->revision_prop ($rev, 'svn:date');
-            # Additional fields for verbose: revision author size datetime
+
+	    # The author name may be undef
+            no warnings 'uninitialized';
+
+	    # Additional fields for verbose: revision author size datetime
             printf "%7ld %-8.8s %10s %12s ", $rev,
                 $fs->revision_prop ($rev, 'svn:author'),
                 ($isdir) ? "" : $root->file_length ("$target->{path}/$_"),
@@ -85,16 +89,15 @@ SVK::Command::List - List entries in a directory from depot
 
 =head1 SYNOPSIS
 
- list [DEPOTPATH|PATH...]
+ list [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 
- -r [--revision] REV:    revision
- -R [--recursive]:       recursive
- -v [--verbose]:         Needs description
- -d [--depth] LEVEL:     Recurse LEVEL levels.  Only useful with -R
- -f [--full-path]:       Show the full path of each entry, rather than
-                         an indented hierarchy
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -R [--recursive]       : descend recursively
+ -d [--depth] arg       : recurse at most ARG levels deep; use with -R
+ -f [--full-path]       : show pathname for each entry, instead of a tree
+ -v [--verbose]         : print extra information
 
 =head1 AUTHORS
 

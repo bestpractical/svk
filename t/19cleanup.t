@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 11;
+use Test::More tests => 13;
 use strict;
 require 't/tree.pl';
 
@@ -35,5 +35,13 @@ is_output_like ($svk, 'update', [$copath],
 chdir ($copath);
 is_output_like ($svk, 'cleanup', [], qr'Cleaned up stalled lock');
 is ($xd->{checkout}->get ($corpath)->{lock}, undef,  'unlocked');
+
 eval { $xd->giant_lock };
 ok ($@ =~ qr'another svk', 'command not allowed when giant locked');
+
+$xd->{checkout}->store ($corpath, {lock => $$+1});
+$xd->store;
+$xd->load;
+is_output_like ($svk, 'cleanup', ['-a'], qr'Cleaned up all stalled lock');
+is_output ($svk, 'update', [],
+	   ["Syncing //(/) in $corpath to 0."]);

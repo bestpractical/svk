@@ -1,28 +1,32 @@
 #!/usr/bin/perl -w
 use strict;
-require 't/tree.pl';
 use Test::More;
+use File::Copy qw( copy );
+BEGIN { require 't/tree.pl' };
 our $output;
 
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 21;
+plan tests => 28;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
 my ($xd2, $svk2) = build_test();
 
+is_output_like ($svk, 'patch', [], qr'SYNOPSIS');
+is_output_like ($svk, 'patch', ['blah'], qr'SYNOPSIS');
+is_output ($svk, 'patch', ['view'], ['Filename required.']);
+
 $svk->mkdir ('-m', 'init', '//trunk');
 my $tree = create_basic_tree ($xd, '//trunk');
 my ($repospath, $path, $repos) = $xd->find_repos ('//trunk', 1);
 my ($repospath2, undef, $repos2) = $xd2->find_repos ('//trunk', 1);
-
-$svk2->mirror ('//trunk', "file://${repospath}".($path eq '/' ? '' : $path));
+my $uri = uri($repospath);
+$svk2->mirror ('//trunk', $uri.($path eq '/' ? '' : $path));
 $svk2->sync ('//trunk');
 $svk2->copy ('-m', 'local branch', '//trunk', '//local');
 
 my ($copath, $corpath) = get_copath ('patch');
-
 $svk2->checkout ('//local', $copath);
 
 append_file ("$copath/B/fe", "fnord\n");
@@ -30,18 +34,22 @@ $svk2->commit ('-m', "modified on local", $copath);
 
 my ($uuid, $uuid2) = map {$_->fs->get_uuid} ($repos, $repos2);
 
-is_output ($svk2, 'patch', ['create', 'test-1', '//local', '//trunk'],
-	   ['U   B/fe',
+is_output ($svk2, 'smerge', ['-lm', '', '-P', '//local', '//local', '//trunk',],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Patching locally against mirror source $uri/trunk.",
+	    'Illegal patch name: //local.']);
+is_output ($svk2, 'smerge', ['-lm', '', '-P', 'test-1', '//local', '//trunk'],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Patching locally against mirror source $uri/trunk.",
+	    'U   B/fe',
 	    'Patch test-1 created.']);
 
 my $log1 = ['Log:',
-	    ' ----------------------------------------------------------------------',
 	    qr'.*',
 	    ' local branch',
-	    ' ----------------------------------------------------------------------',
 	    qr'.*',
-	    ' modified on local',
-	    ' ----------------------------------------------------------------------'];
+	    ' modified on local'];
+#	    ''];
 my $patch1 = ['',
 	      '=== B/fe',
 	      '==================================================================',
@@ -52,14 +60,32 @@ my $patch1 = ['',
 	      '+fnord'];
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:3 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch1]);
 
-ok (-e "$xd2->{svkpath}/patch/test-1.svkpatch");
+is_output ($svk2, 'smerge', ['-lm', '', '-P', '-', '//local', '//trunk'],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Patching locally against mirror source $uri/trunk.",
+	    'U   B/fe',
+	    '==== Patch <-> level 1',
+	    "Source: $uuid2:/local:6",
+	    "Target: $uuid:/trunk:3",
+            "        ($uri/trunk)",
+	    @$log1,
+            (map { join('-', split(/test-1/, $_)) } @$patch1),
+            '',
+            '==== BEGIN SVK PATCH BLOCK ====',
+            qr'Version: svk .*',
+            '',
+            \'...',
+            ]);
+
+ok (-e "$xd2->{svkpath}/patch/test-1.patch");
 mkdir ("$xd->{svkpath}/patch");
-link ("$xd2->{svkpath}/patch/test-1.svkpatch", "$xd->{svkpath}/patch/test-1.svkpatch");
+copy ("$xd2->{svkpath}/patch/test-1.patch" => "$xd->{svkpath}/patch/test-1.patch");
 is_output ($svk, 'patch', ['list'], ['test-1@1: ']);
 
 my ($scopath, $scorpath) = get_copath ('patch1');
@@ -72,7 +98,7 @@ is_output ($svk, 'patch', [qw/test test-1/], ['G   B/fe', 'Empty merge.'],
 	   'patch still applicable from server.');
 
 is_output ($svk, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6",
 	    "Target: $uuid:/trunk:3 [local] [updated]",
 	    @$log1, @$patch1]);
@@ -80,16 +106,16 @@ is_output ($svk, 'patch', ['view', 'test-1'],
 $svk2->sync ('-a');
 
 is_output ($svk2, 'patch', [qw/test test-1/],
-	   ["Merging back to SVN::Mirror source file://$repospath/trunk.",
-	    'Checking against mirrored directory locally.',
+	   ["Checking locally against mirror source $uri/trunk.",
 	    'G   B/fe',
 	    'Empty merge.'],
 	   'patch still applicable from original.');
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:3 [mirrored] [updated]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch1]);
 
 is_output ($svk2, 'patch', ['update', 'test-1'],
@@ -109,30 +135,44 @@ my $patch2 = [split ("\n", << 'END_OF_DIFF')];
 END_OF_DIFF
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch2]);
+
+copy ("$xd2->{svkpath}/patch/test-1.patch" => "$xd->{svkpath}/patch/test-1.patch");
 
 is_output ($svk, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.'],
 	   'patch applies cleanly on server.');
 
 is_output ($svk2, 'patch', [qw/test test-1/],
-	   ["Merging back to SVN::Mirror source file://$repospath/trunk.",
-	    'Checking against mirrored directory locally.',
+	   ["Checking locally against mirror source $uri/trunk.",
 	    'U   B/fe',
 	    'Empty merge.'],
 	   'patch applies cleanly from local.');
 
 is_output ($svk, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6",
 	    "Target: $uuid:/trunk:4 [local]",
 	    @$log1, @$patch2]);
 
-overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
-$svk->commit ('-m', "modified on trunk", $scopath);
+is_output ($svk, 'patch', ['apply', 'test-1', $scopath, '--', '-C'],
+	   [__("U   $scopath/B/fe"),
+	    "New merge ticket: $uuid2:/local:6"]);
+$svk2->cp ('-m', 'branch', '//trunk', '//patch-branch');
+is_output ($svk2, 'patch', ['apply', 'test-1', '//patch-branch', '--', '-C'],
+	   ['U   B/fe',
+	    'Empty merge.']);
 
+overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
+
+$svk->ci ('-Pfrom-ci-P', '-mTest', $scopath);
+# check me
+$svk->patch ('view', 'from-ci-P');
+
+$svk->commit ('-m', "modified on trunk", $scopath);
 is_output ($svk, 'patch', [qw/test test-1/],
 	   ['C   B/fe', 'Empty merge.', '1 conflict found.',
 	    'Please do a merge to resolve conflicts and regen the patch.'],
@@ -140,21 +180,22 @@ is_output ($svk, 'patch', [qw/test test-1/],
 overwrite_file ("$copath/B/fe", "file fe added later\nbzzzzz\nfnord\n");
 $svk2->commit ('-m', "catch up on local", $copath);
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 1',
+	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local] [updated]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1, @$patch2]);
 is_output ($svk2, 'patch', [qw/regen test-1/],
 	   ['G   B/fe']);
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 2',
-	    "Source: $uuid2:/local:8 [local]",
+	   ['==== Patch <test-1> level 2',
+	    "Source: $uuid2:/local:9 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
+            "        ($uri/trunk)",
 	    @$log1,
 	    qr'.*',
 	    ' catch up on local',
-	    ' ----------------------------------------------------------------------',
 	    '',
 	    '=== B/fe',
 	    '==================================================================',
@@ -168,13 +209,13 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 
 $svk2->sync ('-a');
 is_output ($svk2, 'patch', ['view', 'test-1'],
-	   ['=== Patch <test-1> level 2',
-	    "Source: $uuid2:/local:8 [local]",
+	   ['==== Patch <test-1> level 2',
+	    "Source: $uuid2:/local:9 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored] [updated]",
+            "        ($uri/trunk)",
 	    @$log1,
 	    qr'.*',
 	    ' catch up on local',
-	    ' ----------------------------------------------------------------------',
 	    '',
 	    '=== B/fe',
 	    '==================================================================',

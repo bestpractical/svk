@@ -27,8 +27,16 @@ sub new {
 }
 
 sub local {
-    my ($self, $xd, $depot) = @_;
-    my ($repospath, undef, $repos) = $xd->find_repos ("/$depot/", 1);
+    my $self = shift;
+    my ($repospath, $repos, $depot, $xd);
+    if ($#_) {
+	($xd, $depot) = @_;
+	($repospath, undef, $repos) = $xd->find_repos ("/$depot/", 1);
+    }
+    else {
+	$repos = $_[0];
+	$repospath = $repos->path;
+    }
 
     my ($path, $rev) = $self->{uuid} ne $repos->fs->get_uuid ?
 	find_local_mirror ($repos, @{$self}{qw/uuid path rev/}) :
@@ -41,8 +49,13 @@ sub local {
 	  repospath => $repospath,
 	  path => $path,
 	  revision => $rev,
-	  depotpath => "/$depot$path"
+	  depotpath => $depot ? "/$depot$path" : undef,
 	);
+}
+
+sub same_resource {
+    my ($self, $other) = @_;
+    return ($self->{uuid} eq $other->{uuid} && $self->{path} eq $other->{path});
 }
 
 =head1 AUTHORS

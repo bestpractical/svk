@@ -109,4 +109,9 @@ sub conflict {
     $self->{notify}->node_status ($path, 'C');
 }
 
+sub obstruct {
+    my ($self, $path) = @_;
+    $self->{notify}->node_status ($path, '~');
+}
+
 1;
