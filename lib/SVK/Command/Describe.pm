@@ -15,10 +15,9 @@ sub parse_arg {
     return if $#arg < 0;
 
     local $@;
-    unless ($arg[1]) {
-	$arg[1] = eval { $self->arg_copath ('') } or
-	    $arg[1] = $self->arg_depotpath ("//");
-    }
+    $arg[1] = eval { $self->arg_co_maybe ($arg[1] || '')->new (path => '/') }
+	|| $self->arg_depotpath ("//");
+    $arg[1]->depotpath;
     return @arg;
 }
 
