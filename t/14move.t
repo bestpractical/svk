@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 8;
+use Test::More tests => 11;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -56,3 +56,12 @@ $svk->revert ("$copath/B/fe", "$copath/Q-new/fe");
 
 is_output ($svk, 'mv', ["$copath/B/fe", "$copath/Q-new/be"],
 	   [__"Path $copath/Q-new/be already exists."]);
+chdir ("$copath/B");
+is_output ($svk, 'mv', ['fe', 'fe.bz'],
+	   ['D   fe',
+	    'A   fe.bz',
+	   ]);
+overwrite_file ('new_add', "new file\n");
+is_output ($svk, 'add', ['new_add'], ['A   new_add']);
+is_output ($svk, 'mv', ['new_add', 'new_add.bz'],
+	   [__"$corpath/B/new_add is modified."]);

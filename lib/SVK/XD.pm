@@ -607,9 +607,10 @@ sub do_delete {
 	     push @deleted, $cpath;
 	 }, @paths) if @paths;
 
+    # need to use undef to avoid the $SEP at the beginning on empty report.
+    my $report = length ($arg{report}) ? $arg{report} : undef;
     for (@deleted) {
-	my $rpath = abs2rel($_, $arg{copath} => $arg{report});
-	print "D   $rpath\n" unless $arg{quiet};
+	print "D   ".abs2rel($_, $arg{copath} => $report) unless $arg{quiet};
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
 
