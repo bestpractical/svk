@@ -24,7 +24,7 @@ __DATA__
 
 =head1 NAME
 
-SVK::Command::Smerge - Automatic merge all changes between branches
+SVK::Command::Smerge - Automatically merge all changes between branches
 
 =head1 SYNOPSIS
 
