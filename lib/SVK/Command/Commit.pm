@@ -286,7 +286,7 @@ sub run {
     };
 
     die loc("unexpected error: commit to mirrored path but no mirror object")
-	if $is_mirrored && !$cb{mirror};
+	if $is_mirrored && !$self->{direct} && !$cb{mirror};
 
     ${$cb{callback}} = $committed;
 

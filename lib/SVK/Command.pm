@@ -177,6 +177,7 @@ sub arg_copath {
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     return { repos => $repos,
 	     repospath => $repospath,
+	     report => $arg,
 	     copath => Cwd::abs_path ($arg),
 	     path => $path,
 	     cinfo => $cinfo,

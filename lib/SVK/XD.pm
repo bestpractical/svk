@@ -1148,7 +1148,9 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	$self->{xd}->do_add (report => "$self->{report}/$path",
+	my $report = $path;
+	$report =~ s/^$self->{target}/$self->{report}/;
+	$self->{xd}->do_add (report => $report,
 			     copath => $copath, quiet => $self->{quiet});
     }
     $self->{checkout}->store ($copath, {revision => $self->{revision}})
@@ -1162,7 +1164,9 @@ sub add_directory {
     my $copath = $path;
     $self->{get_copath}($copath);
     mkdir ($copath) unless $self->{check_only};
-    $self->{xd}->do_add (report => "$self->{report}/$path",
+    my $report = $path;
+    $report =~ s/^$self->{target}/$self->{report}/;
+    $self->{xd}->do_add (report => $report,
 			 copath => $copath, quiet => $self->{quiet})
 	if !$self->{update} && !$self->{check_only};
     return $path;

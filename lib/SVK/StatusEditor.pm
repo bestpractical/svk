@@ -56,7 +56,7 @@ sub close_file {
 
 sub absent_file {
     my ($self, $path) = @_;
-    print "!  $self->{rpath}$path\n";
+    print "!   $self->{rpath}$path\n";
 }
 
 sub delete_entry {

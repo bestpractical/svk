@@ -16,13 +16,14 @@ sub parse_arg {
     $arg[1] =~ s|/$|| if $arg[1];
     $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
 
-    return ($depotpath, Cwd::abs_path ($arg[1]));
+    return ($depotpath, $arg[1]);
 }
 
 sub lock { $_[0]->{xd}->lock ($_[2]) }
 
 sub run {
-    my ($self, $target, $copath) = @_;
+    my ($self, $target, $report) = @_;
+    my $copath = Cwd::abs_path ($report);
 
     die loc("checkout path %1 already exists", $copath) if -e $copath;
 
@@ -41,6 +42,7 @@ sub run {
 					       });
 
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
+    $target->{report} = $report;
     $target->{copath} = $copath;
 
     return $self->SUPER::run ($target);
