@@ -216,10 +216,16 @@ sub mimetype_is_text {
 }
 
 sub abs2rel {
-    my ($child, $parent) = @_;
-    $child = File::Spec->abs2rel($child, $parent);
-    $child =~ s{\\}{/}g;
-    return $child;
+    my ($child, $parent, $new_parent) = @_;
+    my $rel = File::Spec->abs2rel($child, $parent);
+    if (index($rel, '..') > -1) {
+        $rel = $child;
+    }
+    elsif (defined $new_parent) {
+        $rel = "$new_parent/$rel";
+    }
+    $rel =~ s{\Q$SEP\E}{/}go if $SEP ne '/';
+    return $rel;
 }
 
 sub catfile {

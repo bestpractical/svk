@@ -6,7 +6,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
-use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile);
+use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile abs2rel);
 use SVN::Simple::Edit;
 
 my $target_prompt = '=== below are targets to be committed ===';
@@ -249,22 +249,22 @@ sub run {
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
-	    my $dpath = $copath;
-	    $dpath =~ s|^\Q$target->{copath}\E|$target->{path}|;
+	    my $dpath = abs2rel($copath, $target->{copath}, $target->{path});
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
 	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop);
 	    next unless $layer || ($eol ne ':raw' && $eol ne '');
 
 	    my $fh = SVK::XD::get_fh ($xdroot, '<', $dpath, $copath, 0, $layer, $eol);
-	    my $fname = "$copath.svk.old";
-	    rename $copath, $fname or die $!;
-	    open my ($newfh), ">$eol", $copath or die $!;
+	    my $fname = "$copath.svk.new";
+	    open my ($newfh), ">$eol", $fname or die $!;
 	    $layer->via ($newfh) if $layer;
 	    slurp_fh ($fh, $newfh);
 	    chmod ((stat ($fh))[2], $copath);
 	    close $fh;
-	    unlink $fname;
+	    unlink $copath or die $!;
+	    close $newfh;
+	    rename $fname => $copath or die $!;
 	}
     };
 

@@ -289,7 +289,7 @@ sub find_repos_from_co {
 	$copath = '';
     }
     else {
-	$copath = '/'.abs2rel($copath, $coroot);
+	$copath = abs2rel($copath, $coroot, '');
     }
 
     return ($repospath, $path eq '/' ? $copath || '/' : $path.$copath,
@@ -386,8 +386,7 @@ sub create_xd_root {
 	    $root = $txn->root();
 	    next if $_ eq $copath;
 	}
-	$_ = abs2rel($_, $copath);
-	my $path = "$arg{path}/$_";
+	my $path = abs2rel($_, $copath, $arg{path});
 	$root->delete ($path)
 	    if $root->check_path ($path) != $SVN::Node::none;
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
