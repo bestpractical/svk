@@ -87,7 +87,7 @@ sub _do_edit {
         print loc("New depot map saved.\n");
         $self->{xd}{depotmap} = $new;
     }
-    $self->create_depots;
+    $self->{xd}->create_depots;
     return;
 }
 
@@ -100,7 +100,7 @@ sub _do_add {
     $self->{xd}{depotmap}{$depot} = $path;
 
     print loc("New depot map saved.\n");
-    $self->create_depots;
+    $self->{xd}->create_depots;
 }
 
 sub _do_relocate {
