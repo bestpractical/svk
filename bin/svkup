@@ -3,7 +3,7 @@ use strict;
 use SVN::Core;
 use Storable qw/retrieve_fd/;
 use IO::Socket::INET;
-use PerlIO::gzip;
+#use PerlIO::gzip;
 use SVK::XD;
 use Data::Hierarchy;
 use SVK::Editor::Local;
@@ -73,8 +73,10 @@ sub main {
     $sock->autoflush (1);
 
     my ($read, $write) = (0, 0);
-    eval { require IO::Statistics; 1} and $iostat++;
-    IO::Statistics->count (\$read, \$write, $sock);
+    if (eval { require IO::Statistics; 1 }) {
+        $iostat++;
+        IO::Statistics->count (\$read, \$write, $sock);
+    }
 
     my $t = time;
     init ($sock);

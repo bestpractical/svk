@@ -6,7 +6,7 @@ use SVN::Core;
 use SVK::XD;
 use SVK::Editor::Network;
 use SVK::Editor::Delay;
-use PerlIO::gzip;
+#use PerlIO::gzip;
 use SVK::Target;
 
 use vars qw($VERSION @ISA);
