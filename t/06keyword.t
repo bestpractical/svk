@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 18;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -57,6 +57,7 @@ overwrite_file_raw ("$copath/le/dos", "dos\n");
 overwrite_file_raw ("$copath/le/unix", "unix\n");
 overwrite_file_raw ("$copath/le/native", "native\n");
 overwrite_file_raw ("$copath/le/na", "na\n");
+overwrite_file_raw ("$copath/le/mixed", "mixed\r\nendings\n");
 $svk->add ("$copath/le");
 $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
 $svk->ps ('svn:eol-style', 'native', "$copath/le/native");
@@ -66,9 +67,18 @@ $svk->commit ('-m', 'test line ending', $copath);
 is_file_content_raw ("$copath/le/dos", "dos\r\n");
 is_file_content_raw ("$copath/le/unix", "unix\n");
 is_file_content_raw ("$copath/le/na", "na\n");
-if ($^O eq 'MSWin32') {
+if ($^O =~ /^MSWin|cygwin|os2|dos/) {
     is_file_content_raw ("$copath/le/native", "native\r\n");
 }
 else {
     is_file_content_raw ("$copath/le/native", "native\n");
 }
+
+$SIG{__DIE__} = sub {
+    $_[0] =~ /Mixed newlines/ or return;
+    ok(1, 'mixed line endings should raise exceptions');
+    exit;
+};
+
+$svk->ps ('svn:eol-style', 'CR', "$copath/le/mixed");
+$svk->commit ('-m', 'test line ending', $copath);
