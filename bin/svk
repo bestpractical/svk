@@ -74,7 +74,7 @@ my $svkpath = "$ENV{HOME}/.svk";
     $SIG{INT} = sub {
 	die loc("Interrupted.\n");
     };
-    my $msg = SVK::Command->invoke ($xd, $cmd, @ARGV);
+    my $msg = SVK::Command->invoke ($xd, $cmd, undef, @ARGV);
     print $msg if $msg;
     $xd->store ();
 }
