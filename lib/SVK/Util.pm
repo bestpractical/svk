@@ -5,7 +5,7 @@ our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(
     IS_WIN32 DEFAULT_EDITOR TEXT_MODE HAS_SYMLINK HAS_SVN_MIRROR $EOL $SEP
 
-    get_prompt get_buffer_from_editor
+    get_prompt get_buffer_from_editor edit_file
 
     get_encoding get_encoder from_native to_native
 
@@ -175,6 +175,25 @@ sub get_prompt { {
     return $answer;
 } }
 
+=head3 edit_file ($file_name)
+
+Launch editor to edit a file.
+
+=cut
+
+sub edit_file {
+    my ($file) = @_;
+    my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
+	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
+			: DEFAULT_EDITOR; # fall back to something
+    my @editor = split (/ /, $editor);
+
+    print loc("Waiting for editor...\n");
+
+    # XXX: check $?
+    system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
+}
+
 =head3 get_buffer_from_editor ($what, $sep, $content, $filename, $anchor, $targets_ref)
 
 XXX Undocumented
@@ -195,10 +214,6 @@ sub get_buffer_from_editor {
 	$content = <$fh>;
     }
 
-    my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
-	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
-			: DEFAULT_EDITOR; # fall back to something
-    my @editor = split (/ /, $editor);
     my $time = time;
 
     while (1) {
@@ -206,10 +221,7 @@ sub get_buffer_from_editor {
         my $md5 = md5_fh($fh);
         close $fh;
 
-	print loc("Waiting for editor...\n");
-
-	# XXX: check $?
-	system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
+	edit_file ($file);
 
         open $fh, '<', $file or die $!;
         last if ($md5 ne md5_fh($fh));
