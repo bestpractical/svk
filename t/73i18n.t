@@ -8,7 +8,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 
-plan tests => 25;
+plan tests => 31;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -61,7 +61,13 @@ is_output ($svk, 'add', ["$copath/$msgutf8-dir/newfile2"],
 is_output ($svk, 'st', [$copath],
 	   [__"?   $copath/$msgutf8-dir/newfile",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
-
+is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
+	   []);
+is_output ($svk, 'ls', ["//A"],
+	   ['Q/', 'be', "$msgutf8-dir/"]);
+is_output ($svk, 'ls', ["//A/$msg-dir"],
+	   ["Can't decode path as utf8, try --encoding."]);
+#### BEGIN big5 enivonrment
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => '//'],
 		qr/\Q$msg\E/);
@@ -102,7 +108,14 @@ is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	    'Committed revision 7.']);
 is_output ($svk, 'st', ["$copath/$msg-dir"],
 	   [], 'clean checkout after commit');
+is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
+	   ["Can't decode path as big5-eten, try --encoding."]);
+is_output ($svk, 'ls', ["//A"],
+	   ['Q/', 'be', "$msg-dir/"]);
+is_output ($svk, 'ls', ["//A/$msg-dir"],
+	   []);
 
+#### BEGIN latin-1 enivonrment
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.ISO8859-1');
 rmtree [$copath];
 TODO: {
