@@ -1,17 +1,34 @@
-README
+bin/svk
 CHANGES
-MANIFEST
-Makefile.PL
+inc/ExtUtils/AutoInstall.pm
+inc/Module/Install.pm
+inc/Module/Install/AutoInstall.pm
+inc/Module/Install/Base.pm
+inc/Module/Install/Can.pm
+inc/Module/Install/Fetch.pm
+inc/Module/Install/Include.pm
+inc/Module/Install/Makefile.pm
+inc/Module/Install/Metadata.pm
+inc/Module/Install/Scripts.pm
+inc/Module/Install/Win32.pm
+inc/Module/Install/WriteAll.pm
+lib/SVN/CombineEditor.pm
+lib/SVN/CommitStatusEditor.pm
 lib/SVN/DeleteEditor.pm
 lib/SVN/DiffEditor.pm
 lib/SVN/MergeEditor.pm
 lib/SVN/RevertEditor.pm
 lib/SVN/StatusEditor.pm
-lib/SVN/CombineEditor.pm
-lib/SVN/CommitStatusEditor.pm
 lib/SVN/XD.pm
-bin/svk
-t/tree.pl
+lib/SVN/XD.pm.orig
+lib/SVN/XD/Root.pm
+lib/SVN/XD/Root/Fs.pm
+lib/SVN/XD/Root/SVNFs.pm
+Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
+README
+SIGNATURE
 t/1use.t
 t/2basic.t
 t/3import.t
@@ -21,4 +38,4 @@ t/6keyword.t
 t/7smerge.t
 t/8multimerge.t
 t/9cherrypicking.t
-META.yml                                 Module meta-data (added by MakeMaker)
+t/tree.t

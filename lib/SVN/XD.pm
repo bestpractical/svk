@@ -921,18 +921,16 @@ sub do_commit {
 	    my ($action, $tpath) = @$_;
 	    my $cpath = $tpath;
 	    $tpath =~ s|^$coanchor||;
-	    my $via = get_keyword_layer ($root, "$anchor/$tpath");
-	    next unless $via;
+	    my $layer = get_keyword_layer ($root, "$anchor/$tpath");
+	    next unless $layer;
 
-	    my $fh;
-	    open $fh, '<', $cpath
-		if $_->[0] eq 'A';
-	    $fh ||= get_fh ($xdroot, '<', "$anchor/$tpath", $cpath);
+	    my $fh = get_fh ($xdroot, '<', "$anchor/$tpath", $cpath, $layer);
 	    # XXX: beware of collision
 	    # XXX: fix permission etc also
 	    my $fname = "$cpath.svk.old";
 	    rename $cpath, $fname;
-	    open my ($newfh), ">$via", $cpath;
+	    open my ($newfh), ">", $cpath;
+	    $layer->via ($newfh) if $layer;
 	    local $/ = \16384;
 	    while (<$fh>) {
 		print $newfh $_;
@@ -990,12 +988,12 @@ sub do_commit {
 sub get_keyword_layer {
     my ($root, $path) = @_;
     my $pool = SVN::Pool->new_default;
-    return '' if $root->check_path ($path) == $SVN::Node::none;
+    return if $root->check_path ($path) == $SVN::Node::none;
     my $k = eval { $root->node_prop ($path, 'svn:keywords') };
     use Carp;
     confess "can't get keyword layer for $path: $@" if $@;
 
-    return '' unless $k;
+    return undef unless $k;
 
     # XXX: should these respect svm related stuff
     my %kmap = ( Date =>
@@ -1023,33 +1021,57 @@ sub get_keyword_layer {
 			     $fs->revision_prop ($rev, 'svn:author'), ''
 			   );
 		   },
+		 URL =>
+		 sub { my ($root, $path) = @_;
+		       return $path;
+		   },
+		 FileRev =>
+		 sub { my ($root, $path) = @_;
+		       my $rev = 1;
+		       my $fs = $root->fs;
+		       my $hist = $fs->revision_root ($fs->youngest_rev)->node_history ($path);
+		       $rev++ while ($hist = $hist->prev (1));
+		       "#$rev";
+		   },
 	       );
     my %kalias = qw(
 	LastChangedDate	    Date
 	LastChangedRevision Rev
 	LastChangedBy	    Author
 	HeadURL		    URL
+
+	Change		    Rev
+	File		    URL
+	DateTime	    Date
+	Revision	    FileRev
     );
 
     $kmap{$_} = $kmap{$kalias{$_}} for keys %kalias;
 
-    my @key = grep {exists $kmap{$_}} (split /\W+/,$k);
-    return '' unless $#key >= 0 ;
+    my %key = map { ($_ => 1) } grep {exists $kmap{$_}} (split /\W+/,$k);
+    return unless %key;
+    while (my ($k, $v) = each %kalias) {
+	$key{$k}++ if $key{$v};
+	$key{$v}++ if $key{$k};
+    }
 
-    my $keyword = '('.join('|', @key).')';
+    my $keyword = '('.join('|', sort keys %key).')';
 
-    my $p = PerlIO::via::dynamic->new
+#    use Carp qw/cluck/;
+#    cluck "======> has keyword";
+
+    return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).' $'/eg },
+         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).' $'/eg },
 	 untranslate =>
-	 sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/\$$1\$/g});
-    return $p->via;
+	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g});
 }
 
 sub get_fh {
-    my ($root, $mode, $path, $fname) = @_;
-    my $via = get_keyword_layer ($root, $path);
-    open my ($fh), "$mode$via", $fname;
+    my ($root, $mode, $path, $fname, $layer) = @_;
+    $layer ||= get_keyword_layer ($root, $path);
+    open my ($fh), $mode, $fname;
+    $layer->via ($fh) if $layer;
     return $fh;
 }
 
@@ -1187,6 +1209,7 @@ sub apply_textdelta {
     my $fh = SVN::XD::get_fh ($self->{newroot}, '>',
 			      "$self->{anchor}/$path", $copath)
 	or warn "can't open $path";
+    $self->{tmpfh}{$path} = $fh;
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
 				 $fh, undef, undef, $pool)];
 }
