@@ -95,14 +95,15 @@ sub get_editor {
     my ($base_rev, $m, $mpath);
     if (!$self->{direct} and HAS_SVN_MIRROR and
 	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
-	print loc("Merging back to SVN::Mirror source %1.\n", $m->{source});
 	if ($self->{patch}) {
-	    $base_rev = $m->{fromrev};
+	    print loc("Patching locally against mirror source %1.\n", $m->{source});
+	    $base_rev = $m->{fromrev} if $self->{patch};
 	}
 	elsif ($self->{check_only}) {
-	    print loc("Checking against mirrored directory locally.\n");
+	    print loc("Checking locally against mirror source %1.\n", $m->{source});
 	}
 	else {
+	    print loc("Merging back to mirror source %1.\n", $m->{source});
 	    $m->{config} = $self->{svnconfig};
 	    $m->{revprop} = ['svk:signature'];
 	    ($base_rev, $editor) = $m->get_merge_back_editor
@@ -306,7 +307,7 @@ sub run {
 
     my $is_mirrored = $self->under_mirror ($target) && !$self->{direct};
     print loc("Commit into mirrored path: merging back directly.\n")
-	if $is_mirrored;
+	if $is_mirrored and !$self->{patch};
 
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.

@@ -124,7 +124,7 @@ is_copied_from ("//V/me-dcopied", '/V/me', 3);
 
 is_output ($svk, 'cp', ['-m', 'copy for remote', '//foo-remote/me', '//foo-remote/me-rcopied'],
 	   [
-	    "Merging back to SVN::Mirror source $uri.",
+	    "Merging back to mirror source $uri.",
 	    'Merge back committed as revision 3.',
 	    "Syncing $uri",
 	    'Retrieving log information from 3 to 3',

@@ -36,11 +36,11 @@ my ($uuid, $uuid2) = map {$_->fs->get_uuid} ($repos, $repos2);
 
 is_output ($svk2, 'smerge', ['-lm', '', '-P', '//local', '//local', '//trunk',],
 	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
-	    "Merging back to SVN::Mirror source $uri/trunk.",
+	    "Patching locally against mirror source $uri/trunk.",
 	    'Illegal patch name: //local.']);
 is_output ($svk2, 'smerge', ['-lm', '', '-P', 'test-1', '//local', '//trunk'],
 	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
-	    "Merging back to SVN::Mirror source $uri/trunk.",
+	    "Patching locally against mirror source $uri/trunk.",
 	    'U   B/fe',
 	    'Patch test-1 created.']);
 
@@ -89,8 +89,7 @@ is_output ($svk, 'patch', ['view', 'test-1'],
 $svk2->sync ('-a');
 
 is_output ($svk2, 'patch', [qw/test test-1/],
-	   ["Merging back to SVN::Mirror source $uri/trunk.",
-	    'Checking against mirrored directory locally.',
+	   ["Checking locally against mirror source $uri/trunk.",
 	    'G   B/fe',
 	    'Empty merge.'],
 	   'patch still applicable from original.');
@@ -131,8 +130,7 @@ is_output ($svk, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.'],
 	   'patch applies cleanly on server.');
 
 is_output ($svk2, 'patch', [qw/test test-1/],
-	   ["Merging back to SVN::Mirror source $uri/trunk.",
-	    'Checking against mirrored directory locally.',
+	   ["Checking locally against mirror source $uri/trunk.",
 	    'U   B/fe',
 	    'Empty merge.'],
 	   'patch applies cleanly from local.');

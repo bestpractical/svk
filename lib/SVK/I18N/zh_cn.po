@@ -639,8 +639,12 @@ msgid "Changed paths:\n"
 msgstr "已修改路径：\n"
 
 #: lib/SVK/Command/Commit.pm:98
-msgid "Checking against mirrored directory locally.\n"
-msgstr "正在检查本地端的映像目录。\n"
+msgid "Patching locally against mirror source %1.\n"
+msgstr "正在本地端补缀映像来源 %1。\n"
+
+#: lib/SVK/Command/Commit.pm:98
+msgid "Checking locally against mirror source %1.\n"
+msgstr "正在本地端检查映像来源 %1。\n"
 
 #. ($path, $target)
 #: lib/SVK/Command/Checkout.pm:113
@@ -893,8 +897,8 @@ msgstr "合并后的档案"
 
 #. ($m->{source})
 #: lib/SVK/Command/Commit.pm:96
-msgid "Merging back to SVN::Mirror source %1.\n"
-msgstr "合并至 SVN::Mirror 来源 %1。\n"
+msgid "Merging back to mirror source %1.\n"
+msgstr "正在合并至映像来源 %1。\n"
 
 #. (@{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev)
 #: lib/SVK/Command/Cmerge.pm:75
@@ -1126,12 +1130,12 @@ msgstr "U  更新"
 
 #: lib/SVK/Command.pm:185
 msgid "Unknown options.\n"
-msgstr "末知的选项。\n"
+msgstr "未知的选项。\n"
 
 #. ($_)
 #: lib/SVK/XD.pm:1082
 msgid "Unknown target: %1.\n"
-msgstr "末知的目标：%1。\n"
+msgstr "未知的目标：%1。\n"
 
 #. ($rev)
 #: lib/SVK/Command/Proplist.pm:52

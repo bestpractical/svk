@@ -45,10 +45,10 @@ chdir ($corpath_default);
 is_output ($svk, "push", [], [
         "Auto-merging (0, 5) /l to /m (base /m:3).",
         "===> Auto-merging (0, 4) /l to /m (base /m:3).",
-        "Merging back to SVN::Mirror source $uri/A.",
+        "Merging back to mirror source $uri/A.",
         "Empty merge.",
         "===> Auto-merging (0, 5) /l to /m (base /m:3).",
-        "Merging back to SVN::Mirror source $uri/A.",
+        "Merging back to mirror source $uri/A.",
         "D   Q/qu",
         "A   T",
         "A   T/xd",

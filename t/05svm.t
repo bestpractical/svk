@@ -49,7 +49,7 @@ $svk->status ($copath);
 
 is_output ($svk, 'commit', ['-m', 'commit to mirrored path', $copath],
         ['Commit into mirrored path: merging back directly.',
-        "Merging back to SVN::Mirror source $uri/A.",
+        "Merging back to mirror source $uri/A.",
         'Merge back committed as revision 24.',
         "Syncing $uri/A",
         'Retrieving log information from 24 to 24',
@@ -58,7 +58,7 @@ mkdir ("$copath/N");
 $svk->add ("$copath/N");
 is_output ($svk, 'commit', ['-m', 'commit to deep mirrored path', $copath],
         ['Commit into mirrored path: merging back directly.',
-        "Merging back to SVN::Mirror source $uri/A.",
+        "Merging back to mirror source $uri/A.",
         'Merge back committed as revision 25.',
         "Syncing $uri/A",
         'Retrieving log information from 25 to 25',
@@ -101,7 +101,7 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
 
 is_output($svk, 'smerge', ['-m', '', '--from', $copath2], [
         "Auto-merging (0, 14) /m-99-copy to /m-99 (base /m-99:13).",
-        "Merging back to SVN::Mirror source $uri/A-99.",
+        "Merging back to mirror source $uri/A-99.",
         "Empty merge.",
         ]);
 
@@ -166,7 +166,7 @@ is_output($svk, 'update', ['--sync', '--merge', $copath4], [
 
 is_output($svk, 'smerge', ['-m', '', '--sync', '--from', $copath4], [
         "Auto-merging (0, 20) /m-99-copy-twice to /m-99 (base /m-99:16).",
-        "Merging back to SVN::Mirror source $uri/A-99.",
+        "Merging back to mirror source $uri/A-99.",
         "Empty merge.",
         ]);
 
