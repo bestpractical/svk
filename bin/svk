@@ -110,7 +110,7 @@ sub _init {
 	mkdir "$ENV{HOME}/.svk";
     }
 
-    $info ||= { depotmap => {'' => "$ENV{HOME}/svn/svm" },
+    $info ||= { depotmap => {'' => "$ENV{HOME}/.svk/local" },
 	        checkout => Data::Hierarchy->new(),
 	      };
 }
@@ -651,21 +651,26 @@ sub log {
 	}
     }
 
-    print ('-' x 70);
-    print "\n";
+    do_log ($repos, $path, $fromrev, $torev, $verbose, $cross);
+}
+
+sub do_log {
+    my ($repos, $path, $fromrev, $torev, $verbose, $cross, $output) = @_;
+    $output ||= \*STDOUT;
+    print $output ('-' x 70);
+    print $output "\n";
     $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
 		     sub { my ($paths, $rev, $author, $date, $message) = @_;
 			   no warnings 'uninitialized';
-			   print "rev $rev:  $author | $date\n";
+			   print $output "r$rev:  $author | $date\n";
 			   if ($paths) {
-			       print "Changed paths:\n";
+			       print $output "Changed paths:\n";
 			       for (keys %$paths) {
-				   print '  '.$paths->{$_}->action." $_\n";
+				   print $output
+				       '  '.$paths->{$_}->action." $_\n";
 			       }
 			   }
-			   print "\n$message\n";
-			   print ('-' x 70);
-			   print "\n";
+			   print $output "\n$message\n".('-' x 70). "\n";
 		       });
 
 }
@@ -852,6 +857,7 @@ depotpath. Use -a to automatically calculate the revisions to merge
     -m message:        commit message
     -C [--check-only]: don't perform actual writes
     -a [--auto]:       automatically find merge points
+    -l [--log]:        brings the logs of merged revs to the message buffer
 
 =cut
 
@@ -966,12 +972,19 @@ sub get_new_ticket {
     return join ("\n", map {"$_:$minfo->{$_}"} sort keys %$minfo);
 }
 
+sub log_for_merge {
+    my $buf = IO::String->new (\my $tmp);
+    do_log (@_, 0, 0, $buf);
+    return $tmp;
+}
+
 sub merge {
     local @ARGV = @_;
-    my ($check_only, $message, $auto, $no_ticket, $revspec);
+    my ($check_only, $message, $auto, $log, $no_ticket, $revspec);
     die unless GetOptions ("C|check-only"	=> \$check_only,
 			   "m|message=s"	=> \$message,
 			   "a|auto"		=> \$auto,
+			   "l|log"		=> \$log,
 			   "no-ticket"		=> \$no_ticket,
 			   "r|revision=s"	=> \$revspec);
 
@@ -984,32 +997,9 @@ sub merge {
     }
     my ($repospath, $path, $repos) = find_repos ($src, 1);
     my ($drepospath, $dpath, $editor, $base_rev, $copath);
+    my $dest_repos;
     if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
-	unless (defined $message || $check_only) {
-	    $message = get_buffer_from_editor
-		('log message', $target_prompt,
-		 "\n$target_prompt\n", "svk-commitXXXXX");
-	}
-	if ($svn_mirror) {
-	    my $m = SVN::Mirror->new(target_path => $dpath,
-				     target => $repospath,
-				     pool => SVN::Pool->new, auth => $auth,
-				     get_source => 1);
-	    eval { $m->init };
-	    unless ($@) {
-		print "Merge back to SVN::Mirror source $m->{source}.\n";
-		if ($check_only) {
-		    print "Check against mirrored directory locally.\n";
-		}
-		else {
-		    ($base_rev, $editor) = $m->get_merge_back_editor
-			($message,
-			 sub { print "Merge back committed as revision $_[0].\n" }
-			);
-		    $base_rev = $m->{fromrev};
-		}
-	    }
-	}
+	$dest_repos = 1;
     }
     else {
 	undef $@;
@@ -1034,6 +1024,38 @@ sub merge {
 				get_new_ticket ($root, $dpath, $uuid,
 						$path, $rev));
 		       } unless $no_ticket || $check_only;
+    }
+
+    unless (defined $message || $check_only) {
+	$message = get_buffer_from_editor
+	    ('log message', $target_prompt,
+	     ($log ?
+	      log_for_merge ($repos, $path,
+			     (find_merge_history ($repos, $path, $dpath) ||
+			      (find_branch_point ($repos, $src, $dst))[0])+1,
+			     $torev) : '').
+	     "\n$target_prompt\n", "svk-commitXXXXX");
+    }
+
+    if ($dest_repos && $svn_mirror) {
+	my $m = SVN::Mirror->new(target_path => $dpath,
+				 target => $repospath,
+				 pool => SVN::Pool->new, auth => $auth,
+				 get_source => 1);
+	eval { $m->init };
+	unless ($@) {
+	    print "Merge back to SVN::Mirror source $m->{source}.\n";
+	    if ($check_only) {
+		print "Check against mirrored directory locally.\n";
+	    }
+	    else {
+		($base_rev, $editor) = $m->get_merge_back_editor
+		    ($message,
+		     sub { print "Merge back committed as revision $_[0].\n" }
+		    );
+		$base_rev = $m->{fromrev};
+	    }
+	}
     }
 
     # support incremental merging (merge one revision by one)
