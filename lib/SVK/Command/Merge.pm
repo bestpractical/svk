@@ -77,10 +77,13 @@ sub lock {
 sub get_commit_message {
     my ($self, $log) = @_;
     return if $self->{check_only} || $self->{incremental};
-    $self->{message} = defined $self->{message} ?
-	join ("\n", grep {length $_} ($self->{message}, $log))
-	    : $self->SUPER::get_commit_message ($log);
-    $self->decode_commit_message;
+    if (defined $self->{message}) {
+	$self->{message} = join ("\n", grep {length $_} ($self->{message}, $log));
+	$self->decode_commit_message;
+    }
+    else {
+	$self->SUPER::get_commit_message ($log);
+    }
 }
 
 sub run {
