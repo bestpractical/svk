@@ -128,7 +128,8 @@ sub do_update {
 
 #    $editor = SVN::Delta::Editor->new(_debug=>1),
 
-    SVN::Repos::dir_delta ($xdroot, $anchor, $target || '',
+    $target ||= '' if $SVN::Core::VERSION gt '0.36.0';
+    SVN::Repos::dir_delta ($xdroot, $anchor, $target,,
 			   $fs->revision_root ($arg{rev}), $arg{path},
 			   $editor, undef,
 			   1, 1, 0, 1);
@@ -694,8 +695,9 @@ sub do_merge {
 	  %cb,
 	);
 
+    $target ||= '' if $SVN::Core::VERSION gt '0.36.0';
     SVN::Repos::dir_delta ($fs->revision_root ($arg{fromrev}),
-			   $base_anchor, $base_target || '',
+			   $base_anchor, $base_target,
 			   $fs->revision_root ($arg{torev}), $arg{path},
 			   $editor, undef,
 			   1, 1, 0, 1);
