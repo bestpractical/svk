@@ -154,8 +154,8 @@ is_output ($svk, 'update', ['co-root-a'],
 	    "Checkout directory gone. Use 'checkout //V/A co-root-a' instead."]);
 
 SKIP: {
-skip 'no chmod', 1
-    unless chmod (0555, '.');
+skip 'no working chmod', 1 if $^O eq 'MSWin32';
+chmod (0555, '.');
 is_output ($svk, 'checkout', ['//V/A', 'co-root-a'],
 	   ["Syncing //V/A(/V/A) in ".__"$corpath/co-root-a to 6.",
 	    "Can't create directory co-root-a for checkout: Permission denied."]);
