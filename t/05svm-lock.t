@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
+plan skip_all => "Doesn't work on win32" if $^O eq 'MSWin32';
 plan_svm tests => 1;
 
 our ($output, $answer);
