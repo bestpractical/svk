@@ -70,8 +70,9 @@ sub close_file {
 		    $self->{info}{$path}{new}->filename);
 	}
 	else {
-	    output_diff ($rpath, @label, @showpath,
-			 $base, \$self->{info}{$path}{new});
+	    my @content = ($base, \$self->{info}{$path}{new});
+	    @content = reverse @content if $self->{reverse};
+	    output_diff ($rpath, @label, @showpath, @content);
 	}
     }
 
@@ -135,6 +136,15 @@ sub close_directory {
 
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
+    # generate delta between empty root and oldroot of $path, then reverse in output
+    $self->{xd}->depot_delta
+	( oldroot => $self->{oldtarget}{repos}->fs->revision_root (0),
+	  oldpath => [$self->{oldtarget}{path}, $path],
+	  newroot => $self->{oldroot},
+	  newpath => $self->{oldtarget}{path} eq '/' ? "/$path" : "$self->{oldtarget}{path}/$path",
+	  editor => __PACKAGE__->new (%$self, reverse => 1),
+	);
+
 }
 
 sub change_file_prop {

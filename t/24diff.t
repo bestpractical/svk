@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 11;
+use Test::More tests => 12;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -64,7 +64,13 @@ my $r12output = ['=== A/foo',
 		 '--- A/baz  (revision 1)',
 		 '+++ A/baz  (revision 2)',
 		 '@@ -0,0 +1 @@',
-		 '+foobar'];
+		 '+foobar',
+		 '=== A/nor',
+		 '==================================================================',
+		 '--- A/nor  (revision 1)',
+		 '+++ A/nor  (revision 2)',
+		 '@@ -1 +0,0 @@',
+		 '-foobar'];
 is_output ($svk, 'diff', ['-r1:2'], $r12output, 'diff - rN:M copath');
 is_output ($svk, 'diff', ['-r1:2', '//'], $r12output, 'diff - rN:M depotdir');
 is_output ($svk, 'diff', ['-r1:2', '//A/foo'],
@@ -98,7 +104,14 @@ is_output ($svk, 'diff', ['//A', '//B'],
 	    '--- nor   (/A)   (revision 3)',
 	    '+++ nor   (/B)   (revision 3)',
 	    '@@ -0,0 +1 @@',
-	    '+foobar'], 'diff - depotdir depotdir');
+	    '+foobar',
+	    '=== baz',
+	    '==================================================================',
+	    '--- baz   (/A)   (revision 3)',
+	    '+++ baz   (/B)   (revision 3)',
+	    '@@ -1 +0,0 @@',
+	    '-foobar'], 'diff - depotdir depotdir');
+
 is_output ($svk, 'diff', ['-r1'],
 	   ['=== A/bar',
 	    '==================================================================',
@@ -181,4 +194,32 @@ is_output ($svk, 'diff', [],
 	    ' fnord',
 	    '+mixed']);
 
-# XXX: test with delete_entry and prop changes and also external
+$svk->revert ('-R', 'A');
+unlink ('A/coonly');
+$svk->update ;
+$svk->rm ('A');
+
+is_output ($svk, 'diff', [],
+	   ['=== A/foo',
+	    '==================================================================',
+	    '--- A/foo  (revision 3)',
+	    '+++ A/foo  (local)',
+	    '@@ -1,3 +0,0 @@',
+	    '-foobar',
+	    '-newline',
+	    '-fnord',
+	    '=== A/bar',
+	    '==================================================================',
+	    '--- A/bar  (revision 3)',
+	    '+++ A/bar  (local)',
+	    '@@ -1,2 +0,0 @@',
+	    '-foobar',
+	    '-newline',
+	    '=== A/baz',
+	    '==================================================================',
+	    '--- A/baz  (revision 3)',
+	    '+++ A/baz  (local)',
+	    '@@ -1 +0,0 @@',
+	    '-foobar'], 'recursive delete_entry');
+
+# XXX: test with prop changes and also external

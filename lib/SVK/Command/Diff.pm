@@ -86,6 +86,9 @@ sub run {
 	  $target->{path} ne $target2->{path} ?
 	  ( lpath  => $target->{path},
 	    rpath  => $target2->{path} ) : (),
+	  # XXX: for delete_entry, clean up these
+	  xd => $self->{xd}, newtarget => $target2,
+	  oldtarget => $target, oldroot => $oldroot,
 	);
 
     if ($target2->{copath}) {

@@ -1,4 +1,4 @@
-[Changes for 0.18 - ]
+[Changes for 0.18 - 4 Aug, 2004]
 
 ***WANRING*** 
 
@@ -40,6 +40,8 @@ svk mirror --upgrade // (and other depots if you have).
 * Fix checkout path reporting and anchoring problem.
 
 * Implement propdel on checkout copy.
+
+* svk diff now shows deleted files recursvely.
 
 [Changes for 0.17 - 17 Jul, 2004]
 
