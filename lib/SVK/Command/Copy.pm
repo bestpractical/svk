@@ -97,8 +97,8 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
-    # XXX: this anchorification is bad on checkout root
-    $target->anchorify;
+    # Use condensed to do proper anchorification.
+    $target = $self->arg_condensed ($target->copath);
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),

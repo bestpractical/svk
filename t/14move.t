@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 11;
+use Test::More tests => 13;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -65,3 +65,10 @@ overwrite_file ('new_add', "new file\n");
 is_output ($svk, 'add', ['new_add'], ['A   new_add']);
 is_output ($svk, 'mv', ['new_add', 'new_add.bz'],
 	   [__"$corpath/B/new_add is modified."]);
+mkdir ('new_dir');
+overwrite_file ('new_dir/new_add', "new file\n");
+is_output ($svk, 'add', ['new_dir'],
+	   [__('A   new_dir'),
+	    __('A   new_dir/new_add')]);
+is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'],
+	   [__"$corpath/B/new_dir is modified."]);
