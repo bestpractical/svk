@@ -60,7 +60,7 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 
 ok (-e "$xd2->{svkpath}/patch/test-1.svkpatch");
 mkdir ("$xd->{svkpath}/patch");
-copy ("$xd2->{svkpath}/patch/test-1.svkpatch", "$xd->{svkpath}/patch/test-1.svkpatch");
+copy ("$xd2->{svkpath}/patch/test-1.svkpatch" => "$xd->{svkpath}/patch/test-1.svkpatch");
 is_output ($svk, 'patch', ['list'], ['test-1@1: ']);
 
 my ($scopath, $scorpath) = get_copath ('patch1');
@@ -96,6 +96,8 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 is_output ($svk2, 'patch', ['update', 'test-1'],
 	   ['G   B/fe']);
 
+copy ("$xd->{svkpath}/patch/test-1.svkpatch" => "$xd2->{svkpath}/patch/test-1.svkpatch");
+
 my $patch2 = [split ("\n", << 'END_OF_DIFF')];
 
 === B/fe
@@ -114,6 +116,8 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
 	    @$log1, @$patch2]);
+
+copy ("$xd2->{svkpath}/patch/test-1.svkpatch" => "$xd->{svkpath}/patch/test-1.svkpatch");
 
 is_output ($svk, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.'],
 	   'patch applies cleanly on server.');
