@@ -79,9 +79,9 @@ is_file_content_raw ("$copath/le/unix", "unix$LF");
 is_file_content_raw ("$copath/le/mac", "mac$CR");
 is_file_content_raw ("$copath/le/native", "native$Native");
 
-$svk->pd ('svn:eol-style', "$copath/le/native");
+$svk->ps ('svn:eol-style', 'CRLF', "$copath/le/native");
 $svk->commit ('-m', 'test line ending', $copath);
-is_file_content_raw ("$copath/le/native", "native$LF");
+is_file_content_raw ("$copath/le/native", "native$CRLF");
 
 TODO: {
     local $TODO = 'Sane eol handling';
