@@ -9,6 +9,7 @@ use File::Spec;
 use File::Path;
 use YAML;
 use Algorithm::Merge;
+use File::Temp qw/:mktemp/;
 
 our $VERSION = '0.01';
 
@@ -122,7 +123,7 @@ sub do_update {
 			   $editor,
 			   1, 1, 0, 1);
 
-    SVN::Fs::close_txn ($txn) if $txn;
+    $txn->close if $txn;
 }
 
 sub do_add {
@@ -223,15 +224,17 @@ sub do_propset {
 	if $entry->{schedule} eq 'delete';
     %values = %{$entry->{newprop}}
 	if exists $entry->{schedule};
-    $info->{checkout}->store_single ($arg{copath}, { schedule =>
-					      $entry->{schedule} || 'prop',
-					      newprop => {%values,
-							  $arg{propname} =>
-							  $arg{propvalue},
-							 }});
+    $info->{checkout}->store_single ($arg{copath},
+				     {%{$info->{checkout}->get_single ($arg{copath})},
+				      schedule =>
+				      $entry->{schedule} || 'prop',
+				      newprop => {%values,
+						  $arg{propname} =>
+						  $arg{propvalue},
+						 }});
     print " M $arg{copath}\n" unless $arg{quiet};
 
-    SVN::Fs::close_txn ($txn) if $txn;
+    $txn->close if $txn;
 }
 
 sub do_revert {
@@ -357,7 +360,7 @@ sub checkout_crawler {
 		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot);
 	     }
 	  }, $arg{copath});
-    SVN::Fs::close_txn ($txn) if $txn;
+    $txn->close if $txn;
 }
 
 sub do_merge {
@@ -468,7 +471,7 @@ sub do_merge {
 			   $editor,
 			   1, 1, 0, 1);
 
-    SVN::Fs::close_txn ($txn) if $txn;
+    $txn->close if $txn;
 }
 
 use SVN::Simple::Edit;
@@ -504,27 +507,17 @@ sub do_commit {
     my ($info, %arg) = @_;
 
     die "commit without targets?" if $#{$arg{targets}} < 0;
-    my $committed = sub {
-	my ($rev) = @_;
-	for (reverse @{$arg{targets}}) {
-	    my $result_rev = $_->[0] eq 'D' ? undef : $rev;
-	    my $store = ($_[0] eq 'D' || -d $_->[1]) ?
-		'store_recursively' : 'store';
-	    $info->{checkout}->$store ($_->[1], { schedule => undef,
-						  newprop => undef,
-						  revision => $result_rev,
-						});
-	}
-	print "Committed revision $rev.\n";
-    };
 
     print "commit message from $arg{author}:\n$arg{message}\n";
     my ($anchor, $target) = $arg{path};
     my ($coanchor, $copath) = $arg{copath};
 
-    unless (-d $coanchor ) {
+    unless (-d $coanchor) {
 	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
 	chop $anchor if length ($anchor) > 1;
+    }
+    elsif (!$anchor) {
+	$coanchor .= '/';
     }
 
     (undef,$coanchor,$copath) = File::Spec->splitpath ($arg{copath})
@@ -535,6 +528,46 @@ sub do_commit {
     print "$_->[1]\n" for @{$arg{targets}};
 
     my ($txn, $xdroot) = create_xd_root ($info, %arg);
+
+    my $committed = sub {
+	my ($rev) = @_;
+	for (reverse @{$arg{targets}}) {
+	    my $result_rev = $_->[0] eq 'D' ? undef : $rev;
+	    my $store = ($_[0] eq 'D' || -d $_->[1]) ?
+		'store_recursively' : 'store';
+	    $info->{checkout}->$store ($_->[1], { schedule => undef,
+						  newprop => undef,
+						  revision => $result_rev,
+						});
+
+	}
+	my $root = $arg{repos}->fs->revision_root ($rev);
+	for (@{$arg{targets}}) {
+	    next if $_->[0] eq 'D';
+	    my ($action, $tpath) = @$_;
+	    my $cpath = $tpath;
+	    $tpath =~ s|^$coanchor||;
+	    my $via = get_keyword_layer ($root, "$anchor/$tpath");
+	    next unless $via;
+
+	    my $fh;
+	    open $fh, '<', $cpath
+		if $_->[0] eq 'A';
+	    $fh ||= get_fh ($xdroot, '<', "$anchor/$tpath", $cpath);
+	    # XXX: beware of collision
+	    # XXX: fix permission etc also
+	    my $fname = "$cpath.svk.old";
+	    rename $cpath, $fname;
+	    open my ($newfh), ">$via", $cpath;
+	    local $/ = \16384;
+	    while (<$fh>) {
+		print $newfh $_;
+	    }
+	    close $fh;
+	    unlink $fname;
+	}
+	print "Committed revision $rev.\n";
+    };
 
     my $edit = get_commit_editor ($xdroot, $committed, $anchor, %arg);
 
@@ -566,16 +599,18 @@ sub do_commit {
 		$edit->change_file_prop ($tpath, $key, $value);
 	    }
 	}
-	open my ($fh), '<', $cpath if $action eq 'A';
+	next if $action eq 'P';
+	my $fh;
+	open $fh, '<', $cpath
+	    if $action eq 'A';
 	$fh ||= get_fh ($xdroot, '<', "$anchor/$tpath", $cpath);
 	my $md5 = SVN::XD::MergeEditor::md5 ($fh);
 	seek $fh, 0, 0;
 	$edit->modify_file ($tpath, $fh, $md5)
 	    unless $action eq 'P';
-	seek $fh, 0, 0;
     }
     $edit->close_edit();
-    SVN::Fs::close_txn ($txn) if $txn;
+    $txn->close if $txn;
 }
 
 sub get_keyword_layer {
@@ -584,6 +619,7 @@ sub get_keyword_layer {
 
     return '' unless $k;
 
+    # XXX: should these respect svm related stuff
     my %kmap = ( LastChangedDate =>
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
@@ -745,6 +781,8 @@ sub close_file {
     }
     $self->{checkout}->store ($copath, {revision => $self->{revision}})
 	if $self->{update};
+    chmod 0755, $copath
+	if $self->{exe}{$path};
 }
 
 sub add_directory {
@@ -784,6 +822,9 @@ sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
+    # XXX: do executable unset also.
+    $self->{exe}{$path}++
+	if $name eq 'svn:executable' && defined $value;
     SVN::XD::do_propset ($self->{info},
 			 quiet => 1,
 			 copath => $copath,
@@ -889,13 +930,27 @@ sub close_file {
 	    $new = <$new>;
 	    $local = <$local>;
 	}
-	# XXX: use traverse so we just output the result instead of
-	# buffering it
-	$info->{status}[0] = 'G';
-	my $merged = Algorithm::Merge::merge
+	my @mergearg =
 	    ([split "\n", $orig],
 	     [split "\n", $new],
 	     [split "\n", $local],
+	    );
+	# merge consistencies check
+	my $diff3 = Algorithm::Merge::diff3 (@mergearg);
+
+	for (@$diff3) {
+	    if ($_->[0] eq 'u' && ($_->[1] ne $_->[2] || $_->[2] ne $_->[3])) {
+		my $file = '/tmp/svk-merge-bug.yml';
+		unlink ($file);
+		YAML::DumpFile ($file, $diff3);
+		die "merge result inconsistent, please send the file $file to {clkao,jsmith}\@cpan.org";
+	    }
+	}
+
+	# XXX: use traverse so we just output the result instead of
+	# buffering it
+	$info->{status}[0] = 'G';
+	my $merged = eval {Algorithm::Merge::merge (@mergearg,
 	     {CONFLICT => sub {
 		  my ($left, $right) = @_;
 		  $info->{status}[0] = 'C';
@@ -904,8 +959,8 @@ sub close_file {
 		  q{<!-- ---------------------------- -->},
 		  (@$right),
 		  q{<!-- ------  END  CONFLICT ------ -->},
-	      }},
-	    );
+	      }}) };
+	die $@ if $@;
 
 	close $fh->{base}[0];
 	unlink $fh->{base}[1];

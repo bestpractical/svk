@@ -17,7 +17,7 @@ eval 'require SVN::Mirror' and ++$svn_mirror;
 
 my $auth = SVN::Core::auth_open
     ([SVN::Client::get_simple_provider (),
-      SVN::Client::get_ssl_server_file_provider (),
+      SVN::Client::get_ssl_server_trust_file_provider (),
       SVN::Client::get_username_provider ()]);
 
 =head1 NAME
@@ -188,8 +188,7 @@ sub diff {
 				   print "Index: $_[0]\n";
 				   print '=' x 66;
 				   print "\n";
-				   my $fh = SVN::XD::get_fh
-				       ($_[2], '<', $_[0], $_[1]);
+				   open my ($fh), $_[1];
 				   print Text::Diff::diff (\'', $fh);
 			       },
 			       cb_changed =>

@@ -1,0 +1,114 @@
+This is the README file for SubversionKeeper (svk) 0.1 release, a
+decentralized version control system.
+
+*NOTE* The 0.1 release is aimed to be a working prototype, all things
+are subject to change, including project name, binary name, perl
+module namespaces, depot spec, etc. Since the underlying local
+repository is still a subversion repository, you are free to switch
+back and forth between svn and svk, and you might want to use svn for
+some of the operations that svk does not yet implement.
+
+* About
+
+Subversion aims to take over the CVS user base, while SubversionKeeper
+attempts to take over the others - including people who already
+switched to other scm, and people who had not started using scm. It is
+written in Perl and is using subversion's underlying filesystem.
+
+A quick glance about svk for people already familiar with Subversion:
+
+o the depot spec is like : /[depotname]/<path>
+  ~/.svk/config holds a depotmap hash for mapping depotname (which
+  could be empty) to a path containing a subversion repository.
+
+o svk uses the subversion fs library. the SVN::XD module is a svn_wc
+  (working copy) replacement (XD is character increment of WC).
+
+o SVN::XD does not use the .svn for checkout meta-data. it uses
+  Data::Hierarchy for storing per-directory meta-data in a compact way.
+
+o svk uses svm (svn mirror) for retrieving remote repositories (via
+  ra) to a certain point of the local repository.
+
+o when committing (or merging) into the mirrored directory, svm
+  provides a commit editor for svk to use. the merge brings changes
+  from local to remote repository if there's no conflict.
+
+o using a local repository holding the subversion tree for benchmark,
+  svk checkout time is 3 times faster than svn.
+
+* Installation
+
+You need subversion 0.32 release or newer, with perl bindings support
+to use svk.
+
+svk uses the stanard perl module install process:
+
+% perl Makefile.PL
+% make
+# make install
+
+* Usage
+
+o Initialize: You need to create a primary repository with svnadmin
+  for svk to use. The default one svk looks for is ~/svn/svm
+
+  After the first time you run svk, you'll have a .svk/config file, you
+  can edit the depotmap for modifying the default repository and adding
+  other maps to make the repositories accessible from svk.
+
+  (Note that these operations should have a svk subcommand in the future.)
+
+o Mirroring: For example if you want to bring the svk source tree to
+  your local repository:
+ 
+    svk mirror //svk/trunk http://svn.elixus.org/repos/member/clkao/svk
+
+  Then you can now synchronize with:
+
+    svk sync //svk/trunk
+
+  If you don't want to sync every revision from the remote, you can
+  add an -s REV option as the first revision to sync without previous
+  changes.
+
+  Now you might want to create a local branch:
+
+    svk cp -m 'local branch for svk' //svk/trunk //svk/local
+
+o checkout / update / commit
+
+  Most of the normal operations you use in svn would be found in svk also:
+
+    svk co //svk/local svk # checkout to svk under current directory
+
+  (Note that for the nature we don't use .svn directory, you can't move the
+   checkout copies. A subcommand should be available in the future)
+
+    svk up -r REV # update to revision <REV>
+
+  Also note that subcommands does not support multiple targets at this
+  moment.
+
+o merge
+
+  In svk, you can merge into a checkout copy or into the repository
+  directly. For example, if you want to bring your local change from
+  rev 3 to rev 6 to the remote:
+
+    svk merge -r 3:6 //svk/local //svk/trunk
+
+  The commit by merge will be made to the remote repository in this
+  case. (It's advised to check with -C to see if the merge succeeds)
+
+  Please note that currently Algorithm::Merge has many bugs that will
+  fail merging, a merge regression code is built into the merge command,
+  please help report failed merge to the authors. We will either try
+  to fix Algorithm::Merge or use svn's diff library when it goes
+  streamy instead of mmapping.
+
+o smerge
+
+  Smart merge, or star-merge. This will be a frontend of merge
+  described above, storing extra information about performed merges,
+  and finds appropriate revision numbers to use automatically.
