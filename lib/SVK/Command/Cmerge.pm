@@ -34,7 +34,8 @@ sub run {
 
     die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
     my $repos = $src->{repos};
-    my ($base_path, $base_rev) = $self->find_merge_base ($repos, $src->{path}, $dst->{path});
+    $self->{merge} = SVK::Merge->new (%$self);
+    my ($base_path, $base_rev) = $self->{merge}->find_merge_base ($repos, $src->{path}, $dst->{path});
 
     # find a branch target
     die loc("cannot find a path for temporary branch") if $base_path eq '/';
@@ -103,7 +104,7 @@ sub run {
     my $uuid = $repos->fs->get_uuid;
 
     # give ticket to src
-    my $ticket = $self->find_merge_sources ($repos, $src->{path}, 1, 1);
+    my $ticket = $self->{merge}->find_merge_sources ($repos, $src->{path}, 1, 1);
 
     $ticket .= "\n$uuid:$tmpbranch:$newrev";
 

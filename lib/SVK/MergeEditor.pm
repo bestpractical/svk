@@ -98,6 +98,24 @@ Called after each file close call.
 use Digest::MD5 qw(md5_hex);
 use File::Compare ();
 
+sub cb_for_root {
+    my ($root, $anchor, $base_rev) = @_;
+    return ( cb_exist =>
+	     sub { my $path = $anchor.'/'.shift;
+		   $root->check_path ($path) != $SVN::Node::none;
+	       },
+	     cb_rev => sub { $base_rev; },
+	     cb_localmod =>
+	     sub { my ($path, $checksum, $pool) = @_;
+		   $path = "$anchor/$path";
+		   my $md5 = $root->file_md5_checksum ($path, $pool);
+		   return if $md5 eq $checksum;
+		   return [$root->file_contents ($path, $pool),
+			   undef, $md5];
+	       },
+	   );
+}
+
 sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;

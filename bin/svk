@@ -7,7 +7,7 @@ require SVN::Fs;
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw(get_anchor);
-use Getopt::Long qw(:config no_ignore_case);
+use Getopt::Long qw(:config no_ignore_case bundling);
 use Cwd;
 use File::Spec;
 use Data::Hierarchy;
@@ -43,12 +43,16 @@ L<http://svk.elixus.org/>.
 
 Run C<svk help> to access the built-in tool documentation.
 
+By default svk stores its state in the F<.svk> directory in your home
+directory. You can change this default by setting the SVKROOT environment
+variable to your preferred svk depot path.
+
 =cut
 
 my $show_version;
-my $cmd = shift;
 
-GetOptions ("version"  => \$show_version) unless $cmd;
+die unless GetOptions ("version"  => \$show_version);
+my $cmd = shift;
 
 if ($show_version) {
     print loc("This is svk, version %1.\n", $VERSION);
@@ -65,10 +69,11 @@ if ($cmd eq 'help') {
     exit 0;
 }
 
-my $svkpath = "$ENV{HOME}/.svk";
+my $svkpath = $ENV{SVKROOT} || "$ENV{HOME}/.svk";
 {
     my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
 			    statefile => "$svkpath/config",
+			    svkpath => $svkpath,
 			  );
     $xd->load();
     $SIG{INT} = sub {

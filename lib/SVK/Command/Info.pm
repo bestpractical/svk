@@ -4,6 +4,7 @@ our $VERSION = '0.14';
 
 use base qw( SVK::Command::Merge );
 use SVK::XD;
+use SVK::Merge;
 use SVK::I18N;
 use SVK::Util qw (find_svm_source resolve_svm_source);
 
@@ -24,8 +25,9 @@ sub run {
 	my $yrev = $repos->fs->youngest_rev;
 	my $rev = $target->{cinfo}{revision}||$yrev;
 	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
-	my %ancestors = $self->copy_ancestors($repos,$path,$yrev, 1);
-	my $minfo = $self->find_merge_sources($repos,$path,0,1);
+	$self->{merge} = SVK::Merge->new (%$self);
+	my %ancestors = $self->{merge}->copy_ancestors($repos,$path,$yrev, 1);
+	my $minfo = $self->{merge}->find_merge_sources($repos,$path,0,1);
 	print loc("Checkout Path: %1\n",$copath) if($copath);
 	print loc("Depot Path: %1\n", $depotpath);
 	print loc("Revision: %1\n", $rev);

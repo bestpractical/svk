@@ -153,20 +153,7 @@ sub get_editor {
     $editor = SVK::XD::CheckEditor->new ($editor)
 	if $self->{check_only};
 
-    %cb = ( cb_exist => $self->{cb_exist} ||
-	    sub { my $path = $target->{path}.'/'.shift;
-		  $root->check_path ($path) != $SVN::Node::none;
-	      },
-	    cb_rev => sub { $base_rev; },
-	    cb_localmod => $self->{cb_localmod} ||
-	    sub { my ($path, $checksum, $pool) = @_;
-		  $path = "$target->{path}/$path";
-		  my $md5 = $root->file_md5_checksum ($path, $pool);
-		  return if $md5 eq $checksum;
-		  return [$root->file_contents ($path, $pool),
-			  undef, $md5];
-	      },
-	  );
+    %cb = SVK::MergeEditor::cb_for_root ($root, $target->{path}, $base_rev);
 
     return ($editor, %cb, mirror => $m, callback => \$callback);
 }

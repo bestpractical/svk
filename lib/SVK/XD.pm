@@ -27,19 +27,18 @@ sub new {
 
 sub load {
     my ($self) = @_;
-    my $svkpath = "$ENV{HOME}/.svk";
     my $info;
 
     $self->giant_lock ();
 
-    if (-e "$svkpath/config") {
+    if (-e $self->{statefile}) {
 	$info = LoadFile ($self->{statefile});
     }
     else {
-	mkdir ($svkpath);
+	mkdir ($self->{svkpath});
     }
 
-    $info ||= { depotmap => {'' => "$svkpath/local" },
+    $info ||= { depotmap => {'' => "$self->{svkpath}/local" },
 	        checkout => Data::Hierarchy->new(),
 	      };
     $self->{$_} = $info->{$_} for keys %$info;
