@@ -5,7 +5,8 @@ our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
 		    find_local_mirror abs_path mimetype mimetype_is_text
-		    abs2rel catfile catdir catpath splitpath splitdir tmpdir $SEP %Config);
+		    abs2rel catfile catdir catpath splitpath splitdir tmpdir
+		    devnull $SEP %Config);
 our $VERSION = $SVK::VERSION;
 our $SEP = catdir('');
 
@@ -14,7 +15,8 @@ use SVK::I18N;
 use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
-use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir tmpdir);
+use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir
+			     tmpdir devnull);
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
