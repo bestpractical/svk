@@ -97,12 +97,9 @@ is_output ($svk, 'status', [$copath],
 $svk->revert ('-R', $copath);
 $svk->cp ('-m', 'new trunk', '//trunk', '//trunk.new');
 
-TODO: {
-local $TODO = 'indirect copy relation';
 is_output ($svk, 'merge', ['-C', '--track-rename', '-r8:9', '//local', '//trunk.new'],
 	   ['Collecting renames, this might take a while.',
 	    'G   A/deep/test.pl - test.pl']);
-}
 
 overwrite_file ("$copath/test.pl", "fnord\nfoobarbazzz\nend\nappended\n");
 is_output ($svk, 'commit', ['-m', 'append', $copath],

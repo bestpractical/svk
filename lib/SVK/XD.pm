@@ -468,7 +468,7 @@ sub get_editor {
     $anchor = '' if $anchor eq '/';
     $arg{get_copath} =
 	sub { $_[0] = File::Spec->catfile
-		  ($copath,  $_[0] ? File::Spec->splitdir ($_[0]) : ()) };
+		  ($copath,  $_[0] ? File::Spec::Unix->splitdir ($_[0]) : ()) };
     $arg{get_path} = sub { $_[0] = "$anchor/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 

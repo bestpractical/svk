@@ -279,21 +279,27 @@ sub info {
 }
 
 sub _collect_renamed {
-    my ($renamed, $path, $reverse, $rev, $root, $paths, $props) = @_;
+    my ($renamed, $pathref, $reverse, $rev, $root, $paths, $props) = @_;
     my $entries;
+    my $path = $$pathref;
     for (keys %$paths) {
 	my $entry = $paths->{$_};
 	my $action = $SVK::Command::Log::chg->[$entry->change_kind];
 	$entries->{$_} = [$action , $action eq 'D' ? (-1) : $root->copied_from ($_)];
+	# anchor is copied
+	if ($action eq 'A' && $entries->{$_}[1] != -1 &&
+	    ($path eq $_ || "$_/" eq substr ($path, 0, length($_)+1))) {
+	    $path =~ s/^\Q$_\E/$entries->{$_}[2]/;
+	    $$pathref = $path;
+	}
     }
-
     for (keys %$entries) {
 	my $entry = $entries->{$_};
 	my $from = $entry->[2] or next;
 	if (exists $entries->{$from} && $entries->{$from}[0] eq 'D') {
 	    s|^\Q$path\E/|| or next;
 	    $from =~ s|^\Q$path\E/|| or next;
-	    unshift @$renamed, $reverse ? [$from, $_] : [$_, $from];
+	    push @$renamed, $reverse ? [$from, $_] : [$_, $from];
 	}
     }
 }
@@ -301,29 +307,16 @@ sub _collect_renamed {
 sub track_rename {
     my ($self, $editor, $cb) = @_;
 
-    my ($base, $fromrev) = $self->find_merge_base (@{$self}{qw/base dst/});
-    my $renamed = [];
+    my ($base) = $self->find_merge_base (@{$self}{qw/base dst/});
+    my ($renamed, $path) = ([]);
 
     print "Collecting renames, this might take a while.\n";
-    if ($base->path eq $self->{base}->path) {
-	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{dst}->path,
-				   fromrev => $fromrev+1, torev => $self->{dst}{revision}, verbose => 1,
-				   cb_log => sub {_collect_renamed ($renamed, $self->{dst}->path, 1, @_)});
-	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{base}->path,
-				   fromrev => $base->{revision}+1, torev => $self->{base}{revision}, verbose => 1,
-				   cb_log => sub {_collect_renamed ($renamed, $self->{base}->path, 0, @_)});
-
-    }
-    elsif ($base->path eq $self->{dst}->path) {
-	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{dst}->path,
-				   fromrev => $base->{revision}+1, torev => $self->{dst}{revision}, verbose => 1,
-				   cb_log => sub {_collect_renamed ($renamed, $self->{dst}->path, 1, @_)});
-	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{base}->path,
-				   fromrev => $fromrev+1, torev => $self->{base}{revision}, verbose => 1,
-				   cb_log => sub {_collect_renamed ($renamed, $self->{base}->path, 0, @_)});
-    }
-    else {
-	die "can't handle this yet";
+    for (0..1) {
+	my $target = $self->{('base', 'dst')[$_]};
+	my $path = $target->path;
+	SVK::Command::Log::do_log (repos => $self->{repos}, path => $path, verbose => 1,
+				   torev => $base->{revision}+1, fromrev => $target->{revision},
+				   cb_log => sub {_collect_renamed ($renamed, \$path, $_, @_)});
     }
     return $editor unless @$renamed;
 
