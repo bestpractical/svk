@@ -415,33 +415,8 @@ sub do_merge {
 	%cb = xd_storage_cb ($info, $target, $arg{copath}),
     }
     else {
-	my $editor;
-	my $base_rev;
-	eval 'require SVN::Mirror' and do {
-	    my $auth = SVN::Core::auth_open
-		([SVN::Client::get_simple_provider (),
-		  SVN::Client::get_ssl_server_file_provider (),
-		  SVN::Client::get_username_provider ()]);
-
-	    my $m = SVN::Mirror->new(target_path => $arg{dpath},
-				     target => $arg{repospath},
-				     pool => SVN::Pool->new, auth => $auth,
-				     get_source => 1);
-	    eval { $m->init };
-	    # commit back to mirror
-	    unless ($@) {
-		print "Merge back to SVN::Mirror source $m->{source}.\n";
-		if ($arg{check_only}) {
-		    print "Check against mirrored directory locally.\n";
-		}
-		else {
-		    ($base_rev, $editor) = $m->get_merge_back_editor
-			($arg{message},
-			 sub { print "Merge back committed as revision $_[0].\n" }
-			);
-		}
-	    }
-	};
+	my $editor = $arg{editor};
+	my $base_rev = $arg{base_rev};
 
 	$editor ||= SVN::Delta::Editor->new
 	    ( SVN::Repos::get_commit_editor

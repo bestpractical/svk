@@ -12,6 +12,14 @@ use Data::Hierarchy;
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pl cp/;
 
+my $svn_mirror;
+eval 'require SVN::Mirror' and ++$svn_mirror;
+
+my $auth = SVN::Core::auth_open
+    ([SVN::Client::get_simple_provider (),
+      SVN::Client::get_ssl_server_file_provider (),
+      SVN::Client::get_username_provider ()]);
+
 =head1 NAME
 
 svk - subversion keeper command line interface
@@ -417,9 +425,11 @@ sub log {
 			   "x|cross"		=> \$cross,
 			   "v|verbose"		=> \$verbose);
 
-    my ($copath) = @ARGV;
-
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    my ($tgt) = @ARGV;
+    my ($repospath, $path, $repos);
+    unless (($repospath, $path, $repos) = eval { find_repos ($tgt, 1) }) {
+	($repospath, $path, undef, $repos) = find_repos_from_co ($tgt, 1);
+    }
     my $fs = $repos->fs;
     my ($fromrev, $torev) = ($fs->youngest_rev);
     if ($limit) {
@@ -601,7 +611,7 @@ sub merge {
     my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
 	or die "revision must be N:M";
     my ($repospath, $path, $repos) = find_repos ($src, 1);
-    my ($drepospath, $dpath, $editor, $copath);
+    my ($drepospath, $dpath, $editor, $base_rev, $copath);
     if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
 	unless ($message || $check_only) {
 	    my ($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
@@ -616,6 +626,25 @@ sub merge {
 	    # XXX: parse and check target sanity
 	    close $fh;
 	    unlink $file;
+	}
+	if ($svn_mirror) {
+	    my $m = SVN::Mirror->new(target_path => $dpath,
+				     target => $repospath,
+				     pool => SVN::Pool->new, auth => $auth,
+				     get_source => 1);
+	    eval { $m->init };
+	    unless ($@) {
+		print "Merge back to SVN::Mirror source $m->{source}.\n";
+		if ($check_only) {
+		    print "Check against mirrored directory locally.\n";
+		}
+		else {
+		    ($base_rev, $editor) = $m->get_merge_back_editor
+			($message,
+			 sub { print "Merge back committed as revision $_[0].\n" }
+			);
+		}
+	    }
 	}
     }
     else {
@@ -633,12 +662,55 @@ sub merge {
 		       dpath => $dpath,
 		       copath => $copath,
 		       editor => $editor,
+		       base_rev => $base_rev,
 		       fromrev => $fromrev,
 		       check_only => $check_only,
 		       message => $message,
 		       torev => $torev,
 		      );
 }
+
+=head2 mirror
+
+    svk mirror
+
+=cut
+
+sub mirror {
+    my ($dpath, $source) = @_;
+    die "require SVN::Mirror" unless $svn_mirror;
+    my ($repospath, $path) = find_repos ($dpath);
+
+    my $m = SVN::Mirror->new (target_path => $path, target => $repospath,
+			      auth => $auth,
+			      source => $source, target_create => 1);
+    $m->init;
+}
+
+=head2 sync
+
+    svk sync
+
+=cut
+
+sub sync {
+    local @ARGV = @_;
+    my ($check_only, $message, $revspec);
+    my $skip_to;
+    die unless GetOptions ("s|skipto=s"	=> \$skip_to);
+    die "require SVN::Mirror" unless $svn_mirror;
+
+    my ($dpath) = @ARGV;
+    my ($repospath, $path) = find_repos ($dpath);
+    my $pool = SVN::Pool->new_default;
+
+    my $m = SVN::Mirror->new (target_path => $path, target => $repospath,
+			      pool => $pool, auth => $auth,
+			      get_source => 1, skip_to => $skip_to);
+    $m->init ();
+    $m->run ();
+}
+
 
 *co = *checkout;
 *up = *update;
