@@ -324,7 +324,8 @@ sub arg_uri_maybe {
     my $uri = URI->new("$arg/")->canonical or die loc("%1 is not a valid URI.\n", $arg);
     my $map = $self->{xd}{depotmap};
     foreach my $depot (sort keys %$map) {
-        my $repos = ($self->{xd}->find_repos ("/$depot/", 1))[2];
+        local $@;
+        my $repos = eval { ($self->{xd}->find_repos ("/$depot/", 1))[2] } or next;
 	foreach my $path ( SVN::Mirror::list_mirror ($repos) ) {
 	    my $m = SVN::Mirror->new (
                 repos => $repos,
