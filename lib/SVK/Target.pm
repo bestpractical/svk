@@ -178,6 +178,15 @@ sub contains_copath {
     return 0;
 }
 
+sub depotname {
+    my $self = shift;
+
+    $self->{depotpath} =~ m!^/([^/]*)!
+      or die loc("depotpath '$self->{depotpath}' does not contain a depot!");
+
+    return $1;
+}
+
 sub copied_from {
     my $self = shift;
     my $merge = SVK::Merge->new (%$self);
@@ -186,7 +195,12 @@ sub copied_from {
     my ($ancestor) = $merge->copy_ancestors (@{$self}{qw( repos path revision )}, 1);
     return undef if !$ancestor;
 
-    my $target = $self->new (path => (split (/:/, $ancestor))[1]);
+    my $path = (split (/:/, $ancestor))[1];
+    my $target = $self->new (
+        path => $path,
+        depotpath => '/' . $self->depotname . $path,
+        revision => undef,
+    );
 
     # make a depot path
     $target->depotpath;

@@ -42,11 +42,11 @@ sub run {
 	my $fmt = "%-20s %-s\n";
 	printf $fmt, loc('Path'), loc('Source');
 	print '=' x 60;
-	my ($depot) = ($target->{depotpath} =~ /^(\/\w*)/);
+	my $depot = $target->depotname;
 	for (@paths) {
 	    my $m = SVN::Mirror->new (target_path => $_, repos => $target->{repos},
 				      get_source => 1);
-	    printf $fmt, $depot.$_, $m->{source};
+	    printf $fmt, "/$depot$_", $m->{source};
 	}
 	return;
     }
