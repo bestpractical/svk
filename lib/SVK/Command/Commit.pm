@@ -323,7 +323,7 @@ sub run {
     my ($editor, %cb) = $self->get_editor ($target->new (copath => undef), $committed);
 
     die loc("unexpected error: commit to mirrored path but no mirror object")
-	if $is_mirrored && !$self->{direct} && !$cb{mirror};
+	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
 
     $self->run_delta ($target, $xdroot, $editor, %cb);
 }
