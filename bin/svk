@@ -10,7 +10,6 @@ use Getopt::Long;
 use File::Spec;
 use Data::Hierarchy;
 use SVN::DiffEditor;
-use version;
 
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pl cp sy sm/;
@@ -78,6 +77,7 @@ sub depotmap {
 	print "$@\n" if $@;
     } while ($@);
     print "New depot map saved.\n";
+    $info->{depotmap} = $new;
     for my $path(values %{$info->{depotmap}}) {
 	my $ans;
 	next if -d $path;
@@ -90,12 +90,7 @@ sub depotmap {
 	SVN::Repos::create($path, undef, undef, undef,
 			   {'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
-	if ($SVN::Core::VERSION < '0.35.0') {
-	    print "You might want to enable deltification hook\n";
-	    print "Please take a look at $path/hooks/\n";
-	}
     }
-    $info->{depotmap} = $new;
 }
 
 sub _init {
@@ -317,6 +312,7 @@ sub diff {
 				 xdroot => $baseroot,
 				 editor => $editor,
 				);
+	$txn->abort if $txn;
     }
 }
 
@@ -610,7 +606,7 @@ use File::Temp qw/:mktemp/;
 sub get_buffer_from_editor {
     my ($what, $sep, $content, $file) = @_;
     my $fh;
-    if ($content) {
+    if (defined $content) {
 	($fh, $file) = mkstemps ($file, '.tmp');
 	print $fh $content;
 	close $file;
@@ -752,7 +748,8 @@ sub copy {
     die "different repos?" if $repospath ne $drepospath;
 
     $message = get_buffer_from_editor ('log message', $target_prompt,
-				       undef, "/tmp/svk-commitXXXXX")
+				       "\n$target_prompt\n",
+				       "/tmp/svk-commitXXXXX")
 	unless defined $message;
 
     SVN::XD::do_copy_direct ($info,
