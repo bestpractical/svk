@@ -117,7 +117,9 @@ use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return @arg >= 2 ? @arg : ('', @arg);
+    die loc("Do you mean svk switch %1?\n", $arg[0]) if @arg == 1;
+    return if @arg > 2;
+    return @arg;
 }
 
 sub lock { ++$_[0]->{hold_giant} }
@@ -198,7 +200,7 @@ SVK::Command::Checkout - Checkout the depotpath
  checkout DEPOTPATH [PATH]
  checkout --list
  checkout --detach [DEPOTPATH | PATH]
- checkout --relocate [DEPOTPATH | PATH] PATH
+ checkout --relocate DEPOTPATH|PATH PATH
 
 =head1 OPTIONS
 

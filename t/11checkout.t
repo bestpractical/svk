@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 40;
+use Test::More tests => 41;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -135,6 +135,12 @@ is_output ($svk, 'checkout', ['--relocate', "//V-3.1/A/Q", $corpath], [
 is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/co-root-a")], [
             __("Overlapping checkout path is not supported ($corpath/co-root-a); use 'svk checkout --detach' to remove it first.")
             ]);
+
+chdir ('co-root-a') or die $!;
+is_output ($svk, 'checkout', ['--relocate', "//V-3.1"],
+	   ["Do you mean svk switch //V-3.1?"],
+	  );
+chdir ('..');
 
 is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/foo")], [
             "Checkout '//V-3.1-non' ".__("relocated to '$corpath/foo'.")
