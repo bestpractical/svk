@@ -12,7 +12,7 @@ use SVK::Util qw (resolve_svm_source);
 use SVK::Command::Log;
 
 my %cmd = map {$_ => 1} qw/view dump update regen update test send delete apply/;
-$cmd{list} = 0;
+$cmd{delete} = $cmd{list} = 0;
 
 sub options {
     ('depot=s' => 'depot');
@@ -73,6 +73,12 @@ sub update {
     $self->_store ($patch);
     return;
 
+}
+
+sub delete {
+    my ($self, $name) = @_;
+    unlink ("$self->{xd}{svkpath}/patch/$name.patch");
+    return;
 }
 
 sub list {
@@ -144,6 +150,10 @@ SVK::Command::Patch - Manage patches
 =head1 OPTIONS
 
  None
+
+=head1 DESCRIPTION
+
+ Note that patches are created with commit -P or smerge -P.
 
 =head1 AUTHORS
 
