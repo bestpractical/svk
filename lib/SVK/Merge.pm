@@ -169,7 +169,8 @@ sub find_merge_sources {
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
     return $minfo if $verbatim;
 
-    my %ancestors = $self->copy_ancestors ($target->{repos}, $target->path, $target->{revision}, 1);
+    my %ancestors = $self->copy_ancestors ($target->{repos}, $target->path,
+					   $target->{revision}, 1, 1);
     for (sort keys %ancestors) {
 	my $rev = $ancestors{$_};
 	$minfo->{$_} = $rev
@@ -180,7 +181,7 @@ sub find_merge_sources {
 }
 
 sub copy_ancestors {
-    my ($self, $repos, $path, $rev, $nokeep) = @_;
+    my ($self, $repos, $path, $rev, $nokeep, $reverse) = @_;
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($rev);
     $rev = $root->node_created_rev ($path);
@@ -240,7 +241,10 @@ sub copy_ancestors {
 	}
     }
     return () unless $found;
-    return ("$myuuid:$hpath" => $hrev, $self->copy_ancestors ($repos, $hpath, $hrev));
+
+    my @ret = $self->copy_ancestors ($repos, $hpath, $hrev, 0, $reverse);
+
+    return $reverse ? (@ret, "$myuuid:$hpath" => $hrev) : ("$myuuid:$hpath" => $hrev, @ret);
 }
 
 sub get_new_ticket {

@@ -107,6 +107,7 @@ t/05svm-move.t
 t/05svm.t
 t/06keyword.t
 t/07smerge-anchor.t
+t/07smerge-anchor-replaced.t
 t/07smerge-baseless.t
 t/07smerge-delete.t
 t/07smerge-external.t
