@@ -2,7 +2,7 @@ package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
-use SVK::Util qw( get_anchor catfile abs2rel IS_WIN32 );
+use SVK::Util qw( get_anchor catfile abs2rel HAS_SVN_MIRROR IS_WIN32 );
 use SVK::Target::Universal;
 use Clone;
 
@@ -71,6 +71,7 @@ sub same_repos {
 
 sub same_source {
     my ($self, @other) = @_;
+    return 0 unless HAS_SVN_MIRROR;
     return 0 unless $self->same_repos (@other);
     my $mself = SVN::Mirror::is_mirrored ($self->{repos}, $self->{path});
     for (@other) {
@@ -211,7 +212,7 @@ sub copied_from {
             $target->{path}
         ) == $SVN::Node::none;
 
-        if ($want_mirror) {
+        if ($want_mirror and HAS_SVN_MIRROR) {
             my ($m, $mpath) = SVN::Mirror::is_mirrored (
                 $target->{repos},
                 $target->{path}
