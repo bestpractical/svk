@@ -98,16 +98,18 @@ t/01depotmap.t
 t/01editor.t
 t/01help.t
 t/01init.t
+t/01pod.t
 t/02basic-symlink.t
 t/02basic.t
 t/03import.t
 t/04merge.t
 t/05svm-empty.t
+t/05svm-head.t
 t/05svm-move.t
 t/05svm.t
 t/06keyword.t
+t/07smerge-anchor-replace.t
 t/07smerge-anchor.t
-t/07smerge-anchor-replaced.t
 t/07smerge-baseless.t
 t/07smerge-delete.t
 t/07smerge-external.t
@@ -152,6 +154,7 @@ t/50dav.t
 t/70symlink.t
 t/71autovivify.t
 t/72sign.t
+t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl
 TODO
