@@ -52,17 +52,6 @@ sub run {
 	$root = $fs->revision_root ($yrev);
     }
 
-    my ($editor, %cb) = $self->get_editor ($target);
-    ${$cb{callback}} =
-	sub { $yrev = $_[0];
-	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
-			$copath, $target->{depotpath}, $yrev) };
-
-    my $baton = $editor->open_root ($yrev);
-    local $SIG{INT} = sub {
-	$editor->abort_edit;
-	die loc("Interrupted.\n");
-    };
     if (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{is_checkout}++;
 	die loc("Import source cannot be a checkout path")
@@ -77,22 +66,24 @@ sub run {
 		       revision =>0});
     }
 
-    $self->{xd}->_delta_dir
+    my ($editor, %cb) = $self->get_editor ($target);
+    ${$cb{callback}} =
+	sub { $yrev = $_[0];
+	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
+			$copath, $target->{depotpath}, $yrev) };
+
+    # XXX: cb_copyfrom for $cb_mirror
+    $self->{xd}->checkout_delta
 	( %$target,
 	  copath => $copath,
 	  auto_add => 1,
-	  base => 1,
 	  cb_rev => $cb{cb_rev},
 	  editor => $editor,
 	  base_root => $root,
 	  base_path => $target->{path},
 	  xdroot => $root,
 	  kind => $SVN::Node::dir,
-	  absent_as_delete => 1,
-	  baton => $baton, root => 1);
-
-    $editor->close_directory ($baton);
-    $editor->close_edit ();
+	  absent_as_delete => 1);
 
     if ($self->{is_checkout}) {
 	my (undef, $path) = $self->{xd}->find_repos_from_co ($copath, 0);

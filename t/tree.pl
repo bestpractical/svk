@@ -20,6 +20,7 @@ END {
 
 
 our $output = '';
+our $copath;
 
 for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
     $ENV{$_} = '' if $ENV{$_};
@@ -56,7 +57,7 @@ sub build_test {
 
 sub get_copath {
     my ($name) = @_;
-    my $copath = "t/checkout/$name";
+    my $copath = SVK::Target->copath ('t', "checkout/$name");
     mkpath [$copath] unless -d $copath;
     rmtree [$copath] if -e $copath;
     return ($copath, File::Spec->rel2abs($copath));
@@ -116,6 +117,20 @@ sub is_output_like {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
     $svk->$cmd (@$arg);
     ok ($output =~ m/$expected/, $test || join(' ', $cmd, @$arg));
+}
+
+sub copath {
+    SVK::Target->copath ($copath, @_);
+}
+
+sub status_native {
+    my $copath = shift;
+    my @ret;
+    while (my ($status, $path) = splice (@_, 0, 2)) {
+	push @ret, join (' ', $status, $copath ? copath ($path) :
+			 File::Spec->catfile (File::Spec::Unix->splitdir ($path)));
+    }
+    return @ret;
 }
 
 require SVN::Simple::Edit;
