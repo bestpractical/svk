@@ -13,6 +13,15 @@ SVK::Editor::Patch - An editor to serialize editor calls.
     # feed things to $patch
     $patch->drive ($editor);
 
+=head1 DESCRIPTION
+
+C<SVK::Editor::Patch> serializes incoming editor calls in a tree
+structure. C<$editor->{edit_tree}> is an array indexed by the baton id
+of directories. The value of each entry is an array of editor calls
+that have baton id as parent directory. Each entry of editor calls is
+an array with the first element being the child baton id (if any), and
+then the method name and its arguments.
+
 =cut
 
 sub baton_at {

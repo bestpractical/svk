@@ -483,6 +483,23 @@ sub get_editor {
     return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
 }
 
+=item auto_prop
+
+Return a hash of properties that should attach to the file
+automatically when added.
+
+=cut
+
+sub auto_prop {
+    my ($self, $copath) = @_;
+    # no other prop for links
+    return {'svn:special' => '*'} if -l $copath;
+    my $prop;
+    $prop->{'svn:executable'} = '*' if -x $copath;
+    # XXX: autoprop stuff
+    return $prop;
+}
+
 sub do_add {
     my ($self, %arg) = @_;
 
@@ -503,10 +520,10 @@ sub do_add {
 				delete_verbose => 1,
 				unknown_verbose => 1,
 				cb_unknown => sub {
-				    # XXX: generic auto-prop things and reporting here
 				    $self->{checkout}->store
 					($_[1], { '.schedule' => 'add',
-						  -l $_[1] ? ('.newprop' => { 'svn:special' => '*'}) : ()
+						  -d $_[1] ? () :
+						  ('.newprop'  => $self->auto_prop ($_[1]))
 						});
 				    print "A   $arg{report}$_[0]\n" unless $arg{quiet};
 				},
@@ -823,9 +840,8 @@ sub _delta_file {
 				$cinfo->{'.copyfrom_rev'} ||  -1, $pool) :
 				    undef;
     my $newprop = $cinfo->{'.newprop'};
-    # XXX: generic auto prop for auto-added items
-    $newprop = {'svn:special' => '*'}
-	if -l _ && !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
+    $newprop = $self->auto_prop ($arg{copath})
+	if !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
 
     $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool)
 	if keys %$newprop;

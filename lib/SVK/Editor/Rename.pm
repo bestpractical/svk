@@ -5,7 +5,6 @@ our @ISA = qw(SVK::Editor::Patch);
 use SVK::Editor::Patch;
 use SVK::Notify;
 use SVK::I18N;
-#use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
 
 =head1 NAME
 
@@ -15,18 +14,26 @@ SVK::Editor::Rename - An editor that translates editor calls for renamed entries
 
   $editor = SVK::Editor::Rename->new
     ( editor => $next_editor,
-      base_root => $fs->revision_root ($arg{fromrev}),
-      target => $target,
-      storage => $storage_editor,
-      %cb,
+      rename_map => \@rename_map
     );
 
 =head1 DESCRIPTION
 
-Given the base root and callbacks for local tree, SVK::Editor::Merge
-forwards the incoming editor calls to the storage editor for modifying
-the local tree, and merges the tree delta and text delta
-transparently.
+Given the rename_map, which is a list of [from, to] pairs for
+translating path in editor calls, C<SVK::Editor::Rename> serialize the
+calls and rearrange them for making proper calls to C<$next_editor>.
+
+The translation of pathnames is done with iterating through the
+C<@rename_map>, translate with the first match. Translation is redone
+untill no match is found.
+
+C<SVK::Editor::Rename> is a subclass of C<SVK::Editor::Patch>, which
+serailizes incoming editor calls. Each baton opened is recorded in
+C<$self->{opened_baton}>, which could be use to lookup with path names.
+
+When a path is opened that should be renamed, it's recorded in
+C<$self->{renamed_anchor}> for reanchoring the renamed result to
+proper parent directory before calls are emitted to C<$next_editor>.
 
 =cut
 
@@ -63,7 +70,7 @@ sub _same_parent {
 sub open_root {
     my ($self, @arg) = @_;
     my $ret = $self->SUPER::open_root (@arg);
-    $self->{opened_baton}{''} = $ret;
+    $self->{opened_baton}{''} = [$ret, 0];
     return $ret;
 }
 
@@ -100,21 +107,40 @@ sub AUTOLOAD {
 	$self->{renamed_anchor}[$ret] = $self->{edit_tree}[$arg[1]][-1]
     }
     else {
-	$self->{opened_baton}{$arg[0]} = $ret
+	$self->{opened_baton}{$arg[0]} = [$ret, $arg[1]]
 	    if $func =~ m/^open/;
     }
 
     return $ret;
 }
 
+sub open_parent {
+    my ($self, $path) = @_;
+    my $parent = $path;
+    $parent =~ s|/[^/]*$|| or $parent = '';
+    return @{$self->{opened_baton}{$parent}}
+	if exists $self->{opened_baton}{$parent};
+
+    my ($pbaton, $ppbaton) = $self->open_parent ($parent);
+
+    ++$self->{batons};
+
+    unshift @{$self->{edit_tree}[$pbaton]},
+	[$self->{batons}, 'open_directory', $parent, $ppbaton, -1];
+
+    $self->{edit_tree}[$self->{batons}] = [[undef, 'close_directory', $self->{batons}]];
+
+    return ($self->{batons}, $pbaton);
+}
+
 sub handle_rename_anchor {
     my ($self, $entry) = @_;
     my $path = $entry->[2];
-    my $parent = $path;
-    $parent =~ s|/[^/]*$|| or $parent = '';
-    die "parent $parent (of $path) not opened" unless exists $self->{opened_baton}{$parent};
+    my ($pbaton) = $self->open_parent ($path);
     my @newentry = @$entry;
-    unshift @{$self->{edit_tree}[$self->{opened_baton}{$parent}]}, \@newentry;
+    # move the call to a proper place
+    unshift @{$self->{edit_tree}[$pbaton]}, \@newentry;
+    $newentry[3] = $pbaton;
     @$entry = [];
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 6;
+use Test::More tests => 7;
 use strict;
 use File::Path;
 require 't/tree.pl';
@@ -11,6 +11,8 @@ mkdir $copath;
 overwrite_file ("$copath/filea", "foobarbazz");
 overwrite_file ("$copath/fileb", "foobarbazz");
 overwrite_file ("$copath/filec", "foobarbazz");
+overwrite_file ("$copath/exe", "foobarbazz");
+chmod (0755, "$copath/exe");
 mkdir "$copath/dir";
 overwrite_file ("$copath/dir/filed", "foobarbazz");
 
@@ -29,6 +31,7 @@ ok (-e "$copath/filea");
 ok (!-e "$copath/fileb");
 ok (-e "$copath/filec");
 ok (-e "$copath/dir/filed");
+ok (-x "$copath/exe", 'executable bit imported');
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');

@@ -53,6 +53,9 @@ sub run {
 	    my $content = $xdroot->file_contents ($_[0]);
 	    slurp_fh ($content, $fh);
 	    close $fh or die $!;
+	    # XXX: get_fh should open file with proper permission bit
+	    $self->{xd}->fix_permission ($_[1], 1)
+		if defined $xdroot->node_prop ($_[0], 'svn:executable');
 	}
 	$unschedule->(@_);
     };

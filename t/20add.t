@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 10;
+use Test::More tests => 12;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -57,3 +57,16 @@ $svk->revert ('-R', '.');
 $svk->add (qw|-N A/foo|);
 ok ($@ =~ m'do_add with targets and non-recursive not handled',
     'add - nonrecursive target only');
+
+overwrite_file ("A/exe", "foobar");
+chmod (0755, "A/exe");
+TODO: {
+local $TODO = 'notify that added file has executable bit';
+is_output($svk, 'add', ['A/exe'],
+	  ['A   A/',
+	   'A   A/exe - (bin)']);
+}
+$svk->commit ('-m', 'test exe bit');
+unlink ('A/exe');
+$svk->revert ('A/exe');
+ok (-x 'A/exe');

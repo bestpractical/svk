@@ -109,13 +109,9 @@ is_output ($svk, 'commit', ['-m', 'append', $copath],
 	   ['Committed revision 11.']);
 $svk->switch ('//local', $copath);
 
-is_output ($svk, 'merge', ['-C', '--track-rename', '-r10:11', '//trunk', $copath],
+is_output ($svk, 'merge', ['--track-rename', '-r10:11', '//trunk', $copath],
 	   ['Collecting renames, this might take a while.',
 	    "G   $copath/test.pl - A/deep/test.pl"]);
 
-TODO: {
-local $TODO = 'renamed entry out of opened directories';
-
 is_output ($svk, 'status', [$copath],
-	   ["M   $copath/test.pl"], 'merge renamed entries to checkout');
-}
+	   ["M   $copath/A/deep/test.pl"], 'merge renamed entries to checkout');
