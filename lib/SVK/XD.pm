@@ -1048,7 +1048,8 @@ sub _delta_dir {
 	if $thisdir && $arg{cb_conflict} && $cinfo->{'.conflict'};
 
     return if $self->_node_deleted_or_absent (%arg, pool => $pool);
-    $arg{base} = 0 if $schedule eq 'replace';
+    # if a node is replaced, it has no base, unless it was replaced with history.
+    $arg{base} = 0 if $schedule eq 'replace' && $arg{path} eq $arg{base_path};
     my ($entries, $baton) = ({});
     if ($arg{add}) {
 	$baton = $arg{root} ? $arg{baton} :
@@ -1091,6 +1092,13 @@ sub _delta_dir {
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	$copath = SVK::Target->copath ($arg{copath}, $copath);
 	my $ccinfo = $self->{checkout}->get ($copath);
+	# a replace with history node requires handling the copy anchor in the
+	# latter direntries loop.  we should really merge the two.
+	if ($ccinfo->{'.schedule'} && $ccinfo->{'.schedule'} eq 'replace'
+	    && $ccinfo->{'.copyfrom'}) {
+	    delete $entries->{$entry};
+	    next;
+	}
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	lstat ($copath);
 	my $type = -e _ ? (-d _ and not is_symlink) ? 'directory' : 'file'
