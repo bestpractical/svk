@@ -8,9 +8,9 @@ my $gnuclient = 'gnuclient-emacs';
 my $pwd = cwd;
 
 # Get the arguments
-my ($Working_label,  $Working_file,
-    $Common_label,   $Common_file,
-    $Selected_label, $Selected_file,
+my ($Working_label,  $Working_file,     # yours
+    $Common_label,   $Common_file,      # base
+    $Selected_label, $Selected_file,    # theirs
     $Output_file,
    ) = @ARGV;
 
