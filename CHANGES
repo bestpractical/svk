@@ -9,7 +9,11 @@
 
 * New: svk mkdir -p and svk copy -p to create intermediate directories.
 
+* New: svk pull DEPOTPATH. [Jesse Vincent]
+
 * Proper svn:eol-style support with the same semantics as svn. [Autrijus]
+
+* Proper upper/lower case normalization for Win32 filesystems. [Autrijus]
 
 * The SVK Help system, as SVK/Help/[lang/]/*.pod. [Autrijus]
 
@@ -31,6 +35,8 @@
 * svk patch delete now works.
 
 * svk delete now works within mirrored paths.
+
+* svk annotate now works on files with CR/CRLF line endings. [Autrijus]
 
 [Changes for 0.22 - 4 Oct, 2004]
 
