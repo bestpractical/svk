@@ -1356,13 +1356,20 @@ Syncrhonize a mirrored depotpath.
 sub sync {
     local @ARGV = @_;
     my ($check_only, $message, $revspec);
-    my ($skip_to, $torev);
+    my ($skip_to, $sync_all, $torev);
     die unless GetOptions ("s|skipto=s"	=> \$skip_to,
+			   "a|all"	=> \$sync_all,
 			   "t|torev=s"	=> \$torev);
     die "require SVN::Mirror" unless $svn_mirror;
 
     die "argument skipto not allowed when multiple target specified"
 	if $#ARGV > 0 && $skip_to;
+
+    if ($sync_all) {
+	my (undef, undef, $repos) = find_repos ('//', 1);
+	@ARGV = map {'/'.$_} SVN::Mirror::list_mirror ($repos);
+    }
+
 
     for my $dpath (@ARGV) {
 	my ($repospath, $path) = find_repos ($dpath);
