@@ -75,6 +75,7 @@ lib/SVK/I18N/zh_tw.po
 lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
+lib/SVK/Patchset.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
@@ -161,6 +162,7 @@ t/35admin.t
 t/36push-pull.t
 t/37revspec.t
 t/50dav.t
+t/60patchset.t
 t/70symlink.t
 t/71autovivify.t
 t/72sign.t
