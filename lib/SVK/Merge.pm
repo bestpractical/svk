@@ -124,11 +124,11 @@ sub find_merge_base {
     return ($src->new (revision => $self->{baserev}), $self->{baserev})
         if $self->{baserev};
 
-    return ($src->new (path => '/', revision => 0), 0)
-        if $self->{baseless};
-
-    die loc("Can't find merge base for %1 and %2\n", $src->path, $dst->path)
-        unless $basepath;
+    unless ($basepath) {
+	return ($src->new (path => '/', revision => 0), 0)
+	    if $self->{baseless};
+	die loc("Can't find merge base for %1 and %2\n", $src->path, $dst->path);
+    }
 
     # XXX: document this, cf t/07smerge-foreign.t
     if ($basepath ne $src->path && $basepath ne $dst->path) {
