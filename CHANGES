@@ -1,3 +1,36 @@
+[Changes for 0.24 - 24 Oct, 2004]
+
+* Fix svk ps regression for svn 1.0.x.
+
+* Fallback to getpwuid($<) in case $ENV{HOME} or $ENV{USER} is not
+  set, as is the case in Fink.  Reported by Christian Schaffner.
+  [Autrijus]
+
+* Fix "svk pull -a" when the current directory is not a
+  checkout path. [Autrijus]
+
+* Fix checkout_delta cache on win32. [Autrijus]
+
+* Fix svk move copath destination with trailing slash.
+
+* Make svk move checks if the target already exists before doing
+  anything that might leave the checkout in an inconsistent state.
+
+* "svk cp //depotpath" should be parsed as "svk cp //depotpath .",
+  not "svk cp . //depotpath".  Reported by Jesse Vincent. [Autrijus]
+
+* New: svk admin rmcache.
+
+* The old commit message prompt is now split into two:
+ - Those with editable target list now shows:
+   "=== Targets to commit (you may delete items from it) ==="
+ - Those without editable targets now shows:
+   "=== Please enter your commit message above this line ==="
+ [Autrijus]
+ 
+* If SVN::Core version is too old, die with a meaningful message.
+  [Autrijus]
+
 [Changes for 0.23 - 18 Oct, 2004]
 
 * New: commit / smerge -P creats patch, and obsoletes unintuitive svk
