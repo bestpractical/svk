@@ -159,6 +159,7 @@ sub invoke {
 	    $cmd->usage;
 	}
 	else {
+	    $cmd->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
 	    eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
 	    $xd->unlock if $xd;
 	    die $@ if $@;
@@ -543,7 +544,7 @@ sub msg_handler {
     my ($self, $err, $msg) = @_;
     $self->add_handler
 	($err, sub {
-	     print $_[0]->expanded_message."\n$msg\n";
+	     print $_[0]->expanded_message."\n".($msg ? "$msg\n" : '');
 	 });
 }
 
