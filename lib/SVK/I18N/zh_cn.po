@@ -190,7 +190,7 @@ msgstr "已送交修订版号 %1 的更动。\n"
 #. ((split/:/)
 #: lib/SVK/Command/Info.pm:41
 msgid "Copied from %1, Rev. %2\n"
-msgstr "已从 %1 复制版本 %2\n"
+msgstr "从 %1 的版本 %2 复制\n"
 
 #. ($dst->{report})
 #: lib/SVK/Command/Copy.pm:129
@@ -221,7 +221,7 @@ msgstr "合并后无任何更动。\n"
 
 #: lib/SVK/Command/Patch.pm:26
 msgid "Filename required.\n"
-msgstr "需要指定档名。\n"
+msgstr "需要指定檔名。\n"
 
 #. ($target->{path})
 #: lib/SVK/Command/Import.pm:33
@@ -748,7 +748,7 @@ msgid "-N [--non-recursive]: operate on single directory only"
 msgstr "-N [--non-recursive]: 仅处理档案，忽略子目录"
 
 msgid "-R [--recursive]: recursive"
-msgstr "-R [--recursive]: 递回处理子目录"
+msgstr "-R [--recursive]: 递归处理子目录"
 
 msgid "-a [--auto]: Needs description"
 msgstr "-a [--auto]: 自动找到合并点"

@@ -190,7 +190,7 @@ msgstr "已送交修訂版號 %1 的更動。\n"
 #. ((split/:/)
 #: lib/SVK/Command/Info.pm:41
 msgid "Copied from %1, Rev. %2\n"
-msgstr "已從 %1 複製版本 %2\n"
+msgstr "從 %1 的版本 %2 複製\n"
 
 #. ($dst->{report})
 #: lib/SVK/Command/Copy.pm:129
