@@ -109,7 +109,7 @@ sub load {
     my ($self) = @_;
     my $info;
 
-    mkdir($self->{svkpath}) || die loc("Cannot create svk-config-directory: $!")
+    mkdir($self->{svkpath}) || die loc("Cannot create svk-config-directory at '$self->{svkpath}': $!")
         unless -d $self->{svkpath};
 
     $self->giant_lock ();
@@ -893,8 +893,9 @@ sub _delta_dir {
     my $targets;
     for (@{$arg{targets} || []}) {
 	my ($volume, $directories, $file) = splitpath ($_);
-	if ( my $path = $volume.$directories ) {
-	    chop $path;
+	if ( my @dirs = splitdir($directories) ) {
+	    my $path = $volume . shift(@dirs);
+            $file = catdir(grep length, @dirs, $file);
 	    push @{$targets->{$path}}, $file
 	}
 	else {
