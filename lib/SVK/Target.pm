@@ -1,12 +1,10 @@
 package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
-use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_anchor catfile abs2rel HAS_SVN_MIRROR IS_WIN32
-		  find_prev_copy );
-use SVK::Target::Universal;
-use Clone;
+use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
+			       IS_WIN32 find_prev_copy );
+
 
 =head1 NAME
 
@@ -39,6 +37,8 @@ sub refresh_revision {
 
 sub clone {
     my ($self) = @_;
+
+    require Clone;
     my $cloned = Clone::clone ($self);
     $cloned->{repos} = $self->{repos};
     return $cloned;

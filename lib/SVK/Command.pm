@@ -2,14 +2,10 @@ package SVK::Command;
 use strict;
 our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
-# XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
-use SVN::Simple::Edit;
-use SVK::Target;
-use Pod::Simple::Text ();
-use Pod::Simple::SimpleTree ();
-use File::Find ();
+
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
 use SVK::I18N;
+
 
 =head1 NAME
 

@@ -1,11 +1,12 @@
 package SVK::Editor::Merge;
 use strict;
 our $VERSION = $SVK::VERSION;
+
+require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
-use SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5_fh get_anchor tmpfile devnull );
-use IO::Digest;
+use autouse 'SVK::Util' => qw( slurp_fh md5_fh get_anchor tmpfile devnull );
+
 use constant FH => 0;
 use constant FILENAME => 1;
 use constant CHECKSUM => 2;
@@ -130,7 +131,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Compare ();
 
 sub cb_for_root {
-    my ($root, $anchor, $base_rev) = @_;
+    my ($class, $root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my $path = $anchor.'/'.shift;
 		   return $root->check_path ($path);

@@ -4,7 +4,8 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use Pod::Simple::Text ();
+
+use autouse 'File::Find' => qw(find);
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
 
@@ -19,7 +20,7 @@ sub run {
             my $dir = $INC{'SVK/Command.pm'};
             $dir =~ s/\.pm$//;
             print loc("Available commands:\n");
-            File::Find::find (
+            find (
                 sub { push @cmd, $File::Find::name if m/\.pm$/ }, $dir,
             );
             $self->brief_usage ($_) for sort @cmd;

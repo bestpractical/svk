@@ -234,6 +234,7 @@ sub _collect_renamed {
     my $path = $$pathref;
     for (keys %$paths) {
 	my $entry = $paths->{$_};
+	require SVK::Command;
 	my $action = $SVK::Command::Log::chg->[$entry->change_kind];
 	$entries->{$_} = [$action , $action eq 'D' ? (-1) : $root->copied_from ($_)];
 	# anchor is copied

@@ -1,11 +1,12 @@
 package SVK::Editor::XD;
 use strict;
 our $VERSION = $SVK::VERSION;
+
+use SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
-use SVN::Delta;
-use File::Path;
-use SVK::Util qw( get_anchor md5_fh catpath );
+use autouse 'File::Path' => qw(rmtree);
+use autouse 'SVK::Util'  => qw( get_anchor md5_fh catpath );
 
 =head1 NAME
 

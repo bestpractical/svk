@@ -148,7 +148,7 @@ sub get_editor {
     my $yrev = $fs->youngest_rev;
     my $root = $fs->revision_root ($yrev);
 
-    %cb = SVK::Editor::Merge::cb_for_root
+    %cb = SVK::Editor::Merge->cb_for_root
 	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
 
     if ($self->{patch}) {

@@ -19,6 +19,17 @@ our @EXPORT_OK = qw(
 );
 our $VERSION = $SVK::VERSION;
 
+
+use Config ();
+use SVK::I18N;
+use SVN::Core;
+use SVN::Ra;
+use autouse 'File::Glob' 	=> qw(bsd_glob);
+use autouse 'File::Basename' 	=> qw(dirname);
+use autouse 'File::Spec::Functions' => 
+                               qw(catdir catpath splitpath splitdir tmpdir);
+
+
 =head1 NAME
 
 SVK::Util - Utility functions for SVK classes
@@ -35,16 +46,6 @@ IO handling, tailored to SVK's specific needs.
 No symbols are exported by default; the user module needs to specify the
 list of functions to import.
 
-=cut
-
-use Config ();
-use SVK::I18N;
-use File::Glob qw(bsd_glob);
-use File::Basename qw(dirname);
-use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
-# ra must be loaded earlier since it uses the default pool
-use SVN::Core;
-use SVN::Ra;
 
 =head1 CONSTANTS
 
@@ -375,7 +376,6 @@ Calculate MD5 checksum for data in the input filehandle.
 sub md5_fh {
     my $fh = shift;
 
-    require Digest::MD5;
     my $ctx = Digest::MD5->new;
     $ctx->addfile($fh);
 
@@ -397,7 +397,6 @@ sub mimetype {
     binmode($fh);
     read $fh, my $data, 16*1024 or return undef;
 
-    require File::Type;
     my $type = File::Type->checktype_contents($data);
 
     # On fallback, use the same logic as File::MimeInfo to detect text

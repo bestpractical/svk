@@ -264,7 +264,7 @@ sub update {
     my $conflict;
 
     if ($conflict = $self->apply_to ($target, $patch, patch => 1,
-				     SVK::Editor::Merge::cb_for_root
+				     SVK::Editor::Merge->cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
 
 	print loc("Conflicts.\n");
@@ -293,7 +293,7 @@ sub regen {
     my $patch = SVK::Editor::Patch->new;
     # XXX: handle empty
     unless ($conflict = $merge->run ($patch,
-				     SVK::Editor::Merge::cb_for_root
+				     SVK::Editor::Merge->cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
 	$self->{log} = $merge->log (1);
 	++$self->{level};

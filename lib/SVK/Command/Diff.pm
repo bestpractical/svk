@@ -3,10 +3,8 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
-use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw(get_anchor);
-use SVK::Editor::Diff;
+use autouse 'SVK::Util' => qw(get_anchor);
 
 sub options {
     ("v|verbose"    => 'verbose',

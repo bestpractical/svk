@@ -2,17 +2,10 @@
 use strict;
 use SVK;
 our $VERSION = $SVK::VERSION;
-require SVN::Core;
-require SVN::Repos;
-require SVN::Fs;
-use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw(get_anchor catfile catdir);
+use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
 use Getopt::Long qw(:config no_ignore_case bundling);
-use Cwd;
-use File::Spec;
-use Data::Hierarchy;
-use SVK::Command;
+
 
 =head1 NAME
 

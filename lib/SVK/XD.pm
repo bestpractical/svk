@@ -4,24 +4,18 @@ our $VERSION = $SVK::VERSION;
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
-require SVN::Delta;
-require SVK::Merge;
-use SVK::Editor::Status;
-use SVK::Editor::Delay;
-use SVK::Editor::XD;
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname );
-use Data::Hierarchy 0.21;
-use File::Spec;
-use File::Find;
-use File::Path;
-use YAML qw(LoadFile DumpFile);
+use autouse 'File::Find' => qw(find);
+use autouse 'File::Path' => qw(rmtree);
+use autouse 'YAML'	 => qw(LoadFile DumpFile);
+use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
-use Regexp::Shellish qw( compile_shellish ) ;
+
 
 =head1 NAME
 
