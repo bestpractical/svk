@@ -82,6 +82,8 @@ sub get_editor {
 	my $xdroot = $target->root ($self->{xd});
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
+	      # assuming the editor returned here are used with Editor::Merge
+	      ignore_checksum => 1,
 	      targets => undef,
 	      quiet => 1,
 	      oldroot => $xdroot,

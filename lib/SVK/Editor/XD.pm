@@ -69,6 +69,10 @@ A callback to translate paths in editor calls to copath.
 
 Path for reporting modifications.
 
+=item ignore_checksum
+
+Don't do checksum verification.
+
 =back
 
 =cut
@@ -117,7 +121,7 @@ sub apply_textdelta {
 	  or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
 
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
-	if ($checksum) {
+	if (!$self->{ignore_checksum} && $checksum) {
 	    my $md5 = md5_fh ($base);
 	    die loc("source checksum mismatch") if $md5 ne $checksum;
 	    seek $base, 0, 0;

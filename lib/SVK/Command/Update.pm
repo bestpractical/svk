@@ -72,6 +72,7 @@ sub do_update {
 	 src => $update_target, dst => $cotarget,
 	 xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
 					  revision => $update_target->{revision},
 					  anchor => $cotarget->{path},
