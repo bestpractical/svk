@@ -92,6 +92,7 @@ sub hist_status {
 
 sub flush {
     my ($self, $path, $anchor) = @_;
+    return if $self->{quiet};
     my $status = $self->{status}{$path};
     if ($status && grep {$_} @{$status}[0..2]) {
 	$self->{cb_flush}->($path, $status) if $self->{cb_flush};
@@ -104,11 +105,12 @@ sub flush {
 
 sub flush_dir {
     my ($self, $path) = @_;
+    return if $self->{quiet};
     for (grep {$path ? index($_, "$path/") == 0 : $_}
 	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }
-    $self->flush ($path, 1) unless $path;
+    $self->flush ($path, 1);
 }
 
 =head1 AUTHORS

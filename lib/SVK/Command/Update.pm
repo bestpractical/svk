@@ -12,6 +12,7 @@ sub options {
      'N|non-recursive' => 'nonrecursive',
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
+     'q|quiet'         => 'quiet',
      'I|incremental'   => 'incremental', # -- XXX unsafe -- undocumented XXX --
     );
 }
@@ -114,6 +115,7 @@ sub do_update {
 
     my $notify = SVK::Notify->new_with_report
 	($report, $cotarget->{targets}[0], 1);
+    $notify->{quiet}++ if $self->{quiet};
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => $self->{nonrecursive}, notify => $notify, nodelay => 1,
@@ -146,6 +148,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
  -N [--non-recursive]   : do not descend recursively
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
+ -m [--quiet]           : quiet mode
 
 =head1 DESCRIPTION
 

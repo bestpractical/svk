@@ -10,7 +10,6 @@
   - show paths in import and commit.
 
 * better tree merger
-  - Merge added directories.
   - Merge moved files and directories.
 
 * checkout signatures
