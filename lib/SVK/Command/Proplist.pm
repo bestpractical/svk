@@ -96,7 +96,7 @@ SVK::Command::Proplist - List all properties on files or dirs
 
  -R [--recursive]       : descend recursively
  -v [--verbose]         : print extra information
- -r [--revision] number	: act on revision ARG instead of the head revision
+ -r [--revision] REV	: act on revision REV instead of the head revision
  --revprop              : operate on a revision property (use with -r)
  --direct               : commit directly even if the path is mirrored
 

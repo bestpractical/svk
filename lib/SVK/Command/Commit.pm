@@ -427,9 +427,9 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 OPTIONS
 
- -m [--message] message	: specify commit message ARG
+ -m [--message] MESSAGE	: specify commit message MESSAGE
  -C [--check-only]      : try operation but make no changes
- -P [--patch] name	: instead of commit, save this change as a patch
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  -N [--non-recursive]   : operate on single directory only
  --encoding ENC         : treat value as being in charset encoding ENC

@@ -216,7 +216,7 @@ SVK::Command::Merge - Apply differences between two sources
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
- -P [--patch] name	: instead of commit, save this change as a patch
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point

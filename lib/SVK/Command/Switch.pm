@@ -65,7 +65,7 @@ SVK::Command::Switch - Switch to another branch and keep local changes
 
 =head1 OPTIONS
 
- -r [--revision] number	: act on revision ARG instead of the head revision
+ -r [--revision] REV	: act on revision REV instead of the head revision
  -d [--detach]          : mark a path as no longer checked out
 
 =head1 AUTHORS

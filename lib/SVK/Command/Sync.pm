@@ -99,8 +99,8 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 =head1 OPTIONS
 
  -a [--all]             : synchronize all mirrored paths
- -s [--skipto] number	: start synchronization at revision ARG
- -t [--torev] number	: stop synchronization at revision ARG
+ -s [--skipto] REV	: start synchronization at revision REV
+ -t [--torev] REV	: stop synchronization at revision REV
 
 =head1 AUTHORS
 
