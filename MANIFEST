@@ -35,4 +35,4 @@ t/7smerge.t
 t/8multimerge.t
 t/9cherrypicking.t
 t/10switch.t
-t/tree.t
+t/tree.pl

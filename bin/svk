@@ -19,7 +19,7 @@ use SVN::CommitStatusEditor;
 use File::Temp qw/:mktemp/;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc ver/;
+use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc ver ls/;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
@@ -1850,6 +1850,74 @@ sub import {
 		       );
 }
 
+=head2 cat
+
+Output the content of the target.
+
+  usage: cat TARGET...
+
+=cut
+
+sub cat {
+    local @ARGV = @_;
+    my ($rev);
+    die unless GetOptions ("r|revision=i"  => \$rev);
+
+    for (@ARGV) {
+	my (undef, $path, undef, undef, $repos) = find_repos_from_co_maybe ($_, 1);
+	my $pool = SVN::Pool->new_default;
+	my $fs = $repos->fs;
+	my $root = $fs->revision_root ($rev || $fs->youngest_rev);
+	my $stream = $root->file_contents ($path);
+	# XXX: the keyword layer interface should also have reverse
+	my $layer = SVN::XD::get_keyword_layer ($root, "$path");
+
+	my $io = new IO::Handle;
+	$io->fdopen(fileno(STDOUT),"w");
+	$layer->via ($io) if $layer;
+
+	local $/ = \16384;
+	while (<$stream>) {
+	    print $io $_;
+	}
+    }
+
+}
+
+=head2 list (ls)
+
+Output the content of the target directory.
+
+  usage: cat TARGET...
+
+=cut
+
+sub list {
+    local @ARGV = @_;
+    my ($rev, $verbose, $recursive);
+    die unless GetOptions ("r|revision=i"  => \$rev,
+			   "v|verbose"	   => \$verbose,
+			   "R|recursive"   => \$recursive);
+
+    @ARGV = ('') if $#ARGV == -1;
+
+    for (@ARGV) {
+	my (undef, $path, undef, undef, $repos) = find_repos_from_co_maybe ($_, 1);
+	my $pool = SVN::Pool->new_default;
+	my $fs = $repos->fs;
+	my $root = $fs->revision_root ($rev || $fs->youngest_rev);
+	unless ($root->check_path ($path) == $SVN::Node::dir) {
+	    print "$_ is not a versioned directory\n";
+	    next;
+	}
+	my $entries = $root->dir_entries ($path);
+	for (sort keys %$entries) {
+	    print $_.($entries->{$_}->kind == $SVN::Node::dir ? '/' : '')."\n";
+	}
+    }
+}
+
+
 *co = *checkout;
 *up = *update;
 *st = *status;
@@ -1864,6 +1932,7 @@ sub import {
 *sy = *sync;
 *desc = *describe;
 *ver = *version;
+*ls = *list;
 
 my $show_version;
 
