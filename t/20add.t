@@ -75,8 +75,8 @@ SKIP: {
 skip 'File::MimeInfo not installed', 1 unless eval 'require File::MimeInfo::Magic; 1';
 
 overwrite_file ("A/foo.pl", "#!/usr/bin/perl\n");
-overwrite_file ("A/foo.jpg", "xff\xd8\xffthis is jpeg");
-overwrite_file ("A/foo.bin", "\xf0\xff\xd1\xffthis is binary");
+overwrite_file ("A/foo.jpg", "\xff\xd8\xff\xe0this is jpeg");
+overwrite_file ("A/foo.bin", "\x1f\xf0\xff\x01\x00\xffthis is binary");
 overwrite_file ("A/foo.html", "<html>");
 
 $svk->add ('A/foo.pl', 'A/foo.bin', 'A/foo.jpg', 'A/foo.html');

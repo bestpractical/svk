@@ -484,7 +484,8 @@ sub auto_prop {
     return {'svn:special' => '*'} if -l $copath;
     my $prop;
     $prop->{'svn:executable'} = '*' if -x $copath;
-    if (my $type = mimetype($copath)) {
+    open my $fh, $copath or die $!;
+    if (my $type = mimetype($fh)) {
 	# add only binary mime types or text/* but not text/plain
 	$prop->{'svn:mime-type'} = $type
 	    if $type ne 'text/plain' &&
@@ -517,7 +518,7 @@ sub do_add {
 				cb_unknown => sub {
 				    $self->{checkout}->store
 					($_[1], { '.schedule' => 'add',
-						  -d $_[1] ? () :
+						  ($arg{no_autoprop} || -d $_[1]) ? () :
 						  ('.newprop'  => $self->auto_prop ($_[1]))
 						});
 				    my $report = SVK::Target->copath ($arg{report}, $_[0]);

@@ -145,7 +145,7 @@ sub close_file {
     elsif (!$self->{update} && !$self->{check_only}) {
 	my $report = $copath;
 	$report =~ s/^\Q$self->{copath}\E/$self->{report}/ if $self->{report};
-	$self->{xd}->do_add (report => $report,
+	$self->{xd}->do_add (report => $report, no_autoprop => 1,
 			     copath => $copath, quiet => $self->{quiet});
     }
     if ($self->{update}) {
@@ -166,7 +166,7 @@ sub add_directory {
     mkdir ($copath) unless $self->{check_only};
     my $report = $path;
     $report =~ s/^\Q$self->{target}\E/$self->{report}/ if $self->{report};
-    $self->{xd}->do_add (report => $report,
+    $self->{xd}->do_add (report => $report, no_autoprop => 1,
 			 copath => $copath, quiet => $self->{quiet})
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
