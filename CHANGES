@@ -1,3 +1,79 @@
+[Changes for 0.991 - 29 Mar, 2005]
+
+* Fix a regression for smerge supplying message from editor.
+
+* Fix an edge case that push doesn't report empty merge when
+  the mirrored remote repository is completely empty.
+
+* Proper locking for svn::mirror objects, and mirror --unlock.
+
+* svk patch subcommands are now options. [jesse]
+
+* Support HEAD, BASE, and {DATE} in many commands using -r. [gugod]
+
+* Support mkdir multiple copaths. [hcchien]
+
+* Add --summary to smerge and push to show logs for changes to be merged. [#7791]
+
+* Optionally support paging help text with IO::Pager. [gugod]
+
+* Fix support for replace with history.
+
+* Don't trust LML would return a valid encoding that Encode knows.
+  [Eric Gillespie <epg@pretzelnet.org>]
+
+* Make multiple -r options to dwim. [#7038]
+
+* Allow import into mirrored path, and cleanup old code.
+
+* Allow merge -c -REV to rollback rev.  This is the same as -rREV:REV-1.
+
+* Add missing -c help to merge. [Ethan Tuttle <ethan@etuttle.com>]
+
+* Make checkout, update, and merge deal with unwritable checkout copy
+  more gracefully.
+
+* Fix move on mirrored path.
+
+* Fix rm for scheduled symlinks.
+
+* Proper message for cp nonexisting parent without -p.
+
+* Properly skip special node types like socket or device in checkout_delta.
+
+* On writing mixed-eol files, don't croak on normalization.
+
+* When doing file-anchored merges, ensure file is opened before
+  cb_merged is called.
+
+* When doing file-level merge, translate and report the target path
+  properly.
+
+* Do proper eol translation per svn:eol on local (yours) node
+  before textual merges are invoked.
+
+* Proper io layer ordering, and force re-translation for merge text
+  when needed.
+
+* Reopen FH in prepare_fh when needed, since apply_textdelta already
+  closed the fh for us.
+
+* Propset now works on multiple overlapping copaths. [#8139]
+
+* Fix a buglet that two props set on a added node will be reported
+  as added and prop-modified.
+
+* Make svk info work on removed path. [mathhewd]
+
+* Reflect errors in bin/svk exit codes. [matthewd]
+
+* Update various help messages [#7217] [#7877] [hcchien]
+
+* svk verify now only checks with the content guarded by PGP block.
+
+* Fix a bug that interactive merge dies out horribly when you
+  edit the merged file, exit with saving and answer a)bort.
+
 [Changes for 0.30 - 2 Mar, 2005]
 
 * Support native encodings for pathnames and log messages handling.
