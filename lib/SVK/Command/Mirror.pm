@@ -200,7 +200,7 @@ sub recover_headrev {
 
     $self->command(
         propset => { direct  => 1, revprop => 1 },
-    )->run($_ => $props->{$_}, $target) for sort keys %$props;
+    )->run($_ => $props->{$_}, $target) for sort grep {m/^sv[nm]/} keys %$props;
 
     print loc("Mirror state successfully recovered.\n");
     return;
