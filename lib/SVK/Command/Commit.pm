@@ -9,7 +9,8 @@ use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh find_svm_source tmpfile abs2rel );
 use SVN::Simple::Edit;
 
-my $target_prompt = '=== below are targets to be committed ===';
+use constant target_prompt => '=== Targets to commit (you may delete items from it) ===';
+use constant message_prompt => '=== This line, and those below, will be ignored ===';
 
 sub options {
     ('m|message=s'  => 'message',
@@ -29,8 +30,6 @@ sub parse_arg {
 }
 
 sub lock { $_[0]->lock_target ($_[1]) }
-
-sub target_prompt { $target_prompt }
 
 sub under_mirror {
     my ($self, $target) = @_;
@@ -70,7 +69,7 @@ sub get_commit_message {
     my ($self, $msg) = @_;
     return if defined $self->{message};
     $self->{message} = get_buffer_from_editor
-	(loc('log message'), $target_prompt, join ("\n", $msg || '', $target_prompt, ''), 'commit');
+	(loc('log message'), $self->message_prompt, join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
 }
 
 # XXX: This should just return Editor::Dynamic objects
@@ -212,7 +211,7 @@ sub get_committable {
 	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }
 
-    print $fh "\n$target_prompt\n" if $fh;
+    print $fh "\n", $self->target_prompt, "\n" if $fh;
 
     my $targets = [];
     my $statuseditor = SVK::Editor::Status->new
@@ -253,7 +252,7 @@ sub get_committable {
         $target->{targets} ||= [];
 
 	($self->{message}, $targets) =
-	    get_buffer_from_editor (loc('log message'), $target_prompt,
+	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
 	unlink $file;
     }

@@ -151,12 +151,19 @@ sub get_buffer_from_editor {
     my $time = time;
 
     while (1) {
-        utime ($time - 10, $time - 10, $file);
-	my $mtime = (stat($file))[9];
+        open my $fh, '<', $file or die $!;
+        my $md5 = md5_fh($fh);
+        close $fh;
+
 	print loc("Waiting for editor...\n");
+
 	# XXX: check $?
 	system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
-	last if (stat($file))[9] > $mtime;
+
+        open $fh, '<', $file or die $!;
+        last if ($md5 ne md5_fh($fh));
+        close $fh;
+
 	my $ans = get_prompt(
 	    loc("%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what)),
 	    qr/^[aec]/,
@@ -167,9 +174,13 @@ sub get_buffer_from_editor {
 
     open $fh, $file or die $!;
     local $/;
-    my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
+    my @ret = defined $sep ? split (/^\Q$sep\E$/m, <$fh>, 2) : (<$fh>);
     close $fh;
     unlink $file;
+
+    die loc("Cannot find separator; aborted.\n")
+        if defined($sep) and !defined($ret[1]);
+
     return $ret[0] unless wantarray;
 
     # Compare targets in commit message
