@@ -211,6 +211,7 @@ sub view {
 	    cb_baseprop => sub { my ($path, $pname) = @_;
 				 return $baseroot->node_prop ("$anchor/$path", $pname);
 			     },
+	    oldtarget => $self->{_target}, oldroot => $baseroot,
 	    llabel => "revision $self->{target}{rev}",
 	    rlabel => "patch $self->{name} level $self->{level}",
 	    external => $ENV{SVKDIFF},

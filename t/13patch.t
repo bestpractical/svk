@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 28;
+plan_svm tests => 29;
 
 use File::Copy qw( copy );
 our $output;
@@ -222,6 +222,11 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    ' file fe added later',
 	    '+bzzzzz',
 	    '+fnord']);
+
+$svk->st ($scopath);
+$svk->rm ("$scopath/me");
+is_output ($svk, 'ci', ['-m', 'delete something', '-P', 'delete', $scopath],
+	   ['Patch delete created.']);
 TODO: {
 local $TODO = 'later';
 
