@@ -5,7 +5,9 @@ use File::Basename qw( dirname );
 
 BEGIN {
     my $manifest = File::Spec->catdir( dirname(__FILE__), '..', 'MANIFEST' );
+    require SVN::Core;
 
+    diag "Subversion $SVN::Core::VERSION";
     plan skip_all => 'MANIFEST not exists' unless -e $manifest;
     open FH, $manifest;
 

@@ -1,5 +1,9 @@
 #!/usr/bin/perl
+
+my $pid = $$;
+
 END {
+    return unless $$ == $pid;
     rm_test($_) for @TOCLEAN;
 }
 
@@ -38,6 +42,7 @@ use SVK::XD;
 
 our @TOCLEAN;
 END {
+    return unless $$ == $pid;
     $SIG{__WARN__} = sub { 1 };
     cleanup_test($_) for @TOCLEAN;
 }
@@ -383,6 +388,7 @@ sub replace_file {
 }
 
 END {
+    return unless $$ == $pid;
     unlink $_ for @unlink;
 }
 
