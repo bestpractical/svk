@@ -69,39 +69,26 @@ ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 	      'svm:uuid' => $suuid }),
     'simple smerge back to source');
 
-#print `svn diff -r 3:4 file://$srepospath/A/be`;
-
-#print 'diff 7:8: '.`svn diff -r 7:8 file://$repospath`;
 svk::smerge ('-C', '//m', '//l');
 svk::smerge ('-m', 'mergedown', '//m', '//l');
 svk::smerge ('-m', 'mergedown', '//m', '//l');
 
-#svk::proplist ('-v', $copath);
+append_file ("$scopath/A/be", "more modification on trunk\n");
+svk::commit ('-m', 'commit on trunk', $scopath);
+svk::sync ('//m');
+
+svk::update ($copath);
+append_file ("$copath/be", "modification on local\n");
+svk::commit ('-m', 'commit on local', $copath);
+svk::smerge ('-C', '//m', $copath);
+svk::smerge ('//m', $copath);
+svk::status ($copath);
+svk::revert ("$copath/be");
+svk::resolved ("$copath/be");
+svk::commit ('-m', 'merge down committed from checkout', $copath);
 
 svk::mirror ('/client2/trunk', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 
 svk::sync ('/client2/trunk');
 svk::copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
 
-=comment
-
-ok (-e "$corpath/A/be");
-append_file ("$copath/A/be", "from local branch of svm'ed directory\n");
-mkdir "$copath/A/T/";
-append_file ("$copath/A/T/xd", "local new file\n");
-
-svk::add ("$copath/A/T");
-svk::delete ("$copath/B/S/P/pe");
-
-svk::commit ('-m', 'local modification from branch', "$copath");
-svk::merge (qw/-C -r 4:5/, '-m', 'merge back to remote', '//l', '//m');
-svk::merge (qw/-r 4:5/, '-m', 'merge back to remote', '//l', '//m');
-
-svk::sync ('//m');
-
-$pool = SVN::Pool->new_default; # for some reasons
-
-svk::merge (qw/-r 5:6/, '//m', $copath);
-svk::status ($copath);
-
-=cut

@@ -1,7 +1,7 @@
 package SVK::Util;
 require Exporter;
 @ISA       = qw(Exporter);
-@EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh);
+@EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor);
 $VERSION   = '0.09';
 
 use Digest::MD5 qw(md5_hex);
@@ -70,5 +70,15 @@ sub slurp_fh {
 	print $to $_;
     }
 }
+
+sub get_anchor {
+    my $needtarget = shift;
+    map {
+	my (undef,$anchor,$target) = File::Spec->splitpath ($_);
+	chop $anchor if length ($anchor) > 1;
+	($anchor, $needtarget ? ($target) : ())
+    } @_;
+}
+
 
 1;

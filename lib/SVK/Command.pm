@@ -80,8 +80,6 @@ sub invoke {
 
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->{xd} = $xd;
-    # XXX: legacy support
-    $cmd->{info} = $xd;
     die unless GetOptions ($cmd, _opt_map($cmd, $cmd->options));
     my @args = $cmd->parse_arg(@ARGV);
     $cmd->lock (@args);

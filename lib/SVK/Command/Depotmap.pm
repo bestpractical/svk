@@ -11,7 +11,7 @@ use File::Path;
 sub run {
     my ($self) = @_;
     my $sep = '===edit the above depot map===';
-    my $map = YAML::Dump ($self->{info}->{depotmap});
+    my $map = YAML::Dump ($self->{xd}{depotmap});
     my $new;
     do {
 	$map = get_buffer_from_editor ('depot map', $sep, "$map\n$sep\n",
@@ -20,8 +20,8 @@ sub run {
 	print "$@\n" if $@;
     } while ($@);
     print "New depot map saved.\n";
-    $self->{info}->{depotmap} = $new;
-    for my $path(values %{$self->{info}->{depotmap}}) {
+    $self->{xd}{depotmap} = $new;
+    for my $path (values %{$self->{xd}{depotmap}}) {
 	my $ans;
 	next if -d $path;
 	print "Repository $path does not exist, create? (y/n) ";

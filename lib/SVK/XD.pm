@@ -8,7 +8,7 @@ require SVN::Delta;
 require SVK::MergeEditor;
 use SVK::RevertEditor;
 use SVK::DeleteEditor;
-use SVK::Util qw( slurp_fh md5 );
+use SVK::Util qw( slurp_fh md5 get_anchor );
 use Data::Hierarchy '0.15';
 use File::Spec;
 use File::Find;
@@ -37,12 +37,10 @@ sub load {
     else {
 	mkdir ($svkpath);
     }
-    # wait until lock for giantlock
 
     $info ||= { depotmap => {'' => "$svkpath/local" },
 	        checkout => Data::Hierarchy->new(),
 	      };
-
     $self->{$_} = $info->{$_} for keys %$info;
 }
 
@@ -107,17 +105,8 @@ sub giant_unlock {
     delete $self->{giantlocked};
 }
 
-sub get_anchor {
-    my $needtarget = shift;
-    map {
-	my (undef,$anchor,$target) = File::Spec->splitpath ($_);
-	chop $anchor if length ($anchor) > 1;
-	($anchor, $needtarget ? ($target) : ())
-    } @_;
-}
-
 sub condense {
-    my $info = shift;
+    my $self = shift;
     my @targets = map {Cwd::abs_path ($_ || '')} @_;
     my ($anchor, $report);
     $report = $_[0];
@@ -126,7 +115,7 @@ sub condense {
 	    $anchor = $_;
 	    $report = $_[0]
 	}
-	my $schedule = $info->{checkout}->get ($anchor)->{'.schedule'} || '';
+	my $schedule = $self->{checkout}->get ($anchor)->{'.schedule'} || '';
 	if ($anchor ne $_ || -f $anchor ||
 	    $schedule eq 'add' || $schedule eq 'delete') {
 	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
@@ -145,32 +134,31 @@ sub xdroot {
 }
 
 sub create_xd_root {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $fs = $arg{repos}->fs;
     my ($txn, $root);
 
-    my @paths = $info->{checkout}->find ($arg{copath}, {revision => qr'.*'});
+    my @paths = $self->{checkout}->find ($arg{copath}, {revision => qr'.*'});
 
     return (undef, $fs->revision_root
-	    ($info->{checkout}->get ($paths[0] || $arg{copath})->{revision}))
+	    ($self->{checkout}->get ($paths[0] || $arg{copath})->{revision}))
 	if $#paths <= 0;
 
     for (@paths) {
-	my $rev = $info->{checkout}->get ($_)->{revision};
-	my $deleted = $info->{checkout}->get ($_)->{'.deleted'};
+	my $cinfo = $self->{checkout}->get ($_);
 	unless ($root) {
-	    $txn = $fs->begin_txn ($rev);
+	    $txn = $fs->begin_txn ($cinfo->{revision});
 	    $root = $txn->root();
 	    next if $_ eq $arg{copath};
 	}
 	s|^\Q$arg{copath}\E/||;
 	$root->make_dir ($arg{path})
 	    if $root->check_path ($arg{path}) == $SVN::Node::none;
-	if ($deleted) {
+	if ($cinfo->{'.deleted'}) {
 	    $root->delete ("$arg{path}/$_");
 	}
 	else {
-	    SVN::Fs::revision_link ($fs->revision_root ($rev),
+	    SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
 				    $root, "$arg{path}/$_");
 	}
     }
@@ -185,16 +173,16 @@ sub translator {
 }
 
 sub xd_storage_cb {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $t = translator ($arg{target});
 
     # translate to abs path before any check
     return
 	( cb_exist => sub { $_ = shift; s|$t|$arg{copath}/|; -e $_},
 	  cb_rev => sub { $_ = shift; s|$t|$arg{copath}/|;
-			  $info->{checkout}->get ($_)->{revision} },
+			  $self->{checkout}->get ($_)->{revision} },
 	  cb_conflict => sub { $_ = shift; s|$t|$arg{copath}/|;
-			       $info->{checkout}->store ($_, {'.conflict' => 1})
+			       $self->{checkout}->store ($_, {'.conflict' => 1})
 				   unless $arg{check_only};
 			   },
 	  cb_localmod => sub { my ($path, $checksum) = @_;
@@ -353,16 +341,16 @@ sub do_proplist {
 }
 
 sub do_propset {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my %values;
 
     my ($txn, $xdroot);
-    my $entry = $info->{checkout}->get ($arg{copath});
+    my $entry = $self->{checkout}->get ($arg{copath});
     $entry->{'.schedule'} ||= '';
     $entry->{'.newprop'} ||= {};
 
     unless ($entry->{'.schedule'} eq 'add' || !$arg{repos}) {
-	($txn, $xdroot) = create_xd_root ($info, %arg);
+	($txn, $xdroot) = create_xd_root ($self, %arg);
 
 	die "$arg{copath} ($arg{path})not under version control"
 	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
@@ -373,7 +361,7 @@ sub do_propset {
 	if $entry->{'.schedule'} eq 'delete';
     %values = %{$entry->{'.newprop'}}
 	if exists $entry->{'.schedule'};
-    $info->{checkout}->store ($arg{copath},
+    $self->{checkout}->store ($arg{copath},
 			      { '.schedule' => $entry->{'.schedule'} || 'prop',
 				'.newprop' => {%values,
 					    $arg{propname} =>
@@ -458,7 +446,7 @@ sub ignore {
 }
 
 sub _delta_content {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
 
     my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef, $arg{pool});
     return unless $handle && $#{$handle} > 0;
@@ -475,10 +463,10 @@ sub _delta_content {
 }
 
 sub _delta_file {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
     my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry});
-    my $cinfo = $arg{cinfo} || $info->{checkout}->get ($arg{copath});
+    my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
 
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
@@ -513,17 +501,17 @@ sub _delta_file {
 
     if ($arg{add} || $mymd5 ne ($md5 ||= $arg{xdroot}->file_md5_checksum ($arg{path}))) {
 	seek $fh, 0, 0;
-	_delta_content ($info, %arg, baton => $baton, fh => $fh, pool => $pool);
+	$self->_delta_content (%arg, baton => $baton, fh => $fh, pool => $pool);
     }
 
     $arg{editor}->close_file ($baton, $mymd5, $pool);
 }
 
 sub _delta_dir {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
     my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry} || '');
-    my $cinfo = $arg{cinfo} || $info->{checkout}->get ($arg{copath});
+    my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
 
     # compute targets for children
@@ -558,7 +546,7 @@ sub _delta_dir {
 	# might not be consistent
 	$arg{editor}->delete_entry ($arg{entry}, $rev, $arg{baton}, $pool);
 	if ($arg{delete_verbose}) {
-	    for ($info->{checkout}->find
+	    for ($self->{checkout}->find
 		 ($arg{copath}, {'.schedule' => 'delete'})) {
 		s|^$arg{copath}/?||;
 		$arg{editor}->delete_entry ("$arg{entry}/$_", $rev, $arg{baton}, $pool)
@@ -586,7 +574,7 @@ sub _delta_dir {
     for (keys %{$entries}) {
 	my $kind = $entries->{$_}->kind;
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
-	&{$delta} ($info, %arg,
+	$self->$delta ( %arg,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   kind => $kind,
 		   targets => $targets->{$_},
@@ -603,13 +591,13 @@ sub _delta_dir {
 
     if ($dir) {
 
-    my $svn_ignore = get_props ($info, $arg{xdroot}, $arg{path},
-				$arg{copath})->{'svn:ignore'}
+    my $svn_ignore = $self->get_props ($arg{xdroot}, $arg{path},
+				       $arg{copath})->{'svn:ignore'}
         if $arg{kind} == $SVN::Node::dir;
     my $ignore = ignore (split ("\n", $svn_ignore || ''));
     for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
 	next if m/$ignore/;
-	my $ccinfo = $info->{checkout}->get ("$arg{copath}/$_");
+	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$_");
 	my $sche = $ccinfo->{'.schedule'};
 	unless ($arg{add} || $sche) {
 	    if ($arg{cb_unknown} &&
@@ -634,7 +622,7 @@ sub _delta_dir {
 	    next;
 	}
 	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
-	&{$delta} ($info, %arg,
+	$self->$delta ( %arg,
 		   add => 1,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   kind => $arg{xdroot}->check_path ("$arg{path}/$_"),
@@ -658,8 +646,8 @@ sub _delta_dir {
 }
 
 sub _get_rev {
-    my ($info, $path) = @_;
-    $info->{checkout}->get($path)->{revision}
+    my ($self, $path) = @_;
+    $self->{checkout}->get($path)->{revision};
 }
 
 
@@ -670,30 +658,30 @@ sub _get_rev {
 #  absent_ignore: don't generate absent_* calls.
 
 sub checkout_delta {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $kind = $arg{xdroot}->check_path ($arg{path});
     my $copath = $arg{copath};
     $arg{cb_rev} ||= sub { my $target = shift;
 			   $target = $target ? "$copath/$target" : $copath;
-			   _get_rev($info, $target);
+			   $self->_get_rev ($target);
 		       };
     $arg{kind} = $kind;
     my $rev = &{$arg{cb_rev}} ('');
     my $baton = $arg{editor}->open_root ($rev);
 
     if ($kind == $SVN::Node::file) {
-	_delta_file ($info, %arg, baton => $baton);
+	$self->_delta_file (%arg, baton => $baton);
     }
     elsif ($kind == $SVN::Node::dir) {
-	_delta_dir ($info, %arg, baton => $baton, root => 1);
+	$self->_delta_dir (%arg, baton => $baton, root => 1);
     }
     else {
 	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
 	my $sche =
-	    $info->{checkout}->get ($arg{copath})->{'.schedule'} || '';
+	    $self->{checkout}->get ($arg{copath})->{'.schedule'} || '';
 
 	if ($sche eq 'add') {
-	    &{$delta} ($info, %arg,
+	    $self->$delta ( %arg,
 		       add => 1,
 		       baton => $baton,
 		       root => 1);
@@ -724,28 +712,28 @@ sub checkout_delta {
 }
 
 sub resolved_entry {
-    my ($info, $entry) = @_;
-    my $val = $info->{checkout}->get ($entry);
+    my ($self, $entry) = @_;
+    my $val = $self->{checkout}->get ($entry);
     return unless $val && $val->{'.conflict'};
-    $info->{checkout}->store ($entry, {%$val, '.conflict' => undef});
+    $self->{checkout}->store ($entry, {%$val, '.conflict' => undef});
     print "$entry marked as resolved.\n";
 }
 
 sub do_resolved {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
 
     if ($arg{recursive}) {
-	for ($info->{checkout}->find ($arg{copath}, {'.conflict' => 1})) {
-	    resolved_entry ($info, $_);
+	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => 1})) {
+	    $self->resolved_entry ($_);
 	}
     }
     else {
-	resolved_entry ($info, $arg{copath});
+	$self->resolved_entry ($arg{copath});
     }
 }
 
 sub do_import {
-    my ($info, %arg) = @_;
+    my ($self, %arg) = @_;
     my $fs = $arg{repos}->fs;
     my $yrev = $fs->youngest_rev;
     my $root = $fs->revision_root ($yrev);
@@ -783,18 +771,18 @@ sub do_import {
 
     my $baton = $editor->open_root ($yrev);
 
-    if (exists $info->{checkout}->get ($arg{copath})->{depotpath}) {
+    if (exists $self->{checkout}->get ($arg{copath})->{depotpath}) {
 	die "Import source is a checkout path. it's likely not what you want";
     }
 
     # XXX: check the entry first
-    $info->{checkout}->store ($arg{copath},
+    $self->{checkout}->store ($arg{copath},
 			      {depotpath => $arg{depotpath},
 			       '.newprop' => undef,
 			       '.conflict' => undef,
 			       revision =>0});
 
-    _delta_dir ($info, %arg,
+    $self->_delta_dir (%arg,
 		add => 1,
 		cb_rev => sub { $yrev },
 		editor => $editor,
@@ -809,7 +797,7 @@ sub do_import {
 
     $editor->close_edit ();
 
-    $info->{checkout}->store ($arg{copath},
+    $self->{checkout}->store ($arg{copath},
 			      {depotpath => undef,
 			       revision => undef,
 			       '.schedule' => undef});
@@ -885,9 +873,6 @@ sub get_keyword_layer {
 
     my $keyword = '('.join('|', sort keys %key).')';
 
-#    use Carp qw/cluck/;
-#    cluck "======> has keyword";
-
     return PerlIO::via::dynamic->new
 	(translate =>
          sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).' $'/eg },
@@ -904,11 +889,11 @@ sub get_fh {
 }
 
 sub get_props {
-    my ($info, $root, $path, $copath) = @_;
+    my ($self, $root, $path, $copath) = @_;
 
     my ($props, $entry) = ({});
 
-    $entry = $info->{checkout}->get ($copath) if $copath;
+    $entry = $self->{checkout}->get ($copath) if $copath;
     $entry->{'.newprop'} ||= {};
     $entry->{'.schedule'} ||= '';
 
@@ -945,6 +930,7 @@ package SVK::XD::Editor;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use File::Path;
+use SVK::Util qw( get_anchor );
 
 sub set_target_revision {
     my ($self, $revision) = @_;
@@ -980,7 +966,7 @@ sub apply_textdelta {
     my $copath = $path;
     $self->{get_copath}($copath);
     if (-e $copath) {
-	my ($dir,$file) = SVK::XD::get_anchor (1, $copath);
+	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<',
 				 "$self->{anchor}/$path", $copath);

@@ -85,7 +85,6 @@ sub get_editor {
     my ($callback, $editor, %cb);
 
     if ($target->{copath}) {
-	# XXX: really need txn auto cleanup!
 	my $xdroot = $self->{xd}->xdroot (%$target);
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
@@ -251,7 +250,7 @@ sub run {
 	my $oldroot = $fs->revision_root ($rev-1);
 	for (@datapoint) {
 	    $self->{xd}{checkout}->store ($_, {revision => $rev})
-		if $self->{xd}{checkout}->get ($_)->{revision} ==
+		if $self->{xd}{checkout}->get ($_)->{revision} >=
 		    $oldroot->node_created_rev ($target->{path});
 	}
 	my $root = $fs->revision_root ($rev);
