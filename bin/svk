@@ -701,10 +701,9 @@ sub proplist {
 			   "r|revision=i" => \$rev);
 
     push @ARGV, '' if $#ARGV < 0;
-    for my $copath (@ARGV) {
-	$copath = Cwd::abs_path ($copath);
-	my ($repospath, $path, undef, $repos) =
-	    find_repos_from_co ($copath, 1);
+    for my $target (@ARGV) {
+	my ($repospath, $path, $copath, undef, $repos) = find_repos_from_co_maybe ($target, 1);
+	$rev ||= $repos->fs->youngest_rev unless $copath;
 
 	my $props = SVN::XD::do_proplist ($info,
 					  repos => $repos,
@@ -1305,13 +1304,13 @@ sub get_new_ticket {
 
     my $srcinfo = find_merge_sources ($repos, $src, 1);
     my $dstinfo = find_merge_sources ($repos, $dst, 1);
-    my $newinfo;
+    my ($uuid, $newinfo);
 
     # bring merge history up to date as from source
-    my $myuuid = $repos->fs->get_uuid ();
+    ($uuid, $dst) = resolve_svm_source ($repos, $dst);
 
     for (keys %{{%$srcinfo,%$dstinfo}}) {
-	next if $_ eq "$myuuid:$dst";
+	next if $_ eq "$uuid:$dst";
 	no warnings 'uninitialized';
 	$newinfo->{$_} = $srcinfo->{$_} > $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
 	print "new merge ticket: $_:$newinfo->{$_}\n"
