@@ -1,6 +1,7 @@
 package SVN::DiffEditor;
 use strict;
-our $VERSION = '0.08';
+use SVN::Delta;
+our $VERSION = '0.09';
 our @ISA = qw(SVN::Delta::Editor);
 
 use IO::String;
@@ -45,7 +46,7 @@ sub close_file {
 	my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
 	my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
 
-	output_diff ($path, $llabel, $rlabel,
+	output_diff ($self->{fh} || \*STDOUT, $path, $llabel, $rlabel,
 		     $self->{lpath} || '', $self->{rpath} || '',
 		     $base, \$self->{info}{$path}{new});
     }
@@ -55,7 +56,7 @@ sub close_file {
 }
 
 sub output_diff {
-    my ($path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
+    my ($fh, $path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
 
     # XXX: this slurp is dangerous. waiting for streamy svndiff routine
     local $/;
@@ -63,20 +64,21 @@ sub output_diff {
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
     my $showpath = ($lpath ne $rpath);
-    print "Index: $path\n";
-    print '=' x 66,"\n";
-    print "--- $path ".($showpath ? "  ($lpath)  " : '')." ($llabel)\n";
-    print "+++ $path ".($showpath ? "  ($rpath)  " : '')." ($rlabel)\n";
-    print Text::Diff::diff ($ltext, $rtext);
+    print $fh "Index: $path\n";
+    print $fh '=' x 66,"\n";
+    print $fh "--- $path ".($showpath ? "  ($lpath)  " : '')." ($llabel)\n";
+    print $fh "+++ $path ".($showpath ? "  ($rpath)  " : '')." ($rlabel)\n";
+    print $fh Text::Diff::diff ($ltext, $rtext);
 }
 
 sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
-	print "\nProperty changes on: $path\n".('_' x 67)."\n";
+	my $fh = $self->{fh} || \*STDOUT;
+	print $fh "\nProperty changes on: $path\n".('_' x 67)."\n";
 	for (keys %{$self->{info}{$path}{prop}}) {
-	    print "Name: $_\n";
-	    print Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
+	    print $fh "Name: $_\n";
+	    print $fh  Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
 		\$self->{info}{$path}{prop}{$_});
 	}
     }
