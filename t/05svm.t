@@ -116,8 +116,8 @@ is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], 
             'U   T/xd',
             "New merge ticket: $suuid:/A-99:30",
             'Committed revision 17.',
-            "Syncing //m-99-copy(/m-99-copy/T) in $corpath2/T to 17.",
-            __('U   t/checkout/svm2/T/xd'),
+            "Syncing //m-99-copy(/m-99-copy/T) in ".__("$corpath2/T to 17."),
+            __("U   $copath2/T/xd"),
             ]);
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
@@ -141,8 +141,10 @@ is_output_like ($svk, 'mirror', ['--detach', '//l'],
 is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
 		qr"inside", '--detach inside a mirrored path');
 
-is_output_like ($svk, 'mirror', ['--detach', '//m'],
-		qr"Committed revision 20.", '--detach on mirrored path');
+is_output ($svk, 'mirror', ['--detach', '//m'], [
+                "Committed revision 20.",
+                "Mirror path '//m' detached.",
+                ], '--detach on mirrored path');
 
 is_output_like ($svk, 'mirror', ['--detach', '//m'],
 		qr"not a mirrored", '--detach on non-mirrored path');

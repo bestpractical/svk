@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
+use SVK::Util qw( HAS_SVN_MIRROR is_uri );
 
 sub options {
     ('l|list'  => 'list',
@@ -23,8 +23,8 @@ sub parse_arg {
     my $path = shift(@arg);
 
     # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
-    if (@arg and $path =~ /^[A-Za-z][-+.A-Za-z0-9]*:/) {
-	($arg[0], $path) = ($path, $arg[0]);
+    if (is_uri($path)) {
+        ($arg[0], $path) = ($path, $arg[0]);
     }
 
     return ($self->arg_depotpath ($path), @arg);
@@ -72,6 +72,7 @@ sub run {
         die loc("%1 is inside a mirrored path.\n", $target->{depotpath}) if $mpath;
 
 	$m->delete(1); # remove svm:source and svm:uuid too
+        print loc("Mirror path '%1' detached.\n", $target->{depotpath});
         return;
     }
 
@@ -122,7 +123,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 =head1 OPTIONS
 
  -l [--list]            : list mirrored paths
- -d [--detach]          : mark a path as no longer mirrored
+ -d [--detach]          : mark a depotpath as no longer mirrored
  --relocate             : relocate the mirror to another URI
  --upgrade              : upgrade mirror state to the latest version
 

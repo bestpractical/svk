@@ -5,26 +5,41 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_buffer_from_editor get_prompt dirname $SEP );
+use SVK::Util qw( get_buffer_from_editor get_prompt dirname abs_path move_path make_path $SEP );
 use YAML;
 use File::Path;
 
 sub options {
     ('l|list' => 'list',
      'i|init' => 'init',
-     'd|delete|detach' => 'detach',);
+     'd|delete|detach' => 'detach',
+     'relocate' => 'relocate');
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    $self->{add} = 1 if @arg >= 2;
+    $self->{add} = 1 if @arg >= 2 and !$self->{relocate};
 
-    if ($self->{add} or $self->{detach}) {
+    if ($self->{add} or $self->{detach} or $self->{relocate}) {
         @arg or die loc("Need to specify a depot name");
 
         my $depot = shift(@arg);
+        @arg or die loc("Need to specify a path name") unless $self->{detach};
+
+        my $map = $self->{xd}{depotmap};
+        my $path = $depot;
+        my $abs_path = abs_path($path);
         $depot =~ s{/}{}go;
+
+        return ($depot, @arg) if $self->{add} or $map->{$depot} or !$abs_path;
+
+        # Translate repospath into depotname
+        foreach my $name (sort keys %$map) {
+            (abs_path($map->{$name}) eq $abs_path) or next;
+            move_path($path => $arg[0]) if $self->{relocate} and -d $path;
+            return ($name, @arg);
+        }
 
         return ($depot, @arg);
     }
@@ -34,30 +49,24 @@ sub parse_arg {
 }
 
 sub run {
-    my $self = shift;
+    my ($self) = @_;
 
-    if ($self->{list}) {
-        return $self->_do_list();
+    # Dispatch to one of the four methods
+    foreach my $op (qw( list add detach relocate )) {
+        $self->{$op} or next;
+        goto &{ $self->can("_do_$op") };
     }
-    elsif ($self->{add}) {
-        return $self->_do_add(@_);
-    }
-    elsif ($self->{detach}) {
-        return $self->_do_detach(@_);
-    }
-    else {
-        return $self->_do_edit();
-    }
+
+    return $self->_do_edit();
 }
 
 sub _do_list {
     my ($self) = @_;
     my $map = $self->{xd}{depotmap};
-    local $\ = "\n";
-    my $fmt = "%-20s %-s\n";
-    printf $fmt, 'Depot', 'Path';
-    print '=' x 60;
-    printf $fmt, "/$_/", $map->{$_} for keys %$map;
+    my $fmt = "%-20s\t%-s\n";
+    printf $fmt, loc('Depot'), loc('Path');
+    print '=' x 60, "\n";
+    printf $fmt, "/$_/", $map->{$_} for sort keys %$map;
     return;
 }
 
@@ -93,13 +102,25 @@ sub _do_add {
     $self->create_depots;
 }
 
+sub _do_relocate {
+    my ($self, $depot, $path) = @_;
+
+    die loc("Cannot relocate uninitialized depot '%1'.\n", $depot)
+        if !$self->{xd}{depotmap}{$depot};
+
+    $self->{xd}{depotmap}{$depot} = $path;
+
+    print loc("Depot '%1' relocated to '%2'.\n", $depot, $path);
+    $self->create_depots;
+}
+
 sub _do_detach {
     my ($self, $depot) = @_;
 
     delete $self->{xd}{depotmap}{$depot}
         or die loc("Depot '%1' does not exist in the depot map.\n", $depot);
 
-    print loc("New depot map saved.\n");
+    print loc("Depot '%1' detached.\n", $depot);
     return;
 }
 
@@ -115,8 +136,7 @@ sub create_depots {
 	);
 	next if $ans =~ /^n/i;
 
-        require File::Path;
-        mkpath([dirname($path)]) if !-d dirname($path);
+        make_path(dirname($path));
 
         $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 	SVN::Repos::create($path, undef, undef, undef,
@@ -139,13 +159,17 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
  depotmap [OPTIONS]
  depotmap DEPOT /path/to/repository
- depotmap --detach DEPOT
+
+ depotmap --list
+ depotmap --detach [DEPOT|PATH]
+ depotmap --relocate [DEPOT|PATH] PATH
 
 =head1 OPTIONS
 
+ -i [--init]            : initialize a default depot
  -l [--list]            : list current depot mappings
  -d [--detach]          : remove a depot from the mapping
- -i [--init]            : initialize a default depot
+ --relocate             : relocate the depot to another path
 
 =head1 DESCRIPTION
 

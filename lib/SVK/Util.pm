@@ -12,9 +12,9 @@ our @EXPORT_OK = qw(
     read_file write_file slurp_fh md5_fh mimetype mimetype_is_text
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
-    splitpath splitdir tmpdir tmpfile 
+    move_path make_path splitpath splitdir tmpdir tmpfile
 
-    is_symlink is_executable can_run
+    is_symlink is_executable is_uri can_run
 );
 our $VERSION = $SVK::VERSION;
 
@@ -40,6 +40,7 @@ use Config;
 use SVK::I18N;
 use Digest::MD5;
 use Cwd;
+use File::Path qw(mkpath);
 use File::Temp 0.14 qw(mktemp);
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
@@ -476,6 +477,19 @@ sub get_anchor {
     } @_;
 }
 
+=head3 make_path ($path)
+
+Create a directory, and intermediate directories as required.  
+
+=cut
+
+sub make_path {
+    my $path = shift;
+
+    return undef if !defined($path) or -d $path;
+    return mkpath([$path]);
+}
+
 =head3 splitpath ($path)
 
 Splits a path in to volume, directory, and filename portions.  On systems
@@ -556,6 +570,37 @@ sub can_run {
     }
 
     return;
+}
+
+=head3 is_uri ($string)
+
+Check if a string is a valid URI.
+
+=cut
+
+sub is_uri {
+    ($_[0] =~ /^[A-Za-z][-+.A-Za-z0-9]+:/)
+}
+
+=head3 move_path ($source, $target)
+
+Move a path to another place, creating intermediate directories in the target
+path if neccessary.  If move failed, tell the user to move it manually.
+
+=cut
+
+sub move_path {
+    my ($source, $target) = @_;
+
+    if (-d $source and !-d $target) {
+        make_path(dirname($target));
+        rename ($source => $target) and return;
+    }
+
+    print loc(
+        "Cannot rename %1 to %2; please move it manually.\n",
+        $source, $target,
+    );
 }
 
 1;
