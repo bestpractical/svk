@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 31;
+use Test::More tests => 32;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -63,16 +63,19 @@ is_output ($svk, 'add', [qw/-N A/],
 is_output ($svk, 'add', [qw/-N A/],
 	   ['A already added.'],
 	   'add - nonrecursive anchor already added');
+is_output ($svk, 'add', ['-N', 'A/deep'],
+	   [map __($_), 'A   A/deep'],
+	   'add - nonrecursive, parent added ');
 is_output ($svk, 'add', ['A/foo'],
 	   [map __($_), 'A   A/foo'],
 	   'add - nonrecursive target');
 is_output ($svk, 'add', ['A'],
-	   [map __($_), 'A   A/bar', 'A   A/deep', 'A   A/deep/baz'],
+	   [map __($_), 'A   A/bar', 'A   A/deep/baz'],
 	   'add - readd');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['-N', 'A/foo'],
-		["Please add the parent directory first."],
+		["Please add the parent directory 'A' first."],
 		'add - nonrecursive target only');
 
 overwrite_file ("A/exe", "foobar");
