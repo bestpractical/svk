@@ -11,7 +11,7 @@ my $tree = create_basic_tree ($xd, '//V');
 my ($copath, $corpath) = get_copath ('autovivify');
 mkdir $corpath;
 
-$answer = 'new';
+$answer = '//new';
 is_output($svk, 'copy', [-m => '', '//V/A', "$corpath/A"], [
             'Committed revision 4.',
             "Syncing //new(/new) in ".__("$corpath/A to 4."),

@@ -23,6 +23,7 @@ sub parse_arg {
     else {
         $self->{_checkout_path} = $dst;
         my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
+        $path =~ s{^//+}{};
         $path =~ s{//+}{/};
         $path = "//$path" unless $path =~ m!^/!;
         $path = "$path/" unless $path =~ m!/\z!;
