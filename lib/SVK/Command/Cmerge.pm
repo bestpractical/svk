@@ -31,7 +31,7 @@ sub run {
         print loc("%1 cmerge is deprecated, pending improvements to the Subversion API",$0) ."\n";
         print loc("'Use %1 merge -c' to obtain similar functionality.",$0)."\n\n";
     }
-    my @revlist = $self->parse_revlist;
+    my @revlist = $self->parse_revlist($src);
 
     my $repos = $src->{repos};
     my $fs = $repos->fs;

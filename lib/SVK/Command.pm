@@ -629,7 +629,7 @@ Parse -c or -r to a list of [from, to] pairs.
 =cut
 
 sub parse_revlist {
-    my $self = shift;
+    my ($self,$target) = @_;
     die loc("Revision required.\n") unless $self->{revspec} or $self->{chgspec};
     die loc("Can't assign --revision and --change at the same time.\n")
 	if $self->{revspec} and $self->{chgspec};
@@ -654,7 +654,7 @@ sub parse_revlist {
     }
 
     # revspec
-    if (($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/) {
+    if (($fromrev, $torev) = $self->resolve_revspec($target)) {
 	return ([$fromrev, $torev]);
     }
     else {

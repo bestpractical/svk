@@ -21,7 +21,7 @@ sub options {
      'I|incremental'	=> 'incremental',
      'verbatim'		=> 'verbatim',
      'no-ticket'	=> 'no_ticket',
-     'r|revision=s'	=> 'revspec',
+     'r|revision=s@'	=> 'revspec',
      'c|change=s',	=> 'chgspec',
      't|to'             => 'to',
      'f|from'           => 'from',
@@ -57,7 +57,7 @@ sub parse_arg {
             # to the most immediate copy anchor under copath root.
             ($target1, $target2) = $self->find_checkout_anchor (
                 $target1, 1, $self->{sync}
-            );
+               );
             delete $target1->{copath};
         }
     }
@@ -66,7 +66,6 @@ sub parse_arg {
     if (!defined ($target2)) {
         die loc ("Cannot find the path which '%1' copied from.\n", $arg[0] || '');
     }
-
     return ( ($self->{from}) ? ($target1, $target2) : ($target2, $target1) );
 }
 
@@ -130,7 +129,7 @@ sub run {
     }
     else {
 	die loc("Incremental merge not supported\n") if $self->{incremental};
-	my @revlist = $self->parse_revlist;
+	my @revlist = $self->parse_revlist($src);
 	die "multi-merge not yet" if $#revlist > 0;
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
