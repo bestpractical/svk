@@ -1,48 +1,173 @@
 #!/usr/bin/perl -w
 use strict;
 require SVN::Core;
+require SVN::Repos;
 use SVN::XD;
 use YAML qw(LoadFile DumpFile);
+use File::Spec;
 
 use vars qw/$xd/;
 use subs qw/co up/;
 
 my $info;
 
-if (-d "$ENV{HOME}/.svk") {
-    $info = LoadFile ("$ENV{HOME}/.svk/config");
-}
-else {
-    mkdir "$ENV{HOME}/.svk";
+=head1 NAME
+
+svk - subversion keeper command line interface
+
+=head1 SYNOPSIS
+
+
+=head1 DESCRIPTION
+
+
+=cut
+
+sub init {
+    if (-d "$ENV{HOME}/.svk") {
+	$info = LoadFile ("$ENV{HOME}/.svk/config");
+    }
+    else {
+	mkdir "$ENV{HOME}/.svk";
+    }
+
+    $info ||= {depotmap =>  {'' => '$ENV{HOME}/svn/svm' }};
 }
 
-$info ||= {depotmap =>  {'' => '/home/clkao/svn/svm' }};
+sub update_info {
+    DumpFile ("$ENV{HOME}/.svk/config", $info)
+}
+
+sub find_repos {
+    my ($depotpath, $open) = @_;
+    my ($depot, $path) = $depotpath =~ m|^/(\w*)/(.*)/?$|;
+
+    die "non-default depot name not supported yet" if $depot;
+
+    my $repospath = $info->{depotmap}{$depot} or die "no such depot: $depot";
+
+    return ($repospath, $path, $open && SVN::Repos::open ($repospath));
+}
+
+sub md5file {
+    my $fname = shift;
+    open my $fh, '<', $fname;
+    my $ctx = Digest::MD5->new;
+    $ctx->addfile($fh);
+    return $ctx->hexdigest;
+}
+
+=head2 update / up
+
+    svk update
+
+=cut
+
+sub update {
+    my ($copath, $rev) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    # XXX: support via reporter facility in the future
+    die "$copath not a checkout root" unless exists $info->{checkoutmap}{$copath};
+    my ($depotpath, $startrev) = @{$info->{checkoutmap}{$copath}};
+    my ($repospath, $path, $repos) = find_repos ($depotpath, 1);
+
+    $rev ||= $repos->fs->youngest_rev;
+
+    SVN::XD::do_update ($info,
+			repos => $repos,
+			depotpath => $depotpath,
+			copath => $copath,
+			repospath => $repospath,
+			path => $path,
+			startrev => $startrev,
+			rev => $rev,
+		       );
+    $info->{checkoutmap}{$copath}[1] = $rev;
+}
 
 sub checkout {
-    $xd->checkout (@_);
+    my ($depotpath, $rev, $copath) = @_;
+
+    my ($repospath, $path) = find_repos ($depotpath, 0);
+    $copath = File::Spec->rel2abs ($copath ||
+				   (File::Spec->splitdir($path))[-1]);
+    die "don't know where to checkot"  unless $copath || $path;
+
+    die "checkout path $copath already exists" if -e $copath;
+
+    mkdir ($copath);
+    $info->{checkoutmap}{$copath} = [$depotpath,0];
+
+    update ($copath, $rev)
+}
+
+
+use File::Find;
+use Text::Diff ();
+
+sub diff {
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    my ($depotpath, $rev) = @{$info->{checkoutmap}{$copath}};
+    my ($repospath, $path, $repos) = find_repos ($depotpath, 1);
+
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($rev);
+
+    # XXX: move crawler to SVN::XD
+    find(sub {
+	     my $cpath = $File::Find::name;
+	     return if -d $cpath;
+	     $cpath =~ s|^$copath/|$path/|;
+	     my $kind = $root->check_path ($cpath);
+	     if ($kind == $SVN::Node::none) {
+		 print "? $File::Find::name\n";
+		 return;
+	     }
+	     print Text::Diff::diff ($root->file_contents($cpath), $File::Find::name)
+		 if md5file($File::Find::name) ne
+		     $root->file_md5_checksum ($cpath);
+	  }, $copath);
+}
+
+sub status {
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    my ($depotpath, $rev) = @{$info->{checkoutmap}{$copath}};
+    my ($repospath, $path, $repos) = find_repos ($depotpath, 1);
+
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($rev);
+
+    # XXX: move crawler to SVN::XD
+    find(sub {
+	     my $cpath = $File::Find::name;
+	     return if -d $cpath;
+	     $cpath =~ s|^$copath/|$path/|;
+	     my $kind = $root->check_path ($cpath);
+	     if ($kind == $SVN::Node::none) {
+		 print "? $File::Find::name\n";
+		 return;
+	     }
+	     print "M $File::Find::name\n"
+		 if md5file($File::Find::name) ne
+		     $root->file_md5_checksum ($cpath);
+	  }, $copath);
 }
 
 *co = *checkout;
-
-sub update {
-    $xd->update (@_);
-}
-
 *up = *update;
-
-sub diff {
-    $xd->diff (@_);
-}
+*st = *status;
 
 my $cmd = shift;
 
 no strict 'refs';
 
-$xd = SVN::XD->new (%$info);
+#$xd = SVN::XD->new (%$info);
 
 die "command not recognized" unless main->can($cmd);
+init();
 &$cmd(@ARGV);
+update_info()
 
-
-%$info = %$xd;
-DumpFile ("$ENV{HOME}/.svk/config", $info)
+#%$info = %$xd;

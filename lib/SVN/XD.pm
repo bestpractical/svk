@@ -16,104 +16,28 @@ sub new {
     return $self;
 }
 
-sub find_repos {
-    my ($self, $depotpath) = @_;
 
-    my ($depot, $path) = $depotpath =~ m|^/(\w*)/(.*)/?$|;
+sub do_update {
+    my ($info, %arg) = @_;
+    my $fs = $arg{repos}->fs;
 
-    die "non-default depot name not supported yet" if $depot;
-
-    my $repospath = $self->{depotmap}{$depot} or die "no such depot: $depot";
-
-    return ($repospath, $path);
-}
-
-sub _do_update {
-    my ($self, $rev, $copath) = @_;
-    my ($depotpath, $startrev) = @{$self->{checkoutmap}{$copath}};
-    my ($repos, $path) = $self->find_repos ($depotpath);
-
-    my $r = SVN::Repos::open ($repos) or die "can't open repos $repos";
-    my $fs = $r->fs;
-    $rev = $fs->youngest_rev if $rev eq 'HEAD';
-
-    warn "syncing $depotpath($path) to $copath from $startrev to $rev";
-    my (undef,$anchor,$target) = File::Spec->splitpath ($path);
+    warn "syncing $arg{depotpath}($arg{path}) to $arg{copath} from $arg{startrev} to $arg{rev}";
+    my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
     chop $anchor;
-    SVN::Repos::dir_delta ($fs->revision_root ($startrev), $anchor, $target,
-			   $fs->revision_root ($rev), $path,
+    SVN::Repos::dir_delta ($fs->revision_root ($arg{startrev}), $anchor, $target,
+			   $fs->revision_root ($arg{rev}), $arg{path},
 			   SVN::XD::UpdateEditor->new(_debug=>0),
 #			   SVN::Delta::Editor->new(_debug=>1),
 			   1, 1, 0, 1);
-    $self->{checkoutmap}{$copath}[1] = $rev;
 }
 
-sub update {
-    my ($self, $path, $rev) = @_;
-    $path = File::Spec->rel2abs ($path);
-    $rev ||= 'HEAD';
-    warn "updating $path";
-    $self->_do_update ($rev, $path);
-}
+package TreeData;
 
-sub checkout {
-    my ($self, $depotpath, $rev, $copath) = @_;
-    my ($repos, $path) = $self->find_repos ($depotpath);
-    die "don't know where to checkot"  unless $copath || $path;
-    $copath = File::Spec->rel2abs ($copath ||
-				   (File::Spec->splitdir($path))[-1]);
-
-    die "checkout path $copath already exists" if -e $copath;
-
-    mkdir ($copath);
-    # XXX: status keeping
-    $self->{checkoutmap}{$copath} = [$depotpath,0];
-    $rev ||= 'HEAD';
-
-    $self->_do_update($rev, $copath)
-}
-
-use File::Find;
-use Text::Diff ();
-
-sub diff {
-    my ($self, $xdpath) = @_;
-    $xdpath = File::Spec->rel2abs ($xdpath);
-    my ($depotpath, $rev) = @{$self->{checkoutmap}{$xdpath}};
-    my ($repos, $path) = $self->find_repos ($depotpath);
-
-    my $r = SVN::Repos::open ($repos) or die "can't open repos $repos";
-    my $fs = $r->fs;
-    my $root = $fs->revision_root ($rev);
-
-    find(sub {
-	     my $cpath = $File::Find::name;
-	     return if -d $cpath;
-	     $cpath =~ s|^$xdpath/|$path/|;
-	     my $kind = $root->check_path ($cpath);
-	     if ($kind == $SVN::Node::none) {
-		 print "? $File::Find::name\n";
-		 return;
-	     }
-	     warn "file modified"
-		 if md5file($File::Find::name) ne
-		     $root->file_md5_checksum ($cpath);
-	  }, $xdpath);
-
-}
-
-sub status {
-    my ($self, $path) = @_;
-
-    my ($repos, $stpath) = $self->find_repos ($path);
-}
-
-sub md5file {
-    my $fname = shift;
-    open my $fh, '<', $fname;
-    my $ctx = Digest::MD5->new;
-    $ctx->addfile($fh);
-    return $ctx->hexdigest;
+sub new {
+    my $class = shift;
+    my $self = bless {}, $class;
+    %$self = @_;
+    return $self;
 }
 
 package SVN::XD::UpdateEditor;
@@ -169,7 +93,6 @@ sub apply_textdelta {
 	}
 	$self->{info}{$path}{status}[0] = 'U';
 
-
 	my $basename = "$dir.svk.$file.base";
 	rename ($path, $basename);
 	$self->{info}{$path}{base} = [$base, $basename];
@@ -221,7 +144,6 @@ sub close_directory {
 sub delete_entry {
     my ($self, $path, $revision) = @_;
     # check if everyone under $path is sane for delete";
-    warn "trying to delete $path\@$revision\n";
     rmtree ([$path]);
     $self->{info}{$path}{status} = ['D'];
 }
