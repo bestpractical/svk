@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
+use Test::More tests => 18;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -159,6 +159,12 @@ is_output ($svk, 'diff', ['-r1'],
 	    '+newline',
 	    ' fnord',
 	    '+morenewline',
+	    '=== A/nor',
+	    '==================================================================',
+	    '--- A/nor  (revision 1)',
+	    '+++ A/nor  (local)',
+	    '@@ -1 +0,0 @@',
+	    '-foobar',
 	    '=== A/baz',
 	    '==================================================================',
 	    '--- A/baz  (revision 1)',
@@ -173,7 +179,21 @@ is_output ($svk, 'diff', ['-r1'],
             '___________________________________________________________________',
             'Name: svn:mime-type',
             ' +image/png',], 'diff - rN copath (changed)');
-# the above diff should show nor as deleted instead of absent. see the output of diff -s
+is_output ($svk, 'diff', ['-sr1:2'],
+	   ['M   A/foo',
+	    'M   A/bar',
+	    'A   A/binary',
+	    'A   A/baz',
+	    'D   A/nor']);
+
+is_output ($svk, 'diff', ['-sr1'],
+	   [map __($_),
+	    'M   A/bar',
+	    'M   A/foo',
+	    'A   A/baz',
+	    'A   A/binary',
+	    'D   A/nor']);
+
 $svk->revert ('-R', 'A');
 is_output ($svk, 'diff', ['-r1'],
 	   ['=== A/bar',
@@ -191,6 +211,12 @@ is_output ($svk, 'diff', ['-r1'],
 	    ' foobar',
 	    '+newline',
 	    ' fnord',
+	    '=== A/nor',
+	    '==================================================================',
+	    '--- A/nor  (revision 1)',
+	    '+++ A/nor  (local)',
+	    '@@ -1 +0,0 @@',
+	    '-foobar',
 	    '=== A/baz',
 	    '==================================================================',
 	    '--- A/baz  (revision 1)',

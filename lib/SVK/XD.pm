@@ -787,37 +787,45 @@ sub _unknown_verbose {
 	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
 }
 
+sub _node_deleted {
+    my ($self, %arg) = @_;
+    $arg{rev} = $arg{cb_rev}->($arg{entry});
+    $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
+
+    if ($arg{type} ne 'file') {
+	if ($arg{delete_verbose}) {
+	    foreach my $file (sort $self->{checkout}->find
+			      ($arg{copath}, {'.schedule' => 'delete'})) {
+		$file = abs2rel($file, $arg{copath} => undef, '/');
+		$arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
+		    if $file;
+	    }
+	}
+	$self->_unknown_verbose (%arg)
+	    if $arg{cb_unknown} && $arg{unknown_verbose};
+    }
+}
+
 sub _node_deleted_or_absent {
     my ($self, %arg) = @_;
     my $schedule = $arg{cinfo}{'.schedule'} || '';
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
-	$arg{rev} = $arg{cb_rev}->($arg{entry});
-	$arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
-
-	if ($arg{type} ne 'file') {
-	    # XXX: should still be recursion since the entries
-	    # XXX: check with xdroot since this might be deleted when from base_root to xdroot
-	    if ($arg{delete_verbose}) {
-		foreach my $file (sort $self->{checkout}->find
-		     ($arg{copath}, {'.schedule' => 'delete'})) {
-		    $file = abs2rel($file, $arg{copath} => undef, '/');
-		    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
-			if $file;
-		}
-	    }
-	    $self->_unknown_verbose (%arg)
-		if $arg{cb_unknown} && $arg{unknown_verbose};
-	}
+	$self->_node_deleted (%arg);
 	return 1 if $schedule eq 'delete';
     }
 
     lstat ($arg{copath});
     unless (-e _ or is_symlink) {
+	# deleted during base_root -> xdroot
+	if ($arg{xdroot} ne $arg{base_root} && $arg{kind} == $SVN::Node::none) {
+	    $self->_node_deleted (%arg);
+	    return 1;
+	}
 	return 1 if $arg{absent_ignore};
 	$arg{rev} = $arg{cb_rev}->($arg{entry});
 	if ($arg{absent_as_delete}) {
-	    $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
+	    $self->_node_deleted (%arg);
 	}
 	else {
 	    my $func = "absent_$arg{type}";
@@ -980,19 +988,20 @@ sub _delta_dir {
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
+	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
 	$self->$delta ( %arg,
 			add => $arg{in_copy},
 			base => 1,
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
-			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($arg{path}),
+			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($newpath),
 			base_kind => $kind,
 			targets => $newtarget,
 			baton => $baton,
 			root => 0,
 			cinfo => $ccinfo,
 			base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
-			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
+			path => $newpath,
 			copath => $copath)
 	    and ($signature && $signature->invalidate ($entry));
     }

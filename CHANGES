@@ -1,3 +1,60 @@
+[Changes for 0.21]
+
+* svk now runs natively on win32. [Autrijus]
+
+* New: svk ls -v. [Plasma]
+
+* New: svk propget (pg). [Autrijus]
+
+* Use D::H->store_fast. This makes checkout 5% faster.
+
+* SVNFSTYPE default to bdb with svn 1.0.x, otherwise fsfs.
+
+* Authentication prompts are now handled. [Autrijus]
+
+* For internal differ, Don't output diff for binary nodes. [Plasma]
+
+* Use IO::Digest to get the md5 while reading the merged file, instead
+  of reading it again.
+
+* Add support to use SVKMERGE on win32, in particular
+  p4winmrg.exe. [Autrijus]
+
+* Print error messages to STDERR, unless in test mode.
+
+* "svk sm --base" and "svk sm --baseless" now always do what
+  they are documented to do, overriding existing merge
+  tickets. [Autrijus]
+
+* Prepend depot name before svk mi --list. [Autrijus]
+
+* Fix delete_entry in diff editor for external diff tool.
+
+* Delay SVN::Mirror loading.
+
+* Make SVK::Editor::Delay also delays open_file and discard no-op opens.
+
+* Fix merge ticket parsing and generation for paths mirrored with vcp.
+
+* Make describe work on current copath, otherwise fallback to '//'.
+  [Ruslan U. Zakirov]
+
+* Fix a scary but harmless message after committing copied nodes with
+  messages from editor.
+
+* Add expand_copy optiont to checkout_delta.  This allows diff works
+  correctly (in terms of what svn does) with copied checkout.
+
+* Allow checking out a file with differet name.
+
+* Many checkout_delta cleanups.
+
+* Eliminate repeating mimetype() calls. [Autrijus]
+
+* Fix tests for File::MimeInfo not installed.
+
+* full zh_tw translation for code locs. [Autrijus]
+
 [Changes for 0.20 - 4 Sep, 2004]
 
 *** First Beta Release ***

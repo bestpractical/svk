@@ -148,11 +148,11 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	$self->{xd}{checkout}->store ($copath, { '.schedule' => 'add' });
+	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' });
     }
     if ($self->{update}) {
 	# XXX: use store_fast with new data::hierarchy release.
-	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}}, 1);
+	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
@@ -166,7 +166,7 @@ sub add_directory {
     $self->{get_copath}($copath);
     die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
     mkdir ($copath) unless $self->{check_only};
-    $self->{xd}{checkout}->store ($copath, { '.schedule' => 'add' })
+    $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
     return $path;
