@@ -64,7 +64,6 @@ sub run {
     my ($storage, %cb) = $self->get_editor ($dst);
 
     my $fs = $repos->fs;
-    $storage = SVK::DelayEditor->new ($storage);
     my $editor = SVK::MergeEditor->new
 	( anchor => $src->{path},
 	  base_anchor => $base_path,
@@ -75,7 +74,7 @@ sub run {
 	  storage => $storage,
 	  %cb,
 	);
-
+    $editor = SVK::DelayEditor->new ($editor);
     SVN::Repos::dir_delta ($fs->revision_root ($baserev),
 			   $base_path, '',
 			   $fs->revision_root ($torev), $src->{path},
@@ -180,9 +179,11 @@ sub copy_ancestors {
 	    my $uuid;
 	    ($uuid, $hpath, $hrev) = split ':', $source;
 	    if ($uuid ne $myuuid) {
-		my $m;
-		if ($self->svn_mirror && ($m = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
+		my ($m, $mpath);
+		if ($self->svn_mirror &&
+		    (($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
 		    ($hpath, $hrev) = ($m->{target_path}, $m->find_local_rev ($hrev));
+		    $hpath =~ s/\Q$mpath\E$//;
 		}
 		else {
 		    return ();
@@ -210,18 +211,20 @@ sub copy_ancestors {
 
 sub resolve_svm_source {
     my ($self, $repos, $path) = @_;
-    my ($uuid, $rev, $m);
+    my ($uuid, $rev, $m, $mpath);
     my $mirrored;
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
 
     if ($self->svn_mirror) {
-	$m = eval 'SVN::Mirror::is_mirrored ($repos, $path)';
+	($m, $mpath) = eval 'SVN::Mirror::is_mirrored ($repos, $path)';
+	undef $@;
     }
 
     if ($m) {
+	$path =~ s/\Q$mpath\E$//;
 	$uuid = $root->node_prop ($path, 'svm:uuid');
-	$path = $m->{source};
+	$path = $m->{source}.$mpath;
 	$path =~ s/^\Q$m->{source_root}\E//;
 	$rev = $m->{fromrev};
     }

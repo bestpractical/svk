@@ -223,7 +223,7 @@ sub close_file {
 		apply_textdelta ($self->{storage_baton}{$path}, $fh->{base}[2],
 				 $pool);
 
-	    if ($handle && $#{$handle}) {
+	    if ($handle && $#{$handle} >= 0) {
 		open my ($new), $fh->{new}[1];
 		if ($self->{send_fulltext}) {
 		    SVN::TxDelta::send_stream ($new, @$handle, $pool);
@@ -246,7 +246,7 @@ sub close_file {
 
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
-	my $mfh = IO::String->new;
+	open my $mfh, '+>', \(my $merged);
 	SVN::Core::diff_file_output_merge
 		( $mfh, $diff,
 		  (map {
@@ -265,14 +265,14 @@ sub close_file {
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
 			     $pool);
 
-	$checksum = md5_hex (${$mfh->string_ref});
+	$checksum = md5_hex ($merged);
 
-	if ($handle && $#{$handle} > 0) {
+	if ($handle && $#{$handle} >= 0) {
 	    seek $mfh, 0, 0;
 	    seek $fh->{local}[0], 0, 0;
 	    if ($self->{send_fulltext}) {
 		SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
-			if $handle && $#{$handle} > 0;
+			if $handle && $#{$handle} >= 0;
 	    }
 	    else {
 		my $txstream = SVN::TxDelta::new
@@ -287,7 +287,7 @@ sub close_file {
 	&{$self->{cb_conflict}} ($path)
 	    if $info->{status}[0] eq 'C';
     }
-    elsif ($info->{status}[0] ne 'A') {
+    elsif ($info->{status} && $info->{status}[0] ne 'A') {
 	# open but prop edit only, load local checksum
 	if (my $local = &{$self->{cb_localmod}} ($path, $checksum, $pool)) {
 	    $checksum = $local->[2];

@@ -34,7 +34,7 @@ features(
 features(
     'SVN::Mirror support' => [
 	-default => 1,
-	'SVN::Mirror'    => '0.29',
+	'SVN::Mirror'    => '0.30',
     ],
 );
 

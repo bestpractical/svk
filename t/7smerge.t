@@ -100,9 +100,9 @@ svk::copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
 
 
 svk::copy ('-m', 'branch on source', '/test/A', '/test/A-cp');
-svk::mirror ('//m-cp', "file://${srepospath}/A-cp");
-svk::sync ('//m-cp');
-__END__
-# doesn't work yet, merge base being funny
-svk::smerge ('-C', '//l', '//m-cp');
-svk::smerge ('-C', '//m', '//m-cp');
+svk::ps ('-m', 'prop on A-cp', 'blah', 'tobemerged', '/test/A');
+svk::mirror ('//m-all', "file://${srepospath}/");
+svk::sync ('//m-all');
+svk::smerge ('-C', '//m-all/A', '//m-all/A-cp');
+svk::smerge ('-m', 'merge down', '//m-all/A', '//m-all/A-cp');
+svk::pl ('-v', '//');

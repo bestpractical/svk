@@ -214,4 +214,17 @@ sub arg_path {
     return Cwd::abs_path ($arg);
 }
 
+=comment
+
+# workaround the svn::delta::editor problem in 1.0.x
+my $ref = \&SVN::Delta::Editor::AUTOLOAD;
+*SVN::Delta::Editor::AUTOLOAD =
+    sub { my $ret = $ref-> (@_);
+	  warn $SVN::Delta::Editor::AUTOLOAD;
+	  $ret = undef if ref ($ret) eq 'ARRAY' && $#{$ret} == -1;
+	  return $ret;
+      };
+
+=cut
+
 1;
