@@ -176,7 +176,6 @@ sub copy_ancestors {
     my ($hpath, $hrev);
 
     while ($hist = $hist->prev (1)) {
-	$spool->clear;
 	($hpath, $hrev) = $hist->location ();
 	if ($hpath ne $path) {
 	    $found = 1;
@@ -202,6 +201,7 @@ sub copy_ancestors {
 	}
 	last if $found;
     }
+    $spool->clear;
 
     $source = '' unless $found;
     if (!$found || $hitrev != $hrev) {

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 19;
+use Test::More tests => 20;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -59,7 +59,15 @@ $svk->rm ('A/foo');
 $svk->commit ('-m', 'rm something', 'A/foo');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 	   [$corpath, __("$corpath/A/barnew"), __("$corpath/A/foo")]);
-$svk->update ($corpath);
+
+# The '--sync' and '--merge' below would have no effect.
+is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
+            "Syncing //(/) in $corpath to 4.",
+            __"A   $corpath/A/deep/new",
+            __"U   $corpath/A/deep/baz",
+            __"U   $corpath/A/deep/la/no",
+           ]);
+
 $svk->commit ('-m', 'the rest');
 
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})], [$corpath]);
