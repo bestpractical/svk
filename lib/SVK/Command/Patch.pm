@@ -11,8 +11,8 @@ use SVK::I18N;
 use SVK::Util qw (resolve_svm_source);
 use SVK::Command::Log;
 
-my %cmd = map {$_ => 1} qw/view dump update regen update test send delete apply/;
-$cmd{delete} = $cmd{list} = 0;
+my %file_cmds = map { $_ => $_ } qw/view dump update regen update test send apply/;
+my %nonfile_cmds = map { $_ => $_ } qw/delete list/;
 
 sub options {
     ('depot=s' => 'depot');
@@ -22,13 +22,15 @@ sub options {
 
 sub parse_arg {
     my ($self, $cmd, @arg) = @_;
-    return unless $cmd && exists $cmd{$cmd};
-    if ($cmd{$cmd}) {
+    my $dispatch_to =  $file_cmds{$cmd} || $nonfile_cmds{$cmd};
+    return unless $dispatch_to;
+
+    if ($file_cmds{$cmd}) {
 	die loc ("Filename required.\n")
 	    unless $arg[0];
 	$arg[0] = $self->_load ($arg[0]);
     }
-    return ($cmd, @arg);
+    return ($dispatch_to, @arg);
 }
 
 sub view {
