@@ -259,8 +259,9 @@ sub get_encoding {
         local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
         Locale::Maketext::Lexicon::encoding();
     } || eval {
-        require 'open.pm';
-        return open::_get_locale_encoding();
+        require 'encoding.pm';
+        defined &encoding::_get_locale_encoding() or die;
+        return encoding::_get_locale_encoding();
     }) or 'utf8';
 }
 
