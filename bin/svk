@@ -30,6 +30,10 @@ sub update {
 
 *up = *update;
 
+sub diff {
+    $xd->diff (@_);
+}
+
 my $cmd = shift;
 
 no strict 'refs';

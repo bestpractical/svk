@@ -73,11 +73,47 @@ sub checkout {
     $self->_do_update($rev, $copath)
 }
 
+use File::Find;
+use Text::Diff ();
+
+sub diff {
+    my ($self, $xdpath) = @_;
+    $xdpath = File::Spec->rel2abs ($xdpath);
+    my ($depotpath, $rev) = @{$self->{checkoutmap}{$xdpath}};
+    my ($repos, $path) = $self->find_repos ($depotpath);
+
+    my $r = SVN::Repos::open ($repos) or die "can't open repos $repos";
+    my $fs = $r->fs;
+    my $root = $fs->revision_root ($rev);
+
+    find(sub {
+	     my $cpath = $File::Find::name;
+	     return if -d $cpath;
+	     $cpath =~ s|^$xdpath/|$path/|;
+	     my $kind = $root->check_path ($cpath);
+	     if ($kind == $SVN::Node::none) {
+		 print "? $File::Find::name\n";
+		 return;
+	     }
+	     warn "file modified"
+		 if md5file($File::Find::name) ne
+		     $root->file_md5_checksum ($cpath);
+	  }, $xdpath);
+
+}
 
 sub status {
     my ($self, $path) = @_;
 
     my ($repos, $stpath) = $self->find_repos ($path);
+}
+
+sub md5file {
+    my $fname = shift;
+    open my $fh, '<', $fname;
+    my $ctx = Digest::MD5->new;
+    $ctx->addfile($fh);
+    return $ctx->hexdigest;
 }
 
 package SVN::XD::UpdateEditor;
