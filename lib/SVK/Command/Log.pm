@@ -113,7 +113,8 @@ sub _get_logs {
     );
 
     if ($reverse) {
-	$docall->($_) for @revs;
+	my $pool = SVN::Pool->new_default;
+	$docall->($_), $pool->clear for @revs;
     }
 }
 
@@ -160,6 +161,7 @@ sub _show_log {
 sub do_log {
     my (%arg) = @_;
     $arg{cross} ||= 0, $arg{limit} ||= -1;
+    my $pool = SVN::Pool->new_default;
     my $fs = $arg{repos}->fs;
     my $rev = $arg{fromrev} > $arg{torev} ? $arg{fromrev} : $arg{torev};
     _get_logs ($fs->revision_root ($rev),
