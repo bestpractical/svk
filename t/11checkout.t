@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 38;
+use Test::More tests => 39;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -27,7 +27,9 @@ ok (-e "$copath/co-root-deep/there/Q/qu");
 $svk->checkout ('--export', '//V/A', "$copath/co-root-export");
 ok (-e "$copath/co-root-export/Q/qu");
 
-$svk->checkout ('//V-3.1', "$copath/co-root-v3.1");
+is_output ($svk, 'checkout', ['-q', '//V-3.1', "$copath/co-root-v3.1"],
+	   ["Syncing //V-3.1(/V-3.1) in ".__"$corpath/co-root-v3.1 to 6."],
+	   'quiet');
 ok (-e "$copath/co-root-v3.1/A/Q/qu");
 
 chdir ($copath);

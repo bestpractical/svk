@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_anchor abs_path move_path is_empty_path splitdir $SEP );
+use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP );
 use File::Path;
 
 sub options {

@@ -104,7 +104,7 @@ sub do_update {
     $base = $base->new (path => '/')
 	if $xdroot->check_path ($base->path) == $SVN::Node::none;
     mkdir ($cotarget->{copath}) or die $!
-	unless $self->{check_only} || -e $cotarget->{copath};
+	unless -e $cotarget->{copath};
 
     my $notify = SVK::Notify->new_with_report
 	($report, $cotarget->{targets}[0], 1);
@@ -113,14 +113,14 @@ sub do_update {
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget,
-	 xd => $self->{xd}, check_only => $self->{check_only});
+	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
 					  revision => $update_target->{revision},
 					  anchor => $cotarget->{path},
 					  target => $cotarget->{targets}[0] || '',
-					  update => 1, check_only => $self->{check_only}));
+					  update => 1));
 }
 
 1;
