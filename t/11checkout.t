@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 35;
+use Test::More tests => 36;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -10,6 +10,7 @@ my $tree = create_basic_tree ($xd, '//V');
 my $tree2 = create_basic_tree ($xd, '//V-3.1');
 my ($copath, $corpath) = get_copath ('checkout');
 mkdir ($copath);
+is_output_like ($svk, 'checkout', [], qr'SYNOPSIS', 'checkout - help');
 
 my $cofile = __"$copath/co-root/V-3.1/A/Q/qz";
 is_output_like ($svk, 'checkout', ['//', "$copath/co-root"],
