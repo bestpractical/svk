@@ -121,7 +121,7 @@ is_output ($svk, 'checkout', ['--relocate', "//V-3.1/A/Q", $corpath], [
             ]);
 
 is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/co-root-a")], [
-            __("Overlapping checkout path is not supported ($corpath/co-root-a)")
+            __("Overlapping checkout path is not supported ($corpath/co-root-a); use 'svk checkout --detach' to remove it first.")
             ]);
 
 is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/foo")], [

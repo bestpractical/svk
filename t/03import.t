@@ -49,7 +49,7 @@ unlink (copath ('exe'));
 my $oldwd = getcwd;
 chdir ($copath);
 
-is_output ($svk, 'import', ['//import'], ["Import source ($corpath) cannot be a checkout path, use --from-checkout."]);
+is_output ($svk, 'import', ['//import'], ["Import source ($corpath) is a checkout path; use --from-checkout."]);
 
 $svk->import ('-f', '-m', 'import -f', '//import');
 is_output ($svk, 'status', [], []);
