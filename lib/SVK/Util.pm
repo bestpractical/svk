@@ -170,7 +170,6 @@ sub get_buffer_from_editor {
 	);
 	last if $ans =~ /^c/;
 	# XXX: save the file somewhere
-	warn "==> abort" if $ans =~ m/^a/;
 	unlink ($file), die loc("Aborted.\n") if $ans =~ /^a/;
     }
 
