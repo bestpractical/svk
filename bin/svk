@@ -10,11 +10,12 @@ use Getopt::Long;
 use File::Spec;
 use File::Path ();
 use Data::Hierarchy;
+use IO::String;
 use SVN::DiffEditor;
 use SVN::StatusEditor;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc/;
+use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc ver/;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
@@ -66,6 +67,19 @@ sub help {
 	print join("\n", ($list =~ m/^=head2\s(.*)$/mg), '');
     }
 }
+
+=head2 version (ver)
+
+Report the current version of svk
+
+=cut
+
+
+sub version {
+    print "This is svk version ".$VERSION."\n";
+}
+
+
 
 =head2 depotmap
 
@@ -1240,12 +1254,18 @@ sub sync {
 *sm = *smerge;
 *sy = *sync;
 *desc = *describe;
+*ver = *version;
 
-my $defaultdepot;
-
-#die unless GetOptions ("depot=s"  => \$defaultdepot);
+my $show_version;
 
 my $cmd = shift;
+
+GetOptions ("version"  => \$show_version) unless $cmd;
+
+if ($show_version) {
+    version();
+    exit 0;
+}
 
 no strict 'refs';
 
