@@ -289,7 +289,8 @@ sub run {
 		return $revcache{$corev} if exists $revcache{corev};
 		my $rev = ($xdroot->node_history ($revtarget)->prev (0)->location)[1];
 		$revcache{$corev} = $cb{mirror}->find_remote_rev ($rev);
-	    }) : ());
+	    }) :
+	  ( nodelay => 1 ));
     return;
 }
 

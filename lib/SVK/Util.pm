@@ -138,11 +138,9 @@ sub find_svm_source {
 sub find_local_mirror {
     my ($repos, $uuid, $path, $rev) = @_;
     my $myuuid = $repos->fs->get_uuid;
-    if ($uuid ne $myuuid && svn_mirror &&
-	(my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
-	return ("$m->{target_path}$mpath", $m->find_local_rev ($rev));
-    }
-    return;
+    return unless svn_mirror && $uuid ne $myuuid;
+    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    return ("$m->{target_path}$mpath", $m->find_local_rev ($rev)) if $m;
 }
 
 sub resolve_svm_source {

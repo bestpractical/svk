@@ -63,7 +63,7 @@ sub do_update {
 
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
-	 no_recurse => $self->{nonrecursive}, report => $report,
+	 no_recurse => $self->{nonrecursive}, report => $report, nodelay => 1,
 	 src => $update_target, xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  oldroot => $xdroot, newroot => $newroot,

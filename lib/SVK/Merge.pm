@@ -351,7 +351,8 @@ the merge to the storage editor. Returns the number of conflicts.
 sub run {
     my ($self, $storage, %cb) = @_;
     # XXX: should deal with all the anchorify here
-    $storage = SVK::Editor::Delay->new ($storage);
+    $storage = SVK::Editor::Delay->new ($storage)
+	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
     my $base_root = $self->{base_root} || $self->{base}->root ($self->{xd});

@@ -1202,6 +1202,7 @@ Returns a file handle with keyword translation and line-ending layers attached.
 sub get_fh {
     my ($root, $mode, $path, $fname, $raw, $layer, $eol) = @_;
     local $@;
+    # XXX: might be worth to use node_proplist to save 2 entries to C
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
 	    if -l $fname || defined eval {$root->node_prop ($path, 'svn:special')};
