@@ -349,8 +349,9 @@ sub _delta_content {
 sub _delta_file {
     my ($info, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
+    my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
+
     unless (-e $arg{copath}) {
-	my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 	return if $schedule ne 'delete' && $arg{absent_ignore};
 	if ($schedule eq 'delete' || $arg{absent_as_delete}) {
 	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
@@ -363,15 +364,22 @@ sub _delta_file {
 
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
     my $mymd5 = SVN::MergeEditor::md5($fh);
-    return if !$arg{add} &&
-	$mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
+
+    return if !$schedule && $mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
 
     my $baton = $arg{add} ?
 	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1) :
 	$arg{editor}->open_file ($arg{entry}, $arg{baton}, 0);
 
-    seek $fh, 0, 0;
-    _delta_content ($info, %arg, baton => $baton, fh => $fh);
+    my $newprop = $info->{checkout}->get_single ($arg{copath})->{newprop};
+    $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_})
+	for keys %$newprop;
+
+    if ($arg{add} || $mymd5 ne $arg{xdroot}->file_md5_checksum ($arg{path})) {
+	seek $fh, 0, 0;
+	_delta_content ($info, %arg, baton => $baton, fh => $fh);
+    }
+
     $arg{editor}->close_file ($baton, $mymd5);
 }
 
@@ -429,6 +437,12 @@ sub _delta_dir {
 	$entries = $arg{xdroot}->dir_entries ($arg{path})
 	    if $arg{xdroot}->check_path ($arg{path}) == $SVN::Node::dir;
 	$baton = $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton});
+    }
+
+    if ($schedule eq 'prop' || $schedule eq 'add') {
+	my $newprop = $info->{checkout}->get_single ($arg{copath})->{newprop};
+	$arg{editor}->change_dir_prop ($baton, $_, $newprop->{$_})
+	    for keys %$newprop;
     }
 
     for (keys %{$entries}) {
@@ -523,11 +537,11 @@ sub checkout_delta {
     }
     else {
 	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
-	my $sche = $arg{strict_add} ?
+	my $sche = ($arg{strict_add} ?
 	    $info->{checkout}->get_single ($arg{copath})->{schedule} :
-	    $info->{checkout}->get ($arg{copath})->{schedule};
+	    $info->{checkout}->get ($arg{copath})->{schedule}) || '';
 
-	if ($sche) {
+	if ($sche eq 'add') {
 	    &{$delta} ($info, %arg,
 		       add => 1,
 		       baton => $baton,

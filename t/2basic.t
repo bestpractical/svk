@@ -37,8 +37,14 @@ svk::ps ('someprop', 'propvalue', "$copath/A/baz");
 svk::rm ("$copath/A/bar");
 ok(!-e "$copath/A/bar");
 svk::status ("$copath/A");
-svk::pl ("$copath/A/baz");
+svk::pl ('-v', "$copath/A/baz");
 
 svk::commit ('-m', 'commit message here', "$copath/A");
+svk::revert ('-R', "$copath/A");
+svk::pl ('-v', "$copath/A/baz");
+
+svk::status ("$copath/A");
+svk::ps ('neoprop', 'propvalue', "$copath/A/baz");
 svk::pl ("$copath/A/baz");
 svk::pl ("$copath/A");
+svk::commit ('-m', 'commit message here', "$copath/A");

@@ -38,6 +38,12 @@ sub apply_textdelta {
     return undef;
 }
 
+sub change_file_prop {
+    my ($self, $path, $name, $value) = @_;
+    $self->{info}{$path}{status}[1] = 'M'
+	unless $self->{info}{$path}{status}[0] eq 'A';
+}
+
 sub close_file {
     my ($self, $path) = @_;
     my $rpath = $path;
@@ -75,10 +81,19 @@ sub open_directory {
     return $path;
 }
 
+sub change_dir_prop {
+    my ($self, $path, $name, $value) = @_;
+    $self->{info}{$path}{status}[1] = 'M';
+}
+
 sub close_directory {
     my ($self, $path) = @_;
     my $rpath = $path;
     $rpath =~ s|^$self->{copath}/|$self->{rpath}|;
+    if ($rpath eq $self->{copath}) {
+	$rpath = $self->{rpath};
+	chop $rpath;
+    }
     print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0] || '',
 		   $self->{info}{$path}{status}[1] || '',
 		   $rpath)

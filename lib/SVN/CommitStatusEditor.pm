@@ -7,7 +7,7 @@ our @ISA = qw(SVN::StatusEditor);
 sub close_file {
     my ($self, $path) = @_;
     my $info = $self->{info}{$path}{status};
-    push @{$self->{targets}}, [$info->[1] ? 'P' : $info->[0],
+    push @{$self->{targets}}, [$info->[0] || ($info->[1] ? 'P' : ''),
 			       $path];
     print {$self->{fh}} sprintf ("%1s%1s \%s\n", $info->[0], $info->[1],
 				 $path) if $self->{fh};
