@@ -264,7 +264,7 @@ sub run {
 
 =head2 Utility Methods
 
-Except for C<arg_depotname>, all C<args_*> methods below returns a
+Except for C<arg_depotname>, all C<arg_*> methods below returns a
 L<SVK::Target> object, which consists of a hash with the following keys:
 
 =over
@@ -434,7 +434,8 @@ sub arg_uri_maybe {
 
 =head3 arg_co_maybe ($arg)
 
-Argument might be a checkout path or a depotpath.
+Argument might be a checkout path or a depotpath. If argument is URI then
+handles it via C<arg_uri_maybe>.
 
 =cut
 
