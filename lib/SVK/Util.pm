@@ -12,7 +12,9 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
-use constant svn_mirror => eval { require SVN::Mirror; 1 };
+my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
+
+sub svn_mirror { $svn_mirror }
 
 sub get_prompt {
     my ($prompt, $regex) = @_;
