@@ -356,7 +356,12 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self, @arg) = @_;
-    $self->{storage}->close_edit(@arg);
+    if (defined $self->{storage_baton}{''}) {
+	$self->{storage}->close_edit(@arg);
+    }
+    else {
+	print "Empty merge\n";
+    }
 }
 
 =head1 BUGS
