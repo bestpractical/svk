@@ -19,10 +19,10 @@ sub _open_pbaton {
 }
 
 sub _close_baton {
-    my ($self, $func, $baton, $pool) = @_;
+    my ($self, $func, $baton, @arg) = @_;
     $func = "SUPER::close_$func";
     if ($self->{opened}{$baton}) {
-	$self->$func ($self->{batons}{$baton}, $pool);
+	$self->$func ($self->{batons}{$baton}, @arg);
 	delete $self->{opened}{$baton};
     }
     delete $self->{batons}{$baton};
