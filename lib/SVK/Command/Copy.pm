@@ -2,7 +2,7 @@ package SVK::Command::Copy;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
-use SVK::Util qw( get_anchor );
+use SVK::Util qw( get_anchor get_prompt );
 use SVK::I18N;
 
 sub options {
@@ -12,8 +12,24 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 0;
-    return (map {$self->arg_co_maybe ($_)} @arg);
+    return if @arg < 1;
+
+    my $dst = pop(@arg);
+    my @src = (map {$self->arg_co_maybe ($_)} @arg);
+
+    if ( my $target = eval { $self->arg_co_maybe ($dst) }) {
+        $dst = $target;
+    }
+    else {
+        $self->{_checkout_path} = $dst;
+        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
+        $path =~ s{//+}{/};
+        $path = "//$path" unless $path =~ m!^/!;
+        $path = "$path/" unless $path =~ m!/\z!;
+        $dst = $self->arg_depotpath($path);
+    }
+
+    return (@src, $dst);
 }
 
 sub lock {
@@ -124,13 +140,13 @@ sub run {
 	$self->handle_co_item ($_, $dst->new) for @src;
     }
     else {
-	$self->get_commit_message ();
 	my $root = $dst->root;
 	if ($root->check_path ($dst->{path}) != $SVN::Node::dir) {
 	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->{report})
 		if $#src > 0;
 	    $dst->anchorify;
 	}
+	$self->get_commit_message ();
 	my ($storage, %cb) = $self->get_editor ($dst->new (path => $m ? $m->{target_path} : '/'));
 	my $editor = SVK::Editor::Rename->new ( editor => $storage );
 	my $baton = $editor->open_root ($cb{cb_rev}->(''));
@@ -142,6 +158,17 @@ sub run {
 	$editor->close_directory ($baton);
 	$editor->close_edit;
     }
+
+    if (my $copath = $self->{_checkout_path}) {
+        require SVK::Command::Checkout;
+        my $checkout = SVK::Command::Checkout->new;
+        $checkout->{xd} = $self->{xd};
+
+        my @arg = $checkout->parse_arg ($dst->{report}, $copath);
+        $checkout->lock (@arg);
+        $checkout->run (@arg);
+    }
+
     return;
 }
 

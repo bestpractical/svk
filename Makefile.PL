@@ -28,6 +28,7 @@ requires(
         'SVN::Simple::Edit'     => '0.21',
         'Date::Parse'           => '0',
         'File::Type'            => '0',
+        'URI'                   => '0',
 );
 features(
     'Localized messages' => [

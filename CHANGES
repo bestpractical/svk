@@ -9,10 +9,15 @@
   P4WinMerge, TkDiff, TortoiseMerge, XXDiff. [Autrijus]
 
 * Patch format changed, it's now unidiff with FreezeThaw-serialized
-  svk::patch. [Autrijus]
+  SVK::Patch. [Autrijus]
 
 * merge and smerge now supports -f and -t options to deduce copy
   source as target. [Eric Lindvall]
+
+* Experimental depotpath auto-vivification from URL. [Autrijus]
+  This allows you to svk checkout URL and svk cp URL local-branch.
+
+* Experimental svk push and pull support.
 
 * sync and update now supports -s and -m to sync and/or merge from
   branch source. [Autrijus]
@@ -26,7 +31,7 @@
 
 * Implement "svk depot --add", "svk depot --delete". [Autrijus]
 
-* Prop{get,set,edit,del} on revprops. [Autrijus]
+* prop{get,set,edit,del} on revprops. [Autrijus]
 
 * Fix smerge -l that trims logs before another smerge in the other
   direction.

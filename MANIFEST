@@ -42,6 +42,8 @@ lib/SVK/Command/Propedit.pm
 lib/SVK/Command/Propget.pm
 lib/SVK/Command/Proplist.pm
 lib/SVK/Command/Propset.pm
+lib/SVK/Command/Pull.pm
+lib/SVK/Command/Push.pm
 lib/SVK/Command/Resolved.pm
 lib/SVK/Command/Revert.pm
 lib/SVK/Command/Smerge.pm
@@ -123,6 +125,7 @@ t/22status.t
 t/23commit.t
 t/24diff.t
 t/25log.t
+t/26revert-remove.t
 t/26revert.t
 t/30annotate.t
 t/31cat.t
@@ -130,7 +133,9 @@ t/32list.t
 t/33prop.t
 t/34revprop.t
 t/35admin.t
+t/36push-pull.t
 t/70symlink.t
+t/71autovivify.t
 t/tree.pl
 TODO
 utils/extract-docs

@@ -28,7 +28,7 @@ $svk->checkout ('//V-3.1');
 ok (-e 'V-3.1/A/Q/qu');
 is_output_like ($svk, 'checkout', ['//'], qr"don't know where to checkout");
 
-is_output_like ($svk, 'checkout', ['//V-3.1'], qr'already exists;.* --detach');
+is_output_like ($svk, 'checkout', ['//V-3.1'], qr'already exists');
 is_output_like ($svk, 'checkout', ['//V-3.1', 'V-3.1/l2'], qr'Overlapping checkout');
 
 $svk->checkout ('-r5', '//V-3.1', 'V-3.1-r5');

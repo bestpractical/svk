@@ -16,8 +16,9 @@ use SVK::Util qw( catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
 our $answer = 's'; # skip
 BEGIN {
     no warnings 'redefine';
-    *SVK::Util::get_prompt = sub { $answer }
-        unless $ENV{DEBUG_INTERACTIVE};
+    *SVK::Util::get_prompt = sub {
+        ref($answer) ? shift(@$answer) : $answer
+    } unless $ENV{DEBUG_INTERACTIVE};
 }
 
 use Carp;

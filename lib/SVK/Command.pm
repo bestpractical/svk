@@ -8,7 +8,7 @@ use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
-use SVK::Util qw( abs_path $SEP IS_WIN32 );
+use SVK::Util qw( get_prompt abs_path is_uri catdir $SEP IS_WIN32 HAS_SVN_MIRROR );
 use SVK::I18N;
 
 =head1 NAME
@@ -306,6 +306,103 @@ sub arg_condensed {
     return $target;
 }
 
+=head3 arg_uri_maybe ($arg)
+
+Argument might be a URI or a depotpath.  If it is a URI, try to find it
+at or under one of currently mirrored paths.  If not found, prompts the
+user to mirror and sync it.
+
+=cut
+
+sub arg_uri_maybe {
+    my ($self, $arg) = @_;
+
+    is_uri($arg) or return $self->arg_depotpath($arg);
+    HAS_SVN_MIRROR or die loc("cannot load SVN::Mirror");
+
+    require URI;
+    my $uri = URI->new("$arg/")->canonical or die loc("%1 is not a valid URI.\n", $arg);
+    my $map = $self->{xd}{depotmap};
+    foreach my $depot (sort keys %$map) {
+        my $repos = ($self->{xd}->find_repos ("/$depot/", 1))[2];
+	foreach my $path ( SVN::Mirror::list_mirror ($repos) ) {
+	    my $m = SVN::Mirror->new (
+                repos => $repos,
+                get_source => 1,
+                target_path => $path,
+            );
+
+            my $rel_uri = $uri->rel(URI->new("$m->{source}/")->canonical) or next;
+            next if $rel_uri->eq($uri);
+            next if $rel_uri =~ /^\.\./;
+
+            my $depotpath = catdir('/', $depot, $path, $rel_uri);
+            $depotpath = "/$depotpath" if !length($depot);
+            return $self->arg_depotpath($depotpath);
+	}
+    }
+
+    print loc("New URI encountered: %1\n", $uri);
+
+    my $depots = join('|', map quotemeta, sort keys %$map);
+    my ($base_uri, $rel_uri);
+
+    {
+        my $base = get_prompt(
+            loc("Choose a base URI to mirror from (press enter to use the full URI): ", $uri),
+            qr/^(?:[A-Za-z][-+.A-Za-z0-9]*:|$)/
+        );
+        if (!length($base)) {
+            $base_uri = $uri;
+            $rel_uri = '';
+            last;
+        }
+
+        $base_uri = URI->new("$base/")->canonical;
+
+        $rel_uri = $uri->rel($base_uri);
+        next if $rel_uri->eq($uri);
+        next if $rel_uri =~ /^\.\./;
+        last;
+    }
+
+    my $path = get_prompt(
+        loc("Name a depot path for this mirror (under //mirror/ if no leading '/'): "),
+        qr{^(?:/(?:$depots)/)?\w+},
+    );
+    $path = "//mirror/$path" unless $path =~ m!^/!;
+
+    my $target = $self->arg_depotpath($path);
+    require SVK::Command::Mirror;
+    my $mirror = SVK::Command::Mirror->new;
+    $mirror->run($target, $base_uri);
+
+    print loc("Synchronizing the mirror for the first time:\n");
+    print loc("  a        : Retrieve all revisions (default)\n");
+    print loc("  h        : Only the most recent revision\n");
+    print loc("  -count   : At most 'count' recent revisions\n");
+    print loc("  revision : Start from the specified revision\n");
+
+    my $answer = lc(get_prompt(
+        loc("a)ll, h)ead, -count, revision? [a] "),
+        qr(^[ah]?|^-?\d+$)
+    ));
+    $answer = 'a' unless length $answer;
+
+    require SVK::Command::Sync;
+    my $sync = SVK::Command::Sync->new;
+    $sync->{skip_to} = (
+        ($answer eq 'a') ? undef :
+        ($answer eq 'h') ? 'HEAD-1' :
+        ($answer < 0)    ? "HEAD$answer" :
+                           $answer
+    );
+    $sync->run ($target);
+
+    my $depotpath = "$target->{depotpath}/$rel_uri";
+    return $self->arg_depotpath($depotpath);
+}
+
 =head3 arg_co_maybe ($arg)
 
 Argument might be a checkout path or a depotpath.
@@ -314,6 +411,9 @@ Argument might be a checkout path or a depotpath.
 
 sub arg_co_maybe {
     my ($self, $arg) = @_;
+
+    $arg = $self->arg_uri_maybe($arg)->{depotpath} if is_uri($arg);
+
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
@@ -356,6 +456,7 @@ Argument is a depotpath, including the slashes and depot name.
 
 sub arg_depotpath {
     my ($self, $arg) = @_;
+
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
 

@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( abs_path move_path $SEP );
+use SVK::Util qw( abs_path move_path is_empty_path $SEP );
 use File::Spec;
 
 sub options {
@@ -22,7 +22,7 @@ sub parse_arg {
     return (@arg ? @arg : '') if $self->{detach};
     return (@arg >= 2 ? @arg : ('', @arg)) if $self->{relocate};
 
-    my $depotpath = $self->arg_depotpath ($arg[0]);
+    my $depotpath = $self->arg_uri_maybe ($arg[0]);
     die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
 
     $arg[1] =~ s|/$|| if $arg[1];
@@ -120,10 +120,10 @@ sub _do_checkout {
     my ($self, $target, $report) = @_;
 
     my $copath = abs_path ($report);
-    die loc("Checkout path %1 already exists; use 'svk checkout --detach' to remove it first.\n", $copath) if -e $copath;
+    die loc("Checkout path %1 already exists.\n", $copath) if -e $copath;
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
-    die loc("Overlapping checkout path is not supported (%1)\n", $where[0])
+    die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 
     $self->{xd}{checkout}->store_recursively ( $copath,
