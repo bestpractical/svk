@@ -603,17 +603,96 @@ sub copy {
 
 =cut
 
+sub find_branch_point {
+    my ($repos, $src, $dst, $safe) = @_;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    my $hist = $root->node_history ($dst);
+    my ($path, $rev, $crev);
+    while ($hist = $hist->prev (1)) {
+	($path, $rev) = $hist->location ();
+	last if $path eq $src;
+	$crev = $rev if $path eq $dst;
+    }
+    return ($rev, $crev)
+	if $path eq $src;
+
+    die "can't find branch point for $src and $dst"
+	if $safe;
+
+    return reverse (find_branch_point ($repos, $dst, $src, 1));
+}
+
+# when is the last merge from src to dst?
+sub find_merge_history {
+    my ($repos, $src, $dst) = @_;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    if (my $minfo = $root->node_prop ($dst, 'svk:merge')) {
+	$minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
+			("$uuid:$path" => $rev);
+		    } split ("\n", $minfo) };
+	# resolve the rev to local rev if it's svm'ed
+	if (my $r = $minfo->{join (':', $repos->fs->get_uuid (), $src)}) {
+	    return $r;
+	}
+    }
+}
+
+# XXX: need to return ancestor path too
+sub find_merge_info {
+    my ($repos, $src, $dst) = @_;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    my ($bpsrc, $bpdst) = find_branch_point ($repos, $src, $dst);
+
+    return ($bpsrc, $fs->youngest_rev);
+}
+
+
+sub resolve_svm_source {
+    my ($repos, $path) = @_;
+    my ($uuid, $rev, $m);
+    my $mirrored;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    if ($svn_mirror) {
+	$m = eval 'SVN::Mirror::is_mirrored ($repos, $path)';
+    }
+
+    if ($m) {
+	$uuid = $root->node_prop ($path, 'svm:uuid');
+	$path = $m->{source};
+	$path =~ s/^$m->{source_root}//;
+	$rev = $m->{fromrev};
+    }
+    else {
+	($rev, $uuid) = ($fs->youngest_rev, $fs->get_uuid);
+    }
+
+    return ($uuid, $path, $rev);
+}
+
 sub merge {
     local @ARGV = @_;
-    my ($check_only, $message, $revspec);
+    my ($check_only, $message, $auto, $no_ticket, $revspec);
     die unless GetOptions ("C|check-only"	=> \$check_only,
 			   "m|message=s"	=> \$message,
+			   "a|auto"		=> \$auto,
+			   "no-ticket"		=> \$no_ticket,
 			   "r|revision=s"	=> \$revspec);
 
-    die "revision required" unless $revspec;
     my ($src, $dst) = @ARGV;
-    my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
-	or die "revision must be N:M";
+    my ($fromrev, $torev, $cb_merged);
+    unless ($auto) {
+	die "revision required" unless $revspec;
+	($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
+	    or die "revision must be N:M";
+    }
     my ($repospath, $path, $repos) = find_repos ($src, 1);
     my ($drepospath, $dpath, $editor, $base_rev, $copath);
     if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
@@ -658,6 +737,19 @@ sub merge {
 	$copath = File::Spec->rel2abs ($dst || '');
     }
 
+    if ($auto) {
+	($fromrev, $torev) = find_merge_info ($repos, $path, $dpath);
+	print "auto merge ($fromrev, $torev) $path -> $dpath\n";
+	# XXX: resolve the uuid and torev with source path (see if it's svm'ed)
+	my ($uuid, $path, $rev) = resolve_svm_source ($repos, $path);
+	print "merge ticket: $uuid:$path:$rev\n" unless $no_ticket;
+	# XXX: cb_merged for XD
+	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
+			   $editor->change_dir_prop ($baton, 'svk:merge',
+						     "$uuid:$path:$rev");
+		       } unless $no_ticket;
+    }
+
     # support incremental merging (merge one revision by one)
     SVN::XD::do_merge ($info,
 		       repos => $repos,
@@ -671,6 +763,7 @@ sub merge {
 		       check_only => $check_only,
 		       message => $message,
 		       torev => $torev,
+		       cb_merged => $cb_merged,
 		      );
 }
 
@@ -686,7 +779,7 @@ sub mirror {
     my ($repospath, $path) = find_repos ($dpath);
 
     my $m = SVN::Mirror->new (target_path => $path, target => $repospath,
-			      auth => $auth,
+			      pool => SVN::Pool->new, auth => $auth,
 			      source => $source, target_create => 1);
     $m->init;
 }
@@ -706,10 +799,9 @@ sub sync {
 
     my ($dpath) = @ARGV;
     my ($repospath, $path) = find_repos ($dpath);
-    my $pool = SVN::Pool->new_default;
 
     my $m = SVN::Mirror->new (target_path => $path, target => $repospath,
-			      pool => $pool, auth => $auth,
+			      pool => SVN::Pool->new, auth => $auth,
 			      get_source => 1, skip_to => $skip_to);
     $m->init ();
     $m->run ();

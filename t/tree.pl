@@ -6,6 +6,7 @@ package main;
 require Data::Hierarchy;
 require SVN::Core;
 require SVN::Repos;
+require SVN::Fs;
 use strict;
 
 require IO::Scalar;
@@ -108,6 +109,8 @@ sub create_basic_tree {
     $edit->add_directory ('/B');
     $edit->add_directory ('/C');
     $edit->add_directory ('/A/Q');
+    $edit->modify_file ($edit->add_file ('/A/Q/qu'),
+			"first line in qu\n2nd line in qu\n");
     $edit->add_directory ('/C/R');
     $edit->close_edit ();
     my $tree = { child => { me => {},

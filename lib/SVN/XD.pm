@@ -110,6 +110,7 @@ sub do_update {
 	(_debug => 0,
 	 fs => $fs,
 	 anchor => $anchor,
+	 base_anchor => $anchor,
 	 base_root => $xdroot,
 	 target => $target,
 	 storage => $storage,
@@ -365,9 +366,11 @@ sub checkout_crawler {
 
 sub do_merge {
     my ($info, %arg) = @_;
+    # XXX: reorganize these shit
     my ($anchor, $target) = ($arg{path});
+    my ($base_anchor, $base_target) = ($arg{basepath} || $arg{path});
     my ($txn, $xdroot);
-    my ($basepath, $tgt) = ($arg{dpath});
+    my ($tgt_anchor, $tgt) = ($arg{dpath});
     my ($storage, $findanchor, %cb);
 
     my $fs = $arg{repos}->fs;
@@ -385,10 +388,13 @@ sub do_merge {
     # decide anchor / target
     if ($findanchor) {
 	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
+	(undef,$base_anchor,$base_target) = File::Spec->splitpath ($base_anchor);
 	undef $target unless $target;
+	undef $base_target unless $base_target;
 	chop $anchor if length($anchor) > 1;
+	chop $base_anchor if length($base_anchor) > 1;
 
-	(undef,$basepath,$tgt) = File::Spec->splitpath ($arg{dpath});
+	(undef,$tgt_anchor,$tgt) = File::Spec->splitpath ($arg{dpath});
 	unless ($arg{copath}) {
 	    # XXX: merge into repos requiring anchor is not tested yet
 	    $storage = SVN::XD::TranslateEditor->new
@@ -408,7 +414,7 @@ sub do_merge {
 	    ( copath => $arg{copath},
 	      oldroot => $xdroot,
 	      newroot => $xdroot,
-	      anchor => $basepath,
+	      anchor => $tgt_anchor,
 	      get_copath => sub { my $t = translator($target);
 				  $_[0] = $arg{copath}, return
 				     if $target && $target eq $_[0];
@@ -418,7 +424,7 @@ sub do_merge {
 	      info => $info,
 	      check_only => $arg{check_only},
 	    );
-	%cb = xd_storage_cb ($info, $basepath, $tgt, $arg{copath}, $xdroot),
+	%cb = xd_storage_cb ($info, $tgt_anchor, $tgt, $arg{copath}, $xdroot),
     }
     else {
 	my $editor = $arg{editor};
@@ -428,7 +434,7 @@ sub do_merge {
 	    ( SVN::Repos::get_commit_editor
 	      ( $arg{repos},
 		"file://$arg{repospath}",
-		$basepath,
+		$tgt_anchor,
 		$ENV{USER}, $arg{message},
 		sub { print "Committed revision $_[0].\n" }
 	      ));
@@ -442,14 +448,14 @@ sub do_merge {
 	($storage ? $storage->{_editor} : $storage) = $editor;
 	# XXX: need translator
 	%cb = ( cb_exist =>
-		sub { my $path = $basepath.'/'.shift;
+		sub { my $path = $tgt_anchor.'/'.shift;
 		      $root->check_path ($path) != $SVN::Node::none;
 		  },
 		cb_rev => sub { $base_rev; },
-		cb_conflict => sub { die "conflict $basepath/$_[0]"; },
+		cb_conflict => sub { die "conflict $tgt_anchor/$_[0]"; },
 		cb_localmod =>
 		sub { my ($path, $checksum) = @_;
-		      $path = "$basepath/$path";
+		      $path = "$tgt_anchor/$path";
 		      my $md5 = $root->file_md5_checksum ($path);
 		      return if $md5 eq $checksum;
 		      return [$root->file_contents ($path), undef, $md5];
@@ -459,14 +465,16 @@ sub do_merge {
 
     my $editor = SVN::XD::MergeEditor->new
 	( anchor => $anchor,
+	  base_anchor => $base_anchor,
 	  base_root => $fs->revision_root ($arg{fromrev}),
 	  target => $target,
+	  cb_merged => $arg{cb_merged},
 	  storage => $storage,
 	  %cb,
 	);
 
     SVN::Repos::dir_delta ($fs->revision_root ($arg{fromrev}),
-			   $anchor, $target,
+			   $base_anchor, $base_target,
 			   $fs->revision_root ($arg{torev}), $arg{path},
 			   $editor,
 			   1, 1, 0, 1);
@@ -615,7 +623,9 @@ sub do_commit {
 
 sub get_keyword_layer {
     my ($root, $path) = @_;
-    my $k = $root->node_prop ($path, 'svn:keywords');
+    my $k = eval { $root->node_prop ($path, 'svn:keywords') };
+    use Carp;
+    confess "can't get keyword layer for $path: $@" if $@;
 
     return '' unless $k;
 
@@ -647,8 +657,8 @@ sub get_keyword_layer {
     my $keyword = '('.join('|', @key).')';
 
     my $p = PerlIO::via::keyword->new
-	({translate => sub { $_[1] =~ s/\$($keyword)[:\w\s]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).'$'/e },
-	  undo => sub { $_[1] =~ s/\$($keyword)[:\w\s]*\$/\$$1\$/}});
+	({translate => sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).'$'/e },
+	  undo => sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/\$$1\$/}});
     return $p->via;
 }
 
@@ -671,21 +681,21 @@ package SVN::XD::TranslateEditor;
 use base qw/SVN::Delta::Editor/;
 
 sub add_file {
-    my ($self, $path) = @_;
+    my ($self, $path, @arg) = @_;
     &{$self->{translate}} ($path);
-    $self->{_editor}->add_file ($path);
+    $self->{_editor}->add_file ($path, @arg);
 }
 
 sub open_file {
-    my ($self, $path) = @_;
+    my ($self, $path, @arg) = @_;
     &{$self->{translate}} ($path);
-    $self->{_editor}->open_file ($path);
+    $self->{_editor}->open_file ($path, @arg);
 }
 
 sub add_directory {
-    my ($self, $path) = @_;
+    my ($self, $path, @arg) = @_;
     &{$self->{translate}} ($path);
-    $self->{_editor}->add_directory ($path);
+    $self->{_editor}->add_directory ($path, @arg);
 }
 
 sub open_directory {
@@ -860,7 +870,8 @@ sub set_target_revision {
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
-    $self->{storage_baton}{''} = $self->{storage}->open_root ($baserev);
+    $self->{storage_baton}{''} =
+	$self->{storage}->open_root (&{$self->{cb_rev}}(''));
     return '';
 }
 
@@ -895,7 +906,7 @@ sub apply_textdelta {
 	    # retrieve base
 	    $self->{info}{$path}{fh}{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
 	    my $rpath = $path;
-	    $rpath = "$self->{anchor}/$rpath" if $self->{anchor};
+	    $rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
 	    my $buf = $self->{base_root}->file_contents ($rpath);
 	    local $/;
 	    $self->{info}{$path}{fh}{base}[0]->print(<$buf>);
@@ -930,6 +941,14 @@ sub close_file {
 	    $new = <$new>;
 	    $local = <$local>;
 	}
+
+	if ($new eq $local) {
+	    delete $self->{info}{$path};
+	    $self->{storage}->close_file ($self->{storage_baton}{$path},
+					  $checksum, $pool);
+	    return;
+	}
+
 	my @mergearg =
 	    ([split "\n", $orig],
 	     [split "\n", $new],
@@ -1007,7 +1026,7 @@ sub open_directory {
 }
 
 sub close_directory {
-    my ($self, $path) = @_;
+    my ($self, $path, $pool) = @_;
     no warnings 'uninitialized';
 
     for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
@@ -1017,7 +1036,10 @@ sub close_directory {
 	delete $self->{info}{$_};
     }
 
-    $self->{storage}->close_directory ($self->{storage_baton}{$path});
+    &{$self->{cb_merged}} ($self->{storage}, $self->{storage_baton}{''}, $pool)
+	if $path eq '' && $self->{cb_merged};
+
+    $self->{storage}->close_directory ($self->{storage_baton}{$path}, $pool);
 }
 
 sub delete_entry {
@@ -1029,12 +1051,15 @@ sub delete_entry {
 
 sub change_file_prop {
     my ($self, $path, @arg) = @_;
+    return unless $self->{info}{$path}{status};
     $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
     $self->{info}{$path}{status}[1] = 'U';
 }
 
 sub change_dir_prop {
     my ($self, $path, @arg) = @_;
+    return unless $self->{info}{$path}{status};
+    return if $arg[0] eq 'svk:merge';
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
     $self->{info}{$path}{status}[1] = 'U';
 }
