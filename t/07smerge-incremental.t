@@ -20,6 +20,7 @@ my ($scopath, $scorpath) = get_copath ('smerge-incremental-source');
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 my $uri = uri($srepospath);
+
 $svk->mirror ('//m', $uri.($spath eq '/' ? '' : $spath));
 $svk->sync ('//m');
 $svk->copy ('-m', 'branch', '//m', '//l');
@@ -67,7 +68,7 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 $svk->mkdir ('-m', 'fnord', '/new/A');
 
 ($srepospath, $spath, $srepos) = $xd->find_repos ('/new/A', 1);
-$svk->mirror ('//new', $uri.($spath eq '/' ? '' : $spath));
+$svk->mirror ('//new', uri($srepospath).($spath eq '/' ? '' : $spath));
 $svk->sync ('//new');
 is_output_like ($svk, 'smerge', ['-CI', '//m', '//new'],
 		qr"Can't find merge base for /m and /new");

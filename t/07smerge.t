@@ -227,7 +227,7 @@ is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '/client2/m-
 	    'G   Q/qu',
 	    "New merge ticket: $suuid:/A:11",
 	    'Merge back committed as revision 12.',
-	    "Syncing $uri.",
+	    "Syncing $uri",
 	    'Retrieving log information from 12 to 12',
 	    'Committed revision 13 from revision 12.']);
 
