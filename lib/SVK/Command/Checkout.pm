@@ -33,9 +33,10 @@ sub parse_arg {
 
 sub lock {
     my ($self, $src, $dst) = @_;
-    if ($self->{detach} or $self->{list}) {
-        return $self->lock_none;
-    }
+
+    return if $self->{detach} or $self->{relocate}; # hold giant
+    return $self->lock_none if $self->{list};
+
     my $abs_path = abs_path ($dst) or return;
     $self->{xd}->lock ($abs_path);
 }
@@ -67,7 +68,6 @@ sub _do_detach {
         print loc("Checkout path '%1' detached.\n", $copath);
     }
 
-    $self->{xd}{modified}++;
     return;
 }
 
@@ -110,7 +110,6 @@ sub _do_relocate {
     foreach my $key (sort grep { index("$_$SEP", $prefix) == 0 } keys %$map) {
         $map->{$target . substr($key, $length)} = delete $map->{$key};
     }
-    $self->{xd}{modified}++;
 
     print loc("Checkout '%1' relocated to '%2'.\n", $path, $report);
 
