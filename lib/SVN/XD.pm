@@ -69,7 +69,7 @@ sub xd_storage_cb {
 			       my $md5 = SVN::MergeEditor::md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
-			       return [$base, $_, $md5];
+			       return [$base, undef, $md5];
 			   });
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-$VERSION = '0.02';
+$VERSION = '0.03';
 use strict;
 require SVN::Core;
 require SVN::Repos;
@@ -672,6 +672,10 @@ sub find_merge_info {
 			   find_merge_history ($repos, $dst, $src));
 
     my ($bpsrc, $bpdst) = find_branch_point ($repos, $src, $dst);
+
+    unless ($mpsrc || $mpdst) {
+	return ($src, $bpsrc, $fs->youngest_rev);
+    }
 
     $mpsrc ||= $bpsrc;
     $mpdst ||= $bpdst;
