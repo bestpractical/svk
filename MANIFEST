@@ -8,3 +8,4 @@ t/4merge.t
 t/5svm.t
 t/6keyword.t
 t/7smerge.t
+META.yml                                 Module meta-data (added by MakeMaker)
