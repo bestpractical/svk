@@ -163,6 +163,7 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
+    ++$self->{changes};
     if ($self->{cb_exist}->($path)) {
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
