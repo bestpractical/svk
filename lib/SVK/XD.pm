@@ -1103,7 +1103,7 @@ sub get_eol_layer {
     my $k = $prop->{'svn:eol-style'};
     return ':raw' unless $k;
     return ':crlf' if $k eq 'CRLF';
-    return '' if $k eq 'native';
+    return ' ' if $k eq 'native';
     return ':raw'; # unsupported or lf
 }
 
