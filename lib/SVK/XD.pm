@@ -7,6 +7,7 @@ require SVN::Fs;
 require SVN::Delta;
 require SVK::MergeEditor;
 use SVK::RevertEditor;
+use SVK::DelayEditor;
 use SVK::DeleteEditor;
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor );
@@ -626,7 +627,7 @@ sub _delta_dir {
 	$self->$delta ( %arg,
 		   add => 1,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
-		   kind => $arg{xdroot}->check_path ("$arg{path}/$_"),
+		   kind => $SVN::Node::none,
 		   baton => $baton,
 		   targets => $targets->{$_},
 		   root => 0,
@@ -662,6 +663,10 @@ sub checkout_delta {
     my ($self, %arg) = @_;
     my $kind = $arg{xdroot}->check_path ($arg{path});
     my $copath = $arg{copath};
+    $arg{editor} = SVK::DelayEditor->new ($arg{editor})
+	unless $arg{nodelay};
+    $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
+	if $arg{debug};
     $arg{cb_rev} ||= sub { my $target = shift;
 			   $target = $target ? "$copath/$target" : $copath;
 			   $self->_get_rev ($target);

@@ -45,6 +45,7 @@ lib/SVK/Command/Switch.pm
 lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/CommitStatusEditor.pm
+lib/SVK/DelayEditor.pm
 lib/SVK/DeleteEditor.pm
 lib/SVK/DiffEditor.pm
 lib/SVK/I18N.pm
