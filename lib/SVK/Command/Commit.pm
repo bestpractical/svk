@@ -97,7 +97,7 @@ sub get_editor {
 	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
 	if ($self->{patch}) {
 	    print loc("Patching locally against mirror source %1.\n", $m->{source});
-	    $base_rev = $m->{fromrev} if $self->{patch};
+	    $base_rev = $m->{fromrev};
 	}
 	elsif ($self->{check_only}) {
 	    print loc("Checking locally against mirror source %1.\n", $m->{source});

@@ -144,6 +144,7 @@ sub run {
             },
         );
 
+	my $spool = SVN::Pool->new_default;
 	for (@rev) {
 	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $_));
 	    print '===> '.$merge->info;
@@ -151,6 +152,7 @@ sub run {
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
 	    $dst->{revision} = $fs->youngest_rev;
+	    $spool->clear;
 	}
     }
     else {

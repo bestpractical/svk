@@ -635,6 +635,7 @@ sub traverse_history {
 
     my $old_pool = SVN::Pool->new;
     my $new_pool = SVN::Pool->new;
+    my $spool = SVN::Pool->new_default;
 
     my $hist = $args{root}->node_history ($args{path}, $old_pool);
     my $rv;
@@ -643,6 +644,7 @@ sub traverse_history {
         $rv = $args{callback}->($hist->location ($new_pool));
         last if !$rv;
         $old_pool->clear;
+	$spool->clear;
         ($old_pool, $new_pool) = ($new_pool, $old_pool);
     }
 
