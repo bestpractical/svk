@@ -838,6 +838,12 @@ sub close_edit {
     $self->{_editor}->abort_edit (@_);
 }
 
+sub abort_edit {
+    my $self = shift;
+    print "Empty merge.\n";
+    $self->{_editor}->abort_edit (@_);
+}
+
 package SVN::XD::Editor;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);

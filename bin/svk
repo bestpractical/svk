@@ -581,6 +581,7 @@ sub log {
     print "\n";
     $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
 		     sub { my ($paths, $rev, $author, $date, $message) = @_;
+			   no warnings 'uninitialized';
 			   print "rev $rev:  $author | $date\n";
 			   if ($paths) {
 			       print "Changed paths:\n";
@@ -638,6 +639,16 @@ sub get_buffer_from_editor {
     return wantarray ? @ret : $ret[0];
 }
 
+sub path_is_mirrored {
+    my ($repos, $path) = @_;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    my $rev = ($root->node_history ($path)->prev (0)->location)[1];
+
+    return (grep {m/^svm:headrev:/} keys %{$fs->revision_proplist ($rev)});
+}
+
 sub commit {
     local @ARGV = @_;
     my ($message, $force);
@@ -651,7 +662,11 @@ sub commit {
     $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
     my $targets;
-    # XXX: test if $path is svm mirrored to prevent repository ruin
+
+    # XXX: other commands committing to target should have this check too
+    die "Commit into mirrored path will ruin the mirror state!\n".
+	"Use --force to override if you know what you are doing"
+	    unless $force || !path_is_mirrored ($repos, $path);
 
     # harvest
     unless (defined $message) {

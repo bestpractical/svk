@@ -190,18 +190,18 @@ sub apply_textdelta {
 	$self->{info}{$path}{fh}{local} =
 	    &{$self->{cb_localmod}}($path, $checksum) or
 		$self->{info}{$path}{status}[0] = 'U';
-	    # retrieve base
-	    $self->{info}{$path}{fh}{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
-	    my $rpath = $path;
-	    $rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
-	    my $buf = $self->{base_root}->file_contents ($rpath);
-	    local $/;
-	    $self->{info}{$path}{fh}{base}[0]->print(<$buf>);
-	    seek $self->{info}{$path}{fh}{base}[0], 0, 0;
-	    # get new
-	    my ($fh, $file) = mkstemps("/tmp/svk-mergeXXXXX", '.tmp');
-	    $self->{info}{$path}{fh}{new} = [$fh, $file];
-	    return [SVN::TxDelta::apply ($self->{info}{$path}{fh}{base}[0],
+	# retrieve base
+	$self->{info}{$path}{fh}{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	my $rpath = $path;
+	$rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
+	my $buf = $self->{base_root}->file_contents ($rpath);
+	local $/;
+	$self->{info}{$path}{fh}{base}[0]->print(<$buf>);
+	seek $self->{info}{$path}{fh}{base}[0], 0, 0;
+	# get new
+	my ($fh, $file) = mkstemps("/tmp/svk-mergeXXXXX", '.tmp');
+	$self->{info}{$path}{fh}{new} = [$fh, $file];
+	return [SVN::TxDelta::apply ($self->{info}{$path}{fh}{base}[0],
 					 $fh, undef, undef, $pool)];
     }
     $self->{info}{$path}{status}[0] ||= 'U';
@@ -233,9 +233,19 @@ sub close_file {
 		apply_textdelta ($self->{storage_baton}{$path}, $fh->{base}[2],
 				 $pool);
 
-	    open my ($new), $fh->{new}[1];
-	    SVN::TxDelta::send_stream ($new, @$handle, $pool)
-		    if $handle && $#{$handle} > 0;
+	    if ($handle && $#{$handle}) {
+		open my ($new), $fh->{new}[1];
+		if ($self->{send_fulltext}) {
+		    SVN::TxDelta::send_stream ($new, @$handle, $pool);
+		}
+		else {
+		    my $txstream = SVN::TxDelta::new
+			($fh->{base}[0], $new, $pool);
+
+		    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool)
+		}
+	    }
+
 	    $self->{storage}->close_file ($self->{storage_baton}{$path},
 					  $checksum, $pool);
 	    $self->cleanup_fh ($fh);
@@ -259,19 +269,30 @@ sub close_file {
 	$info->{status}[0] = SVN::Core::diff_contains_conflicts ($diff)
 	    ? 'C' : 'G';
 
-	$self->cleanup_fh ($fh);
 	my $handle = $self->{storage}->
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
 			     $pool);
 
 	open my ($mfh), $merge_fname;
-	SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
-		if $handle && $#{$handle} > 0;
-
-	seek $mfh, 0, 0;
 	$checksum = md5 ($mfh);
+
+	if ($handle && $#{$handle} > 0) {
+	    seek $mfh, 0, 0;
+	    seek $fh->{local}[0], 0, 0;
+	    if ($self->{send_fulltext}) {
+		SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
+			if $handle && $#{$handle} > 0;
+	    }
+	    else {
+		my $txstream = SVN::TxDelta::new
+		    ($fh->{local}[0], $mfh, $pool);
+		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool)
+	    }
+	}
+
 	close $mfh;
 	unlink ($merge_fname);
+	$self->cleanup_fh ($fh);
 
 	&{$self->{cb_conflict}} ($path)
 	    if $info->{status}[0] eq 'C';
@@ -360,7 +381,7 @@ sub close_edit {
 	$self->{storage}->close_edit(@arg);
     }
     else {
-	print "Empty merge\n";
+	$self->{storage}->abort_edit(@arg);
     }
 }
 
