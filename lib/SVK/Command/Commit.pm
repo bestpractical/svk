@@ -1,22 +1,18 @@
 package SVK::Command::Commit;
 use strict;
-our $VERSION = '0.09';
-
+our $VERSION = '0.11';
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::CommitStatusEditor;
 use SVK::Util qw(get_buffer_from_editor slurp_fh);
 use File::Temp;
-require SVN::Client;
+use SVN::Simple::Edit;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
 my $target_prompt = '=== below are targets to be committed ===';
 
-my $auth = SVN::Core::auth_open
-    ([SVN::Client::get_simple_provider (),
-      SVN::Client::get_ssl_server_trust_file_provider (),
-      SVN::Client::get_username_provider ()]);
+my $auth;
 
 sub options {
     ('m|message=s'  => 'message',
@@ -40,7 +36,13 @@ sub lock {
 
 sub target_prompt { $target_prompt }
 sub svn_mirror { $svn_mirror }
-sub auth { $auth }
+sub auth {
+    eval 'require SVN::Client' or die $@;
+    $auth ||= SVN::Core::auth_open
+	([SVN::Client::get_simple_provider (),
+	  SVN::Client::get_ssl_server_trust_file_provider (),
+	  SVN::Client::get_username_provider ()]);
+}
 
 sub path_is_mirrored {
     my ($self, $repos, $path) = @_;
@@ -52,6 +54,30 @@ sub path_is_mirrored {
     return (grep {m/^svm:headrev:/} keys %{$fs->revision_proplist ($rev)});
 }
 
+sub get_commit_editor {
+    my ($self, $xdroot, $committed, $path, %arg) = @_;
+    ${$arg{callback}} = $committed if $arg{editor};
+    return SVN::Simple::Edit->new
+	(_editor => [$arg{editor} ||
+		     SVN::Repos::get_commit_editor($arg{repos},
+						   "file://$arg{repospath}",
+						   $path,
+						   $arg{author}, $arg{message},
+						   $committed)],
+	 base_path => $path,
+	 $arg{mirror} ? () : ( root => $xdroot ),
+	 missing_handler =>
+	 SVN::Simple::Edit::check_missing ($xdroot));
+}
+
+sub get_commit_message {
+    my ($self) = @_;
+    $self->{message} = get_buffer_from_editor ('log message', $target_prompt,
+					       "\n$target_prompt\n",
+					       "/tmp/svk-commitXXXXX")
+	unless defined $self->{message};
+}
+
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be XD::Editor, repos_commit_editor, or svn::mirror merge back editor.
 sub get_editor {
@@ -60,15 +86,15 @@ sub get_editor {
 
     if ($target->{copath}) {
 	# XXX: really need txn auto cleanup!
-	my ($txn, $xdroot) = SVK::XD::create_xd_root ($self->{info}, %$target);
-
-	($editor, %cb) = SVK::XD::get_editor ( $self->{info}, %$target,
-					       oldroot => $xdroot,
-					       newroot => $xdroot,
-					       anchor => $target->{path},
-					       target => '',
-					       check_only => $self->{check_only});
-	return ($editor, %cb, txn => $txn);
+	my $xdroot = $self->{xd}->xdroot (%$target);
+	($editor, %cb) = $self->{xd}->get_editor
+	    ( %$target,
+	      oldroot => $xdroot,
+	      newroot => $xdroot,
+	      anchor => $target->{path},
+	      target => '',
+	      check_only => $self->{check_only});
+	return ($editor, %cb);
     }
 
     my ($base_rev, $m, $mpath);
@@ -79,7 +105,7 @@ sub get_editor {
 	    print "Check against mirrored directory locally.\n";
 	}
 	else {
-	    $m->{auth} = $auth;
+	    $m->{auth} = $self->auth;
 	    ($base_rev, $editor) = $m->get_merge_back_editor
 		($mpath, $self->{message},
 		 sub { print "Merge back committed as revision $_[0].\n";
@@ -161,9 +187,8 @@ sub run {
     print "Commit into mirrored path, merge back directly\n"
 	if $is_mirrored;
 
-    my ($txn, $xdroot) = SVK::XD::create_xd_root ($self->{info}, %$target);
-
     my ($fh, $file);
+    my $xdroot = $self->{xd}->xdroot (%$target);
 
     unless (defined $self->{message}) {
 	($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
@@ -172,19 +197,18 @@ sub run {
     print $fh "\n$target_prompt\n" if $fh;
 
     my $targets = [];
-    SVK::XD::checkout_delta ( $self->{info},
-			      %$target,
-			      baseroot => $xdroot,
-			      xdroot => $xdroot,
-			      delete_verbose => 1,
-			      absent_ignore => 1,
-			      strict_add => 1,
-			      editor => SVK::CommitStatusEditor->new
-			      ( copath => $target->{copath},
-				dpath => $target->{path},
-				targets => $targets, fh => $fh),
-			      cb_conflict => \&SVK::StatusEditor::conflict,
-			    );
+    $self->{xd}->checkout_delta
+	( %$target,
+	  baseroot => $xdroot,
+	  xdroot => $xdroot,
+	  delete_verbose => 1,
+	  absent_ignore => 1,
+	  editor => SVK::CommitStatusEditor->new
+	  ( copath => $target->{copath},
+	    dpath => $target->{path},
+	    targets => $targets, fh => $fh),
+	  cb_conflict => \&SVK::StatusEditor::conflict,
+	);
 
     if (grep {$_->[0] eq 'C'} @$targets) {
 	if ($fh) {
@@ -213,16 +237,24 @@ sub run {
 
     my $committed = sub {
 	my ($rev) = @_;
+	my (undef, @datapoint) = $self->{xd}{checkout}->get ($target->{copath});
+	my $fs = $target->{repos}->fs;
 	for (reverse @$targets) {
 	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
 		'store_recursively' : 'store';
-	    $self->{info}->{checkout}->$store ($_->[1], { '.schedule' => undef,
-							  '.newprop' => undef,
-							  $_->[0] eq 'D' ? ('.deleted' => 1) : (),
-							  revision => $rev,
-							});
+	    $self->{xd}{checkout}->$store ($_->[1], { '.schedule' => undef,
+						      '.newprop' => undef,
+						      $_->[0] eq 'D' ? ('.deleted' => 1) : (),
+						      revision => $rev,
+						    });
 	}
-	my $root = $target->{repos}->fs->revision_root ($rev);
+	for (@datapoint) {
+	    $self->{xd}{checkout}->store ($_, {revision => $rev})
+		if $self->{xd}{checkout}->get ($_)->{revision} ==
+		    ($fs->revision_root ($rev-1)->
+		     node_history ($target->{path})->prev (0)->location)[1];
+	}
+	my $root = $fs->revision_root ($rev);
 	for (@$targets) {
 	    next if $_->[0] eq 'D';
 	    my ($action, $tpath) = @$_;
@@ -249,31 +281,57 @@ sub run {
 
     ${$cb{callback}} = $committed;
 
-    SVK::XD::checkout_delta ( $self->{info},
-			      %$target,
-			      baseroot => $xdroot,
-			      xdroot => $xdroot,
-			      absent_ignore => 1,
-			      strict_add => 1,
-			      editor => $editor,
-			      $cb{mirror} ?
-			      ( send_delta => 1,
-				cb_rev => sub {
-				    my $revtarget = shift;
-				    my $cotarget = $revtarget;
-				    my $fs = $target->{repos}->fs;
-				    $cotarget = $cotarget ? "$target->{copath}/$cotarget" : $target->{copath};
-				    $revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
+    $self->{xd}->checkout_delta
+	( %$target,
+	  baseroot => $xdroot,
+	  xdroot => $xdroot,
+	  absent_ignore => 1,
+	  editor => $editor,
+	  $cb{mirror} ?
+	  ( send_delta => 1,
+	    cb_rev => sub {
+		my $revtarget = shift;
+		my $cotarget = $revtarget;
+		my $fs = $target->{repos}->fs;
+		$cotarget = $cotarget ? "$target->{copath}/$cotarget" : $target->{copath};
+		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
 
-				    my $root = $fs->revision_root
-					($self->{info}->{checkout}->get($cotarget)->{revision});
-				    $fs->revision_prop ($root->node_created_rev ($revtarget),
-							"svm:headrev:$cb{mirror}{source}");
-				}) : (),
-			    );
-    $txn->abort if $txn;
-
+		my $root = $fs->revision_root
+		    ($self->{xd}{checkout}->get($cotarget)->{revision});
+		$fs->revision_prop ($root->node_created_rev ($revtarget),
+				    "svm:headrev:$cb{mirror}{source}");
+	    }) : ());
     return;
 }
 
 1;
+
+=head1 NAME
+
+commit - Commit changes to depot.
+
+=head1 SYNOPSIS
+
+    commit [PATH...]
+
+=head1 OPTIONS
+
+    options:
+    -m [--message] ARG:    specify commit message ARG
+    -s [--sign]:           sign the commit
+
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut

@@ -2,7 +2,7 @@ package SVK::Command::Cmerge;
 use strict;
 our $VERSION = '0.09';
 
-use base qw( SVK::Command::Merge );
+use base qw( SVK::Command::Merge SVK::Command::Copy SVK::Command::Propset );
 use SVK::XD;
 use SVK::CombineEditor;
 
@@ -29,13 +29,13 @@ sub run {
     die "can't find a path for tmp branch" if $base_path eq '/';
     my $tmpbranch = "$src->{path}-merge-$$";
 
-    SVK::XD::do_copy_direct ($self->{info},
-			     %$src,
-			     path => $base_path,
-			     dpath => $tmpbranch,
-			     message => "preparing for cherry picking merging",
-			     rev => $base_rev,
-			    ) unless $self->{check_only};
+    $self->do_copy_direct
+	( %$src,
+	  path => $base_path,
+	  dpath => $tmpbranch,
+	  message => "preparing for cherry picking merging",
+	  rev => $base_rev,
+	) unless $self->{check_only};
 
     my $fs = $repos->fs;
     my $ceditor = SVK::CombineEditor->new(tgt_anchor => $base_path, #$check_only ? $base_path : $tmpbranch,
@@ -96,13 +96,13 @@ sub run {
 
     $ticket .= "\n$uuid:$tmpbranch:$newrev";
 
-    SVK::XD::do_propset_direct ($self->{info},
-				author => $ENV{USER},
-				%$src,
-				propname => 'svk:merge',
-				propvalue => $ticket,
-				message => "cherry picking merge $self->{chgspec} to $dst",
-			       ) unless $self->{check_only};
+    $self->do_propset_direct
+	( author => $ENV{USER},
+	  %$src,
+	  propname => 'svk:merge',
+	  propvalue => $ticket,
+	  message => "cherry picking merge $self->{chgspec} to $dst",
+	) unless $self->{check_only};
     my ($depot) = main::find_depotname ($src->{depotpath});
 
     $src->{path} = $tmpbranch;

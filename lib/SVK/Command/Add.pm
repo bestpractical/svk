@@ -1,6 +1,6 @@
 package SVK::Command::Add;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
@@ -11,16 +11,16 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
+    $self->usage if $#arg < 0;
     return $self->arg_condensed (@arg);
 }
 
 sub run {
     my ($self, $target) = @_;
 
-    SVK::XD::do_add ($self->{info},
-		     %$target,
-		     recursive => !$self->{nrec},
-		    );
+    $self->{xd}->do_add ( %$target,
+			  recursive => !$self->{nrec},
+			);
     return;
 }
 

@@ -74,17 +74,19 @@ sub help {
 
 sub invoke {
     my $pkg = shift;
-    my $info = shift;
+    my $xd = shift;
     my $cmd = shift;
     local @ARGV = @_;
 
     $cmd = get_cmd ($pkg, $cmd);
-    $cmd->{info} = $info;
+    $cmd->{xd} = $xd;
+    # XXX: legacy support
+    $cmd->{info} = $xd;
     die unless GetOptions ($cmd, _opt_map($cmd, $cmd->options));
     my @args = $cmd->parse_arg(@ARGV);
     $cmd->lock (@args);
     my $ret = $cmd->run (@args);
-    $info->unlock ();
+    $xd->unlock ();
     return $ret;
 }
 
@@ -101,12 +103,12 @@ sub usage {
 
 sub lock_target {
     my ($self, $target) = @_;
-    $self->{info}->lock ($target->{copath});
+    $self->{xd}->lock ($target->{copath});
 }
 
 sub lock_none {
     my ($self) = @_;
-    $self->{info}->giant_unlock ();
+    $self->{xd}->giant_unlock ();
 }
 
 sub lock {

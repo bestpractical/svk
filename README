@@ -1,6 +1,12 @@
 This is the README file for svk 0.11 release, a decentralized version
 control system.
 
+The latest version could be found at
+
+    http://svn.elixus.org/repos/member/clkao/svk
+
+You need Module::Install if you are not installing from release tarballs.
+
 * About
 
 Subversion (svn) aims to take over the CVS user base, while svk

@@ -20,7 +20,8 @@ ok(!exists $svk::info->{checkout}->get
 # check output with selecting some io::stringy object?
 #svk::status ("$copath");
 svk::commit ('-m', 'commit message here', "$copath");
-
+ok ($svk::info->{checkout}->get ("$corpath")->{revision} == 1,
+    'checkout optimzation after commit');
 mkdir "$copath/A/new";
 mkdir "$copath/A/new/newer";
 svk::add ("$copath/A/new");
@@ -28,7 +29,6 @@ svk::revert ('-R', "$copath/A/new");
 
 ok(!$svk::info->{checkout}->get ("$corpath/A/new")->{'.schedule'});
 
-ok($svk::info->{checkout}->get ("$corpath")->{revision} == 0);
 ok($svk::info->{checkout}->get ("$corpath/A/foo")->{revision} == 1);
 svk::update ("$copath");
 ok($svk::info->{checkout}->get ("$corpath")->{revision} == 1);

@@ -1,16 +1,14 @@
 package SVK::Command::Status;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::StatusEditor;
 
 sub parse_arg {
-    my $self = shift;
-    my @arg = @_;
+    my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
-
     return $self->arg_condensed (@arg);
 }
 
@@ -18,25 +16,46 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target) = @_;
-    my ($txn, $xdroot) = SVK::XD::create_xd_root ($self->{info}, %$target);
-
-    SVK::XD::checkout_delta ( $self->{info},
-			      %$target,
-			      baseroot => $xdroot,
-			      xdroot => $xdroot,
-			      delete_verbose => 1,
-			      strict_add => 1,
-			      editor => SVK::StatusEditor->new
-			      ( copath => $target->{copath},
-				dpath => $target->{path},
-				rpath => $target->{report}),
-			      cb_conflict => \&SVK::StatusEditor::conflict,
-			      cb_unknown =>
-			      sub { $_[1] =~ s|^\Q$target->{copath}\E/|$target->{report}|;
-				    print "?  $_[1]\n" }
-			    );
-    $txn->abort if $txn;
+    my $xdroot = $self->{xd}->xdroot (%$target);
+    use Internals qw(GetRefCount);
+    $self->{xd}->checkout_delta
+	( %$target,
+	  baseroot => $xdroot,
+	  xdroot => $xdroot,
+	  delete_verbose => 1,
+	  editor => SVK::StatusEditor->new
+	  ( copath => $target->{copath},
+	    dpath => $target->{path},
+	    rpath => $target->{report}),
+	  cb_conflict => \&SVK::StatusEditor::conflict,
+	  cb_unknown =>
+	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$target->{report}|;
+		print "?  $_[1]\n" }
+	);
     return;
 }
 
 1;
+
+=head1 NAME
+
+status - Display the status of files and directories of the checkout copy.
+
+=head1 SYNOPSIS
+
+    status [PATH..]
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut

@@ -8,6 +8,7 @@ require SVN::Delta;
 require SVK::MergeEditor;
 use SVK::RevertEditor;
 use SVK::DeleteEditor;
+use SVK::Util qw( slurp_fh md5 );
 use Data::Hierarchy '0.15';
 use File::Spec;
 use File::Find;
@@ -138,6 +139,11 @@ sub condense {
 	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
 }
 
+sub xdroot {
+    my ($txn, $root) = create_xd_root (@_);
+    bless [$txn, $root], 'SVK::XD::Root';
+}
+
 sub create_xd_root {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
@@ -195,7 +201,7 @@ sub xd_storage_cb {
 			       $_ = $path; s|$t|$arg{copath}/|;
 			       my $base = get_fh ($arg{oldroot}, '<',
 						  "$arg{anchor}/$arg{path}", $_);
-			       my $md5 = SVK::MergeEditor::md5 ($base);
+			       my $md5 = md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
 			       return [$base, undef, $md5];
@@ -279,7 +285,6 @@ sub do_add {
 				 editor => SVN::Delta::Editor->new (),
 				 targets => $arg{targets},
 				 unknown_verbose => 1,
-				 strict_add => 1,
 				 cb_unknown => sub {
 				     $info->{checkout}->store ($_[1], { '.schedule' => 'add' });
 				     print "A  $_[1]\n" unless $arg{quiet};
@@ -306,7 +311,6 @@ sub do_delete {
 			     absent_as_delete => 1,
 			     delete_verbose => 1,
 			     absent_verbose => 1,
-			     strict_add => 1,
 			     editor => SVK::DeleteEditor->new
 			     (copath => $arg{copath},
 			      dpath => $arg{path},
@@ -363,29 +367,6 @@ sub do_proplist {
     return $props;
 }
 
-sub do_propset_direct {
-    my ($info, %arg) = @_;
-    my $fs = $arg{repos}->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-    my $kind = $root->check_path ($arg{path});
-
-    die "path $arg{path} does not exist" if $kind == $SVN::Node::none;
-
-    my $edit = get_commit_editor ($root,
-				  sub { print "Committed revision $_[0].\n" },
-				  '/', %arg);
-    $edit->open_root();
-
-    if ($kind == $SVN::Node::dir) {
-	$edit->change_dir_prop ($arg{path}, $arg{propname}, $arg{propvalue});
-    }
-    else {
-	$edit->change_file_prop ($arg{path}, $arg{propname}, $arg{propvalue});
-    }
-
-    $edit->close_edit();
-}
-
 sub do_propset {
     my ($info, %arg) = @_;
     my %values;
@@ -435,10 +416,7 @@ sub do_revert {
 	else {
 	    my $fh = get_fh ($xdroot, '>', $_[0], $_[1]);
 	    my $content = $xdroot->file_contents ($_[0]);
-	    local $/ = \16384;
-	    while (<$content>) {
-		print $fh $_;
-	    }
+	    slurp_fh ($content, $fh);
 	    close $fh;
 	}
 	$info->{checkout}->store ($_[1],
@@ -466,7 +444,6 @@ sub do_revert {
 				 targets => $arg{targets},
 				 delete_verbose => 1,
 				 absent_verbose => 1,
-				 strict_add => 1,
 				 editor => SVK::RevertEditor->new
 				 (copath => $arg{copath},
 				  dpath => $arg{path},
@@ -539,10 +516,11 @@ sub _delta_file {
     }
 
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
-    my $mymd5 = SVK::MergeEditor::md5($fh);
+    my $mymd5 = md5($fh);
+    my $md5;
 
     return unless $schedule || $arg{add}
-	|| $mymd5 ne $arg{xdroot}->file_md5_checksum ($arg{path});
+	|| $mymd5 ne ($md5 = $arg{xdroot}->file_md5_checksum ($arg{path}));
 
     my $baton = $arg{add} ?
 	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1, $pool) :
@@ -552,7 +530,7 @@ sub _delta_file {
     $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_}, $pool)
 	for keys %$newprop;
 
-    if ($arg{add} || $mymd5 ne $arg{xdroot}->file_md5_checksum ($arg{path})) {
+    if ($arg{add} || $mymd5 ne ($md5 ||= $arg{xdroot}->file_md5_checksum ($arg{path}))) {
 	seek $fh, 0, 0;
 	_delta_content ($info, %arg, baton => $baton, fh => $fh, pool => $pool);
     }
@@ -637,8 +615,8 @@ sub _delta_dir {
 		   path => "$arg{path}/$_",
 		   copath => "$arg{copath}/$_")
 	    if !defined $arg{targets} || exists $targets->{$_};
-
     }
+
     # check scheduled addition
     opendir my ($dir), $arg{copath};
 
@@ -709,14 +687,13 @@ sub _get_rev {
 #  absent_verbose: generate absent_* calls for subdir within absent entry
 #  unknown_verbose: generate cb_unknown calls for subdir within absent entry
 #  absent_ignore: don't generate absent_* calls.
-#  strict_add: add schedule must be on the entry check, not any parent.
 
 sub checkout_delta {
     my ($info, %arg) = @_;
-
     my $kind = $arg{xdroot}->check_path ($arg{path});
+    my $copath = $arg{copath};
     $arg{cb_rev} ||= sub { my $target = shift;
-			   $target = $target ? "$arg{copath}/$target" : $arg{copath};
+			   $target = $target ? "$copath/$target" : $copath;
 			   _get_rev($info, $target);
 		       };
     $arg{kind} = $kind;
@@ -859,46 +836,11 @@ sub do_import {
 
 }
 
-use SVN::Simple::Edit;
-
-sub get_commit_editor {
-    my ($xdroot, $committed, $path, %arg) = @_;
-    ${$arg{callback}} = $committed if $arg{editor};
-    return SVN::Simple::Edit->new
-	(_editor => [$arg{editor} ||
-		     SVN::Repos::get_commit_editor($arg{repos},
-						   "file://$arg{repospath}",
-						   $path,
-						   $arg{author}, $arg{message},
-						   $committed)],
-	 base_path => $path,
-	 $arg{mirror} ? () : ( root => $xdroot ),
-	 missing_handler =>
-	 SVN::Simple::Edit::check_missing ($xdroot));
-}
-
-sub do_copy_direct {
-    my ($info, %arg) = @_;
-    my $fs = $arg{repos}->fs;
-    my $edit = get_commit_editor ($fs->revision_root ($fs->youngest_rev),
-				  sub { print "Committed revision $_[0].\n" },
-				  '/', %arg);
-    # XXX: check parent, check isfile, check everything...
-    $edit->open_root();
-    $edit->copy_directory ($arg{dpath}, "file://$arg{repospath}$arg{path}",
-			   $arg{rev});
-    $edit->close_edit();
-}
-
 sub get_keyword_layer {
     my ($root, $path) = @_;
     my $pool = SVN::Pool->new_default;
-    return if $root->check_path ($path) == $SVN::Node::none;
     my $k = eval { $root->node_prop ($path, 'svn:keywords') };
-    use Carp;
-    confess "can't get keyword layer for $path: $@" if $@;
-
-    return undef unless $k;
+    return unless $k;
 
     # XXX: should these respect svm related stuff
     my %kmap = ( Date =>
@@ -1002,14 +944,6 @@ sub get_props {
 
 }
 
-sub md5file {
-    my $fname = shift;
-    open my $fh, '<', $fname;
-    my $ctx = Digest::MD5->new;
-    $ctx->addfile($fh);
-    return $ctx->hexdigest;
-}
-
 package SVK::XD::CheckEditor;
 our @ISA = qw(SVN::Delta::Editor);
 
@@ -1070,7 +1004,7 @@ sub apply_textdelta {
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<',
 				 "$self->{anchor}/$path", $copath);
 	if ($checksum) {
-	    my $md5 = SVK::MergeEditor::md5($base);
+	    my $md5 = md5($base);
 	    die "source checksum mismatch" if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}
@@ -1162,6 +1096,29 @@ sub change_dir_prop {
 sub close_edit {
     my ($self) = @_;
     $self->close_directory('');
+}
+
+package SVK::XD::Root;
+
+our $AUTOLOAD;
+sub AUTOLOAD {
+    my $func = $AUTOLOAD;
+    $func =~ s/^SVK::XD::Root:://;
+    return if $func =~ m/^[A-Z]*$/;
+    no strict 'refs';
+    my $self = shift;
+    $self->[1]->$func (@_);
+}
+
+# XXX: workaround some stalled refs in svn/perl
+my $globaldestroy;
+
+sub DESTROY {
+    return if $globaldestroy;
+    $_[0][0]->abort if $_[0][0];
+}
+
+END { $globaldestroy = 1;
 }
 
 =head1 AUTHORS

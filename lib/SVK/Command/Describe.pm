@@ -1,6 +1,6 @@
 package SVK::Command::Describe;
 use strict;
-our $VERSION = '0.09';
+our $VERSION = '0.11';
 
 use base qw( SVK::Command::Diff SVK::Command::Log);
 use SVK::XD;
@@ -12,7 +12,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage unless $#arg < 1;
+    $self->usage if $#arg < 0;
     return ($arg[0], $self->arg_depotname ($arg[1] || '//'));
 }
 

@@ -47,7 +47,7 @@ sub find_repos_from_co {
 	$copath =~ s|^\Q$coroot\E/|/|;
     }
 
-    return ($repospath, $path eq '/' ? $copath : $path.$copath,
+    return ($repospath, $path eq '/' ? $copath || '/' : $path.$copath,
 	    $cinfo, $repos);
 }
 

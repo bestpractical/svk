@@ -109,7 +109,6 @@ sub run {
 				 %$target,
 				 baseroot => $baseroot,
 				 xdroot => $xdroot,
-				 strict_add => 1,
 				 editor => $editor,
 				);
 	$txn->abort if $txn;

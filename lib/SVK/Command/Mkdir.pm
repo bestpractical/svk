@@ -1,21 +1,22 @@
-package SVK::Command::Copy;
+package SVK::Command::Mkdir;
 use strict;
 our $VERSION = '0.11';
-use base qw( SVK::Command::Commit );
 
-sub options {
-    ($_[0]->SUPER::options,
-     'r|revision=i' => 'rev');
-}
+use base qw( SVK::Command::Commit );
+use SVK::XD;
+use SVK::CommitStatusEditor;
+use SVK::Command::Log;
+use SVK::Util qw (get_buffer_from_editor);
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return map {$self->arg_depotpath ($_)} @arg;
+    $self->usage if $#arg != 0;
+    return ($self->arg_depotpath ($arg[0]));
 }
 
 sub lock { return $_[0]->lock_none }
 
-sub do_copy_direct {
+sub do_mkdir_direct {
     my ($self, %arg) = @_;
     my $fs = $arg{repos}->fs;
     my $edit = $self->get_commit_editor ($fs->revision_root ($fs->youngest_rev),
@@ -23,22 +24,18 @@ sub do_copy_direct {
 					 '/', %arg);
     # XXX: check parent, check isfile, check everything...
     $edit->open_root();
-    $edit->copy_directory ($arg{dpath}, "file://$arg{repospath}$arg{path}",
-			   $arg{rev});
+    $edit->add_directory ($arg{path});
     $edit->close_edit();
+
 }
 
 sub run {
-    my ($self, $src, $dst) = @_;
-    die "different repos?" if $src->{repospath} ne $dst->{repospath};
-    $self->{rev} ||= $src->{repos}->fs->youngest_rev;
-
+    my ($self, $target) = @_;
     $self->get_commit_message ();
-    $self->do_copy_direct ( author => $ENV{USER},
-			    %$src,
-			    dpath => $dst->{path},
-			    %$self,
-			  );
+    $self->do_mkdir_direct ( author => $ENV{USER},
+			     %$target,
+			     %$self,
+			   );
     return;
 }
 
@@ -46,11 +43,11 @@ sub run {
 
 =head1 NAME
 
-copy - Make a versioned copy.
+mkdir - Create versioned directory.
 
 =head1 SYNOPSIS
 
-    copy DEPOTPATH1 DEPOTPATH2
+    mkdir DEPOTPATH
 
 =head1 AUTHORS
 
