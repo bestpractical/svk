@@ -466,8 +466,7 @@ sub get_editor {
     my ($self, %arg) = @_;
     my ($copath, $anchor) = @arg{qw/copath path/};
     $anchor = '' if $anchor eq '/';
-    $arg{get_copath} =
-	sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) };
+    $arg{get_copath} = sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) };
     $arg{get_path} = sub { $_[0] = "$anchor/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
@@ -828,17 +827,16 @@ sub _delta_file {
     lstat ($arg{copath});
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l _);
     my $mymd5 = md5($fh);
-    my $md5;
+    my ($baton, $md5);
 
     return $modified unless $schedule || $arg{add} ||
 	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
 
-    my $baton = $arg{add} ?
-	$arg{editor}->add_file ($arg{entry}, $arg{baton},
-				$cinfo->{'.copyfrom'} ?
-				"file://$arg{repospath}$cinfo->{'.copyfrom'}" : undef,
-				$cinfo->{'.copyfrom_rev'} ||  -1, $pool) :
-				    undef;
+    $baton = $arg{editor}->add_file ($arg{entry}, $arg{baton},
+				     $cinfo->{'.copyfrom'} ?
+				     ($arg{cb_copyfrom}->(@{$cinfo}{qw/.copyfrom .copyfrom_rev/}))
+				     : (undef, -1), $pool)
+	if $arg{add};
     my $newprop = $cinfo->{'.newprop'};
     $newprop = $self->auto_prop ($arg{copath})
 	if !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
@@ -889,9 +887,9 @@ sub _delta_dir {
     if ($arg{add}) {
 	$baton = $arg{root} ? $arg{baton} :
 	    $arg{editor}->add_directory ($arg{entry}, $arg{baton},
-					 $arg{copyfrom} ?
-					 ("file://$arg{repospath}$arg{copyfrom}",
-					  $cinfo->{'.copyfrom_rev'}) : (undef, -1), $pool);
+					 $cinfo->{'.copyfrom'} ?
+					 ($arg{cb_copyfrom}->(@{$cinfo}{qw/.copyfrom .copyfrom_rev/}))
+					 : (undef, -1), $pool);
     }
 
     $entries = $arg{base_root}->dir_entries ($arg{base_path})
@@ -933,7 +931,8 @@ sub _delta_dir {
 			cinfo => undef,
 			base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
 			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
-			copath => "$arg{copath}/$entry") and ($signature && $signature->invalidate ($entry));
+			copath => SVK::Target->copath ($arg{copath}, $entry))
+	    and ($signature && $signature->invalidate ($entry));
     }
 
     $signature->flush ($arg{copath}) if $signature;
@@ -955,7 +954,7 @@ sub _delta_dir {
 	my $add = ($sche || $arg{auto_add}) ||
 	    ($arg{xdroot} ne $arg{base_root} &&
 	     $arg{xdroot}->check_path ("$arg{path}/$_") != $SVN::Node::none);
-	my %newpaths = ( copath => "$arg{copath}/$_",
+	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $_),
 			 entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 			 path => "$arg{path}/$_",
 			 targets => $targets ? $targets->{$_} : undef);
@@ -990,7 +989,6 @@ sub _delta_dir {
 			($arg{path} eq '/' ? "/$_" : "$arg{path}/$_"),
 			# XXX: what shold base_path be when there's copyfrom?
 			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$_",
-			copyfrom => $ccinfo->{'.copyfrom'},
 			cinfo => $ccinfo )
 	    if !defined $targets || exists $targets->{$_};
     }
@@ -1011,7 +1009,7 @@ sub checkout_delta {
     $arg{base_root} ||= $arg{xdroot};
     $arg{base_path} ||= $arg{path};
     my $kind = $arg{kind} = $arg{base_root}->check_path ($arg{base_path});
-    my $copath = $arg{copath};
+    my ($copath, $repospath) = @arg{qw/copath repospath/};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
     $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
@@ -1020,6 +1018,7 @@ sub checkout_delta {
 			   $target = $target ? "$copath/$target" : $copath;
 			   $self->_get_rev ($target);
 		       };
+    $arg{cb_copyfrom} ||= sub { ("file://$repospath$_[0]", $_[1]) };
     my $rev = $arg{cb_rev}->('');
     my $baton = $arg{editor}->open_root ($rev);
     local $SIG{INT} = sub {

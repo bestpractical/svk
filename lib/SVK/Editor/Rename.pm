@@ -129,18 +129,18 @@ sub open_parent {
 	[$self->{batons}, 'open_directory', $parent, $ppbaton, -1];
 
     $self->{edit_tree}[$self->{batons}] = [[undef, 'close_directory', $self->{batons}]];
-
+    $self->{opened_baton}{$parent} = [$self->{batons}, $pbaton];
     return ($self->{batons}, $pbaton);
 }
 
-sub handle_rename_anchor {
+sub adjust_anchor {
     my ($self, $entry) = @_;
     my $path = $entry->[2];
     my ($pbaton) = $self->open_parent ($path);
     my @newentry = @$entry;
     # move the call to a proper place
     unshift @{$self->{edit_tree}[$pbaton]}, \@newentry;
-    $newentry[3] = $pbaton;
+    $newentry[2+$self->baton_at ($entry->[1])] = $pbaton;
     @$entry = [];
 }
 
@@ -149,7 +149,7 @@ sub close_edit {
     $self->SUPER::close_edit (@_);
     for (0..$#{$self->{renamed_anchor}}) {
 	next unless defined $self->{renamed_anchor}[$_];
-	$self->handle_rename_anchor ($self->{renamed_anchor}[$_]);
+	$self->adjust_anchor ($self->{renamed_anchor}[$_]);
     }
     $self->drive ($self->{editor});
 }

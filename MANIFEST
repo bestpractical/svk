@@ -97,6 +97,7 @@ t/10switch.t
 t/11checkout.t
 t/12copy.t
 t/13patch.t
+t/14move.t
 t/18replaced.t
 t/19cleanup.t
 t/20add.t

@@ -120,16 +120,16 @@ Return the checkout path of the target, optionally with additional
 path component.
 
 =cut
+my $_copath_catsplit = $^O eq 'MSWin32' ?
+sub { File::Spec->catfile ($_[0], File::Spec::Unix->splitdir ($_[1])) } :
+sub { "$_[0]/$_[1]" };
 
 sub copath {
     my $self = shift;
     my $copath = ref ($self) ? $self->{copath} : shift;
     my $paths = shift;
     return $copath unless $paths;
-
-    return File::Spec->catfile ($copath, $^O eq 'MSWin32' ?
-				File::Spec::Unix->splitdir ($paths) :
-				$paths);
+    return $_copath_catsplit->($copath, $paths);
 }
 
 =head2 descend

@@ -281,6 +281,11 @@ sub run {
 	  editor => $editor,
 	  $cb{mirror} ?
 	  ( send_delta => 1,
+	    cb_copyfrom => sub {
+		my ($path, $rev) = @_;
+		$path =~ s|^\Q$cb{mirror}{target_path}\E|$cb{mirror}{source}|;
+		return ($path, scalar $cb{mirror}->find_remote_rev ($rev));
+	    },
 	    cb_rev => sub {
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);

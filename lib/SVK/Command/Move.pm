@@ -1,66 +1,24 @@
 package SVK::Command::Move;
 use strict;
 our $VERSION = $SVK::VERSION;
-use base qw( SVK::Command::Copy SVK::Command::Delete );
+use base qw( SVK::Command::Copy );
 use SVK::I18N;
 
-sub get_commit_editor {
+sub handle_direct_item {
     my $self = shift;
-    # cache the editor
-    $self->{commit_editor} ||= SVK::Command::Move::ProxyEdit->new(
-	$self->SUPER::get_commit_editor(@_)
-    );
-    return $self->{commit_editor};
+    $self->SUPER::handle_direct_item (@_);
+    my ($editor, $m, $src, $dst) = @_;
+    my $path = $src->path;
+    $path =~ s|^\Q$m->{target_path}\E/?|| if $m;
+    $editor->delete_entry ($path, $m ? $m->find_remote_rev ($src->{revision}) : $src->{revision}, 0);
+    $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
 }
 
-sub run {
-    my ($self, $src, $dst) = @_;
-
-    $self->SVK::Command::Copy::run($src, $dst);
-    $self->get_commit_editor->set_copied(1);
-    $self->SVK::Command::Delete::run($src);
-
-    return;
+sub handle_co_item {
+    my ($self) = shift;
+    $self->{xd}->do_delete (%{$_[0]});
+    $self->SUPER::handle_co_item (@_);
 }
-
-package SVK::Command::Move::ProxyEdit;
-our $AUTOLOAD;
-
-sub new {
-    my ($class, $edit) = @_;
-    bless({ edit => $edit, copied => 0}, $class);
-}
-
-sub set_copied {
-    my $self = shift;
-    $self->{copied} = shift;
-}
-
-sub open_root {
-    my $self = shift;
-    # only does open_root during the "Copy" run
-    $self->{edit}->open_root(@_) if !$self->{copied};
-}
-
-sub close_edit {
-    my $self = shift;
-    # only does close_edit during the "Delete" run
-    $self->{edit}->close_edit(@_) if $self->{copied};
-}
-
-sub AUTOLOAD {
-    my $self = shift;
-    my $method = $AUTOLOAD;
-    $method =~ s/.*:://;
-    $self->{edit}->$method(@_);
-}
-
-sub DESTROY {
-    my $self = shift;
-    delete $self->{edit};
-}
-
-1;
 
 __DATA__
 

@@ -18,6 +18,7 @@ $svk->mirror ('/mac/upstream', "file://${srepospath}");
 $svk->sync ('/mac/upstream');
 
 ($copath) = get_copath ('obra-mac');
+$svk->mkdir ('-m', 'mac local', '/mac/local');
 $svk->copy ('-m', 'local branch trunk on mac', '/mac/upstream/trunk', '/mac/local/trunk');
 $svk->copy ('-m', 'local branch stable on mac', '/mac/upstream/stable', '/mac/local/stable');
 $svk->checkout ('/mac/local', $copath);
@@ -33,6 +34,7 @@ $svk->mirror ('/linux/upstream', "file://${srepospath}");
 $svk->sync ('/linux/upstream');
 
 ($copath) = get_copath ('obra-linux');
+$svk->mkdir ('-m', 'linux local', '/linux/local');
 $svk->copy ('-m', 'local branch trunk on linux', '/linux/upstream/trunk', '/linux/local/trunk');
 $svk->copy ('-m', 'local branch stable on linux', '/linux/upstream/stable', '/linux/local/stable');
 $svk->checkout ('/linux/local', $copath);

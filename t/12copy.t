@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 28;
 use strict;
 our $output;
 require 't/tree.pl';
@@ -12,9 +12,12 @@ my ($copath, $corpath) = get_copath ('copy');
 is_output_like ($svk, 'copy', [], qr'SYNOPSIS', 'copy - help');
 
 $svk->checkout ('//new', $copath);
+
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', $copath],
 	   ["A   $copath/me",
 	    "A   $copath/de"]);
+$svk->cp ('//V/me', $copath);
+is ($@, "Path $corpath/me already exists.\n");
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   ["$corpath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
@@ -27,8 +30,6 @@ $svk->copy ('//V', "$copath/V-copy");
 
 is_output ($svk, 'copy', ['//V', '/foo/bar', "$copath/V-copy"],
 	   ['Different depots.']);
-is_output ($svk, 'copy', ['//V/me', '//V/D', '//V/new'],
-	   ["Can't copy more than one depotpath to depotpath"]);
 append_file ("$copath/me-copy", "foobar");
 append_file ("$copath/V-copy/D/de", "foobar");
 $svk->rm ("$copath/V-copy/B/fe");
@@ -47,10 +48,64 @@ is_copied_from ("$copath/me-copy", '/V/me', 3);
 is_copied_from ("$copath/D-copy/de", '/V/D/de', 3);
 is_copied_from ("$copath/D-copy", '/V/D', 3);
 
+$svk->copy ('-m', 'more than one', '//V/me', '//V/D', '//V/new');
+is ($@, "Copying more than one source requires //V/new to be directory.\n");
+
+$svk->mkdir ('-m', 'directory for multiple source cp', '//V/new');
+is_output ($svk, 'copy', ['-m', 'more than one', '//V/me', '//V/D', '//V/new'],
+	   ["Committed revision 7."]);
+is_copied_from ("//V/new/me", '/V/me', 3);
+is_copied_from ("//V/new/D", '/V/D', 3);
+
+my ($srepospath, $spath, $srepos) = $xd->find_repos ('/foo/', 1);
+create_basic_tree ($xd, '/foo/');
+$svk->mirror ('//foo-remote', "file://$srepospath");
+$svk->sync ('//foo-remote');
+$svk->update ($copath);
+
+is_output ($svk, 'cp', ['//V/new', '//foo-remote/new'],
+	   ['Different sources.']);
+
+is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/me-dcopied'],
+	   ['Committed revision 11.']);
+is_copied_from ("//V/me-dcopied", '/V/me', 3);
+
+is_output ($svk, 'cp', ['-m', 'copy for remote', '//foo-remote/me', '//foo-remote/me-rcopied'],
+	   [
+	    "Merging back to SVN::Mirror source file://$srepospath.",
+	    'Merge back committed as revision 3.',
+	    "Syncing file://$srepospath",
+	    'Retrieving log information from 3 to 3',
+	    'Committed revision 12 from revision 3.']);
+
+is_copied_from ("//foo-remote/me-rcopied", '/foo-remote/me', 10);
+is_copied_from ("/foo/me-rcopied", '/me', 2);
+
+
+rmtree ([$copath]);
+$svk->checkout ('//foo-remote', $copath);
+
+is_output ($svk, 'cp', ['//V/me', "$copath/me-rcopied"],
+	   ['Different sources.']);
+$svk->copy ('-m', 'from co', "$copath/me", '//foo-remote/me-rcopied.again');
+is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 10);
+is_copied_from ("/foo/me-rcopied.again", '/me', 2);
+
+append_file ("$copath/me", "bzz\n");
+$svk->copy ('-m', 'from co, modified', "$copath/me", '//foo-remote/me-rcopied.modified');
+ok ($@ =~ m/modified/);
+$svk->revert ('-R', $copath);
+$svk->copy ("$copath/me", "$copath/me-cocopied");
+is_output ($svk, 'status', [$copath],
+	   ["A + $copath/me-cocopied"]
+	  );
+
+$svk->commit ('-m', 'commit copied file in mirrored path', $copath);
+is_copied_from ("/foo/me-cocopied", '/me', 2);
+
 sub is_copied_from {
-    my ($path, $source, $rev) = @_;
+    my ($path, @expected) = @_;
     $svk->info ($path);
-    my ($rsource, $rrev);
-    ok ((($rsource, $rrev) = $output =~ m/Copied from (.*?), Rev. (\d+)/) &&
-	$source eq $rsource && $rev == $rrev);
+    my ($rsource, $rrev) = $output =~ m/Copied from (.*?), Rev. (\d+)/;
+    is_deeply ([$rsource, $rrev], \@expected);
 }
