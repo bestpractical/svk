@@ -16,9 +16,26 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     # XXX: support multiple
-    return if $#arg != 0;
+    #return if $#arg != 0;
     my @targets;
-    my $path = $arg[0];
+    my @paths;
+    my $parent = $self->{parent};
+    for my $path (@arg) {
+	@targets = $self->create($path);
+	push @paths, $path if (@targets);
+	$self->{parent} = $parent;
+    }
+    $self->rebless (
+	add => {
+	    recursive => 1
+	}
+    )->parse_arg (@paths);
+}
+
+sub create {
+    my $self = shift;
+    my $path = shift;
+    my @targets;
     # parsing all of the folder we need to add.
     until (@targets = eval { ($self->arg_co_maybe ($path)) }) {
 	my ($parent, $target) = get_anchor(1, $path);
@@ -28,7 +45,7 @@ sub parse_arg {
 	    # should tell the user about parent not exist
             return ($self->arg_depotpath($path));
         }
-        $self->parse_arg($parent);
+        $self->create($parent);
 	undef $self->{parent};
     }
     # execute the mkdir
@@ -39,13 +56,9 @@ sub parse_arg {
 	    $self->{parent} ? mkpath ([$copath])
 	    	: mkdir ($copath) or die "$copath: $!";
         }
-        return $self->rebless (
-           add => {
-              recursive => 1
-           }
-        )->parse_arg ($path)
+	return @targets;
     }
-    return @targets;
+    return 0;
 }
 
 sub run {
@@ -75,10 +88,10 @@ SVK::Command::Mkdir - Create a versioned directory
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE 
+ -m [--message] arg     : specify commit message ARG
  -p [--parent]          : create intermediate directories as required
  -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
 
 =head1 AUTHORS
