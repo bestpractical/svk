@@ -220,6 +220,118 @@ sub depotname {
     return $1;
 }
 
+# depotpath only for now
+# cache revprop:
+# svk:copy_cache
+
+# svk:copy_cache_prev points to the revision in the depot that the
+# previous copy happens.
+
+sub copy_ancestors {
+    my $self = shift;
+    my $fs = $self->{repos}->fs;
+    my $t = $self->new;
+    warn "==> ".$t->path;
+    while (my ($copyto, $copyfrom_rev, $copyfrom_path) = $t->nearest_copy) {
+	$t->{path} = $copyfrom_path;
+	$t->{revision} = $copyfrom_rev;
+	warn "==> . ".$t->path." @ $t->{revision}";
+    }
+}
+
+use List::Util qw(min);
+
+# given a root object and a path, returns the revision where it's ancestor
+# is from another path.
+sub nearest_copy {
+    my ($root, $path) = @_;
+    if (ref ($root) eq __PACKAGE__) {
+	($root, $path) = ($root->root, $root->path);
+    }
+    # normalize;
+    my $histself = $root->node_history ($path)->prev(0);
+    my $rev = ($histself->location)[1];
+
+    my $fs = $root->fs;
+    while ($rev) {
+	# Find history_prev revision, if the path is different, bingo.
+	my ($hppath, $hprev);
+	if (my $hist = $histself->prev(1)) {
+	    ($hppath, $hprev) = $hist->location;
+	    if ($hppath ne $path) {
+		return ($rev, $hprev, $hppath);
+	    }
+	}
+	# Find nearest copy of the current revision. if the copy
+	# contains us, bingo.
+	my ($prev, $copy) = _find_prev_copy ($fs, $rev);
+	if ($copy && (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path))) {
+	    return ($prev, $fromrev, $frompath);
+	}
+	# Continue testing on min (history_prev, prev_copy), provided
+	# it's still a related to the current node.
+	$rev = min (grep defined,$prev, $hprev);
+    }
+    return;
+}
+
+sub _copies_contain_path {
+    my ($copy, $path) = @_;
+    my ($match) = grep { index ("$path/", "$_/") == 0 }
+	sort { length $b <=> length $a } keys %$copy;
+    return unless $match;
+    $path =~ s/^\Q$match\E/$copy->{$match}[1]/;
+    return ($copy->{$match}[0], $path);
+}
+
+sub _copies_in_rev {
+    my ($fs, $rev) = @_;
+    my $copies;
+    my $root = $fs->revision_root ($rev);
+    my $changed = $root->paths_changed;
+    for (keys %$changed) {
+	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
+	my ($copyfrom_rev, $copyfrom_path) = $root->copied_from ($_);
+	$copies->{$_} = [$copyfrom_rev, $copyfrom_path]
+	    if defined $copyfrom_path;
+    }
+    return $copies;
+}
+
+sub _find_prev_copy {
+    my ($fs, $endrev) = @_;
+    my $pool = SVN::Pool->new_default;
+    my $rev = $endrev;
+    while ($rev > 0) {
+	$pool->clear;
+	if (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev')) {
+	    $rev = $cache;
+	}
+	if (my $copy = _copies_in_rev ($fs, $rev)) {
+	    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev)
+		for $rev..$endrev;
+	    return ($rev, $copy);
+	}
+	--$rev;
+    }
+    return undef;
+}
+
+=head2 related_to
+
+Check if C<$self> is related to another target.
+
+=cut
+
+sub related_to {
+    my ($self, $other) = @_;
+    # XXX: when two related paths are mirrored separatedly, need to
+    # use hooks or merge tickets to decide if they are related.
+    return SVN::Fs::check_related
+	($self->root->node_id ($self->path),
+	 $other->root->node_id ($other->path));
+}
+
 sub copied_from {
     my ($self, $want_mirror) = @_;
     my $merge = SVK::Merge->new (%$self);

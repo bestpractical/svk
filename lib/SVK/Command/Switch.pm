@@ -36,9 +36,12 @@ sub run {
 	unless $where[0] eq $cotarget->{copath};
 
     $self->{update_target_path} = $target->{path};
+#    switch to related_to once the api is ready
     # check if the switch has a base at all
     SVK::Merge->auto (%$self, repos => $target->{repos},
 		      src => $cotarget, dst => $target);
+#    die loc ("$cotarget->{report} is not related to $target->{report}.\n")
+#	unless $cotarget->new->as_depotpath->related_to ($target);
 
     $self->SUPER::run ($cotarget);
 
