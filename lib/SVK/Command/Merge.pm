@@ -85,6 +85,12 @@ sub run {
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
 
+    if (my @mirrors = $dst->contains_mirror) {
+	die loc ("%1 can not be used as merge target, because it contains mirrored path:\n", $dst->{report})
+	    .join("\n", @mirrors, '')
+		unless $mirrors[0] eq $dst->path;
+    }
+
     if ($self->{sync}) {
         my $sync = $self->command ('sync');
 	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));

@@ -131,6 +131,7 @@ t/20add.t
 t/21delete.t
 t/22status.t
 t/23commit.t
+t/23commit-mirror.t
 t/24diff.t
 t/25log.t
 t/26revert-remove.t

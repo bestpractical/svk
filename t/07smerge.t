@@ -7,7 +7,7 @@ eval { require SVN::Mirror; 1 } or do {
     plan skip_all => "SVN::Mirror not installed";
     exit;
 };
-plan tests => 26;
+plan tests => 27;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -51,6 +51,9 @@ is_output ($svk, 'smerge', ['-C', '//m/be', '//l/'],
 	   ["Can't merge different types of nodes"]);
 
 }
+
+is_output_like ($svk, 'smerge', ['-C', '//l', '//'],
+		qr/contains mirror/);
 
 is_output_like ($svk, 'smerge', ['-C', '//m/Q', '//l/'],
 		qr/find merge base/);

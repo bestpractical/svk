@@ -209,6 +209,12 @@ sub get_editor {
 	    send_fulltext => !$cb{mirror});
 }
 
+sub exclude_mirror {
+    my ($self, $target) = @_;
+    return () if $self->{direct} or !HAS_SVN_MIRROR;
+    ( exclude => { map { abs2rel ($_, $target->{path} => undef, '/')  => 1 } $target->contains_mirror },
+    );
+}
 
 sub get_committable {
     my ($self, $target, $root) = @_;
@@ -233,6 +239,7 @@ sub get_committable {
     $self->{xd}->checkout_delta
 	( %$target,
 	  depth => $self->{recursive} ? undef : 0,
+	  $self->exclude_mirror ($target),
 	  xdroot => $root,
 	  nodelay => 1,
 	  delete_verbose => 1,
@@ -372,6 +379,9 @@ sub run_delta {
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},
 	  nodelay => $cb{send_fulltext},
+	  $self->exclude_mirror ($target),
+	  cb_exclude => sub { print loc ("%1 is a mirrored path, please commit separately.\n",
+					 abs2rel ($_[1], $target->{copath} => $target->{report})) },
 	  $self->{import} ?
 	  ( auto_add => 1,
 	    obstruct_as_replace => 1,

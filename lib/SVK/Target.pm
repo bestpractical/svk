@@ -180,6 +180,15 @@ sub contains_copath {
     return 0;
 }
 
+sub contains_mirror {
+    require SVN::Mirror;
+    my ($self) = @_;
+    my $path = $self->{path};
+    $path .= '/' unless $path eq '/';
+    return map { substr ("$_/", 0, length($path)) eq $path ? $_ : () }
+	SVN::Mirror::list_mirror ($self->{repos});
+}
+
 sub depotname {
     my $self = shift;
 

@@ -955,6 +955,10 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($self, %arg) = @_;
+    if ($arg{entry} && $arg{exclude} && exists $arg{exclude}{$arg{entry}}) {
+	$arg{cb_exclude}->($arg{path}, $arg{copath}) if $arg{cb_exclude};
+	return;
+    }
     my $pool = SVN::Pool->new_default (undef);
     my $cinfo = $arg{cinfo} ||= $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
