@@ -146,8 +146,14 @@ giant is unlocked.
 
 sub _store_self {
     my ($self, $hash) = @_;
-    DumpFile ($self->{statefile},
+    local $SIG{INT};
+    my $file = $self->{statefile};
+    my $tmpfile = $file."-$$";
+    DumpFile ($tmpfile,
 	      { map { $_ => $hash->{$_}} qw/checkout depotmap/ });
+    unlink ("$file~");
+    rename ($file => "$file~");
+    rename ($tmpfile => $file);
 }
 
 sub store {
