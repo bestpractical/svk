@@ -229,11 +229,20 @@ sub committed_commit {
 	for (reverse @$targets) {
 	    my ($action, $path) = @$_;
 	    $self->{xd}{checkout}->store_recursively ($path, { $self->_schedule_empty });
-	    $self->{xd}{checkout}->store
-		($path, { revision => $rev,
-			  $action eq 'D' ? ('.deleted' => 1) : (),
-			})
-		    unless $self->{xd}{checkout}->get ($path)->{revision} == $rev;
+            if (($action eq 'D') and $self->{xd}{checkout}->get ($path)->{revision} == $rev ) {
+                # Fully merged, remove the special node
+                $self->{xd}{checkout}->store (
+                    $path, { revision => undef, $self->_schedule_empty }
+                );
+            }
+            else {
+                $self->{xd}{checkout}->store (
+                    $path, {
+                        revision => $rev,
+                        ($action eq 'D') ? ('.deleted' => 1) : (),
+                    }
+                )
+            }
 	}
 	my $root = $fs->revision_root ($rev);
 	# update keyword-translated files
