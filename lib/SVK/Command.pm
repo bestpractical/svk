@@ -335,8 +335,10 @@ sub arg_uri_maybe {
     is_uri($arg) or return $self->arg_depotpath($arg);
     HAS_SVN_MIRROR or die loc("cannot load SVN::Mirror");
 
+    $arg =~ s{/?$}{/}; # add a trailing slash at the end
+
     require URI;
-    my $uri = URI->new("$arg/")->canonical or die loc("%1 is not a valid URI.\n", $arg);
+    my $uri = URI->new($arg)->canonical or die loc("%1 is not a valid URI.\n", $arg);
     my $map = $self->{xd}{depotmap};
     foreach my $depot (sort keys %$map) {
         local $@;
