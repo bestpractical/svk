@@ -34,7 +34,7 @@ sub lock {
 	    : $self->lock_none;
     }
     $source = $self->arg_copath ($source);
-    die loc("Import source ($source->{copath}) cannot be a checkout path, use --from-checkout.\n")
+    die loc("Import source (%1) is a checkout path; use --from-checkout.\n", $source->{copath})
 	unless $self->{from_checkout};
     die loc("Import path (%1) is different from the copath (%2)\n", $target->{path}, $source->{path})
 	unless $source->{path} eq $target->{path};
@@ -135,7 +135,7 @@ SVK::Command::Import - Import directory into depot
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
  -f [--from-checkout]   : import from a checkout path
- -t [--to-checkout]     : immediately check out after import
+ -t [--to-checkout]     : turn the source into a checkout path
 
 =head1 AUTHORS
 

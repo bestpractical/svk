@@ -19,6 +19,8 @@ sub parse_arg {
         @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
     }
 
+    $self->{lump} = 1; # -- XXX -- will break otherwise -- XXX ---
+
     $self->{sync}++;
     $self->{merge}++;
     $self->{incremental} = !$self->{lump};
@@ -36,12 +38,13 @@ SVK::Command::Pull - Bring changes from another repository
 
 =head1 SYNOPSIS
 
- pull [DEPOTPATH]
+ pull [PATH...]
 
 =head1 OPTIONS
 
  -a [--all]             : pull into all checkout paths
  -l [--lump]            : merge everything into a single commit log
+                          (always enabled by default in this version)
 
 =head1 AUTHORS
 

@@ -105,7 +105,7 @@ sub _do_add {
 sub _do_relocate {
     my ($self, $depot, $path) = @_;
 
-    die loc("Cannot relocate uninitialized depot '%1'.\n", $depot)
+    die loc("Depot '%1' does not exist in the depot map.\n", $depot)
         if !$self->{xd}{depotmap}{$depot};
 
     $self->{xd}{depotmap}{$depot} = $path;

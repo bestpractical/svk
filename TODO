@@ -9,21 +9,10 @@
 * path reporting
   - show paths in import and commit.
 
-* svk diff
-  - use tmp files and libsvn_diff's output_diff function instead of non-streamy Text::Diff.
-
 * better tree merger
   - Merge added directories.
   - Merge moved files and directories.
 
-* checkout maintenance
-  - move checkouts.
-  - purge dead checkouts.
-  - purge checkout signatures.
-
 * checkout signatures
   - command to purge cache.
   - cache for modified files also, but the gain is marginal.
-
-* improve mirror information
-  - svk mirror --relocate

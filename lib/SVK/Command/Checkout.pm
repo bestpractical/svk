@@ -92,7 +92,7 @@ sub _do_relocate {
     my $target = abs_path ($report);
     if (defined $target) {
         my ($entry, @where) = $self->{xd}{checkout}->get ($target);
-        die loc("Overlapping checkout path is not supported (%1)\n", $where[0])
+        die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
             if exists $entry->{depotpath};
     }
 

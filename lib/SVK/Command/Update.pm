@@ -12,7 +12,7 @@ sub options {
      'N|non-recursive' => 'nonrecursive',
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
-     'I|incremental'   => 'incremental',
+     'I|incremental'   => 'incremental', # -- XXX unsafe -- undocumented XXX --
     );
 }
 
@@ -30,7 +30,7 @@ sub lock {
 sub run {
     my ($self, @arg) = @_;
 
-    die loc ("-r cannot be used in conjunction with -s or -m.\n")
+    die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
@@ -145,7 +145,6 @@ SVK::Command::Update - Bring changes from repository to checkout copies
  -N [--non-recursive]   : do not descend recursively
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
- -I [--incremental]     : apply each change individually; use with -m
 
 =head1 DESCRIPTION
 

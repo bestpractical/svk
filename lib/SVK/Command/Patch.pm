@@ -162,7 +162,7 @@ SVK::Command::Patch - Manage patches
  patch view PATCHNAME
  patch regen PATCHNAME
  patch update PATCHNAME
- patch apply PATCHNAME [DEPOTPATH | COPATH] [-- MERGEOPT]
+ patch apply PATCHNAME [DEPOTPATH | PATH] [-- MERGEOPTIONS]
  patch send PATCHNAME
  patch delete PATCHNAME
 
