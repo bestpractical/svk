@@ -5,7 +5,7 @@ our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
 use SVN::Delta;
 use File::Path;
-use SVK::Util qw( get_anchor md5_fh );
+use SVK::Util qw( get_anchor md5_fh catpath );
 
 =head1 NAME
 
@@ -115,7 +115,7 @@ sub apply_textdelta {
     $self->{get_path}($dpath);
     unless ($self->{added}{$path}) {
 	my ($dir,$file) = get_anchor (1, $copath);
-	my $basename = "$dir.svk.$file.base";
+	my $basename = catpath (undef, $dir, ".svk.$file.base");
 
 	rename ($copath, $basename)
 	  or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
