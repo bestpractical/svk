@@ -125,22 +125,21 @@ sub get_editor {
 
     return ($editor, %cb, mirror => $m, callback => \$callback);
 
-
 =for comment
 
-	    if ($sign && !$check_only) {
-		my $digest = IO::String->new;
-		$cb_closed = sub {
-		    print $digest join(' ', 'MD5', $_[1], $_[0])."\n";
-		};
-		my $old_cb_merged = $cb_merged;
-		$cb_merged = sub { my ($editor, $baton, $pool) = @_;
-				   my $sig =_sign_gpg ('/tmp/svk-sign',
-						       ${$digest->string_ref});
-				   $editor->change_dir_prop
-				       ($baton, 'svk:signature', $sig);
-				   &{$old_cb_merged} (@_) };
-	    }
+    if ($self->{sign} && !$self->{check_only}) {
+	my $digest = IO::String->new;
+	$cb_closed = sub {
+	    print $digest join(' ', 'MD5', $_[1], $_[0])."\n";
+	};
+	my $old_cb_merged = $cb_merged;
+	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
+			   my $sig =_sign_gpg ('/tmp/svk-sign',
+					       ${$digest->string_ref});
+			   $editor->change_dir_prop
+			       ($baton, 'svk:signature', $sig);
+			   &{$old_cb_merged} (@_) };
+    }
 
 =cut
 

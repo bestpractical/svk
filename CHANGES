@@ -1,4 +1,32 @@
-[Changes for 0.08 - 16 Feb, 2003]
+[Changes for 0.09 - 5 Mar, 2004]
+
+* Command invocation interface cleanup.
+
+* Move to SVK:: namespace.
+
+* Reduce root->check_path calls in checkout_delta .
+
+* Commit target editing support [Autrijus].
+
+* svk cat, ls and switch.
+
+* Avoid opening repository multiple times.
+
+* Let checkout_delta generate strict editor calls.
+
+* Support committing to mirrored path directly.
+
+* Commit / Merge to remote now brings the mirrored path updated.
+
+* Various code cleanups.
+
+* Fix some pool abuse.
+
+* Keyword enhacement (p4-like). [Autrijus]
+
+* Update to modern perl build system. [Autrijus]
+
+[Changes for 0.08 - 16 Feb, 2004]
 
 * Support multi-parent branch auto merging.
 
@@ -16,7 +44,7 @@
 
 * Various doc improvements and code cleanups.
 
-[Changes for 0.07 - 15 Jan, 2003]
+[Changes for 0.07 - 15 Jan, 2004]
 
 * Memory usage enhancements.
 
