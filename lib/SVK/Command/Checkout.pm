@@ -12,6 +12,7 @@ sub options {
     ($_[0]->SUPER::options,
      'l|list' => 'list',
      'd|delete|detach' => 'detach',
+     'export' => 'export',
      'relocate' => 'relocate');
 }
 
@@ -151,8 +152,11 @@ sub _do_checkout {
 					       });
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 
-    return $self->SUPER::run ($target->new (report => $report,
-					    copath => $copath));
+    $self->SUPER::run ($target->new (report => $report,
+				     copath => $copath));
+    $self->_do_detach ($copath)
+	if $self->{export};
+    return;
 }
 
 sub _find_copath {
@@ -192,6 +196,7 @@ SVK::Command::Checkout - Checkout the depotpath
  -l [--list]            : list checkout paths
  -d [--detach]          : mark a path as no longer checked out
  -q [--quiet]           : quiet mode
+ --export               : export mode; checkout a detached copy
  --relocate             : relocate the checkout to another path
 
 =head1 AUTHORS
