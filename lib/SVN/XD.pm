@@ -1209,7 +1209,7 @@ sub apply_textdelta {
     my $fh = SVN::XD::get_fh ($self->{newroot}, '>',
 			      "$self->{anchor}/$path", $copath)
 	or warn "can't open $path";
-    $self->{tmpfh}{$path} = $fh;
+
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
 				 $fh, undef, undef, $pool)];
 }

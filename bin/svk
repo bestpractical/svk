@@ -625,7 +625,9 @@ sub condense {
 	    $anchor = $_;
 	    $report = $_[0]
 	}
-	if ($anchor ne $_ || -f $anchor) {
+	my $schedule = $info->{checkout}->get_single ($anchor)->{schedule} || '';
+	if ($anchor ne $_ || -f $anchor ||
+	    $schedule eq 'add' || $schedule eq 'delete') {
 	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
 		(undef, $anchor, undef) = File::Spec->splitpath ($anchor);
 		chop $anchor;

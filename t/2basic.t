@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 9;
+use Test::More tests => 10;
 use strict;
 require 't/tree.pl';
 
@@ -20,6 +20,13 @@ ok(!exists $svk::info->{checkout}->get_single
 # check output with selecting some io::stringy object?
 #svk::status ("$copath");
 svk::commit ('-m', 'commit message here', "$copath");
+
+mkdir "$copath/A/new";
+mkdir "$copath/A/new/newer";
+svk::add ("$copath/A/new");
+svk::revert ('-R', "$copath/A/new");
+
+ok(!$svk::info->{checkout}->get ("$corpath/A/new")->{schedule});
 
 ok($svk::info->{checkout}->get ("$corpath")->{revision} == 0);
 ok($svk::info->{checkout}->get ("$corpath/A/foo")->{revision} == 1);
