@@ -16,9 +16,7 @@ sub run {
     my $self = shift;
 
     if(defined($ENV{SVKPAGER})){
-        $ENV{PAGER}=$ENV{SVKPAGER};
-        use IO::Pager;
-        IO::Pager->new(*STDOUT);
+        eval '$ENV{PAGER}=$ENV{SVKPAGER};use IO::Pager;IO::Pager->new(*STDOUT)';
     }
 
     foreach my $topic (@_) {
