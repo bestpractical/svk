@@ -1057,7 +1057,7 @@ sub merge {
 			       ($baton, 'svk:merge',
 				get_new_ticket ($root, $dpath, $uuid,
 						$path, $rev));
-		       } unless $no_ticket || $check_only;
+		       } unless $no_ticket;
     }
 
     unless (!$dest_repos || defined $message || $check_only) {

@@ -97,7 +97,9 @@ sub do_update {
 			      $_[0] = $arg{copath}, return
 				  if $target && $target eq $_[0];
 			      $_[0] =~ s|$t|$arg{copath}/|
-				  or die "unable to translate $_[0] with $t" },
+				  or die "unable to translate $_[0] with $t";
+			      $_[0] =~ s|/$||;
+			  },
 	  oldroot => $xdroot,
 	  newroot => $fs->revision_root ($arg{rev}),
 	  anchor => $anchor,
@@ -556,7 +558,9 @@ sub do_merge {
 				  $_[0] = $arg{copath}, return
 				     if $target && $target eq $_[0];
 				  $_[0] =~ s|$t|$arg{copath}/|
-				      or die "unable to translate $_[0] with $t" },
+				      or die "unable to translate $_[0] with $t";
+				  $_[0] =~ s|/$||;
+			      },
 	      checkout => $info->{checkout},
 	      info => $info,
 	      check_only => $arg{check_only},
@@ -981,6 +985,7 @@ sub close_directory {
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
+    return if $self->{check_only};
     my $copath = $path;
     $self->{get_copath}($copath);
     # XXX: do executable unset also.
