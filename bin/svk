@@ -1084,8 +1084,6 @@ sub commit {
 			     cb_conflict => \&SVN::StatusEditor::conflict,
 			    );
 
-    $txn->abort if $txn;
-
     if (grep {$_->[0] eq 'C'} @$targets) {
 	if ($fh) {
 	    close $fh;
@@ -1116,19 +1114,60 @@ sub commit {
 				     sign => $sign,
 				     message => $message,
 				   );
-    SVN::XD::do_commit ($info,
-			author => $ENV{USER},
-			message => $message,
-			repos => $repos,
-			repospath => $repospath,
-			copath => $copath,
-			path => $path,
-			baserev => $cinfo->{revision},
-			targets => $targets,
-			# somehow pass the commit callback out from the editor
-			# to sync and really bumb XD revisions
-			editor => $editor,
-			%cb );
+
+    my $committed = sub {
+	my ($rev) = @_;
+	for (reverse @$targets) {
+	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
+		'store_recursively' : 'store';
+	    $info->{checkout}->$store ($_->[1], { schedule => undef,
+						  newprop => undef,
+						  $_->[0] eq 'D' ? (deleted => 1) : (),
+						  revision => $rev,
+						});
+	}
+	my $root = $repos->fs->revision_root ($rev);
+	for (@$targets) {
+	    next if $_->[0] eq 'D';
+	    my ($action, $tpath) = @$_;
+	    my $cpath = $tpath;
+	    $tpath =~ s|^$copath||;
+	    my $layer = SVN::XD::get_keyword_layer ($root, "$path/$tpath");
+	    next unless $layer;
+
+	    my $fh = SVN::XD::get_fh ($xdroot, '<', "$path/$tpath", $cpath, $layer);
+	    # XXX: beware of collision
+	    # XXX: fix permission etc also
+	    my $fname = "$cpath.svk.old";
+	    rename $cpath, $fname;
+	    open my ($newfh), ">", $cpath;
+	    $layer->via ($newfh) if $layer;
+	    local $/ = \16384;
+	    while (<$fh>) {
+		print $newfh $_;
+	    }
+	    close $fh;
+	    unlink $fname;
+	}
+	print "Committed revision $rev.\n";
+    };
+
+    ${$cb{callback}} = $committed;
+
+
+    SVN::XD::checkout_delta ($info,
+			     repos => $repos,
+			     copath => $copath,
+			     targets => @targets ? \@targets : undef,
+			     path => $path,
+			     baseroot => $xdroot,
+			     xdroot => $xdroot,
+			     absent_ignore => 1,
+			     strict_add => 1,
+			     editor => $editor,
+			    );
+    $txn->abort if $txn;
+
 }
 
 =head2 copy (cp)
@@ -1432,6 +1471,7 @@ sub get_editor {
 	      },
 	  );
 
+#    $editor = SVN::Delta::Editor->new (_debug => 1, _editor => [$editor]);
 
     return ($editor, %cb, mirror => $m, callback => \$callback);
 

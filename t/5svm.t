@@ -3,9 +3,9 @@ use strict;
 no warnings 'once';
 require Test::More;
 require 't/tree.pl';
-eval "require SVN::Mirror"
-or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('tests', 1);
+use Test::More;
+eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
+plan tests => 2;
 
 # build another tree to be mirrored ourself
 $svk::info = build_test ('test');
@@ -14,8 +14,11 @@ my $tree = create_basic_tree ('/test/');
 my $pool = SVN::Pool->new_default;
 
 my ($copath, $corpath) = get_copath ('svm');
-my ($srepospath, $spath) = svk::find_repos ('/test/');
+my ($srepospath, $spath) = svk::find_repos ('/test/A');
+svk::copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for (1..20);
+
 svk::mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+
 svk::sync ('//m');
 
 $pool = SVN::Pool->new_default; # for some reasons
@@ -23,13 +26,13 @@ $pool = SVN::Pool->new_default; # for some reasons
 svk::copy ('-m', 'branch', '//m', '//l');
 svk::checkout ('//l', $copath);
 
-ok (-e "$corpath/A/be");
-append_file ("$copath/A/be", "from local branch of svm'ed directory\n");
-mkdir "$copath/A/T/";
-append_file ("$copath/A/T/xd", "local new file\n");
+ok (-e "$corpath/be");
+append_file ("$copath/be", "from local branch of svm'ed directory\n");
+mkdir "$copath/T/";
+append_file ("$copath/T/xd", "local new file\n");
 
-svk::add ("$copath/A/T");
-svk::delete ("$copath/B/S/P/pe");
+svk::add ("$copath/T");
+svk::delete ("$copath/Q/qu");
 
 svk::commit ('-m', 'local modification from branch', "$copath");
 svk::merge (qw/-C -r 4:5/, '-m', 'merge back to remote', '//l', '//m');
@@ -43,7 +46,10 @@ $pool = SVN::Pool->new_default; # for some reasons
 svk::switch ('//m', $copath);
 svk::update ($copath);
 
-append_file ("$copath/A/T/xd", "back to mirror directly\n");
+append_file ("$copath/T/xd", "back to mirror directly\n");
 svk::status ($copath);
-
-svk::commit ('-m', 'commit to mirrored path', $copath);
+TODO: {
+    local $TODO = 'rev translation for committing to remote';
+    eval { svk::commit ('-m', 'commit to mirrored path', $copath) };
+    ok(!$@);
+};

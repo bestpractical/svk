@@ -396,7 +396,9 @@ sub ignore {
 sub _delta_content {
     my ($info, %arg) = @_;
 
-    my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef);
+    my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef, $arg{pool});
+
+    # support sending delta too
 
     SVN::TxDelta::send_stream ($arg{fh}, @$handle)
 	    if $handle && $#{$handle} > 0;
@@ -405,6 +407,7 @@ sub _delta_content {
 sub _delta_file {
     my ($info, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
+    my $rev = _get_rev($info, $arg{copath});
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 
     if ($arg{cb_conflict} && $info->{checkout}->get_single ($arg{copath})->{conflict}) {
@@ -414,10 +417,10 @@ sub _delta_file {
     unless (-e $arg{copath}) {
 	return if $schedule ne 'delete' && $arg{absent_ignore};
 	if ($schedule eq 'delete' || $arg{absent_as_delete}) {
-	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
+	    $arg{editor}->delete_entry ($arg{entry}, $rev, $arg{baton}, $pool);
 	}
 	else {
-	    $arg{editor}->absent_file ($arg{entry}, $arg{baton});
+	    $arg{editor}->absent_file ($arg{entry}, $arg{baton}, $pool);
 	}
 	return;
     }
@@ -429,24 +432,25 @@ sub _delta_file {
 	&& $mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
 
     my $baton = $arg{add} ?
-	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1) :
-	$arg{editor}->open_file ($arg{entry}, $arg{baton}, 0);
+	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1, $pool) :
+	$arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool);
 
     my $newprop = $info->{checkout}->get_single ($arg{copath})->{newprop};
-    $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_})
+    $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_}, $pool)
 	for keys %$newprop;
 
     if ($arg{add} || $mymd5 ne $arg{xdroot}->file_md5_checksum ($arg{path})) {
 	seek $fh, 0, 0;
-	_delta_content ($info, %arg, baton => $baton, fh => $fh);
+	_delta_content ($info, %arg, baton => $baton, fh => $fh, pool => $pool);
     }
 
-    $arg{editor}->close_file ($baton, $mymd5);
+    $arg{editor}->close_file ($baton, $mymd5, $pool);
 }
 
 sub _delta_dir {
     my ($info, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
+    my $rev = _get_rev($info, $arg{copath});
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 
     # compute targets for children
@@ -465,10 +469,10 @@ sub _delta_dir {
 	if ($schedule ne 'delete') {
 	    return if $arg{absent_ignore};
 	    if ($arg{absent_as_delete}) {
-		$arg{editor}->delete_entry ($arg{entry}, $arg{baton});
+		$arg{editor}->delete_entry ($arg{entry}, $arg{baton}, $rev, $pool);
 	    }
 	    else {
-		$arg{editor}->absent_directory ($arg{entry}, $arg{baton});
+		$arg{editor}->absent_directory ($arg{entry}, $arg{baton}, $pool);
 	    }
 	    return unless $arg{absent_verbose};
 	}
@@ -479,12 +483,12 @@ sub _delta_dir {
 	# XXX: limit with targets
 	# XXX: should still be recursion since the entries
 	# might not be consistent
-	$arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
+	$arg{editor}->delete_entry ($arg{entry}, $rev, $arg{baton}, $pool);
 	if ($arg{delete_verbose}) {
 	    for ($info->{checkout}->find
 		 ($arg{copath}, {schedule => 'delete'})) {
 		s|^$arg{copath}/?||;
-		$arg{editor}->delete_entry ("$arg{entry}/$_", 0, $arg{baton})
+		$arg{editor}->delete_entry ("$arg{entry}/$_", $rev, $arg{baton}, $pool)
 		    if $_;
 	    }
 	}
@@ -492,17 +496,17 @@ sub _delta_dir {
     }
     elsif ($arg{add}) {
 	$baton =
-	    $arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1);
+	    $arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1, $pool);
     }
     else {
 	$entries = $arg{xdroot}->dir_entries ($arg{path})
 	    if $arg{xdroot}->check_path ($arg{path}) == $SVN::Node::dir;
-	$baton = $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton});
+	$baton = $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton}, $rev, $pool);
     }
 
     if ($schedule eq 'prop' || $schedule eq 'add') {
 	my $newprop = $info->{checkout}->get_single ($arg{copath})->{newprop};
-	$arg{editor}->change_dir_prop ($baton, $_, $newprop->{$_})
+	$arg{editor}->change_dir_prop ($baton, $_, $newprop->{$_}, $pool)
 	    for keys %$newprop;
     }
 
@@ -572,9 +576,15 @@ sub _delta_dir {
     }
 
     # chekc prop diff
-    $arg{editor}->close_directory ($baton)
+    $arg{editor}->close_directory ($baton, $pool)
 	unless $arg{root} || $schedule eq 'delete';
 }
+
+sub _get_rev {
+    my ($info, $path) = @_;
+    $info->{checkout}->get($path)->{revision}
+}
+
 
 # options:
 #  delete_verbose: generate delete_entry calls for subdir within deleted entry
@@ -587,8 +597,8 @@ sub checkout_delta {
     my ($info, %arg) = @_;
 
     my $kind = $arg{xdroot}->check_path ($arg{path});
-
-    my $baton = $arg{editor}->open_root ();
+    my $rev = _get_rev($info, $arg{copath});
+    my $baton = $arg{editor}->open_root ($rev);
 
     if ($kind == $SVN::Node::file) {
 	_delta_file ($info, %arg, baton => $baton);
@@ -748,9 +758,9 @@ sub get_commit_editor {
 						   $arg{author}, $arg{message},
 						   $committed)],
 	 base_path => $path,
-	 root => $xdroot,
+	 $arg{mirror} ? () : ( root => $xdroot ),
 	 missing_handler =>
-	 SVN::Simple::Edit::check_missing ());
+	 SVN::Simple::Edit::check_missing ($xdroot));
 }
 
 sub do_copy_direct {
@@ -764,110 +774,6 @@ sub do_copy_direct {
     $edit->copy_directory ($arg{dpath}, "file://$arg{repospath}$arg{path}",
 			   $arg{rev});
     $edit->close_edit();
-}
-
-sub do_commit {
-    my ($info, %arg) = @_;
-
-    die "commit without targets?" if $#{$arg{targets}} < 0;
-
-    print "commit message from $arg{author}:\n$arg{message}\n";
-    my ($anchor, $target) = $arg{path};
-    my ($coanchor, $copath) = $arg{copath};
-
-    unless (-d $coanchor) {
-	($anchor,$target,
-	 $coanchor, $copath) = get_anchor (1, $arg{path}, $arg{copath});
-    }
-    elsif (!$anchor) {
-	$coanchor .= '/';
-    }
-
-    print "commit from $arg{path} (anchor $anchor) <- $arg{copath}\n";
-    print "targets:\n";
-    print "$_->[1]\n" for @{$arg{targets}};
-
-    my ($txn, $xdroot) = create_xd_root ($info, %arg);
-
-    my $committed = sub {
-	my ($rev) = @_;
-	for (reverse @{$arg{targets}}) {
-	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
-		'store_recursively' : 'store';
-	    $info->{checkout}->$store ($_->[1], { schedule => undef,
-						  newprop => undef,
-						  $_->[0] eq 'D' ? (deleted => 1) : (),
-						  revision => $rev,
-						});
-	}
-	my $root = $arg{repos}->fs->revision_root ($rev);
-	for (@{$arg{targets}}) {
-	    next if $_->[0] eq 'D';
-	    my ($action, $tpath) = @$_;
-	    my $cpath = $tpath;
-	    $tpath =~ s|^$coanchor||;
-	    my $layer = get_keyword_layer ($root, "$anchor/$tpath");
-	    next unless $layer;
-
-	    my $fh = get_fh ($xdroot, '<', "$anchor/$tpath", $cpath, $layer);
-	    # XXX: beware of collision
-	    # XXX: fix permission etc also
-	    my $fname = "$cpath.svk.old";
-	    rename $cpath, $fname;
-	    open my ($newfh), ">", $cpath;
-	    $layer->via ($newfh) if $layer;
-	    local $/ = \16384;
-	    while (<$fh>) {
-		print $newfh $_;
-	    }
-	    close $fh;
-	    unlink $fname;
-	}
-	print "Committed revision $rev.\n";
-    };
-
-    my $edit = get_commit_editor ($xdroot, $committed, $anchor, %arg);
-
-    $edit->open_root();
-    for (@{$arg{targets}}) {
-	my ($action, $tpath) = @$_;
-	my $cpath = $tpath;
-	$tpath =~ s|^$coanchor|| or die "absurb path $tpath not under $coanchor";
-	if ($action eq 'D') {
-	    $edit->delete_entry ($tpath);
-	    next;
-	}
-	if (-d $cpath) {
-	    $edit->add_directory ($tpath)
-		unless $action eq 'P';
-	    my $props = $info->{checkout}->get_single ($cpath);
-	    next unless $props->{newprop};
-	    while (my ($key, $value) = each (%{$props->{newprop}})) {
-		$edit->change_dir_prop ($tpath, $key, $value);
-	    }
-	    next;
-	}
-	if ($action eq 'A') {
-	    $edit->add_file ($tpath);
-	}
-	my $props = $info->{checkout}->get_single ($cpath);
-	if ($props->{newprop}) {
-	    while (my ($key, $value) = each (%{$props->{newprop}})) {
-		$edit->change_file_prop ($tpath, $key, $value);
-	    }
-	}
-	next if $action eq 'P';
-	my $fh;
-	open $fh, '<', $cpath
-	    if $action eq 'A';
-	$fh ||= get_fh ($xdroot, '<', "$anchor/$tpath", $cpath);
-	my $md5 = SVN::MergeEditor::md5 ($fh);
-	seek $fh, 0, 0;
-	$edit->modify_file ($tpath, $fh, $md5)
-	    unless $action eq 'P';
-    }
-    $edit->close_edit();
-    $txn->abort if $txn;
 }
 
 sub get_keyword_layer {
