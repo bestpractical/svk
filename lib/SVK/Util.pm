@@ -7,7 +7,7 @@ our @EXPORT_OK = qw(
 
     get_prompt get_buffer_from_editor
 
-    get_encoding from_native to_native
+    get_encoding get_encoder from_native to_native
 
     find_local_mirror find_svm_source resolve_svm_source traverse_history
     find_prev_copy
@@ -264,15 +264,24 @@ sub get_encoding {
     } || 'utf8');
 }
 
+=head3 get_encoder ([$encoding])
+
+=cut
+
+sub get_encoder {
+    my $enc = shift || get_encoding;
+    if (!ref($enc)) {
+	$enc = Encode::find_encoding ($enc);
+    }
+    return $enc;
+}
+
 =head3 from_native ($octets, $what, [$encoding])
 
 =cut
 
 sub from_native {
-    my $enc = $_[2] || get_encoding;
-    if (!ref($enc)) {
-	$enc = Encode::find_encoding ($enc);
-    }
+    my $enc = get_encoder ($_[2]);
     $_[0] = eval { $enc->decode ($_[0], 1) };
     die loc ("Can't decode %1 as %2, try --encoding.\n", $_[1], $enc->name) if $@;
     Encode::_utf8_off ($_[0]);
@@ -284,10 +293,7 @@ sub from_native {
 =cut
 
 sub to_native {
-    my $enc = $_[2] || get_encoding;
-    if (!ref($enc)) {
-	$enc = Encode::find_encoding ($enc);
-    }
+    my $enc = get_encoder ($_[2]);
     Encode::_utf8_on ($_[0]);
     $_[0] = eval { $enc->encode ($_[0], 1) };
     die loc ("Can't encode %1 as %2, try --encoding.\n", $_[1], $enc->name) if $@;

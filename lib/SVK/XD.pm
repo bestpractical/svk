@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
-		  from_native to_native );
+		  from_native to_native get_encoder );
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML'	 => qw(LoadFile DumpFile);
@@ -1082,7 +1082,7 @@ sub _delta_dir {
     for my $entry (sort keys %$entries) {
 	my $newtarget;
 	my $copath = $entry;
-	to_native ($copath, 'path');
+	to_native ($copath, 'path', $arg{encoder});
 	if (defined $targets) {
 	    next unless exists $targets->{$copath};
 	    $newtarget = delete $targets->{$copath};
@@ -1129,12 +1129,13 @@ sub _delta_dir {
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
 	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
 	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} }
-	    map { from_native($_); $_ } readdir ($dir);
+	    map { eval {from_native($_, 'path', $arg{encoder}); 1} ? $_ : () }
+	    readdir ($dir);
     }
 
     for my $copath (@direntries) {
 	my $entry = $copath;
-	to_native ($copath, 'path');
+	to_native ($copath, 'path', $arg{encoder});
 	my $newtarget;
 	if (defined $targets) {
 	    next unless exists $targets->{$copath};
@@ -1210,6 +1211,7 @@ sub checkout_delta {
     my ($self, %arg) = @_;
     $arg{base_root} ||= $arg{xdroot};
     $arg{base_path} ||= $arg{path};
+    $arg{encoder} = get_encoder;
     my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
     $arg{kind} = $arg{base_root} eq $arg{xdroot} ? $kind : $arg{xdroot}->check_path ($arg{path});
     die "checkout_delta called with non-dir node"

@@ -8,7 +8,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 
-plan tests => 20;
+plan tests => 23;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -53,6 +53,9 @@ $svk->up ($copath);
 ok (-e "$copath/$msgutf8-dir");
 overwrite_file ("$copath/$msgutf8-dir/newfile", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/newfile2", "new file\n");
+overwrite_file ("$copath/$msgutf8-dir/$msg", "new file\n");
+is_output ($svk, 'add', ["$copath/$msgutf8-dir/$msg"],
+	   [__"Unknown target: $msg."]);
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/newfile2"],
 	   [__"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'st', [$copath],
@@ -90,6 +93,13 @@ is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	    'Committed revision 6.']);
 is_output ($svk, 'st', [$copath],
 	   [], 'clean checkout after commit');
+is_output ($svk, 'st', ["$copath/$msg-dir"],
+	   [], 'clean checkout after commit');
+is_output ($svk, 'rm', ["$copath/$msg-dir/$msg"],
+	   [__"D   $copath/$msg-dir/$msg"]);
+is_output ($svk, 'commit', ["$copath/$msg-dir"],
+	   ['Waiting for editor...',
+	    'Committed revision 7.']);
 is_output ($svk, 'st', ["$copath/$msg-dir"],
 	   [], 'clean checkout after commit');
 

@@ -8,7 +8,8 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
-		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native);
+		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
+		  get_encoder );
 
 sub options {
     ('m|message=s'  => 'message',
@@ -232,11 +233,12 @@ sub get_committable {
     print $fh "\n", $self->target_prompt, "\n" if $fh;
 
     my $targets = [];
+    my $encoder = get_encoder;
     my $statuseditor = SVK::Editor::Status->new
 	( notify => SVK::Notify->new
 	  ( cb_flush => sub {
 		my ($path, $status) = @_;
-		to_native ($path, 'path');
+		to_native ($path, 'path', $encoder);
 		my $copath = $target->copath ($path);
 		push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
 				 $copath];
@@ -319,13 +321,14 @@ sub committed_commit {
 	}
 	my $root = $fs->revision_root ($rev);
 	# update keyword-translated files
+	my $encoder = get_encoder;
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
-	    from_native ($dpath, 'path');
+	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
 	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop, '>');
