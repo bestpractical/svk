@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR traverse_history );
+use SVK::Util qw( HAS_SVN_MIRROR traverse_history get_encoding );
 use List::Util qw(max min);
 use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
@@ -155,6 +155,8 @@ sub _show_log {
     $message = ($indent ? '' : "\n")."$message\n$sep";
 #    $message =~ s/\n\n+/\n/mg;
     $message =~ s/^/$indent/mg if $indent and !$verbatim;
+    require Encode;
+    Encode::from_to ($message, 'UTF-8', get_encoding);
     $output->print ($message);
 }
 
