@@ -31,8 +31,6 @@ SVK::XD - svk depot and checkout handling.
       (depotmap => { '' => '/path/to/repos'},
        checkout => Data::Hierarchy->new);
 
-=head1 DESCRIPTION
-
 =head1 TERMINOLOGY
 
 =over
@@ -1202,6 +1200,15 @@ sub get_fh {
     $layer->via ($fh) if $layer;
     return $fh;
 }
+
+=item get_props
+
+Returns the properties associated with a node. Properties schedule for
+commit are merged if C<$copath> is given.
+
+=back
+
+=cut
 
 sub get_props {
     my ($self, $root, $path, $copath) = @_;

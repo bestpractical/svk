@@ -84,8 +84,6 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  mirror --list
  mirror --upgrade /DEPOT/
 
-=head1 DESCRIPTION
-
 =head1 OPTIONS
 
  --list:               List mirrored path

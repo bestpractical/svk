@@ -69,6 +69,8 @@ A callback to translate paths in editor calls to copath.
 
 Path for reporting modifications.
 
+=back
+
 =cut
 
 sub set_target_revision {

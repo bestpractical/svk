@@ -191,8 +191,8 @@ sub abs_path {
 sub mimetype {
     no warnings 'redefine';
     my $mimetype = eval {
-        require File::MimeInfo::Magic; 
-        \&File::MimeInfo::Magic::mimetype;
+        require File::MimeInfo::Magic;
+        \&File::MimeInfo::Magic::magic;
     };
     *mimetype = $mimetype || sub { undef };
     goto &$mimetype;
