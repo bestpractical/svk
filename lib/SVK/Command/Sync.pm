@@ -37,6 +37,7 @@ sub run {
 	$m->init ();
 	$m->run ($self->{torev});
     }
+    return;
 }
 
 1;

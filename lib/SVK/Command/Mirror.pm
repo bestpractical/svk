@@ -17,6 +17,7 @@ sub run {
 			      pool => SVN::Pool->new, auth => $self->auth,
 			      source => $source, target_create => 1);
     $m->init;
+    return;
 }
 
 1;
