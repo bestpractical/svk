@@ -149,8 +149,12 @@ sub checkout_crawler {
 	     # seems gotta do anchor/target in a upper level?
 	     $cpath = '' if $cpath eq $arg{copath};
 	     if (exists $torm{$File::Find::name}) {
-		 for ($info->{checkout}->find ($File::Find::name,
-					       {schedule => 'delete'})) {
+		 my @items = ($arg{delete_only_parent}) ?
+		     @{$torm{$File::Find::name}} :
+			 $info->{checkout}->find ($File::Find::name,
+						  {schedule => 'delete'});
+
+		 for (@items) {
 		     my $rmpath = $_;
 		     s|^$arg{copath}/|$arg{path}/|;
 		     &{$arg{cb_delete}} ($_, $rmpath)
@@ -171,7 +175,6 @@ sub checkout_crawler {
 		 return;
 	     }
 	     return if -d $File::Find::name;
-	     warn "checksuming $File::Find::name";
 	     &{$arg{cb_changed}} ($cpath, $File::Find::name)
 		 if $arg{cb_changed} && md5file($File::Find::name) ne
 		     $xdroot->file_md5_checksum ($cpath);
@@ -187,9 +190,16 @@ sub do_commit {
     my $committed = sub {
 	my ($rev) = @_;
 	for (@{$arg{targets}}) {
-	    $info->{checkout}->store ($_->[1], { schedule => undef,
-						 revision => $rev,
-					       });
+	    if ($_->[0] eq 'D') {
+		$info->{checkout}->store_recursively ($_->[1], { schedule => undef,
+						     revision => undef,
+						   });
+	    }
+	    else {
+		$info->{checkout}->store ($_->[1], { schedule => undef,
+						     revision => $rev,
+						   });
+	    }
 	}
 	print "Committed revision $rev.\n";
     };
@@ -217,8 +227,11 @@ sub do_commit {
     for (@{$arg{targets}}) {
 	my ($action, $tpath) = @$_;
 	my $cpath = $tpath;
-#	($tpath eq $arg{copath}) ? '$tpath';
 	$tpath =~ s|^$arg{copath}/|| or die "absurb path";
+	if ($action eq 'D') {
+	    $edit->delete_entry ($tpath);
+	    next;
+	}
 	if (-d $cpath) {
 	    $edit->add_directory ($tpath);
 	    next;
@@ -226,7 +239,6 @@ sub do_commit {
 	open my ($fh), '<', $cpath;
 	my $md5 = md5file ($cpath);
 	if ($action eq 'A') {
-	    # check dir later
 	    $edit->add_file ($tpath);
 	}
 	$edit->modify_file ($tpath, $fh, $md5);

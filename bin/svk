@@ -294,19 +294,24 @@ sub commit {
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
     my $targets;
     # harvest
-
     print "$target_prompt\n";
     SVN::XD::checkout_crawler ($info,
 			       repos => $repos,
 			       copath => $copath,
 			       path => $path,
 			       rev => $cinfo->{revision},
+			       delete_only_parent => 1,
 			       cb_unknown =>
 			       sub {},
 			       cb_add =>
 			       sub {
 				   push @$targets, ['A', $_[1]];
 				   print "A  $_[1]\n";
+			       },
+			       cb_delete =>
+			       sub {
+				   push @$targets, ['D', $_[1]];
+				   print "D  $_[1]\n";
 			       },
 			       cb_changed =>
 			       sub {
