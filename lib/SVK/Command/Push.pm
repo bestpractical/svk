@@ -24,6 +24,8 @@ sub parse_arg {
         unshift @arg, $self->{from_path};
     }
 
+    # "svk push -P" has the same effect as "svk push -l",
+    # because incremental patches is not yet implemented.
     if ($self->{lump} or $self->{patch}) {
         $self->{log}++;
         $self->{message} = '';
