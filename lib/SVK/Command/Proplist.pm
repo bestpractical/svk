@@ -27,7 +27,7 @@ sub run {
 	$target->depotpath ($self->{rev})
 	    if defined $self->{rev};
 	my $props = $self->{xd}->do_proplist ( $target );
-	return unless %$props;
+	next unless %$props;
 	print loc("Properties on %1:\n", $target->{report} || '.');
 	for my $key (sort keys %$props) {
 	    my $value = $props->{$key};

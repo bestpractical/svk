@@ -50,6 +50,15 @@ features(
 	'Compress::Zlib'    => '0',
     ],
 );
+
+features(
+    'Automatic mime-type detection' => [
+	-default => 1,
+	'File::MimeInfo'    => '0',
+	'File::BaseDir'     => '0',
+    ],
+);
+
 include('ExtUtils::AutoInstall');
 auto_install();
 

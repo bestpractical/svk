@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype_is_text );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -18,6 +18,8 @@ use File::Path;
 use YAML qw(LoadFile DumpFile);
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
+my $mimeinfo = eval 'use File::MimeInfo::Magic; 1' ? 1 : 0;
+
 
 =head1 NAME
 
@@ -496,6 +498,13 @@ sub auto_prop {
     return {'svn:special' => '*'} if -l $copath;
     my $prop;
     $prop->{'svn:executable'} = '*' if -x $copath;
+    if ($mimeinfo) {
+	my $type = mimetype($copath);
+	# add only binary mime types or text/* but not text/plain
+	$prop->{'svn:mime-type'} = $type
+	    if $type ne 'text/plain' &&
+		($type =~ m/^text/ || !mimetype_is_text ($type));
+    }
     # XXX: autoprop stuff
     return $prop;
 }
