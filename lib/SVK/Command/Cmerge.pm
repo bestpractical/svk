@@ -79,13 +79,14 @@ sub run {
 	find_merge_sources ($src->new (revision => $newrev), 1, 1);
     $ticket->{"$uuid:$tmpbranch"} = $newrev;
 
-    $self->do_propset_direct
-	( author => $ENV{USER},
-	  %$src,
-	  propname => 'svk:merge',
-	  propvalue => join ("\n", map {"$_:$ticket->{$_}"} sort keys %$ticket),
-	  message => "cherry picking merge $self->{chgspec} to $dst->{path}",
-	) unless $self->{check_only};
+    unless ($self->{check_only}) {
+	my $oldmessage = $self->{message};
+	$self->{message} = "cherry picking merge $self->{chgspec} to $dst->{path}";
+	$self->do_propset_direct ($src, 'svk:merge',
+				  join ("\n", map {"$_:$ticket->{$_}"} sort keys %$ticket));
+	$self->{message} = $oldmessage;
+    }
+
     my ($depot) = $self->{xd}->find_depotname ($src->{depotpath});
     ++$self->{auto};
     $self->SUPER::run ($src->new (path => $tmpbranch,

@@ -2,6 +2,7 @@ package SVK::Command::Propset;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit SVK::Command::Proplist );
+use SVK::Util qw ( abs2rel );
 use SVK::XD;
 use SVK::I18N;
 
@@ -28,33 +29,38 @@ sub lock {
 }
 
 sub do_propset_direct {
-    my ($self, %arg) = @_;
-    my $fs = $arg{repos}->fs;
+    my ($self, $target, $propname, $propvalue) = @_;
 
+    my $fs = $target->{repos}->fs;
     if ($self->{revprop}) {
-        my $rev = (defined($self->{rev}) ? $self->{rev} : $arg{revision});
-        $fs->change_rev_prop ($rev, $arg{propname} => $arg{propvalue});
-        print loc("Property '%1' set on repository revision %2.\n", $arg{propname}, $rev);
+        my $rev = (defined($self->{rev}) ? $self->{rev} : $target->{revision});
+        $fs->change_rev_prop ($rev, $propname => $propvalue);
+        print loc("Property '%1' set on repository revision %2.\n", $propname, $rev);
         return;
     }
 
     my $root = $fs->revision_root ($fs->youngest_rev);
-    my $kind = $root->check_path ($arg{path});
+    my $kind = $root->check_path ($target->path);
 
-    die loc("path %1 does not exist.\n", $arg{path}) if $kind == $SVN::Node::none;
+    die loc("path %1 does not exist.\n", $target->path) if $kind == $SVN::Node::none;
 
-    my $edit = $self->get_commit_editor
-	($root, sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %arg);
-    $edit->open_root();
-
+    my ($anchor, $editor) = $self->get_dynamic_editor ($target);
+    my $func = $kind == $SVN::Node::dir ? 'change_dir_prop' : 'change_file_prop';
     if ($kind == $SVN::Node::dir) {
-	$edit->change_dir_prop ($arg{path}, $arg{propname}, $arg{propvalue});
+	my $baton = $editor->open_directory
+	    (abs2rel ($target->path, $anchor => undef, '/'), 0, -1);
+	$editor->change_dir_prop ($baton, $propname, $propvalue);
+	$editor->close_directory ($baton);
     }
     else {
-	$edit->change_file_prop ($arg{path}, $arg{propname}, $arg{propvalue});
+	my $baton = $editor->open_file
+	    (abs2rel ($target->path, $anchor => undef, '/'), 0, -1);
+	$editor->change_file_prop ($baton, $propname, $propvalue);
+	$editor->close_file ($baton, undef);
     }
-
-    $edit->close_edit();
+    $self->adjust_anchor ($editor);
+    $self->finalize_dynamic_editor ($editor);
+    return;
 }
 
 sub do_propset {
@@ -68,14 +74,9 @@ sub do_propset {
 	    );
     }
     else {
-	return unless $self->check_mirrored_path ($target);
+	# XXX: forbid special props on mirror anchor
 	$self->get_commit_message () unless $self->{revprop};
-	$self->do_propset_direct ( author => $ENV{USER},
-				   %$target,
-				   propname => $pname,
-				   propvalue => $pvalue,
-				   message => $self->{message},
-				 );
+	$self->do_propset_direct ( $target, $pname => $pvalue );
     }
 }
 
