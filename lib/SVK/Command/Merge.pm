@@ -46,18 +46,21 @@ sub parse_arg {
     }
 
     my $target1 = $self->arg_co_maybe (@arg ? $arg[0] : '');
+    my $target2;
 
     if ($self->{from}) {
         # When using "from", $target1 must always be a depotpath.
         if (defined $target1->{copath}) {
-            # Because merging under the copath anchor is unsafe,
-            # cast it into a coroot now. -- XXX -- also see Update.pm
-            my $entry = $self->{xd}{checkout}->get ($target1->{copath});
-            $target1 = $self->arg_depotpath ($entry->{depotpath});
+            # Because merging under the copy anchor is unsafe, we always merge
+            # to the most immediate copy anchor under copath root.
+            ($target1, $target2) = $self->find_checkout_anchor (
+                $target1, 1, $self->{sync}
+            );
+            delete $target1->{copath};
         }
     }
 
-    my $target2 = $target1->copied_from($self->{sync});
+    $target2 ||= $target1->copied_from($self->{sync});
     if (!defined ($target2)) {
         die loc ("Cannot find the path which '%1' copied from.\n", $arg[0]);
     }
@@ -150,13 +153,20 @@ sub run {
         );
 
 	my $spool = SVN::Pool->new_default;
-	for (@rev) {
-	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $_));
+	my $previous_base;
+	foreach my $rev (@rev) {
+	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $rev));
+	    if ($previous_base) {
+		$merge->{fromrev} = $previous_base;
+	    }
+
 	    print '===> '.$merge->info;
 	    $self->{message} = $merge->log (1);
+
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
 	    $dst->{revision} = $fs->youngest_rev;
+	    $previous_base = $rev;
 	    $spool->clear;
 	}
     }

@@ -8,6 +8,8 @@ use SVK::XD;
 sub options {
     ('f|from=s'         => 'from_path',
      'l|lump'           => 'lump',
+     'C|check-only'     => 'check_only',
+     'S|sign'	        => 'sign',
     );
 }
 
@@ -49,6 +51,8 @@ SVK::Command::Push - Move changes into another repository
 
  -f [--from] arg        : push from the specified path
  -l [--lump]            : merge everything into a single commit log
+ -C [--check-only]      : try operation but make no changes
+ -S [--sign]            : sign this change
 
 =head1 AUTHORS
 

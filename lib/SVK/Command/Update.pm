@@ -43,21 +43,14 @@ sub run {
 	      copath => undef
 	    );
 
-        # Because merging under the copath anchor is unsafe,
-        # we always merge to the copath root.
-        my $entry = $self->{xd}{checkout}->get ($target->{copath});
-        my $merge_target = $self->arg_depotpath ($entry->{depotpath});
-        my $sync_target = $merge_target;
+        # Because merging under the copy anchor is unsafe, we always merge
+        # to the most immediate copy anchor under copath root.
+        my ($merge_target, $copied_from) = $self->find_checkout_anchor (
+            $target, $self->{merge}, $self->{sync}
+        );
 
-        if ($self->{merge}) {
-            my $copied_from = $merge_target->copied_from($self->{sync});
-            if ($copied_from) {
-                $sync_target = $copied_from;
-            }
-            else {
-                delete $self->{merge};
-            }
-        }
+        my $sync_target = $copied_from || $merge_target;
+        delete $self->{merge} if !$copied_from;
 
         if ($self->{sync}) {
             die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
