@@ -96,6 +96,7 @@ t/00use.t
 t/01depotmap.t
 t/01editor.t
 t/01help.t
+t/01init.t
 t/02basic-symlink.t
 t/02basic.t
 t/03import.t

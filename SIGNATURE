@@ -14,9 +14,9 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 ea379ac8d4a673f904c6636a80689dfdcef70e4f CHANGES
-SHA1 2dbb666b07ad5ca9ad17aa5f626226381851b63f MANIFEST
-SHA1 3b945818f1f1ce0f39b4f131c0bb4a1367dbef8b META.yml
+SHA1 186e3b8e72d1fba99ccac146850a4989acdbe0bc CHANGES
+SHA1 9be07590651a0002dbbc9e983973f42b9512693c MANIFEST
+SHA1 584de4c2ea6da4cbf958408e2aa7bce2be1b1221 META.yml
 SHA1 4ddff24f3903be05d5d98230cc598bfec0f2d3f5 Makefile.PL
 SHA1 0dd1372ff52376bdf9d4d5b1460c52ac1caa8958 README
 SHA1 964164463c9be97f09b4c128f0ae2a14d2dcee4f TODO
@@ -33,7 +33,7 @@ SHA1 6fca1d05c6b9a8f10865de5be4fefb9bfa7a52e9 inc/Module/Install/Metadata.pm
 SHA1 2e6f5004ac895a26c41f043bf8fa5efb4f5b21c4 inc/Module/Install/Scripts.pm
 SHA1 6b051a6d3ed824df40343a7ff09b66282e1783c3 inc/Module/Install/Win32.pm
 SHA1 77f82ce7c623e05304ac9aae05bcd1a5558fadbb inc/Module/Install/WriteAll.pm
-SHA1 8d2bf86eb32f87e8d5ab6a1d858d7014a4caedf2 lib/SVK.pm
+SHA1 3a94b2da6db5b6f579aa32996190dedcf5c853f3 lib/SVK.pm
 SHA1 7d335a23d98dd2aa409d9e982d05e46d913c2f11 lib/SVK/Command.pm
 SHA1 9d5bddfdb50a617c3b49fc1f694b9d215e0da57d lib/SVK/Command/Add.pm
 SHA1 655ed04b76243c7ba862e28a652cfa7e8fc46b64 lib/SVK/Command/Admin.pm
@@ -107,11 +107,12 @@ SHA1 4e884b69d61942f12484b37d5e8b2e42253af5b0 lib/SVK/Resolve/XXDiff.pm
 SHA1 5039d1fcda28bbdcaaaede144d6d9e65a1b2fddc lib/SVK/Target.pm
 SHA1 1424df24150f58a5f671a814d5f4f6fc1fa13297 lib/SVK/Target/Universal.pm
 SHA1 e04e86f08ed2e661b7071f8518c6f25c63f25a35 lib/SVK/Util.pm
-SHA1 de4808b91497a17582e8d15e350d375258de9b27 lib/SVK/XD.pm
+SHA1 d8051dfa70fe1f9c52ae4d4aec3a7be603eb190a lib/SVK/XD.pm
 SHA1 e3460907dd22b7ddd83ef94c870af0d63894a2b3 t/00use.t
 SHA1 e0d73b5a704de414dd78011237cba3c526631df8 t/01depotmap.t
 SHA1 49f4858dc1d6f8064dbaf8e8fd4c7f088b6ab96e t/01editor.t
 SHA1 db440f631a73ac977106cea81911f97abc6b6100 t/01help.t
+SHA1 349463d078c18667c08f817bd96b455c65173db1 t/01init.t
 SHA1 77a2acd7ead76bcd532445746599576281aad579 t/02basic-symlink.t
 SHA1 56bc91a994377daccd2c77ed0d81617d243ba507 t/02basic.t
 SHA1 aad47e2aedc8725ae6aa12140153d5f6b0987d46 t/03import.t
@@ -165,7 +166,7 @@ SHA1 93cdfec7b5348cf0b9a4a7789290ae4c53078c0c utils/svk-ediff.el
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.2.6 (FreeBSD)
 
-iD8DBQFBfJXxk1XldlEkA5YRAlGhAJ9Vtx+yes0ZuY3OjuvLjs7hSuDPcgCeKrd8
-BDzkUHiv2j+aGkfZm+eGalE=
-=LUno
+iD8DBQFBfKQok1XldlEkA5YRAuqtAJ9Wz9e7DavDvdWs3SJqWq3xGriFfwCeKPeJ
+fvZed3JoLfZl5a+ANRNshfo=
+=WCSw
 -----END PGP SIGNATURE-----

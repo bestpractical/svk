@@ -1,3 +1,8 @@
+[Changes for 0.25 - 25 Oct, 2004]
+
+* Fix the mkdir sequence which causes first-time svk users fatal error.
+  [Autrijus]
+
 [Changes for 0.24 - 24 Oct, 2004]
 
 * Fix svk ps regression for svn 1.0.x.
