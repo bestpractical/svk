@@ -10,7 +10,9 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5_fh get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP is_symlink is_executable splitpath HAS_SYMLINK );
+use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
+		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
+		  md5_fh  traverse_history );
 use Data::Hierarchy 0.18;
 use File::Spec;
 use File::Find;
@@ -1213,10 +1215,10 @@ sub get_keyword_layer {
 		 FileRev =>
 		 sub { my ($root, $path) = @_;
 		       my $rev = 0;
-		       my $fs = $root->fs;
-		       my $hist = $root->node_history ($path);
-		       my $spool = SVN::Pool->new_default_sub;
-		       $rev++, $spool->clear while $hist = $hist->prev (0);
+		       traverse_history ( root     => $root,
+					  path     => $path,
+					  cross    => 0,
+					  callback => sub { ++$rev });
 		       "#$rev";
 		   },
 	       );
