@@ -47,7 +47,7 @@ msgstr "%1 已被排程列入下次要刪除的項目"
 #. ($_[0])
 #: lib/SVK/XD.pm:307
 msgid "%1 is not under version control"
-msgstr "%s 未受版本控制"
+msgstr "%1 未受版本控制"
 
 #. ($_[1])
 #: lib/SVK/XD.pm:384

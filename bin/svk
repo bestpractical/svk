@@ -20,12 +20,12 @@ svk - A Distributed Version Control System
 
 =head1 SYNOPSIS
 
-B<svk> I<commands> S<[I<options>]> [I<args>]
+B<svk> I<command> S<[I<options>]> [I<args>]
 
 =head1 DESCRIPTION
 
-B<svk> is a decentralized version control system written in Perl.
-It uses the subversion filesystem but provides additional features:
+B<SVK> is a decentralized version control system written in Perl.
+It uses the Subversion filesystem but provides additional features:
 
 =over 4
 
@@ -39,8 +39,7 @@ It uses the subversion filesystem but provides additional features:
 
 =back
 
-For more information about the Subversion project, visit
-L<http://svk.elixus.org/>.
+For more information about the SVK project, visit L<http://svk.elixus.org/>.
 
 Run C<svk help> to access the built-in tool documentation.
 

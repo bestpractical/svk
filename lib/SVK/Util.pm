@@ -4,7 +4,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
-		    find_local_mirror abs_path mimetype_is_text);
+		    find_local_mirror abs_path mimetype mimetype_is_text);
 our $VERSION = $SVK::VERSION;
 
 use SVK::I18N;
@@ -12,9 +12,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
-my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
-
-sub svn_mirror { $svn_mirror }
+use constant svn_mirror => eval { require SVN::Mirror; 1 };
 
 sub get_prompt {
     my ($prompt, $regex) = @_;
@@ -177,6 +175,11 @@ sub abs_path {
     my (undef, $dir, $pathname) = File::Spec->splitpath ($path);
     return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
 }
+
+*mimetype = eval {
+    require File::MimeInfo::Magic; 
+    \&File::MimeInfo::Magic::mimetype;
+} || sub { undef };
 
 sub mimetype_is_text {
     my $type = shift;

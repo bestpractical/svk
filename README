@@ -1,4 +1,4 @@
-This is the README file for svk 0.18 release, a decentralized version
+This is the README file for SVK 0.18 release, a decentralized version
 control system.
 
 The latest version could be found at
@@ -9,19 +9,26 @@ You need Module::Install if you are not installing from release tarballs.
 
 * About
 
-Subversion (svn) aims to take over the CVS user base, while svk
-attempts to take over the others - including people who already
-switched to other scm, and people who had not started using scm. It is
-written in Perl and is using subversion's underlying filesystem.
+While Subversion aims to take over the CVS user base, SVK attempts
+to take over the others -- including people who are already using
+other SCM systems, and people who had not started using SCM.
 
-For more information plase see the web site at http://svk.elixus.org/
+SVK is written in Perl, using Subversion's underlying filesystem
+but provides additional features:
+
+ * Offline operations like "checkin", "log", "merge".
+ * Distributed branches.
+ * Lightweight checkout copy management (no ".svn" directories).
+ * Advanced merge algorithms, like "star-merge" and "cherry picking".
+
+For more information, please visit the web site at http://svk.elixus.org/.
 
 * Installation
 
-You need subversion 0.36 release or newer, with perl bindings support
-to use svk.
+To use SVK, you need Subversion version 1.0.4 or higher, compiled with
+Perl bindings support.
 
-svk uses the stanard perl module install process:
+SVK uses the standard perl module install process:
 
 % perl Makefile.PL
 % make
@@ -29,4 +36,4 @@ svk uses the stanard perl module install process:
 
 * Usage
 
-You may want to start with the tutorial available at the web site.
+You may want to start with the SVK tutorial, available on the web site.

@@ -17,7 +17,7 @@ msgstr ""
 #. ($conflicts)
 #: lib/SVK/Command/Commit.pm:231
 msgid "%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n"
-msgstr "侦测到 %1 项冲突。请在解决后执行「svk resolved」。\n"
+msgstr "侦测到 %1 项冲突。请在解决后执行‘svk resolved’。\n"
 
 #. ($self->{conflicts})
 #: lib/SVK/XD.pm:929
@@ -32,7 +32,7 @@ msgstr "%1 - 略过\n"
 #. ($path)
 #: lib/SVK/XD.pm:71
 msgid "%1 already locked, use 'svk cleanup' if lock is stalled"
-msgstr "%1 已被锁定，若已烂掉请用「svk cleanup」解除"
+msgstr "%1 已被锁定，若已烂掉请用‘svk cleanup’解除"
 
 #. ($self->{info}{$path}{dpath})
 #: lib/SVK/DeleteEditor.pm:12
@@ -47,7 +47,7 @@ msgstr "%1 已被排程列入下次要删除的项目"
 #. ($_[0])
 #: lib/SVK/XD.pm:307
 msgid "%1 is not under version control"
-msgstr "%s 未受版本控制"
+msgstr "%1 未受版本控制"
 
 #. ($_[1])
 #: lib/SVK/XD.pm:384
@@ -57,7 +57,7 @@ msgstr "%1 无版本信息；略过。\n"
 #. ($self->{info}{$path}{dpath})
 #: lib/SVK/DeleteEditor.pm:15 lib/SVK/DeleteEditor.pm:21
 msgid "%1 is scheduled, use 'svk revert'"
-msgstr "%1 已排程，请用「svk revert」"
+msgstr "%1 已排程，请用‘svk revert’"
 
 #. ($entry)
 #: lib/SVK/XD.pm:727
@@ -372,7 +372,7 @@ msgstr "这是 svk，第 %1 版。\n"
 
 #: bin/svk:130
 msgid "Type 'svk help' for usage.\n"
-msgstr "请键入「svk help」以取得说明信息。\n"
+msgstr "请键入‘svk help’以取得说明信息。\n"
 
 #: lib/SVK/Util.pm:55
 msgid "Waiting for editor...\n"

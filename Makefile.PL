@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 my $required_svn = '1.0.4';
 
+use strict;
 use inc::Module::Install;
 
 name		('SVK');
@@ -54,8 +55,8 @@ features(
 features(
     'Automatic mime-type detection' => [
 	-default => 1,
-	'File::MimeInfo'    => '0',
 	'File::BaseDir'     => '0',
+	'File::MimeInfo'    => '0',
     ],
 );
 
@@ -64,5 +65,6 @@ auto_install();
 
 WriteAll( sign => 1 );
 
+$::VERSION = $required_svn;
 die "SVN::Core $required_svn must be manually installed"
-    unless eval {require SVN::Core} && $SVN::Core::VERSION >= $required_svn;
+    unless eval {require SVN::Core; SVN::Core->VERSION >= main->VERSION };
