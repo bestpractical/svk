@@ -510,13 +510,15 @@ sub _load_svn_autoprop {
 
 sub auto_prop {
     my ($self, $copath) = @_;
+
+    return {} if -d $copath;
+
     # no other prop for links
     return {'svn:special' => '*'} if is_symlink($copath);
     my $prop;
     $prop->{'svn:executable'} = '*' if is_executable($copath);
     # auto mime-type
-    require IO::File;
-    my $fh = IO::File->new ($copath) or die "$copath: $!";
+    open my $fh, '<', $copath or die "$copath: $!";
     if (my $type = mimetype($fh)) {
 	# add only binary mime types or text/* but not text/plain
 	$prop->{'svn:mime-type'} = $type
