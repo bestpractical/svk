@@ -43,7 +43,7 @@ my $buri = uri ($brepospath).'/version-B';
 $svk->mirror ('//version-B', $buri);
 $svk->sync ('-a');
 #$answer = 't';
-is_output ($svk, 'smerge', ['-BC', '//version-A', '//version-B'],
+is_sorted_output ($svk, 'smerge', ['-BC', '//version-A', '//version-B'],
 	   ['Auto-merging (0, 6) /version-A to /version-B (base /:0).',
 	    "Checking locally against mirror source $buri.",
 	    'C   A/Q/qu',
