@@ -207,6 +207,50 @@ Note that patches are created with C<commit -P> or C<smerge -P>.
 
 A patch name of C<-> refers to the standard input and output.
 
+=head1 INTRODUCTION
+
+C<svk patch> command can help out on the situation where you want to
+maintain your patchset to a given project.  It is used under the
+situation that you have no direct write access to remote repository,
+thus C<svk push> cannot be used.
+
+Suppose you mirror project C<foo> to C<//mirror/foo>, create a local
+copy on C<//foo>, and check out to C<~/dev/foo>. After you work a
+while, you will do a:
+
+    svk commit -m "Add my new feature"
+
+to commit changes from C<~/dev/foo> to C<//foo>. Then you want
+to send the difference between C<//foo> and C<//mirror/foo> to
+the project admin. This is the way you do it:
+
+    cd ~/dev/foo
+    svk push -P Foo
+
+The C<-P> parameter means the name of your patch, you may like
+to name it as the feature name or repository name. After that
+you may send the patch file generated under C<~/.svk/patch>
+to the project admin.
+
+As time goes by, project C<foo> will keep going, so you'll need
+to keep your patch up-to-date. This is the way you do it:
+
+    1. cd ~/dev/foo
+    2. svk pull
+    3. # Unbreak anything that breaks
+    4. svk patch update Foo
+    5. svk patch regen Foo
+
+The purpose of line 2 is to keep your C<//foo> up-to-day with
+C<//mirror/foo>. Line 4 refresh the Foo patch if any of the involved
+file is changed remotely. Line 5 re-computes the difference of
+C<//foo> C<//mirror/foo> and generate a new revision of Foo patch.
+
+Normally you'll also use C<svk patch list> to list the patches you've
+generated, and C<svk patch view> to view them.
+
+Many features still want to be complete, please help svk.
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
