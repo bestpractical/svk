@@ -427,7 +427,7 @@ sub new {
 
     my $minfo = { map { my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
 			("$uuid:$path" => SVK::Target::Universal->new ($uuid, $path, $rev))
-		    } split ("\n", $merge || '') };
+		    } grep { length $_ } split (/\n/, $merge || '') };
     bless $minfo, $class;
     return $minfo;
 }
