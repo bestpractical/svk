@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
-use Test::More tests => 10;
+use Test::More tests => 12;
 use strict;
+use File::Path;
 BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
@@ -48,5 +49,12 @@ is_output ($svk, 'delete', ['A/deep'],
 is_output ($svk, 'delete', ['-m', 'rm directly', '//A/deep'],
 	  ['Committed revision 2.'], 'rm directly');
 
-# XXX: more checkout tests
+$svk->mkdir (-m => 'something', '//A/something');
+
+$svk->up;
+rmtree ('A/something');
+is_output ($svk, 'st', [],
+	   [__('!   A/something')]);
+is_output ($svk, 'rm', ['A/something'],
+	   [__('D   A/something')]);
 

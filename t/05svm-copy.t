@@ -13,7 +13,6 @@ $svk->copy (-pm => 'local', '/test/trunk' => '/test/local');
 
 $svk->copy (-pm => 'here', '/test/trunk' => '/test/branches/hate');
 $svk->copy (-pm => 'here', '/test/trunk' => '/test/branches/hate2');
-warn $output;
 
 my ($srepospath, $spath, $srepos) =$xd->find_repos ('/test/trunk', 1);
 my $uri = uri($srepospath);
@@ -35,5 +34,8 @@ $svk->sync ('-a');
 is_ancestor ($svk, '//m-local',
 	     '/m-trunk', 4);
 }
-1;
 
+# DTRT when remote copy source is also something we have mirror locally.
+# need resolver for remote copy too.
+
+1;

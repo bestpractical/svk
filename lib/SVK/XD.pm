@@ -1089,7 +1089,8 @@ sub _delta_dir {
     my $ignore = ignore (split ("\n", $fullprops->{'svn:ignore'} || ''));
 
     my @direntries;
-    unless (defined $targets && !keys %$targets) {
+    # if we are at somewhere arg{copath} not exist, $arg{type} is empty
+    if ($arg{type} && !(defined $targets && !keys %$targets)) {
 	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
 	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
     }
