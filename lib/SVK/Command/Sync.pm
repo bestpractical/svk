@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR find_prev_copy );
+use SVK::Util qw( HAS_SVN_MIRROR find_prev_copy find_local_mirror );
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -20,8 +20,10 @@ sub parse_arg {
 }
 
 sub copy_notify {
-    my ($m, $path, $from_path, $from_rev) = @_;
-    warn loc("copy_notify: %1", join(',',@_));
+    my ($self, $m, $path, $from_path, $from_rev) = @_;
+    # XXX: on anchor, try to get a external copy cache
+    return unless $m->{target_path} ne $path;
+    return find_local_mirror ($m->{repos}, $m->{rsource_uuid}, $from_path, $from_rev);
 }
 
 sub run {
@@ -58,7 +60,7 @@ sub run {
 				  repos => $repos,
 				  pool => SVN::Pool->new,
 				  config => $self->{svnconfig},
-				  cb_copy_notify => \&copy_notify,
+				  cb_copy_notify => sub { $self->copy_notify (@_) },
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();

@@ -104,6 +104,7 @@ t/02basic.t
 t/03import.t
 t/04merge.t
 t/05svm-empty.t
+t/05svm-copy.t
 t/05svm-head.t
 t/05svm-move.t
 t/05svm.t
