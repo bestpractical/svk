@@ -33,9 +33,9 @@ use ExtUtils::AutoInstall
 WriteMakefile(
     AUTHOR              => 'Chia-liang Kao (clkao@clkao.org)',
     ABSTRACT            => 'A decentralized version control system',
-    NAME                => 'SVN::XD',
+    NAME                => 'svk',
     VERSION_FROM        => 'bin/svk',
-    DISTNAME            => 'SVN-XD',
+    DISTNAME            => 'svk',
     EXE_FILES    => [ 'bin/svk' ],
     dist                => {
         COMPRESS        => 'gzip -9',
