@@ -82,7 +82,7 @@ sub edit {
     my $self = shift;
 
     edit_file ($self->{merged});
-    $self->{has_conflict} = (read_file ($self->{merged}), $self->{marker}) >= 0;
+    $self->{has_conflict} = index (read_file ($self->{merged}), $self->{marker}) >= 0;
 
     return 0;
 }
