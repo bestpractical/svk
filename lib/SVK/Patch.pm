@@ -1,6 +1,6 @@
 package SVK::Patch;
 use strict;
-our $VERSION = '0.15';
+our $VERSION = $SVK::VERSION;
 
 =head1 NAME
 

@@ -9,7 +9,6 @@ $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
 $svk->mkdir ('-m', 'init', '//new');
 my ($copath, $corpath) = get_copath ('copy');
-
 $svk->checkout ('//new', $copath);
 $svk->copy ('//V/me', $copath);
 $svk->copy ('//V/D/de', $copath);

@@ -88,6 +88,7 @@ t/10switch.t
 t/11checkout.t
 t/12copy.t
 t/13patch.t
+t/18replaced.t
 t/19cleanup.t
 t/20add.t
 t/21delete.t
@@ -99,8 +100,9 @@ t/30annotate.t
 t/31cat.t
 t/tree.pl
 utils/extract-docs
-utils/svk-ediff.el
-utils/svk-merge-filemerge
 utils/extract-message-catalog
+utils/svk-ediff.el
+utils/svk-merge
+utils/svk-merge-filemerge
 utils/svk-merge-emacs
 utils/svk-merge-meld

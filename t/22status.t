@@ -49,7 +49,7 @@ $svk->status;
 $svk->delete ('A/deep');
 $svk->delete ('A/another');
 is_output ($svk, 'status', [],
-	   [ 'D   A/another', 'D   A/deep', 'D   A/deep/baz', '?   A/bar'], 'status - deleted file and dir');
+	   [ '?   A/bar', 'D   A/another', 'D   A/deep', 'D   A/deep/baz'], 'status - deleted file and dir');
 $svk->revert ('-R', 'A');
 overwrite_file ("A/foo", "foo");
 $svk->merge ('-r1:2', '//A', 'A');

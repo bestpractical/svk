@@ -94,6 +94,9 @@ sub run {
 	    $target2->{targets} = [$tgt];
 	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
 	}
+	else {
+	    $report .= '/' if $report && $report !~ m|/$|;
+	}
 	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
 	    ( %$target2,

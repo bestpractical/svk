@@ -1,9 +1,75 @@
 package SVK::Editor::XD;
-use SVK::I18N;
-require SVN::Delta;
+use strict;
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
+use SVK::I18N;
+use SVN::Delta;
 use File::Path;
 use SVK::Util qw( get_anchor md5 );
+
+=head1 NAME
+
+SVK::Editor::XD - An editor for modifying checkout copies
+
+=head1 SYNOPSIS
+
+$editor = SVK::Editor::XD->new
+    ( anchor => $anchor,
+      target => $target,
+      oldroot => $fs->revision_root ($fromrev),
+      newroot => $fs->revision_root ($torev),
+      xd => $xd,
+      get_copath => sub { ... },
+    );
+
+
+=head1 DESCRIPTION
+
+SVK::Editor::XD modifies existing checkout copies at the paths
+translated by the get_copath callback, according to the incoming
+editor calls.
+
+There are two modes, one is for applying changes to checkout copy as
+external modification, like merging changes. The other is update mode,
+which is used for bringing changes from depot to checkout copies.
+
+=head1 PARAMETERS
+
+=over
+
+=item anchor
+
+The anchor of the editor calls.
+
+=item target
+
+The target path of the editor calls.
+
+=item xd
+
+XD object.
+
+=item oldroot
+
+Old root before the editor calls.
+
+=item newroot
+
+New root after the editor calls.
+
+=item update
+
+Working in update mode.
+
+=item get_copath
+
+A callback to translate paths in editor calls to copath.
+
+=item report
+
+Path for reporting modifications.
+
+=cut
 
 sub set_target_revision {
     my ($self, $revision) = @_;
@@ -64,6 +130,7 @@ sub close_file {
     my $copath = $path;
     $self->{get_copath}($copath);
     if ($self->{base}{$path}) {
+	chmod ((stat ($self->{base}{$path}[0]))[2], $copath);
 	close $self->{base}{$path}[0];
 	unlink $self->{base}{$path}[1];
 	delete $self->{base}{$path};
@@ -74,10 +141,11 @@ sub close_file {
 	$self->{xd}->do_add (report => $report,
 			     copath => $copath, quiet => $self->{quiet});
     }
-    $self->{checkout}->store ($copath, {revision => $self->{revision}})
-	if $self->{update};
-    chmod 0755, $copath
-	if $self->{exe}{$path};
+    if ($self->{update}) {
+	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}});
+	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
+	    if exists $self->{exe}{$path};
+    }
 }
 
 sub add_directory {
@@ -121,9 +189,9 @@ sub close_directory {
     my $copath = $path;
     eval {$self->{get_copath}($copath)};
     undef $@, return if $@;
-    $self->{checkout}->store_recursively ($copath,
-					  {revision => $self->{revision},
-					   '.deleted' => undef})
+    $self->{xd}{checkout}->store_recursively ($copath,
+					      {revision => $self->{revision},
+					       '.deleted' => undef})
 	if $self->{update};
 }
 
@@ -132,15 +200,17 @@ sub change_file_prop {
     return if $self->{check_only};
     my $copath = $path;
     $self->{get_copath}($copath);
-    # XXX: do executable unset also.
-    $self->{exe}{$path}++
-	if $name eq 'svn:executable' && defined $value;
-    $self->{xd}->do_propset ( quiet => 1,
-			      copath => $copath,
-			      propname => $name,
-			      propvalue => $value,
-			    )
-	unless $self->{update};
+    if ($self->{update}) {
+	$self->{exe}{$path} = $value
+	    if $name eq 'svn:executable';
+    }
+    else {
+	$self->{xd}->do_propset ( quiet => 1,
+				  copath => $copath,
+				  propname => $name,
+				  propvalue => $value,
+				);
+    }
 }
 
 sub change_dir_prop {

@@ -31,12 +31,12 @@ append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
 is_output ($svk, 'up', ["$copath"],
 	   ["Syncing //trunk(/trunk) in $corpath to 5.",
-	    'D   B',
-	    'D   A/normal',
-	    'C   A/foo',
-	    'D   A/deep',
-	    'D   A/bar',
 	    'C   A',
+	    'D   A/bar',
+	    'D   A/deep',
+	    'C   A/foo',
+	    'D   A/normal',
+	    'D   B',
 	    'Empty merge.',
 	    '2 conflicts found.'
 	   ], 'delete entry but modified on checkout');
@@ -48,12 +48,12 @@ append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
 is_output ($svk, 'smerge', ['//trunk', $copath],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
-	    'D   B',
-	    'D   A/normal',
-	    'C   A/foo',
-	    'D   A/deep',
-	    'D   A/bar',
 	    'C   A',
+	    'D   A/bar',
+	    'D   A/deep',
+	    'C   A/foo',
+	    'D   A/normal',
+	    'D   B',
 	    "New merge ticket: $uuid:/trunk:5",
 	    'Empty merge.',
 	    '2 conflicts found.'
@@ -69,14 +69,13 @@ $svk->rm ("$copath/A/bar");
 $svk->commit ('-m', 'local modification', $copath);
 is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	   ['Auto-merging (2, 6) /trunk to /local (base /trunk:2).',
-	    'D   B',
-	    'D   A/normal',
-	    'C   A/foo',
-	    'D   A/deep',
-	    'd   A/bar',
 	    'C   A',
+	    'd   A/bar',
+	    'D   A/deep',
+	    'C   A/foo',
+	    'D   A/normal',
+	    'D   B',
 	    "New merge ticket: $uuid:/trunk:5",
 	    'Empty merge.',
 	    '2 conflicts found.']);
-
 

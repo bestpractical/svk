@@ -182,7 +182,6 @@ sub run {
 	    }));
     $self->{xd}->checkout_delta
 	( %$target,
-	  baseroot => $xdroot,
 	  xdroot => $xdroot,
 	  nodelay => 1,
 	  delete_verbose => 1,
@@ -263,6 +262,7 @@ sub run {
 	    open my ($newfh), ">", $cpath;
 	    $layer->via ($newfh);
 	    slurp_fh ($fh, $newfh);
+	    chmod ((stat ($fh))[2], $cpath);
 	    close $fh;
 	    unlink $fname;
 	}
@@ -275,7 +275,6 @@ sub run {
 
     $self->{xd}->checkout_delta
 	( %$target,
-	  baseroot => $xdroot,
 	  xdroot => $xdroot,
 	  absent_ignore => 1,
 	  editor => $editor,

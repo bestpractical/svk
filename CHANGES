@@ -1,3 +1,30 @@
+[Changes for 0.16 - 30 Jun, 2004 - German Perl Workshop Release]
+
+* Fix pool usage in svk annotate with svn_fsfs.
+
+* Many More tests.
+
+* Unbreak 'svk help'.
+
+* Fix a bug in revert that both text/prop modified files are not
+  reverted correctly.
+
+* Require D::H 0.18 so delete_verbose will work in checkout_delta.
+
+* Refactor Editor::Status to use SVK::Notify.
+
+* Fix a bug for merge base when merge anchor is not mirror anchor.
+
+* Preliminary true delete_entry tree merge in SVK::Editor::Merge.
+
+* Cleanup SVK::Command::Diff.
+
+* Make checkout_delta respect base_root when it's different from xdroot.
+
+* Take care of unset svn:executable and update.
+
+* Support replaced items in checkout copy.
+
 [Changes for 0.15 - 26 May, 2004]
 
 * Fix a bug that keyword-substituted files would cause merge or conflict.

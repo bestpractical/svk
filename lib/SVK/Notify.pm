@@ -68,10 +68,11 @@ sub flush {
 
 sub flush_dir {
     my ($self, $path) = @_;
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
-	 reverse sort keys %{$self->{status}}) {
+    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : $_ ne $path}
+	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }
+    $self->flush ($path, 1) unless $path;
 }
 
 =head1 AUTHORS

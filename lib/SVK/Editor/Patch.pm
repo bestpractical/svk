@@ -1,6 +1,6 @@
 package SVK::Editor::Patch;
 use strict;
-our $VERSION = '0.15';
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 =head1 NAME

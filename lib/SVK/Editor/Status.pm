@@ -23,10 +23,20 @@ sub open_root {
     return '';
 }
 
+sub add_or_replace {
+    my ($self, $path) = @_;
+    if ($self->{notify}->node_status ($path)) {
+	$self->{notify}->node_status ($path) = 'R'
+	    if $self->{notify}->node_status ($path) eq 'D';
+    }
+    else {
+	$self->{notify}->node_status ($path) = 'A'
+    }
+}
+
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
-    $self->{notify}->node_status ($path) = 'A'
-	unless $self->{notify}->node_status ($path);
+    $self->add_or_replace ($path);
     $self->{notify}->hist_status ($path) = '+' if $arg[0];
     return $path;
 }
@@ -64,13 +74,12 @@ sub absent_file {
 sub delete_entry {
     my ($self, $path) = @_;
     $self->{notify}->node_status ($path) = 'D';
-    $self->{notify}->flush ($path);
+#    $self->{notify}->flush ($path);
 }
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
-    $self->{notify}->node_status ($path) = 'A';
-#	unless $self->{notify}->node_status ($path);
+    $self->add_or_replace ($path);
     $self->{notify}->hist_status ($path) = '+' if $arg[0];
     $self->{notify}->flush ($path, 1);
     return $path;

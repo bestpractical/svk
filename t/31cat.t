@@ -18,10 +18,7 @@ append_file ('A/foo', "barbar\n");
 $svk->ps ('svn:keywords', 'FileRev', 'A/foo');
 $svk->commit ('-m', 'modify');
 
-TODO: {
-local $TODO = 'cat outputs to STDOUT directly';
 is_output ($svk, 'cat', ['A/foo'], [qw/foobar barbar/]);
 is_output ($svk, 'cat', ['//A/foo'], [qw/foobar barbar/]);
 is_output ($svk, 'cat', ['-r1', 'A/foo'], ['foobar']);
 is_output ($svk, 'cat', ['-r1', '//A/foo'], ['foobar']);
-}

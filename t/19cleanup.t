@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 10;
+use Test::More tests => 11;
 use strict;
 require 't/tree.pl';
 
@@ -22,6 +22,7 @@ ok (!$xd->{giantlocked}, 'giant unlocked');
 $xd->giant_lock;
 $svk->checkout ('//', $copath);
 ok (!$xd->{giantlocked}, 'giant unlocked after command invocation');
+is_output_like ($svk, 'cleanup', [$copath], qr'not locked');
 $xd->giant_lock;
 $xd->lock ($corpath);
 is ($xd->{checkout}->get ($corpath)->{lock}, $$, 'copath locked');

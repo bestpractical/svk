@@ -27,10 +27,11 @@ sub run {
 	my $stream = $root->file_contents ($path);
 	# XXX: the keyword layer interface should also have reverse
 	my $layer = SVK::XD::get_keyword_layer ($root, $path);
-	my $io = new IO::Handle;
-	$io->fdopen(fileno(STDOUT),"w");
+	no strict 'refs';
+	my $io = \*{select()};
 	$layer->via ($io) if $layer;
 	slurp_fh ($stream, $io);
+	binmode $io;
     }
     return;
 }

@@ -54,23 +54,23 @@ sub apply_textdelta {
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     if ($self->{info}{$path}{new}) {
+	no warnings 'uninitialized';
 	my $rpath = $self->{report} ? "$self->{report}$path" : $path;
 	my $base = $self->{info}{$path}{added} ?
 	    \'' : $self->{cb_basecontent} ($path);
-	my $llabel = $self->{llabel} || $self->{cb_llabel}->($path);
-	my $rlabel = $self->{rlabel} || $self->{cb_rlabel}->($path);
-
+	my @label = map { $self->{$_} || $self->{"cb_$_"}->($path) } qw/llabel rlabel/;
+	my $showpath = ($self->{lpath} ne $self->{rpath});
+	my @showpath = map { $showpath ? $self->{$_} : undef } qw/lpath rpath/;
 	if ($self->{external}) {
 	    # XXX: the 2nd file could be - and save some disk IO
 	    system (split (' ', $self->{external}),
-		    '-L', _full_label ($rpath, undef, $llabel),
+		    '-L', _full_label ($rpath, $showpath[0], $label[0]),
 		    $self->{info}{$path}{base}->filename,
-		    '-L', _full_label ($rpath, undef, $rlabel),
+		    '-L', _full_label ($rpath, $showpath[1], $label[1]),
 		    $self->{info}{$path}{new}->filename);
 	}
 	else {
-	    output_diff ($rpath, $llabel, $rlabel,
-			 $self->{lpath} || '', $self->{rpath} || '',
+	    output_diff ($rpath, @label, @showpath,
 			 $base, \$self->{info}{$path}{new});
 	}
     }
@@ -92,11 +92,10 @@ sub output_diff {
     $ltext = \<$ltext> if ref ($ltext) && ref ($ltext) ne 'SCALAR';
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
-    my $showpath = ($lpath ne $rpath);
     print "=== $path\n";
     print '=' x 66,"\n";
-    print "--- "._full_label ($path, $showpath ? $lpath : undef, $llabel)."\n";
-    print "+++ "._full_label ($path, $showpath ? $rpath : undef, $rlabel)."\n";
+    print "--- "._full_label ($path, $lpath, $llabel)."\n";
+    print "+++ "._full_label ($path, $rpath, $rlabel)."\n";
     print Text::Diff::diff ($ltext, $rtext);
 }
 
