@@ -15,6 +15,7 @@ sub options {
      'a|auto'		=> 'auto',
      'l|log'		=> 'log',
      'remoterev'	=> 'remoterev',
+     'track-rename'	=> 'track_rename',
      'host=s'   	=> 'host',
      'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
@@ -49,6 +50,8 @@ sub run {
     my $yrev = $fs->youngest_rev;
 
     if ($self->{auto}) {
+	die loc("No need to track rename for smerge\n")
+	    if $self->{track_rename};
 	# XXX: these should come from parse_arg
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos,

@@ -152,7 +152,7 @@ sub set_target_revision {
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
-    $self->{notify} = SVK::Notify->new_with_report ($self->{report}, $self->{target});
+    $self->{notify} ||= SVK::Notify->new_with_report ($self->{report}, $self->{target});
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     return '';
@@ -179,12 +179,13 @@ sub add_file {
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    if (defined $pdir && $self->{cb_exist}->($path)) {
+    if ($self->{cb_exist}->($path)) {
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
 	return $path;
     }
+    ++$self->{skipped};
     $self->{notify}->flush ($path);
     return undef;
 }
@@ -369,7 +370,7 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
-    return undef unless defined $pdir;
+#    return undef unless defined $pdir;
     if ($self->{cb_exist}->($path)) {
 	$self->{notify}->flush ($path) ;
 	return undef;
@@ -385,7 +386,7 @@ sub add_directory {
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
-    return undef unless defined $pdir;
+#    return undef unless defined $pdir;
     unless ($self->{cb_exist}->($path)) {
 	$self->{notify}->flush ($path) ;
 	return undef;
@@ -487,7 +488,7 @@ sub _partial_delete {
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
-    return unless defined $pdir && $self->{cb_exist}->($path);
+    return unless $self->{cb_exist}->($path);
 
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
     my $torm = $self->_check_delete_conflict ($path, $rpath,

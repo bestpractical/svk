@@ -23,7 +23,8 @@ sub run {
     for my $target (@arg) {
 	my ($copath,$path,$repos,$depotpath) = @$target{qw/copath path repos depotpath/};
 	my $yrev = $repos->fs->youngest_rev;
-	my $rev = $target->{cinfo}{revision}||$yrev;
+	my $rev = $target->{copath} ?
+	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
 	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
 	$self->{merge} = SVK::Merge->new (%$self);
 	my %ancestors = $self->{merge}->copy_ancestors($repos,$path,$yrev, 1);

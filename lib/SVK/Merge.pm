@@ -3,6 +3,7 @@ use strict;
 use SVK::Util qw (find_svm_source find_local_mirror svn_mirror);
 use SVK::I18N;
 use SVK::Editor::Merge;
+use SVK::Editor::Rename;
 
 =head1 NAME
 
@@ -279,6 +280,65 @@ sub info {
 	       $self->{dst}{path}, @{$self->{base}}{qw/path revision/});
 }
 
+sub _collect_renamed {
+    my ($renamed, $path, $reverse, $rev, $root, $paths, $props) = @_;
+    my $entries;
+    for (keys %$paths) {
+	my $entry = $paths->{$_};
+	my $action = $SVK::Command::Log::chg->[$entry->change_kind];
+	$entries->{$_} = [$action , $action eq 'D' ? (-1) : $root->copied_from ($_)];
+    }
+
+    for (keys %$entries) {
+	my $entry = $entries->{$_};
+	my $from = $entry->[2] or next;
+	if (exists $entries->{$from} && $entries->{$from}[0] eq 'D') {
+	    s|^\Q$path\E/|| or next;
+	    $from =~ s|^\Q$path\E/|| or next;
+	    unshift @$renamed, $reverse ? [$from, $_] : [$_, $from];
+	}
+    }
+}
+
+sub track_rename {
+    my ($self, $editor, $cb) = @_;
+
+    my ($base, $fromrev) = $self->find_merge_base (@{$self}{qw/base dst/});
+    my $renamed = [];
+
+    print "Collecting renames, this might take a while.\n";
+    if ($base->{path} eq $self->{base}{path}) {
+	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{dst}{path},
+				   fromrev => $fromrev+1, torev => $self->{dst}{revision}, verbose => 1,
+				   cb_log => sub {_collect_renamed ($renamed, $self->{dst}{path}, 1, @_)});
+	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{base}{path},
+				   fromrev => $base->{revision}+1, torev => $self->{base}{revision}, verbose => 1,
+				   cb_log => sub {_collect_renamed ($renamed, $self->{base}{path}, 0, @_)});
+
+    }
+    elsif ($base->{path} eq $self->{dst}{path}) {
+	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{dst}{path},
+				   fromrev => $base->{revision}+1, torev => $self->{dst}{revision}, verbose => 1,
+				   cb_log => sub {_collect_renamed ($renamed, $self->{dst}{path}, 1, @_)});
+	SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{base}{path},
+				   fromrev => $fromrev+1, torev => $self->{base}{revision}, verbose => 1,
+				   cb_log => sub {_collect_renamed ($renamed, $self->{base}{path}, 0, @_)});
+    }
+    else {
+	die "can't handle this yet";
+    }
+    return $editor unless @$renamed;
+
+    my $rename_editor = SVK::Editor::Rename->new (editor => $editor, rename_map => $renamed);
+    for (qw/cb_exist cb_rev cb_conflict cb_localmod cb_dirdelta/) {
+	my $sub = $cb->{$_};
+	next unless $sub;
+	$cb->{$_} = sub { my $path = shift;
+			  $sub->($rename_editor->rename_check ($path), @_)};
+    }
+    return $rename_editor;
+}
+
 =item run
 
 Given the storage editor and L<SVK::Editor::Merge> callbacks, apply
@@ -292,19 +352,30 @@ sub run {
     my ($self, $storage, %cb) = @_;
     # XXX: should deal with all the anchorify here
     $storage = SVK::Editor::Delay->new ($storage);
+    $storage = $self->track_rename ($storage, \%cb)
+	if $self->{track_rename};
     my $base_root = $self->{base_root} || $self->{base}->root ($self->{xd});
     # XXX: this should really be in SVK::Target
-    my $report = $self->{report};
+    my ($report, $target) = ($self->{report},  $self->{src}{targets}[0] || '');;
     $report .= '/'
 	if $report && $report ne '' && substr($report, -1, 1) ne '/';
+    my $notify = SVK::Notify->new_with_report ($report, $target);
+    if ($storage->can ('rename_check')) {
+	my $flush = $notify->{cb_flush};
+	$notify->{cb_flush} = sub {
+	    my ($path, $st) = @_;
+	    my $newpath = $storage->rename_check ($path);
+	    $flush->($path, $st, $path eq $newpath ? undef : $newpath) };
+    }
     my $editor = SVK::Editor::Merge->new
 	( anchor => $self->{src}{path},
 	  report => $report,
 	  base_anchor => $self->{base}{path},
 	  base_root => $base_root,
-	  target => $self->{src}{targets}[0] || '',
+	  target => $target,
 	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  storage => $storage,
+	  notify => $notify,
 	  allow_conflicts => defined $self->{dst}{copath},
 	  cb_merged => $self->{ticket} ?
 	  sub { my ($editor, $baton, $pool) = @_;
@@ -320,9 +391,11 @@ sub run {
 	      oldpath => [$self->{base}{path}, $self->{base}{targets}[0] || ''],
 	      newpath => $self->{src}{targets}[0]
 	      ? "$self->{src}{path}/$self->{src}{targets}[0]" : $self->{src}{path},
-	      no_recurse => $self->{no_recurse}, editor => $editor
+	      no_recurse => $self->{no_recurse}, editor => $editor,
 	    );
     print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
+    print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
+	      $editor->{skipped}) if $editor->{skipped} && !$self->{track_rename} && !$self->{auto};
 
     return $editor->{conflicts};
 }

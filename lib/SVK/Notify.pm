@@ -21,9 +21,10 @@ SVK::Notify - svk entry status notification
 =cut
 
 sub flush_print {
-    my ($path, $status) = @_;
+    my ($path, $status, $extra) = @_;
     no warnings 'uninitialized';
-    print sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $path);
+    $extra = " - $extra" if $extra;
+    print sprintf ("%1s%1s%1s \%s\%s\n", @{$status}[0..2], $path, $extra);
 }
 
 sub skip_print {

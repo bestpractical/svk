@@ -12,6 +12,8 @@ BEGIN {
 	s|/|::|g;
 	use_ok ($_);
     }
-    my $svk = SVK->new (xd => SVK::XD->new);
+    my $svk = SVK->new;
+    $svk->help;
+    $svk = SVK->new (xd => SVK::XD->new);
     $svk->help;
 }
