@@ -3,7 +3,7 @@ use strict;
 use SVK::I18N;
 use SVK::Util qw(
     slurp_fh tmpfile get_prompt get_buffer_from_editor
-    read_file can_run is_executable
+    read_file can_run is_executable bsd_glob
 );
 use File::Copy ();
 
@@ -191,7 +191,7 @@ sub get_resolver {
     my $self = shift;
 
     my %name;
-    foreach my $file ( grep -e, map glob("$_/SVK/Resolve/*.pm"), @INC ) {
+    foreach my $file ( grep -e, map bsd_glob("$_/SVK/Resolve/*.pm"), @INC ) {
         $file =~ /(\w+)\.pm$/i or next;
         if (lc($1) eq lc($self->{external})) {
             %name = ( $1 => 1 ); last;
@@ -233,7 +233,7 @@ sub get_resolver {
 
 sub run_resolver {
     my ($self, $cmd, @args) = @_;
-    my $rv = system ($cmd, @args);
+    my $rv = system {$cmd} ($cmd, @args);
     return ($rv == 0 and -e $self->{merged});
 }
 

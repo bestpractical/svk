@@ -169,7 +169,7 @@ sub add_directory {
     my $copath = $path;
     $self->{get_copath}($copath);
     die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
-    mkdir ($copath) unless $self->{check_only};
+    mkdir ($copath) or die $! unless $self->{check_only};
     $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;

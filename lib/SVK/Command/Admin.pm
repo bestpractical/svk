@@ -35,12 +35,13 @@ sub run {
         return;
     }
 
-    system(
+    (system(
         'svnadmin',
         $command,
         ($target ? $target->{repospath} : ()),
         @arg
-    );
+    ) >= 0) or die loc("Could not run %1: %2", 'svnadmin', $?);
+
     return;
 }
 

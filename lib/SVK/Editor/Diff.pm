@@ -101,11 +101,11 @@ sub close_file {
 	    # XXX: the 2nd file could be - and save some disk IO
 	    my @content = map { ($self->{info}{$path}{$_}->filename) } qw/base new/;
 	    @content = reverse @content if $self->{reverse};
-	    system (split (' ', $self->{external}),
+	    (system (split (/ /, $self->{external}),
 		    '-L', _full_label ($rpath, $showpath[0], $label[0]),
 		    $content[0],
 		    '-L', _full_label ($rpath, $showpath[1], $label[1]),
-		    $content[1]);
+		    $content[1]) >= 0) or die loc("Could not run %1: %2", $self->{external}, $?);
 	}
 	else {
 	    my @content = ($base, \$self->{info}{$path}{new});

@@ -111,7 +111,7 @@ sub load {
     my ($self) = @_;
     my $info;
 
-    mkdir($self->{svkpath}) || die loc("Cannot create svk-config-directory at '%1': %2", $self->{svkpath}, $!)
+    mkdir($self->{svkpath}) or die loc("Cannot create svk-config-directory at '%1': %2", $self->{svkpath}, $!)
         unless -d $self->{svkpath};
 
     $self->giant_lock ();
@@ -651,7 +651,7 @@ sub fix_permission {
     else {
 	$mode &= ~0111;
     }
-    chmod ($mode, $copath)
+    chmod ($mode, $copath);
 }
 
 =item depot_delta
@@ -1345,14 +1345,14 @@ sub get_props {
 sub cache_directory {
     my ($self) = @_;
     my $rv = catdir ( $self->{svkpath}, 'cache' );
-    mkdir $rv unless -e $rv;
+    mkdir $rv or die $! unless -e $rv;
     return $rv;
 }
 
 sub patch_directory {
     my ($self) = @_;
     my $rv = catdir ( $self->{svkpath}, 'patch' );
-    mkdir $rv unless -e $rv;
+    mkdir $rv or die $! unless -e $rv;
     return $rv;
 }
 
@@ -1375,7 +1375,7 @@ sub new {
     my ($class, @arg) = @_;
     my $self = bless {}, __PACKAGE__;
     %$self = @arg;
-    mkdir ($self->{root}) unless -e $self->{root};
+    mkdir ($self->{root}) or die $! unless -e $self->{root};
     return $self;
 }
 

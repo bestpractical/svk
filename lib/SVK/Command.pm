@@ -8,7 +8,7 @@ use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
-use SVK::Util qw( get_prompt abs_path is_uri catdir $SEP IS_WIN32 HAS_SVN_MIRROR );
+use SVK::Util qw( get_prompt abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
 use SVK::I18N;
 
 =head1 NAME
@@ -126,7 +126,7 @@ and the arguments for the command. The command name is translated with the
 C<%alias> map.
 
 On Win32, after C<@args> is parsed for named options, the remaining positional
-arguments are expanded for shell globbing with C<File::Glob::bsd_glob>.
+arguments are expanded for shell globbing with C<bsd_glob>.
 
 =cut
 
@@ -149,10 +149,9 @@ sub invoke {
 
 	# Fake shell globbing on Win32 if we are called from main
 	if (IS_WIN32 and caller(1) eq 'main') {
-	    require File::Glob;
 	    @args = map {
 		/[?*{}\[\]]/
-		    ? File::Glob::bsd_glob($_, File::Glob::GLOB_NOCHECK())
+		    ? bsd_glob($_, File::Glob::GLOB_NOCHECK())
 		    : $_
 	    } @args;
 	}

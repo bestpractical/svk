@@ -9,7 +9,7 @@ our @EXPORT_OK = qw(
 
     find_local_mirror find_svm_source resolve_svm_source traverse_history
 
-    read_file write_file slurp_fh md5_fh mimetype mimetype_is_text
+    read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
     move_path make_path splitpath splitdir tmpdir tmpfile
@@ -38,6 +38,7 @@ list of functions to import.
 
 use Config ();
 use SVK::I18N;
+use File::Glob qw(bsd_glob);
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
 # ra must be loaded earlier since it uses the default pool
@@ -146,7 +147,7 @@ sub get_buffer_from_editor {
     my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
 			: DEFAULT_EDITOR; # fall back to something
-    my @editor = split (' ', $editor);
+    my @editor = split (/ /, $editor);
     my $time = time;
 
     while (1) {
@@ -154,7 +155,7 @@ sub get_buffer_from_editor {
 	my $mtime = (stat($file))[9];
 	print loc("Waiting for editor...\n");
 	# XXX: check $?
-	system (@editor, $file) and die loc("Aborted: %1\n", $!);
+	system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
 	last if (stat($file))[9] > $mtime;
 	my $ans = get_prompt(
 	    loc("%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what)),

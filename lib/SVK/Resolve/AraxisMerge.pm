@@ -1,8 +1,7 @@
 package SVK::Resolve::AraxisMerge;
 use strict;
 use base 'SVK::Resolve';
-use File::Glob;
-use SVK::Util qw( catdir );
+use SVK::Util qw( catdir bsd_glob );
 
 sub commands { 'consolecompare' }
 
@@ -14,7 +13,7 @@ sub paths {
 
     return(
         $araxis_dir,
-        File::Glob::bsd_glob(
+        bsd_glob(
             catdir($araxis_dir, 'Araxis Merge*')
         ),
     );
