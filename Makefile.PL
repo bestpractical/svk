@@ -9,7 +9,7 @@ abstract	('A decentralized version control system');
 license		('perl');
 version_from	('lib/SVK.pm');
 install_script	('bin/svk');
-
+clean_files	('t/checkout');
 requires(
         'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
