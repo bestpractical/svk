@@ -121,8 +121,14 @@ sub get_prompt {
 
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
-        last if $key =~ /[\012\015]/;
-        if ($key eq "\cH") {
+        if ($key =~ /[\012\015]/) {
+            print "\n"; last;
+        }
+        elsif ($key eq "\cC") {
+            Term::ReadKey::ReadMode('restore');
+            die loc("Interrupted.\n");
+        }
+        elsif ($key eq "\cH") {
             next unless length $answer;
             print "$key $key";
             chop $answer; next;
