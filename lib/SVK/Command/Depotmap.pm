@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw(get_buffer_from_editor get_prompt);
+use SVK::Util qw( get_buffer_from_editor get_prompt dirname $SEP );
 use YAML;
 use File::Path;
 
@@ -23,7 +23,7 @@ sub parse_arg {
         @arg or die loc("Need to specify a depot name");
 
         my $depot = shift(@arg);
-        $depot =~ s{/}{}g;
+        $depot =~ s{/}{}go;
 
         @arg or die loc("Need to specify a repository path")
             if $self->{add};
@@ -108,12 +108,18 @@ sub _do_delete {
 sub create_depots {
     my ($self) = @_;
     for my $path (values %{$self->{xd}{depotmap}}) {
+        $path =~ s{[$SEP/]+$}{}go;
+
 	next if -d $path;
 	my $ans = get_prompt(
 	    loc("Repository %1 does not exist, create? (y/n)", $path),
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;
+
+        require File::Path;
+        mkpath([dirname($path)]) if !-d dirname($path);
+
         $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 	SVN::Repos::create($path, undef, undef, undef,
 			   {'fs-type' => $ENV{SVNFSTYPE},

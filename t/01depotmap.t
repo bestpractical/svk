@@ -19,7 +19,7 @@ set_editor(<< "TMP");
 sleep 1;
 open _, ">\$_" or die $!;
 print _ << "EOF";
-'': '$quoted'
+'': '$quoted/'
 
 ===edit the above depot map===
 

@@ -11,7 +11,7 @@ our @EXPORT_OK = qw(
 
     read_file write_file slurp_fh md5_fh mimetype mimetype_is_text
 
-    abs_path abs2rel catdir catfile catpath devnull get_anchor 
+    abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
     splitpath splitdir tmpdir tmpfile 
 
     is_symlink is_executable can_run
