@@ -18,6 +18,9 @@ use File::Temp 0.14 qw(mktemp);
 use SVN::Core;
 use SVN::Ra;
 
+use constant TEXT_MODE => ($^O eq 'MSWin32') ? ':crlf' : '';
+use constant DEFAULT_EDITOR => ($^O eq 'MSWin32') ? 'notepad.exe' : 'vi';
+
 # loading svn::mirror on-the-fly causes output stream not respected,
 # failing #1 in t/23commit. possibly because VCP calls select.
 my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
@@ -54,6 +57,7 @@ sub get_buffer_from_editor {
     my $fh;
     if (defined $content) {
 	($fh, $file) = tmpfile ($file, UNLINK => 0);
+	binmode($fh, TEXT_MODE);
 	print $fh $content;
 	close $fh;
     }
@@ -65,8 +69,7 @@ sub get_buffer_from_editor {
 
     my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
-			: ($^O eq 'MSWin32') ? "notepad.exe"
-		       	: "vi"; # fall back to something
+			: DEFAULT_EDITOR; # fall back to something
     my @editor = split (' ', $editor);
     while (1) {
 	my $mtime = (stat($file))[9];
@@ -176,8 +179,6 @@ sub tmpfile {
 				SUFFIX => '.tmp',
 				%args
 			      );
-    # XXX - hard code
-    binmode($tmp, ':crlf') if $^O eq 'MSWin32';
     return wantarray ? ($tmp, $tmp->filename) : $tmp;
 }
 
@@ -187,7 +188,10 @@ sub tmpfile {
 
 sub abs_path {
     my $path = shift;
-    return scalar Win32::GetFullPathName($path) if $^O eq 'MSWin32';
+    if (defined \&Win32::GetFullPathName) {
+	$path = '.' if !length $path;
+	return scalar Win32::GetFullPathName($path)
+    }
     return Cwd::abs_path ($path) unless -l $path;
     my (undef, $dir, $pathname) = File::Spec->splitpath ($path);
     return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
