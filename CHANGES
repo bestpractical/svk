@@ -1,3 +1,15 @@
+[Changes for 0.08 - ]
+
+* Support multi-parent branch auto merging.
+
+* svk sync -a to sync all mirrored path in the given depot.
+
+* checkout_delta now handle props and do_commit commits them.
+
+* Respect conflict flag in status and commit.
+
+* various doc improvements and code cleanups.
+
 [Changes for 0.07 - 15 Jan, 2003]
 
 * Memory usage enhancements.

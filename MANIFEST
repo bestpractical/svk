@@ -18,4 +18,5 @@ t/5svm.t
 t/6keyword.t
 t/7smerge.t
 t/8multimerge.t
+t/9cherrypicking.t
 META.yml                                 Module meta-data (added by MakeMaker)

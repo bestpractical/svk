@@ -15,6 +15,7 @@ use IO::String;
 use SVN::DiffEditor;
 use SVN::StatusEditor;
 use SVN::CommitStatusEditor;
+use File::Temp qw/:mktemp/;
 
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc ver/;
@@ -26,6 +27,8 @@ my $auth = SVN::Core::auth_open
     ([SVN::Client::get_simple_provider (),
       SVN::Client::get_ssl_server_trust_file_provider (),
       SVN::Client::get_username_provider ()]);
+
+my $target_prompt = '=== below are targets to be committed ===';
 
 =head1 NAME
 
@@ -183,6 +186,16 @@ sub find_repos_from_co {
 	    $cinfo, $repos);
 }
 
+sub find_repos_from_co_maybe {
+    my ($target, $open) = @_;
+    my ($repospath, $path, $copath, $cinfo, $repos);
+    unless (($repospath, $path, $repos) = eval { find_repos ($target, $open) }) {
+	undef $@;
+	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($target, $open);
+	$copath = File::Spec->rel2abs ($target || '');
+    }
+    return ($repospath, $path, $copath, $cinfo, $repos);
+}
 
 =head2 update (up)
 
@@ -728,17 +741,39 @@ Set PROPNAME to PROPVAL on files, or dirs.
 =cut
 
 sub propset {
-    my ($pname, $pvalue, $copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    local @ARGV = @_;
+    my ($message);
+    die unless GetOptions ("m|message=s"  => \$message,
+			  );
 
-    SVN::XD::do_propset ($info,
-			 propname => $pname,
-			 propvalue => $pvalue,
-			 repos => $repos,
-			 copath => $copath,
-			 path => $path,
-			);
+    my ($pname, $pvalue, $target) = @ARGV;
+    my ($repospath, $path, $copath, undef, $repos) = find_repos_from_co_maybe ($target, 1);
+
+    if ($copath) {
+	SVN::XD::do_propset ($info,
+			     propname => $pname,
+			     propvalue => $pvalue,
+			     repos => $repos,
+			     copath => $copath,
+			     path => $path,
+			    );
+    }
+    else {
+	$message = get_buffer_from_editor ('log message', $target_prompt,
+					   "\n$target_prompt\n",
+					   "/tmp/svk-commitXXXXX")
+	    unless defined $message;
+
+	SVN::XD::do_propset_direct ($info,
+				    author => $ENV{USER},
+				    repospath => $repospath,
+				    propname => $pname,
+				    propvalue => $pvalue,
+				    repos => $repos,
+				    path => $path,
+				    message => $message,
+				   );
+    }
 }
 
 =head2 revert
@@ -884,8 +919,6 @@ Commit changes to depot.
 
 =cut
 
-my $target_prompt = '=== below are targets to be committed ===';
-use File::Temp qw/:mktemp/;
 
 sub get_buffer_from_editor {
     my ($what, $sep, $content, $file) = @_;
@@ -1053,6 +1086,7 @@ sub copy {
 	unless defined $message;
 
     SVN::XD::do_copy_direct ($info,
+			     author => $ENV{USER},
 			     repospath => $repospath,
 			     repos => $repos,
 			     path => $path,
@@ -1182,7 +1216,7 @@ sub find_merge_base {
 }
 
 sub find_merge_sources {
-    my ($repos, $path, $verbatim) = @_;
+    my ($repos, $path, $verbatim, $noself) = @_;
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
     my $minfo = $root->node_prop ($path, 'svk:merge');
@@ -1197,10 +1231,13 @@ sub find_merge_sources {
     }
     if ($verbatim) {
 	my ($uuid, $path, $rev) = resolve_svm_source ($repos, $path);
-	$minfo->{join(':', $uuid, $path)} = $rev;
+	$minfo->{join(':', $uuid, $path)} = $rev
+	    unless $noself;
+	return $minfo;
     }
     else {
-	$minfo->{join(':', $myuuid, $path)} = $fs->youngest_rev;
+	$minfo->{join(':', $myuuid, $path)} = $fs->youngest_rev
+	    unless $noself;
     }
 
 
@@ -1269,6 +1306,26 @@ sub log_for_merge {
     return $tmp;
 }
 
+# given a pair of A,B-C,D-E,
+# output minimum pairs of revisin pairs.
+sub parse_chgspec {
+    my ($repos, $chgspec, $path) = @_;
+
+    my @chgs = split ',', $chgspec;
+    for (@chgs) {
+	my ($fromrev, $torev);
+	if (($fromrev, $torev) = $chgspec =~ m/^(\d+):(\d+)$/) {
+	    --$fromrev;
+	}
+	elsif (($torev) = $chgspec =~ m/^(\d+)$/) {
+	    $fromrev = $torev - 1;
+	}
+	else {
+	    die "chgspec not recognized";
+	}
+    }
+}
+
 sub merge {
     local @ARGV = @_;
     my ($check_only, $message, $auto, $sign, $log, $no_ticket, $revspec);
@@ -1288,17 +1345,12 @@ sub merge {
 	    or die "revision must be N:M";
     }
     my ($repospath, $path, $repos) = find_repos ($src, 1);
-    my ($drepospath, $dpath, $editor, $base_rev, $copath);
-    my $dest_repos;
-    if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
-	$dest_repos = 1;
-    }
-    else {
-	undef $@;
-	($drepospath, $dpath) = find_repos_from_co ($dst, 0);
-	die "different repos?" unless $repospath eq $drepospath;
-	$copath = File::Spec->rel2abs ($dst || '');
-    }
+    my ($drepospath, $dpath, $copath) = find_repos_from_co_maybe ($dst, 0);
+    my $dest_repos = 1 unless defined $copath;
+
+    die "different repos?" unless $repospath eq $drepospath;
+
+    my ($editor, $base_rev);
 
     if ($auto) {
 	($base_path, $fromrev, $torev) =
@@ -1354,6 +1406,7 @@ sub merge {
     }
 
     # XXX: support incremental merging (merge one revision by one)
+    # XXX: the options here are really too many!
     SVN::XD::do_merge ($info,
 		       repos => $repos,
 		       repospath => $repospath,
@@ -1405,6 +1458,88 @@ Alias to merge -a.
 
 sub smerge {
     merge ('-a', @_);
+}
+
+=head2 cmerge
+
+Cherry picking. This will eventually be integrated with smerge.
+
+=cut
+
+sub cmerge {
+    local @ARGV = @_;
+    my ($check_only, $message, $auto, $sign, $log, $chgspec, $revspec);
+    die unless GetOptions ("C|check-only"	=> \$check_only,
+			   "m|message=s"	=> \$message,
+			   "s|sign"		=> \$sign,
+			   "l|log"		=> \$log,
+			   "c|change=s",	=> \$chgspec,
+			   "r|revision=s"	=> \$revspec);
+
+    my ($src, $dst) = @ARGV;
+    my ($tgt_root);
+
+    # XXX: support checkonly
+    die "revision required" unless $revspec;
+    my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
+	or die "revision must be N:M";
+
+    my ($repospath, $path, $repos) = find_repos ($src, 1);
+    my ($drepospath, $dpath, $copath) = find_repos_from_co_maybe ($dst, 0);
+    my $dest_repos = 1 unless defined $copath;
+
+    die "different repos?" unless $repospath eq $drepospath;
+
+    my ($base_path, $base_rev) = find_merge_base ($repos, $path, $dpath);
+
+    # back to normally auto merge if $fromrev is what we get from the base
+    print "merging with base $base_path $base_rev applying $path $fromrev:$torev\n";
+    # find a branch target
+    die "can't find a path for tmp branch" if $base_path eq '/';
+    my $tmpbranch = "$path-merge-$$";
+
+    SVN::XD::do_copy_direct ($info,
+			     repospath => $repospath,
+			     repos => $repos,
+			     dpath => $tmpbranch,
+			     message => "preparing for cherry picking merging",
+			     path => $base_path,
+			     rev => $base_rev,
+			    );
+
+    # XXX: support chgspec and multipass
+    SVN::XD::do_merge ($info,
+		       repos => $repos,
+		       repospath => $repospath,
+		       path => $path,
+		       dpath => $tmpbranch,
+		       send_fulltext => 1,
+		       fromrev => $fromrev,
+		       torev => $torev,
+		       message => "merge from $path r$fromrev:$torev",
+		      );
+
+    my $newrev = $repos->fs->youngest_rev;
+    my $uuid = $repos->fs->get_uuid;
+
+    # give ticket to src
+    my $ticket = find_merge_sources ($repos, $path, 1, 1);
+
+    $ticket .= "\n$uuid:$tmpbranch:$newrev";
+
+    SVN::XD::do_propset_direct ($info,
+				author => $ENV{USER},
+				repospath => $repospath,
+				propname => 'svk:merge',
+				propvalue => $ticket,
+				repos => $repos,
+				path => $path,
+				message => "cherry picking merge $revspec to $dst",
+			       );
+    # XXX: clean me up!
+    my ($depot) = $src =~ m|^/(.*?)/|;
+
+    merge ('-a', ($message) ? ('-m', $message) : (), "/$depot$tmpbranch", $dst);
 }
 
 =head2 mirror

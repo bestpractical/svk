@@ -234,6 +234,29 @@ sub do_proplist {
     return $props;
 }
 
+sub do_propset_direct {
+    my ($info, %arg) = @_;
+    my $fs = $arg{repos}->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+    my $kind = $root->check_path ($arg{path});
+
+    die "path $arg{path} does not exist" if $kind == $SVN::Node::none;
+
+    my $edit = get_commit_editor ($root,
+				  sub { print "Committed revision $_[0].\n" },
+				  '/', %arg);
+    $edit->open_root();
+
+    if ($kind == $SVN::Node::dir) {
+	$edit->change_dir_prop ($arg{path}, $arg{propname}, $arg{propvalue});
+    }
+    else {
+	$edit->change_file_prop ($arg{path}, $arg{propname}, $arg{propvalue});
+    }
+
+    $edit->close_edit();
+}
+
 sub do_propset {
     my ($info, %arg) = @_;
     my %values;

@@ -8,6 +8,7 @@ package main;
 
 $svk::info = build_test();
 my ($copath, $corpath) = get_copath ('basic');
+my ($repospath, undef, $repos) = svk::find_repos ('//', 1);
 svk::checkout ('//', $copath);
 mkdir "$copath/A";
 overwrite_file ("$copath/A/foo", "foobar");
@@ -48,3 +49,17 @@ svk::ps ('neoprop', 'propvalue', "$copath/A/baz");
 svk::pl ("$copath/A/baz");
 svk::pl ("$copath/A");
 svk::commit ('-m', 'commit message here', "$copath/A");
+
+svk::ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');
+svk::update ($copath);
+
+ok (eq_hash (SVN::XD::do_proplist ($svk::info,
+				   repos => $repos,
+				   copath => $copath,
+				   path => '/A',
+				   rev => $repos->fs->youngest_rev,
+				  ),
+	     { directprop => 'propvalue',
+	       someprop => 'propvalue',
+	       moreprop => 'propvalue'}), 'prop matched');
+
