@@ -114,15 +114,38 @@ sub get_prompt {
     my ($prompt, $pattern) = @_;
 
     local $| = 1;
-    {
-	print "$prompt";
-	my $answer = <STDIN>;
-	chomp $answer;
-	if (defined $pattern) {
-	    $answer =~ $pattern or redo;
-	}
-	return $answer;
+    print $prompt;
+
+    require Term::ReadKey;
+    Term::ReadKey::ReadMode('raw');
+
+    my $answer = '';
+    while (defined(my $key = Term::ReadKey::ReadKey(0))) {
+        last if $key =~ /[\012\015]/;
+        if ($key eq "\cH") {
+            next unless length $answer;
+            print "$key $key";
+            chop $answer; next;
+        }
+        elsif ($key eq "\cW") {
+            my $len = (length $answer) or next;
+            print "\cH" x $len, " " x $len, "\cH" x $len;
+            $answer = ''; next;
+        }
+        elsif (ord $key < 32) {
+            # control character -- ignore it!
+            next;
+        }
+        print $key;
+        $answer .= $key;
     }
+
+    if (defined $pattern) {
+        $answer =~ $pattern or redo;
+    }
+
+    Term::ReadKey::ReadMode('restore');
+    return $answer;
 }
 
 =head3 get_buffer_from_editor ($what, $sep, $content, $filename, $anchor, $targets_ref)
