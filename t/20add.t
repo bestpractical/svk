@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 16;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -7,6 +7,8 @@ my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('add');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
+is_output_like ($svk, 'add', [], qr'SYNOPSIS', 'add - help');
+
 chdir ($copath);
 mkdir ('A');
 mkdir ('A/deep');
@@ -15,8 +17,15 @@ overwrite_file ("A/bar", "foobar");
 overwrite_file ("A/deep/baz", "foobar");
 overwrite_file ("A/deep/baz~", "foobar");
 
-is_output_like ($svk, 'add', [], qr'SYNOPSIS', 'add - help');
+overwrite_file ("test.txt", "test..\n");
+is_output ($svk, 'add', ['test.txt'],
+	   ['A   test.txt']);
 
+TODO: {
+local $TODO = 'file not found';
+is_output ($svk, 'add', ['Z/bzz'],
+	   ["Can't find Z/bzz"]);
+}
 is_output ($svk, 'add', ['A/foo'],
 	   ['A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');
@@ -74,17 +83,27 @@ SKIP: {
 
 skip 'File::MimeInfo not installed', 1 unless eval 'require File::MimeInfo::Magic; 1';
 
-overwrite_file ("A/foo.pl", "#!/usr/bin/perl\n");
-overwrite_file ("A/foo.jpg", "\xff\xd8\xff\xe0this is jpeg");
-overwrite_file ("A/foo.bin", "\x1f\xf0\xff\x01\x00\xffthis is binary");
-overwrite_file ("A/foo.html", "<html>");
+mkdir ('A/mime');
+overwrite_file ("A/mime/foo.pl", "#!/usr/bin/perl\n");
+overwrite_file ("A/mime/foo.jpg", "\xff\xd8\xff\xe0this is jpeg");
+overwrite_file ("A/mime/foo.bin", "\x1f\xf0\xff\x01\x00\xffthis is binary");
+overwrite_file ("A/mime/foo.html", "<html>");
+overwrite_file ("A/mime/foo.txt", "test....");
 
-$svk->add ('A/foo.pl', 'A/foo.bin', 'A/foo.jpg', 'A/foo.html');
-is_output ($svk, 'pl', ['-v', 'A/foo.pl', 'A/foo.bin', 'A/foo.jpg', 'A/foo.html'],
-	   ['Properties on A/foo.bin:',
+is_output ($svk, 'add', ['A/mime'],
+	   ['A   A/mime',
+	    'A   A/mime/foo.bin',
+	    'A   A/mime/foo.html',
+	    'A   A/mime/foo.jpg',
+	    'A   A/mime/foo.pl',
+	    'A   A/mime/foo.txt',
+	   ]);
+is_output ($svk, 'pl', ['-v', <A/mime/*>],
+	   ['Properties on A/mime/foo.bin:',
 	    '  svn:mime-type: application/octet-stream',
-	    'Properties on A/foo.jpg:',
+	    'Properties on A/mime/foo.html:',
+	    '  svn:mime-type: text/html',
+	    'Properties on A/mime/foo.jpg:',
 	    '  svn:mime-type: image/jpeg',
-	    'Properties on A/foo.html:',
-	    '  svn:mime-type: text/html']);
+	   ]);
 }

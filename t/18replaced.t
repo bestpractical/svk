@@ -3,7 +3,6 @@ use Test::More tests => 7;
 use strict;
 our $output;
 require 't/tree.pl';
-use SVK::Command;
 my ($xd, $svk) = build_test();
 $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');

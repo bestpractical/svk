@@ -484,7 +484,8 @@ sub auto_prop {
     return {'svn:special' => '*'} if -l $copath;
     my $prop;
     $prop->{'svn:executable'} = '*' if -x $copath;
-    open my $fh, $copath or die $!;
+    require IO::File;
+    my $fh = IO::File->new ($copath) or die $!;
     if (my $type = mimetype($fh)) {
 	# add only binary mime types or text/* but not text/plain
 	$prop->{'svn:mime-type'} = $type

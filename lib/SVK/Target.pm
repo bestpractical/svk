@@ -126,8 +126,8 @@ path component.
 =cut
 
 my $_copath_catsplit = $^O eq 'MSWin32' ?
-sub { File::Spec->catfile ($_[0], File::Spec::Unix->splitdir ($_[1])) } :
-sub { "$_[0]/$_[1]" };
+sub { File::Spec->catfile ($_[0] ? ($_[0]) : (), File::Spec::Unix->splitdir ($_[1])) } :
+sub { $_[0] ? "$_[0]/$_[1]" : $_[1] };
 
 sub copath {
     my $self = shift;
