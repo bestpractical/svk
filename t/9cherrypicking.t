@@ -9,7 +9,7 @@ require 'bin/svk';
 package main;
 
 $svk::info = build_test();
-my ($copath, $corpath) = get_copath ('multimerge');
+my ($copath, $corpath) = get_copath ('cherrypicking');
 
 svk::checkout ('//', $copath);
 mkdir "$copath/trunk";
@@ -89,4 +89,18 @@ sub newfeature {}
 
 svk::commit ('-m', 'some new feature', "$copath/feature");
 
-svk::cmerge ('-m', 'merge r14 from feature to work', '-r', '13:14', '//feature', '//work');
+`$^X -pi -e 's/newfeature/newnewfeature/' $copath/feature/test.pl`;
+
+svk::commit ('-m', 'rename feature depends on c14', "$copath/feature");
+append_file ("$copath/feature/test.pl", q|
+
+sub fnord {}
+|);
+
+svk::commit ('-m', 'more features unreleated to c14', "$copath/feature");
+
+svk::cmerge ('-m', 'merge change 14,16 from feature to work', '-c', '14,16', '//feature', '//work');
+
+svk::update ("$copath/work");
+
+ok (1);

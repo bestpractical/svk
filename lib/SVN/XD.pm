@@ -705,7 +705,7 @@ sub do_merge {
 	my $root = $fs->revision_root ($fs->youngest_rev);
 	($storage ? $storage->{_editor} : $storage) = $editor;
 	# XXX: need translator
-	%cb = ( cb_exist =>
+	%cb = ( cb_exist => $arg{cb_exist} ||
 		sub { my $path = $tgt_anchor.'/'.shift;
 		      $root->check_path ($path) != $SVN::Node::none;
 		  },
@@ -714,7 +714,7 @@ sub do_merge {
 					 unless $arg{check_only};
 				     $editor->{conflicts}++;
 				 },
-		cb_localmod =>
+		cb_localmod => $arg{cb_localmod} ||
 		sub { my ($path, $checksum, $pool) = @_;
 		      $path = "$tgt_anchor/$path";
 		      my $md5 = $root->file_md5_checksum ($path, $pool);
