@@ -5,20 +5,32 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::I18N;
 
+sub options {
+    ('a|all' => 'all');
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
+    return undef if $self->{all};
     @arg = ('') if $#arg < 0;
     return map {$self->arg_copath ($_)} @arg;
 }
 
 sub run {
     my ($self, @arg) = @_;
+
+    if ($self->{all}) {
+        $self->{xd}{checkout}->store_recursively ('', {lock => undef});
+        print loc("Cleaned up all stalled locks.\n");
+        return;
+    }
+
     for (@arg) {
 	if ($self->{xd}{checkout}->get ($_->{copath})->{lock}) {
 	    print loc("Cleaned up stalled lock on %1.\n", $_->{copath});
 	    $self->{xd}{checkout}->store ($_->{copath}, {lock => undef});
 	}
-	else {
+        else {
 	    print loc("Path %1 was not locked.\n", $_->{copath});
 	}
     }
@@ -39,7 +51,7 @@ SVK::Command::Cleanup - Remove stalled locks
 
 =head1 OPTIONS
 
- None
+ -a [--all]             : remove all stalled locks
 
 =head1 AUTHORS
 
