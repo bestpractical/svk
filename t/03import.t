@@ -69,6 +69,8 @@ ok (-f copath ('dir'));
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');
+SKIP: {
+skip 'SVN::Mirror not installed', 3 unless HAS_SVN_MIRROR;
 $svk->mirror ('//m', uri($srepospath.($spath eq '/' ? '' : $spath)));
 $svk->sync ('//m');
 is_output ($svk, 'import', ['--from-checkout', '-m', 'import into mirrored path', '//m', $copath],
@@ -86,3 +88,4 @@ append_file ("$copath/filea", "fnord");
 $svk->import ('--from-checkout', '-m', 'import into mirrored path', '//m', $copath);
 
 is ($srepos->fs->youngest_rev, 23, 'import to remote directly with proper base rev');
+}

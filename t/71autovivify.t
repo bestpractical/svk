@@ -1,9 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
 BEGIN { require 't/tree.pl' };
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 4;
+plan_svm tests => 4;
 
 our ($answer, $output);
 my ($xd, $svk) = build_test();

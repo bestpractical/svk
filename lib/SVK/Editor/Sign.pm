@@ -41,7 +41,8 @@ sub _sign_gpg {
 	if -e $sigfile and (-d $sigfile or not -w $sigfile);
 
     local *D;
-    open D, "| gpg --clearsign > $sigfile.sig" or die loc("could not call gpg: %1", $!);
+    my $pgp = $ENV{SVKPGP} || 'gpg';
+    open D, "| $pgp --clearsign > $sigfile.sig" or die loc("could not call gpg: %1", $!);
     print D $plaintext;
     close D;
 

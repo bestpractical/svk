@@ -4,8 +4,7 @@ use Test::More;
 use Cwd;
 
 BEGIN { require 't/tree.pl' };
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 7;
+plan_svm tests => 7;
 
 my $initial_cwd = getcwd;
 

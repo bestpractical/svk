@@ -1,14 +1,10 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
-use File::Copy qw( copy );
 BEGIN { require 't/tree.pl' };
+plan_svm tests => 28;
+
+use File::Copy qw( copy );
 our $output;
-
-eval "require SVN::Mirror"
-or plan skip_all => "SVN::Mirror not installed";
-plan tests => 28;
-
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
 my ($xd2, $svk2) = build_test();

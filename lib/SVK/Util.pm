@@ -90,7 +90,7 @@ use constant HAS_SYMLINK => $Config::Config{d_symlink};
 sub HAS_SVN_MIRROR () {
     no warnings 'redefine';
     local $@;
-    my $has_svn_mirror = eval { require SVN::Mirror; 1 };
+    my $has_svn_mirror = $ENV{SVKNOSVM} ? 0 : eval { require SVN::Mirror; 1 };
     *HAS_SVN_MIRROR = $has_svn_mirror ? sub () { 1 } : sub () { 0 };
     return $has_svn_mirror;
 }

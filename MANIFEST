@@ -149,6 +149,8 @@ t/35admin.t
 t/36push-pull.t
 t/70symlink.t
 t/71autovivify.t
+t/72sign.t
+t/svk.gpg
 t/tree.pl
 TODO
 utils/extract-docs

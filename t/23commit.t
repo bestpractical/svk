@@ -1,8 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
 BEGIN { require 't/tree.pl' };
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
 plan tests => 21;
 
 our $output;
@@ -72,6 +70,9 @@ $svk->commit ('-m', 'rm something', 'A/foo');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 	   [$corpath, __("$corpath/A/barnew"), __("$corpath/A/foo")]);
 
+SKIP: {
+skip 'SVN::Mirror not installed', 1
+    unless HAS_SVN_MIRROR;
 # The '--sync' and '--merge' below would have no effect.
 is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
             "Syncing //(/) in $corpath to 5.",
@@ -80,7 +81,8 @@ is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
             __"U   $corpath/A/deep/la/no",
             __" U  $corpath/A",
            ]);
-
+}
+$svk->update ($corpath) unless HAS_SVN_MIRROR;
 $svk->commit ('-m', 'the rest');
 
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})], [$corpath]);
