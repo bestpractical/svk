@@ -22,8 +22,8 @@ sub parse_arg {
     my $parent = $self->{parent};
     for my $path (@arg) {
 	my ($addtargets, $addpaths) = $self->create($path);
-	push @paths, @$addpaths if defined ($addpaths);
-	push @targets, @$addtargets if defined ($addtargets);
+	push @paths, @$addpaths;
+	push @targets, @$addtargets;
 	$self->{parent} = $parent;
     }
     if (scalar @paths) {
@@ -51,8 +51,8 @@ sub create {
             return ($self->arg_depotpath($path));
         }
         my ($subtargets, $subpaths) = $self->create($parent);
-	push @paths, @$subpaths if defined $subpaths;
-	push @targets, @$subtargets if defined $subtargets;
+	push @paths, @$subpaths;
+	push @targets, @$subtargets;
 	undef $self->{parent};
     }
     # execute the mkdir
