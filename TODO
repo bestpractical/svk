@@ -14,5 +14,4 @@
   - Merge moved files and directories.
 
 * checkout signatures
-  - command to purge cache.
   - cache for modified files also, but the gain is marginal.

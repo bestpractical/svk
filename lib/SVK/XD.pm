@@ -87,7 +87,7 @@ sub new {
     my $class = shift;
     my $self = bless {}, $class;
     %$self = @_;
-    $self->{signature} ||= SVK::XD::Signature->new (root => "$self->{svkpath}/cache")
+    $self->{signature} ||= SVK::XD::Signature->new (root => $self->cache_directory)
 	if $self->{svkpath};
     $self->{checkout} ||= Data::Hierarchy->new( sep => $SEP );
     return $self;
@@ -1340,6 +1340,13 @@ sub get_props {
 	$props = $root->node_proplist ($path);
     }
     return _combine_prop ($props, $entry->{'.newprop'});
+}
+
+sub cache_directory {
+    my ($self) = @_;
+    my $rv = catdir ( $self->{svkpath}, 'cache' );
+    mkdir $rv unless -e $rv;
+    return $rv;
 }
 
 sub patch_directory {

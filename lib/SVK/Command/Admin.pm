@@ -1,5 +1,6 @@
 package SVK::Command::Admin;
 use strict;
+use SVK::I18N;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
@@ -16,7 +17,7 @@ sub parse_arg {
     my $command = shift(@arg);
     return ($command, undef, @arg) if $command eq 'help';
 
-    my $depot = (@arg ? shift(@arg) : '');
+    my $depot = '/' . (@arg ? pop(@arg) : '');
 
     return ($command, $self->arg_depotroot($depot), @arg);
 }
@@ -25,6 +26,15 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $command, $target, @arg) = @_;
+
+    if ($command eq 'rmcache') {
+        my $dir = $self->{xd}->cache_directory;
+        opendir my $fh, $dir or die loc("cannot open %1: %2", $dir, $!);
+        unlink map "$dir/$_", readdir($fh);
+        close $fh;
+        return;
+    }
+
     system(
         'svnadmin',
         $command,
@@ -40,26 +50,31 @@ __DATA__
 
 =head1 NAME
 
-SVK::Command::Admin - Administer a depot
+SVK::Command::Admin - Administration tools
 
 =head1 SYNOPSIS
 
+Subcommands provided by F<svnadmin>:
+
  admin help [COMMAND]
- admin deltify [DEPOTPATH]
- admin dump [DEPOTPATH]
- admin hotcopy [DEPOTPATH]
- admin list-dblogs [DEPOTPATH]
- admin list-unused-dblogs [DEPOTPATH]
- admin load [DEPOTPATH]
- admin lstxns [DEPOTPATH]
- admin recover [DEPOTPATH]
- admin rmtxns [DEPOTPATH]
- admin setlog [DEPOTPATH]
- admin verify [DEPOTPATH]
+ admin deltify [DEPOTNAME]
+ admin dump [DEPOTNAME]
+ admin hotcopy /path/to/repository [DEPOTNAME]
+ admin list-dblogs [DEPOTNAME]
+ admin list-unused-dblogs [DEPOTNAME]
+ admin load [DEPOTNAME]
+ admin lstxns [DEPOTNAME]
+ admin recover [DEPOTNAME]
+ admin rmtxns [DEPOTNAME]
+ admin setlog -r REVISION FILE [DEPOTNAME]
+ admin verify [DEPOTNAME]
 
-=head1 OPTIONS
+Subcommands specific to F<svk>:
 
- None
+ admin rmcache
+
+The C<rmcache> subcommand purges the inode/mtime/size cache on all checkout
+subdirectories.  Use C<svk admin help> for helps on other subcommands.
 
 =head1 AUTHORS
 
