@@ -40,7 +40,7 @@ sub run {
 	my $root = $fs->revision_root ($fs->youngest_rev);
 	local $\ = "\n";
 	my $fmt = "%-20s %-s\n";
-	printf $fmt, 'Path', 'Source';
+	printf $fmt, loc('Path'), loc('Source');
 	print '=' x 60;
 	my ($depot) = ($target->{depotpath} =~ /^(\/\w*)/);
 	for (@paths) {
