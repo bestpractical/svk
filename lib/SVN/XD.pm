@@ -690,6 +690,7 @@ sub do_merge {
 	  target => $target,
 	  send_fulltext => $arg{send_fulltext},
 	  cb_merged => $arg{cb_merged},
+	  cb_closed => $arg{cb_closed},
 	  storage => $storage,
 # SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
 	  %cb,

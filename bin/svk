@@ -65,7 +65,7 @@ sub help {
 	$parser->select ('COMMANDS');
 	$parser->parse_from_file ($0, $ofh);
 	print "Available commands:\n";
-	print join("\n", sort ($list =~ m/^=head2\s(.*)$/mg), '');
+	print join("\n", (sort ($list =~ m/^=head2\s(.*)$/mg)), '');
     }
 }
 
@@ -354,7 +354,8 @@ sub diff {
 	      rpath  => $path2,
 	    );
 
-	SVN::Repos::dir_delta ($baseroot, $path, undef,
+	SVN::Repos::dir_delta ($baseroot, $path,
+			       $SVN::Core::VERSION ge '0.36.0' ? '' : undef,
 			       $newroot, $path2,
 			       $editor, undef,
 			       1, 1, 0, 1);
@@ -1124,16 +1125,17 @@ sub log_for_merge {
 
 sub merge {
     local @ARGV = @_;
-    my ($check_only, $message, $auto, $log, $no_ticket, $revspec);
+    my ($check_only, $message, $auto, $sign, $log, $no_ticket, $revspec);
     die unless GetOptions ("C|check-only"	=> \$check_only,
 			   "m|message=s"	=> \$message,
 			   "a|auto"		=> \$auto,
+			   "s|sign"		=> \$sign,
 			   "l|log"		=> \$log,
 			   "no-ticket"		=> \$no_ticket,
 			   "r|revision=s"	=> \$revspec);
 
     my ($src, $dst) = @ARGV;
-    my ($base_path, $fromrev, $torev, $cb_merged);
+    my ($base_path, $fromrev, $torev, $cb_merged, $cb_closed);
     unless ($auto) {
 	die "revision required" unless $revspec;
 	($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
@@ -1199,10 +1201,23 @@ sub merge {
 		    );
 		$base_rev = $m->{fromrev};
 	    }
+	    if ($sign && !$check_only) {
+		my $digest = IO::String->new;
+		$cb_closed = sub {
+		    print $digest join(' ', 'MD5', $_[1], $_[0])."\n";
+		};
+		my $old_cb_merged = $cb_merged;
+		$cb_merged = sub { my ($editor, $baton, $pool) = @_;
+				   my $sig =_sign_gpg ('/tmp/svk-sign',
+						       ${$digest->string_ref});
+				   $editor->change_dir_prop
+				       ($baton, 'svk:signature', $sig);
+				   &{$old_cb_merged} (@_) };
+	    }
 	}
     }
 
-    # support incremental merging (merge one revision by one)
+    # XXX: support incremental merging (merge one revision by one)
     SVN::XD::do_merge ($info,
 		       repos => $repos,
 		       repospath => $repospath,
@@ -1218,8 +1233,33 @@ sub merge {
 		       message => $message,
 		       torev => $torev,
 		       cb_merged => $cb_merged,
+		       cb_closed => $cb_closed,
 		      );
 }
+
+sub _sign_gpg {
+    my ($sigfile, $plaintext) = @_;
+
+    die "Could not write to $sigfile"
+	if -e $sigfile and (-d $sigfile or not -w $sigfile);
+
+    local *D;
+    open D, "| gpg --clearsign > $sigfile.tmp" or die "Could not call gpg: $!";
+    print D $plaintext;
+    close D;
+
+    (-e "$sigfile.tmp" and -s "$sigfile.tmp") or do {
+	unlink "$sigfile.tmp";
+	die "Cannot find $sigfile.tmp, signing aborted.\n";
+    };
+
+    open D, "$sigfile.tmp" or die "Cannot open $sigfile.tmp: $!";
+    undef $/;
+    my $buf = <D>;
+    unlink("$sigfile.tmp");
+    return $buf;
+}
+
 
 =head2 smerge (sm)
 

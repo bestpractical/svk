@@ -84,6 +84,10 @@ undef if there is no local modification.
 Called right before closing the top directory with storage editor,
 root baton, and pool.
 
+=item cb_closed
+
+Called after each file close call.
+
 =back
 
 =cut
@@ -243,6 +247,8 @@ sub close_file {
 		}
 	    }
 
+	    &{$self->{cb_closed}} ($path, $checksum, $pool)
+		if $self->{cb_closed};
 	    $self->{storage}->close_file ($self->{storage_baton}{$path},
 					  $checksum, $pool);
 	    $self->cleanup_fh ($fh);
@@ -302,6 +308,8 @@ sub close_file {
 	print sprintf ("%1s%1s \%s\n", $info->{status}[0],
 		       $info->{status}[1], $path)
 	    if $info->{status}[0] || $info->{status}[1];
+	&{$self->{cb_closed}} ($path, $checksum, $pool)
+	    if $self->{cb_closed};
 	$self->{storage}->close_file ($self->{storage_baton}{$path},
 				      $checksum, $pool)
 	    if $self->{storage_baton}{$path};
