@@ -297,11 +297,12 @@ sub cleanup_fh {
 
 sub prepare_fh {
     my ($self, $fh, $eol) = @_;
-    # XXX: need to respect eol-style here?
     for my $name (qw/base new local/) {
 	my $entry = $fh->{$name};
 	next unless $entry->[FH];
-	next if $entry->[FILENAME];
+	# if there's eol translation required, we can't use the
+	# prepared tmp files.
+	next if $entry->[FILENAME] && !$eol;
 	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
 	binmode $tmp->[FH], $eol if $eol;
 	slurp_fh ($entry->[FH], $tmp->[FH]);
@@ -398,6 +399,14 @@ sub _overwrite_local_file {
     }
 }
 
+sub _merge_file_unchanged {
+    my ($self, $path, $checksum, $pool) = @_;
+    ++$self->{changes};
+    $self->{notify}->node_status ($path, 'g');
+    $self->ensure_close ($path, $checksum, $pool);
+    return;
+}
+
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
@@ -408,16 +417,19 @@ sub close_file {
     no warnings 'uninitialized';
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
-	my $eol = $self->{cb_localprop}->($path, 'svn:eol-style', $pool);
-	$self->prepare_fh ($fh, get_eol_layer({'svn:eol-style' => $eol}, '>'));
 
-	if ($checksum eq $fh->{local}[CHECKSUM] ||
-	    File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0) {
-	    ++$self->{changes};
-	    $self->{notify}->node_status ($path, 'g');
-	    $self->ensure_close ($path, $checksum, $pool);
-	    return;
-	}
+	$self->_merge_file_unchanged ($path, $checksum, $pool), return
+	    if $checksum eq $fh->{local}[CHECKSUM];
+
+	my $eol = $self->{cb_localprop}->($path, 'svn:eol-style', $pool);
+	my $eol_layer = get_eol_layer({'svn:eol-style' => $eol}, '>');
+	$eol_layer = '' if $eol_layer eq ':raw';
+	$self->prepare_fh ($fh, $eol_layer);
+
+	# XXX: There used be a case that this explicit comparison is
+	# needed, but i'm not sure anymore.
+	$self->_merge_file_unchanged ($path, $checksum, $pool), return
+	    if File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0;
 
 	$self->ensure_open ($path);
         if ($info->{addmerge}) {
@@ -426,10 +438,12 @@ sub close_file {
         }
 	my ($conflict, $mfh) = $self->_merge_text_change ($fh, $path, $pool);
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
+
+	$eol_layer = get_eol_layer({'svn:eol-style' => $eol}, '<');
+	binmode $mfh, $eol_layer if $eol_layer;
+
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
-	my $eol_layer = get_eol_layer({'svn:eol-style' => $eol}, '<');
-	binmode $mfh, $eol_layer if $eol_layer;
 	$self->_overwrite_local_file ($fh, $path, $mfh, $pool);
 
 	undef $fh->{base}[FILENAME] if $info->{addmerge};
