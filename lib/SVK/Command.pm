@@ -36,29 +36,33 @@ information is displayed instead.
 
 =cut
 
-my %alias = qw( co checkout
-		up update
-		blame annotate
-		ci commit
-		del delete
-		rm delete
-		pg propget
-		ps propset
-		pe propedit
-		pl proplist
-		cp copy
-		mv move
-		ren move
-		rename move
-		mi mirror
-		sm smerge
-		sy sync
-		desc describe
-		st status
-		stat status
-		ver version
-		ls list
-	      );
+my %alias = qw( blame		annotate
+		co		checkout
+		cm		cmerge
+		ci		commit
+		cp		copy
+		del		delete
+		rm		delete
+		depot		depotmap
+		desc		describe
+		ls		list
+		mi		mirror
+		mv		move
+		ren		move
+		rename	    	move
+		pd		propdel
+		pe		propedit
+		pg		propget
+		pl		proplist
+		ps		propset
+		sm		smerge
+		st		status
+		stat		status
+		sw		switch
+		sy		sync
+		up		update
+		ver		version
+	    );
 
 =head3 new ($xd)
 
