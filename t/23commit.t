@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 7;
+use Test::More tests => 12;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -51,3 +51,26 @@ is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})], [$corpath])
 $svk->rm ('A/deep/la');
 $svk->commit ('-m', 'remove something deep');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})], [$corpath]);
+
+
+is_output ($svk, 'status', [],
+	   ['?   A/deep/X']);
+
+unlink ('A/barnew');
+mkdir ('A/forimport');
+overwrite_file ("A/forimport/foo", "fnord");
+overwrite_file ("A/forimport/bar", "fnord");
+overwrite_file ("A/forimport/baz", "fnord");
+
+is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
+			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',
+			    'A/barnew'],
+	   ['Committed revision 7.']);
+
+is_output ($svk, 'status', [],
+	   ['?   A/deep/X']);
+
+is_output ($svk, 'commit', ['--import', '-m', 'commit --import'],
+	   ['Committed revision 8.']);
+
+is_output ($svk, 'status', [], []);
