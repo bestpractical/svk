@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 21;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('add');
@@ -26,7 +26,7 @@ is_output_like ($svk, 'add', ['Z/bzz'],
 is_output ($svk, 'add', ['asdf'],
 	   ["Unknown target: asdf."]);
 is_output ($svk, 'add', ['A/foo'],
-	   ['A   A', 'A   A/foo'], 'add - descendent target only');
+	   [map __($_), 'A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['-q', 'A/foo'],
@@ -34,33 +34,33 @@ is_output ($svk, 'add', ['-q', 'A/foo'],
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ["$corpath/A/foo"],
-	   ["A   $corpath/A", "A   $corpath/A/foo"], 'add - descendent target only - abspath');
+	   [map __($_), "A   $corpath/A", "A   $corpath/A/foo"], 'add - descendent target only - abspath');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['../add/A/foo'],
-	   ["A   ../add/A", "A   ../add/A/foo"], 'add - descendent target only - relpath');
+	   [map __($_), "A   ../add/A", "A   ../add/A/foo"], 'add - descendent target only - relpath');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['A/deep/baz'],
-	   ['A   A', 'A   A/deep', 'A   A/deep/baz'],
+	   [map __($_), 'A   A', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - deep descendent target only');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['A'],
-	   ['A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
+	   [map __($_), 'A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['A/'],
-	   ['A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
+	   [map __($_), 'A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor with trailing slash');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', [qw/-N A/],
-	   ['A   A'],
+	   [map __($_), 'A   A'],
 	   'add - nonrecursive anchor');
 is_output ($svk, 'add', ['A/foo'],
-	   ['A   A/foo'],
+	   [map __($_), 'A   A/foo'],
 	   'add - nonrecursive target');
 $svk->revert ('-R', '.');
 
@@ -73,13 +73,13 @@ chmod (0755, "A/exe");
 TODO: {
 local $TODO = 'notify that added file has executable bit';
 is_output($svk, 'add', ['A/exe'],
-	  ['A   A',
-	   'A   A/exe - (bin)']);
+	  [__('A   A'),
+	   __('A   A/exe - (bin)')]);
 }
 $svk->commit ('-m', 'test exe bit');
 unlink ('A/exe');
 $svk->revert ('A/exe');
-ok (-x 'A/exe');
+ok (_x 'A/exe');
 SKIP: {
 
 skip 'File::MimeInfo not installed', 2 unless eval 'require File::MimeInfo::Magic; 1';
@@ -92,12 +92,12 @@ overwrite_file ("A/mime/foo.html", "<html>");
 overwrite_file ("A/mime/foo.txt", "test....");
 
 is_output ($svk, 'add', ['A/mime'],
-	   ['A   A/mime',
-	    'A   A/mime/foo.bin',
-	    'A   A/mime/foo.html',
-	    'A   A/mime/foo.jpg',
-	    'A   A/mime/foo.pl',
-	    'A   A/mime/foo.txt',
+	   [__('A   A/mime'),
+	    __('A   A/mime/foo.bin'),
+	    __('A   A/mime/foo.html'),
+	    __('A   A/mime/foo.jpg'),
+	    __('A   A/mime/foo.pl'),
+	    __('A   A/mime/foo.txt'),
 	   ]);
 is_output ($svk, 'pl', ['-v', <A/mime/*>],
 	   ['Properties on A/mime/foo.bin:',
@@ -138,10 +138,10 @@ SKIP: {
 skip 'svn too old, does not support config enumerator', 2 if $@;
 
 is_output ($svk, 'add', ['A/autoprop'],
-	   ['A   A/autoprop',
-	    'A   A/autoprop/foo.bar',
-	    'A   A/autoprop/foo.pl',
-	    'A   A/autoprop/foo.txt']);
+	   [__('A   A/autoprop'),
+	    __('A   A/autoprop/foo.bar'),
+	    __('A   A/autoprop/foo.pl'),
+	    __('A   A/autoprop/foo.txt')]);
 
 is_output ($svk, 'pl', ['-v', <A/autoprop/*>],
 	   ['Properties on A/autoprop/foo.pl:',

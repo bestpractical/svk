@@ -14,7 +14,8 @@ $svk->commit ('-m', 'init', "$copath");
 $svk->copy ('-m', 'branch stable', '//trunk', '//stable');
 
 my ($srepospath, $spath) = $xd->find_repos ('//trunk');
-$svk->mirror ('/mac/upstream', "file://${srepospath}");
+my $uri = uri($srepospath);
+$svk->mirror ('/mac/upstream', $uri);
 $svk->sync ('/mac/upstream');
 
 ($copath) = get_copath ('obra-mac');
@@ -30,7 +31,7 @@ $svk->smerge ('-m', 'merge trunk -> stable on mac', '/mac/local/trunk', '/mac/lo
 $svk->smerge ('-m', 'merge back trunk from mac', '/mac/local/trunk', '/mac/upstream/trunk');
 $svk->smerge ('-m', 'merge back stable from mac', '/mac/local/stable', '/mac/upstream/stable');
 
-$svk->mirror ('/linux/upstream', "file://${srepospath}");
+$svk->mirror ('/linux/upstream', $uri);
 $svk->sync ('/linux/upstream');
 
 ($copath) = get_copath ('obra-linux');

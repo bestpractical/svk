@@ -48,7 +48,7 @@ $svk->commit ('-m', 'and some prop', "$copath");
 $svk->copy ('-m', 'branch //work', '//trunk', '//work');
 $svk->update ($copath);
 
-`$^X -pi -e 's/is main/is local main/' $copath/work/test.pl`;
+`$^X -pi.bak -e "s/is main/is local main/" $copath/work/test.pl`;
 
 $svk->commit ('-m', 'local mod', "$copath/work");
 
@@ -65,14 +65,14 @@ $svk->smerge ('-m', 'mergeback from //trunk', '//trunk', '//work');
 
 $svk->update ($copath);
 
-`$^X -pi -e 's|#!/usr/bin/|#!env |' $copath/trunk/test.pl`;
+`$^X -pi.bak -e "s|#!/usr/bin/|#!env |" $copath/trunk/test.pl`;
 
 $svk->commit ('-m', 'mod on trunk before branch to featre', "$copath/trunk");
 
 $svk->copy ('-m', 'branch //feature', '//trunk', '//feature');
 $svk->update ($copath);
 
-`$^X -pi -e 's/^#test/    test();/' $copath/work/test.pl`;
+`$^X -pi.bak -e "s/^#test/    test();/" $copath/work/test.pl`;
 
 $svk->commit ('-m', 'call test() in main', "$copath/work");
 
@@ -84,7 +84,7 @@ sub newfeature {}
 
 $svk->commit ('-m', 'some new feature', "$copath/feature");
 
-`$^X -pi -e 's/newfeature/newnewfeature/' $copath/feature/test.pl`;
+`$^X -pi.bak -e "s/newfeature/newnewfeature/" $copath/feature/test.pl`;
 
 $svk->commit ('-m', 'rename feature depends on c14', "$copath/feature");
 append_file ("$copath/feature/test.pl", q|

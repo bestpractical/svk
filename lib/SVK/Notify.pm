@@ -1,5 +1,6 @@
 package SVK::Notify;
 use SVK::I18N;
+use SVK::Util qw( abs2rel );
 use strict;
 
 =head1 NAME
@@ -42,13 +43,16 @@ sub print_report {
 		$path = '';
 	    }
 	    else {
-		$path =~ s|^\Q$target\E/||;
+		$path = abs2rel($path, $target => '', $is_copath ? () : '/');
 	    }
 	}
-	$print->($path ? $report ? $is_copath ? SVK::Target->copath ($report, $path)
-		                              : "$report/$path"
-                                 : $path
-		       : $report || '.', @_);
+	$print->((
+	    $path ? $is_copath ? SVK::Target->copath ($report, $path)
+			       : $report ? "$report/$path"
+					 : $path
+		  : $is_copath ? SVK::Target->copath('', $report || '.')
+			       : ($report || '.')
+	), @_);
     };
 }
 
@@ -99,7 +103,7 @@ sub flush {
 
 sub flush_dir {
     my ($self, $path) = @_;
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : $_}
+    for (grep {$path ? index($_, "$path/") == 0 : $_}
 	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }

@@ -2,7 +2,7 @@
 use Test::More tests => 8;
 use strict;
 use File::Path;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('import');
@@ -31,11 +31,11 @@ ok (-e "$copath/filea");
 ok (!-e "$copath/fileb");
 ok (-e "$copath/filec");
 ok (-e "$copath/dir/filed");
-ok (-x "$copath/exe", 'executable bit imported');
+ok (_x "$copath/exe", 'executable bit imported');
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');
-$svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->mirror ('//m', uri($srepospath.($spath eq '/' ? '' : $spath)));
 $svk->sync ('//m');
 is_output ($svk, 'import', ['--force', '-m', 'import into mirrored path', '//m', $copath],
 	   ["Import path (/m) is different from the copath (/import)"]);

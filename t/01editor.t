@@ -16,9 +16,7 @@ overwrite_file ("$copath/B/nor", "foobar\n");
 $svk->add ("$copath/A", "$copath/B");
 $svk->commit ('-m', 'init', $copath);
 
-my $tmp = File::Temp->new( SUFFIX => '.pl' );
-
-print $tmp (<< 'TMP');
+set_editor(<< 'TMP');
 $_ = shift;
 print "# props $_\n";
 open _ or die $!;
@@ -30,14 +28,6 @@ open _, '>', $_ or die $!;
 print _ @_;
 close _;
 TMP
-$tmp->close;
-
-my ($perl, $tmpfile) = ($^X, $tmp->filename);
-if (defined &Win32::GetShortPathName) {
-    $perl = Win32::GetShortPathName($perl);
-    $tmpfile = Win32::GetShortPathName($tmpfile);
-}
-$ENV{SVN_EDITOR} = "$perl $tmp";
 
 $svk->ps ('someprop', 'somevalue', "$copath/B/nor");
 $svk->commit ( $copath);

@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
-require 't/tree.pl';
 use Test::More;
-plan skip_all => "can't find utils/svk-merge" unless -x "utils/svk-merge";
+BEGIN { require 't/tree.pl' };
+plan skip_all => "can't find utils/svk-merge" unless _x "utils/svk-merge";
 
 plan tests => 3;
 our $output;
@@ -29,12 +29,12 @@ $svk->commit ('-m', 'change on local', $copath);
 is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 		qr|1 conflict found.|);
 
-$ENV{SVKMERGE} = 'utils/svk-merge mine';
+$ENV{SVKMERGE} = "$^X utils/svk-merge mine";
 $svk->sm ('//trunk', $copath);
 is_output ($svk, 'diff', ["$copath/test.pl"],
 	   [], 'svk-merge mine');
-$ENV{SVKMERGE} = 'utils/svk-merge theirs';
+$ENV{SVKMERGE} = "$^X utils/svk-merge theirs";
 $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
 is_output ($svk, 'up', ["$copath"],
 	   ["Syncing //local(/local) in $corpath to 6.",
-	    "U   $copath/test.pl"], 'svk-merge theirs');
+	    __"U   $copath/test.pl"], 'svk-merge theirs');

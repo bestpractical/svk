@@ -64,7 +64,7 @@ SVK::Command::Info - Display information about a file or directory
 
    None
 
-=head1 DESCRIPTIONS
+=head1 DESCRIPTION
 
 For example, here's the way to display the info of a checkout path
 

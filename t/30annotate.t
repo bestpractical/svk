@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 6;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('annotate');
@@ -35,6 +35,6 @@ sub is_annotate {
     $svk->annotate (@$arg);
     my @out = map {m/(\d+).*\(/; $1}split ("\n", $output);
     splice @out, 0, 2,;
-    is_deeply (\@out, $annotate,
-	       $test);
+    @_ = (\@out, $annotate, $test);
+    goto &is_deeply;
 }

@@ -3,7 +3,7 @@ use Test::More tests => 21;
 use strict;
 use File::Path;
 use Cwd;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -36,13 +36,13 @@ my $oldwd = getcwd;
 chdir ($copath);
 is_output ($svk, 'up', [],
 	   ["Syncing //trunk(/trunk) in $corpath to 5.",
-	    'C   A',
-	    'D   A/bar',
-	    'D   A/deep',
-	    'C   A/foo',
-	    'D   A/normal',
-	    'C   A/unused',
-	    'D   B',
+	    __('C   A'),
+	    __('D   A/bar'),
+	    __('D   A/deep'),
+	    __('C   A/foo'),
+	    __('D   A/normal'),
+	    __('C   A/unused'),
+	    __('D   B'),
 	    '3 conflicts found.'
 	   ], 'delete entry but modified on checkout');
 chdir ($oldwd);
@@ -57,13 +57,13 @@ append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
 is_output ($svk, 'smerge', ['//trunk', $copath],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
-	    "C   $copath/A",
-	    "D   $copath/A/bar",
-	    "D   $copath/A/deep",
-	    "C   $copath/A/foo",
-	    "D   $copath/A/normal",
-	    "C   $copath/A/unused",
-	    "D   $copath/B",
+	    __"C   $copath/A",
+	    __"D   $copath/A/bar",
+	    __"D   $copath/A/deep",
+	    __"C   $copath/A/foo",
+	    __"D   $copath/A/normal",
+	    __"C   $copath/A/unused",
+	    __"D   $copath/B",
 	    "New merge ticket: $uuid:/trunk:5",
 	    '3 conflicts found.'
 	   ]);
@@ -98,29 +98,29 @@ is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 
 is_output ($svk, 'smerge', ['//trunk', $copath],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
-	    "C   $copath/A",
-	    "d   $copath/A/bar",
-	    "d   $copath/A/deep",
-	    "d   $copath/A/deep/deeper",
-	    "D   $copath/A/deep/foo",
-	    "D   $copath/A/deep/stay",
-	    "C   $copath/A/foo",
-	    "D   $copath/A/normal",
-	    "C   $copath/A/unused",
-	    "D   $copath/B",
+	    __"C   $copath/A",
+	    __"d   $copath/A/bar",
+	    __"d   $copath/A/deep",
+	    __"d   $copath/A/deep/deeper",
+	    __"D   $copath/A/deep/foo",
+	    __"D   $copath/A/deep/stay",
+	    __"C   $copath/A/foo",
+	    __"D   $copath/A/normal",
+	    __"C   $copath/A/unused",
+	    __"D   $copath/B",
 	    "New merge ticket: $uuid:/trunk:5",
 	    '3 conflicts found.']);
 
 is_output ($svk, 'status', [$copath],
-	   ["D   $copath/A/deep",
-	    "D   $copath/A/deep/foo",
-	    "D   $copath/A/deep/stay",
-	    "C   $copath/A/foo",
-	    "D   $copath/A/normal",
-	    "C   $copath/A/unused",
-	    "C   $copath/A",
-	    "D   $copath/B",
-	    " M  $copath"], 'merge partial deletes to checkout');
+	   [__"D   $copath/A/deep",
+	    __"D   $copath/A/deep/foo",
+	    __"D   $copath/A/deep/stay",
+	    __"C   $copath/A/foo",
+	    __"D   $copath/A/normal",
+	    __"C   $copath/A/unused",
+	    __"C   $copath/A",
+	    __"D   $copath/B",
+	    __" M  $copath"], 'merge partial deletes to checkout');
 
 $svk->revert ('-R', $copath);
 $svk->resolved ('-R', $copath);
@@ -146,29 +146,29 @@ is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 
 is_output ($svk, 'smerge', ['//trunk', $copath],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
-	    "C   $copath/A",
-	    "d   $copath/A/bar",
-	    "C   $copath/A/deep",
-	    "d   $copath/A/deep/deeper",
-	    "C   $copath/A/deep/foo",
-	    "D   $copath/A/deep/stay",
-	    "C   $copath/A/foo",
-	    "D   $copath/A/normal",
-	    "C   $copath/A/unused",
-	    "D   $copath/B",
+	    __"C   $copath/A",
+	    __"d   $copath/A/bar",
+	    __"C   $copath/A/deep",
+	    __"d   $copath/A/deep/deeper",
+	    __"C   $copath/A/deep/foo",
+	    __"D   $copath/A/deep/stay",
+	    __"C   $copath/A/foo",
+	    __"D   $copath/A/normal",
+	    __"C   $copath/A/unused",
+	    __"D   $copath/B",
 	    "New merge ticket: $uuid:/trunk:5",
 	    '5 conflicts found.']);
 
 is_output ($svk, 'status', [$copath],
-	   ["C   $copath/A/deep/foo",
-	    "D   $copath/A/deep/stay",
-	    "C   $copath/A/deep",
-	    "C   $copath/A/foo",
-	    "D   $copath/A/normal",
-	    "C   $copath/A/unused",
-	    "C   $copath/A",
-	    "D   $copath/B",
-	    " M  $copath"], 'merge partial deletes to checkout');
+	   [__"C   $copath/A/deep/foo",
+	    __"D   $copath/A/deep/stay",
+	    __"C   $copath/A/deep",
+	    __"C   $copath/A/foo",
+	    __"D   $copath/A/normal",
+	    __"C   $copath/A/unused",
+	    __"C   $copath/A",
+	    __"D   $copath/B",
+	    __" M  $copath"], 'merge partial deletes to checkout');
 
 $svk->resolved ('-R', $copath);
 $svk->commit ('-m', 'merged', $copath);
@@ -177,17 +177,17 @@ $svk->rm ('-m', 'kill test.pl', '//trunk/test.pl');
 
 is_output ($svk, 'smerge', ['//trunk', $copath],
 	   ['Auto-merging (5, 9) /trunk to /local (base /trunk:5).',
-	    "D   $copath/test.pl",
+	    __"D   $copath/test.pl",
 	    "New merge ticket: $uuid:/trunk:9"]);
 is_output ($svk, 'status', [$copath],
-	   ["D   $copath/test.pl",
-	    " M  $copath"]);
+	   [__"D   $copath/test.pl",
+	    __" M  $copath"]);
 
 $svk->revert ('-R', $copath);
 overwrite_file ("$copath/test.pl", "modified\n");
 is_output ($svk, 'smerge', ['//trunk', $copath],
 	   ['Auto-merging (5, 9) /trunk to /local (base /trunk:5).',
-	    "C   $copath/test.pl",
+	    __"C   $copath/test.pl",
 	    "New merge ticket: $uuid:/trunk:9",
 	    '1 conflict found.']);
 $svk->revert ('-R', $copath);

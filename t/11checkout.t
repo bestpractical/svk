@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 20;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
 $svk->mkdir ('-m', 'init', '//V');
@@ -11,8 +11,9 @@ my $tree2 = create_basic_tree ($xd, '//V-3.1');
 my ($copath, $corpath) = get_copath ('checkout');
 mkdir ($copath);
 
+my $cofile = __"$copath/co-root/V-3.1/A/Q/qz";
 is_output_like ($svk, 'checkout', ['//', "$copath/co-root"],
-		qr"A   \Q$copath\E/co-root/V-3.1/A/Q/qz",
+		qr{A   \Q$cofile\E},
 		'checkout - report path');
 ok (-e "$copath/co-root/V/A/Q/qu");
 
@@ -34,41 +35,41 @@ $svk->checkout ('-r5', '//V-3.1', 'V-3.1-r5');
 ok (-e 'V-3.1-r5/A/P/pe');
 
 is_output ($svk, 'checkout', ['-Nr5', '//V-3.1', 'V-3.1-nr'],
-	   ["Syncing //V-3.1(/V-3.1) in $corpath/V-3.1-nr to 5.",
-	    'A   V-3.1-nr/me'], 'checkout - non-recursive');
+	   ["Syncing //V-3.1(/V-3.1) in ".__"$corpath/V-3.1-nr to 5.",
+	    __('A   V-3.1-nr/me')], 'checkout - non-recursive');
 
 ok (!-e 'V-3.1-nr/A');
 ok (-e 'V-3.1-nr/me');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu'],
-	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in $corpath/qu to 6.",
+	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in ".__"$corpath/qu to 6.",
 	    'A   qu']);
 ok (-e 'qu');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu', 'boo'],
-	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in $corpath/boo to 6.",
+	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in ".__"$corpath/boo to 6.",
 	    'A   boo']);
 ok (-e 'boo');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
-	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/just-q to 6.",
-	    'A   ../checkout/just-q/qu',
-	    'A   ../checkout/just-q/qz',
-	    ' U  ../checkout/just-q',
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/just-q to 6.",
+	    __('A   ../checkout/just-q/qu'),
+	    __('A   ../checkout/just-q/qz'),
+	    __(' U  ../checkout/just-q'),
 	   ], 'checkout report');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q/', "../checkout/just-q-slash"],
-	   ["Syncing //V-3.1/A/Q/(/V-3.1/A/Q) in $corpath/just-q-slash to 6.",
-	    'A   ../checkout/just-q-slash/qu',
-	    'A   ../checkout/just-q-slash/qz',
-	    ' U  ../checkout/just-q-slash',
+	   ["Syncing //V-3.1/A/Q/(/V-3.1/A/Q) in ".__"$corpath/just-q-slash to 6.",
+	    __('A   ../checkout/just-q-slash/qu'),
+	    __('A   ../checkout/just-q-slash/qz'),
+	    __(' U  ../checkout/just-q-slash'),
 	   ], 'checkout report');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q-slashco/"],
-	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/just-q-slashco to 6.",
-	    'A   ../checkout/just-q-slashco/qu',
-	    'A   ../checkout/just-q-slashco/qz',
-	    ' U  ../checkout/just-q-slashco',
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/just-q-slashco to 6.",
+	    __('A   ../checkout/just-q-slashco/qu'),
+	    __('A   ../checkout/just-q-slashco/qz'),
+	    __(' U  ../checkout/just-q-slashco'),
 	   ], 'checkout report');
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-require 't/tree.pl';
 use Test::More;
+BEGIN { require 't/tree.pl' };
 our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
@@ -18,7 +18,7 @@ my ($scopath, $scorpath) = get_copath ('smerge-file-source');
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 
-$svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->mirror ('//m', uri($srepospath).($spath eq '/' ? '' : $spath));
 $svk->sync ('//m');
 
 $svk->copy ('-m', 'branch', '//m', '//l');
@@ -42,11 +42,11 @@ is_output ($svk, 'smerge', ['-C', '//m/be', '//l/be'],
 
 is_output ($svk, 'smerge', ['//m/be', "$copath/be"],
 	   ['Auto-merging (2, 6) /m/be to /l/be (base /m/be:2).',
-	    "U   $copath/be",
+	    __"U   $copath/be",
 	    "New merge ticket: $suuid:/A/be:3"]);
 
 is_output ($svk, 'status', [$copath],
-	   ["MM  $copath/be"]);
+	   [__"MM  $copath/be"]);
 $svk->commit ('-m', 'commit merged file', $copath);
 append_file ("$scopath/A/be", "modified on trunk\n");
 $svk->commit ('-m', 'commit on trunk', $scopath);
@@ -65,5 +65,5 @@ is_output ($svk, 'smerge', ['-C', '//l/be', '//l/be.cp'],
 	    "New merge ticket: $uuid:/l/be:10"]);
 is_output ($svk, 'smerge', ['-C', '//l/be', "$copath/be.cp"],
 	   ['Auto-merging (7, 10) /l/be to /l/be.cp (base /l/be:7).',
-	    "U   $copath/be",
+	   __ "U   $copath/be",
 	    "New merge ticket: $uuid:/l/be:10"]);

@@ -19,8 +19,9 @@ my ($scopath, $scorpath) = get_copath ('smerge-incremental-source');
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
+my $uri = uri($srepospath);
 
-$svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->mirror ('//m', $uri.($spath eq '/' ? '' : $spath));
 $svk->sync ('//m');
 $svk->copy ('-m', 'branch', '//m', '//l');
 
@@ -35,7 +36,7 @@ $svk->commit ('-m', 'commit on local branch', $copath);
 is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 	   ['Auto-merging (3, 6) /l to /m (base /m:3).',
 	    'Incremental merge not guaranteed even if check is successful',
-	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    "Merging back to SVN::Mirror source $uri/A.",
 	    'Checking against mirrored directory locally.',
 	    'U   Q/qu',
 	    'U   Q/qz',
@@ -44,30 +45,30 @@ is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	   ['Auto-merging (3, 6) /l to /m (base /m:3).',
 	    '===> Auto-merging (3, 4) /l to /m (base /m:3).',
-	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    "Merging back to SVN::Mirror source $uri/A.",
 	    "Empty merge.",
 	    '===> Auto-merging (3, 5) /l to /m (base /m:3).',
-	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    "Merging back to SVN::Mirror source $uri/A.",
 	    'U   Q/qu',
 	    'New merge ticket: '.$repos->fs->get_uuid.':/l:5',
 	    'Merge back committed as revision 3.',
-	    "Syncing file://$srepospath/A",
+	    "Syncing $uri/A",
 	    'Retrieving log information from 3 to 3',
 	    'Committed revision 7 from revision 3.',
 	    '===> Auto-merging (5, 6) /l to /m (base /l:5).',
-	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    "Merging back to SVN::Mirror source $uri/A.",
 	    'U   Q/qu',
 	    'U   Q/qz',
 	    'New merge ticket: '.$repos->fs->get_uuid.':/l:6',
 	    'Merge back committed as revision 4.',
-	    "Syncing file://$srepospath/A",
+	    "Syncing $uri/A",
 	    'Retrieving log information from 4 to 4',
 	    'Committed revision 8 from revision 4.']);
 
 $svk->mkdir ('-m', 'fnord', '/new/A');
 
 ($srepospath, $spath, $srepos) = $xd->find_repos ('/new/A', 1);
-$svk->mirror ('//new', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->mirror ('//new', uri($srepospath).($spath eq '/' ? '' : $spath));
 $svk->sync ('//new');
 is_output_like ($svk, 'smerge', ['-CI', '//m', '//new'],
 		qr"Can't find merge base for /m and /new");

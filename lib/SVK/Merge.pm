@@ -1,6 +1,6 @@
 package SVK::Merge;
 use strict;
-use SVK::Util qw (find_svm_source find_local_mirror svn_mirror);
+use SVK::Util qw (find_svm_source find_local_mirror svn_mirror is_executable);
 use SVK::I18N;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;
@@ -105,15 +105,14 @@ sub find_merge_base {
 	    if !$basepath || $rev > $baserev;
     }
 
-    if (!$basepath) {
-	die loc("Can't find merge base for %1 and %2\n", $src->path, $dst->path)
-	    unless $self->{baseless} or $self->{base};
+    return ($src->new (revision => $self->{baserev}), $self->{baserev})
+        if $self->{baserev};
 
-	return ($src->new (revision => $self->{baserev}), $self->{baserev})
-	    if $self->{baserev};
+    return ($src->new (path => '/', revision => 0), 0)
+        if $self->{baseless};
 
-	return ($src->new (path => '/', revision => 0), 0);
-    }
+    die loc("Can't find merge base for %1 and %2\n", $src->path, $dst->path)
+        unless $basepath;
 
     # XXX: document this, cf t/07smerge-foreign.t
     if ($basepath ne $src->path && $basepath ne $dst->path) {
@@ -351,8 +350,9 @@ sub run {
 	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
+    my $is_copath = defined($self->{dst}{copath});
     my $notify = $self->{notify} || SVK::Notify->new_with_report
-	($report, defined $self->{target} ? $self->{target} : $target);
+	($report, (defined $self->{target} ? $self->{target} : $target), $is_copath);
     if ($storage->can ('rename_check')) {
 	my $flush = $notify->{cb_flush};
 	$notify->{cb_flush} = sub {
@@ -368,7 +368,7 @@ sub run {
 	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  storage => $storage,
 	  notify => $notify,
-	  allow_conflicts => defined $self->{dst}{copath},
+	  allow_conflicts => $is_copath,
 	  open_nonexist => $self->{track_rename},
 	  cb_merged => $self->{ticket} ?
 	  sub { my ($editor, $baton, $pool) = @_;
@@ -380,7 +380,7 @@ sub run {
 	  %cb,
 	);
     $editor->{external} = $ENV{SVKMERGE}
-	if !$self->{check_only} && $ENV{SVKMERGE} && -x (split (' ', $ENV{SVKMERGE}))[0];
+	if !$self->{check_only} && $ENV{SVKMERGE} && is_executable ((split (' ', $ENV{SVKMERGE}))[0]);
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],

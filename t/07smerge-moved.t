@@ -3,7 +3,7 @@ use Test::More tests => 17;
 use strict;
 use File::Path;
 use Cwd;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -57,25 +57,25 @@ is_output ($svk, 'merge', ['-C', '--track-rename', '-r7:8', '//trunk', '//local'
 $svk->switch ('//local', $copath);
 is_output ($svk, 'merge', ['-C', '--track-rename', '-r7:8', '//trunk', $copath],
 	   ['Collecting renames, this might take a while.',
-	    "U   $copath/A/deep.new/foo - A/deep/foo",
-	    "U   $copath/A/deep.new/bar - A/bar",
-	    "U   $copath/A/normal",
-	    "U   $copath/A/foo.new - A/foo",
-	    "U   $copath/test.pl - A/deep/test.pl"]);
+	    __("U   $copath/A/deep.new/foo")." - A/deep/foo",
+	    __("U   $copath/A/deep.new/bar")." - A/bar",
+	    __("U   $copath/A/normal"),
+	    __("U   $copath/A/foo.new")." - A/foo",
+	    __("U   $copath/test.pl")." - A/deep/test.pl"]);
 
 is_output ($svk, 'merge', ['--track-rename', '-r7:8', '//trunk', $copath],
 	   ['Collecting renames, this might take a while.',
-	    "U   $copath/A/deep.new/foo - A/deep/foo",
-	    "U   $copath/A/deep.new/bar - A/bar",
-	    "U   $copath/A/normal",
-	    "U   $copath/A/foo.new - A/foo",
-	    "U   $copath/test.pl - A/deep/test.pl"]);
+	    __("U   $copath/A/deep.new/foo")." - A/deep/foo",
+	    __("U   $copath/A/deep.new/bar")." - A/bar",
+	    __("U   $copath/A/normal"),
+	    __("U   $copath/A/foo.new")." - A/foo",
+	    __("U   $copath/test.pl")." - A/deep/test.pl"]);
 is_output ($svk, 'status', [$copath],
-	   ["M   $copath/A/bar",
-	    "M   $copath/A/deep/foo",
-	    "M   $copath/A/deep/test.pl",
-	    "M   $copath/A/foo",
-	    "M   $copath/A/normal"], 'merge renamed entries to checkout');
+	   [__"M   $copath/A/bar",
+	    __"M   $copath/A/deep/foo",
+	    __"M   $copath/A/deep/test.pl",
+	    __"M   $copath/A/foo",
+	    __"M   $copath/A/normal"], 'merge renamed entries to checkout');
 $svk->revert ('-R', $copath);
 overwrite_file ("$copath/A/deep/test.pl", "foobarbazzz\nfromlocal\nend\n");
 is_output ($svk, 'commit', ['-m', 'append to moved files', $copath],
@@ -91,9 +91,9 @@ is_output ($svk, 'merge', ['-C', '--track-rename', '-r8:9', '//local', '//trunk'
 $svk->switch ('//trunk', $copath);
 is_output ($svk, 'merge', ['--track-rename', '-r8:9', '//local', $copath],
 	   ['Collecting renames, this might take a while.',
-	    "G   $copath/A/deep/test.pl - test.pl"]);
+	    __"G   $copath/A/deep/test.pl - test.pl"]);
 is_output ($svk, 'status', [$copath],
-	   ["M   $copath/test.pl"], 'merge renamed entries to checkout');
+	   [__"M   $copath/test.pl"], 'merge renamed entries to checkout');
 $svk->revert ('-R', $copath);
 $svk->cp ('-m', 'new trunk', '//trunk', '//trunk.new');
 
@@ -108,10 +108,10 @@ $svk->switch ('//local', $copath);
 
 is_output ($svk, 'merge', ['--track-rename', '-r10:11', '//trunk', $copath],
 	   ['Collecting renames, this might take a while.',
-	    "G   $copath/test.pl - A/deep/test.pl"]);
+	    __("G   $copath/test.pl")." - A/deep/test.pl"]);
 
 is_output ($svk, 'status', [$copath],
-	   ["M   $copath/A/deep/test.pl"], 'merge renamed entries to checkout');
+	   [__"M   $copath/A/deep/test.pl"], 'merge renamed entries to checkout');
 
 $svk->revert ('-R', $copath);
 $svk->mkdir ('-m', 'new', "//trunk/A/new");

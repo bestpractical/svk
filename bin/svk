@@ -90,6 +90,13 @@ my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 
 1;
 
+exit;
+
+require PerlIO;
+require PerlIO::via;
+require PerlIO::scalar;
+require Encode::TW;
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

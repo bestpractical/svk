@@ -18,7 +18,8 @@ my $suuid = $srepos->fs->get_uuid;
 
 $svk->copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for (1..20);
 
-$svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+my $uri = uri($srepospath);
+$svk->mirror ('//m', $uri.($spath eq '/' ? '' : $spath));
 
 $svk->sync ('//m');
 
@@ -49,18 +50,18 @@ $svk->status ($copath);
 
 is_output ($svk, 'commit', ['-m', 'commit to mirrored path', $copath],
 	   ['Commit into mirrored path: merging back directly.',
-	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    "Merging back to SVN::Mirror source $uri/A.",
 	    'Merge back committed as revision 24.',
-	    "Syncing file://$srepospath/A",
+	    "Syncing $uri/A",
 	    'Retrieving log information from 24 to 24',
 	    'Committed revision 7 from revision 24.']);
 mkdir ("$copath/N");
 $svk->add ("$copath/N");
 is_output ($svk, 'commit', ['-m', 'commit to deep mirrored path', $copath],
 	   ['Commit into mirrored path: merging back directly.',
-	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    "Merging back to SVN::Mirror source $uri/A.",
 	    'Merge back committed as revision 25.',
-	    "Syncing file://$srepospath/A",
+	    "Syncing $uri/A",
 	    'Retrieving log information from 25 to 25',
 	    'Committed revision 8 from revision 25.']);
 append_file ("$copath/T/xd", "back to mirror directly again\n");
@@ -70,14 +71,14 @@ ok(1);
 $svk->copy ('-m', 'branch in source', '/test/A', '/test/A-98');
 $svk->copy ('-m', 'branch in source', '/test/A-98', '/test/A-99');
 
-$svk->mirror ('//m-99', "file://${srepospath}/A-99");
+$svk->mirror ('//m-99', "$uri/A-99");
 $svk->sync ('//m-99');
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 # has some output
 ok ($output =~ /under mirrored path/);
 is_output_like ($svk, 'mirror', ['--list'],
-		qr"/m.*file://$srepospath/A\n//m-99.*file://$srepospath/A-99");
+		qr"//m.*$uri/A\n//m-99.*$uri/A-99");
 
 is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');

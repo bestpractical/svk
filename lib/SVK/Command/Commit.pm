@@ -6,7 +6,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
-use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile);
+use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile abs2rel);
 use SVN::Simple::Edit;
 
 my $target_prompt = '=== below are targets to be committed ===';
@@ -150,7 +150,7 @@ sub get_committable {
     my ($self, $target, $root) = @_;
     my ($fh, $file);
     unless (defined $self->{message}) {
-	($fh, $file) = tmpfile ('commit', UNLINK => 0);
+	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }
 
     print $fh "\n$target_prompt\n" if $fh;
@@ -227,11 +227,9 @@ sub committed_commit {
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
-	    my $dpath = $copath;
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
-	    # XXX: translate SEP to /
-	    $dpath =~ s|^\Q$target->{copath}\E|$path|;
+	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
 	    my $prop = $root->node_proplist ($dpath);
 	    # XXX: some mode in get_fh for modification only
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);

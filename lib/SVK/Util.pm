@@ -5,21 +5,30 @@ our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
 		    find_local_mirror abs_path mimetype mimetype_is_text
-		    abs2rel catfile catdir catpath splitpath tmpdir $SEP);
+		    abs2rel catfile catdir catpath splitpath splitdir tmpdir
+		    devnull is_symlink is_executable read_file write_file
+		    $SEP $EOL HAS_SYMLINK IS_WIN32 TEXT_MODE DEFAULT_EDITOR);
 our $VERSION = $SVK::VERSION;
-our $SEP = catdir('');
 
+use Config;
 use SVK::I18N;
 use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
-use File::Spec::Functions qw(catfile catdir catpath splitpath tmpdir);
+use File::Basename qw(dirname);
+use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
+use ExtUtils::MakeMaker ();
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
 
-use constant TEXT_MODE => ($^O eq 'MSWin32') ? ':crlf' : '';
-use constant DEFAULT_EDITOR => ($^O eq 'MSWin32') ? 'notepad.exe' : 'vi';
+use constant HAS_SYMLINK => $Config{d_symlink};
+use constant IS_WIN32 => ($^O eq 'MSWin32');
+use constant TEXT_MODE => IS_WIN32 ? ':crlf' : '';
+use constant DEFAULT_EDITOR => IS_WIN32 ? 'notepad.exe' : 'vi';
+
+our $SEP = catdir('');
+our $EOL = IS_WIN32 ? "\015\012" : "\012";
 
 sub svn_mirror () {
     no warnings 'redefine';
@@ -54,8 +63,7 @@ sub get_buffer_from_editor {
     my ($what, $sep, $content, $file, $anchor, $targets_ref) = @_;
     my $fh;
     if (defined $content) {
-	($fh, $file) = tmpfile ($file, UNLINK => 0);
-	binmode($fh, TEXT_MODE);
+	($fh, $file) = tmpfile ($file, TEXT => 1, UNLINK => 0);
 	print $fh $content;
 	close $fh;
     }
@@ -170,6 +178,7 @@ sub resolve_svm_source {
 sub tmpfile {
     my ($temp, %args) = @_;
     my $dir = tmpdir;
+    my $text = delete $args{TEXT};
     $temp = "svk-${temp}XXXXX";
     return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
@@ -177,6 +186,7 @@ sub tmpfile {
 				SUFFIX => '.tmp',
 				%args
 			      );
+    binmode($tmp, TEXT_MODE) if $text;
     return wantarray ? ($tmp, $tmp->filename) : $tmp;
 }
 
@@ -188,7 +198,8 @@ sub abs_path {
     my $path = shift;
     if (defined &Win32::GetFullPathName) {
 	$path = '.' if !length $path;
-	return scalar Win32::GetFullPathName($path)
+	$path = Win32::GetFullPathName($path);
+	return((-d dirname($path)) ? $path : undef);
     }
     return Cwd::abs_path ($path) unless -l $path;
     my (undef, $dir, $pathname) = splitpath ($path);
@@ -196,13 +207,18 @@ sub abs_path {
 }
 
 sub mimetype {
+    no strict 'refs';
     no warnings 'redefine';
+
     local $@;
     my $mimetype = eval {
         require File::MimeInfo::Magic;
         \&File::MimeInfo::Magic::mimetype;
-    };
-    *mimetype = $mimetype ||= sub { undef };
+    } || sub { undef };
+
+    *{caller().'::mimetype'} = $mimetype;
+    *mimetype = $mimetype;
+
     goto &$mimetype;
 }
 
@@ -219,16 +235,49 @@ sub mimetype_is_text {
 }
 
 sub abs2rel {
-    my ($child, $parent, $new_parent) = @_;
+    my ($child, $parent, $new_parent, $slash) = @_;
+    if (IS_WIN32 and $child =~ /^\W/) {
+	print STDERR "*********Called: $child <=> $parent\n";
+	exit;
+    }
     my $rel = File::Spec::Functions::abs2rel($child, $parent);
     if (index($rel, '..') > -1) {
         $rel = $child;
     }
     elsif (defined $new_parent) {
-        $rel = "$new_parent/$rel";
+        $rel = catdir($new_parent, $rel);
     }
-    $rel =~ s{\Q$SEP\E}{/}go if $SEP ne '/';
+    $rel =~ s/\Q$SEP/$slash/g if $slash and $SEP ne $slash;
     return $rel;
+}
+
+sub catfile {
+    return File::Spec::Functions::catfile (
+	grep {defined and length} +shift, map splitdir($_), @_
+    )
+}
+
+sub devnull () {
+    IS_WIN32 ? tmpfile('', UNLINK => 1) : File::Spec::Functions::devnull();
+}
+
+sub is_symlink {
+    HAS_SYMLINK ? @_ ? (-l $_[0]) : (-l _) : 0;
+}
+
+sub is_executable {
+    MM->maybe_command($_[0]);
+}
+
+sub read_file {
+    local $/;
+    open my $fh, '<', $_[0] or die $!;
+    return <$fh>;
+}
+
+sub write_file {
+    open my $fh, '>', $_[0] or die $!;
+    print $fh $_[1];
 }
 
 1;

@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
+use SVK::Util qw( slurp_fh md5 get_anchor tmpfile devnull );
 use IO::Digest;
 
 =head1 NAME
@@ -274,6 +274,7 @@ sub prepare_fh {
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
+
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
     $pool->default if $pool && $pool->can ('default');
@@ -323,7 +324,7 @@ sub close_file {
 	}
 
 	$self->ensure_open ($path);
-	$fh->{base}[1] = '/dev/null' if $info->{addmerge};
+	$fh->{base}[1] = devnull if $info->{addmerge};
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
 	my $mfh = tmpfile ('merged-');
@@ -571,6 +572,7 @@ sub change_dir_prop {
     # be dealt.
     return if $arg[0] eq 'svk:merge';
     return if $arg[0] =~ m/^svm:/;
+    $path = '' unless defined $path;
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
     $self->{notify}->prop_status ($path, 'U');
     ++$self->{changes};
