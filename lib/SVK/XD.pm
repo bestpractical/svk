@@ -27,9 +27,7 @@ SVK::XD - svk depot and checkout handling.
 =head1 SYNOPSIS
 
   use SVK::XD;
-  $xd = SVK::XD->new
-      (depotmap => { '' => '/path/to/repos'},
-       checkout => Data::Hierarchy->new);
+  $xd = SVK::XD->new (depotmap => { '' => '/path/to/repos'});
 
 =head1 TERMINOLOGY
 
@@ -88,6 +86,7 @@ sub new {
     %$self = @_;
     $self->{signature} ||= SVK::XD::Signature->new (root => "$self->{svkpath}/cache")
 	if $self->{svkpath};
+    $self->{checkout} ||= Data::Hierarchy->new( sep => $SEP );
     return $self;
 }
 
@@ -122,10 +121,13 @@ sub load {
 	    print loc ("Can't load statefile, old statefile saved as %1\n",
 		     "$self->{statefile}.backup");
 	}
+        elsif ($info) {
+            $info->{checkout}{sep} = $SEP;
+        }
     }
 
     $info ||= { depotmap => {'' => "$self->{svkpath}/local" },
-	        checkout => Data::Hierarchy->new() };
+	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
 }
 

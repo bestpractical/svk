@@ -47,11 +47,8 @@ SVK - A Distributed Version Control System
 =head1 SYNOPSIS
 
   use SVK;
-  use XD;
-
-  $xd = SVK::XD->new
-      (depotmap => { '' => '/path/to/repos'},
-       checkout => Data::Hierarchy->new);
+  use SVK::XD;
+  $xd = SVK::XD->new (depotmap => { '' => '/path/to/repos'});
 
   $svk = SVK->new (xd => $xd, output => \$output);
   # serialize the $xd object for future use.

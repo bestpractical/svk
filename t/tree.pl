@@ -75,8 +75,7 @@ sub build_test {
 
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
     my $xd = SVK::XD->new (depotmap => $depotmap,
-			   svkpath => $depotmap->{''},
-			   checkout => Data::Hierarchy->new( sep => $SEP ));
+			   svkpath => $depotmap->{''});
     my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
     push @TOCLEAN, [$xd, $svk];
     return ($xd, $svk);
