@@ -114,6 +114,3 @@ is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
  'Committed revision 20.']);
 
 $svk->update ("$copath/work");
-$svk->desc ('19');
-our $output;
-warn $output;
