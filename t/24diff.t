@@ -248,22 +248,22 @@ $svk->update ('-r2', 'A/bar');
 append_file ("A/foo", "mixed\n");
 append_file ("A/bar", "mixed\n");
 
-is_output ($svk, 'diff', [],
-	   ['=== A/bar',
-	    '==================================================================',
-	    '--- A/bar  (revision 2)',
-	    '+++ A/bar  (local)',
-	    '@@ -1,2 +1,3 @@',
-	    ' foobar',
-	    ' newline',
-	    '+mixed',
-	    '=== A/foo',
+is_output ($svk, 'diff', ['A/foo', 'A/bar'],
+	   ['=== A/foo',
 	    '==================================================================',
 	    '--- A/foo  (revision 1)',
 	    '+++ A/foo  (local)',
 	    '@@ -1,2 +1,3 @@',
 	    ' foobar',
 	    ' fnord',
+	    '+mixed',
+	    '=== A/bar',
+	    '==================================================================',
+	    '--- A/bar  (revision 2)',
+	    '+++ A/bar  (local)',
+	    '@@ -1,2 +1,3 @@',
+	    ' foobar',
+	    ' newline',
 	    '+mixed']);
 
 $svk->revert ('-R', 'A');
