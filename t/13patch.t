@@ -143,7 +143,7 @@ is_output ($svk, 'patch', ['view', 'test-1'],
 	    @$log1, @$patch2]);
 
 is_output ($svk, 'patch', ['apply', 'test-1', $scopath, '--', '-C'],
-	   [__('U   B/fe'),
+	   [__("U   $scopath/B/fe"),
 	    "New merge ticket: $uuid2:/local:6"]);
 $svk2->cp ('-m', 'branch', '//trunk', '//patch-branch');
 is_output ($svk2, 'patch', ['apply', 'test-1', '//patch-branch', '--', '-C'],

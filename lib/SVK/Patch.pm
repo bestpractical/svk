@@ -226,7 +226,7 @@ sub apply_to {
     my ($self, $target, $storage, %cb) = @_;
     my $base = $self->{_target}
 	or die loc("Target not local nor mirrored, unable to test patch.\n");
-    # XXX: cb_merged
+
     my $editor = SVK::Editor::Merge->new
 	( base_anchor => $base->path,
 	  base_root => $base->root,
@@ -235,6 +235,11 @@ sub apply_to {
 	  anchor => $target->path,
 	  target => '',
 	  send_fulltext => !$cb{patch} && !$cb{mirror},
+	  ($target->{copath}
+	      ? (notify => SVK::Notify->new_with_report
+		    ($target->{report}, $target, 1))
+	      : ()
+	  ),
 	  %cb,
 	);
     $self->{editor}->drive ($editor);

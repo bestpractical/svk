@@ -603,7 +603,7 @@ sub move_path {
 
     print loc(
         "Cannot rename %1 to %2; please move it manually.\n",
-        $source, $target,
+        catfile($source), catfile($target),
     );
 }
 

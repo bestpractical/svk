@@ -111,7 +111,7 @@ sub _do_relocate {
         $map->{$target . substr($key, $length)} = delete $map->{$key};
     }
 
-    print loc("Checkout '%1' relocated to '%2'.\n", $path, $report);
+    print loc("Checkout '%1' relocated to '%2'.\n", $path, $target);
 
     return;
 }
