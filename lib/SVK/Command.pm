@@ -87,8 +87,8 @@ sub invoke {
 	    $cmd->usage;
 	}
 	else {
-	    eval { $cmd->lock (@args); warn "Running $cmd\n"; $ret = $cmd->run (@args) };
-	    print STDERR "======>[$@]\n";
+	    eval { $cmd->lock (@args); warn "Running $cmd\n" if $ENV{DEBUG}; $ret = $cmd->run (@args) };
+	    print STDERR "======>[$@]\n" if $ENV{DEBUG};
 	    $xd->unlock if $xd;
 	    die $@ if $@;
 	}

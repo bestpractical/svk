@@ -27,7 +27,7 @@ sub AUTOLOAD {
     eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
     if ($output) {
 	close $output;
-	print STDERR "[$cmd] $buf";
+	print STDERR "[$cmd] $buf" if $ENV{DEBUG};
 	${$self->{output}} = $buf;
     }
 }
