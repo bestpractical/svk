@@ -59,6 +59,7 @@ sub mkpdir {
 
 sub run {
     my ($self, $target, $copath) = @_;
+    return unless $self->check_mirrored_path ($target);
 
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
