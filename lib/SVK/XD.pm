@@ -582,7 +582,9 @@ sub do_delete {
     my @paths = grep {is_symlink($_) || -e $_} (exists $arg{targets}[0] ?
 			      map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}}
 			      : $arg{copath});
+    my $ignore = ignore ();
     find(sub {
+	     return if m/$ignore/;
 	     my $cpath = catdir($File::Find::dir, $_);
 	     no warnings 'uninitialized';
 	     return if $self->{checkout}->get ($cpath)->{'.schedule'}
@@ -779,18 +781,8 @@ sub _unknown_verbose {
 		return if $seen{$copath};
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
-		if ($arg{entry}) {
-		    $dpath = abs2rel($dpath, $arg{copath} => $arg{entry}, '/');
-		}
-		else {
-		    if ($dpath eq $arg{copath}) {
-			$dpath = '';
-		    }
-		    else {
-			$dpath = abs2rel($dpath, $arg{copath}, '/');
-		    }
-		}
-		$arg{cb_unknown}->($dpath, catdir($File::Find::dir, $_));
+		$dpath = abs2rel($dpath, $arg{copath} => $arg{entry}, '/');
+		$arg{cb_unknown}->($dpath, $copath);
 	  }}, defined $arg{targets} ?
 	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
 }
@@ -826,7 +818,18 @@ sub _node_deleted_or_absent {
     }
 
     lstat ($arg{copath});
-    unless (-e _) {
+    if (-e _) {
+	if ($arg{kind} && ((-f _ || is_symlink) xor ($arg{kind} == $SVN::Node::file))) {
+	    if ($arg{obstruct_as_replace}) {
+		$self->_node_deleted (%arg);
+	    }
+	    else {
+		$arg{cb_obstruct}->($arg{editor}, $arg{entry}, $arg{baton})
+		    if $arg{cb_obstruct};
+	    }
+	}
+    }
+    else {
 	# deleted during base_root -> xdroot
 	if ($arg{xdroot} ne $arg{base_root} && $arg{kind} == $SVN::Node::none) {
 	    $self->_node_deleted (%arg);
@@ -896,8 +899,7 @@ sub _delta_file {
 	$newprops = _prop_delta ($arg{base_root}->node_proplist ($arg{base_path}), $fullprop)
 	    if $arg{kind} && $arg{base_kind} && _prop_changed (@arg{qw/base_root base_path xdroot path/});
     }
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, 0, undef, undef,
-		     $fullprop);
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $fullprop);
     my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
 
@@ -997,11 +999,17 @@ sub _delta_dir {
 	my $copath = SVK::Target->copath ($arg{copath}, $entry);
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
-	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
+	# XXX: save this stat() result for node_delete_or_absent
+	lstat ($copath);
+	my $isdir = (-d _ and not is_symlink);
+	my $delta = -e _ ? $isdir ? \&_delta_dir : \&_delta_file
+	                 : $kind == $SVN::Node::file ? \&_delta_file : \&_delta_dir;
 	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
+	my $obs = -e _ ? ($kind == $SVN::Node::dir xor $isdir) : 0;
 	$self->$delta ( %arg,
-			add => $arg{in_copy},
-			base => 1,
+			add => $arg{in_copy} || ($obs && $arg{obstruct_as_replace}),
+			# if copath exist, we have base only if they are of the same type
+			base => !$obs,
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($newpath),
@@ -1256,18 +1264,16 @@ Returns a file handle with keyword translation and line-ending layers attached.
 =cut
 
 sub get_fh {
-    my ($root, $mode, $path, $fname, $raw, $layer, $eol, $prop) = @_;
+    my ($root, $mode, $path, $fname, $prop, $layer, $eol) = @_;
     {
 	local $@;
 	$prop ||= eval { $root->node_proplist ($path) };
     }
-    unless ($raw) {
-	return _fh_symlink ($mode, $fname)
-	    if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
-	if (keys %$prop) {
-	    $layer ||= get_keyword_layer ($root, $path, $prop);
-	    $eol ||= get_eol_layer($root, $path, $prop);
-	}
+    return _fh_symlink ($mode, $fname)
+	if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
+    if (keys %$prop) {
+	$layer ||= get_keyword_layer ($root, $path, $prop);
+	$eol ||= get_eol_layer($root, $path, $prop);
     }
     $eol ||= ':raw';
     open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!\n";

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 21;
+use Test::More tests => 22;
 use strict;
 use File::Path;
 use Cwd;
@@ -71,14 +71,15 @@ ok (-e "$copath/A/unused", 'unversioned file not deleted');
 ok (-e "$copath/A/foo", 'local file not deleted');
 ok (!-e "$copath/B/foo", 'unmodified dir deleted');
 $svk->revert ('-R', $copath);
+# XXX: stalled conflict items are not resolved with revert.
 $svk->resolved ('-R', $copath);
-
 append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
 $svk->add ("$copath/A/unused");
 $svk->rm ("$copath/A/bar");
 $svk->rm ("$copath/A/deep/deeper");
-$svk->commit ('-m', 'local modification', $copath);
+is_output ($svk, 'commit', ['-m', 'local modification', $copath],
+	   ['Committed revision 6.']);
 
 is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',

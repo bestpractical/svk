@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 10;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -38,6 +38,12 @@ is_output ($svk, 'status', [],
 is_output ($svk, 'delete', ["$corpath/A/foo"],
 	   [__("D   $corpath/A/foo")], 'delete - file - abspath');
 $svk->revert ('-R', '.');
+
+overwrite_file ("A/deep/baz~", "foobar");
+is_output ($svk, 'delete', ['A/deep'],
+	   [map __($_),
+	    'D   A/deep',
+	    'D   A/deep/baz'], 'delete - ignore files');
 
 is_output ($svk, 'delete', ['-m', 'rm directly', '//A/deep'],
 	  ['Committed revision 2.'], 'rm directly');

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 10;
 use strict;
 use File::Temp;
 BEGIN { require 't/tree.pl' };
@@ -15,8 +15,10 @@ $svk->add("$copath/A");
 $svk->commit('-m' => 'log1', "$copath/A");
 overwrite_file ("$copath/A/foo", "foobar2");
 $svk->commit('-m' => 'log2', "$copath/A");
+is_output ($svk, 'pl', ['--revprop'],
+	   ['Revision required.']);
 is_output_like(
-    $svk, 'proplist', ['--revprop'],
+    $svk, 'proplist', ['-r' => 2, '--revprop'],
     qr{Unversioned properties on revision 2:\n.*  svn:date\n.*  svn:log}s,
 );
 is_output(
@@ -24,25 +26,25 @@ is_output(
     ['log1']
 );
 is_output(
-    $svk, 'propget', ['--revprop', 'svn:log'],
+    $svk, 'propget', ['-r' => 2, '--revprop', 'svn:log'],
     ['log2']
 );
 
 is_output(
-    $svk, 'propset', ['--revprop', 'svn:log', 'log2.new'],
+    $svk, 'propset', ['-r2', '--revprop', 'svn:log', 'log2.new'],
     ["Property 'svn:log' set on repository revision 2."]
 );
 is_output(
-    $svk, 'propget', ['--revprop', 'svn:log'],
+    $svk, 'propget', ['-r2', '--revprop', 'svn:log'],
     ['log2.new']
 );
 
 is_output(
-    $svk, 'propdel', ['--revprop', 'svn:log'],
+    $svk, 'propdel', ['-r2', '--revprop', 'svn:log'],
     ["Property 'svn:log' set on repository revision 2."]
 );
 is_output_like(
-    $svk, 'proplist', ['--revprop'],
+    $svk, 'proplist', ['-r2', '--revprop'],
     qr{(?!.*svn:log)Unversioned properties on revision 2:\n.*  svn:date\n}s,
 );
 

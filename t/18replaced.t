@@ -63,3 +63,4 @@ is_output ($svk, 'status', [$copath],
 	    __"D   $copath/A/be",
 	    __"D   $copath/A/neu"], 'file replacing dir');
 }
+$svk->commit ('-m', 'commit the replace', $copath);

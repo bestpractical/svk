@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 15;
+use Test::More tests => 16;
 use strict;
 use File::Path;
 use Cwd;
@@ -55,6 +55,14 @@ $svk->import ('-f', '-m', 'import -f', '//import');
 is_output ($svk, 'status', [], []);
 
 chdir ($oldwd);
+
+rmtree ["$copath/dir"];
+
+overwrite_file ("$copath/dir", "now file\n");
+$svk->import ('-f', '-m', 'import -f', '//import', $copath);
+rmtree [$copath];
+$svk->checkout ('//import', $copath);
+ok (-f copath ('dir'));
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');

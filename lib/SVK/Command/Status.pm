@@ -30,6 +30,7 @@ sub run {
 	      notify => SVK::Notify->new_with_report ($target->{report}, undef, 1)
 	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
+	  cb_obstruct => \&SVK::Editor::Status::obstruct,
 	  cb_unknown =>
 	  sub { my $path = abs2rel($_[1], $target->{copath} => length($report) ? $report : undef);
 		print "?   $path\n" }

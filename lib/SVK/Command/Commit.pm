@@ -314,6 +314,7 @@ sub run_delta {
 	  editor => $editor,
 	  $self->{import} ?
 	  ( auto_add => 1,
+	    obstruct_as_replace => 1,
 	    absent_as_delete => 1) :
 	  ( absent_ignore => 1),
 	  $cb{mirror} ?

@@ -26,14 +26,16 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, @arg) = @_;
 
+    die loc ("Revision required.\n")
+	if $self->{revprop} && !defined $self->{rev};
+
     for my $target (@arg) {
         if ($self->{revprop}) {
-            my $rev = (defined($self->{rev}) ? $self->{rev} : $target->{revision});
-            $self->show_props (
-                $target,
-                $target->{repos}->fs->revision_proplist($rev),
-                $rev,
-            );
+            $self->show_props
+		( $target,
+		  $target->{repos}->fs->revision_proplist($self->{rev}),
+		  $self->{rev}
+		);
             next;
         }
 

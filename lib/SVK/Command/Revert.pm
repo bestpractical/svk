@@ -33,6 +33,8 @@ sub run {
 	      xdroot => $xdroot,
 	      delete_verbose => 1,
 	      absent_verbose => 1,
+	      nodelay => 1,
+	      cb_conflict => \&SVK::Editor::Status::conflict,
 	      editor => SVK::Editor::Status->new
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
@@ -41,7 +43,7 @@ sub run {
 		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
 		      my $copath = $target->copath ($path);
 
-                      if ($st =~ /[DMR!]/) {
+                      if ($st =~ /[DMRC!]/) {
                           return $self->do_revert($copath, $dpath, $xdroot);
                       }
 

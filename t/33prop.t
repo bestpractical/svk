@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 45;
+use Test::More tests => 47;
 use strict;
 use File::Temp;
 require 't/tree.pl';
@@ -123,6 +123,12 @@ print _ @_;
 close _;
 TMP
 
+TODO: {
+local $TODO = 'forbid ps/pe on depotpath, non-revprop';
+is_output ($svk, 'pe', ['-r2', 'newprop', "$copath/A"],
+	   ['Not allowed.']);
+}
+
 is_output ($svk, 'pe', ['newprop', "$copath/A"],
 	   ['Waiting for editor...',
 	    " M  $copath/A"]);
@@ -170,5 +176,6 @@ is_output ($svk, 'pl', ['-v'],
 	    '  pedirect: prepended_prop']);
 
 is_output ($svk, 'pg', ['myprop2'], ['prepended_prop', 'myvalue2']);
+is_output ($svk, 'pg', ['-r1', 'myprop2'], []);
 is_output ($svk, 'pg', ['nosuchprop'], []);
 

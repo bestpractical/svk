@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 11;
+use Test::More tests => 12;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -75,3 +75,10 @@ $svk->revert ('-R', '.');
 $svk->ps ('someprop', 'somevalue', 'A/deep/baz');
 is_output ($svk, 'status', ['A/deep'],
 	   [__(' M  A/deep/baz')], 'prop only');
+$svk->revert ('-R', '.');
+rmtree (['A/deep']);
+overwrite_file ("A/deep", "dir replaced with file.\n");
+is_output ($svk, 'status', [],
+	   [map __($_),
+	    '?   A/bar',
+	    '~   A/deep'], 'obstructure');

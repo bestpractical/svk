@@ -132,7 +132,7 @@ sub apply_textdelta {
     }
     # XXX: should test merge to co with keywords
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
-    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath, 0, undef, undef,
+    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
 	or warn "can't open $path";
 
