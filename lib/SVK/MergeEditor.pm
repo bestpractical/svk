@@ -2,6 +2,7 @@ package SVK::MergeEditor;
 use strict;
 our $VERSION = '0.05';
 our @ISA = qw(SVN::Delta::Editor);
+use SVK::Util qw( slurp_fh md5 get_anchor );
 
 =head1 NAME
 
@@ -97,13 +98,6 @@ use File::Compare ();
 use IO::String;
 use File::Temp qw/:mktemp/;
 
-sub md5 {
-    my $fh = shift;
-    my $ctx = Digest::MD5->new;
-    $ctx->addfile($fh);
-    return $ctx->hexdigest;
-}
-
 sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;
@@ -167,10 +161,7 @@ sub prepare_fh {
 	my $tmp = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
 	my $slurp = $fh->{$name}[0];
 
-	local $/ = \16384;
-	while (<$slurp>) {
-	    print {$tmp->[0]} $_;
-	}
+	slurp_fh ($slurp, $tmp->[0]);
 
 	close $fh->{$name}[0];
 	$fh->{$name} = $tmp;
@@ -194,10 +185,7 @@ sub apply_textdelta {
 	my $rpath = $path;
 	$rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
 	my $buf = $self->{base_root}->file_contents ($rpath, $pool);
-	local $/ = \16384;
-	while (<$buf>) {
-	    print {$fh->{base}[0]} $_;
-	}
+	slurp_fh ($buf, $fh->{base}[0]);
 	seek $fh->{base}[0], 0, 0;
 	# get new
 	$fh->{new} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
@@ -297,6 +285,13 @@ sub close_file {
 
 	&{$self->{cb_conflict}} ($path)
 	    if $info->{status}[0] eq 'C';
+    }
+    elsif ($info->{status}[0] ne 'A') {
+	# open but prop edit only, load local checksum
+	if (my $local = &{$self->{cb_localmod}} ($path, $checksum, $pool)) {
+	    $checksum = $local->[2];
+	    close $local->[0];
+	}
     }
 
     if ($info->{status}) {

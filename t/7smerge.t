@@ -72,14 +72,17 @@ ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 svk::smerge ('-C', '//m', '//l');
 svk::smerge ('-m', 'mergedown', '//m', '//l');
 svk::smerge ('-m', 'mergedown', '//m', '//l');
-
+svk::update ($scopath);
 append_file ("$scopath/A/be", "more modification on trunk\n");
+svk::propset ("bzz", "newprop", "$scopath/A/Q/qu");
 svk::commit ('-m', 'commit on trunk', $scopath);
 svk::sync ('//m');
 
 svk::update ($copath);
 append_file ("$copath/be", "modification on local\n");
+append_file ("$copath/Q/qu", "modified on local\n");
 svk::commit ('-m', 'commit on local', $copath);
+svk::smerge ('-C', '//m', '//l');
 svk::smerge ('-C', '//m', $copath);
 svk::smerge ('//m', $copath);
 svk::status ($copath);

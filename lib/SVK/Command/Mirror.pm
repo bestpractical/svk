@@ -16,6 +16,7 @@ sub run {
     die "require SVN::Mirror" unless $self->svn_mirror;
 
     my $m = SVN::Mirror->new (target_path => $target->{path}, target => $target->{repospath},
+			      repos => $target->{repos},
 			      pool => SVN::Pool->new, auth => $self->auth,
 			      source => $source, target_create => 1);
     $m->init;

@@ -39,6 +39,7 @@ sub run {
     for my $target (@arg) {
 	my $m = SVN::Mirror->new (target_path => $target->{path},
 				  target => $target->{repospath},
+				  repos => $target->{repos},
 				  pool => SVN::Pool->new, auth => $self->auth,
 				  cb_copy_notify => \&copy_notify,
 				  get_source => 1, skip_to => $self->{skip_to});
