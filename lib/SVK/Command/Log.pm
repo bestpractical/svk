@@ -15,8 +15,8 @@ sub options {
 
 sub log_remote_rev {
     # XXX: Use an api instead
-    my ($repos, $rev) = @_;
-    my $revprops = $repos->fs->revision_proplist ($rev);
+    my ($fs, $rev) = @_;
+    my $revprops = $fs->revision_proplist ($rev);
 
     my ($rrev) = map {$revprops->{$_}} grep {m/^svm:headrev:/} sort keys %$revprops;
 
@@ -45,6 +45,15 @@ sub run {
     $torev ||= 0;
 
     $self->{cross} ||= 0;
+
+    if ($SVN::Core::VERSION ge '1.0.2') {
+	_get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
+		   $self->{verbose}, $self->{cross},
+		   sub {_show_log (@_, undef, '', 1)} );
+	return;
+    }
+
+    # XXX: obsolete after svn 1.0.2 release
     if ($self->{limit}) {
 	my $pool = SVN::Pool->new_default;
 	my $hist = $fs->revision_root ($fromrev)->node_history ($target->{path});
@@ -59,6 +68,69 @@ sub run {
     return;
 }
 
+sub _get_logs {
+    my ($fs, $limit, $path, $fromrev, $torev, $verbose, $cross, $callback) = @_;
+    my $reverse = ($fromrev < $torev);
+    my @revs;
+    ($fromrev, $torev) = ($torev, $fromrev) if $reverse;
+
+    my $docall = sub {
+	my ($rev) = @_;
+	my ($root, $changed, $props);
+	$root = $fs->revision_root ($rev);
+	$changed = $root->paths_changed if $verbose;
+	$props = $fs->revision_proplist ($rev);
+	$callback->($rev, $root, $changed, $props);
+    };
+
+    my $pool = SVN::Pool->new_default;
+    my $hist = $fs->revision_root ($fromrev)->node_history ($path);
+    while (($hist = $hist->prev ($cross)) && $limit--) {
+	my $rev = ($hist->location)[1];
+	last if $rev < $torev;
+	$reverse ?  unshift @revs, $rev : $docall->($rev);
+	$pool->clear;
+    }
+
+    if ($reverse) {
+	$docall->($_), $pool->clear for @revs;
+    }
+}
+
+my $chg;
+$chg->[$SVN::Fs::PathChange::modify] = 'M';
+$chg->[$SVN::Fs::PathChange::add] = 'A';
+$chg->[$SVN::Fs::PathChange::delete] = 'D';
+$chg->[$SVN::Fs::PathChange::replace] = 'R';
+
+sub _show_log { 
+    my ($rev, $root, $paths, $props, $output, $host, $remote) = @_;
+    $output ||= \*STDOUT;
+    my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
+    no warnings 'uninitialized';
+    print $output "r$rev$host".
+	($remote ? log_remote_rev($root->fs, $rev): '').
+	    ":  $author | $date\n";
+    if ($paths) {
+	print $output loc("Changed paths:\n");
+	for (sort keys %$paths) {
+	    my $entry = $paths->{$_};
+	    my ($action, $propaction) = ($chg->[$entry->change_kind], ' ');
+	    my ($copyfrom_rev, $copyfrom_path) = $action eq 'D' ? (-1) : $root->copied_from ($_);
+	    $propaction = 'M' if $action eq 'M' && $entry->prop_mod;
+	    $action = ' ' if $action eq 'M' && !$entry->text_mod;
+	    $action = 'M' if $action eq 'A' && $copyfrom_path && $entry->text_mod;
+	    print $output
+		"  $action$propaction $_".
+		    ($copyfrom_path ?
+		     ' ' . loc("(from %1:%2)", $copyfrom_path, $copyfrom_rev) : ''
+		    ).
+			"\n";
+	}
+    }
+    print $output "\n$message\n".('-' x 70). "\n";
+}
+
 sub do_log {
     my ($repos, $path, $fromrev, $torev, $verbose,
 	$cross, $remote, $showhost, $output) = @_;
@@ -68,27 +140,31 @@ sub do_log {
     no warnings 'uninitialized';
     use Sys::Hostname;
     my ($host) = split ('\.', hostname, 2);
-    $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
-		     sub { my ($paths, $rev, $author, $date, $message) = @_;
-			   no warnings 'uninitialized';
-			   print $output "r$rev".($showhost ? "\@$host" : '').
-			       ($remote ? log_remote_rev($repos, $rev): '').
-				   ":  $author | $date\n";
-			   if ($paths) {
-			       print $output loc("Changed paths:\n");
-			       for (sort keys %$paths) {
-				   my $entry = $paths->{$_};
-				   print $output
-				       '  '.$entry->action." $_".
-					   ($entry->copyfrom_path ?
-					    ' ' . loc("(from %1:%2)", $entry->copyfrom_path, $entry->copyfrom_rev) : ''
-					   ).
-					   "\n";
-			       }
-			   }
-			   print $output "\n$message\n".('-' x 70). "\n";
-		       });
-
+    $host = $showhost ? '@'.$host : '';
+    # XXX: obsolete after svn 1.0.2 release
+    $SVN::Core::VERSION ge '1.0.2' ?
+	_get_logs ($repos->fs, -1, $path, $fromrev, $torev, $verbose, $cross,
+		   sub {_show_log (@_, $output, $host, $remote)} )
+	    : $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
+				sub { my ($paths, $rev, $author, $date, $message) = @_;
+				      no warnings 'uninitialized';
+				      print $output "r$rev$host".
+					  ($remote ? log_remote_rev($repos->fs, $rev): '').
+					      ":  $author | $date\n";
+				      if ($paths) {
+					  print $output loc("Changed paths:\n");
+					  for (sort keys %$paths) {
+					      my $entry = $paths->{$_};
+					      print $output
+						  '  '.$entry->action." $_".
+						      ($entry->copyfrom_path ?
+						       ' ' . loc("(from %1:%2)", $entry->copyfrom_path, $entry->copyfrom_rev) : ''
+						      ).
+							  "\n";
+					  }
+				      }
+				      print $output "\n$message\n".('-' x 70). "\n";
+				  });
 }
 
 1;
