@@ -28,9 +28,6 @@ sub parse_arg {
 	    unless $arg[0];
 	$arg[0] = $self->_load ($arg[0]);
     }
-    if ($cmd eq 'apply') {
-	$arg[1] = $self->arg_co_maybe ($arg[1] || '');
-    }
     return ($cmd, @arg);
 }
 
@@ -93,15 +90,16 @@ sub list {
 
 sub apply {
     require SVK::Command::Merge;
-    my ($self, $patch, $dst, @args) = @_;
-    $self->lock_target ($dst) if $dst->{copath};
-    my $ticket;
+    my ($self, $patch, @args) = @_;
     my $mergecmd = SVK::Command::Merge->new ($self->{xd});
     $mergecmd->getopt (\@args);
+    my $dst = $self->arg_co_maybe ($args[0] || '');
+    $self->lock_target ($dst) if $dst->{copath};
+    my $ticket;
     $mergecmd->get_commit_message ($patch->{log}) unless $dst->{copath};
     my $merge = SVK::Merge->new (%$mergecmd, dst => $dst, repos => $dst->{repos});
     $ticket = sub { $merge->get_new_ticket (SVK::Merge::Info->new ($patch->{ticket})) }
-	if $dst->universal->same_resource ($patch->{target});
+	if $patch->{ticket} && $dst->universal->same_resource ($patch->{target});
     $patch->apply_to ($dst, $mergecmd->get_editor ($dst),
 		      resolve => $merge->resolver,
 		      ticket => $ticket);
