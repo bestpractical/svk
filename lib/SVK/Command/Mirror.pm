@@ -117,12 +117,14 @@ sub run {
 	my $root = $fs->revision_root ($fs->youngest_rev);
 	my $name = $target->depotname;
 	foreach my $path (@paths) {
+	    eval {
 	    my $m = SVN::Mirror->new(
                     target_path => $path,
                     repos => $target->{repos},
                     get_source => 1
                 );
 	    printf $fmt, "/$name$path", $m->{source};
+	    };
 	}
     }
     return;
