@@ -17,6 +17,7 @@ use Cwd;
 use File::Temp 0.14 qw(mktemp);
 use File::Basename qw(dirname);
 use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
+use ExtUtils::MakeMaker ();
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
@@ -265,8 +266,7 @@ sub is_symlink {
 }
 
 sub is_executable {
-    IS_WIN32 ? @_ ? (-f $_[0]) : (-f _)
-	     : @_ ? (-x $_[0]) : (-x _);
+    MM->maybe_command($_[0]);
 }
 
 sub read_file {
