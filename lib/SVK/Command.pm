@@ -374,9 +374,7 @@ sub arg_uri_maybe {
     $path = "//mirror/$path" unless $path =~ m!^/!;
 
     my $target = $self->arg_depotpath($path);
-    require SVK::Command::Mirror;
-    my $mirror = SVK::Command::Mirror->new;
-    $mirror->run($target, $base_uri);
+    $self->command ('mirror')->run ($target, $base_uri);
 
     print loc("Synchronizing the mirror for the first time:\n");
     print loc("  a        : Retrieve all revisions (default)\n");
@@ -390,15 +388,16 @@ sub arg_uri_maybe {
     ));
     $answer = 'a' unless length $answer;
 
-    require SVK::Command::Sync;
-    my $sync = SVK::Command::Sync->new;
-    $sync->{skip_to} = (
-        ($answer eq 'a') ? undef :
-        ($answer eq 'h') ? 'HEAD-1' :
-        ($answer < 0)    ? "HEAD$answer" :
-                           $answer
-    );
-    $sync->run ($target);
+    $self->command(
+        sync => {
+            skip_to => (
+                ($answer eq 'a') ? undef :
+                ($answer eq 'h') ? 'HEAD-1' :
+                ($answer < 0)    ? "HEAD$answer" :
+                                $answer
+            ),
+        }
+    )->run ($target);
 
     my $depotpath = "$target->{depotpath}/$rel_uri";
     return $self->arg_depotpath($depotpath);
@@ -690,10 +689,13 @@ sub msg_handler {
 
 sub command {
     my ($self, $command, $args) = @_;
-    require "SVK/Command/$command.pm";
 
-    my $cmd = "SVK::Command::$command"->new(%$self);
+    $command = ucfirst(lc($command));
+
+    require "SVK/Command/$command.pm";
+    my $cmd = "SVK::Command::$command"->new ($self->{xd});
     $cmd->{$_} = $args->{$_} for sort keys %$args;
+
     return $cmd;
 }
 

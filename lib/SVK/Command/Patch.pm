@@ -95,9 +95,8 @@ sub list {
 }
 
 sub apply {
-    require SVK::Command::Merge;
     my ($self, $patch, @args) = @_;
-    my $mergecmd = SVK::Command::Merge->new ($self->{xd});
+    my $mergecmd = $self->command ('merge');
     $mergecmd->getopt (\@args);
     my $dst = $self->arg_co_maybe ($args[0] || '');
     $self->lock_target ($dst) if $dst->{copath};

@@ -71,13 +71,12 @@ sub run {
         }
 
         if ($self->{merge}) {
-            require SVK::Command::Smerge;
-            my $smerge = SVK::Command::Smerge->new ($self->{xd});
-            %$smerge = (
-                ($self->{incremental} ? () : (message => '', log => 1)),
-                %$self, %$smerge, sync => 0,
-            );
-            $smerge->run(
+            $self->command (
+                smerge => {
+                    ($self->{incremental} ? () : (message => '', log => 1)),
+                    %$self, sync => 0,
+                }
+            )->run (
                 $merge_target->copied_from($self->{sync}) => $merge_target
             );
         }

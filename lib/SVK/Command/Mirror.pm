@@ -151,18 +151,18 @@ sub recover_headrev {
     ) =~ /^[Yy]/ or die loc("Aborted.\n");
 
     $self->command(
-        Delete => { direct => 1, message => '' }
+        delete => { direct => 1, message => '' }
     )->run($target);
 
     $self->command(
-        Copy => { rev => $rev, direct  => 1, message => '' },
+        copy => { rev => $rev, direct  => 1, message => '' },
     )->run($target => $target);
 
     # XXX - race condition? should get the last committed rev instead
     $target->refresh_revision;
 
     $self->command(
-        Propset => { direct  => 1, revprop => 1 },
+        propset => { direct  => 1, revprop => 1 },
     )->run($_ => $props->{$_}, $target) for sort keys %$props;
 
     print loc("Mirror state successfully recovered.\n");

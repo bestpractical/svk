@@ -86,8 +86,7 @@ sub run {
     my $yrev = $fs->youngest_rev;
 
     if ($self->{sync}) {
-        require SVK::Command::Sync;
-        my $sync = SVK::Command::Sync->new ($self->{xd});
+        my $sync = $self->command ('sync');
 	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));
         if ($m->{target_path}) {
             $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));

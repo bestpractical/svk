@@ -43,11 +43,11 @@ sub lock {
 
 sub mkpdir {
     my ($self, $target, $root, $yrev) = @_;
-    require SVK::Command::Mkdir;
-    my $cmd = SVK::Command::Mkdir->new ($self->{xd});
-    $cmd->{message} = "Directory for svk import.";
-    $cmd->{parent}++;
-    $cmd->run ($target);
+
+    $self->command (
+        mkdir => { message => "Directory for svk import.", parent => 1 },
+    )->run ($target);
+
     print loc("Import path %1 initialized.\n", $target->{path});
 }
 
