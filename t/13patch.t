@@ -7,7 +7,7 @@ our $output;
 
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 27;
+plan tests => 28;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
@@ -65,6 +65,24 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    "Target: $uuid:/trunk:3 [mirrored]",
             "        ($uri/trunk)",
 	    @$log1, @$patch1]);
+
+is_output ($svk2, 'smerge', ['-lm', '', '-P', '-', '//local', '//trunk'],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Patching locally against mirror source $uri/trunk.",
+	    'U   B/fe',
+	    '==== Patch <-> level 1',
+	    "Source: $uuid2:/local:6",
+	    "Target: $uuid:/trunk:3",
+            "        ($uri/trunk)",
+	    @$log1,
+            (map { join('-', split(/test-1/, $_)) } @$patch1),
+            '',
+            '==== BEGIN SVK PATCH BLOCK ====',
+            qr'Version: svk .*',
+            '',
+            ((qr'.*') x (9)),
+            '==== END SVK PATCH BLOCK ====',
+            ]);
 
 ok (-e "$xd2->{svkpath}/patch/test-1.patch");
 mkdir ("$xd->{svkpath}/patch");

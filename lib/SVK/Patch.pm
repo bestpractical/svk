@@ -77,7 +77,7 @@ sub load {
     my ($class, $file, $xd, $depot) = @_;
 
     my $content = do {
-        open my $fh, '<', $file or die "Cannot open $file: $!";
+        open my $fh, "< $file" or die loc("Cannot open %1: %2", $file, $!);
 
         # Serialized patches always begins with a block marker.
         # We need the \nVersion: to not trip over inlined block makers.
@@ -263,7 +263,7 @@ sub update {
 				     SVK::Editor::Merge::cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
 
-	print "Conflicts.\n";
+	print loc("Conflicts.\n");
 	return $conflict;
     }
 
@@ -278,7 +278,7 @@ sub regen {
     my $target = $self->{_target}
 	or die loc("Target not local nor mirrored, unable to regen patch.\n");
     unless ($self->{level} == 0 || $self->{_source_updated}) {
-	print "Source of path <$self->{name}> not updated or not local. No need to update.\n";
+	print loc("Source of patch %1 not updated or not local. No need to update.\n", $self->{name});
 	return;
     }
     my $source = $self->{_source}->new (revision => undef);
@@ -323,6 +323,7 @@ sub close_edit {
     $patch->{editor} = bless $self, 'SVK::Editor::Patch';
     ++$patch->{level};
     $patch->store ($filename);
+    return if $filename eq '-';
     print loc ("Patch %1 created.\n", $patch->{name});
 }
 

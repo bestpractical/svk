@@ -136,9 +136,7 @@ sub get_editor {
 	$patch->{ticket} = SVK::Merge->new (xd => $self->{xd})->merge_info ($source)->add_target ($source)->as_string
 	    if $source;
 	$patch->{log} = $self->{message};
-	my $fname = "$self->{xd}{svkpath}/patch";
-	mkdir ($fname);
-	$fname .= "/$self->{patch}.patch";
+	my $fname = $self->{xd}->patch_file ($self->{patch});
 	if (-e $fname) {
 	    die loc ("file %1 already exists.\n", $fname).
 		($source ? loc ("use $0 patch regen or update $self->{patch} instead.\n") : '');

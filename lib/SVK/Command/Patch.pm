@@ -77,14 +77,14 @@ sub update {
 
 sub delete {
     my ($self, $name) = @_;
-    unlink ("$self->{xd}{svkpath}/patch/$name.patch");
+    unlink $self->{xd}->patch_file ($name);
     return;
 }
 
 sub list {
     my ($self) = @_;
     my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
-    opendir my $dir, "$self->{xd}{svkpath}/patch";
+    opendir my $dir, $self->{xd}->patch_directory;
     foreach my $file (readdir ($dir)) {
 	next if $file =~ /^\./;
 	$file =~ s/\.patch$// or next;
@@ -114,14 +114,17 @@ sub apply {
 
 sub _store {
     my ($self, $patch) = @_;
-    $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.patch");
+    $patch->store ($self->{xd}->patch_file ($patch->{name}));
 }
 
 sub _load {
     my ($self, $name) = @_;
     # XXX: support alternative path
-    SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.patch",
-		      $self->{xd}, $self->{depot} || '');
+    SVK::Patch->load (
+        $self->{xd}->patch_file ($name),
+        $self->{xd},
+        ($self->{depot} || ''),
+    );
 }
 
 sub run {
@@ -153,7 +156,9 @@ SVK::Command::Patch - Manage patches
 
 =head1 DESCRIPTION
 
- Note that patches are created with commit -P or smerge -P.
+Note that patches are created with C<commit -P> or C<smerge -P>.
+
+A patch name of C<-> refers to the standard input and output.
 
 =head1 AUTHORS
 

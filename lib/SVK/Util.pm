@@ -266,7 +266,7 @@ Read from a file and returns its content as a single scalar.
 
 sub read_file {
     local $/;
-    open my $fh, '<', $_[0] or die $!;
+    open my $fh, "< $_[0]" or die $!;
     return <$fh>;
 }
 
@@ -277,6 +277,7 @@ Write out content to a file, overwriting existing content if present.
 =cut
 
 sub write_file {
+    return print $_[1] if ($_[0] eq '-');
     open my $fh, '>', $_[0] or die $!;
     print $fh $_[1];
 }

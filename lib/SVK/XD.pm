@@ -1342,6 +1342,19 @@ sub get_props {
     return _combine_prop ($props, $entry->{'.newprop'});
 }
 
+sub patch_directory {
+    my ($self) = @_;
+    my $rv = catdir ( $self->{svkpath}, 'patch' );
+    mkdir $rv unless -e $rv;
+    return $rv;
+}
+
+sub patch_file {
+    my ($self, $name) = @_;
+    return '-' if $name eq '-';
+    return catdir ($self->patch_directory, "$name.patch");
+}
+
 sub DESTROY {
     my ($self) = @_;
     return if $self->{updated};
