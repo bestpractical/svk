@@ -8,7 +8,7 @@ if (!HAS_SYMLINK) {
     exit;
 }
 
-plan tests => 19;
+plan tests => 20;
 use strict;
 use File::Path;
 require 't/tree.pl';

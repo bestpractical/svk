@@ -240,7 +240,7 @@ sub arg_path {
     return abs_path ($arg);
 }
 
-my %empty = map { ($_ => undef) } qw/.schedule copyfrom copyfrom_rev .newprop scheduleanchor/;
+my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor/;
 sub _schedule_empty { %empty };
 
 1;

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 16;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -16,6 +16,18 @@ overwrite_file ("A/nor", "foobar\n");
 $svk->add ('A');
 $svk->commit ('-m', 'init');
 
+overwrite_file ("A/binary", "foobar\nfnord\n");
+$svk->add ('A/binary');
+$svk->propset ('svn:mime-type', 'image/png', 'A/binary');
+is_output ($svk, 'diff', [],
+           ['=== A/binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' +image/png']);
 overwrite_file ("A/foo", "foobar\nnewline\nfnord\n");
 overwrite_file ("A/bar", "foobar\nnewline\n");
 overwrite_file ("A/baz", "foobar\n");
@@ -32,7 +44,8 @@ is_output ($svk, 'diff', [],
 	    ' foobar',
 	    ' newline',
 	    ' fnord',
-	    '+morenewline'], 'diff - checkout dir');
+	    '+morenewline',], 'diff - checkout dir');
+
 is_output ($svk, 'diff', ['A/foo'],
 	  ['=== A/foo',
 	   '==================================================================',
@@ -58,6 +71,15 @@ my $r12output = ['=== A/foo',
 		 '@@ -1 +1,2 @@',
 		 ' foobar',
 		 '+newline',
+                 '=== A/binary',
+                 '==================================================================',
+                 'Cannot display: file marked as a binary type.',
+                 '',
+                 'Property changes on: A/binary',
+                 '___________________________________________________________________',
+                 'Name: svn:mime-type',
+                 ' +image/png',
+                 '',
 		 '=== A/baz',
 		 '==================================================================',
 		 '--- A/baz  (revision 1)',
@@ -104,6 +126,15 @@ is_output ($svk, 'diff', ['//A', '//B'],
 	    '+++ nor   (/B)   (revision 3)',
 	    '@@ -0,0 +1 @@',
 	    '+foobar',
+            '=== binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' -image/png',
+            '',
 	    '=== baz',
 	    '==================================================================',
 	    '--- baz   (/A)   (revision 3)',
@@ -133,7 +164,16 @@ is_output ($svk, 'diff', ['-r1'],
 	    '--- A/baz  (revision 1)',
 	    '+++ A/baz  (local)',
 	    '@@ -0,0 +1 @@',
-	    '+foobar'], 'diff - rN copath (changed)');
+	    '+foobar',
+            '=== A/binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' +image/png',], 'diff - rN copath (changed)');
+# the above diff should show nor as deleted instead of absent. see the output of diff -s
 $svk->revert ('-R', 'A');
 is_output ($svk, 'diff', ['-r1'],
 	   ['=== A/bar',
@@ -156,7 +196,15 @@ is_output ($svk, 'diff', ['-r1'],
 	    '--- A/baz  (revision 1)',
 	    '+++ A/baz  (local)',
 	    '@@ -0,0 +1 @@',
-	    '+foobar'], 'diff - rN copath (unchanged)');
+	    '+foobar',
+            '=== A/binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' +image/png'], 'diff - rN copath (unchanged)');
 $svk->update ('-r1', 'A');
 overwrite_file ("A/coonly", "foobar\n");
 $svk->add ('A/coonly');
@@ -214,12 +262,40 @@ is_output ($svk, 'diff', [],
 	    '@@ -1,2 +0,0 @@',
 	    '-foobar',
 	    '-newline',
+            '=== A/binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' -image/png',
+            '',
 	    '=== A/baz',
 	    '==================================================================',
 	    '--- A/baz  (revision 3)',
 	    '+++ A/baz  (local)',
 	    '@@ -1 +0,0 @@',
 	    '-foobar'], 'recursive delete_entry');
+
+$svk->revert ('-R', 'A');
+$svk->update;
+$svk->propset ('svn:mime-type', 'image/jpg', 'A/binary');
+is_output ($svk, 'diff', [],
+           ['',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' -image/png',
+            ' +image/jpg']);
+$svk->commit('-m', 'Property changes for A/binary.');
+is_output ($svk, 'diff', ['-r4:3'],
+           ['',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' -image/jpg',
+            ' +image/png']);
 
 # test with expanding copies
 $svk->cp ('-m', 'blah', '//B', '//A/B-cp');
@@ -229,39 +305,48 @@ append_file ("C/foo", "copied and modified on C\n");
 is_output ($svk, 'diff', ['C'],
 	   ['=== C/B-cp/bar',
 	    '==================================================================',
-	    '--- C/B-cp/bar  (revision 3)',
+	    '--- C/B-cp/bar  (revision 4)',
 	    '+++ C/B-cp/bar  (local)',
 	    '@@ -0,0 +1 @@',
 	    '+foobar',
 	    '=== C/B-cp/foo',
 	    '==================================================================',
-	    '--- C/B-cp/foo  (revision 3)',
+	    '--- C/B-cp/foo  (revision 4)',
 	    '+++ C/B-cp/foo  (local)',
 	    '@@ -0,0 +1,2 @@',
 	    '+foobar',
 	    '+fnord',
 	    '=== C/B-cp/nor',
 	    '==================================================================',
-	    '--- C/B-cp/nor  (revision 3)',
+	    '--- C/B-cp/nor  (revision 4)',
 	    '+++ C/B-cp/nor  (local)',
 	    '@@ -0,0 +1 @@',
 	    '+foobar',
 	    '=== C/bar',
 	    '==================================================================',
-	    '--- C/bar  (revision 3)',
+	    '--- C/bar  (revision 4)',
 	    '+++ C/bar  (local)',
 	    '@@ -0,0 +1,2 @@',
 	    '+foobar',
 	    '+newline',
 	    '=== C/baz',
 	    '==================================================================',
-	    '--- C/baz  (revision 3)',
+	    '--- C/baz  (revision 4)',
 	    '+++ C/baz  (local)',
 	    '@@ -0,0 +1 @@',
 	    '+foobar',
+            '=== C/binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: C/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' +image/jpg',
+            '',
 	    '=== C/foo',
 	    '==================================================================',
-	    '--- C/foo  (revision 3)',
+	    '--- C/foo  (revision 4)',
 	    '+++ C/foo  (local)',
 	    '@@ -0,0 +1,4 @@',
 	    '+foobar',
