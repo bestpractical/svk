@@ -206,7 +206,7 @@ sub get_editor {
     }
 
     return ($editor, %cb, mirror => $m, callback => \$callback,
-	    send_fulltext => !$cb{mirror});
+	    send_fulltext => !$m);
 }
 
 sub exclude_mirror {
