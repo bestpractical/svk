@@ -78,8 +78,8 @@ sub invoke {
 	$cmd = get_cmd ($pkg, $cmd);
 	$cmd->{xd} = $xd;
 	die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
-	@args = $cmd->parse_arg(@ARGV);
-	if ($help || $#args == -1) {
+
+	if ($help || !(@args = $cmd->parse_arg(@ARGV))) {
 	    $cmd->usage;
 	}
 	else {
