@@ -70,8 +70,9 @@ sub do_revert {
 	mkdir $copath unless -e $copath;
     }
     else {
-	# XXX: PerlIO::via::symlink should take care of this
-	unlink $copath if is_symlink($copath);
+	# XXX: PerlIO::via::symlink should take care of this.
+	# It doesn't overwrite existing file or close.
+	unlink $copath;
 	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath);
 	my $content = $xdroot->file_contents ($dpath);
 	slurp_fh ($content, $fh);

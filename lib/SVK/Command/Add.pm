@@ -59,8 +59,9 @@ sub run {
 		      if -e _;
 	      })),
 	  cb_unknown => sub {
+	      lstat ($_[1]);
 	      $self->do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
-			     !-d $_[1]);
+			     (!-d _ or is_symlink));
 	  },
 	);
 }
