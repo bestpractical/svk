@@ -69,7 +69,7 @@ overwrite_file_raw ("$copath/le/unix", "unix$CR");
 overwrite_file_raw ("$copath/le/mac", "mac$CRLF");
 overwrite_file_raw ("$copath/le/native", "native$Native");
 overwrite_file_raw ("$copath/le/na", "na$CR");
-overwrite_file_raw ("$copath/le/mixed", "mixed$CRLF...endings$CR");
+overwrite_file_raw ("$copath/le/mixed", "mixed$CRLF...endings$CR...");
 $svk->add ("$copath/le");
 $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
 $svk->ps ('svn:eol-style', 'native', "$copath/le/native");
