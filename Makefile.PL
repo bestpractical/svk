@@ -30,7 +30,7 @@ requires(
 features(
     'Localized messages' => [
 	-default => 1,
-        'Locale::Maketext::Lexicon' => '0.36',
+        'Locale::Maketext::Lexicon' => '0.42',
         'Locale::Maketext::Simple'  => '0.12',
     ],
 );
