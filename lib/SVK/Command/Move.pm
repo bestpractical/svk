@@ -9,6 +9,11 @@ sub handle_direct_item {
     my $self = shift;
     $self->SUPER::handle_direct_item (@_);
     my ($editor, $anchor, $m, $src, $dst) = @_;
+    my $srcm = $self->under_mirror ($src);
+    if ($srcm && $srcm->{target_path} eq $src->path) {
+	die loc ("Can't move mirror anchor, detach the mirror first.\n");
+    }
+
     $editor->delete_entry (abs2rel ($src->path, $anchor => undef, '/'),
 			   $m ? scalar $m->find_remote_rev ($src->{revision})
 			      : $src->{revision}, 0);
