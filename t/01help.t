@@ -10,9 +10,10 @@ my @cmd = map { chomp; s|^lib/SVK/Command/(\w+)\.pm$|$1| ? $_ : () } <FH>;
 our $output;
 my ($xd, $svk) = build_test();
 
-plan tests => 2*@cmd+5;
+plan tests => ( 6 + ( 2 * @cmd ) );
 
-is_output_like ($svk, 'help', [], qr'Available commands:');
+is_output_like ($svk, 'help', [], qr'Index');
+is_output_like ($svk, 'help', ['commands'], qr'Available commands:');
 is_output ($svk, 'nosuchcommand', [], ["Command not recognized, try $0 help."]);
 is_output ($svk, 'bad:command/', [], ["Command not recognized, try $0 help."]);
 
