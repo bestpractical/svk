@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 14;
 use strict;
 use File::Path;
 BEGIN { require 't/tree.pl' };
@@ -28,6 +28,12 @@ is_output ($svk, 'delete', ['A/foo'],
 ok (!-e 'A/foo', 'delete - copath deleted');
 is_output ($svk, 'status', [],
 	   [__('D   A/foo')], 'delete - status');
+
+$svk->revert ('-R', '.');
+
+is_output ($svk, 'delete', ['A/foo', 'A/bar'],
+		[__('D   A/foo'),
+		 __('D   A/bar')]);
 
 $svk->revert ('-R', '.');
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 49;
+plan_svm tests => 50;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -152,6 +152,7 @@ $svk->copy ("$copath/me", "$copath/me-cocopied");
 is_output ($svk, 'status', [$copath],
 	   [__("A + $copath/me-cocopied")]
 	  );
+is_output ($svk, 'cp', ["$copath/me", "$copath/me-cocopied"], [__("Path $copath/me-cocopied already exists.")]);
 
 $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);

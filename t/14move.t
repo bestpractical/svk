@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 14;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -72,3 +72,9 @@ is_output ($svk, 'add', ['new_dir'],
 	    __('A   new_dir/new_add')]);
 is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'],
 	   [__"$corpath/B/new_dir is modified."]);
+
+$svk->commit ('-m', 'commit everything');
+overwrite_file ('new_dir/unknown_file', "unknown file\n");
+is_output ($svk, 'mv', ['new_dir', 'new_dir_mv'], 
+		[__"$corpath/B/new_dir/unknown_file is missing."]);
+

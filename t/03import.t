@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 19;
+plan tests => 20;
 
 use Cwd;
 use File::Path;
@@ -38,6 +38,9 @@ overwrite_file ("$copath/dir/filed", "foobarbazzbozo");
 unlink "$copath/fileb";
 
 $svk->import ('-m', 'test import', '//import', $copath);
+is_output ($svk, 'import', ['-m', 'test import into file', '//import/filec', $copath], 
+	   [qr'^import destination cannot be a file at ']);
+
 unlink "$copath/filec";
 $svk->import ('-t', '-m', 'import -t', '//import', $copath);
 ok($xd->{modified}, 'will update svk config');
@@ -68,7 +71,9 @@ chdir ($oldwd);
 rmtree ["$copath/dir"];
 
 overwrite_file ("$copath/dir", "now file\n");
+$svk->import ('-C', '-f', '//import', $copath);
 $svk->import ('-f', '-m', 'import -f', '//import', $copath);
+
 rmtree [$copath];
 $svk->checkout ('//import', $copath);
 ok (-f copath ('dir'));

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 44;
+plan tests => 45;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -103,6 +103,12 @@ overwrite_file ("A/forimport/foo", "fnord");
 overwrite_file ("A/forimport/bar", "fnord");
 overwrite_file ("A/forimport/baz", "fnord");
 overwrite_file ("A/forimport/ss..", "fnord");
+
+# XXX - This doesn't output anything!?!
+is_output ($svk, 'commit', ['-C', '--import', '-m', 'commit --import',
+			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',
+			    'A/barnew', 'A/forimport/ss..'],
+	   []);
 
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
 			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 24;
+use Test::More tests => 25;
 BEGIN { require 't/tree.pl' };
 
 our ($answer, $output);
@@ -14,6 +14,7 @@ $svk->mkdir ('-m', 'the trunk', '//trunk');
 $svk->co ('//trunk', $copath);
 overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub' }\n#common\n#common2\n\n\n");
 $svk->add ("$copath/test.pl");
+$svk->ps ("svn:eol-style", "native", "$copath/test.pl");
 $svk->commit ('-m', 'test.pl', $copath);
 
 $svk->cp ('-m', 'local branch of trunk', '//trunk', '//local');
@@ -48,6 +49,19 @@ is_output ($svk, 'diff', ["$copath/test.pl"],
 
 $answer = 't'; # theirs
 $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
+# TODO: Don't stuff up line endings (currently problematic on Win32)
+is_output ($svk, 'diff', ["//trunk/test.pl", "//local/test.pl"],
+	   [__"=== test.pl",
+	    "==================================================================",
+	    "--- test.pl   (/trunk/test.pl)   (revision 6)",
+	    "+++ test.pl   (/local/test.pl)   (revision 6)",
+	    __('@@ -6,3 +6,5 @@'),
+	    " #common2",
+	    " ",
+	    " ",
+	    "+#trunk",
+	    "+trunk additions (do not kill!)",
+	   ], 'svk-merge mine');
 is_output ($svk, 'up', ["$copath"],
 	   ["Syncing //local(/local) in $corpath to 6.",
 	    __"g   $copath/test.pl"], 'svk-merge theirs');

@@ -31,7 +31,7 @@ is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deeper/file'],
 	   ['Committed revision 3.']);
 
 is_output ($svk, 'mkdir', ["$copath/c-newfile"],
-      ["A   $copath/c-newfile"]);
+      [__"A   $copath/c-newfile"]);
 
 is_output ($svk, 'mkdir', ["$copath/c-newdir/deeper"],
       ["$copath/c-newdir/deeper is not a depot path."]);

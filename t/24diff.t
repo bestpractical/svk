@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 21;
+use Test::More tests => 22;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -183,6 +183,16 @@ is_output ($svk, 'diff', ['-r1'],
             '___________________________________________________________________',
             'Name: svn:mime-type',
             ' +image/png',], 'diff - rN copath (changed)');
+is_sorted_output ($svk, 'diff', ['-sr1:2', '//A', $corpath],
+	   ['A   A',
+	    'A   A/foo',
+	    'A   A/bar',
+	    'A   A/binary',
+	    'A   A/baz',
+	    'D   bar',
+	    'D   foo',
+	    'D   nor']);
+
 is_sorted_output ($svk, 'diff', ['-sr1:2'],
 	   ['M   A/foo',
 	    'M   A/bar',
