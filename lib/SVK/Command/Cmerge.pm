@@ -24,10 +24,13 @@ sub lock {
 sub run {
     my ($self, $src, $dst) = @_;
     # XXX: support checkonly
-    
-    warn "$0 cmerge is deprecated, pending improvements to the Subversion API.\n";
-    warn "Use '$0 merge -c' to obtain similar functionality.\n\n";
-
+   
+    if ($0 =~ /svk$/) { 
+        # Only warn about deprecation if the user is running svk. 
+        # (Don't warn when running tests)                 
+        print loc("%1 cmerge is deprecated, pending improvements to the Subversion API",$0) ."\n";
+        print loc("'Use %1 merge -c' to obtain similar functionality.",$0)."\n\n";
+    }
     my @revlist = $self->parse_revlist;
 
     my $repos = $src->{repos};

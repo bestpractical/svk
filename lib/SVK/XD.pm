@@ -1395,9 +1395,9 @@ sub get_keyword_layer {
 
     return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)\b.*?\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
+         sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
 	 untranslate =>
-	 sub { $_[1] =~ s/\$($keyword)\b.*?\$/\$$1\$/g; });
+	 sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/\$$1\$/g; });
 }
 
 sub _fh_symlink {

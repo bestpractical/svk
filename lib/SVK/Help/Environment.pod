@@ -1,0 +1,102 @@
+=head1 NAME
+
+SVK::Help::Environment - A list of svk's environment variables
+
+=head1 DESCRIPTION
+
+A number of system environment variables influence how svk runs. Below is 
+a complete list of variables you can use to alter svk's behavior.
+
+=head2 All Platforms
+
+=over 
+
+=item $SVKROOT
+
+Unless you tell it otherwise, svk stores your configuration and repository in
+$HOME/.svk.  If you set SVKROOT to a path on disk, svk will look there instead
+of in $HOME/.svk.
+
+
+=item $SVN_EDITOR / $EDITOR
+
+Sometimes, svk needs to pop up a text editor. svk first tries to launch
+the editor specified in $SVN_EDITOR and falls back to $EDITOR if that's
+not defined.
+
+
+=item $SVKDIFF
+
+If you'd prefer to use an external "diff" tool instead of svk's builtin
+diff library, set this variable to your tool's name or path.
+
+=item $SVKMERGE
+
+svk lets you resolve conflicts, interactively, with a text editor or
+use an external diff tool.  Out of the box, svk comes with support for
+the following merge tools:
+
+ AraxisMerge
+ Emacs
+ FileMerge
+ GtkDiff
+ Guiffy
+ KDiff3
+ Meld
+ P4WinMerge
+ TkDiff
+ TortoiseMerge
+ XXDiff
+
+If you want svk to spawn a specific merge tool, set this variable to
+the tool's name.
+
+
+=item $SVKRESOLVE
+
+If you set this variable, svk's interactive resolver will I<always>
+perform the command it's set to. For more details about the commands
+available in svk's interactive resolver, type C<perldoc SVK::Resolve>.
+
+=item $SVKPAGER / $PAGER
+
+When svk needs to pipe long output through a pager, it first tries to
+use $SVKPAGER to send the output to your display. If that's not set,
+it falls back to $PAGER
+
+=item $SVKPGP
+
+svk supports signing and verifying changesets using the Gnu Privacy Guard.
+By default, svk tries to run the first program called B<gpg> in your
+path. To tell svk to use a specific gpg executable, set this variable
+to the executable's name or path.
+
+=item $SVNFSTYPE
+
+By default, svk creates its local repository as a B<fsfs> repository when
+running on Subversion 1.1 and newer. On Subversion 1.0, SVK defaults
+to B<bdb>.  To explicitly specify a repository type, set this variable
+to B<fsfs> or B<bdb>.
+
+=item $SVKNOSVM
+
+To be able to talk to a remote Subversion server, svk needs the
+SVN::Mirror perl package installed.  If you have SVN::Mirror installed,
+but want svk to operate as if you didn't, set $SVKNOSVM to a true value.
+
+=back
+
+=head2 Win32
+
+These variables only apply to svk on Windows.
+
+=over
+
+=item $ProgramFiles
+
+Set this variable to the directory you install programs into. It defaults
+to 'C:\Program Files'.
+
+=back
+
+=cut
