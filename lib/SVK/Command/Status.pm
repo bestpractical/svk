@@ -17,7 +17,6 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, $target) = @_;
     my $xdroot = $self->{xd}->xdroot (%$target);
-    use Internals qw(GetRefCount);
     $self->{xd}->checkout_delta
 	( %$target,
 	  baseroot => $xdroot,
