@@ -163,7 +163,7 @@ sub get_editor {
 	die loc ("Illegal patch name: %1.\n", $self->{patch})
 	    if $self->{patch} =~ m!/!;
 	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
-				     $target->depotname, $source, $target);
+				     $target->depotname, $source, $target->new (targets => undef));
 	$patch->{ticket} = SVK::Merge->new (xd => $self->{xd})->merge_info ($source)->add_target ($source)->as_string
 	    if $source;
 	$patch->{log} = $self->{message};
