@@ -75,6 +75,12 @@ my %alias = qw( ann		annotate
 		ver		version
 	    );
 
+my %cmd2alias = map { $_ => [] } values %alias;
+while( my($alias, $cmd) = each %alias ) {
+    push @{$cmd2alias{$cmd}}, $alias;
+}
+
+
 =head3 new ($xd)
 
 Base constructor for all commands.
@@ -664,6 +670,9 @@ sub usage {
     # XXX: the order from selected is not preserved.
     my $fname = ref($self);
     $fname =~ s|::|/|g;
+
+    my($cmd) = $fname =~ m{\W(\w+)$};
+
     my $parser = Pod::Simple::Text->new;
     my $buf;
     $parser->output_string(\$buf);
@@ -672,6 +681,14 @@ sub usage {
     $buf =~ s/SVK::Command::(\w+)/\l$1/g;
     $buf =~ s/^AUTHORS.*//sm;
     $buf =~ s/^DESCRIPTION.*//sm unless $want_detail;
+
+    my $aliases = $cmd2alias{lc $cmd} || [];
+    if( @$aliases ) {
+        $buf .= "ALIASES\n\n";
+        $buf .= "     ";
+        $buf .= join ', ', sort { $a cmp $b } @$aliases;
+    }
+
     foreach my $line (split(/\n\n+/, $buf, -1)) {
 	if (my @lines = $line =~ /^( {4}\s+.+\s*)$/mg) {
             foreach my $chunk (@lines) {
