@@ -55,21 +55,21 @@ sub run {
 
 		  return unless $status->[0] eq 'D';
 		  lstat ($copath);
-		  $self->do_add ('R', $copath, $report, !-d _)
+		  $self->_do_add ('R', $copath, $report, !-d _)
 		      if -e _;
 	      })),
 	  cb_unknown => sub {
 	      lstat ($_[1]);
 	      to_native ($_[0]);
-	      $self->do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
-			     (!-d _ or is_symlink));
+	      $self->_do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
+			     !-d _);
 	  },
 	);
 }
 
 my %sch = (A => 'add', 'R' => 'replace');
 
-sub do_add {
+sub _do_add {
     my ($self, $st, $copath, $report, $autoprop) = @_;
     $self->{xd}{checkout}->store ($copath,
 				  { '.schedule' => $sch{$st},
