@@ -474,7 +474,7 @@ usually good enough.
         }
     )->run ($target);
 
-    my $depotpath = "$target->{depotpath}/$rel_uri";
+    my $depotpath = length ($rel_uri) ? "$target->{depotpath}/$rel_uri" : $target->{depotpath};
     return $self->arg_depotpath($depotpath);
 }
 
