@@ -1,7 +1,7 @@
 package SVK::Command;
 use strict;
 our $VERSION = '0.09';
-use Getopt::Long qw(:config no_ignore_case);
+use Getopt::Long qw(:config no_ignore_case bundling);
 # XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
 use SVN::Simple::Edit;
 use Pod::Simple::Text ();
@@ -68,12 +68,13 @@ sub get_cmd {
 
 sub invoke {
     my ($pkg, $xd, $cmd, $output, @arg) = @_;
-    my $ofh;
+    my ($help, $ofh);
     local @ARGV = @arg;
 
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->{xd} = $xd;
-    die unless GetOptions ($cmd, _opt_map($cmd, $cmd->options));
+    die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
+    $cmd->usage, return if $help;
     my @args = $cmd->parse_arg(@ARGV);
     $cmd->lock (@args);
     $ofh = select $output if $output;
