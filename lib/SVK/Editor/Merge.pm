@@ -6,6 +6,9 @@ use SVK::Notify;
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5_fh get_anchor tmpfile devnull );
 use IO::Digest;
+use constant FH => 0;
+use constant FILENAME => 1;
+use constant CHECKSUM => 2;
 
 =head1 NAME
 
@@ -247,8 +250,8 @@ sub node_conflict {
 sub cleanup_fh {
     my ($self, $fh) = @_;
     for (qw/base new local/) {
-	close $fh->{$_}[0]
-	    if $fh->{$_}[0];
+	close $fh->{$_}[FH]
+	    if $fh->{$_}[FH];
     }
 }
 
@@ -257,13 +260,13 @@ sub prepare_fh {
     # XXX: need to respect eol-style here?
     for my $name (qw/base new local/) {
 	my $entry = $fh->{$name};
-	next unless $entry->[0];
-	next if $entry->[1];
-	my $tmp = [tmpfile("$name-"), $entry->[2]];
-	slurp_fh ($entry->[0], $tmp->[0]);
-	close $entry->[0];
+	next unless $entry->[FH];
+	next if $entry->[FILENAME];
+	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
+	slurp_fh ($entry->[FH], $tmp->[FH]);
+	close $entry->[FH];
 	$entry = $fh->{$name} = $tmp;
-	seek $entry->[0], 0, 0;
+	seek $entry->[FH], 0, 0;
     }
 }
 
@@ -282,13 +285,13 @@ sub apply_textdelta {
 	    $fh->{base} = [tmpfile('base-')];
 	    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
 	    slurp_fh ($self->{base_root}->file_contents ($path, $pool),
-		      $fh->{base}[0]);
-	    $base = $fh->{base}[0];
+		      $fh->{base}[FH]);
+	    $base = $fh->{base}[FH];
 	    seek $base, 0, 0;
 	}
 	# get new
 	$fh->{new} = [tmpfile('new-')];
-	return [SVN::TxDelta::apply ($base, $fh->{new}[0], undef, undef, $pool)];
+	return [SVN::TxDelta::apply ($base, $fh->{new}[FH], undef, undef, $pool)];
     }
     $self->{notify}->node_status ($path, 'U')
 	unless $self->{notify}->node_status ($path);
@@ -311,9 +314,9 @@ sub close_file {
     if ($info->{fh}{new}) {
 	$self->prepare_fh ($fh);
 
-	if ($checksum eq $fh->{local}[2] ||
+	if ($checksum eq $fh->{local}[CHECKSUM] ||
 	    # XXX: mark this as a change too?
-	    File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0) {
+	    File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0) {
 	    $self->{notify}->node_status ($path, 'g');
 	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
@@ -321,17 +324,17 @@ sub close_file {
 
 	$self->ensure_open ($path);
         if ($info->{addmerge}) {
-            $fh->{base}[1] = devnull;
-            open $fh->{base}[0], '<', $fh->{base}[1];
+            $fh->{base}[FILENAME] = devnull;
+            open $fh->{base}[FH], '<', $fh->{base}[FILENAME];
         }
 	my $diff = SVN::Core::diff_file_diff3
-	    (map {$fh->{$_}[1]} qw/base local new/);
+	    (map {$fh->{$_}[FILENAME]} qw/base local new/);
 	my $mfh = tmpfile ('merged-');
         my $marker = time.int(rand(100000));
 	SVN::Core::diff_file_output_merge
 		( $mfh, $diff,
 		  (map {
-		      $fh->{$_}[1]
+		      $fh->{$_}[FILENAME]
 		  } qw/base local new/),
                   "==== ORIGINAL VERSION $path $marker",
                   ">>>> YOUR VERSION $path $marker",
@@ -364,7 +367,7 @@ sub close_file {
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
 	my $handle = $self->{storage}->
-	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
+	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
 			     $pool);
 
 	if ($handle && $#{$handle} >= 0) {
@@ -373,16 +376,16 @@ sub close_file {
 			if $handle && $#{$handle} >= 0;
 	    }
 	    else {
-		seek $fh->{local}[0], 0, 0;
+		seek $fh->{local}[FH], 0, 0;
 		my $txstream = SVN::TxDelta::new
-		    ($fh->{local}[0], $mfh, $pool);
+		    ($fh->{local}[FH], $mfh, $pool);
 		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	    }
 	}
 
 	close $mfh;
 	unlink $mfn if $mfn;
-	undef $fh->{base}[1] if $info->{addmerge};
+	undef $fh->{base}[FILENAME] if $info->{addmerge};
 	$self->cleanup_fh ($fh);
 
 	$self->node_conflict ($path) if $conflict;
@@ -390,8 +393,8 @@ sub close_file {
     elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
 	# open but prop edit only, load local checksum
 	if (my $local = $self->{cb_localmod}->($path, $checksum, $pool)) {
-	    $checksum = $local->[2];
-	    close $local->[0];
+	    $checksum = $local->[CHECKSUM];
+	    close $local->[FH];
 	}
     }
 
