@@ -599,8 +599,8 @@ sub _delta_dir {
     for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
 	next if m/$ignore/;
 	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$_");
-	my $sche = $ccinfo->{'.schedule'};
-	unless ($arg{add} || $sche) {
+	my $sche = $ccinfo->{'.schedule'} || '';
+	unless ($sche || ($arg{auto_add} && $arg{add})) {
 	    if ($arg{cb_unknown} &&
 		(!defined $arg{targets} || exists $targets->{$_})) {
 		if ($arg{unknown_verbose}) {
@@ -784,6 +784,7 @@ sub do_import {
 
     $self->_delta_dir (%arg,
 		add => 1,
+	        auto_add => 1,
 		cb_rev => sub { $yrev },
 		editor => $editor,
 		baseroot => $root,
@@ -1010,7 +1011,9 @@ sub add_directory {
     my ($self, $path) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    mkdir ($copath);
+    mkdir ($copath) unless $self->{check_only};
+    $self->{xd}->do_add (copath => $copath, quiet => 1)
+	if !$self->{update} && !$self->{check_only};
     return $path;
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 10;
+use Test::More tests => 12;
 use strict;
 require 't/tree.pl';
 use SVK::Command;
@@ -20,6 +20,9 @@ ok(!exists $svk::info->{checkout}->get
 # check output with selecting some io::stringy object?
 #svk::status ("$copath");
 svk::commit ('-m', 'commit message here', "$copath");
+unlink ("$copath/A/notused");
+svk::revert ('-R', $copath);
+ok(!-e "$copath/A/notused", 'non-targets not committed');
 ok ($svk::info->{checkout}->get ("$corpath")->{revision} == 1,
     'checkout optimzation after commit');
 mkdir "$copath/A/new";
@@ -74,3 +77,10 @@ ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 	       someprop => 'propvalue',
 	       moreprop => 'propvalue'}), 'prop matched');
 
+mkdir "$copath/B";
+overwrite_file ("$copath/B/foo", "foobar");
+svk::update ('-r', 3, "$copath/A");
+svk::add ("$copath/B");
+svk::commit ('-m', 'blah', "$copath/B");
+ok ($svk::info->{checkout}->get ("$corpath/A")->{revision} == 3,
+    'checkout optimzation respects existing state');

@@ -40,9 +40,7 @@ svk::merge ('-a', '-C', '//l', '//m');
 svk::merge ('-a', '-m', 'simple smerge from source', '//m', '//l');
 
 my ($suuid, $srev) = ($srepos->fs->get_uuid, $srepos->fs->youngest_rev);
-
 svk::update ($copath);
-
 ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 				   repos => $repos,
 				   copath => $copath,
@@ -75,7 +73,7 @@ svk::smerge ('-m', 'mergedown', '//m', '//l');
 svk::update ($scopath);
 append_file ("$scopath/A/be", "more modification on trunk\n");
 mkdir "$scopath/A/newdir";
-#svk::add ("$scopath/A/newdir");
+svk::add ("$scopath/A/newdir");
 svk::propset ("bzz", "newprop", "$scopath/A/Q/qu");
 svk::commit ('-m', 'commit on trunk', $scopath);
 svk::sync ('//m');
@@ -90,13 +88,11 @@ svk::smerge ('//m', $copath);
 svk::status ($copath);
 svk::revert ("$copath/be");
 svk::resolved ("$copath/be");
-print "====>\n";
 svk::status ($copath);
 svk::commit ('-m', 'merge down committed from checkout', $copath);
-unlink ("$copath/newdir");
+rmdir "$copath/newdir";
 svk::revert ('-R', $copath);
-ok (-e "$copath/newdir", 'smerge to checkout - added directory');
-
+ok (-e "$copath/newdir", 'smerge to checkout - add directory');
 svk::mirror ('/client2/trunk', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 
 svk::sync ('/client2/trunk');
@@ -106,5 +102,7 @@ svk::copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
 svk::copy ('-m', 'branch on source', '/test/A', '/test/A-cp');
 svk::mirror ('//m-cp', "file://${srepospath}/A-cp");
 svk::sync ('//m-cp');
+__END__
+# doesn't work yet, merge base being funny
 svk::smerge ('-C', '//l', '//m-cp');
 svk::smerge ('-C', '//m', '//m-cp');

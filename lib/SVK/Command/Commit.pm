@@ -161,8 +161,6 @@ sub get_editor {
 	      },
 	  );
 
-#    $editor = SVN::Delta::Editor->new (_debug => 1, _editor => [$editor]);
-
     return ($editor, %cb, mirror => $m, callback => \$callback);
 
 =begin comment
@@ -260,10 +258,16 @@ sub run {
 						    });
 	}
 	my $oldroot = $fs->revision_root ($rev-1);
+	my $oldrev = $oldroot->node_created_rev ($target->{path});
 	for (@datapoint) {
-	    $self->{xd}{checkout}->store ($_, {revision => $rev})
-		if $self->{xd}{checkout}->get ($_)->{revision} >=
-		    $oldroot->node_created_rev ($target->{path});
+	    # use store_single to effectively override all the oldvalue but not others.
+	    for my $path ($self->{xd}{checkout}->find ($_, {revision => qr/.*/})) {
+		next unless $self->{xd}{checkout}->get ($path)->{revision} >= $oldrev;
+		# XXX: should be a data::hierarchy api to simply do this and remove
+		# duplicates
+		$self->{xd}{checkout}->store_override ($path, {revision => $rev});
+		$self->{xd}{checkout}->store ($path, {'.deleted' => undef});
+	    }
 	}
 	my $root = $fs->revision_root ($rev);
 	for (@$targets) {
