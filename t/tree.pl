@@ -223,6 +223,13 @@ sub is_output_like {
     goto &like;
 }
 
+sub is_ancestor {
+    my ($svk, $path, @expected) = @_;
+    $svk->info ($path);
+    my (@copied) = $output =~ m/Copied From: (.*?), Rev. (\d+)/mg;
+    is_deeply (\@copied, \@expected);
+}
+
 sub copath {
     SVK::Target->copath ($copath, @_);
 }

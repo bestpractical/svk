@@ -4,7 +4,6 @@ BEGIN { require 't/tree.pl' };
 plan_svm tests => 49;
 
 our ($output, $answer);
-BEGIN { require 't/tree.pl' };
 my ($xd, $svk) = build_test('foo');
 $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
@@ -198,8 +197,6 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    'Committed revision 20 from revision 6.']);
 
 sub is_copied_from {
-    my ($path, @expected) = @_;
-    $svk->info ($path);
-    my ($rsource, $rrev) = $output =~ m/Copied From: (.*?), Rev. (\d+)/;
-    is_deeply ([$rsource, $rrev], \@expected);
+    unshift @_, $svk;
+    goto \&is_ancestor;
 }

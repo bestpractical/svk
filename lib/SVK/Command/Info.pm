@@ -27,7 +27,7 @@ sub run {
 	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
 	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
 	$self->{merge} = SVK::Merge->new (%$self);
-	my %ancestors = $self->{merge}->copy_ancestors($repos,$path,$yrev, 1);
+	my @ancestors = $self->{merge}->copy_ancestors($repos,$path,$yrev, 1);
 	my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
 	print loc("Checkout Path: %1\n",$copath) if($copath);
 	print loc("Depot Path: %1\n", $depotpath);
@@ -38,8 +38,9 @@ sub run {
 	);
 	print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
 	    if($m->{source});
-	for (keys %ancestors) {
-	    print loc("Copied From: %1, Rev. %2\n",(split/:/)[1],$ancestors{$_});
+	while (my ($apath, $arev) = splice @ancestors, 0, 2) {
+	    # XXX trim or report remote copies
+	    print loc("Copied From: %1, Rev. %2\n",(split/:/,$apath)[1],$arev);
 	}
 	for (keys %$minfo) {
 	    print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
