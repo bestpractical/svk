@@ -39,6 +39,11 @@ SVK::Command::Describe - Describe a change
 
  describe REV [DEPOTPATH | PATH]
 
+=head1 DESCRIPTION
+
+Displays the change in revision number I<REV> in the specified depot.
+It always shows the entire change even if you specified a particular target.
+
 =head1 OPTIONS
 
  None
