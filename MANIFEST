@@ -15,6 +15,7 @@ inc/Module/Install/WriteAll.pm
 lib/SVK/CombineEditor.pm
 lib/SVK/Command.pm
 lib/SVK/Command/Add.pm
+lib/SVK/Command/Annotate.pm
 lib/SVK/Command/Cat.pm
 lib/SVK/Command/Checkout.pm
 lib/SVK/Command/Cleanup.pm
