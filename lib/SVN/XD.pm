@@ -7,6 +7,7 @@ require SVN::Delta;
 use Data::Hierarchy;
 use File::Spec;
 use YAML;
+use Algorithm::Merge; # Text::Merge instead
 
 our $VERSION = '0.01';
 
@@ -48,17 +49,23 @@ sub do_update {
     my $xdroot;
     my $txn;
 
-    warn "syncing $arg{depotpath}($arg{path}) to $arg{copath} from $arg{startrev} to $arg{rev}";
+    print "syncing $arg{depotpath}($arg{path}) to $arg{copath} to $arg{rev}\n";
     my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
     my (undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
-    chop $anchor;
+    if ($anchor eq '/') {
+	$anchor = '';
+	$target = '/';
+    }
+    chop $anchor if length($anchor) > 1;
 
+#    warn "$anchor $target ($arg{path} -> $arg{copath})";
+#    $target ||= '/';
     ($txn, $xdroot) = create_xd_root ($info, %arg);
 
     SVN::Repos::dir_delta ($xdroot, $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
 			   SVN::XD::UpdateEditor->new (_debug => 0,
-						       target => $target,
+						       target => $target eq '/' ? '' : $target,
 						       copath => $arg{copath},
 						      ),
 #			   SVN::Delta::Editor->new(_debug=>1),
@@ -84,6 +91,15 @@ sub do_add {
 
 }
 
+sub do_delete {
+    my ($info, %arg) = @_;
+
+    # check for if the file/dir is modified.
+
+    # actually remove it from checkout path
+    die "not yet";
+}
+
 use File::Find;
 
 sub checkout_crawler {
@@ -96,6 +112,7 @@ sub checkout_crawler {
 
     find(sub {
 	     my $cpath = $File::Find::name;
+
 	     $cpath =~ s|^$arg{copath}/|$arg{path}/|;
 	     $cpath = '' if $cpath eq $arg{copath};
 	     if (exists $schedule{$File::Find::name}) {
@@ -155,12 +172,12 @@ sub do_commit {
     for (@{$arg{targets}}) {
 	my ($action, $tpath) = @$_;
 	my $cpath = $tpath;
-	$tpath =~ s|^$arg{copath}/||;
+#	($tpath eq $arg{copath}) ? '$tpath';
+	$tpath =~ s|^$arg{copath}/|| or die "absurb path";
 	if (-d $cpath) {
 	    $edit->add_directory ($tpath);
 	    next;
 	}
-
 	open my ($fh), '<', $cpath;
 	my $md5 = md5file ($cpath);
 	if ($action eq 'A') {

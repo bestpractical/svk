@@ -8,10 +8,8 @@ use Getopt::Long;
 use File::Spec;
 use Data::Hierarchy;
 
-use vars qw/$xd/;
-use subs qw/co up st blame ci/;
-
-my $info;
+use vars qw/$xd $info/;
+use subs qw/co up st blame ci del rm/;
 
 =head1 NAME
 
@@ -44,9 +42,7 @@ sub update_info {
 
 sub find_repos {
     my ($depotpath, $open) = @_;
-    my ($depot, $path) = $depotpath =~ m|^/(\w*)/(.*)/?$|;
-
-    die "non-default depot name not supported yet" if $depot;
+    my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|;
 
     my $repospath = $info->{depotmap}{$depot} or die "no such depot: $depot";
 
@@ -92,7 +88,6 @@ sub update {
 			copath => $copath,
 			repospath => $repospath,
 			path => $path,
-			startrev => $cinfo->{revision},
 			rev => $rev,
 		       );
 }
@@ -109,11 +104,11 @@ sub checkout {
     die unless GetOptions ("r|revision=i"  => \$rev);
     my ($depotpath, $copath) = @ARGV;
 
-
     my ($repospath, $path) = find_repos ($depotpath, 0);
+    die "don't know where to checkout" unless $copath || $path ne '/';
+    # FIXME: work on path inside depot should always use UNIX File::Spec
     $copath = File::Spec->rel2abs ($copath ||
 				   (File::Spec->splitdir($path))[-1]);
-    die "don't know where to checkout" unless $copath || $path;
 
     die "checkout path $copath already exists" if -e $copath;
 
@@ -260,6 +255,21 @@ sub add {
 		    );
 }
 
+=head2 delete
+
+=cut
+
+sub delete {
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
+
+    SVN::XD::do_delete ($info,
+			copath => $copath,
+			path => $path,
+		       );
+}
+
 =head2 commit / ci
 
     svk commit
@@ -300,6 +310,9 @@ sub commit {
 			       },
 			      );
 
+    # if $copath itself is a file or is in the targets,
+    # should get the anchor instead, tweak copath for the s// in XD.pm
+
     SVN::XD::do_commit ($info,
 			author => $ENV{USER},
 			message => $message,
@@ -317,6 +330,7 @@ sub commit {
 *st = *status;
 *blame = *annotate;
 *ci = *commit;
+*del = *rm = *delete;
 
 my $defaultdepot;
 
@@ -328,9 +342,13 @@ no strict 'refs';
 
 #$xd = SVN::XD->new (%$info);
 
-die "command not recognized" unless main->can($cmd);
-init();
-&$cmd(@ARGV);
-update_info()
+if (main->can($cmd)) {
+    init();
+    &$cmd(@ARGV);
+    update_info()
+}
+else {
+    print "command not recognized\n";
+}
 
 #%$info = %$xd;
