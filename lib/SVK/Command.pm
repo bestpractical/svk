@@ -176,7 +176,8 @@ sub invoke {
 	    $cmd->usage;
 	}
 	else {
-	    $cmd->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
+	    $cmd->msg_handler ($_)
+		for ($SVN::Error::FS_NO_SUCH_REVISION, $SVN::Error::FS_NOT_FOUND);
 	    eval { $cmd->lock (@args);
 		   $xd->giant_unlock if $xd && !$cmd->{hold_giant};
 		   $ret = $cmd->run (@args) };
