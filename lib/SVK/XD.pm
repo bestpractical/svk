@@ -1242,7 +1242,7 @@ sub get_fh {
     }
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
-	    if defined $prop->{'svn:special'} || -l $fname;
+	    if defined $prop->{'svn:special'} || ($mode eq '<' && -l $fname);
 	if (keys %$prop) {
 	    $layer ||= get_keyword_layer ($root, $path, $prop);
 	    $eol ||= get_eol_layer($root, $path, $prop);

@@ -91,10 +91,10 @@ sub invoke {
 	    die $@ if $@;
 	}
     };
-    select STDERR unless $output;
+    $ofh = select STDERR unless $output;
     print $ret if $ret;
     print $@ if $@;
-    select $ofh if $output;
+    select $ofh if $ofh
 }
 
 sub brief_usage {
