@@ -12,14 +12,14 @@ my ($copath, $corpath) = get_copath ('keyword');
 svk::checkout ('//', $copath);
 
 is_file_content ("$copath/A/be",
-		 "\$Rev: 1\$\nfirst line in be\n2nd line in be\n",
+		 "\$Rev: 1 \$ \$Rev: 1 \$\nfirst line in be\n2nd line in be\n",
 		 'basic Id');
 
 append_file ("$copath/A/be", "some more\n");
 svk::ps ('svn:executable', 'on', "$copath/A/be");
 svk::commit ('-m', 'some modifications', $copath);
 
-my $newcontent = "\$Rev: 3\$\nfirst line in be\n2nd line in be\nsome more\n";
+my $newcontent = "\$Rev: 3 \$ \$Rev: 3 \$\nfirst line in be\n2nd line in be\nsome more\n";
 
 is_file_content ("$copath/A/be", $newcontent, 'commit Id');
 

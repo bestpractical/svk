@@ -1022,9 +1022,9 @@ sub get_keyword_layer {
 
     my $p = PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).'$'/e },
+         sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).' $'/eg },
 	 untranslate =>
-	 sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/\$$1\$/});
+	 sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/\$$1\$/g});
     return $p->via;
 }
 
