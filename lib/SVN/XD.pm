@@ -980,7 +980,7 @@ sub get_keyword_layer {
     return '' unless $k;
 
     # XXX: should these respect svm related stuff
-    my %kmap = ( LastChangedDate =>
+    my %kmap = ( Date =>
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
 		       my $fs = $root->fs;
@@ -989,6 +989,12 @@ sub get_keyword_layer {
 		 Rev =>
 		 sub { my ($root, $path) = @_;
 		       $root->node_created_rev ($path);
+		 },
+		 Author =>
+		 sub { my ($root, $path) = @_;
+		       my $rev = $root->node_created_rev ($path);
+		       my $fs = $root->fs;
+			$fs->revision_prop ($rev, 'svn:author');
 		 },
 		 Id =>
 		 sub { my ($root, $path) = @_;
@@ -1000,8 +1006,16 @@ sub get_keyword_layer {
 			   );
 		   },
 	       );
+    my %kalias = qw(
+	LastChangedDate	    Date
+	LastChangedRevision Rev
+	LastChangedBy	    Author
+	HeadURL		    URL
+    );
 
-    my @key = grep {exists $kmap{$_}} (split ',',$k);
+    $kmap{$_} = $kmap{$kalias{$_}} for keys %kalias;
+
+    my @key = grep {exists $kmap{$_}} (split /\W+/,$k);
     return '' unless $#key >= 0 ;
 
     my $keyword = '('.join('|', @key).')';
