@@ -63,7 +63,7 @@ sub run {
 	$cb_llabel =
 	    sub { my ($rpath) = @_;
 		  'revision '.($lrev ||
-			       $self->{xd}{checkout}->get ("$target2->{copath}/$rpath")->{revision});
+			       $self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision});
 	      },
     }
 

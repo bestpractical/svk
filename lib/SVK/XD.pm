@@ -575,7 +575,7 @@ sub do_delete {
 
     # actually remove it from checkout path
     my @paths = grep {-l $_ || -e $_} (exists $arg{targets}[0] ?
-			      map { "$arg{copath}/$_" } @{$arg{targets}}
+			      map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}}
 			      : $arg{copath});
     find(sub {
 	     my $cpath = $File::Find::name;
@@ -755,6 +755,7 @@ sub _unknown_verbose {
 		my $copath = $dpath;
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
+		# XXX: translate $dpath from SEP to /
 		if ($arg{entry}) {
 		    $dpath =~ s/^\Q$arg{copath}\E/$arg{entry}/;
 		}
@@ -768,7 +769,7 @@ sub _unknown_verbose {
 		}
 		$arg{cb_unknown}->($dpath, $File::Find::name);
 	  }}, defined $arg{targets} ?
-	  map {"$arg{copath}/$_"} @{$arg{targets}} : $arg{copath});
+	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
 }
 
 sub _node_deleted_or_absent {
@@ -912,17 +913,18 @@ sub _delta_dir {
     my $signature;
     if ($self->{signature} && $arg{xdroot} eq $arg{base_root}) {
 	$signature = $self->{signature}->load ($arg{copath});
+	# if we are not iterating over all entries, keep the old signatures
+	$signature->{keepold} = 1 if defined $targets
     }
 
     # XXX: Merge this with @direntries so we have single entry to descendents
     for my $entry (sort keys %$entries) {
-	# XXX: when we are not in the target, $signautre is not properly iterated over.
 	next if defined $targets && !exists $targets->{$entry};
 	my $kind = $entries->{$entry}->kind;
-	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$entry");
-	my $sche = $ccinfo->{'.schedule'} || '';
-	next if $kind == $SVN::Node::file && $signature && !$signature->changed ($entry)
-	    && !$sche;
+	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
+	my $copath = SVK::Target->copath ($arg{copath}, $entry);
+	my $ccinfo = $self->{checkout}->get ($copath);
+	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
 	$self->$delta ( %arg,
 			add => 0,
@@ -933,14 +935,17 @@ sub _delta_dir {
 			targets => $targets ? $targets->{$entry} : undef,
 			baton => $baton,
 			root => 0,
-			cinfo => undef,
+			cinfo => $ccinfo,
 			base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
 			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
-			copath => SVK::Target->copath ($arg{copath}, $entry))
+			copath => $copath)
 	    and ($signature && $signature->invalidate ($entry));
     }
 
-    $signature->flush ($arg{copath}) if $signature;
+    if ($signature) {
+	$signature->flush;
+	undef $signature;
+    }
 
     # check scheduled addition
     my $ignore = ignore ($arg{add} ? () :
@@ -954,15 +959,15 @@ sub _delta_dir {
 
     for (@direntries) {
 	next if m/$ignore/;
-	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$_");
+	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $_),
+			 entry => defined $arg{entry} ? "$arg{entry}/$_" : $_,
+			 path => $arg{path} eq '/' ? "/$_" : "$arg{path}/$_",
+			 targets => $targets ? $targets->{$_} : undef);
+	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
 	my $sche = $ccinfo->{'.schedule'} || '';
 	my $add = ($sche || $arg{auto_add}) ||
 	    ($arg{xdroot} ne $arg{base_root} &&
-	     $arg{xdroot}->check_path ("$arg{path}/$_") != $SVN::Node::none);
-	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $_),
-			 entry => defined $arg{entry} ? "$arg{entry}/$_" : $_,
-			 path => "$arg{path}/$_",
-			 targets => $targets ? $targets->{$_} : undef);
+	     $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none);
 	unless ($add) {
 	    if ($arg{cb_unknown} &&
 		(!defined $targets || exists $targets->{$_})) {
@@ -970,7 +975,7 @@ sub _delta_dir {
 		    $self->_unknown_verbose (%arg, %newpaths);
 		}
 		else {
-		    $arg{cb_unknown}->("$arg{path}/$_", "$arg{copath}/$_")
+		    $arg{cb_unknown}->($newpaths{path}, $newpaths{copath})
 			if $arg{cb_unknown};
 		}
 
@@ -990,8 +995,7 @@ sub _delta_dir {
 			kind => $kind,
 			baton => $baton,
 			root => 0,
-			path => $ccinfo->{'.copyfrom'} ||
-			($arg{path} eq '/' ? "/$_" : "$arg{path}/$_"),
+			path => $ccinfo->{'.copyfrom'} || $newpaths{path},
 			# XXX: what shold base_path be when there's copyfrom?
 			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$_",
 			cinfo => $ccinfo )
@@ -1005,8 +1009,7 @@ sub _delta_dir {
 }
 
 sub _get_rev {
-    my ($self, $path) = @_;
-    $self->{checkout}->get($path)->{revision};
+    $_[0]->{checkout}->get ($_[1])->{revision};
 }
 
 sub checkout_delta {
@@ -1019,10 +1022,8 @@ sub checkout_delta {
 	unless $arg{nodelay};
     $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
 	if $arg{debug};
-    $arg{cb_rev} ||= sub { my $target = shift;
-			   $target = $target ? "$copath/$target" : $copath;
-			   $self->_get_rev ($target);
-		       };
+    $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Target->copath ($copath, $_[0])) };
+    # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= sub { ("file://$repospath$_[0]", $_[1]) };
     my $rev = $arg{cb_rev}->('');
     my $baton = $arg{editor}->open_root ($rev);
@@ -1305,6 +1306,7 @@ sub read {
         $self->{signature} = {};
     }
 
+    $self->{changed} = {};
     $self->{newsignature} = {};
 }
 
@@ -1312,15 +1314,14 @@ sub write {
     my ($self) = @_;
     my $path = $self->path;
     # nothing to write
-    return unless keys %{$self->{newsignature}};
-    # not first time file and no entry changed
-    return if -s $path && !keys %{$self->{signature}};
+    return unless keys %{$self->{changed}};
 
     $self->lock;
     return unless $self->{locked};
     my ($hash, $file) = @_;
     open my $fh, '>:raw', $path or die $!;
-    print {$fh} %{ $self->{newsignature} };
+    print {$fh} $self->{keepold} ? (%{$self->{signature}}, %{$self->{newsignature}})
+	: %{ $self->{newsignature} };
     $self->unlock;
 }
 
@@ -1331,19 +1332,21 @@ sub changed {
     my @sig = (stat ($file))[1,7,9] or return 1;
 
     my ($key, $value) = (quotemeta($entry)."\n", "@sig\n");
-    $self->{newsignature}{$key} = $value;
-    return 1 unless exists $self->{signature}{$key};
-
-    return 1 if $self->{signature}{$key} ne $self->{newsignature}{$key};
-    # remove from ->{signature} if unchanged
+    my $changed = (!exists $self->{signature}{$key} ||
+		   $self->{signature}{$key} ne $value);
+    $self->{changed}{$key} = 1 if $changed;
     delete $self->{signature}{$key};
+    $self->{newsignature}{$key} = $value
+	if !$self->{keepold} || $changed;
 
-    return 0;
+    return $changed;
 }
 
 sub invalidate {
     my ($self, $entry) = @_;
-    delete $self->{newsignature}{quotemeta($entry)."\n"};
+    my $key = quotemeta($entry)."\n";
+    delete $self->{newsignature}{$key};
+    delete $self->{changed}{$key};
 }
 
 sub flush {
