@@ -66,6 +66,7 @@ sub get_commit_editor {
 						   $committed)],
 	 base_path => $path,
 	 $arg{mirror} ? () : ( root => $xdroot ),
+	 pool => SVN::Pool->new,
 	 missing_handler =>
 	 SVN::Simple::Edit::check_missing ($xdroot));
 }
@@ -215,11 +216,11 @@ sub run {
     $targets = [sort {$a->[1] cmp $b->[1]} @$targets];
 
     my ($editor, %cb) = $self->get_editor ({%$target, copath => undef});
+    my $fs = $target->{repos}->fs;
 
     my $committed = sub {
 	my ($rev) = @_;
 	my (undef, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
-	my $fs = $target->{repos}->fs;
 	my $oldroot = $fs->revision_root ($rev-1);
 	my $oldrev = $oldroot->node_created_rev ($target->{path});
 	# optimize checkout map
@@ -273,6 +274,7 @@ sub run {
 
     ${$cb{callback}} = $committed;
 
+    my %revcache;
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $xdroot,
@@ -283,14 +285,12 @@ sub run {
 	    cb_rev => sub {
 		my $revtarget = shift;
 		my $cotarget = $revtarget;
-		my $fs = $target->{repos}->fs;
-		$cotarget = $cotarget ? "$target->{copath}/$cotarget" : $target->{copath};
 		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
-
-		my $root = $fs->revision_root
-		    ($self->{xd}{checkout}->get($cotarget)->{revision});
-		$fs->revision_prop ($root->node_created_rev ($revtarget),
-				    "svm:headrev:$cb{mirror}{source}");
+		$cotarget = $cotarget ? "$target->{copath}/$cotarget" : $target->{copath};
+		my $corev = $self->{xd}{checkout}->get($cotarget)->{revision};
+		return $revcache{$corev} if exists $revcache{corev};
+		my $rev = ($xdroot->node_history ($revtarget)->prev (0)->location)[1];
+		$revcache{$corev} = $fs->revision_prop ($rev, "svm:headrev:$cb{mirror}{source}");
 	    }) : ());
     return;
 }

@@ -27,7 +27,7 @@ sub run {
 	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
 	$self->{merge} = SVK::Merge->new (%$self);
 	my %ancestors = $self->{merge}->copy_ancestors($repos,$path,$yrev, 1);
-	my $minfo = $self->{merge}->find_merge_sources($repos,$path,0,1);
+	my $minfo = $self->{merge}->find_merge_sources($repos,$path,$yrev, 0,1);
 	print loc("Checkout Path: %1\n",$copath) if($copath);
 	print loc("Depot Path: %1\n", $depotpath);
 	print loc("Revision: %1\n", $rev);

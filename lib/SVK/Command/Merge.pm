@@ -35,6 +35,7 @@ sub run {
 
     die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
     my $repos = $src->{repos};
+    my $fs = $repos->fs;
     unless ($self->{auto}) {
 	die loc("revision required") unless $self->{revspec};
 	($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
@@ -45,7 +46,7 @@ sub run {
     if ($self->{auto}) {
 	$self->{merge} = SVK::Merge->new (%$self);
 	($base_path, $baserev, $fromrev, $torev) =
-	    ($self->{merge}->find_merge_base ($repos, $src->{path}, $dst->{path}), $repos->fs->youngest_rev);
+	    ($self->{merge}->find_merge_base ($repos, $src->{path}, $dst->{path}), $fs->youngest_rev);
 	print loc("Auto-merging (%1, %2) %3 to %4 (base %5:%6).\n",
 		  $fromrev, $torev, $src->{path}, $dst->{path}, $base_path, $baserev);
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
@@ -66,7 +67,6 @@ sub run {
     # editor for the target
     my ($storage, %cb) = $self->get_editor ($dst);
 
-    my $fs = $repos->fs;
     $storage = SVK::Editor::Delay->new ($storage);
     my $editor = SVK::Editor::Merge->new
 	( anchor => $src->{path},

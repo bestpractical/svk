@@ -39,7 +39,51 @@ SVK - A Distributed Version Control System
 
 =head1 SYNOPSIS
 
-see svk help
+  use SVK;
+  use XD;
+
+  $xd = SVK::XD->new
+      (depotmap => { '' => '/path/to/repos'},
+       checkout => Data::Hierarchy->new);
+
+  $svk = SVK->new (xd => $xd, output => \$output);
+  # serialize the $xd object for future use.
+
+  $svk->ls ('//'); # check $output for its output
+  ...
+
+=head1 DESCRIPTION
+
+C<SVK> is the class that loads L<SVK::Command> and invokes them. You can
+use it in your program to do what you do with the L<svk> command line
+interface.
+
+=head1 CONSTRUCTOR
+
+Options to C<new>:
+
+=over
+
+=item xd
+
+L<SVK::XD> object that handles depot and checkout copy mapping.
+
+=item output
+
+A scalar reference. After command invocation the output will be stored
+in the scalar. By default the output is not held in any scalar and
+will be printed to STDOUT.
+
+=head1 METHODS
+
+All methods are autoloaded and deferred to
+C<SVK::Command-E<gt>invoke>.
+
+=back
+
+=head1 SEE ALSO
+
+L<svk>, L<SVK::XD>, L<SVK::Command>.
 
 =head1 AUTHORS
 

@@ -939,6 +939,7 @@ sub do_import {
 					    '/', $ENV{USER},
 					    "directory for svk import",
 					    sub { print loc("Import path %1 initialized.\n", $arg{path}) })],
+	     pool => SVN::Pool->new,
 	     missing_handler => &SVN::Simple::Edit::check_missing ($root));
 
 	$edit->open_root ($yrev);

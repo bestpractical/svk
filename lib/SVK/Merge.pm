@@ -35,9 +35,10 @@ sub _next_is_merge {
 
 sub find_merge_base {
     my ($self, $repos, $src, $dst) = @_;
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($repos, $_)} ($src, $dst);
-    my ($basepath, $baserev, $baseentry);
     my $fs = $repos->fs;
+    my $yrev = $fs->youngest_rev;
+    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($repos, $_, $yrev)} ($src, $dst);
+    my ($basepath, $baserev, $baseentry);
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
@@ -47,7 +48,6 @@ sub find_merge_base {
 	    if !$basepath || $rev > $baserev;
     }
 
-    my $yrev = $fs->youngest_rev;
     if (!$basepath) {
 	die loc("Can't find merge base for %1 and %2\n", $src, $dst)
 	  unless $self->{baseless} or $self->{base};
@@ -81,12 +81,11 @@ sub find_merge_base {
 }
 
 sub find_merge_sources {
-    my ($self, $repos, $path, $verbatim, $noself) = @_;
+    my ($self, $repos, $path, $rev, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
 
     my $fs = $repos->fs;
-    my $yrev = $fs->youngest_rev;
-    my $root = $fs->revision_root ($yrev);
+    my $root = $fs->revision_root ($rev);
     my $minfo = $root->node_prop ($path, 'svk:merge');
     my $myuuid = $fs->get_uuid ();
     if ($minfo) {
@@ -109,7 +108,7 @@ sub find_merge_sources {
 	    unless $noself;
     }
 
-    my %ancestors = $self->copy_ancestors ($repos, $path, $yrev, 1);
+    my %ancestors = $self->copy_ancestors ($repos, $path, $rev, 1);
     for (sort keys %ancestors) {
 	my $rev = $ancestors{$_};
 	$minfo->{$_} = $rev
@@ -176,9 +175,9 @@ sub copy_ancestors {
 
 sub get_new_ticket {
     my ($self, $repos, $src, $dst) = @_;
-
-    my $srcinfo = $self->find_merge_sources ($repos, $src, 1);
-    my $dstinfo = $self->find_merge_sources ($repos, $dst, 1);
+    my $yrev = $repos->fs->youngest_rev;
+    my $srcinfo = $self->find_merge_sources ($repos, $src, $yrev, 1);
+    my $dstinfo = $self->find_merge_sources ($repos, $dst, $yrev, 1);
     my ($uuid, $newinfo);
 
     # bring merge history up to date as from source

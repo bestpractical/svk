@@ -71,7 +71,6 @@ sub run {
 
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n", $base_path, $base_rev, $src->{path}, $fromrev, $torev);
 
-	my $fs = $repos->fs;
 	my $editor = SVK::Editor::Merge->new
 	    ( anchor => $src->{path},
 	      base_anchor => $src->{path},
@@ -100,11 +99,11 @@ sub run {
 				     sub { print loc("Committed revision %1.\n", $_[0]) })
 				  ]),
 		      $fs->youngest_rev);
-    my $newrev = $repos->fs->youngest_rev;
-    my $uuid = $repos->fs->get_uuid;
+    my $newrev = $fs->youngest_rev;
+    my $uuid = $fs->get_uuid;
 
     # give ticket to src
-    my $ticket = $self->{merge}->find_merge_sources ($repos, $src->{path}, 1, 1);
+    my $ticket = $self->{merge}->find_merge_sources ($repos, $src->{path}, $fs->youngest_rev, 1, 1);
 
     $ticket .= "\n$uuid:$tmpbranch:$newrev";
 
