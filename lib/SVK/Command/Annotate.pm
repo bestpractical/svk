@@ -83,12 +83,21 @@ SVK::Command::Annotate - Display per-line revision and author info
 
 =head1 SYNOPSIS
 
- annotate FILE
+ annotate [PATH][@REV]
+ annotate [-r REV] [PATH]
  annotate DEPOTPATH[@rev]
+ annotate [-r REV] DEPOTPATH
 
 =head1 OPTIONS
 
+ -r [--revision] REV    : annotate up to revision
  -x [--cross]           : track revisions copied from elsewhere
+
+=head1 NOTES
+
+Note that -r REV file will do annotation up to REV,
+while file@REV will do annotation up to REV,
+plus the checkout copy differences.
 
 =head1 AUTHORS
 
