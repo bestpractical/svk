@@ -128,12 +128,14 @@ sub get_prompt { {
     }
 
     require Term::ReadKey;
-    Term::ReadKey::ReadMode('raw');
+    Term::ReadKey::ReadMode(IS_WIN32 ? 'normal' : 'raw');
+    my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
         if ($key =~ /[\012\015]/) {
-            print "\n" if $key eq $formfeed; print $key; last;
+            $out->("\n") if $key eq $formfeed;
+	    $out->($key); last;
         }
         elsif ($key eq "\cC") {
             Term::ReadKey::ReadMode('restore');
@@ -145,19 +147,19 @@ sub get_prompt { {
         }
         elsif ($key eq "\cH") {
             next unless length $answer;
-            print "$key $key";
+            $out->("$key $key");
             chop $answer; next;
         }
         elsif ($key eq "\cW") {
             my $len = (length $answer) or next;
-            print "\cH" x $len, " " x $len, "\cH" x $len;
+            $out->("\cH" x $len, " " x $len, "\cH" x $len);
             $answer = ''; next;
         }
         elsif (ord $key < 32) {
             # control character -- ignore it!
             next;
         }
-        print $key;
+        $out->($key);
         $answer .= $key;
     }
 
