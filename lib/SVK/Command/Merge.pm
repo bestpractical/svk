@@ -47,19 +47,23 @@ sub parse_arg {
     }
 
     my $target1 = $self->arg_co_maybe (@arg ? $arg[0] : '');
-    my $target2 = $target1->copied_from;
 
+    if ($self->{from}) {
+        # When using "from", $target1 must always be a depotpath.
+        if (defined $target1->{copath}) {
+            # Because merging under the copath anchor is unsafe,
+            # cast it into a coroot now. -- XXX -- also see Update.pm
+            my $entry = $self->{xd}{checkout}->get ($target1->{copath});
+            $target1 = $self->arg_depotpath ($entry->{depotpath});
+        }
+    }
+
+    my $target2 = $target1->copied_from;
     if (!defined ($target2)) {
         die loc ("Cannot find the path which '%1' copied from.\n", $arg[0]);
     }
 
-    if ($self->{from}) {
-        # When using "from", $target1 must always be a depotpath.
-        return ($target1->as_depotpath, $target2);
-    }
-    else {
-        return ($target2, $target1);
-    }
+    return ( ($self->{from}) ? ($target1, $target2) : ($target2, $target1) );
 }
 
 sub lock {
