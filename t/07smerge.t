@@ -1,10 +1,12 @@
 #!/usr/bin/perl -w
 use strict;
-require 't/tree.pl';
 use Test::More;
+BEGIN { require 't/tree.pl' };
 our $output;
-eval "require SVN::Mirror"
-or plan skip_all => "SVN::Mirror not installed";
+eval { require SVN::Mirror; 1 } or do {
+    plan skip_all => "SVN::Mirror not installed";
+    exit;
+};
 plan tests => 21;
 
 # build another tree to be mirrored ourself
@@ -154,13 +156,13 @@ is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 $svk->smerge ('-C', '//m', $copath);
 is_output ($svk, 'smerge', ['//m', $copath],
 	   ['Auto-merging (7, 9) /m to /l (base /l:7).',
-	    " U  $copath/Q/qu",
-	    "    $copath/Q/qz - skipped",
-	    "C   $copath/be",
-	    "    $copath/newdir - skipped",
-	    "g   $copath/newfile",
-	    "A   $copath/newdir2",
-	    "C   $copath/newfile2",
+	    __" U  $copath/Q/qu",
+	    __"    $copath/Q/qz - skipped",
+	    __"C   $copath/be",
+	    __"    $copath/newdir - skipped",
+	    __"g   $copath/newfile",
+	    __"A   $copath/newdir2",
+	    __"C   $copath/newfile2",
 	    "New merge ticket: $suuid:/A:5",
 	    '2 conflicts found.']);
 $svk->status ($copath);

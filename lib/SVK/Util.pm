@@ -6,7 +6,7 @@ our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
 		    find_local_mirror abs_path mimetype mimetype_is_text
 		    abs2rel catfile catdir catpath splitpath splitdir tmpdir
-		    devnull $SEP %Config);
+		    devnull $SEP %Config IS_WIN32 is_symlink);
 our $VERSION = $SVK::VERSION;
 our $SEP = catdir('');
 
@@ -15,12 +15,12 @@ use SVK::I18N;
 use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
-use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir
-			     tmpdir devnull);
+use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir tmpdir );
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
 
+use constant HAS_SYMLINK => $Config{d_symlink};
 use constant IS_WIN32 => ($^O eq 'MSWin32');
 use constant TEXT_MODE => IS_WIN32 ? ':crlf' : '';
 use constant DEFAULT_EDITOR => IS_WIN32 ? 'notepad.exe' : 'vi';
@@ -243,6 +243,14 @@ sub abs2rel {
     }
     $rel =~ s/\Q$SEP/$slash/g if $slash and $SEP ne $slash;
     return $rel;
+}
+
+sub devnull () {
+    IS_WIN32 ? tmpfile('', UNLINK => 1) : File::Spec::Functions::devnull();
+}
+
+sub is_symlink {
+    HAS_SYMLINK ? @_ ? (-l $_[0]) : (-l _) : 0;
 }
 
 1;

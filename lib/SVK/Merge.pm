@@ -351,8 +351,9 @@ sub run {
 	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
+    my $is_copath = defined($self->{dst}{copath});
     my $notify = $self->{notify} || SVK::Notify->new_with_report
-	($report, defined $self->{target} ? $self->{target} : $target);
+	($report, (defined $self->{target} ? $self->{target} : $target), $is_copath);
     if ($storage->can ('rename_check')) {
 	my $flush = $notify->{cb_flush};
 	$notify->{cb_flush} = sub {
@@ -368,7 +369,7 @@ sub run {
 	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  storage => $storage,
 	  notify => $notify,
-	  allow_conflicts => defined $self->{dst}{copath},
+	  allow_conflicts => $is_copath,
 	  open_nonexist => $self->{track_rename},
 	  cb_merged => $self->{ticket} ?
 	  sub { my ($editor, $baton, $pool) = @_;

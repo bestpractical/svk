@@ -45,10 +45,13 @@ sub print_report {
 		$path =~ s|^\Q$target\E/||;
 	    }
 	}
-	$print->($path ? $report ? $is_copath ? SVK::Target->copath ($report, $path)
-		                              : "$report/$path"
-                                 : $path
-		       : $report || '.', @_);
+	$print->((
+	    $path ? $report ? $is_copath ? SVK::Target->copath ($report, $path)
+					 : "$report/$path"
+			    : $path
+		  : $is_copath ? SVK::Target->copath('', $report || '.')
+			       : ($report || '.')
+	), @_);
     };
 }
 

@@ -37,7 +37,8 @@ $svk->update ('-r', 3, $copath);
 ok (_x "$copath/A/be", 'take care of svn:executable after update');
 is_file_content ("$copath/A/be", $newcontent, 'commit Id');
 
-is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  \Q$copath\E/A/be$|m,
+my $cofile = __"$copath/A/be";
+is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  \Q$cofile\E$|m,
 		'keyword does not cause merge');
 
 ok (not_x "$copath/A/be", 'take care of removing svn:executable after update');
@@ -59,9 +60,6 @@ $svk->add ("$copath/le");
 $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
 $svk->ps ('svn:eol-style', 'native', "$copath/le/native");
 $svk->ps ('svn:eol-style', 'LF', "$copath/le/unix");
-$svk->ps ('svn:mime-type', 'text/plain', "$copath/le/dos");
-$svk->ps ('svn:mime-type', 'text/plain', "$copath/le/native");
-$svk->ps ('svn:mime-type', 'text/plain', "$copath/le/unix");
 $svk->commit ('-m', 'test line ending', $copath);
 is_file_content ("$copath/le/dos", "dos\r\n");
 is_file_content ("$copath/le/unix", "unix\n");

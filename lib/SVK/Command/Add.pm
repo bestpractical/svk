@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( $SEP );
+use SVK::Util qw( $SEP is_symlink );
 
 sub options {
     ('N|non-recursive'	=> 'nrec',
@@ -44,7 +44,7 @@ sub run {
 		      @{$target}{qw/copath report/};
 		  lstat ($copath);
 		  $self->do_add ('R', $copath, $report, !-d _)
-		      if -l _ || -e _;
+		      if is_symlink || -e _;
 	      })),
 	  cb_unknown => sub {
 	      $self->do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),

@@ -257,7 +257,7 @@ sub tree_from_xdroot {
     # generate a hash describing the content in an xdroot
 }
 
-sub __ {
+sub __ ($) {
     my $path = shift;
     $path =~ s{/}{$SEP}go;
     return $path;

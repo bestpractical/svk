@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 4;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('commit');
@@ -31,7 +31,7 @@ r1.*\Q  A  /A
   A  /A/bar
   A  /A/foo\E|s);
 
-$svk->mirror ('/test/A', "file://$repospath/A");
+$svk->mirror ('/test/A', uri("$repospath/A"));
 $svk->sync ('/test/A');
 
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],

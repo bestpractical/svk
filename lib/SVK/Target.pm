@@ -2,7 +2,7 @@ package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
-use SVK::Util qw( get_anchor );
+use SVK::Util qw( get_anchor IS_WIN32 );
 use SVK::Target::Universal;
 use Clone;
 
@@ -129,8 +129,8 @@ path component.
 
 =cut
 
-my $_copath_catsplit = $^O eq 'MSWin32' ?
-sub { File::Spec->catfile (defined $_[0] && length $_[0] ? ($_[0]) : (), File::Spec::Unix->splitdir ($_[1])) } :
+my $_copath_catsplit = IS_WIN32 ?
+sub { File::Spec->catfile ((defined $_[0] && length $_[0] ? ($_[0]) : ()), File::Spec::Unix->splitdir ($_[1])) } :
 sub { defined $_[0] && length $_[0] ? "$_[0]/$_[1]" : $_[1] };
 
 sub copath {

@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config is_symlink );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -19,7 +19,6 @@ use YAML qw(LoadFile DumpFile);
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
-use constant HAS_SYMLINK => $Config{d_symlink};
 
 =head1 NAME
 
@@ -410,7 +409,7 @@ sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
     return
-	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_ || -l $_ },
+	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_ || is_symlink($_) },
 	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
 			  $self->{checkout}->get ($_)->{revision} },
 	  cb_conflict => sub { $_ = shift; $arg{get_copath} ($_);
@@ -504,7 +503,7 @@ sub _load_svn_autoprop {
 sub auto_prop {
     my ($self, $copath) = @_;
     # no other prop for links
-    return {'svn:special' => '*'} if -l $copath;
+    return {'svn:special' => '*'} if is_symlink($copath);
     my $prop;
     $prop->{'svn:executable'} = '*' if -x $copath;
     # auto mime-type
@@ -572,7 +571,7 @@ sub do_delete {
 			  );
 
     # actually remove it from checkout path
-    my @paths = grep {-l $_ || -e $_} (exists $arg{targets}[0] ?
+    my @paths = grep {is_symlink($_) || -e $_} (exists $arg{targets}[0] ?
 			      map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}}
 			      : $arg{copath});
     find(sub {
@@ -815,7 +814,7 @@ sub _node_deleted_or_absent {
     }
 
     lstat ($arg{copath});
-    unless (-e _ or (HAS_SYMLINK and -l _)) {
+    unless (-e _ or is_symlink) {
 	return 1 if $arg{absent_ignore};
 	$arg{rev} = $arg{cb_rev}->($arg{entry});
 	if ($arg{absent_as_delete}) {
@@ -1016,8 +1015,8 @@ sub _delta_dir {
 	}
 	lstat ($newpaths{copath});
 	# XXX: warn about unreadable entry?
-	next unless -r _ or (HAS_SYMLINK and -l _);
-	my $delta = (-d _ and not (HAS_SYMLINK and -l _))
+	next unless -r _ or is_symlink;
+	my $delta = (-d _ and not is_symlink)
 	    ? \&_delta_dir : \&_delta_file;
 	my $copyfrom = $ccinfo->{'.copyfrom'};
 	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
@@ -1212,7 +1211,7 @@ sub get_fh {
     }
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
-	    if defined $prop->{'svn:special'} || ($mode eq '<' && -l $fname);
+	    if defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname));
 	if (keys %$prop) {
 	    $layer ||= get_keyword_layer ($root, $path, $prop);
 	    $eol ||= get_eol_layer($root, $path, $prop);

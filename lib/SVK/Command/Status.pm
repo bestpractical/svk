@@ -5,6 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::Editor::Status;
+use SVK::Util qw( abs2rel );
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -27,8 +28,8 @@ sub run {
 	  editor => SVK::Editor::Status->new (report => $target->{report}),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_unknown =>
-	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$report|;
-		print "?   $_[1]\n" }
+	  sub { my $path = abs2rel($_[1], $target->{copath} => length($report) ? $report : undef);
+		print "?   $path\n" }
 	);
     return;
 }
