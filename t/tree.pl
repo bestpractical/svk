@@ -105,7 +105,8 @@ sub is_file_content {
     my ($file, $content, $test) = @_;
     open my ($fh), '<:raw', $file or confess "Cannot read from $file: $!";
     local $/;
-    is (<$fh>, $content, $test);
+    @_ = (<$fh>, $content, $test);
+    goto &is;
 }
 
 sub is_output {
@@ -113,8 +114,8 @@ sub is_output {
     $svk->$cmd (@$arg);
     my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
 	? \&is_deeply_like : \&is_deeply;
-    $cmp->([split ("\n", $output)], $expected,
-	   $test || join(' ', $cmd, @$arg));
+    @_ = ([split ("\n", $output)], $expected, $test || join(' ', $cmd, @$arg));
+    goto &$cmp;
 }
 
 sub is_deeply_like {
@@ -135,13 +136,15 @@ sub is_deeply_like {
 	    }
 	}
     }
-    is ($#{$expected}, $#{$got}, $test);
+    @_ = ($#{$expected}, $#{$got}, $test);
+    goto &is;
 }
 
 sub is_output_like {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
     $svk->$cmd (@$arg);
-    like ($output, $expected, $test || join(' ', $cmd, @$arg));
+    @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
+    goto &like;
 }
 
 sub copath {
@@ -154,6 +157,14 @@ sub status_native {
     while (my ($status, $path) = splice (@_, 0, 2)) {
 	push @ret, join (' ', $status, $copath ? copath ($path) :
 			 File::Spec->catfile (File::Spec::Unix->splitdir ($path)));
+    }
+    return @ret;
+}
+
+sub status {
+    my @ret;
+    while (my ($status, $path) = splice (@_, 0, 2)) {
+	push @ret, join (' ', $status, $path);
     }
     return @ret;
 }
