@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
+use SVK::Util qw( slurp_fh md5 get_anchor tmpfile devnull );
 
 =head1 NAME
 
@@ -321,7 +321,7 @@ sub close_file {
 	}
 
 	$self->ensure_open ($path);
-	$fh->{base}[1] = '/dev/null' if $info->{addmerge};
+	$fh->{base}[1] = devnull if $info->{addmerge};
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
 	# XXX: why do in-memory here? use some tee'ed io to get md5 upon written.
