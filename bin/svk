@@ -273,12 +273,21 @@ sub add {
 
 =cut
 
+my $target_prompt = '=== below are targets to be committed ===';
+
 sub commit {
-    my ($copath) = @_;
+    local @ARGV = @_;
+    my $message;
+    die unless GetOptions ("m|message=s"  => \$message);
+    die "no message" unless $message;
+
+    my ($copath) = @ARGV;
     $copath = File::Spec->rel2abs ($copath);
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
-
+    my $targets;
     # harvest
+
+    print "$target_prompt\n";
     SVN::XD::checkout_crawler ($info,
 			       repos => $repos,
 			       copath => $copath,
@@ -289,13 +298,26 @@ sub commit {
 			       sub {},
 			       cb_add =>
 			       sub {
+				   push @$targets, ['A', $_[1]];
 				   print "A  $_[1]\n";
 			       },
 			       cb_changed =>
 			       sub {
+				   push @$targets, ['M', $_[1]];
 				   print "M  $_[1]\n";
 			       },
 			      );
+
+    SVN::XD::do_commit ($info,
+			author => $ENV{USER},
+			message => $message,
+			repos => $repos,
+			repospath => $repospath,
+			copath => $copath,
+			path => $path,
+			baserev => $cinfo->{revision},
+			targets => $targets,
+		       );
 }
 
 *co = *checkout;
@@ -306,7 +328,7 @@ sub commit {
 
 my $defaultdepot;
 
-die unless GetOptions ("depot=s"  => \$defaultdepot);
+#die unless GetOptions ("depot=s"  => \$defaultdepot);
 
 my $cmd = shift;
 

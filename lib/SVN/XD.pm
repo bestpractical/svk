@@ -74,6 +74,52 @@ sub checkout_crawler {
 
 }
 
+use SVN::Simple::Edit;
+
+sub do_commit {
+    my ($info, %arg) = @_;
+
+    my $committed = sub {
+	my ($rev) = @_;
+	for (@{$arg{targets}}) {
+	    $info->{checkout}->store ($_->[1], { schedule => undef,
+						 revision => $rev,
+					       });
+	}
+	print "Committed revision $rev.\n";
+    };
+
+    print "commit message from $arg{author}:\n$arg{message}\n";
+    my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
+    my (undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
+
+    print "commit from $arg{path} ($anchor & $target) <- $arg{copath}\n";
+    print "targets:\n";
+    print "$_->[1]\n" for @{$arg{targets}};
+
+    my $edit = SVN::Simple::Edit->new
+	(_editor => [SVN::Repos::get_commit_editor($arg{repos},
+						   "file://$arg{repospath}",
+						   $arg{path},
+						   $arg{author}, $arg{message},
+						   $committed)]);
+
+    $edit->open_root($arg{baserev});
+    for (@{$arg{targets}}) {
+	my ($action, $tpath) = @$_;
+	open my ($fh), '<', $tpath;
+	my $md5 = md5file ($tpath);
+	$tpath =~ s|^$arg{copath}/||;
+	if ($action eq 'A') {
+	    # check dir later
+	    $edit->add_file ($tpath);
+	}
+	$edit->modify_file ($tpath, $fh, $md5);
+    }
+    $edit->close_edit();
+
+}
+
 sub md5file {
     my $fname = shift;
     open my $fh, '<', $fname;
