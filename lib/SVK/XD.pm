@@ -909,7 +909,7 @@ sub _delta_file {
     my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
 
-    $arg{base} = 0 if $arg{in_copy};
+    $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';;
 
     return $modified unless $schedule || $arg{add} ||
 	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
@@ -930,7 +930,8 @@ sub _delta_file {
 	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
 	seek $fh, 0, 0;
 	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool);
-	$self->_delta_content (%arg, baton => $baton, fh => $fh, md5 => $md5, pool => $pool);
+	$self->_delta_content (%arg, baton => $baton, pool => $pool,
+			       fh => $fh, md5 => $arg{base} ? $md5 : undef);
     }
 
     $arg{editor}->close_file ($baton, $mymd5, $pool) if $baton;
