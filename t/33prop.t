@@ -57,8 +57,8 @@ is_output ($svk, 'pl', ['-v', "//A"],
 is_output ($svk, 'pg', ['myprop', "//A"],
 	   ['myvalue']);
 is_output ($svk, 'pg', ['myprop', "$copath/A", "//A"],
-	   ['/A - myvalue2',
-            '/A - myvalue']);
+	   [__("$copath/A - myvalue2"),
+            '//A - myvalue']);
 is_output ($svk, 'pg', ['--strict', 'myprop', "$copath/A", "//A"],
 	   ['myvalue2myvalue']);
 $svk->revert ("$copath/A");
