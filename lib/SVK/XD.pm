@@ -955,7 +955,11 @@ sub _delta_dir {
 
     # XXX: Merge this with @direntries so we have single entry to descendents
     for my $entry (sort keys %$entries) {
-	next if defined $targets && !exists $targets->{$entry};
+	my $newtarget;
+	if (defined $targets) {
+	    next unless exists $targets->{$entry};
+	    $newtarget = delete $targets->{$entry};
+	}
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	my $copath = SVK::Target->copath ($arg{copath}, $entry);
@@ -968,7 +972,7 @@ sub _delta_dir {
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			kind => $kind,
-			targets => $targets ? $targets->{$entry} : undef,
+			targets => $newtarget,
 			baton => $baton,
 			root => 0,
 			cinfo => $ccinfo,
@@ -976,7 +980,6 @@ sub _delta_dir {
 			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			copath => $copath)
 	    and ($signature && $signature->invalidate ($entry));
-	delete $targets->{$entry} if defined $targets;
     }
 
     if ($signature) {

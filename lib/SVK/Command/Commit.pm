@@ -32,14 +32,6 @@ sub lock { $_[0]->lock_target ($_[1]) }
 
 sub target_prompt { $target_prompt }
 
-sub auth {
-    eval 'require SVN::Client' or die $@;
-    return SVN::Core::auth_open
-	([SVN::Client::get_simple_provider (),
-	  SVN::Client::get_ssl_server_trust_file_provider (),
-	  SVN::Client::get_username_provider ()]);
-}
-
 sub under_mirror {
     my ($self, $target) = @_;
     svn_mirror && SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
@@ -108,7 +100,6 @@ sub get_editor {
 	    print loc("Checking against mirrored directory locally.\n");
 	}
 	else {
-	    $m->{auth} = $self->auth;
 	    $m->{config} = $self->{svnconfig};
 	    $m->{revprop} = ['svk:signature'];
 	    ($base_rev, $editor) = $m->get_merge_back_editor
