@@ -14,6 +14,7 @@ sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
      'l|log'		=> 'log',
+     's|summary'	=> 'summary',
      'remoterev'	=> 'remoterev',
      'track-rename'	=> 'track_rename',
      'host=s'   	=> 'host',
@@ -122,6 +123,7 @@ sub run {
 				   ticket => !$self->{no_ticket},
 				   src => $src, dst => $dst);
 	print $merge->info;
+	print $merge->log(1) if $self->{summary};
     }
     else {
 	die loc("Incremental merge not supported\n") if $self->{incremental};
