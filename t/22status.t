@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 11;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -65,13 +65,11 @@ $svk->merge ('-r2:3', '//A', 'A');
 is_output ($svk, 'status', [],
 	   [ map __($_), 'C   A/foo', '?   A/bar'], 'status - conflict');
 $svk->revert ('A/foo');
-is_output ($svk, 'status', [],
-	   [ map __($_), '?   A/bar', 'C   A/foo'], 'status - conflict only');
 $svk->ps ('someprop', 'somevalue', '.');
 $svk->ps ('someprop', 'somevalue', 'A');
 chdir ('A');
 is_output ($svk, 'status', [],
-	   [ map __($_), '?   bar', 'C   foo', ' M  .'], 'status - conflict only');
+	   [ map __($_), '?   bar', ' M  .']);
 chdir ('..');
 $svk->revert ('-R', '.');
 $svk->ps ('someprop', 'somevalue', 'A/deep/baz');
