@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 18;
+use Test::More tests => 19;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -52,26 +52,35 @@ $svk->ps ('svn:keywords', 'URL Author Rev Date Id FileRev', "$copath/A/foo");
 $svk->commit ('-m', 'appending a file and change props', $copath);
 is_output ($svk, 'st', ["$copath/A/foo"], [], 'commit does keyword expansion');
 
+my ($CR, $LF, $CRLF) = ("\015", "\012", "\015\012");
 mkdir ("$copath/le");
-overwrite_file_raw ("$copath/le/dos", "dos\n");
-overwrite_file_raw ("$copath/le/unix", "unix\n");
-overwrite_file_raw ("$copath/le/native", "native\n");
-overwrite_file_raw ("$copath/le/na", "na\n");
-overwrite_file_raw ("$copath/le/mixed", "mixed\r\nendings\n");
+overwrite_file_raw ("$copath/le/dos", "dos$CR");
+overwrite_file_raw ("$copath/le/unix", "unix$CR");
+overwrite_file_raw ("$copath/le/mac", "mac$CRLF");
+overwrite_file_raw ("$copath/le/native", "native$CR");
+overwrite_file_raw ("$copath/le/na", "na$CR");
+overwrite_file_raw ("$copath/le/mixed", "mixed$CRLF...endings$CR");
 $svk->add ("$copath/le");
 $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
 $svk->ps ('svn:eol-style', 'native', "$copath/le/native");
 $svk->ps ('svn:eol-style', 'LF', "$copath/le/unix");
+$svk->ps ('svn:eol-style', 'CR', "$copath/le/mac");
 $svk->ps ('svn:eol-style', 'NA', "$copath/le/na");
 $svk->commit ('-m', 'test line ending', $copath);
-is_file_content_raw ("$copath/le/dos", "dos\r\n");
-is_file_content_raw ("$copath/le/unix", "unix\n");
-is_file_content_raw ("$copath/le/na", "na\n");
+
+is_file_content_raw ("$copath/le/dos", "dos$CRLF");
+is_file_content_raw ("$copath/le/unix", "unix$LF");
+is_file_content_raw ("$copath/le/mac", "mac$CR");
+is_file_content_raw ("$copath/le/na", "na$CR");
+
 if ($^O =~ /^MSWin|cygwin|os2|dos/) {
-    is_file_content_raw ("$copath/le/native", "native\r\n");
+    is_file_content_raw ("$copath/le/native", "native$CRLF");
+}
+elsif ($^O =~ /^MacOS/) {
+    is_file_content_raw ("$copath/le/native", "native$CR");
 }
 else {
-    is_file_content_raw ("$copath/le/native", "native\n");
+    is_file_content_raw ("$copath/le/native", "native$LF");
 }
 
 $SIG{__DIE__} = sub {
@@ -80,5 +89,5 @@ $SIG{__DIE__} = sub {
     exit;
 };
 
-$svk->ps ('svn:eol-style', 'CR', "$copath/le/mixed");
+$svk->ps ('svn:eol-style', 'native', "$copath/le/mixed");
 $svk->commit ('-m', 'test line ending', $copath);

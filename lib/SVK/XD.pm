@@ -1144,10 +1144,14 @@ sub do_resolved {
 }
 
 sub get_eol_layer {
-    my ($root, $path, $prop) = @_;
+    my ($root, $path, $prop, $mode) = @_;
     my $k = $prop->{'svn:eol-style'} or return ':raw';
     if ($k eq 'native') {
-        return ' ';
+        return (
+            (!$mode or $mode eq '<')
+                ? ':raw:encoding(LF)'
+                : ':raw:encoding(Native)'
+        );
     }
     elsif ($k eq 'CRLF' or $k eq 'CR' or $k eq 'LF') {
         return ":raw:encoding($k)";
@@ -1158,7 +1162,7 @@ sub get_eol_layer {
 }
 
 sub get_keyword_layer {
-    my ($root, $path, $prop) = @_;
+    my ($root, $path, $prop, $mode) = @_;
     my $k = $prop->{'svn:keywords'};
     return unless $k;
 
@@ -1265,8 +1269,8 @@ sub get_fh {
 	return _fh_symlink ($mode, $fname)
 	    if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
 	if (keys %$prop) {
-	    $layer ||= get_keyword_layer ($root, $path, $prop);
-	    $eol ||= get_eol_layer($root, $path, $prop);
+	    $layer ||= get_keyword_layer ($root, $path, $prop, $mode);
+	    $eol ||= get_eol_layer($root, $path, $prop, $mode);
 	}
     }
     $eol ||= ':raw';
