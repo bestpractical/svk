@@ -33,8 +33,13 @@ sub run {
 	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);
 
     if ($self->{sync_all}) {
-	@arg = $self->parse_arg
-	    (map {'/'.$_} map {SVN::Mirror::list_mirror ($_->{repos})} @arg);
+	my @newarg;
+	for (@arg) {
+	    my ($depotname) = $self->{xd}->find_depotname ($_->{depotpath});
+	    push @newarg, $self->parse_arg
+		(map {"/$depotname$_"} SVN::Mirror::list_mirror ($_->{repos}));
+	}
+	@arg = @newarg;
     }
 
     for my $target (@arg) {
