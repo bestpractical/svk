@@ -65,6 +65,7 @@ sub close_file {
 	my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
 
 	if ($self->{external}) {
+	    # XXX: the 2nd file could be - and save some disk IO
 	    system (split (' ', $self->{external}),
 		    '-L', $llabel,
 		    $self->{info}{$path}{base}->filename,

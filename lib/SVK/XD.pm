@@ -942,7 +942,7 @@ use SVK::I18N;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use File::Path;
-use SVK::Util qw( get_anchor );
+use SVK::Util qw( get_anchor md5 );
 
 sub set_target_revision {
     my ($self, $revision) = @_;
@@ -984,6 +984,8 @@ sub apply_textdelta {
 				 "$self->{anchor}/$path", $copath);
 	if ($checksum) {
 	    my $md5 = md5($base);
+	    use Carp;
+	    confess "bzz";
 	    die loc("source checksum mismatch") if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}
