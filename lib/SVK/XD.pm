@@ -856,15 +856,18 @@ sub do_import {
     my $baton = $editor->open_root ($yrev);
 
     if (exists $self->{checkout}->get ($arg{copath})->{depotpath}) {
-	die loc("Import source cannot be a checkout path");
+	$arg{is_checkout}++;
+	die loc("Import source cannot be a checkout path")
+	    unless $arg{force};
     }
-
-    # XXX: check the entry first
-    $self->{checkout}->store ($arg{copath},
-			      {depotpath => $arg{depotpath},
-			       '.newprop' => undef,
-			       '.conflict' => undef,
-			       revision =>0});
+    else {
+	# XXX: check the entry first
+	$self->{checkout}->store ($arg{copath},
+				  {depotpath => $arg{depotpath},
+				   '.newprop' => undef,
+				   '.conflict' => undef,
+				   revision =>0});
+    }
 
     $self->_delta_dir ( %arg,
 	        auto_add => 1,
@@ -884,7 +887,8 @@ sub do_import {
     $self->{checkout}->store ($arg{copath},
 			      {depotpath => undef,
 			       revision => undef,
-			       '.schedule' => undef});
+			       '.schedule' => undef})
+	unless $arg{is_checkout};
 
 
 }
