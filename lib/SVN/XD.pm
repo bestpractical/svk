@@ -154,8 +154,6 @@ sub do_revert {
 
     my $revert = sub {
 	# revert dir too...
-#	warn "reverting $_[1]...";
-#	return;
 	warn "$_[1] already exists" if -e $_[1];
 	open my ($fh), '>', $_[1];
 	my $content = $arg{repos}->fs->revision_root ($info->{checkout}->get ($_[1])->{revision})->file_contents ($_[0]);
@@ -234,6 +232,8 @@ sub checkout_crawler {
 		 }
 	     }
 	     if (exists $schedule{$File::Find::name}) {
+		 # we need an option to decide how to use the add/prop callback
+		 # 1. akin to the editor interface, add and prop are separate
 		 if ($schedule{$File::Find::name} eq 'add') {
 		     &{$arg{cb_add}} ($cpath, $File::Find::name)
 			 if $arg{cb_add};
