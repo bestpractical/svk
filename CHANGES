@@ -1,3 +1,42 @@
+[Changes for 0.26 - 9 Nov, 2004]
+
+* svk push -P. [Autrijus]
+
+* Allow checkout, mirrored, and copy anchors to be different
+  from each other, for the purpose of "push" and "pull"..[Autrijus]
+
+* In incremental smerge, increase the fromrev after each
+  individual merge. [Autrijus]
+
+* Ignore empty lines for svk:merge parsing.
+
+* Use local time for log output. [Wen-chien Jesse Sung]
+
+* Properties are now being merged.
+
+* Exsting directories are now being merged.
+
+* Allow custom resolver for properties.
+
+* Support svk:merge property auto-merging, when doing smerge.
+
+* Create svn config directory if it doesn't exist.
+
+* Commit to mirrored path was always sending full text
+  due to an incorrect $cb{mirror} check.  This is a regression since
+  0.23.
+
+* Fix a bug that when committing from a checkout with descendents
+  being mirrored path, the commit can ruin the mirror state.
+
+* Fix svk merge -l rN:M loading too many logs.
+
+* Fix svk admin to work  with non-default depots.
+
+* New: svk ci -N, svk update/checkout --quiet.
+
+* Fix svk cp a directory to checkout and then commit.
+
 [Changes for 0.25 - 25 Oct, 2004]
 
 * Fix the mkdir sequence which causes first-time svk users fatal error.

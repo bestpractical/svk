@@ -1,6 +1,6 @@
 package SVK;
 use strict;
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 use SVK::Command;
 
 sub import {

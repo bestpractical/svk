@@ -17,15 +17,15 @@ requires(
         'Algorithm::Diff'       => '0',
         'YAML'                  => '0',
         'Regexp::Shellish'      => '0',
-        'Data::Hierarchy'       => '0.19',
+        'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
         'Clone'	                => '0',
         'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.11',
-        'PerlIO::via::symlink'  => '0.01',
+        'PerlIO::via::symlink'  => '0.02',
         'IO::Digest'		=> '0',
-        'SVN::Simple::Edit'     => '0.21',
+        'SVN::Simple::Edit'     => '0.26',
         'Date::Parse'           => '0',
         'File::Type'            => '0',
         'URI'                   => '0',
@@ -40,11 +40,11 @@ features(
 );
 
 if( eval{ require SVN::Mirror } ) {
-    requires( 'SVN::Mirror' => '0.49' );
+    requires( 'SVN::Mirror' => '0.50' );
 } else {
     features( 'SVN::Mirror support' => [
                -default => 1,
-               'SVN::Mirror'    => '0.49',
+               'SVN::Mirror'    => '0.50',
            ],
 	    );
 }
