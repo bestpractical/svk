@@ -62,7 +62,6 @@ sub run {
 	my ($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
 	    or die loc("Revision must be N:M\n");
 	$src->{revision} = $torev;
-	$dst->{revision} ||= $yrev;
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src, dst => $dst,
 	     base => SVK::Target->new (%$src, revision => $baserev));
@@ -70,6 +69,8 @@ sub run {
 
     $self->get_commit_message ($self->{log} ? $merge->log : '')
 	unless $dst->{copath};
+
+    $merge->{report} = $dst->{report} if $dst->{copath};
 
     if ($self->{incremental} && !$self->{check_only}) {
 	die loc ("Not possible to do incremental merge without merge ticket.\n")

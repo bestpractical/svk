@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 7;
+use Test::More tests => 13;
 use strict;
 require 't/tree.pl';
 
@@ -7,6 +7,8 @@ our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('merge');
 is_output_like ($svk, 'merge', [], qr'SYNOPSIS', 'merge - help');
+is_output_like ($svk, 'merge', ['//foo', '//bar', '//foo'], qr'SYNOPSIS',
+		'merge - too many args');
 $svk->checkout ('//', $copath);
 mkdir "$copath/A";
 overwrite_file ("$copath/A/foo", "foobar\n");
@@ -16,13 +18,13 @@ $svk->add ("$copath/A/foo");
 $svk->add ("$copath/A/bar");
 $svk->ps ('svn:keywords', 'Rev', "$copath/A/foo");
 
-$svk->commit ('-m', 'commit message here', "$copath");
+$svk->commit ('-m', 'commit message here (r1)', "$copath");
 
 $svk->copy ('-m', 'branch', '//A', '//B');
 
 append_file ("$copath/A/foo", "\nsome more foobar\nzz\n");
 $svk->propset ('someprop', 'propvalue', "$copath/A/foo");
-$svk->commit ('-m', 'commit message here', "$copath");
+$svk->commit ('-m', 'commit message here (r3)', "$copath");
 
 $svk->update ('-r', 1, $copath);
 overwrite_file ("$copath/A/foo", "some local mods\nfoobar\n");
@@ -51,16 +53,27 @@ $svk->resolved ("$copath/A/foo");
 
 overwrite_file ("$copath/A/foo", "late modification...\nfoobar\n\nsome more foobar\nzz\n");
 $svk->status ($copath);
-$svk->commit ('-m', 'commit message here', "$copath");
+$svk->commit ('-m', 'commit message here (r4)', "$copath");
 $svk->update ($copath);
-$svk->merge ("-r", "3:2", '//', $copath);
+is_output ($svk, 'merge', ["-r", "3:2", '//', $copath],
+	   ["GU  $copath/A/foo"]);
 
 is_file_content ("$copath/A/foo", "late modification...\nfoobar\n",
 		 'basic merge for revert');
 
 $svk->merge (qw/-C -r 4:3/, '//A', '//B');
-$svk->merge (qw/-r 4:3/, '-m', 'merge from //A to //B', '//A', '//B');
-$svk->update ($copath);
+is_output ($svk, 'merge', ['-r4:3', '-m', 'merge from //A to //B', '//A', '//B'],
+	   ['G   foo',
+	    'Committed revision 5.']);
+is_output ($svk, 'update', [$copath],
+	   ["Syncing //(/) in $corpath to 5.",
+	    'Empty merge.']);
 
 is_file_content ("$copath/B/foo", "foobar\n",
 		 'merge via update');
+$svk->revert ('-R', $copath);
+$svk->merge ("-r", "3:2", '//');
+ok ($@ =~ m'not a checkout path');
+chdir ($copath);
+is_output ($svk, 'merge', ["-r", "3:2", '//'],
+	   ["GU  A/foo"]);

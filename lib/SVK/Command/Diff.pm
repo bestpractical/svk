@@ -56,9 +56,10 @@ sub run {
     if ($target2->{copath}) {
 	$newroot = $self->{xd}->xdroot (%$target2);
 	$oldroot = $newroot unless $r1;
+	my $lrev = $r1; # for the closure
 	$cb_llabel =
 	    sub { my ($rpath) = @_;
-		  'revision '.($r1 ||
+		  'revision '.($lrev ||
 			       $self->{xd}{checkout}->get ("$target2->{copath}/$rpath")->{revision});
 	      },
     }

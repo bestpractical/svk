@@ -293,9 +293,13 @@ sub run {
     # XXX: should deal with all the anchorify here
     $storage = SVK::Editor::Delay->new ($storage);
     my $base_root = $self->{base_root} || $self->{base}->root ($self->{xd});
+    # XXX: this should really be in SVK::Target
+    my $report = $self->{report};
+    $report .= '/'
+	if $report && $report ne '' && substr($report, -1, 1) ne '/';
     my $editor = SVK::Editor::Merge->new
 	( anchor => $self->{src}{path},
-	  report => $self->{src}{report},
+	  report => $report,
 	  base_anchor => $self->{base}{path},
 	  base_root => $base_root,
 	  target => $self->{src}{targets}[0] || '',

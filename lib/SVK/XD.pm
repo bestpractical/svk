@@ -279,7 +279,7 @@ sub find_repos_from_co {
     $copath = abs_path ($copath);
 
     my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
-    die loc("path %1 is not a checkout path", $copath) unless %$cinfo;
+    die loc("path %1 is not a checkout path\n", $copath) unless %$cinfo;
     my ($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, $open);
 
     if ($copath eq $coroot) {
@@ -303,11 +303,11 @@ a depotpath. In that case, the checkout paths returned iwll be undef.
 sub find_repos_from_co_maybe {
     my ($self, $target, $open) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos);
-    local $@;
     unless (($repospath, $path, $repos) = eval { $self->find_repos ($target, $open) }) {
 	($repospath, $path, $cinfo, $repos) = $self->find_repos_from_co ($target, $open);
 	$copath = abs_path ($target);
     }
+    undef $@;
     return ($repospath, $path, $copath, $cinfo, $repos);
 }
 

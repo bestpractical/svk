@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 11;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -7,6 +7,8 @@ my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('diff');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
+$svk->diff;
+ok($@ =~ m'not a checkout path');
 chdir ($copath);
 mkdir ('A');
 overwrite_file ("A/foo", "foobar\nfnord\n");
@@ -154,5 +156,33 @@ is_output ($svk, 'diff', ['//B', 'A'],
 	    '@@ -0,0 +1 @@',
 	    '+foobar'],
 	   'diff - depopath copath');
+
+$svk->revert ('-R', 'A');
+
+$svk->update ('-r2', 'A/bar');
+append_file ("A/foo", "mixed\n");
+append_file ("A/bar", "mixed\n");
+
+TODO: {
+local $TODO = 'buggy';
+
+is_output ($svk, 'diff', [],
+	   ['=== A/bar',
+	    '==================================================================',
+	    '--- A/bar  (revision 2)',
+	    '+++ A/bar  (local)',
+	    '@@ -1,2 +1,3 @@',
+	    ' foobar',
+	    ' newline',
+	    '+mixed',
+	    '=== A/foo',
+	    '==================================================================',
+	    '--- A/foo  (revision 1)',
+	    '+++ A/foo  (local)',
+	    '@@ -1,3 +1,3 @@',
+	    ' foobar',
+	    ' fnord',
+	    '+mixed']);
+}
 
 # XXX: test with delete_entry and prop changes and also external

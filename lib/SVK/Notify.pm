@@ -31,9 +31,9 @@ sub skip_print {
     print "    ", loc("%1 - skipped\n", $path);
 }
 
-sub flush_print_report {
-    my ($report, $target) = @_;
-    return \&flush_print unless defined $report;
+sub print_report {
+    my ($print, $report, $target) = @_;
+    return $print unless defined $report;
     sub {
 	my $path = shift;
 	if ($target) {
@@ -44,7 +44,7 @@ sub flush_print_report {
 		$path =~ s|^\Q$target/||;
 	    }
 	}
-	flush_print ($path ? "$report$path" : $report || '.', @_);
+	$print->($path ? "$report$path" : $report || '.', @_);
     };
 }
 
@@ -53,6 +53,12 @@ sub new {
     my $self = bless {}, $class;
     %$self = @arg;
     return $self;
+}
+
+sub new_with_report {
+    my ($class, $report, $target) = @_;
+    $class->new	( cb_skip => print_report (\&skip_print, $report),
+		  cb_flush => print_report (\&flush_print, $report, $target));
 }
 
 sub node_status {

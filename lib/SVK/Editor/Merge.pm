@@ -152,9 +152,7 @@ sub set_target_revision {
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
-    $self->{notify} = SVK::Notify->new
-	( cb_skip => \&SVK::Notify::skip_print,
-	  cb_flush => SVK::Notify::flush_print_report ($self->{report}, $self->{target}));
+    $self->{notify} = SVK::Notify->new_with_report ($self->{report}, $self->{target});
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     return '';

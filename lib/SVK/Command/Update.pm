@@ -56,14 +56,10 @@ sub do_update {
 	mkdir ($cotarget->{copath})
 	    unless $self->{check_only};
     }
-    # XXX: this should really be in SVK::Target
-    $report .= '/'
-	if $report ne '' && substr($report, -1, 1) ne '/';
-    $update_target->{report} = $report;
 
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
-	 no_recurse => $self->{nonrecursive},
+	 no_recurse => $self->{nonrecursive}, report => $report,
 	 src => $update_target, xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  oldroot => $xdroot, newroot => $update_target->root,

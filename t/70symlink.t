@@ -76,7 +76,7 @@ $svk->commit ('-m', 'change something', "$copath/B");
 $svk->smerge ('-C', '//B', "$copath/A");
 is_output ($svk, 'smerge', ['--no-ticket', '//B', "$copath/A"],
 	   ['Auto-merging (1, 4) /B to /A (base /A:1).',
-	    'U   dir.lnk'], 'merge');
+	    "U   $copath/A/dir.lnk"], 'merge');
 is_output ($svk, 'diff', [$copath],
 	   ['=== t/checkout/symlink/A/dir.lnk',
 	    '==================================================================',
