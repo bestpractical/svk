@@ -6,7 +6,8 @@ require 't/tree.pl';
 plan skip_all => 'MANIFEST not exists' unless -e 'MANIFEST';
 open FH, 'MANIFEST' or die $!;
 my @cmd = map { chomp; s|^lib/SVK/Command/(\w+)\.pm$|$1| ? $_ : () } <FH>;
-
+my $pager = $ENV{SVKPAGER};
+delete $ENV{SVKPAGER};
 our $output;
 my ($xd, $svk) = build_test();
 
@@ -30,7 +31,6 @@ for (@cmd) {
     is_output_like ($svk, 'help', [lc($_)], qr'SYNOPSIS');
     is_output_like ($svk, lc($_), ['--help'], qr'SYNOPSIS');
 }
-
 
 # Test ALIASES section
 {
