@@ -29,19 +29,19 @@ sub lock {
 
 sub run {
     my ($self, $src, $dst) = @_;
-    my ($fromrev, $torev, $cb_merged, $cb_closed);
+    my ($fromrev, $torev, $baserev, $cb_merged, $cb_closed);
 
     die "different repos?" unless $src->{repospath} eq $dst->{repospath};
     my $repos = $src->{repos};
     unless ($self->{auto}) {
 	die "revision required" unless $self->{revspec};
-	($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
+	($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
 	    or die "revision must be N:M";
     }
 
     my $base_path = $src->{path};
     if ($self->{auto}) {
-	($base_path, $fromrev, $torev) =
+	($base_path, $baserev, $fromrev, $torev) =
 	    ($self->find_merge_base ($repos, $src->{path}, $dst->{path}), $repos->fs->youngest_rev);
 	print "auto merge ($fromrev, $torev) $src->{path} -> $dst->{path} (base $base_path)\n";
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
@@ -66,7 +66,7 @@ sub run {
     my $editor = SVK::MergeEditor->new
 	( anchor => $src->{path},
 	  base_anchor => $base_path,
-	  base_root => $fs->revision_root ($fromrev),
+	  base_root => $fs->revision_root ($baserev),
 	  target => '',
 	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  cb_merged => $cb_merged,
@@ -74,7 +74,7 @@ sub run {
 	  %cb,
 	);
 
-    SVN::Repos::dir_delta ($fs->revision_root ($fromrev),
+    SVN::Repos::dir_delta ($fs->revision_root ($baserev),
 			   $base_path, '',
 			   $fs->revision_root ($torev), $src->{path},
 			   $editor, undef,
@@ -108,7 +108,7 @@ sub find_merge_base {
 	    ($basepath, $baserev) = ($path, $rev);
 	}
     }
-    return ($basepath, $baserev);
+    return ($basepath, $baserev, $dstinfo->{$repos->fs->get_uuid.':'.$src} || $baserev);
 }
 
 sub find_merge_sources {

@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::CommitStatusEditor;
+use SVK::SignEditor;
 use SVK::Util qw(get_buffer_from_editor slurp_fh);
 use File::Temp;
 use SVN::Simple::Edit;
@@ -84,6 +85,7 @@ sub get_editor {
     my ($self, $target) = @_;
     my ($callback, $editor, %cb);
 
+    # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->{copath}) {
 	my $xdroot = $self->{xd}->xdroot (%$target);
 	($editor, %cb) = $self->{xd}->get_editor
@@ -109,6 +111,7 @@ sub get_editor {
 		($mpath, $self->{message},
 		 sub { print "Merge back committed as revision $_[0].\n";
 		       my $rev = shift;
+		       # XXX: do svk:signature here
 		       # XXX: some failsafe handler
 		       $m->run ($rev);
 		       &{$callback} ($m->find_local_rev ($rev), @_)
@@ -118,20 +121,26 @@ sub get_editor {
 	}
     }
 
+    my $fs = $target->{repos}->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
     $editor ||= SVN::Delta::Editor->new
 	( SVN::Repos::get_commit_editor
 	  ( $target->{repos}, "file://$target->{repospath}",
 	    $target->{path}, $ENV{USER}, $self->{message},
 	    sub { print "Committed revision $_[0]\n";
+		  $fs->change_rev_prop ($_[0], 'svk:signature',
+					$self->{signeditor}{sig})
+		      if $self->{sign};
 		  &{$callback} (@_) if $callback; }
 	  ));
     $base_rev ||= $target->{repos}->fs->youngest_rev;
 
+    $self->{signeditor} = $editor = SVK::SignEditor->new ($editor)
+	if $self->{sign};
+
     $editor = SVK::XD::CheckEditor->new ($editor)
 	if $self->{check_only};
-
-    my $fs = $target->{repos}->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
 
     %cb = ( cb_exist => $self->{cb_exist} ||
 	    sub { my $path = $target->{path}.'/'.shift;

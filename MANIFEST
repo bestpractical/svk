@@ -47,6 +47,7 @@ lib/SVK/DeleteEditor.pm
 lib/SVK/DiffEditor.pm
 lib/SVK/MergeEditor.pm
 lib/SVK/RevertEditor.pm
+lib/SVK/SignEditor.pm
 lib/SVK/StatusEditor.pm
 lib/SVK/Util.pm
 lib/SVK/XD.pm

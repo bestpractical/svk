@@ -48,7 +48,7 @@ sub get_buffer_from_editor {
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
 			: "vi"; # fall back to something
 	print "waiting for editor...\n";
-	system ($editor, $file);
+	system ($editor, $file) and die "Aborted";
 	last if (stat($file))[9] > $mtime;
 	my $ans = get_prompt(
 	    "$what not modified: a)bort, e)dit, c)ommit?",
