@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 7;
+use Test::More tests => 10;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -35,6 +35,8 @@ is_output ($svk, 'status', ["$copath"],
 	    __"D   $copath/A/Q/qu",
 	    __"D   $copath/A/Q/qz"]);
 
+is_output ($svk, 'add', ['-N', "$copath/A"],
+	   ["$copath/A already added."]);
 $svk->revert ('-R', $copath);
 is_output ($svk, 'status', [$copath],
 	   [__"?   $copath/A/neu",
@@ -48,3 +50,16 @@ overwrite_file ("$copath/A/neu", "foobar\n2nd replace\n");
 $svk->add ("$copath/A");
 is_output ($svk, 'commit', ['-m', 'replace A/be', $copath],
 	   ['Committed revision 5.']);
+$svk->rm ("$copath/A");
+$svk->status ($copath);
+overwrite_file ("$copath/A", "dir replaced as file\n");
+$svk->status ($copath);
+is_output ($svk, 'add', ["$copath/A"],
+	   [__"R   $copath/A"]);
+TODO: {
+local $TODO = 'file replacing dir';
+is_output ($svk, 'status', [$copath],
+	   [__"R   $copath/A",
+	    __"D   $copath/A/be",
+	    __"D   $copath/A/neu"], 'file replacing dir');
+}

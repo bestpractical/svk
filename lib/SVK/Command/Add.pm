@@ -24,7 +24,9 @@ sub lock {
 sub run {
     my ($self, $target) = @_;
 
-    if ($self->{nrec} && $target->{targets}) {
+    if ($self->{nrec}) {
+	die loc ("%1 already under version control.\n", $target->{report})
+	    unless $target->{targets};
 	# check for multi-level targets
 	die loc ("Please add the parent directory first.\n")
 	    if grep { m{[/\Q$SEP\E]}o } @{$target->{targets}};
@@ -39,12 +41,21 @@ sub run {
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
 		  my ($path, $status) = @_;
-		  return unless $status->[0] eq 'D';
 		  my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
 		      @{$target}{qw/copath report/};
+
+		  if ($target->{targets}) {
+		      # Check that we are not reverting parents
+		      $target->contains_copath ($copath) or return;
+		  }
+
+		  die loc ("%1 already added.\n", $report)
+		      if $self->{nrec} && ($status->[0] eq 'R' || $status->[0] eq 'A');
+
+		  return unless $status->[0] eq 'D';
 		  lstat ($copath);
 		  $self->do_add ('R', $copath, $report, !-d _)
-		      if is_symlink || -e _;
+		      if -e _ || is_symlink;
 	      })),
 	  cb_unknown => sub {
 	      $self->do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),

@@ -79,7 +79,7 @@ sub prop_status {
     my ($self, $path, $s) = @_;
     my $st = $self->{status}{$path};
     $st->[1] = $s if defined $s
-	&& (!$st->[0] || $st->[0] ne 'A' );
+	&& !($st->[0] && ($st->[0] eq 'A' || $st->[0] eq 'R'));
     return $self->{status}{$path}[1];
 }
 

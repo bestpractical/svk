@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 21;
+use Test::More tests => 23;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -59,6 +59,10 @@ $svk->revert ('-R', '.');
 is_output ($svk, 'add', [qw/-N A/],
 	   [map __($_), 'A   A'],
 	   'add - nonrecursive anchor');
+
+is_output ($svk, 'add', [qw/-N A/],
+	   ['A already added.'],
+	   'add - nonrecursive anchor already added');
 is_output ($svk, 'add', ['A/foo'],
 	   [map __($_), 'A   A/foo'],
 	   'add - nonrecursive target');
@@ -77,6 +81,10 @@ is_output($svk, 'add', ['A/exe'],
 	   __('A   A/exe - (bin)')]);
 }
 $svk->commit ('-m', 'test exe bit');
+is_output ($svk, 'add', [qw/-N A/],
+	   ['A already under version control.'],
+	   'add - nonrecursive, already committed');
+
 unlink ('A/exe');
 $svk->revert ('A/exe');
 ok (_x 'A/exe');

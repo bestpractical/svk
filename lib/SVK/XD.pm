@@ -801,8 +801,6 @@ sub _node_deleted {
 		    if $file;
 	    }
 	}
-	$self->_unknown_verbose (%arg)
-	    if $arg{cb_unknown} && $arg{unknown_verbose};
     }
 }
 
@@ -812,7 +810,11 @@ sub _node_deleted_or_absent {
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
 	$self->_node_deleted (%arg);
-	return 1 if $schedule eq 'delete';
+	if ($schedule eq 'delete') {
+	    $self->_unknown_verbose (%arg)
+		if $arg{cb_unknown} && $arg{unknown_verbose};
+	    return 1;
+	}
     }
 
     lstat ($arg{copath});

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 20;
+use Test::More tests => 24;
 BEGIN { require 't/tree.pl' };
 
 use SVK::Util qw( HAS_SYMLINK );
@@ -137,5 +137,19 @@ $svk->update ('-r5', $copath);
 ok (_l "$copath/B/new-non.lnk", 'update from file to symlink');
 $svk->update ($copath);
 ok (-e "$copath/B/new-non.lnk", 'update from symlink to file');
+
+$svk->rm ("$copath/B/new-non.lnk");
+_symlink ('non', "$copath/B/new-non.lnk");
+is_output ($svk, 'add', ["$copath/B/new-non.lnk"],
+	   [__('R   t/checkout/symlink/B/new-non.lnk')], 'replace normal file with symlink');
+is_output ($svk, 'st', [$copath],
+	   [__('R   t/checkout/symlink/B/new-non.lnk')]);
+is_output ($svk, 'commit', ['-m', 'change to non-link', $copath],
+	   ['Committed revision 7.']);
+
+unlink ("$copath/B/dir.lnk");
+_symlink ('/tmp', "$copath/B/dir.lnk");
+is_output ($svk, 'commit', ['-m', "change dir.lnk", "$copath/B/dir.lnk"],
+	   ['Committed revision 8.']);
 
 # XXX: test for conflicts resolving etc; XD should stop translating when conflicted
