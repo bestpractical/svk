@@ -351,7 +351,7 @@ sub run {
 	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
-    my $notify = SVK::Notify->new_with_report
+    my $notify = $self->{notify} || SVK::Notify->new_with_report
 	($report, defined $self->{target} ? $self->{target} : $target);
     if ($storage->can ('rename_check')) {
 	my $flush = $notify->{cb_flush};

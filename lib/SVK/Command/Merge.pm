@@ -77,7 +77,8 @@ sub run {
     $self->get_commit_message ($self->{log} ? $merge->log : '')
 	unless $dst->{copath};
 
-    $merge->{report} = $dst->{report} if $dst->{copath};
+    $merge->{notify} = SVK::Notify->new_with_report
+	($dst->{report}, '', 1) if $dst->{copath};
 
     if ($self->{incremental} && !$self->{check_only}) {
 	die loc ("Not possible to do incremental merge without merge ticket.\n")
