@@ -7,19 +7,6 @@ use Class::Autouse qw(:superloader);
 
 use SVN::Core;
 
-# $SVN::Core::VERSION is the string '1.1.2' (or whatever your subversion
-# version is) and thus breaks numeric comparisons.  This causes warnings
-# on things like "use SVN::Core '1.0'" such as SVN::Simple::Edit does.
-# Unfortunately the SVN code does things like $SVN::Core::VERSION gt '0.3.1'
-# so we can't use a v-string.  Instead it becomes '1.12' which is pretty
-# close.
-BEGIN { 
-    my @version = split m{\.}, $SVN::Core::VERSION;
-    $SVN::Core::VERSION =  join '.', splice @version, 0, 2;
-    $SVN::Core::VERSION .= join '', @version;
-}
-
-
 sub import {
     return unless ref ($_[0]);
     our $AUTOLOAD = 'import';
