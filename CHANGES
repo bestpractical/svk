@@ -1,3 +1,13 @@
+[Changes for 0.07 - 15 Jan, 2003]
+
+* Memory usage enhancements.
+
+* Support but not require subversion 0.36.0.
+
+* clean up multiple targets handling for various commands.
+
+* svk status now reports what is given in command line.
+
 [Changes for 0.06 - 26 Dec, 2003]
 
 * Correct a pacakging problem.

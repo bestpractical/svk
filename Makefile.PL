@@ -29,7 +29,7 @@ use ExtUtils::AutoInstall
       ],
       'SVN::Mirror support' =>
       [ -default    => 1,
-	SVN::Mirror    => '0.26',
+	SVN::Mirror    => '0.27',
       ],
     );
 
