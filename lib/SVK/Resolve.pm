@@ -206,11 +206,8 @@ sub get_resolver {
         eval { require "SVK/Resolve/$name.pm"; 1 } or next;
 
         my $resolver = "SVK::Resolve::$name"->new(%$self);
-        foreach my $cmd ($resolver->commands) {
-            my $pathname = can_run($cmd, $resolver->paths) or next;
-            push @resolver, [$resolver, $pathname, $resolver->arguments];
-            last;
-        }
+        my $pathname = $resolver->find_command($resolver->commands) or next;
+        push @resolver, [$resolver, $pathname];
     }
 
     if (@resolver > 1) {
@@ -232,7 +229,8 @@ sub get_resolver {
         @resolver = $resolver[$answer-1];
     }
 
-    return @{$resolver[0]||[]};
+    my ($resolver, $pathname) = @{$resolver[0]||[]} or return;
+    return ($resolver, $pathname, $resolver->arguments);
 }
 
 sub run_resolver {
@@ -258,6 +256,15 @@ sub name {
     return $1 if (ref($self) =~ /(\w*)$/);
 }
 
+sub find_command {
+    my $self = shift;
+    foreach my $cmd (@_) {
+        my $pathname = can_run($cmd, $self->paths) or next;
+        return $pathname;
+    }
+    return;
+}
+
 sub DESTROY {
     my $self = shift;
 
@@ -266,7 +273,7 @@ sub DESTROY {
     unlink $_ for grep {defined and -e} (
         $self->{merged},
         $self->{conflict},
-        map $self->{fh}{$_}[1], qw( local new base ),
+        map $self->{$_}, qw( yours theirs base ),
     );
 }
 
