@@ -24,7 +24,9 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $self->lock_target (@_[2..$#_]);
+    my @paths = @_[2..$#_];
+    return unless grep {$_->copath} @paths;
+    $self->lock_target ($self->arg_condensed (map {$_->{report}} @_[2..$#_]));
 }
 
 sub do_propset_direct {
