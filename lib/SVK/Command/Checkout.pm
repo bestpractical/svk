@@ -19,7 +19,7 @@ sub parse_arg {
     return ($depotpath, $arg[1]);
 }
 
-sub lock { $_[0]->{xd}->lock ($_[2]) }
+sub lock { $_[0]->{xd}->lock (Cwd::abs_path ($_[2])) }
 
 sub run {
     my ($self, $target, $report) = @_;
