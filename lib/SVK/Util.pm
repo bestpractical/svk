@@ -16,9 +16,6 @@ use File::Temp 0.14 qw(mktemp);
 use SVN::Core;
 use SVN::Ra;
 
-# loading svn::mirror on-the-fly causes output stream not respected,
-# failing #1 in t/23commit. possibly because VCP calls select.
-my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 sub svn_mirror () {
     no warnings 'redefine';
     local $@;
@@ -151,7 +148,8 @@ sub find_local_mirror {
     my $myuuid = $repos->fs->get_uuid;
     return unless svn_mirror && $uuid ne $myuuid;
     my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
-    return ("$m->{target_path}$mpath", $m->find_local_rev ($rev)) if $m;
+    return ("$m->{target_path}$mpath",
+	    $rev ? $m->find_local_rev ($rev) : $rev) if $m;
 }
 
 sub resolve_svm_source {
