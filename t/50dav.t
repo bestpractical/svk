@@ -10,7 +10,7 @@ BEGIN {
     eval { require Apache2 };
     eval { require Apache::Test;
 	   $Apache::Test::VERSION >= 1.18 }
-	or plan (skip_all => "Apache::Test 1.19 required for testing dav");
+	or plan (skip_all => "Apache::Test 1.18 required for testing dav");
 }
 
 use Apache::TestConfig;
