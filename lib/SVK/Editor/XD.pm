@@ -1,6 +1,6 @@
 package SVK::Editor::XD;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
@@ -159,7 +159,13 @@ sub close_file {
     }
     if ($self->{update}) {
 	my (undef, $file) = get_anchor (1, $copath);
-	$self->{cursignature}[-1]->changed ($file);
+	# populate signature cache for added files only, because
+	# modified file might be edited from merge editor, and thus
+	# actually unclean.  There should be notification from merge
+	# editor in the future, or to update the cache in cb_localmod
+	# for modified entries.
+	$self->{cursignature}[-1]->changed ($file)
+	    if $self->{added}{$path};
 	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
