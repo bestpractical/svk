@@ -33,12 +33,12 @@ sub run {
 	my $root = $fs->revision_root ($fs->youngest_rev);
 	local $\ = "\n";
 	my $fmt = "%-20s %-s\n";
-	printf ($fmt, 'Path', 'Source');
+	printf $fmt, 'Path', 'Source';
 	print '=' x 60;
 	for (@paths) {
 	    my $m = SVN::Mirror->new (target_path => $_, repos => $target->{repos},
 				      get_source => 1);
-	    printf ($fmt, $_, $m->{source});
+	    printf $fmt, $_, $m->{source};
 	}
 	print '=' x 60;
 	return;
