@@ -19,6 +19,7 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
 
+    ++$self->{hold_giant};
     $self->{add} = 1 if @arg >= 2 and !$self->{relocate};
 
     if ($self->{add} or $self->{detach} or $self->{relocate}) {
@@ -184,13 +185,16 @@ The depotname may then be used as part of a DEPOTPATH:
 
  /depotname/path/inside/repos
 
+Depot creation respects $ENV{SVNFSTYPE}, which is default to fsfs for
+svn 1.1 or later, and bdb for svn 1.0.x.
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

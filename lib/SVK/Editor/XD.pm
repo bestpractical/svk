@@ -63,6 +63,8 @@ Working in update mode.
 
 A callback to translate paths in editor calls to path in depot.
 
+=back
+
 =cut
 
 sub get_base {
@@ -105,7 +107,6 @@ sub close_file {
     my $copath = $path;
     $self->{get_copath}($copath);
     if ($self->{update}) {
-	# XXX: use store_fast with new data::hierarchy release.
 	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
@@ -196,7 +197,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

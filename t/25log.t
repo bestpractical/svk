@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 4;
+plan_svm tests => 8;
 
 our $output;
 my ($xd, $svk) = build_test('test');
-my ($copath, $corpath) = get_copath ('commit');
+my ($copath, $corpath) = get_copath ('log');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 chdir ($copath);
@@ -40,3 +40,18 @@ is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/A/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
+
+is_output ($svk, 'log', [-r => 16384, -l1 =>'/test/A'],
+	   ['Revision too large, show log from 3.',
+	    qr|-+|, qr|r3.*orig r2|, '',
+	    qr|cp and ps|,
+	    qr|-+|]);
+is_output ($svk, 'log', [-r => 'asdf', '/test/A'],
+	   ['asdf is not a number.']);
+$svk->update ('A');
+$svk->rm (-m => 'bye', '//A');
+
+is_output_like ($svk, 'log', [-l1 => 'A'],
+		qr|r2.*cp and ps|s);
+is_output_like ($svk, 'desc', [2],
+		qr|r2.*cp and ps.*Property changes on: A/foo.*--- foo-cp  \(revision 1\)|s);

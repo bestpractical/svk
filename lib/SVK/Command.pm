@@ -162,11 +162,17 @@ sub invoke {
 	}
 	else {
 	    $cmd->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
-	    eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
+	    eval { $cmd->lock (@args);
+		   $xd->giant_unlock if $xd && !$cmd->{hold_giant};
+		   $ret = $cmd->run (@args) };
 	    $xd->unlock if $xd;
 	    die $@ if $@;
 	}
     };
+
+    # in case parse_arg dies
+    $xd->giant_unlock if $xd && ref ($cmd) && !$cmd->{hold_giant};
+
     $ofh = select STDERR unless $output;
     unless ($error and $cmd->handle_error ($error)) {
 	print $ret if $ret;
@@ -264,7 +270,7 @@ sub run {
 
 =head2 Utility Methods
 
-Except for C<arg_depotname>, all C<args_*> methods below returns a
+Except for C<arg_depotname>, all C<arg_*> methods below returns a
 L<SVK::Target> object, which consists of a hash with the following keys:
 
 =over
@@ -434,7 +440,8 @@ sub arg_uri_maybe {
 
 =head3 arg_co_maybe ($arg)
 
-Argument might be a checkout path or a depotpath.
+Argument might be a checkout path or a depotpath. If argument is URI then
+handles it via C<arg_uri_maybe>.
 
 =cut
 
@@ -590,19 +597,11 @@ XXX Undocumented
 =cut
 
 sub lock_target {
-    my ($self, $target) = @_;
-    $self->{xd}->lock ($target->{copath});
-}
-
-=head3 lock_none ()
-
-XXX Undocumented
-
-=cut
-
-sub lock_none {
-    my ($self) = @_;
-    $self->{xd}->giant_unlock ();
+    my $self = shift;
+    for my $target (@_) {
+	$self->{xd}->lock ($target->{copath})
+	    if $target->{copath};
+    }
 }
 
 =head3 brief_usage ($file)
@@ -782,6 +781,21 @@ sub find_checkout_anchor {
     }
 }
 
+sub prompt_depotpath {
+    my ($self, $action) = @_;
+
+    my $path = get_prompt(loc(
+        "Enter a depot path to %1 into (under // if no leading '/'): ",
+        loc($action),
+    ));
+
+    $path =~ s{^//+}{};
+    $path =~ s{//+}{/};
+    $path = "//$path" unless $path =~ m!^/!;
+    $path =~ s{/$}{};
+
+    return $path;
+}
 
 1;
 
@@ -797,7 +811,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

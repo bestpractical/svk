@@ -1,5 +1,9 @@
 #!/usr/bin/perl
+
+my $pid = $$;
+
 END {
+    return unless $$ == $pid;
     rm_test($_) for @TOCLEAN;
 }
 
@@ -38,6 +42,7 @@ use SVK::XD;
 
 our @TOCLEAN;
 END {
+    return unless $$ == $pid;
     $SIG{__WARN__} = sub { 1 };
     cleanup_test($_) for @TOCLEAN;
 }
@@ -56,6 +61,8 @@ $ENV{HOME} ||= (
 $ENV{USER} ||= (
     (defined &Win32::LoginName) ? Win32::LoginName() : ''
 ) || $ENV{USERNAME} || (getpwuid($<))[0];
+
+$ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 
 # Make "prove -l" happy; abs_path() returns "undef" if the path 
 # does not exist. This makes perl very unhappy.
@@ -82,7 +89,6 @@ sub new_repos {
 	$repospath = $reposbase . '-'. (++$i);
     }
     my $pool = SVN::Pool->new_default;
-    $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
     $repos = SVN::Repos::create("$repospath", undef, undef, undef,
 				{'fs-type' => $ENV{SVNFSTYPE}})
 	or die "failed to create repository at $repospath";
@@ -216,6 +222,14 @@ sub is_output_like {
     $svk->$cmd (@$arg);
     @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
     goto &like;
+}
+
+sub is_ancestor {
+    my ($svk, $path, @expected) = @_;
+    $svk->info ($path);
+    my (@copied) = $output =~ m/Copied From: (.*?), Rev. (\d+)/mg;
+    @_ = (\@copied, \@expected);
+    goto &is_deeply;
 }
 
 sub copath {
@@ -383,6 +397,7 @@ sub replace_file {
 }
 
 END {
+    return unless $$ == $pid;
     unlink $_ for @unlink;
 }
 

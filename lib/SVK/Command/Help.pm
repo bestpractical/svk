@@ -8,6 +8,9 @@ use Pod::Simple::Text ();
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
 
+# Note: lock is not called for help, as it's invoked differently from
+# other commands.
+
 sub run {
     my $self = shift;
     foreach my $topic (@_) {
@@ -39,7 +42,7 @@ sub run {
             print $encoder->encode($buf);
         }
         else {
-            warn loc("Cannot find help topic '%1'.\n", $topic);
+            die loc("Cannot find help topic '%1'.\n", $topic);
         }
     }
     return;
@@ -107,7 +110,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -13,6 +13,7 @@ sub options {
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
      'q|quiet'         => 'quiet',
+     'C|check-only'    => 'check_only',
      'I|incremental'   => 'incremental', # -- XXX unsafe -- undocumented XXX --
     );
 }
@@ -30,6 +31,9 @@ sub lock {
 
 sub run {
     my ($self, @arg) = @_;
+
+    die loc ("--check-only cannot be used in conjunction with --sync or --merge.\n")
+        if defined $self->{check_only} && ($self->{merge} || $self->{sync});
 
     die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
@@ -112,15 +116,16 @@ sub do_update {
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
-	 src => $update_target, dst => $cotarget,
+	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+					  check_only => $self->{check_only},
 					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
 					  revision => $update_target->{revision},
 					  anchor => $cotarget->{path},
 					  target => $cotarget->{targets}[0] || '',
-					  update => 1));
+					  update => $self->{check_only} ? 0 : 1));
 }
 
 1;
@@ -139,6 +144,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -N [--non-recursive]   : do not descend recursively
+ -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
  -q [--quiet]           : quiet mode
@@ -172,7 +178,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

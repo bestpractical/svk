@@ -28,11 +28,7 @@ sub parse_arg {
         # (otherwise it hurts when user types //deep/directory/name)
         $self->{parent} = 1;
 
-        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): ")) || '//A';
-        $path =~ s{^//+}{};
-        $path =~ s{//+}{/};
-        $path = "//$path" unless $path =~ m!^/!;
-        $path =~ s{/$}{};
+        my $path = $self->prompt_depotpath("copy");
 
         if ($dst =~ /^\.?$/) {
             $self->{_checkout_path} = (splitdir($path))[-1];
@@ -49,7 +45,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $_[-1]->{copath} ? $self->lock_target ($_[-1]) : $self->lock_none;
+    $self->lock_target ($_[-1]);
 }
 
 sub handle_co_item {
@@ -107,6 +103,7 @@ sub _unmodified {
 	    ( cb_flush => sub {
 		  die loc ("%1 is modified.\n", $target->copath ($_[0]));
 	      })),
+	  # need tests: only useful for move killing the src with unknown entries
 	  cb_unknown => sub {
 	      die loc ("%1 is missing.\n", $target->copath ($_[0]))});
 }
@@ -202,7 +199,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

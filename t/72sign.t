@@ -2,8 +2,12 @@
 use strict;
 use SVK::Util qw( is_executable );
 BEGIN { require 't/tree.pl' };
-plan skip_all => 'gnupg not found'
-    unless `gpg --version` =~ /GnuPG/;
+{
+    local $SIG{__WARN__} = sub { 1 };
+    plan skip_all => 'gnupg not found'
+        unless (`gpg --version` || '') =~ /GnuPG/;
+    plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
+}
 plan_svm tests => 8;
 our $output;
 
@@ -11,7 +15,7 @@ $ENV{SVKPGP} = my $gpg = 'gpg --no-default-keyring --keyring t/svk.gpg --secret-
 
 ok (`$gpg --list-keys` =~ '1024D/A50DE110');
 
-my ($xd, $svk) = build_test('test', 'client2');
+my ($xd, $svk) = build_test('test');
 
 is_output_like ($svk, 'verify', [], qr'SYNOPSIS', 'help');
 
@@ -64,7 +68,7 @@ is_output ($svk, 'pl', ['--revprop', '-r3', '/test/'],
 	    '  svn:author',
 	    '  svn:date',
 	    '  svn:log',
-]);
+	   ]);
 
 is_output ($svk, 'verify', [3, '/test/'],
 	  ['Signature verified.']);

@@ -144,10 +144,21 @@ sub adjust_anchor {
     my $path = $entry->[2];
     my ($pbaton) = $self->open_parent ($path);
     my @newentry = @$entry;
-    # move the call to a proper place
-    unshift @{$self->{edit_tree}[$pbaton]}, \@newentry;
+    $self->_insert_entry ($self->{edit_tree}[$pbaton] ||= [], \@newentry);
     $newentry[2+$self->baton_at ($entry->[1])] = $pbaton;
     @$entry = [];
+}
+
+sub _insert_entry {
+    my ($self, $anchor, $entry) = @_;
+    # move the call to a proper place.
+    # retain the order, but calls must be placed before close.
+    if (@$anchor && $anchor->[-1][1] =~ m/^close/) {
+	splice @$anchor, -1, 0, $entry;
+    }
+    else {
+	push @$anchor, $entry;
+    }
 }
 
 sub close_edit {
@@ -157,9 +168,10 @@ sub close_edit {
 	next unless defined $self->{renamed_anchor}[$_];
 	$self->adjust_anchor ($self->{renamed_anchor}[$_]);
     }
+    # XXX: addition phase here to trim useless opens.
     $self->drive ($self->{editor});
+#SVN::Delta::Editor->new (_debug => 1, _editor => [$self->{editor}]));
 }
-
 
 =head1 AUTHORS
 
@@ -167,7 +179,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

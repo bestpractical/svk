@@ -17,8 +17,6 @@ sub parse_arg {
     return ($arg[0], $self->arg_depotroot($arg[1]));
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, $chg, $target) = @_;
     $self->{revspec} = $chg;
@@ -54,7 +52,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

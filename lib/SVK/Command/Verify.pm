@@ -15,8 +15,6 @@ sub parse_arg {
     return ($arg[0], $self->arg_depotname ($arg[1] || '//'));
 }
 
-sub lock { $_[0]->lock_none }
-
 sub _verify {
     my ($repos, $sig, $chg) = @_;
     my $fs = $repos->fs;
@@ -122,7 +120,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

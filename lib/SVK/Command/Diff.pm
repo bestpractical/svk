@@ -20,8 +20,6 @@ sub parse_arg {
     return map {$self->arg_co_maybe ($_)} @arg;
 }
 
-sub lock { $_[0]->lock_none }
-
 # XXX: need to handle peg revisions, ie
 # -r N PATH@M means the node PATH@M at rev N
 sub run {
@@ -164,7 +162,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

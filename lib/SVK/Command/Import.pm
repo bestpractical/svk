@@ -12,6 +12,7 @@ sub options {
      't|to-checkout'	        => 'to_checkout',
     )
 }
+
 sub parse_arg {
     my $self = shift;
     my @arg = @_ or return;
@@ -19,9 +20,14 @@ sub parse_arg {
     return if @arg > 2;
     unshift @arg, '' while @arg < 2;
 
+    local $@;
     if (eval { $self->{xd}->find_repos($arg[1]); 1 }) {
         # Reorder to put DEPOTPATH before PATH
         @arg[0,1] = @arg[1,0];
+    }
+    elsif (!eval { $self->{xd}->find_repos($arg[0]); 1 }) {
+        # The user entered a path 
+        @arg = $arg[0], $self->prompt_depotpath('import');
     }
 
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));
@@ -30,8 +36,8 @@ sub parse_arg {
 sub lock {
     my ($self, $target, $source) = @_;
     unless ($self->{xd}{checkout}->get ($source)->{depotpath}) {
-	return $self->{to_checkout} ? $self->{xd}->lock ($source)
-	    : $self->lock_none;
+	$self->{xd}->lock ($source) if $self->{to_checkout};
+	return;
     }
     $source = $self->arg_copath ($source);
     die loc("Import source (%1) is a checkout path; use --from-checkout.\n", $source->{copath})
@@ -138,7 +144,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

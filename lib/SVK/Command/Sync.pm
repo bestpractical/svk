@@ -2,9 +2,9 @@ package SVK::Command::Sync;
 use strict;
 our $VERSION = $SVK::VERSION;
 
-use base qw( SVK::Command::Commit );
+use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
+use SVK::Util qw( HAS_SVN_MIRROR find_prev_copy find_local_mirror );
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -15,15 +15,15 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     return (@arg ? @arg : undef) if $self->{sync_all};
-    @arg = ('//') if !@arg;
+
     return map {$self->arg_uri_maybe ($_)} @arg;
 }
 
-sub lock { $_[0]->lock_none }
-
 sub copy_notify {
-    my ($m, $path, $from_path, $from_rev) = @_;
-    warn loc("copy_notify: %1", join(',',@_));
+    my ($self, $m, $path, $from_path, $from_rev) = @_;
+    # XXX: on anchor, try to get a external copy cache
+    return unless $m->{target_path} ne $path;
+    return find_local_mirror ($m->{repos}, $m->{rsource_uuid}, $from_path, $from_rev);
 }
 
 sub run {
@@ -39,7 +39,11 @@ sub run {
         my @newarg;
         foreach my $depot (@arg) {
             $depot =~ s{/}{}g;
-            my $target = eval { $self->arg_depotpath ("/$depot/") } or next;
+            my $target = eval { $self->arg_depotpath ("/$depot/") };
+	    unless ($target) {
+		print $@;
+		next;
+	    }
 	    push @newarg, (
                 map {$self->arg_depotpath("/$depot$_")}
                     SVN::Mirror::list_mirror ($target->{repos})
@@ -49,16 +53,32 @@ sub run {
     }
 
     for my $target (@arg) {
+	my $repos = $target->{repos};
+	my $fs = $repos->fs;
 	my $m = SVN::Mirror->new (target_path => $target->{path},
 				  target => $target->{repospath},
-				  repos => $target->{repos},
+				  repos => $repos,
 				  pool => SVN::Pool->new,
 				  config => $self->{svnconfig},
-				  cb_copy_notify => \&copy_notify,
+				  cb_copy_notify => sub { $self->copy_notify (@_) },
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();
-	$m->run ($self->{torev});
+
+        if ($self->{sync_all}) {
+            print loc("Starting to synchronize %1\n", $target->{depotpath});
+            eval { $m->run ($self->{torev});
+		   find_prev_copy ($fs, $fs->youngest_rev);
+		   1 } or warn $@;
+            next;
+        }
+        else {
+            $m->run ($self->{torev});
+	    # build the copy cache after sync.
+	    # we should do this in svn::mirror::committed, with a
+	    # hook provided here.
+	    find_prev_copy ($fs, $fs->youngest_rev);
+        }
     }
     return;
 }
@@ -88,7 +108,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

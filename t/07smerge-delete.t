@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 22;
+use Test::More tests => 24;
 use strict;
 use File::Path;
 use Cwd;
@@ -67,12 +67,27 @@ is_output ($svk, 'smerge', ['//trunk', $copath],
 	    "New merge ticket: $uuid:/trunk:5",
 	    '3 conflicts found.'
 	   ]);
+is_output ($svk, 'st', [$copath],
+	   [
+	    __"C   $copath/A/foo",
+	    __"C   $copath/A/unused",
+	    __"D   $copath/A/bar",
+	    __"D   $copath/A/deep",
+	    __"D   $copath/A/deep/deeper",
+	    __"D   $copath/A/deep/foo",
+	    __"D   $copath/A/deep/stay",
+	    __"D   $copath/A/normal",
+	    __"C   $copath/A",
+	    __"D   $copath/B",
+	    __" M  $copath",
+	   ]);
+
 ok (-e "$copath/A/unused", 'unversioned file not deleted');
 ok (-e "$copath/A/foo", 'local file not deleted');
 ok (!-e "$copath/B/foo", 'unmodified dir deleted');
 $svk->revert ('-R', $copath);
-# XXX: stalled conflict items are not resolved with revert.
-$svk->resolved ('-R', $copath);
+is_output ($svk, 'st', [$copath],
+	   [__"?   $copath/A/unused"]);
 append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
 $svk->add ("$copath/A/unused");
@@ -80,7 +95,6 @@ $svk->rm ("$copath/A/bar");
 $svk->rm ("$copath/A/deep/deeper");
 is_output ($svk, 'commit', ['-m', 'local modification', $copath],
 	   ['Committed revision 6.']);
-
 is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
 	    'C   A',

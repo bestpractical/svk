@@ -169,78 +169,16 @@ sub find_merge_sources {
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
     return $minfo if $verbatim;
 
-    my %ancestors = $self->copy_ancestors ($target->{repos}, $target->path, $target->{revision}, 1);
-    for (sort keys %ancestors) {
-	my $rev = $ancestors{$_};
-	$minfo->{$_} = $rev
-	    unless $minfo->{$_} && $minfo->{$_} > $rev;
+    my $myuuid = $target->{repos}->fs->get_uuid ();
+
+    for (reverse $target->copy_ancestors) {
+	my ($path, $rev) = @$_;
+	my $entry = "$myuuid:$path";
+	$minfo->{$entry} = $rev
+	    unless $minfo->{$entry} && $minfo->{$entry} > $rev;
     }
 
     return $minfo;
-}
-
-sub copy_ancestors {
-    my ($self, $repos, $path, $rev, $nokeep) = @_;
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($rev);
-    $rev = $root->node_created_rev ($path);
-
-    my ($found, $hitrev, $source) = (0, 0, '');
-    my $myuuid = $fs->get_uuid ();
-    my ($hpath, $hrev);
-
-    defined( traverse_history (
-        root     => $root,
-        path     => $path,
-        cross    => 1,
-        callback => sub {
-            ($hpath, $hrev) = @_;
-
-            if ($hpath ne $path) {
-                $found = 1;
-                return 0; # last
-            }
-
-            $source = $fs->revision_prop ($hrev, "svk:copied_from:$path");
-            return 1 if !defined $source;
-
-	    $hitrev = $hrev;
-            return 0 if !$source; # last
-
-	    my $uuid;
-	    ($uuid, $hpath, $hrev) = split /:/, $source;
-
-	    if ($uuid ne $myuuid) {
-		my ($m, $mpath);
-		if (HAS_SVN_MIRROR &&
-		    (($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
-		    ($hpath, $hrev) = ($m->{target_path}, $m->find_local_rev ($hrev));
-		    # XXX: WTF? need test suite for this
-		    $hpath =~ s/\Q$mpath\E$//;
-		}
-		else {
-		    return undef; # last and return ()
-		}
-            }
-
-	    $found = 1;
-            return 0; # last
-        }
-    ) ) or return ();
-
-    $source = '' unless $found;
-    if (!$found || $hitrev != $hrev) {
-	$fs->change_rev_prop ($hitrev, "svk:copied_from:$path", undef)
-	    unless $hitrev || $fs->revision_prop ($hitrev, "svk:copied_from_keep:$path");
-	$source ||= join (':', $myuuid, $hpath, $hrev) if $found;
-	if ($hitrev != $rev) {
-	    $fs->change_rev_prop ($rev, "svk:copied_from:$path", $source);
-	    $fs->change_rev_prop ($rev, "svk:copied_from_keep:$path", 'yes')
-		unless $nokeep;
-	}
-    }
-    return () unless $found;
-    return ("$myuuid:$hpath" => $hrev, $self->copy_ancestors ($repos, $hpath, $hrev));
 }
 
 sub get_new_ticket {
@@ -516,7 +454,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

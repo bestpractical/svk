@@ -7,7 +7,8 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
-use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh find_svm_source tmpfile abs2rel );
+use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh
+		  find_svm_source tmpfile abs2rel find_prev_copy );
 
 sub options {
     ('m|message=s'  => 'message',
@@ -166,6 +167,8 @@ sub get_editor {
 		  $fs->change_rev_prop ($_[0], 'svk:signature',
 					$self->{signeditor}{sig})
 		      if $self->{sign};
+		  # build the copy cache as early as possible
+		  find_prev_copy ($fs, $_[0]);
 		  $callback->(@_) if $callback; }
 	  ));
 
@@ -420,7 +423,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

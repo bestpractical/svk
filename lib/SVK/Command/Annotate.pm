@@ -8,7 +8,8 @@ use SVK::Util qw( traverse_history );
 use Algorithm::Annotate;
 
 sub options {
-    ('x|cross'  => 'cross');
+    ('x|cross'  => 'cross',
+     'r|revision=i'  => 'rev');
 }
 
 sub parse_arg {
@@ -18,11 +19,10 @@ sub parse_arg {
     return $self->arg_co_maybe (@arg);
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, $target) = @_;
 
+    $target->as_depotpath ($self->{rev}) if defined $self->{rev};
     my $fs = $target->{repos}->fs;
     my $ann = Algorithm::Annotate->new;
     my @revs;
@@ -83,12 +83,21 @@ SVK::Command::Annotate - Display per-line revision and author info
 
 =head1 SYNOPSIS
 
- annotate FILE
+ annotate [PATH][@REV]
+ annotate [-r REV] [PATH]
  annotate DEPOTPATH[@rev]
+ annotate [-r REV] DEPOTPATH
 
 =head1 OPTIONS
 
+ -r [--revision] REV    : annotate up to revision
  -x [--cross]           : track revisions copied from elsewhere
+
+=head1 NOTES
+
+Note that -r REV file will do annotation up to REV,
+while file@REV will do annotation up to REV,
+plus the checkout copy differences.
 
 =head1 AUTHORS
 
@@ -96,7 +105,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

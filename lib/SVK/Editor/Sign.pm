@@ -1,7 +1,7 @@
 package SVK::Editor::Sign;
 our @ISA = qw (SVN::Delta::Editor);
 use SVK::I18N;
-use File::Temp;
+use SVK::Util qw (tmpfile);
 
 sub add_file {
     my ($self, $path, @arg) = @_;
@@ -26,35 +26,30 @@ sub close_file {
 
 sub close_edit {
     my ($self, $baton) = @_;
-    my ($fh, $fname) =  mkstemps ("/tmp/svk-sigXXXXX", '.tmp');
-
     $self->{sig} =_sign_gpg
-	($fname, join("\n", "ANCHOR: $self->{anchor}",
-		      (map {"MD5 $_->[0] $_->[1]"} @{$self->{checksum}})),'');
+	(join("\n", "ANCHOR: $self->{anchor}",
+	      (map {"MD5 $_->[0] $_->[1]"} @{$self->{checksum}})),'');
     $self->SUPER::close_edit ($baton);
 }
 
 sub _sign_gpg {
-    my ($sigfile, $plaintext) = @_;
-
-    die loc("could not write to %1", $sigfile)
-	if -e $sigfile and (-d $sigfile or not -w $sigfile);
-
+    my ($plaintext) = @_;
+    my $sigfile = tmpfile("sig-", OPEN => 0);
     local *D;
     my $pgp = $ENV{SVKPGP} || 'gpg';
-    open D, "| $pgp --clearsign > $sigfile.sig" or die loc("could not call gpg: %1", $!);
+    open D, "| $pgp --clearsign > $sigfile" or die loc("could not call gpg: %1", $!);
     print D $plaintext;
     close D;
 
-    (-e "$sigfile.sig" and -s "$sigfile.sig") or do {
-	unlink "$sigfile.sig";
-	die loc("cannot find %1, signing aborted", "$sigfile.sig");
+    (-e "$sigfile" and -s "$sigfile") or do {
+	unlink "$sigfile";
+	die loc("cannot find %1, signing aborted", $sigfile);
     };
 
-    open D, "$sigfile.sig" or die loc("cannot open %1: %2", "$sigfile.sig", $!);
+    open D, "$sigfile" or die loc("cannot open %1: %2", $sigfile, $!);
     undef $/;
     my $buf = <D>;
-    unlink("$sigfile.sig");
+    unlink($sigfile);
     return $buf;
 }
 

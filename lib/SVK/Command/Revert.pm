@@ -34,7 +34,9 @@ sub run {
 	      cb_conflict => \&SVK::Editor::Status::conflict,
 	      cb_unknown => sub {
 		  my ($path, $copath) = @_;
-		  print loc("%1 is not versioned; ignored.\n", $copath);
+		  return unless $target->contains_copath ($copath);
+		  print loc("%1 is not versioned; ignored.\n",
+			    $target->report_copath ($copath));
 		  return;
 	      },
 	      editor => SVK::Editor::Status->new
@@ -46,14 +48,17 @@ sub run {
 		      my $copath = $target->copath ($path);
 
                       if ($st =~ /[DMRC!]/) {
-                          return $self->do_revert($copath, $dpath, $xdroot);
+			  # conflicted items do not necessarily exist
+			  return $self->do_unschedule ($target, $copath)
+			      if $st eq 'C' && !$xdroot->check_path ($dpath);
+                          return $self->do_revert($target, $copath, $dpath, $xdroot);
                       }
 
                       if ($target->{targets}) {
                           # Check that we are not reverting parents
                           $target->contains_copath ($copath) or return;
                       }
-                      $self->do_unschedule($copath);
+                      $self->do_unschedule($target, $copath);
 		  },
 		),
 	      ));
@@ -62,7 +67,7 @@ sub run {
 }
 
 sub do_revert {
-    my ($self, $copath, $dpath, $xdroot) = @_;
+    my ($self, $target, $copath, $dpath, $xdroot) = @_;
 
     # XXX: need to respect copied resources
     my $kind = $xdroot->check_path ($dpath);
@@ -70,8 +75,9 @@ sub do_revert {
 	mkdir $copath unless -e $copath;
     }
     else {
-	# XXX: PerlIO::via::symlink should take care of this
-	unlink $copath if is_symlink($copath);
+	# XXX: PerlIO::via::symlink should take care of this.
+	# It doesn't overwrite existing file or close.
+	unlink $copath;
 	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath);
 	my $content = $xdroot->file_contents ($dpath);
 	slurp_fh ($content, $fh);
@@ -80,14 +86,15 @@ sub do_revert {
 	$self->{xd}->fix_permission ($copath, 1)
 	    if defined $xdroot->node_prop ($dpath, 'svn:executable');
     }
-    $self->do_unschedule($copath);
+    $self->do_unschedule($target, $copath);
 }
 
 sub do_unschedule {
-    my ($self, $copath) = @_;
+    my ($self, $target, $copath) = @_;
     $self->{xd}{checkout}->store ($copath, { $self->_schedule_empty,
 					     '.conflict' => undef });
-    print loc("Reverted %1\n", $copath);
+    print loc("Reverted %1\n", $target->report_copath ($copath));
+
 }
 
 1;
@@ -112,7 +119,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

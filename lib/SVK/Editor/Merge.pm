@@ -101,6 +101,11 @@ undef if there is no local modification.
 Called when the merger needs to retrieve the local modification of a
 property. Return the property value.
 
+=item cb_prop_merged
+
+Called when properties are merged without changes, that is, the C<g>
+status.
+
 =item cb_dirdelta
 
 When C<delete_entry> needs to check if everything to be deleted does
@@ -202,6 +207,7 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
+    my $pool = pop @arg;
     if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
@@ -209,14 +215,18 @@ sub add_file {
 	}
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
-	$self->{info}{$path}{fpool} = pop @arg;
+	$self->{info}{$path}{fpool} = $pool;
     }
     else {
 	++$self->{changes};
 	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, 'A');
 	$self->{storage_baton}{$path} =
-	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg);
+	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
+	$pool->default if $pool && $pool->can ('default');
+	# XXX: fpool is used for testing if the file is open rather than add,
+	# so use another field to hold it.
+	$self->{info}{$path}{hold_pool} = $pool;
     }
     return $path;
 }
@@ -228,6 +238,7 @@ sub open_file {
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
+	$pool->default if $pool && $pool->can ('default');
 	return $path;
     }
     ++$self->{skipped};
@@ -301,7 +312,6 @@ sub apply_textdelta {
 
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
-    $pool->default if $pool && $pool->can ('default');
     my ($base);
     if (($pool = $info->{fpool}) &&
 	($fh->{local} = $self->{cb_localmod}->($path, $checksum || '', $pool))) {
@@ -364,7 +374,6 @@ sub _merge_text_change {
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
-    $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
     my $iod;
@@ -428,6 +437,8 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
+    # Don't bother calling cb_exist (which might be expensive if the parent is
+    # already added.
     if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
 	unless ($kind == $SVN::Node::dir) {
 	    $self->{notify}->flush ($path) ;
@@ -651,12 +662,16 @@ sub _merge_prop_change {
 	$self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
 	++$self->{conflicts};
     }
+    elsif ($status eq 'g') {
+	$self->{cb_prop_merged}->($path, $_[0])
+	    if $self->{cb_prop_merged};
+    }
     else {
 	$_[1] = $merged;
     }
     $self->{notify}->prop_status ($path, $status);
     ++$self->{changes};
-    return 1;
+    return $status eq 'g' ? 0 : 1;
 }
 
 sub change_file_prop {
@@ -700,7 +715,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

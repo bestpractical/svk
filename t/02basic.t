@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 12;
+plan tests => 19;
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -83,3 +83,21 @@ $svk->add ("$copath/B");
 $svk->commit ('-m', 'blah', "$copath/B");
 ok ($xd->{checkout}->get (__"$corpath/A")->{revision} == 3,
     'checkout optimzation respects existing state');
+
+$svk->update ($copath);
+$svk->mkdir ('-m', 'commit message here', '//A/update-check-only');
+is_output($svk, 'update', ['-C', $copath], [
+        "Syncing //(/) in $corpath to 7.",
+        __("A   $copath/A/update-check-only"), ]);
+
+for (['-s'], ['-m'], ['-s', '-m']) {
+    is_output($svk, 'update', ['-C', @$_, $copath], [
+            '--check-only cannot be used in conjunction with --sync or --merge.', ]);
+}
+
+for (['-s'], ['-m'], ['-s', '-m']) {
+    is_output($svk, 'update', ['-r', 3, @$_, $copath], [
+            '--revision cannot be used in conjunction with --sync or --merge.', ]);
+}
+
+1;

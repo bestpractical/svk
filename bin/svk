@@ -76,8 +76,8 @@ $ENV{USER} ||= (
 
 my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 {
-    my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
-			    statefile => "$svkpath/config",
+    my $xd = SVK::XD->new ( giantlock => catfile($svkpath, 'lock'),
+			    statefile => catfile($svkpath, 'config'),
 			    svkpath => $svkpath,
 			  );
     $xd->load();
@@ -108,7 +108,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -24,8 +24,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $_->{copath} ? $self->lock_target ($_) : $self->lock_none
-	for (@_[2..$#_]);
+    $self->lock_target (@_[2..$#_]);
 }
 
 sub do_propset_direct {
@@ -122,7 +121,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -15,22 +15,22 @@ overwrite_file ("A/deep/bar", "foobar");
 overwrite_file ("A/deep/baz", "foobar");
 $svk->add('A');
 is_output ($svk, 'revert', ['A/foo'],
-	   [__("Reverted $corpath/A/foo")], 'revert an added file');
+	   [__("Reverted A/foo")], 'revert an added file');
 is_output ($svk, 'revert', ['A/foo'],
-	   [__("$corpath/A/foo is not versioned; ignored.")], 'do it again');
+	   [__("A/foo is not versioned; ignored.")], 'do it again');
 is_output ($svk, 'revert', ['-R', 'A/deep'],
-	   [__("Reverted $corpath/A/deep"),
-	    __("Reverted $corpath/A/deep/bar"),
-	    __("Reverted $corpath/A/deep/baz"),
+	   [__("Reverted A/deep"),
+	    __("Reverted A/deep/bar"),
+	    __("Reverted A/deep/baz"),
 	   ], 'partial revert after add');
 
 $svk->add('A');
 is_output ($svk, 'revert', ['-R'],
-	   [__("Reverted $corpath/A"),
-	    __("Reverted $corpath/A/deep"),
-	    __("Reverted $corpath/A/deep/bar"),
-	    __("Reverted $corpath/A/deep/baz"),
-	    __("Reverted $corpath/A/foo"),
+	   [__("Reverted A"),
+	    __("Reverted A/deep"),
+	    __("Reverted A/deep/bar"),
+	    __("Reverted A/deep/baz"),
+	    __("Reverted A/foo"),
            ], 'revert everything');
 
 TODO: {
@@ -52,11 +52,11 @@ overwrite_file ("A/deep/baz", "foobarbaz");
 $svk->status;
 
 is_output ($svk, 'revert', ['-R', 'A/deep'],
-	   [__("Reverted $corpath/A/deep/bar"),
-	    __("Reverted $corpath/A/deep/baz"),
+	   [__("Reverted A/deep/bar"),
+	    __("Reverted A/deep/baz"),
 	   ], 'partial revert after modification');
 is_output ($svk, 'revert', ['A/foo'],
-	   [__("Reverted $corpath/A/foo")], 'revert a modified file');
+	   [__("Reverted A/foo")], 'revert a modified file');
 
 is_output ($svk, 'revert', ['A/foo'], [], 'do it again');
 
@@ -67,5 +67,5 @@ $svk->update ('-r1');
 is_output ($svk, 'st', [],
 	  [__('C   A/foo')]);
 is_output ($svk, 'revert', ['-R'],
-	   [__("Reverted $corpath/A/foo")]);
+	   [__("Reverted A/foo")]);
 is_output ($svk, 'st', [], []);

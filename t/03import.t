@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 16;
+plan tests => 19;
 
 use Cwd;
 use File::Path;
@@ -21,6 +21,10 @@ overwrite_file ("$copath/filea", "foobarbazz");
 overwrite_file ("$copath/fileb", "foobarbazz");
 overwrite_file ("$copath/filec", "foobarbazz");
 overwrite_file ("$copath/exe", "foobarbazz");
+overwrite_file ("$copath/filea~","foobarbazz"); # Test for import honoring global ignores
+mkdir "$copath/.DS_Store"; # Test for import honoring global ignores for directories
+overwrite_file ("$copath/.DS_Store/ignored","foobarbazz"); # Test for import pruning trees on directories in global ignores
+
 chmod (0755, "$copath/exe");
 mkdir "$copath/dir";
 overwrite_file ("$copath/dir/filed", "foobarbazz");
@@ -46,7 +50,9 @@ ok (!-e copath ('fileb'));
 ok (!-e copath ('filec'));
 ok (-e copath ('dir/filed'));
 ok (_x copath ('exe'), 'executable bit imported');
-
+ok (!-e copath ('filea~'));
+ok (!-e copath ('.DS_Store'));
+ok (!-e copath ('.DS_Store/ignored'));
 unlink (copath ('exe'));
 
 my $oldwd = getcwd;

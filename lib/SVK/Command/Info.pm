@@ -15,8 +15,6 @@ sub parse_arg {
     return map {$self->arg_co_maybe ($_)} @arg;
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, @arg) = @_;
 
@@ -26,9 +24,6 @@ sub run {
 	my $rev = $target->{copath} ?
 	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
 	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
-	$self->{merge} = SVK::Merge->new (%$self);
-	my %ancestors = $self->{merge}->copy_ancestors($repos,$path,$yrev, 1);
-	my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
 	print loc("Checkout Path: %1\n",$copath) if($copath);
 	print loc("Depot Path: %1\n", $depotpath);
 	print loc("Revision: %1\n", $rev);
@@ -38,9 +33,11 @@ sub run {
 	);
 	print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
 	    if($m->{source});
-	for (keys %ancestors) {
-	    print loc("Copied From: %1, Rev. %2\n",(split/:/)[1],$ancestors{$_});
+	for ($target->copy_ancestors) {
+	    print loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]);
 	}
+	$self->{merge} = SVK::Merge->new (%$self);
+	my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
 	for (keys %$minfo) {
 	    print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
 	}
@@ -113,7 +110,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

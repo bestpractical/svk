@@ -14,6 +14,8 @@ sub options {
      'recover'=> 'recover');
 }
 
+sub lock {} # override commit's locking
+
 sub parse_arg {
     my ($self, @arg) = @_;
 
@@ -30,8 +32,6 @@ sub parse_arg {
 
     return ($self->arg_depotpath ($path), @arg);
 }
-
-sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target, $source, @options) = @_;
@@ -98,6 +98,8 @@ sub run {
         return;
     }
 
+    die loc ("%1 already exists.\n", $target->path)
+	if $target->root->check_path ($target->path);
     $m->init or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n", $target->{depotpath});
 
     return;
@@ -222,7 +224,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -37,8 +37,11 @@ sub parse_arg {
 sub lock {
     my ($self, $src, $dst) = @_;
 
-    return if $self->{detach} or $self->{relocate}; # hold giant
-    return $self->lock_none if $self->{list};
+    if ($self->{detach} or $self->{relocate}) {
+	++$self->{hold_giant};
+	return;
+    }
+    return if $self->{list};
 
     my $abs_path = abs_path ($dst) or return;
     $self->{xd}->lock ($abs_path);
@@ -132,7 +135,7 @@ sub _do_checkout {
 	my ($anchor) = get_anchor (0, $report);
 	if (length $anchor && !-e $anchor) {
 	    mkpath [$anchor] or
-		die loc ("Can't create checkout path %1: $!\n", $anchor);
+		die loc ("Can't create checkout path %1: %2\n", $anchor, $!);
 	}
     }
 
@@ -205,7 +208,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

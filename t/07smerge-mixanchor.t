@@ -46,8 +46,8 @@ is_output ($svk, 'smerge', ['-m', 'merge back local to remote', '-f', '//local']
 	    'Committed revision 15 from revision 8.']);
 
 is_output ($svk, 'pg', ['svk:merge', '//local/3.3-TESTING', '//mirror/3.3-TESTING'],
-	   ["/local/3.3-TESTING - $uuid:/3.3-exp:11",
-	    "/mirror/3.3-TESTING - $uuid:/3.3-exp:11"]);
+	   ["//local/3.3-TESTING - $uuid:/3.3-exp:11",
+	    "//mirror/3.3-TESTING - $uuid:/3.3-exp:11"]);
 
 is_output ($svk, 'smerge', ['-m', 'merge back 3.3-another to remote directly', '//3.3-another', '//mirror/3.3-TESTING'],
 	   ['Auto-merging (0, 13) /3.3-another to /mirror/3.3-TESTING (base /3.3-exp:11).',
