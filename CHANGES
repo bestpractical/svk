@@ -1,4 +1,12 @@
-[Changes for 0.09 - 5 Mar, 2004]
+[Changes for 0.10 - 05 Mar, 2004]
+
+* Change distname.
+
+* Fix svn help for listing commands
+
+* Fix adding files when committing to mirrored path.
+
+[Changes for 0.09 - 05 Mar, 2004]
 
 * Command invocation interface cleanup.
 

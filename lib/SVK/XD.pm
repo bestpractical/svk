@@ -582,7 +582,8 @@ sub _delta_dir {
 			                : $newco);
 		}
 		else {
-		    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_");
+		    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_")
+			if $arg{cb_unknown};
 		}
 
 	    }
@@ -666,7 +667,8 @@ sub checkout_delta {
 		      : $arg{copath});
 	    }
 	    else {
-		&{$arg{cb_unknown}} ($arg{path}, $arg{copath});
+		&{$arg{cb_unknown}} ($arg{path}, $arg{copath})
+		    if $arg{cb_unknown};
 	    }
 
 	}

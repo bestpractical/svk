@@ -3,11 +3,11 @@ my $required_svn = '0.36.0';
 
 use inc::Module::Install;
 
-name		('svk');
+name		('SVK');
 author		('Chia-liang Kao <clkao@clkao.org>');
 abstract	('A decentralized version control system');
 license		('perl');
-version_from	('bin/svk');
+version_from	('lib/SVK.pm');
 install_script	('bin/svk');
 
 requires(
@@ -24,7 +24,7 @@ requires(
 features(
     'SVN::Mirror support' => [
 	-default => 1,
-	'SVN::Mirror'    => '0.30',
+	'SVN::Mirror'    => '0.29',
     ],
 );
 
