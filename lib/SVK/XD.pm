@@ -780,6 +780,7 @@ sub _node_deleted_or_absent {
 	return 1 if $schedule eq 'delete';
     }
 
+    lstat ($arg{copath});
     unless (-e _ || -l _) {
 	return 1 if $arg{absent_ignore};
 	if ($arg{absent_as_delete}) {
@@ -1328,7 +1329,7 @@ my $globaldestroy;
 
 sub DESTROY {
     # XXX: maybe just for 5.8.0 ?
-    # return if $globaldestroy;
+    return if $globaldestroy;
     $_[0][0]->abort if $_[0][0];
 }
 
