@@ -34,7 +34,9 @@ sub run {
             $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
             require Encode;
-            print Encode::encode($self->_find_encoding, $buf);
+            my $encoder = Encode::find_encoding($self->_find_encoding)
+                       || Encode::find_encoding('utf8');
+            print $encoder->encode($buf);
         }
         else {
             warn loc("Cannot find help topic '%1'.\n", $topic);
