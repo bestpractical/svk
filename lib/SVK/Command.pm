@@ -895,14 +895,14 @@ sub resolve_revspec {
         } else {
             $revspec = [map {split /:/} @$revspec];
             ($r1, $r2) = map {
-                $self->resolv_revision($target,$_);
+                $self->resolve_revision($target,$_);
             } @$revspec;
         }
     }
     return($r1,$r2);
 }
 
-sub resolv_revision {
+sub resolve_revision {
     my ($self,$target,$revstr) = @_;
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;

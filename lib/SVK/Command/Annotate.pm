@@ -9,7 +9,7 @@ use Algorithm::Annotate;
 
 sub options {
     ('x|cross'  => 'cross',
-     'r|revision=i'  => 'rev');
+     'r|revision=s'  => 'rev');
 }
 
 sub parse_arg {
@@ -21,8 +21,10 @@ sub parse_arg {
 
 sub run {
     my ($self, $target) = @_;
-
-    $target->as_depotpath ($self->{rev}) if defined $self->{rev};
+    if(defined $self->{rev}) {
+        my $r = $self->resolve_revision($target,$self->{rev});
+        $target->as_depotpath($r);
+    }
     my $fs = $target->{repos}->fs;
     my $ann = Algorithm::Annotate->new;
     my @revs;
