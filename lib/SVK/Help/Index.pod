@@ -6,6 +6,7 @@ SVK::Help::Index - List of SVK's help topics
 
     svk help intro          A brief introduction to svk
 
+    svk help environment    Environment variables that alter svk's behavior
     svk help commands       A list of all available commands
     svk help <command-name> Help for a specific command
     svk help                This page
