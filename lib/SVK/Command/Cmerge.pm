@@ -125,6 +125,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Cmerge - Merge specific changes

@@ -93,6 +93,8 @@ sub do_log {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Log - Show log messages for revisions

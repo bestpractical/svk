@@ -30,6 +30,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Add - Put files and directories under version control

@@ -37,6 +37,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Status - Display the status of items in the checkout copy

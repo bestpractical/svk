@@ -29,6 +29,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Describe - Describe a change

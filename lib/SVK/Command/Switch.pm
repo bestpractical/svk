@@ -37,6 +37,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Switch - Switch to another branch and keep local modifications

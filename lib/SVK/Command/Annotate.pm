@@ -66,6 +66,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Annotate - Print files with per-line revision and author info

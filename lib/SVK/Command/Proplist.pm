@@ -44,6 +44,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Proplist - List all properties on files or dirs

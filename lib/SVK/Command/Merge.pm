@@ -251,6 +251,8 @@ sub get_new_ticket {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Merge - Apply differences between two sources

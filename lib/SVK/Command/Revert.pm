@@ -32,6 +32,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Revert - Revert changes made in checkout copies

@@ -20,6 +20,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Smerge - Automatic merge all changes between branches

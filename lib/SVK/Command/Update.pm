@@ -37,6 +37,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Update - Bring changes from the repository into checkout copies

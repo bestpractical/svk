@@ -305,6 +305,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Commit - Commit changes to depot

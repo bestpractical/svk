@@ -56,6 +56,8 @@ sub _do_list {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::List - List entries in a directory from depot

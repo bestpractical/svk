@@ -33,6 +33,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Resolved - Remove conflict mark from checkout items

@@ -45,6 +45,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Copy - Make a versioned copy

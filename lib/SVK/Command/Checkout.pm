@@ -48,6 +48,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Checkout - Checkout the depotpath

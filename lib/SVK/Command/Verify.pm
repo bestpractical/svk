@@ -100,6 +100,8 @@ sub close_edit {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Verify - Verify change signatures

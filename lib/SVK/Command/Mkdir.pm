@@ -41,6 +41,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Mkdir - Create a versioned directory

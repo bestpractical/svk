@@ -53,6 +53,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Sync - Synchronize a mirrored depotpath

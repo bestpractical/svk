@@ -68,6 +68,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Propset - Set a property on path

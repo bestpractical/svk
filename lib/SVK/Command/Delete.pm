@@ -61,6 +61,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Delete - Remove versioned item

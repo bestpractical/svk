@@ -36,6 +36,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Cat - Output the file from depot

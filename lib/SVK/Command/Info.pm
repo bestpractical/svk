@@ -31,6 +31,8 @@ sub run {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Info - Display information about a file or directory

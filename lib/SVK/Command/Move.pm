@@ -62,6 +62,8 @@ sub DESTROY {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK::Command::Move - Move a file or directory

@@ -96,7 +96,7 @@ sub output_diff {
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
     my $showpath = ($lpath ne $rpath);
-    print $fh loc("Index: %1\n", $path);
+    print $fh "=== $path\n";
     print $fh '=' x 66,"\n";
     print $fh "--- "._full_label ($path, $showpath ? $lpath : undef, $llabel)."\n";
     print $fh "+++ "._full_label ($path, $showpath ? $rpath : undef, $rlabel)."\n";
