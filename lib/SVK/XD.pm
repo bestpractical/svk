@@ -818,7 +818,7 @@ sub _node_deleted_or_absent {
     }
 
     lstat ($arg{copath});
-    unless (-e _ or is_symlink) {
+    unless (-e _) {
 	# deleted during base_root -> xdroot
 	if ($arg{xdroot} ne $arg{base_root} && $arg{kind} == $SVN::Node::none) {
 	    $self->_node_deleted (%arg);
@@ -1056,7 +1056,7 @@ sub _delta_dir {
 	}
 	lstat ($newpaths{copath});
 	# XXX: warn about unreadable entry?
-	next unless -r _ or is_symlink;
+	next unless -r _;
 	my $delta = (-d _ and not is_symlink)
 	    ? \&_delta_dir : \&_delta_file;
 	my $copyfrom = $ccinfo->{'.copyfrom'};
