@@ -116,17 +116,30 @@ sub get_prompt { {
     local $| = 1;
     print $prompt;
 
+    local *IN;
+    local *SAVED = *STDIN;
+    local *STDIN = *STDIN;
+
+    my $formfeed = "";
+    if (!-t STDIN and -r '/dev/tty' and open IN, '<', '/dev/tty') {
+        *STDIN = *IN;
+        $formfeed = "\r";
+    }
+
     require Term::ReadKey;
     Term::ReadKey::ReadMode('raw');
 
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
         if ($key =~ /[\012\015]/) {
-            print "\n"; last;
+            print "\n" if $key eq $formfeed; print $key; last;
         }
         elsif ($key eq "\cC") {
             Term::ReadKey::ReadMode('restore');
-            die loc("Interrupted.\n");
+            *STDIN = *SAVED;
+            Term::ReadKey::ReadMode('restore');
+            print loc("Interrupted.\n"), $formfeed;
+            exit 1;
         }
         elsif ($key eq "\cH") {
             next unless length $answer;
