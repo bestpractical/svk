@@ -745,6 +745,11 @@ generate cb_unknown calls for sub-entries within absent entry.
 
 Don't generate absent_* calls.
 
+=item expand_copy
+
+Mimic the behavior like SVN::Repos::dir_delta, lose copy information
+and treat all copied descendents as added too.
+
 =back
 
 =cut
@@ -966,9 +971,12 @@ sub _delta_dir {
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
+	my $expanding = ($arg{expand_copy} && $arg{in_copy});
 	$self->$delta ( %arg,
-			add => 0,
-			base => 1,
+			add => $expanding,
+			# when expanding, dir still needs base to read entries,
+			# while file needs non-base to generate text delta
+			base => !($expanding && $kind == $SVN::Node::file),
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			kind => $kind,
@@ -1000,11 +1008,16 @@ sub _delta_dir {
 
     for my $entry (@direntries) {
 	next if $entry =~ m/$ignore/;
-	next if	defined $targets && !exists $targets->{$entry};
+	my $newtarget;
+	if (defined $targets) {
+	    next unless exists $targets->{$entry};
+	    $newtarget = delete $targets->{$entry};
+	}
 	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $entry),
 			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
-			 targets => $targets ? $targets->{$entry} : undef);
+			 base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
+			 targets => $newtarget, kind => $SVN::Node::none);
 	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
 	my $sche = $ccinfo->{'.schedule'} || '';
 	my $add = ($sche || $arg{auto_add}) ||
@@ -1019,29 +1032,26 @@ sub _delta_dir {
 		    $arg{cb_unknown}->($newpaths{path}, $newpaths{copath})
 			if $arg{cb_unknown};
 		}
-		delete $targets->{$entry} if defined $targets;
 	    }
 	    next;
 	}
 	lstat ($newpaths{copath});
+	# XXX: warn about unreadable entry?
 	next unless -r _ || -l _;
 	my $delta = (-d _ && !-l _)
 	    ? \&_delta_dir : \&_delta_file;
-	my $kind = $ccinfo->{'.copyfrom'} ?
-	    $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'}) : $SVN::Node::none;
-	$self->$delta ( %arg,
-			%newpaths,
-			add => $add,
-			base => exists $ccinfo->{'.copyfrom'},
-			kind => $kind,
-			baton => $baton,
-			root => 0,
-			path => $ccinfo->{'.copyfrom'} || $newpaths{path},
-			base_root => $ccinfo->{'.copyfrom'} ?
-			    $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : $arg{base_root},
-			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$entry",
-			cinfo => $ccinfo );
-	delete $targets->{$entry} if defined $targets;
+	my $copyfrom = $ccinfo->{'.copyfrom'};
+	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
+	$self->$delta ( %arg, %newpaths, add => 1, baton => $baton,
+			root => 0, base => 0, cinfo => $ccinfo,
+			$copyfrom ?
+			( base => 1,
+			  in_copy => $arg{expand_copy},
+			  kind => $fromroot->check_path ($copyfrom),
+			  path => $copyfrom,
+			  base_root => $fromroot,
+			  base_path => $copyfrom) : (),
+		      );
     }
 
     if (defined $targets) {
@@ -1070,7 +1080,8 @@ sub checkout_delta {
 	if $arg{debug};
     $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Target->copath ($copath, $_[0])) };
     # XXX: translate $repospath to use '/'
-    $arg{cb_copyfrom} ||= sub { ("file://$repospath$_[0]", $_[1]) };
+    $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
+	: sub { ("file://$repospath$_[0]", $_[1]) };
     my $rev = $arg{cb_rev}->('');
     my $baton = $arg{editor}->open_root ($rev);
     local $SIG{INT} = sub {

@@ -43,7 +43,6 @@ is_output ($svk, 'up', [],
 	    'D   A/normal',
 	    'C   A/unused',
 	    'D   B',
-	    'Empty merge.',
 	    '3 conflicts found.'
 	   ], 'delete entry but modified on checkout');
 chdir ($oldwd);

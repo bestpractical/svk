@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 13;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -220,5 +220,53 @@ is_output ($svk, 'diff', [],
 	    '+++ A/baz  (local)',
 	    '@@ -1 +0,0 @@',
 	    '-foobar'], 'recursive delete_entry');
+
+# test with expanding copies
+$svk->cp ('-m', 'blah', '//B', '//A/B-cp');
+$svk->cp ('//A', 'C');
+append_file ("C/foo", "copied and modified on C\n");
+
+is_output ($svk, 'diff', ['C'],
+	   ['=== C/B-cp/bar',
+	    '==================================================================',
+	    '--- C/B-cp/bar  (revision 3)',
+	    '+++ C/B-cp/bar  (local)',
+	    '@@ -0,0 +1 @@',
+	    '+foobar',
+	    '=== C/B-cp/foo',
+	    '==================================================================',
+	    '--- C/B-cp/foo  (revision 3)',
+	    '+++ C/B-cp/foo  (local)',
+	    '@@ -0,0 +1,2 @@',
+	    '+foobar',
+	    '+fnord',
+	    '=== C/B-cp/nor',
+	    '==================================================================',
+	    '--- C/B-cp/nor  (revision 3)',
+	    '+++ C/B-cp/nor  (local)',
+	    '@@ -0,0 +1 @@',
+	    '+foobar',
+	    '=== C/bar',
+	    '==================================================================',
+	    '--- C/bar  (revision 3)',
+	    '+++ C/bar  (local)',
+	    '@@ -0,0 +1,2 @@',
+	    '+foobar',
+	    '+newline',
+	    '=== C/baz',
+	    '==================================================================',
+	    '--- C/baz  (revision 3)',
+	    '+++ C/baz  (local)',
+	    '@@ -0,0 +1 @@',
+	    '+foobar',
+	    '=== C/foo',
+	    '==================================================================',
+	    '--- C/foo  (revision 3)',
+	    '+++ C/foo  (local)',
+	    '@@ -0,0 +1,4 @@',
+	    '+foobar',
+	    '+newline',
+	    '+fnord',
+	    '+copied and modified on C']);
 
 # XXX: test with prop changes and also external

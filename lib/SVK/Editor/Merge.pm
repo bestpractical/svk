@@ -313,6 +313,7 @@ sub close_file {
 	$self->prepare_fh ($fh);
 
 	if ($checksum eq $fh->{local}[2] ||
+	    # XXX: mark this as a change too?
 	    File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0) {
 	    $self->{notify}->node_status ($path, 'g');
 	    $self->ensure_close ($path, $checksum, $pool);
