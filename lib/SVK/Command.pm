@@ -402,10 +402,24 @@ sub arg_uri_maybe {
         last;
     }
 
+    my $prompt = loc("
+First of all, you have to choose a depot path to store this mirrored
+repository, usually something like //mirror/your_project/.  Enter a suitable
+name below to place it under //mirror/; you may also hit Enter and accept
+SVK's default.
+
+");
+
+    my $default = $base_uri->path;
+    $default =~ s{^/+|/+$}{}g;
+    $default =~ s{(?:/(?=trunk$)|/(?:tags|branche?s)/(?=[^/]+$))}{-};
+    $default =~ s{.*/}{};
+
     my $path = get_prompt(
-        loc("Name a depot path for this mirror (under //mirror/ if no leading '/'): "),
-        qr{^(?:/(?:$depots)/)?[^/]},
+        $prompt . loc("Depot path: [//mirror/%1] ", $default),
+        qr{^(?:$|(?:/(?:$depots)/)?[^/])},
     );
+    $path = $default unless length $path;
     $path = "//mirror/$path" unless $path =~ m!^/!;
 
     my $target = $self->arg_depotpath($path);
