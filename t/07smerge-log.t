@@ -44,7 +44,7 @@ is_output ($svk, 'log', ['-r7', '//'],
 	    ' branch for local',
 	    qr' r4@svk: .*',
 	    ' add fileb on local',
-	    '', '',# why so many empty lines?
+	    '',
 	    '-' x 70,
 	   ]);
 
@@ -62,7 +62,7 @@ is_output ($svk, 'log', ['-r9', '//'],
 	    'Merge from local to trunk',
 	    qr' r8@svk: .*',
 	    ' modify fileb on local',
-	    '', '',
+	    '',
 	    '-' x 70]);
 $svk->cp ('-m', 'branch for local', '//local', '//fix');
 $svk->update ($copath);
@@ -79,7 +79,7 @@ is_output ($svk, 'log', ['-r12', '//'],
 	    ' branch for local',
 	    qr' r11@fix: .*',
 	    ' modify fileb on fix',
-	    '', '',
+	    '',
 	    '-' x 70]);
 is_output ($svk, 'log', ['-r13', '//'],
 	   ['-' x 70,
@@ -91,8 +91,8 @@ is_output ($svk, 'log', ['-r13', '//'],
 	    '  branch for local',
 	    qr'  r11@fix: .*',
 	    '  modify fileb on fix',
-	    ' ', ' ',
-	    '', '',
+	    ' ',
+	    '',
 	    '-' x 70]);
 
 # XXX: may lose something if we do "local -> fix merge" first

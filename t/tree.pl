@@ -173,7 +173,7 @@ sub is_deeply_like {
     for (0..$#{$expected}) {
 	if (ref ($expected->[$_]) eq 'Regexp' ) {
 	    unless ($got->[$_] =~ m/$expected->[$_]/) {
-		diag "Different at $_:\n$got->[$_]";
+		diag "Different at $_:\n$got->[$_]\n$expected->[$_]";
 		@_ = (0, $test);
 		goto &ok;
 	    }

@@ -34,20 +34,22 @@ $svk2->commit ('-m', "modified on local", $copath);
 
 my ($uuid, $uuid2) = map {$_->fs->get_uuid} ($repos, $repos2);
 
-is_output ($svk2, 'patch', ['create', '//local', '//trunk'],
-	   ['Illegal patch name: //local.']);
-is_output ($svk2, 'patch', ['create', 'test-1', '//local', '//trunk'],
-	   ['U   B/fe',
+is_output ($svk2, 'smerge', ['-lm', '', '-P', '//local', '//local', '//trunk',],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Merging back to SVN::Mirror source $uri/trunk.",
+	    'Illegal patch name: //local.']);
+is_output ($svk2, 'smerge', ['-lm', '', '-P', 'test-1', '//local', '//trunk'],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Merging back to SVN::Mirror source $uri/trunk.",
+	    'U   B/fe',
 	    'Patch test-1 created.']);
 
 my $log1 = ['Log:',
-	    ' ----------------------------------------------------------------------',
 	    qr'.*',
 	    ' local branch',
-	    ' ----------------------------------------------------------------------',
 	    qr'.*',
-	    ' modified on local',
-	    ' ----------------------------------------------------------------------'];
+	    ' modified on local'];
+#	    ''];
 my $patch1 = ['',
 	      '=== B/fe',
 	      '==================================================================',
@@ -63,7 +65,6 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    "Target: $uuid:/trunk:3 [mirrored]",
             "        ($uri/trunk)",
 	    @$log1, @$patch1]);
-
 
 ok (-e "$xd2->{svkpath}/patch/test-1.patch");
 mkdir ("$xd->{svkpath}/patch");
@@ -151,6 +152,11 @@ is_output ($svk2, 'patch', ['apply', 'test-1', '//patch-branch', '--', '-C'],
 	    'Empty merge.']);
 
 overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
+
+$svk->ci ('-Pfrom-ci-P', '-mTest', $scopath);
+# check me
+$svk->patch ('view', 'from-ci-P');
+
 $svk->commit ('-m', "modified on trunk", $scopath);
 is_output ($svk, 'patch', [qw/test test-1/],
 	   ['C   B/fe', 'Empty merge.', '1 conflict found.',
@@ -175,7 +181,6 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    @$log1,
 	    qr'.*',
 	    ' catch up on local',
-	    ' ----------------------------------------------------------------------',
 	    '',
 	    '=== B/fe',
 	    '==================================================================',
@@ -196,7 +201,6 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    @$log1,
 	    qr'.*',
 	    ' catch up on local',
-	    ' ----------------------------------------------------------------------',
 	    '',
 	    '=== B/fe',
 	    '==================================================================',

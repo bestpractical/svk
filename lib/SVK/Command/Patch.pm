@@ -12,7 +12,7 @@ use SVK::Util qw (resolve_svm_source);
 use SVK::Command::Log;
 
 my %cmd = map {$_ => 1} qw/view dump update regen update test send delete apply/;
-$cmd{create} = $cmd{list} = 0;
+$cmd{list} = 0;
 
 sub options {
     ('depot=s' => 'depot');
@@ -32,28 +32,6 @@ sub parse_arg {
 	$arg[1] = $self->arg_co_maybe ($arg[1] || '');
     }
     return ($cmd, @arg);
-}
-
-sub create {
-    my ($self, $name, @arg) = @_;
-    die loc ("Illegal patch name: %1.\n", $name)
-	if $name !~ m/^[\w\-]+$/;
-    my $fname = "$self->{xd}{svkpath}/patch";
-    mkdir ($fname);
-    $fname .= "/$name.patch";
-    return "file $fname already exists, use $0 patch regen or update $name instead\n"
-	if -e $fname;
-
-    my ($src, $dst) = map {$self->arg_depotpath ($_) } @arg;
-    die loc("repos paths mismatch") unless $src->same_repos ($dst);
-
-    my $patch = SVK::Patch->new ($name, $self->{xd}, $self->{xd}->find_depotname ($arg[0]),
-				 $src, $dst);
-    my $ret = $self->regen ($patch);
-    unless ($ret) {
-	print loc ("Patch %1 created.\n", $name);
-    }
-    return $ret;
 }
 
 sub view {
@@ -157,7 +135,6 @@ SVK::Command::Patch - Manage patches
 
 =head1 SYNOPSIS
 
- patch create PATCHNAME DEPOTPATH1 DEPOTPATH2
  patch list
  patch view PATCHNAME
  patch regen PATCHNAME

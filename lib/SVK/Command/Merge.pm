@@ -74,7 +74,7 @@ sub get_commit_message {
     my ($self, $log) = @_;
     return if $self->{check_only} || $self->{incremental};
     $self->{message} = defined $self->{message} ?
-	join ("\n", $self->{message}, $log, '')
+	join ("\n", grep {length $_} ($self->{message}, $log))
 	    : $self->SUPER::get_commit_message ($log);
 }
 
@@ -102,6 +102,7 @@ sub run {
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
+	++$self->{no_ticket} if $self->{patch};
 	# XXX: these should come from parse_arg
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
@@ -155,7 +156,7 @@ sub run {
     else {
 	print loc("Incremental merge not guaranteed even if check is successful\n")
 	    if $self->{incremental};
-	$merge->run ($self->get_editor ($dst));
+	$merge->run ($self->get_editor ($dst, undef, $src));
     }
     return;
 }

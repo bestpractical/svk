@@ -377,7 +377,6 @@ sub run {
 	  base_anchor => $base->{path},
 	  base_root => $base_root,
 	  target => $target,
-	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  storage => $storage,
 	  notify => $notify,
 	  allow_conflicts => $is_copath,

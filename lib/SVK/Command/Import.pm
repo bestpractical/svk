@@ -84,8 +84,7 @@ sub run {
     }
 
     $self->get_commit_message () unless $self->{check_only};
-    my ($editor, %cb) = $self->get_editor ($target);
-    ${$cb{callback}} =
+    my $committed =
 	sub { $yrev = $_[0];
 	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
 			$copath, $target->{depotpath}, $yrev);
@@ -109,6 +108,7 @@ sub run {
 				 '.schedule' => undef});
 	      }
 	  };
+    my ($editor, %cb) = $self->get_editor ($target, $committed);
 
     $self->{import} = 1;
     $self->run_delta ($target->new (copath => $copath), $root, $editor, %cb);

@@ -15,6 +15,7 @@ sub options {
     ('m|message=s'  => 'message',
      'C|check-only' => 'check_only',
      'S|sign'	  => 'sign',
+     'P|patch=s'  => 'patch',
      'import',	  => 'import',
      'direct',	  => 'direct',
     );
@@ -72,7 +73,7 @@ sub get_commit_message {
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
 sub get_editor {
-    my ($self, $target, $callback) = @_;
+    my ($self, $target, $callback, $source) = @_;
     my ($editor, %cb);
 
     # XXX: the case that the target is an xd is actually only used in merge.
@@ -95,7 +96,10 @@ sub get_editor {
     if (!$self->{direct} and HAS_SVN_MIRROR and
 	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
 	print loc("Merging back to SVN::Mirror source %1.\n", $m->{source});
-	if ($self->{check_only}) {
+	if ($self->{patch}) {
+	    $base_rev = $m->{fromrev};
+	}
+	elsif ($self->{check_only}) {
 	    print loc("Checking against mirrored directory locally.\n");
 	}
 	else {
@@ -119,6 +123,29 @@ sub get_editor {
     my $yrev = $fs->youngest_rev;
     my $root = $fs->revision_root ($yrev);
 
+    %cb = SVK::Editor::Merge::cb_for_root
+	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
+
+    if ($self->{patch}) {
+	require SVK::Patch;
+	die loc ("Illegal patch name: %1.\n", $self->{patch})
+	    if $self->{patch} !~ m/^[\w\-]+$/;
+	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
+				     $target->depotname, $source, $target);
+	$patch->{ticket} = SVK::Merge->new (xd => $self->{xd})->merge_info ($source)->add_target ($source)->as_string
+	    if $source;
+	$patch->{log} = $self->{message};
+	my $fname = "$self->{xd}{svkpath}/patch";
+	mkdir ($fname);
+	$fname .= "/$self->{patch}.patch";
+	if (-e $fname) {
+	    die loc ("file %1 already exists.\n", $fname).
+		($source ? loc ("use $0 patch regen or update $self->{patch} instead.\n") : '');
+	}
+	return ($patch->commit_editor ($fname), %cb, callback => \$callback,
+		send_fulltext => 0);
+    }
+
     $editor ||= $self->{check_only} ? SVN::Delta::Editor->new :
 	SVN::Delta::Editor->new
 	( $target->{repos}->get_commit_editor
@@ -138,9 +165,6 @@ sub get_editor {
 							       );
     }
 
-    %cb = SVK::Editor::Merge::cb_for_root
-	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
-
     unless ($self->{check_only}) {
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE, $SVN::Error::FS_ALREADY_EXISTS) {
 	    # XXX: there's no copath info here
@@ -150,7 +174,8 @@ sub get_editor {
 	}
     }
 
-    return ($editor, %cb, mirror => $m, callback => \$callback);
+    return ($editor, %cb, mirror => $m, callback => \$callback,
+	    send_fulltext => !$cb{mirror});
 }
 
 
@@ -312,14 +337,15 @@ sub run_delta {
 	  error => $self->{error},
 	  xdroot => $xdroot,
 	  editor => $editor,
+	  send_delta => !$cb{send_fulltext},
+	  nodelay => $cb{send_fulltext},
 	  $self->{import} ?
 	  ( auto_add => 1,
 	    obstruct_as_replace => 1,
 	    absent_as_delete => 1) :
 	  ( absent_ignore => 1),
 	  $cb{mirror} ?
-	  ( send_delta => 1,
-	    cb_copyfrom => sub {
+	  ( cb_copyfrom => sub {
 		my ($path, $rev) = @_;
 		$path =~ s|^\Q$cb{mirror}{target_path}\E|$cb{mirror}{source}|;
 		return ($path, scalar $cb{mirror}->find_remote_rev ($rev));
@@ -332,8 +358,7 @@ sub run_delta {
 		return $revcache{$corev} if exists $revcache{corev};
 		my $rev = ($fs->revision_root ($corev)->node_history ($revtarget)->prev (0)->location)[1];
 		$revcache{$corev} = $cb{mirror}->find_remote_rev ($rev);
-	    }) :
-	  ( nodelay => 1 ));
+	    }) : ());
     return;
 }
 

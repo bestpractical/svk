@@ -740,7 +740,7 @@ sub ignore {
 sub _delta_content {
     my ($self, %arg) = @_;
 
-    my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef, $arg{pool});
+    my $handle = $arg{editor}->apply_textdelta ($arg{baton}, $arg{md5}, $arg{pool});
     return unless $handle && $#{$handle} > 0;
 
     if ($arg{send_delta} && $arg{base}) {
@@ -930,7 +930,7 @@ sub _delta_file {
 	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
 	seek $fh, 0, 0;
 	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool);
-	$self->_delta_content (%arg, baton => $baton, fh => $fh, pool => $pool);
+	$self->_delta_content (%arg, baton => $baton, fh => $fh, md5 => $md5, pool => $pool);
     }
 
     $arg{editor}->close_file ($baton, $mymd5, $pool) if $baton;

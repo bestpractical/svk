@@ -40,7 +40,7 @@ sub AUTOLOAD {
     return if $func =~ m/^[A-Z]+$/;
     my $baton;
 
-    pop @arg if ref ($arg[-1]) eq '_p_apr_pool_t';
+    pop @arg if ref ($arg[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
 
     if ((my $baton_at = $self->baton_at ($func)) >= 0) {
 	$baton = $arg[$baton_at];
