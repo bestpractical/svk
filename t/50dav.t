@@ -14,6 +14,7 @@ BEGIN {
     eval { require Apache::Test;
 	   $Apache::Test::VERSION >= 1.18 }
 	or plan (skip_all => "Apache::Test 1.18 required for testing dav");
+    plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
 }
 
 use Apache::TestConfig;
