@@ -1049,9 +1049,9 @@ sub commit {
     (undef, $copath, @targets )= condense (@ARGV);
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
-
+    my $is_mirrored = path_is_mirrored ($repos, $path);
     print "Commit into mirrored path, merge back directly\n"
-	if path_is_mirrored ($repos, $path);
+	if $is_mirrored;
 
     my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
 						  path => $path,
@@ -1150,6 +1150,9 @@ sub commit {
 	print "Committed revision $rev.\n";
     };
 
+    die "commit to mirror with anchor not supported yet"
+	if $is_mirrored && !$cb{mirror};
+
     ${$cb{callback}} = $committed;
 
     SVN::XD::checkout_delta ($info,
@@ -1163,7 +1166,7 @@ sub commit {
 			     strict_add => 1,
 			     editor => $editor,
 			     $cb{mirror} ?
-			     ( send_delta => 1, 
+			     ( send_delta => 1,
 			       cb_rev => sub {
 				   my $target = shift;
 				   my $cotarget = $target;
