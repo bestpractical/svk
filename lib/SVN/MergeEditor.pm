@@ -367,11 +367,6 @@ sub close_edit {
 
 still very primitive, have to handle lots of cases
 
-=item Text merge
-
-Algorithm::Merge is too fragile. should fall back to svn's
-internal diff library.
-
 =back
 
 =head1 AUTHORS

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-$VERSION = '0.03';
+$VERSION = '0.04';
 use strict;
 require SVN::Core;
 require SVN::Repos;
@@ -9,6 +9,7 @@ use YAML qw(LoadFile DumpFile);
 use Getopt::Long;
 use File::Spec;
 use Data::Hierarchy;
+use SVN::DiffEditor;
 
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pl cp/;
@@ -170,9 +171,38 @@ sub info {
 use Text::Diff ();
 
 sub diff {
-    my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    local @ARGV = @_;
+    my $verbose = 0;
+    my $revspec;
+
+    die unless GetOptions ("v|verbose"	=> \$verbose,
+			   "r|revision=s" => \$revspec);
+
+    my ($tgt) = @ARGV;
+
+    my ($repospath, $path, $cinfo, $repos);
+
+    if (($repospath, $path, $repos) = eval { find_repos ($tgt, 1) }) {
+	my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
+	    or die "require revspec";
+	my $fs = $repos->fs;
+	my $baseroot = $fs->revision_root ($fromrev);
+	my $editor = SVN::DiffEditor->new
+	    ( cb_getbase => sub { my ($rpath) = @_;
+				  my $base = $baseroot->file_contents ("$path/$rpath");
+				  return $base;
+			      }
+	    );
+	SVN::Repos::dir_delta ($baseroot,
+			       $path, undef,
+			       $fs->revision_root ($torev), $path,
+			       $editor, undef,
+			       1, 1, 0, 1);
+
+    }
+    else {
+	my $copath = File::Spec->rel2abs ($tgt || '');
+	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::checkout_crawler ($info,
 			       repos => $repos,
@@ -206,6 +236,7 @@ sub diff {
 			       },
 			      );
 
+    }
 }
 
 =head2 status / st

@@ -2,6 +2,7 @@ README
 CHANGES
 MANIFEST
 Makefile.PL
+lib/SVN/DiffEditor.pm
 lib/SVN/MergeEditor.pm
 lib/SVN/XD.pm
 bin/svk

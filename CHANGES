@@ -1,3 +1,11 @@
+[Changes for 0.04 - 06 Dec, 2003]
+
+* Textual merge now uses svn's internal diff library.
+
+* new DiffEdtitor to handle depot diff.
+
+* Requires svn 0.34
+
 [Changes for 0.03 - 26 Nov, 2003]
 
 * Merge editor now calls open_file only when necessary.
