@@ -45,6 +45,7 @@ sub run {
             my $sync = SVK::Command::Sync->new;
             %$sync = (%$self, %$sync);
             $sync->run($sync_target);
+            $sync_target->refresh_revision;
         }
 
         if ($self->{merge}) {
@@ -52,6 +53,7 @@ sub run {
             my $smerge = SVK::Command::Smerge->new;
             %$smerge = ( message => '', log => 1, %$self, %$smerge);
             $smerge->run($sync_target => $update_target);
+            $update_target->refresh_revision;
         }
 
 	$self->do_update ($target, $update_target);

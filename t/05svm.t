@@ -80,9 +80,24 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             "Syncing $uri/A-99",
             'Retrieving log information from 1 to 28',
             'Committed revision 12 from revision 28.',
-            'Auto-merging (10, 10) /m-99 to /m-99-copy (base /m-99:10).',
-            'Empty merge.',
-            "Syncing //m-99-copy(/m-99-copy) in $corpath2 to 11."]);
+            'Auto-merging (10, 12) /m-99 to /m-99-copy (base /m-99:10).',
+            'A   Q',
+            'A   Q/qz',
+            'A   T',
+            'A   T/foo',
+            'A   T/xd',
+            'A   be',
+            'A   N',
+            "New merge ticket: $suuid:/A-99:28",
+            'Committed revision 13.',
+            "Syncing //m-99-copy(/m-99-copy) in $corpath2 to 13.",
+            'A   t/checkout/svm2/Q',
+            'A   t/checkout/svm2/Q/qz',
+            'A   t/checkout/svm2/T',
+            'A   t/checkout/svm2/T/foo',
+            'A   t/checkout/svm2/T/xd',
+            'A   t/checkout/svm2/be',
+            'A   t/checkout/svm2/N', ]);
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 # has some output
@@ -97,7 +112,7 @@ is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');
 
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-	   ['Committed revision 13.', 'Committed revision 14.']);
+	   ['Committed revision 14.', 'Committed revision 15.']);
 
 is_output_like ($svk, 'mirror', ['--delete', '//l'],
 		qr"not a mirrored", '--delete on non-mirrored path');
@@ -106,7 +121,7 @@ is_output_like ($svk, 'mirror', ['--delete', '//m/T'],
 		qr"inside", '--delete inside a mirrored path');
 
 is_output_like ($svk, 'mirror', ['--delete', '//m'],
-		qr"Committed revision 15.", '--delete on mirrored path');
+		qr"Committed revision 16.", '--delete on mirrored path');
 
 is_output_like ($svk, 'mirror', ['--delete', '//m'],
 		qr"not a mirrored", '--delete on non-mirrored path');

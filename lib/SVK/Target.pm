@@ -26,9 +26,13 @@ sub new {
     my $self = ref $class ? clone ($class) :
 	bless {}, $class;
     %$self = (%$self, @arg);
-    $self->{revision} = $self->{repos}->fs->youngest_rev
-	unless defined $self->{revision};
+    $self->refresh_revision unless defined $self->{revision};
     return $self;
+}
+
+sub refresh_revision {
+    my ($self) = @_;
+    $self->{revision} = $self->{repos}->fs->youngest_rev;
 }
 
 sub clone {
