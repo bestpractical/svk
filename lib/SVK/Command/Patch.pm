@@ -101,7 +101,7 @@ sub list {
     opendir my $dir, "$self->{xd}{svkpath}/patch";
     foreach my $file (readdir ($dir)) {
 	next if $file =~ /^\./;
-	$file =~ s/\.patch$//;
+	$file =~ s/\.patch$// or next;
 	my $patch = $self->_load ($file);
 	print "$patch->{name}\@$patch->{level}: \n";
     }
