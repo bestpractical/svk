@@ -325,6 +325,7 @@ sub run_delta {
 		$revcache{$corev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) :
 	  ( nodelay => 1 ));
+    return;
 }
 
 1;
