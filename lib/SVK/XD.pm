@@ -1115,7 +1115,11 @@ sub _delta_dir {
 	if (!defined $targets) {
 	    next if (!$add || $arg{auto_add}) && $entry =~ m/$ignore/ ;
 	}
-	unless ($add) {
+	if ($ccinfo->{'.conflict'}) {
+	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton})
+		if $arg{cb_conflict};
+	}
+	unless ($add || $ccinfo->{'.conflict'}) {
 	    if ($arg{cb_unknown}) {
 		$arg{cb_unknown}->($newpaths{entry}, $newpaths{copath});
 		$self->_unknown_verbose (%arg, %newpaths)
