@@ -110,7 +110,7 @@ the regular expression pattern.  Returns the chomped answer line.
 
 =cut
 
-sub get_prompt {
+sub get_prompt { {
     my ($prompt, $pattern) = @_;
 
     local $| = 1;
@@ -152,7 +152,7 @@ sub get_prompt {
 
     Term::ReadKey::ReadMode('restore');
     return $answer;
-}
+} }
 
 =head3 get_buffer_from_editor ($what, $sep, $content, $filename, $anchor, $targets_ref)
 
