@@ -8,8 +8,10 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use File::Path;
+use File::Spec;
 use SVK;
 use SVK::XD;
+use SVK::Util qw( $SEP catdir abs_path );
 use strict;
 use Carp;
 
@@ -28,7 +30,7 @@ for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
 my $pool = SVN::Pool->new_default;
 
 sub new_repos {
-    my $repospath = "/tmp/svk-$$";
+    my $repospath = catdir(File::Spec->tmpdir, "svk-$$");
     my $reposbase = $repospath;
     my $repos;
     my $i = 0;
@@ -48,7 +50,7 @@ sub build_test {
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
     my $xd = SVK::XD->new (depotmap => $depotmap,
 			   svkpath => $depotmap->{''},
-			   checkout => Data::Hierarchy->new);
+			   checkout => Data::Hierarchy->new( sep => $SEP ));
     my $svk = SVK->new (xd => $xd, output => \$output);
     push @TOCLEAN, [$xd, $svk];
     return ($xd, $svk);
@@ -59,7 +61,7 @@ sub get_copath {
     my $copath = "t/checkout/$name";
     mkpath [$copath] unless -d $copath;
     rmtree [$copath] if -e $copath;
-    return ($copath, File::Spec->rel2abs($copath));
+    return ($copath, abs_path($copath));
 }
 
 sub rm_test {
@@ -93,14 +95,14 @@ sub append_file {
 
 sub overwrite_file {
     my ($file, $content) = @_;
-    open my ($fh), '>:raw', $file or confess $!;
+    open my ($fh), '>:raw', $file or confess "$file: $!";
     print $fh $content;
     close $fh;
 }
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
-    open my ($fh), '<:raw', $file or confess $!;
+    open my ($fh), '<:raw', $file or confess "$file: $!";
     local $/;
     is (<$fh>, $content, $test);
 }
