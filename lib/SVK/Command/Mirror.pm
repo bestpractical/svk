@@ -15,7 +15,7 @@ sub parse_arg {
     my ($self, $path, @arg) = @_;
 
     # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
-    if (@arg and $path =~ m{^\w+:}) {
+    if (@arg and $path =~ /^[A-Za-z][-+.A-Za-z0-9]*:/) {
 	($arg[0], $path) = ($path, $arg[0]);
     }
 
