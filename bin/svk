@@ -1164,7 +1164,8 @@ sub commit {
 			     strict_add => 1,
 			     editor => $editor,
 			     $cb{mirror} ?
-			     ( cb_rev => sub {
+			     ( send_delta => 1, 
+			       cb_rev => sub {
 				   my $target = shift;
 				   my $fs = $repos->fs;
 				   $target = $target ? "$path/$target" : $path;

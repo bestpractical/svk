@@ -397,11 +397,17 @@ sub _delta_content {
     my ($info, %arg) = @_;
 
     my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef, $arg{pool});
+    return unless $handle && $#{$handle} > 0;
 
-    # support sending delta too
+    if ($arg{send_delta}) {
+	my $txstream = SVN::TxDelta::new
+	    ($arg{xdroot}->file_contents ($arg{path}), $arg{fh}, $arg{pool});
 
-    SVN::TxDelta::send_stream ($arg{fh}, @$handle)
-	    if $handle && $#{$handle} > 0;
+	SVN::TxDelta::send_txstream ($txstream, @$handle, $arg{pool});
+    }
+    else {
+	SVN::TxDelta::send_stream ($arg{fh}, @$handle, $arg{pool})
+    }
 }
 
 sub _delta_file {
