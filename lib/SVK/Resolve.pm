@@ -83,12 +83,15 @@ sub do_resolve {
 sub edit {
     my $self = shift;
 
-    my $content = get_buffer_from_editor (
+    local $@;
+    my $content = eval { get_buffer_from_editor (
         loc("Merged file"),     # name
         undef,                  # separator
         undef,                  # content
         $self->{merged},        # filename
-    );
+    ) };
+
+    return 0 if $@;
 
     $self->{has_conflict} = (index($content, $self->{marker}) >= 0);
 
@@ -250,6 +253,7 @@ sub paths { () }
 sub name {
     my $self = shift;
 
+    return $self->{external} if ref($self) eq __PACKAGE__;
     return $1 if (ref($self) =~ /(\w*)$/);
 }
 
@@ -267,7 +271,7 @@ sub DESTROY {
 
 1;
 
-__END__
+__DATA__
 
 =head1 NAME
 
@@ -285,16 +289,15 @@ SVK::Resolve - Interactively resolve conflicts
      dy  : See your changes alone.
      dt  : See their changes alone.
   Edit:
-     e   : Edit merged file (read/write).
-     ey  : Edit your file (read/write).
-     et  : Edit their file (read only).
-  Misc:
+     e   : Edit merged file with an editor.
      m   : Run an external merge tool to edit merged file.
+  Misc:
      s   : Skip this file.
      h   : Print this help message.
 
   Environment variables:
-    SVKMERGE:   External merge tool to always use for "m".
-    SVKRESOLVE: The resolve action to take, instead of asking.
+    EDITOR     : Editor to use for 'e'.
+    SVKMERGE   : External merge tool to always use for 'm'.
+    SVKRESOLVE : The resolve action to take, instead of asking.
 
 =cut
