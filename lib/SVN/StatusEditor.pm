@@ -40,19 +40,21 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path) = @_;
+    my $rpath = $path;
+    $rpath =~ s|^$self->{copath}/|$self->{rpath}|;
     print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0],
 		   $self->{info}{$path}{status}[1],
-		   $path);
+		   $rpath);
 }
 
 sub absent_file {
     my ($self, $path) = @_;
-    print "!  $self->{copath}/$path\n";
+    print "!  $self->{rpath}$path\n";
 }
 
 sub delete_entry {
     my ($self, $path) = @_;
-    print "D  $self->{copath}/$path\n";
+    print "D  $self->{rpath}$path\n";
 }
 
 sub add_directory {
@@ -75,15 +77,17 @@ sub open_directory {
 
 sub close_directory {
     my ($self, $path) = @_;
+    my $rpath = $path;
+    $rpath =~ s|^$self->{copath}/|$self->{rpath}|;
     print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0] || '',
 		   $self->{info}{$path}{status}[1] || '',
-		   $path)
+		   $rpath)
 	if $self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[1];
 }
 
 sub absent_directory {
     my ($self, $path) = @_;
-    print "!  $self->{copath}/$path\n";
+    print "!  $self->{rpath}$path\n";
 }
 
 1;

@@ -423,9 +423,9 @@ sub diff {
 
 sub status {
     local @ARGV = @_;
-    my ($copath, @targets);
+    my ($report, $copath, @targets);
     @ARGV = ('') if $#ARGV == -1;
-    ($copath, @targets )= condense (@ARGV);
+    ($report, $copath, @targets )= condense (@ARGV);
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
@@ -443,8 +443,10 @@ sub status {
 			     delete_verbose => 1,
 			     strict_add => 1,
 			     editor => SVN::StatusEditor->new
-			     (copath => $copath, dpath => $path),
-			     cb_unknown => sub {print "?  $_[1]\n"}
+			     (copath => $copath, dpath => $path,
+			      rpath => $report),
+			     cb_unknown => sub {$_[1] =~ s|^$copath/|$report|;
+						print "?  $_[1]\n"}
 			    );
 
     $txn->abort if $txn;
@@ -546,20 +548,26 @@ sub annotate {
 
 sub condense {
     my @targets = map {File::Spec->rel2abs ($_ || '')} @_;
-    return $targets[0] if $#targets == 0;
-    my $anchor;
+    my ($anchor, $report);
+    $report = $_[0];
+    $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
+    return ($report, $targets[0]) if $#targets == 0;
     for (@targets) {
 	if ($anchor) {
 	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
 		(undef, $anchor, undef) = File::Spec->splitpath ($anchor);
 		chop $anchor;
+		(undef, $report, undef) = File::Spec->splitpath ($report);
+		chop $report;
 	    }
 	}
 	else {
 	    $anchor = $_;
+	    $report = $_[0]
 	}
     }
-    return ($anchor, map {s|^$anchor/||;$_} @targets);
+    $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
+    return ($report, $anchor, map {s|^$anchor/||;$_} @targets);
 }
 
 sub add {
@@ -569,7 +577,7 @@ sub add {
 
     my ($copath, @targets);
     die unless @ARGV;
-    ($copath, @targets) = condense (@ARGV);
+    (undef, $copath, @targets) = condense (@ARGV);
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
@@ -590,7 +598,7 @@ sub delete {
     local @ARGV = @_;
     my ($copath, @targets);
     die unless @ARGV;
-    ($copath, @targets) = condense (@ARGV);
+    (undef, $copath, @targets) = condense (@ARGV);
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
@@ -871,7 +879,7 @@ sub commit {
 
     my ($copath, @targets);
     @ARGV = ('') if $#ARGV == -1;
-    ($copath, @targets )= condense (@ARGV);
+    (undef, $copath, @targets )= condense (@ARGV);
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
