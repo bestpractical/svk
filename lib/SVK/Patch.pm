@@ -79,6 +79,9 @@ sub load {
     my $content = do {
         open my $fh, "< $file" or die loc("cannot open %1: %2", $file, $!);
 
+        # Normalize all line endings to LF
+        binmode($fh, ":eol(LF)");
+
         # Serialized patches always begins with a block marker.
         # We need the \nVersion: to not trip over inlined block makers.
         # This is safe because unidiff can't have lines beginning with 'V'.
