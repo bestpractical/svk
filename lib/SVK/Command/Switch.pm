@@ -7,8 +7,21 @@ use SVK::XD;
 use SVK::I18N;
 use File::Spec;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'd|delete|detach' => 'detach',
+    );
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
+
+    if ($self->{detach}) {
+        require SVK::Command::Checkout;
+        bless($self, 'SVK::Command::Checkout');
+        goto &{ $self->can('parse_arg') };
+    }
+
     return if $#arg < 0 || $#arg > 1;
     my $depotpath = $self->arg_depotpath ($arg[0]);
     return ($depotpath, $self->arg_copath ($arg[1] || ''));
@@ -50,6 +63,7 @@ SVK::Command::Switch - Switch to another branch and keep local changes
 =head1 OPTIONS
 
  -r [--revision] arg    : act on revision ARG instead of the head revision
+ -d [--detach]          : mark a path as no longer checked out
 
 =head1 AUTHORS
 

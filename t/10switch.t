@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 7;
+use Test::More tests => 8;
 require 't/tree.pl';
 
 # build another tree to be mirrored ourself
@@ -35,3 +35,6 @@ is_output ($svk, 'switch', ['//A-branch'],
 
 is_output ($svk, 'switch', ['//A-branch', 'P'],
 	   ['Can only switch checkout root.']);
+
+is_output ($svk, 'switch', ['--detach'],
+	   [__("Checkout path '$corpath' detached.")]);
