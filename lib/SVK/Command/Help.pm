@@ -5,10 +5,11 @@ our $VERSION = '0.12';
 use base qw( SVK::Command );
 use SVK::I18N;
 
+sub parse_arg { shift; @_; }
+
 sub run {
     my $self = shift;
-    my ($cmd) = @_;
-    unless ($cmd) {
+    unless (@_) {
 	my @cmd;
 	my $dir = $INC{'SVK/Command.pm'};
 	$dir =~ s/\.pm$//;
@@ -18,7 +19,7 @@ sub run {
 			  }, $dir);
 	$self->brief_usage ($_) for sort @cmd;
     } else {
-        $self->get_cmd ($cmd)->usage(1);
+        $self->get_cmd ($_)->usage(1) foreach @_;
     }
 }
 

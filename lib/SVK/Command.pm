@@ -55,7 +55,7 @@ sub _cmd_map {
 
 sub get_cmd {
     my ($pkg, $cmd) = @_;
-    $pkg = join('::', $pkg, _cmd_map ($cmd));
+    $pkg = join('::', 'SVK::Command', _cmd_map ($cmd));
     unless (eval "require $pkg; 1" && UNIVERSAL::can($pkg, 'run')) {
 	$pkg =~ s|::|/|g;
 	warn $@ if $@ && exists $INC{"$pkg.pm"};
@@ -118,8 +118,6 @@ sub usage {
 	    print "\n";
 	}
     }
-
-    exit 0;
 }
 
 sub lock_target {
