@@ -1113,6 +1113,7 @@ sub commit {
 				     sign => $sign,
 				     message => $message,
 				   );
+
     my $committed = sub {
 	my ($rev) = @_;
 	for (reverse @$targets) {
@@ -1147,7 +1148,6 @@ sub commit {
 	    close $fh;
 	    unlink $fname;
 	}
-	print "Committed revision $rev.\n";
     };
 
     die "commit to mirror with anchor not supported yet"
@@ -1456,7 +1456,8 @@ sub get_editor {
 	( SVN::Repos::get_commit_editor
 	  ( $arg{repos}, "file://$arg{repospath}",
 	    $arg{path}, $ENV{USER}, $arg{message},
-	    sub { &{$callback} (@_) if $callback}
+	    sub { print "Committed revision $_[0]\n";
+		  &{$callback} (@_) if $callback; }
 	  ));
     $base_rev ||= $arg{repos}->fs->youngest_rev;
 
