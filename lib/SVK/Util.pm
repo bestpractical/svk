@@ -219,7 +219,7 @@ sub abs2rel {
     my ($child, $parent) = @_;
     $child = File::Spec->abs2rel($child, $parent);
     $child =~ s{\\}{/}g;
-    return '/'.$child;
+    return $child;
 }
 
 sub catfile {
