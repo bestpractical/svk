@@ -4,11 +4,12 @@ require 't/tree.pl';
 use Test::More;
 our $output;
 eval "require SVN::Mirror"
-or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('tests', 2);
+or plan skip_all => "SVN::Mirror not installed";
+
+plan tests => 4;
 
 # build another tree to be mirrored ourself
-my ($xd, $svk) = build_test('test');
+my ($xd, $svk) = build_test('test', 'new');
 
 my $tree = create_basic_tree ($xd, '/test/');
 my $pool = SVN::Pool->new_default;
@@ -62,3 +63,16 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    "Syncing file://$srepospath/A",
 	    'Retrieving log information from 4 to 4',
 	    'Committed revision 8 from revision 4.']);
+
+$svk->mkdir ('-m', 'fnord', '/new/A');
+
+($srepospath, $spath, $srepos) = $xd->find_repos ('/new/A', 1);
+$svk->mirror ('//new', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+$svk->sync ('//new');
+$svk->smerge ('-CI', '//m', '//new');
+ok ($@ =~ m"Can't find merge base for /m and /new");
+$svk->smerge ('-BCI', '//m', '//new');
+$svk->smerge ('-BI', '//m', '//new');
+is ($srepos->fs->youngest_rev, 4);
+
+

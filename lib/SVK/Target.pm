@@ -51,6 +51,19 @@ sub anchorify {
     ($self->{copath}) = get_anchor (0, $self->{copath}) if $self->{copath};
 }
 
+=head2 normalize
+
+Normalize the revision to the last changed one.
+
+=cut
+
+sub normalize {
+    my ($self) = @_;
+    my $fs = $self->{repos}->fs;
+    my $root = $fs->revision_root ($self->{revision});
+    $self->{revision} = ($root->node_history ($self->{path})->prev(0)->location)[1];
+}
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

@@ -108,7 +108,7 @@ is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
  'Empty merge.',
  'Committed revision 18.',
  'Committed revision 19.',
- "Auto-merging (9, 19) /feature-merge-$$ to /work (base /trunk:9).",
+ "Auto-merging (9, 18) /feature-merge-$$ to /work (base /trunk:9).",
  'G   test.pl',
  "New merge ticket: $uuid:/feature-merge-$$:18",
  'Committed revision 20.']);

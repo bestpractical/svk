@@ -71,7 +71,7 @@ $svk->add ("$copath/A/unused");
 $svk->rm ("$copath/A/bar");
 $svk->commit ('-m', 'local modification', $copath);
 is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
-	   ['Auto-merging (2, 6) /trunk to /local (base /trunk:2).',
+	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
 	    'C   A',
 	    'd   A/bar',
 	    'D   A/deep',

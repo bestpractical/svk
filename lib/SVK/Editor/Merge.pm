@@ -499,7 +499,8 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self, @arg) = @_;
-    if (defined $self->{storage_baton}{''} && !$self->{conflicts} && $self->{changes}) {
+    if (defined $self->{storage_baton}{''} &&
+	($self->{allow_conflicts} || !$self->{conflicts}) && $self->{changes}) {
 	$self->{storage}->close_edit(@arg);
     }
     else {

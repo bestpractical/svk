@@ -13,6 +13,7 @@ use SVK::Util qw (get_buffer_from_editor find_svm_source svn_mirror);
 sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
+     'b|base:i'		=> 'base',
      'l|log'		=> 'log',
      'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
@@ -50,6 +51,7 @@ sub run {
 	# XXX: these should come from parse_arg
 	$src->{revision} ||= $yrev;
 	$dst->{revision} ||= $yrev;
+	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos,
 				   ticket => !$self->{no_ticket},
 				   src => $src, dst => $dst);
@@ -62,7 +64,6 @@ sub run {
 	    or die loc("Revision must be N:M\n");
 	$src->{revision} = $torev;
 	$dst->{revision} ||= $yrev;
-	# XXX: fix --base= and add regression test
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src, dst => $dst,
 	     base => SVK::Target->new (%$src, revision => $baserev));

@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 10;
+plan tests => 11;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -43,7 +43,7 @@ is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
 is_output ($svk, 'smerge', ['-C', '//l', '//m'],
-	   ['Auto-merging (3, 6) /l to /m (base /m:3).',
+	   ['Auto-merging (3, 5) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source file://$srepospath/A.",
 	    'Checking against mirrored directory locally.',
 	    'U   Q/qu',
@@ -115,7 +115,7 @@ append_file ("$copath/Q/qu", "modified on local\n");
 $svk->rm ("$copath/Q/qz");
 $svk->commit ('-m', 'commit on local', $copath);
 is_output ($svk, 'smerge', ['-C', '//m', '//l'],
-	   ['Auto-merging (7, 10) /m to /l (base /l:7).',
+	   ['Auto-merging (7, 9) /m to /l (base /l:7).',
 	    ' U  Q/qu',
 	    '    Q/qz - skipped',
 	    'C   be',
@@ -127,7 +127,17 @@ is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 	    'Empty merge.', '1 conflict found.'],
 	   'smerge - added file collision');
 $svk->smerge ('-C', '//m', $copath);
-$svk->smerge ('//m', $copath);
+is_output ($svk, 'smerge', ['//m', $copath],
+	   ['Auto-merging (7, 9) /m to /l (base /l:7).',
+	    ' U  Q/qu',
+	    '    Q/qz - skipped',
+	    'C   be',
+	    '    newdir - skipped',
+	    'g   newfile',
+	    'A   newdir2',
+	    'C   newfile2',
+	    "New merge ticket: $suuid:/A:5",
+	    '2 conflicts found.']);
 $svk->status ($copath);
 $svk->commit ('-m', 'commit with conflict state', $copath);
 ok ($output =~ m/conflict/, 'forbid commit with conflict state');

@@ -116,12 +116,13 @@ sub find_svm_source {
     }
 
     if ($m) {
+	# XXX: we should normalize $rev before calling find_svm_source
+	$rev = $m->find_remote_rev (($root->node_history($path)->prev(0)->location)[1]);
 	$path =~ s/\Q$mpath\E$//;
 	$uuid = $root->node_prop ($path, 'svm:uuid');
 	$path = $m->{source}.$mpath;
 	$path =~ s/^\Q$m->{source_root}\E//;
 	$path ||= '/';
-	$rev = $m->{fromrev};
     }
     else {
 	$uuid = $fs->get_uuid;

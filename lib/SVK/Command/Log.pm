@@ -20,7 +20,8 @@ sub _log_remote_rev {
     # save some initialization
     my $m = SVN::Mirror::is_mirrored (@_) || 'SVN::Mirror';
     sub {
-	' (orig r'.$m->find_remote_rev ($_[0], $repos).')'
+	my $rrev = $m->find_remote_rev ($_[0], $repos);
+	$rrev ? " (orig r$rrev)" : '';
     }
 }
 

@@ -107,12 +107,12 @@ sub find_merge_base {
 	die loc("Can't find merge base for %1 and %2\n", $src->{path}, $dst->{path})
 	    unless $self->{baseless} or $self->{base};
 
-	unless ($baserev = $self->{base}) {
+	unless ($baserev = $self->{baserev}) {
 	    # baseless merge
 	    my $pool = SVN::Pool->new_default;
-	    my $hist = $fs->revision_root($yrev)->node_history($src);
-	    $pool->clear, $baserev = ($hist->location)[1]
-		while $hist = $hist->prev(0);
+	    my $hist = $fs->revision_root($yrev)->node_history($src->{path});
+	    $baserev = ($hist->location)[1], $pool->clear
+		while $hist = $hist->prev (0);
 	}
 	return (SVK::Target->new (%$src, revision => $baserev), $baserev);
     }
@@ -292,6 +292,7 @@ sub run {
 	  target => $self->{src}{targets}[0] || '',
 	  send_fulltext => $cb{mirror} ? 0 : 1,
 	  storage => $storage,
+	  allow_conflicts => defined $self->{dst}{copath},
 	  cb_merged => $self->{ticket} ?
 	  sub { my ($editor, $baton, $pool) = @_;
 		$editor->change_dir_prop
