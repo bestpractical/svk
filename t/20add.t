@@ -113,10 +113,12 @@ overwrite_file ("A/mime/foo.jpg", "\xff\xd8\xff\xe0this is jpeg");
 overwrite_file ("A/mime/foo.bin", "\x1f\xf0\xff\x01\x00\xffthis is binary");
 overwrite_file ("A/mime/foo.html", "<html>");
 overwrite_file ("A/mime/foo.txt", "test....");
+overwrite_file ("A/mime/foo.c", "/*\tHello World\t*/");
 
 is_output ($svk, 'add', ['A/mime'],
 	   [__('A   A/mime'),
 	    __('A   A/mime/foo.bin'),
+	    __('A   A/mime/foo.c'),
 	    __('A   A/mime/foo.html'),
 	    __('A   A/mime/foo.jpg'),
 	    __('A   A/mime/foo.pl'),
