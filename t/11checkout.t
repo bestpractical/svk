@@ -63,7 +63,7 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu', 'boo'],
 ok (-e 'boo');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', '0'],
-	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/0 to 6.",
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/0 to 6.",
 	    __"A   0/qu",
 	    __"A   0/qz",
 	    __" U  0"]);
