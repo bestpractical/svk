@@ -76,8 +76,8 @@ $ENV{USER} ||= (
 
 my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 {
-    my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
-			    statefile => "$svkpath/config",
+    my $xd = SVK::XD->new ( giantlock => catfile($svkpath, 'lock'),
+			    statefile => catfile($svkpath, 'config'),
 			    svkpath => $svkpath,
 			  );
     $xd->load();
