@@ -81,7 +81,7 @@ ok (-f copath ('dir'));
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');
 SKIP: {
-skip 'SVN::Mirror not installed', 6 unless HAS_SVN_MIRROR;
+skip 'SVN::Mirror not installed', 7 unless HAS_SVN_MIRROR;
 my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
 $svk->mirror ('//m', $uri);
 $svk->sync ('//m');
