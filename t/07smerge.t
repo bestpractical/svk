@@ -7,7 +7,7 @@ eval { require SVN::Mirror; 1 } or do {
     plan skip_all => "SVN::Mirror not installed";
     exit;
 };
-plan tests => 23;
+plan tests => 24;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -167,13 +167,15 @@ is_output ($svk, 'smerge', ['//m', $copath],
 	    "New merge ticket: $suuid:/A:5",
 	    '2 conflicts found.']);
 $svk->status ($copath);
-$svk->commit ('-m', 'commit with conflict state', $copath);
-ok ($output =~ m/conflict/, 'forbid commit with conflict state');
+is_output ($svk, 'commit', ['-m', 'commit with conflict state', $copath],
+	   ["1 conflict detected. Use 'svk resolved' after resolving them."],
+	   'forbid commit with conflict state');
 $svk->revert ("$copath/be");
 $svk->resolved ("$copath/be");
 # XXX: newfile2 conflicted but not added
 $svk->status ($copath);
-$svk->commit ('-m', 'merge down committed from checkout', $copath);
+is_output ($svk, 'commit', ['-m', 'merge down committed from checkout', $copath],
+	   ['Committed revision 11.']);
 rmdir "$copath/newdir";
 $svk->revert ('-R', $copath);
 ok (-e "$copath/newdir", 'smerge to checkout - add directory');
@@ -241,7 +243,7 @@ overwrite_file ("$copath/Q/qu", "on local\nfirst line in qu\n2nd line in qu\n");
 is_output ($svk, 'commit', ['-m', 'more on local', $copath],
 	   ['Committed revision 12.']);
 is_output ($svk, 'smerge', ['-m', 'merge back', '//l', '//m'],
-	   ['Auto-merging (7, 12) /l to /m (base /l:7).',
+	   ['Auto-merging (7, 12) /l to /m (base /m:9).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    qr'Transaction is out of date.*',
 	   'Please sync mirrored path /m first.']);

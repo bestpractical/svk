@@ -98,7 +98,7 @@ sub run {
     my $uuid = $fs->get_uuid;
 
     # give ticket to src
-    my $ticket = SVK::Merge->find_merge_sources ($repos, $src->{path}, $newrev, 1, 1);
+    my $ticket = SVK::Merge->find_merge_sources ($src->new (revision => $newrev), 1, 1);
     $ticket->{"$uuid:$tmpbranch"} = $newrev;
 
     $self->do_propset_direct

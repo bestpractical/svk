@@ -94,7 +94,7 @@ sub find_merge_base {
     my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($repos, $_->path, $_->{revision})} ($src, $dst);
+    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
@@ -135,35 +135,27 @@ sub find_merge_base {
 	    ($basepath eq $src->path ? $baserev : 0));
 }
 
+sub merge_info {
+    my ($self, $target) = @_;
+    # XXX: support xdroot
+    $target->as_depotpath;
+    my $root = $target->root; # ($self->{xd});
+    my $info = SVK::Merge::Info->new ($root->node_prop ($target->path, 'svk:merge'));
+    return $info;
+}
+
 sub find_merge_sources {
-    my ($self, $repos, $path, $rev, $verbatim, $noself) = @_;
+    my ($self, $target, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
+    my $info = $self->merge_info ($target->new);
+    my $utarget = $target->universal;
+    $info->{join(':', $utarget->{uuid}, $utarget->{path})} = $utarget
+	unless $noself;
 
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($rev);
-    my $minfo = $root->node_prop ($path, 'svk:merge');
-    my $myuuid = $fs->get_uuid ();
-    if ($minfo) {
-	$minfo = { map {my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
-                        ($uuid, $path, $rev) =
-			    ($myuuid, find_local_mirror ($repos, $uuid, $path, $rev))
-				unless $verbatim || $uuid eq $myuuid;
-                        $rev ? ("$uuid:$path" => $rev) : ()
-		    } split ("\n", $minfo) };
-    }
-    if ($verbatim) {
-	unless ($noself) {
-	    my ($uuid, $path, $rev) = find_svm_source ($repos, $path, $rev);
-	    $minfo->{join(':', $uuid, $path)} = $rev;
-	}
-	return $minfo;
-    }
-    else {
-	$minfo->{join(':', $myuuid, $path)} = ($root->node_history ($path)->prev (0)->location)[1]
-	    unless $noself;
-    }
+    my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
+    return $minfo if $verbatim;
 
-    my %ancestors = $self->copy_ancestors ($repos, $path, $rev, 1);
+    my %ancestors = $self->copy_ancestors ($target->{repos}, $target->path, $target->{revision}, 1);
     for (sort keys %ancestors) {
 	my $rev = $ancestors{$_};
 	$minfo->{$_} = $rev
@@ -230,8 +222,7 @@ sub copy_ancestors {
 
 sub get_new_ticket {
     my ($self) = @_;
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($self->{repos}, $_->path, $_->{revision}, 1)}
-	@{$self}{qw/src dst/};
+    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_, 1)} @{$self}{qw/src dst/};
     my ($newinfo);
     # bring merge history up to date as from source
     my ($uuid, $dstpath) = find_svm_source ($self->{repos}, $self->{dst}->path);
@@ -407,9 +398,9 @@ package SVK::Merge::Info;
 sub new {
     my ($class, $merge) = @_;
 
-    my $minfo = { map {my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
-		       ("$uuid:$path" => $rev)
-		   } split ("\n", $merge) };
+    my $minfo = { map { my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
+			("$uuid:$path" => SVK::Target::Universal->new ($uuid, $path, $rev))
+		    } split ("\n", $merge || '') };
     bless $minfo, $class;
     return $minfo;
 }
@@ -418,9 +409,22 @@ sub subset_of {
     my ($self, $other) = @_;
     my $subset = 1;
     for (keys %$self) {
-	return unless exists $other->{$_} && $self->{$_} <= $other->{$_};
+	return unless exists $other->{$_} && $self->{$_}{rev} <= $other->{$_}{rev};
     }
     return 1;
+}
+
+sub resolve {
+    my ($self, $repos) = @_;
+    my $uuid = $repos->fs->get_uuid;
+    return { map { my $local = $self->{$_}->local ($repos);
+		   $local ? ("$uuid:$local->{path}" => $local->{revision}) : ()
+	       } keys %$self };
+}
+
+sub verbatim {
+    my ($self) = @_;
+    return { map { $_ => $self->{$_}{rev}; } keys %$self };
 }
 
 =head1 TODO
