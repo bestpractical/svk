@@ -141,7 +141,7 @@ sub recover_headrev {
         return;
     }
 
-    get_prompt(loc("Revert to revision %1 and discard %2 revision? [n] ", $rev, $skipped))
+    get_prompt(loc("Revert to revision %1 and discard %*(%2,revision)? [n] ", $rev, $skipped))
         =~ /^[Yy]/ or die loc("Aborted.\n");
 
     my $rm_edit = $self->get_commit_editor(
