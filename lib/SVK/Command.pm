@@ -1,6 +1,6 @@
 package SVK::Command;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
@@ -655,16 +655,13 @@ sub brief_usage {
     my ($self, $file) = @_;
     my $fname = ref($self);
     $fname =~ s|::|/|g;
-    my $parser = Pod::Simple::SimpleTree->new;
-    my @rows = @{$parser->parse_file($file || $INC{"$fname.pm"})->root};
-    while (my $row = shift @rows) {
-        if ( ref($row) eq 'ARRAY' && $row->[0] eq 'head1' && $row->[2] eq 'NAME')  {
-            my $buf = $rows[0][2];
-            $buf =~ s/SVK::Command::(\w+ - .+)/loc(lcfirst($1))/eg;
-            print "   $buf\n";
-            last;
-        }
+    open my ($podfh), '<', ($file || $INC{"$fname.pm"}) or return;
+    local $/=undef;
+    my $buf = <$podfh>;
+    if($buf =~ /^=head1\s+NAME\s*SVK::Command::(\w+ - .+)$/m) {
+	print "   ",loc(lcfirst($1)),"\n";
     }
+    close $podfh;
 }
 
 =head3 usage ($want_detail)
