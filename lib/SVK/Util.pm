@@ -261,7 +261,7 @@ sub get_encoding {
     } || eval {
         require 'open.pm';
         return open::_get_locale_encoding();
-    } || 'utf8');
+    }) or 'utf8';
 }
 
 =head3 get_encoder ([$encoding])
