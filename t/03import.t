@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 20;
+plan tests => 21;
 
 use Cwd;
 use File::Path;
@@ -81,8 +81,9 @@ ok (-f copath ('dir'));
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');
 SKIP: {
-skip 'SVN::Mirror not installed', 3 unless HAS_SVN_MIRROR;
-$svk->mirror ('//m', uri($srepospath.($spath eq '/' ? '' : $spath)));
+skip 'SVN::Mirror not installed', 4 unless HAS_SVN_MIRROR;
+my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
+$svk->mirror ('//m', $uri);
 $svk->sync ('//m');
 is_output ($svk, 'import', ['--from-checkout', '-m', 'import into mirrored path', '//m', $copath],
 	   ["Import path (/m) is different from the copath (/import)"]);
@@ -99,4 +100,20 @@ append_file ("$copath/filea", "fnord");
 $svk->import ('--from-checkout', '-m', 'import into mirrored path', '//m', $copath);
 
 is ($srepos->fs->youngest_rev, 23, 'import to remote directly with proper base rev');
+
+$svk->checkout ('--detach', $copath);
+
+is_output ($svk, 'import', ['-m', 'import into mirrored path from noncheckout', '//m/hate', $copath],
+	   ["Merging back to mirror source $uri.",
+	    'Merge back committed as revision 24.',
+	    "Syncing $uri",
+	    "Retrieving log information from 24 to 24",
+	    "Committed revision 11 from revision 24.",
+	    "Import path /m/hate initialized.",
+	    "Merging back to mirror source $uri.",
+	    "Merge back committed as revision 25.",
+	    "Syncing $uri",
+	    "Retrieving log information from 25 to 25",
+	    "Committed revision 12 from revision 25.",
+	    "Directory $corpath imported to depotpath //m/hate as revision 12."]);
 }

@@ -46,15 +46,6 @@ sub under_mirror {
     HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
 }
 
-sub check_mirrored_path {
-    my ($self, $target) = @_;
-    if ($self->under_mirror ($target)) {
-	print loc ("%1 is under mirrored path.\n", $target->{depotpath});
-	return;
-    }
-    return 1;
-}
-
 sub fill_commit_message {
     my $self = shift;
     if ($self->{message_file}) {
