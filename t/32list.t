@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 16;
+use Test::More tests => 24;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -19,7 +19,11 @@ foreach my $depot ('','bob') {
     $svk->add ('A/B');
     $svk->commit ('-m', 'dir B');
 
+    is_output ($svk, 'ls', [], ['A/']);
+    is_output ($svk, 'ls', ['-r1', 'A'], ['foo']);
     is_output ($svk, 'ls', ['A/foo'], []);
+    is_output ($svk, 'ls', ['-R', 'A'], ['B/', ' foo', 'foo']);
+    is_output ($svk, 'ls', ['-R', '-d1'], ['A/', ' B/', ' foo']);
     is_output ($svk, 'ls', ['-f','A/foo'], []);
     is_output ($svk, 'ls', ["/$depot/"], ['A/']);
     is_output ($svk, 'ls', ['-f',"/$depot/"], ["/$depot/A/"]);
