@@ -20,12 +20,12 @@ use ExtUtils::AutoInstall
       -core           =>
       [ 'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
-        'Data::Hierarchy'       => '0.12',
+        'Data::Hierarchy'       => '0.13',
         'SVN::Simple::Edit'     => '0.21',
       ],
       'SVN::Mirror support' =>
       [ -default    => 1,
-	SVN::Mirror    => '0.21',
+	SVN::Mirror    => '0.22',
       ],
     );
 

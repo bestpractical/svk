@@ -42,7 +42,7 @@ mkdir "$copath/A/T/";
 append_file ("$copath/A/T/xd", "local new file\n");
 
 svk::add ("$copath/A/T");
-svk::delete ("$copath/B/S/P/be");
+svk::delete ("$copath/B/S/P/pe");
 
 svk::commit ('-m', 'local modification from branch', "$copath");
 svk::merge (qw/-r 4:5/, '-m', 'merge back to remote', '//l', '//m');

@@ -28,9 +28,16 @@ ok($svk::info->{checkout}->get ("$corpath")->{revision} == 1);
 
 svk::ps ('someprop', 'propvalue', "$copath/A");
 svk::ps ('moreprop', 'propvalue', "$copath/A");
-
+overwrite_file ("$copath/A/baz", "zzzz");
+svk::add ("$copath/A/baz");
+svk::ps ('someprop', 'propvalue', "$copath/A/baz");
 svk::rm ("$copath/A/bar");
 ok(!-e "$copath/A/bar");
+svk::status ("$copath/A");
+svk::pl ("$copath/A/baz");
+
 svk::commit ('-m', 'commit message here', "$copath/A");
+svk::pl ("$copath/A/baz");
+svk::pl ("$copath/A");
 
 cleanup_test($svk::info)

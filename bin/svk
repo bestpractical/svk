@@ -10,7 +10,7 @@ use File::Spec;
 use Data::Hierarchy;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps cp/;
+use subs qw/co up st blame ci del rm ps pl cp/;
 
 =head1 NAME
 
@@ -119,10 +119,36 @@ sub checkout {
 
     die "checkout path $copath already exists" if -e $copath;
 
+    if (my ($entry, @where) = $info->{checkout}->get ($copath)) {
+	die "overlapping checkout path not supported yet ($where[-1])"
+	    if exists $entry->{depotpath} && $where[-1] ne $copath;
+    }
+
     mkdir ($copath);
     $info->{checkout}->store_recursively ($copath, {depotpath => $depotpath, revision =>0});
 
     update ($copath, $rev)
+}
+
+=head2 info
+
+    svk info
+
+=cut
+
+sub info {
+    local @ARGV = @_;
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath || '');
+    my $depotpath = $info->{checkout}->get ($copath)->{depotpath}
+	or die "$copath not a checkout path";
+    my ($depot, undef) = $depotpath =~ m|^/(\w*)(/.*)/?$|;
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    my $rev = $cinfo->{revision};
+    print "Depot Path: /$depot$path\n";
+    print "Revision: $rev\n";
+    print "Last Changed Rev: ".
+	$repos->fs->revision_root ($rev)->node_created_rev ($path)."\n";
 }
 
 =head2 diff
@@ -309,6 +335,35 @@ sub delete {
 		       );
 }
 
+=head2 proplist / pl
+
+=cut
+
+sub proplist {
+    local @ARGV = @_;
+    my $verbose = 0;
+    my $rev;
+
+    die unless GetOptions ("v|verbose"	=> \$verbose,
+			   "r|revision=i" => \$rev);
+
+    my ($copath) = @ARGV;
+    $copath = File::Spec->rel2abs ($copath || '');
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    my $props = SVN::XD::do_proplist ($info,
+				      repos => $repos,
+				      copath => $copath,
+				      path => $path,
+				      rev => $rev,
+				     );
+    return unless %$props;
+    print "Properties on $copath:\n";
+    while (my ($key, $value) = each (%$props)) {
+	print "$key: $value\n";
+    }
+}
+
 =head2 propset / ps
 
 =cut
@@ -447,6 +502,11 @@ sub commit {
 			       sub {
 				   push @$targets, ['A', $_[1]];
 				   print $fh "A  $_[1]\n" if $fh;
+			       },
+			       cb_prop =>
+			       sub {
+				   push @$targets, ['P', $_[1]];
+				   print $fh " M $_[1]\n" if $fh;
 			       },
 			       cb_delete =>
 			       sub {
@@ -587,6 +647,7 @@ sub merge {
 *ci = *commit;
 *del = *rm = *delete;
 *ps = *propset;
+*pl = *proplist;
 *cp = *copy;
 
 my $defaultdepot;

@@ -137,7 +137,7 @@ sub do_add {
     }
     else {
 	$info->{checkout}->store ($arg{copath}, { schedule => 'add' });
-	print "A  $arg{copath}\n";
+	print "A  $arg{copath}\n" unless $arg{quiet};
     }
 }
 
@@ -171,30 +171,64 @@ sub do_delete {
     -d $arg{copath} ? rmtree ([$arg{copath}]) : unlink($arg{copath});
 }
 
+sub do_proplist {
+    my ($info, %arg) = @_;
+
+    my ($txn, $xdroot);
+    my $props = {};
+    my $entry = $info->{checkout}->get_single ($arg{copath});
+    $entry->{schedule} ||= '';
+    $entry->{newprop} ||= {};
+
+    if ($arg{rev}) {
+	$xdroot = $arg{repos}->fs->revision_root ($arg{rev});
+    }
+    elsif ($entry->{schedule} eq 'add') {
+    }
+    else {
+	($txn, $xdroot) = create_xd_root ($info, %arg);
+
+	die "$arg{copath} ($arg{path})not under version control"
+	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
+    }
+
+    $txn->close if $txn;
+
+    $props = $xdroot->node_proplist ($arg{path}) if $xdroot;
+
+    return {%$props,
+	    %{$entry->{newprop}}};
+
+}
+
 sub do_propset {
     my ($info, %arg) = @_;
     my %values;
 
-    my ($txn, $xdroot) = create_xd_root ($info, %arg);
+    my ($txn, $xdroot);
+    my $entry = $info->{checkout}->get_single ($arg{copath});
+    $entry->{schedule} ||= '';
+    $entry->{newprop} ||= {};
 
-    die "$arg{copath} ($arg{path})not under version control"
-	if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
+    unless ($entry->{schedule} eq 'add' || !$arg{repos}) {
+	($txn, $xdroot) = create_xd_root ($info, %arg);
+
+	die "$arg{copath} ($arg{path})not under version control"
+	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
+    }
 
     #XXX: support working on multiple paths and recursive
-    my ($data, @where) = $info->{checkout}->get ($arg{copath});
-    if ($where[-1] eq $arg{copath}) {
-	die "$arg{copath} is already schedule for delete"
-	    if $data->{schedule} eq 'delete';
-	%values = %{$data->{newprop}}
-	    if exists $data->{schedule};
-    }
-    $info->{checkout}->store ($arg{copath}, { schedule =>
-					      $data->{schedule} || 'prop',
+    die "$arg{copath} is already scheduled for delete"
+	if $entry->{schedule} eq 'delete';
+    %values = %{$entry->{newprop}}
+	if exists $entry->{schedule};
+    $info->{checkout}->store_single ($arg{copath}, { schedule =>
+					      $entry->{schedule} || 'prop',
 					      newprop => {%values,
 							  $arg{propname} =>
 							  $arg{propvalue},
 							 }});
-    print " M $arg{copath}\n";
+    print " M $arg{copath}\n" unless $arg{quiet};
 
     SVN::Fs::close_txn ($txn) if $txn;
 }
@@ -265,6 +299,7 @@ sub checkout_crawler {
 
     find(sub {
 	     my $cpath = $File::Find::name;
+	     my $hasprop;
 
 	     # seems gotta do anchor/target in a upper level?
 	     if (-d $arg{copath}) {
@@ -297,11 +332,8 @@ sub checkout_crawler {
 			 if $arg{cb_add};
 		     return;
 		 }
-		 if ($schedule{$File::Find::name} eq 'prop') {
-		     &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot)
-			 if $arg{cb_prop};
-		     return;
-		 }
+		 $hasprop++
+		     if $schedule{$File::Find::name} eq 'prop';
 	     }
 	     my $kind = $xdroot->check_path ($cpath);
 	     if ($kind == $SVN::Node::none) {
@@ -309,10 +341,19 @@ sub checkout_crawler {
 		     if $arg{cb_unknown};
 		 return;
 	     }
-	     return if -d $File::Find::name;
-	     &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot)
-		 if $arg{cb_changed} && md5file($File::Find::name) ne
-		     $xdroot->file_md5_checksum ($cpath);
+	     if (-d $File::Find::name) {
+		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot)
+		     if $hasprop && $arg{cb_prop};
+		 return;
+	     }
+
+	     if ($arg{cb_changed} && md5file($File::Find::name) ne
+		 $xdroot->file_md5_checksum ($cpath)) {
+		 &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot)
+	     }
+	     elsif ($hasprop &&$arg{cb_prop}) {
+		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot);
+	     }
 	  }, $arg{copath});
     SVN::Fs::close_txn ($txn) if $txn;
 }
@@ -375,6 +416,7 @@ sub do_merge {
     }
     else {
 	my $editor;
+	my $base_rev;
 	eval 'require SVN::Mirror' and do {
 	    my $auth = SVN::Core::auth_open
 		([SVN::Client::get_simple_provider (),
@@ -393,7 +435,7 @@ sub do_merge {
 		    print "Check against mirrored directory locally.\n";
 		}
 		else {
-		    $editor = $m->get_merge_back_editor
+		    ($base_rev, $editor) = $m->get_merge_back_editor
 			($arg{message},
 			 sub { print "Merge back committed as revision $_[0].\n" }
 			);
@@ -410,6 +452,8 @@ sub do_merge {
 		sub { print "Committed revision $_[0].\n" }
 	      ));
 
+	$base_rev ||= $arg{repos}->fs->youngest_rev;
+
 	$editor = SVN::XD::CheckEditor->new ($editor)
 	    if $arg{check_only};
 
@@ -420,8 +464,7 @@ sub do_merge {
 		sub { my $path = $basepath.'/'.shift;
 		      $root->check_path ($path) != $SVN::Node::none;
 		  },
-		cb_rev => sub { my $path = $basepath.'/'.shift;
-				$root->node_created_rev ($path); },
+		cb_rev => sub { $base_rev; },
 		cb_conflict => sub { die "conflict $basepath/$_[0]"; },
 		cb_localmod =>
 		sub { my ($path, $checksum) = @_;
@@ -490,6 +533,7 @@ sub do_commit {
 	    my $store = ($_[0] eq 'D' || -d $_->[1]) ?
 		'store_recursively' : 'store';
 	    $info->{checkout}->$store ($_->[1], { schedule => undef,
+						  newprop => undef,
 						  revision => $result_rev,
 						});
 	}
@@ -508,7 +552,7 @@ sub do_commit {
     (undef,$coanchor,$copath) = File::Spec->splitpath ($arg{copath})
 	if $target;
 
-    print "commit from $arg{path} ($anchor & $target) <- $arg{copath}\n";
+    print "commit from $arg{path} (anchor $anchor) <- $arg{copath}\n";
     print "targets:\n";
     print "$_->[1]\n" for @{$arg{targets}};
 
@@ -526,7 +570,13 @@ sub do_commit {
 	    next;
 	}
 	if (-d $cpath) {
-	    $edit->add_directory ($tpath);
+	    $edit->add_directory ($tpath)
+		unless $action eq 'P';
+	    my $props = $info->{checkout}->get_single ($cpath);
+	    next unless $props->{newprop};
+	    while (my ($key, $value) = each (%{$props->{newprop}})) {
+		$edit->change_dir_prop ($tpath, $key, $value);
+	    }
 	    next;
 	}
 	open my ($fh), '<', $cpath;
@@ -534,7 +584,14 @@ sub do_commit {
 	if ($action eq 'A') {
 	    $edit->add_file ($tpath);
 	}
-	$edit->modify_file ($tpath, $fh, $md5);
+	my $props = $info->{checkout}->get_single ($cpath);
+	if ($props->{newprop}) {
+	    while (my ($key, $value) = each (%{$props->{newprop}})) {
+		$edit->change_file_prop ($tpath, $key, $value);
+	    }
+	}
+	$edit->modify_file ($tpath, $fh, $md5)
+	    unless $action eq 'P';
     }
     $edit->close_edit();
     SVN::Fs::close_txn ($txn) if $txn;
@@ -620,7 +677,7 @@ sub open_file {
 }
 
 sub apply_textdelta {
-    my ($self, $path, $checksum) = @_;
+    my ($self, $path, $checksum, $pool) = @_;
     my $base;
     return if $self->{check_only};
     if (-e $path) {
@@ -637,8 +694,8 @@ sub apply_textdelta {
 
     }
     open my ($fh), '+>', $path or warn "can't open $path";
-    return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty(),
-				 $fh, undef, undef)];
+    return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
+				 $fh, undef, undef, $pool)];
 }
 
 sub close_file {
@@ -647,8 +704,8 @@ sub close_file {
 	close $self->{base}{$path}[0];
 	unlink $self->{base}{$path}[1];
     }
-    elsif (!$self->{update}) {
-	warn "should do_add $path";
+    elsif (!$self->{update} && !$self->{check_only}) {
+	SVN::XD::do_add ($self->{info}, copath => $path, quiet => 1);
     }
     $self->{checkout}->store ($path, {revision => $self->{revision}})
 	if $self->{update};
@@ -677,6 +734,22 @@ sub close_directory {
     $self->{checkout}->store_recursively ($path,
 					  {revision => $self->{revision}})
 	if $self->{update};
+}
+
+sub change_file_prop {
+    my ($self, $path, $name, $value) = @_;
+    SVN::XD::do_propset ($self->{info},
+			 quiet => 1,
+			 copath => $path,
+			 propname => $name,
+			 propvalue => $value,
+			)
+	    unless $self->{update};
+}
+
+sub change_dir_prop {
+    my ($self, @arg) = @_;
+    $self->change_file_prop (@arg);
 }
 
 package SVN::XD::MergeEditor;
@@ -721,12 +794,12 @@ sub open_file {
     $self->{storage_baton}{$path} =
 	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
 				     &{$self->{cb_rev}}($path), @arg)
-	    if $self->{info}{$path}{status};;
+	    if $self->{info}{$path}{status};
     return $path;
 }
 
 sub apply_textdelta {
-    my ($self, $path, $checksum) = @_;
+    my ($self, $path, $checksum, $pool) = @_;
     return unless $self->{info}{$path}{status};
     my ($base, $newname);
     unless ($self->{info}{$path}{status}[0]) { # open, has base
@@ -744,16 +817,16 @@ sub apply_textdelta {
 	    my ($fh, $file) = mkstemps("/tmp/svk-mergeXXXXX", '.tmp');
 	    $self->{info}{$path}{fh}{new} = [$fh, $file];
 	    return [SVN::TxDelta::apply ($self->{info}{$path}{fh}{base}[0],
-					 $fh, undef, undef)];
+					 $fh, undef, undef, $pool)];
 	}
     }
     $self->{info}{$path}{status}[0] = 'U';
     return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
-					      $checksum);
+					      $checksum, $pool);
 }
 
 sub close_file {
-    my ($self, $path, $checksum) = @_;
+    my ($self, $path, $checksum, $pool) = @_;
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
     no warnings 'uninitialized';
@@ -793,11 +866,12 @@ sub close_file {
 	close $fh->{new}[0];
 	unlink $fh->{new}[1];
 	my $handle = $self->{storage}->
-	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2]);
+	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
+			     $pool);
 
 	$merged = (join("\n", @$merged)."\n");
-	SVN::TxDelta::send_string ($merged, @$handle)
-		if $handle;
+	SVN::TxDelta::send_string ($merged, @$handle, $pool)
+		if $handle && $#{$handle} > 0;
 	$checksum = Digest::MD5::md5_hex ($merged);
 	&{$self->{cb_conflict}} ($path)
 	    if $info->{status}[0] eq 'C';
@@ -806,12 +880,13 @@ sub close_file {
     if ($info->{status}) {
 	print sprintf ("%1s%1s \%s\n", $info->{status}[0],
 		       $info->{status}[1], $path);
+	$self->{storage}->close_file ($self->{storage_baton}{$path},
+				      $checksum, $pool);
     }
     else {
 	print "   $path - skipped\n";
     }
     delete $self->{info}{$path};
-    $self->{storage}->close_file ($self->{storage_baton}{$path}, $checksum);
 }
 
 sub add_directory {
@@ -842,19 +917,30 @@ sub close_directory {
     }
 
     $self->{storage}->close_directory ($self->{storage_baton}{$path});
-    print ".  $path\n";
 }
 
 sub delete_entry {
-    my ($self, $path, $revision, $pdir) = @_;
+    my ($self, $path, $revision, $pdir, @arg) = @_;
     $self->{storage}->delete_entry ($path, $revision,
-				    $self->{storage_baton}{$pdir});
+				    $self->{storage_baton}{$pdir}, @arg);
     $self->{info}{$path}{status} = ['D'];
 }
 
+sub change_file_prop {
+    my ($self, $path, @arg) = @_;
+    $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
+    $self->{info}{$path}{status}[1] = 'U';
+}
+
+sub change_dir_prop {
+    my ($self, $path, @arg) = @_;
+    $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
+    $self->{info}{$path}{status}[1] = 'U';
+}
+
 sub close_edit {
-    my ($self) = @_;
-    $self->{storage}->close_edit();
+    my ($self, @arg) = @_;
+    $self->{storage}->close_edit(@arg);
 }
 
 1;

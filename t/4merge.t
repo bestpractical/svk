@@ -25,6 +25,7 @@ svk::commit ('-m', 'commit message here', "$copath");
 svk::copy ('-m', 'branch', '//A', '//B');
 
 append_file ("$copath/A/foo", "\nsome more foobar\nzz\n");
+svk::propset ('someprop', 'propvalue', "$copath/A/foo");
 svk::commit ('-m', 'commit message here', "$copath");
 
 svk::update ('-r', 1, $copath);
