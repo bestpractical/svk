@@ -693,8 +693,9 @@ sub _merge_prop_change {
     $prop->{new} = $_[1];
     {
 	local $@;
-	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0]) };
-	$prop->{local} = $self->{cb_exist}->($path) ? $self->{cb_localprop}->($path, $_[0]) : undef;
+	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0], $pool) };
+	$prop->{local} = $self->{cb_exist}->($path)
+	    ? $self->{cb_localprop}->($path, $_[0], $pool) : undef;
     }
     # XXX: only known props should be auto-merged with default resolver
     $pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
