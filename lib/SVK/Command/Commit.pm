@@ -50,8 +50,7 @@ sub path_is_mirrored {
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
 
-    my $rev = $root->node_created_rev ($path);
-
+    my $rev = (($root->node_history ($path)->prev (0)->location)[1]);
     return (grep {m/^svm:headrev:/} keys %{$fs->revision_proplist ($rev)});
 }
 

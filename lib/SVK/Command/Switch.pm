@@ -22,7 +22,7 @@ sub run {
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($depotpath->{copath});
 
-    die "can only switch checkout root" unless $where[-1] eq $depotpath->{copath};
+    die "can only switch checkout root" unless $where[0] eq $depotpath->{copath};
 
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 

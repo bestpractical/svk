@@ -10,10 +10,7 @@ sub parse_arg {
     return map {$self->arg_copath ($_)} @arg;
 }
 
-sub lock {
-    my $self = shift;
-    $self->lock_target ($_) for @_;
-}
+sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, @arg) = @_;
