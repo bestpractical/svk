@@ -50,6 +50,7 @@ sub store {
     my ($self) = @_;
     $self->{updated} = 1;
     return unless $self->{statefile};
+    my $error = $@;
     if ($self->{giantlocked}) {
 	DumpFile ($self->{statefile}, { checkout => $self->{checkout},
 					depotmap => $self->{depotmap}} );
@@ -64,6 +65,7 @@ sub store {
 					depotmap => $info->{depotmap}} );
     }
     $self->giant_unlock ();
+    $@ = $error;
 }
 
 sub lock {

@@ -66,9 +66,7 @@ if ($cmd eq 'help') {
 }
 
 my $svkpath = "$ENV{HOME}/.svk";
-
 {
-
     my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
 			    statefile => "$svkpath/config",
 			  );
