@@ -39,11 +39,11 @@ SVK::Command::Add - Put files and directories under version control
 
 =head1 SYNOPSIS
 
-    add [PATH...]
+ add [PATH...]
 
 =head1 OPTIONS
 
-    -N [--non-recursive]:   operate on single directory only
+ -N [--non-recursive]:   operate on single directory only
 
 =head1 DESCRIPTION
 

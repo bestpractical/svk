@@ -46,12 +46,11 @@ SVK::Command::Cat - Output the file from depot
 
 =head1 SYNOPSIS
 
-    cat [DEPOTPATH|PATH...]
+ cat [DEPOTPATH|PATH...]
 
 =head1 OPTIONS
 
-    options:
-    -r [--revision] REV:    revision
+ -r [--revision] REV:    revision
 
 =head1 AUTHORS
 

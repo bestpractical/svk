@@ -41,15 +41,15 @@ SVK::Command::Switch - Switch to another branch and keep local modifications
 
 =head1 SYNOPSIS
 
-    switch DEPOTPATH [PATH]
+ switch DEPOTPATH [PATH]
 
 =head1 OPTIONS
 
-    -r [--revision]:      revision
+ -r [--revision]:        revision
 
 =head1 OPTIONS
 
-  -r [--revision] arg:	Needs description
+ -r [--revision] arg:    Needs description
 
 =head1 AUTHORS
 

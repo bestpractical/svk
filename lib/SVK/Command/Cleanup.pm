@@ -35,11 +35,11 @@ SVK::Command::Cleanup - Remove stalled locks
 
 =head1 SYNOPSIS
 
-    cleanup [PATH...]
+ cleanup [PATH...]
 
 =head1 OPTIONS
 
-   None
+ None
 
 =head1 AUTHORS
 

@@ -40,18 +40,18 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 SYNOPSIS
 
-    mirror DEPOTPATH [http|svn]://server.host/path
-    mirror DEPOTPATH cvs::pserver:user@host:/cvsroot:module/...
-    mirror DEPOTPATH p4:user@host:1666://depot/module/...
+ mirror DEPOTPATH [http|svn]://server.host/path
+ mirror DEPOTPATH cvs::pserver:user@host:/cvsroot:module/...
+ mirror DEPOTPATH p4:user@host:1666://depot/module/...
 
 =head1 DESCRIPTION
 
 =head1 OPTIONS
 
-  -m [--message] arg:	Needs description
-  -C [--check-only]:	Needs description
-  -s [--sign]:	Needs description
-  --force:	Needs description
+ -m [--message] arg:    Needs description
+ -C [--check-only]:     Needs description
+ -s [--sign]:           Needs description
+ --force:               Needs description
 
 =head1 AUTHORS
 

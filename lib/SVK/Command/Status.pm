@@ -41,7 +41,7 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
 =head1 SYNOPSIS
 
-    status [PATH..]
+ status [PATH..]
 
 =head1 OPTIONS
 

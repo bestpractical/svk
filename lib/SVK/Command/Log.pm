@@ -140,22 +140,22 @@ SVK::Command::Log - Show log messages for revisions
 
 =head1 SYNOPSIS
 
-    log DEPOTPATH
-    log PATH
+ log DEPOTPATH
+ log PATH
 
 =head1 OPTIONS
 
-    -r [--revision]:        revision spec from:to
-    -l [--limit]:           limit the number of revisions displayed
-    -x [--cross]:           display cross copied nodes
-    -v [--verbose]:         print changed path in changes
+ -r [--revision]:        revision spec from:to
+ -l [--limit]:           limit the number of revisions displayed
+ -x [--cross]:           display cross copied nodes
+ -v [--verbose]:         print changed path in changes
 
 =head1 OPTIONS
 
-  -r [--revision] arg:	Needs description
-  -l [--limit] arg:	Needs description
-  -x [--cross]:	Needs description
-  -v [--verbose]:	Needs description
+ -r [--revision] arg:    Needs description
+ -l [--limit] arg:       Needs description
+ -x [--cross]:           Needs description
+ -v [--verbose]:         Needs description
 
 =head1 AUTHORS
 

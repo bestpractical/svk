@@ -71,12 +71,12 @@ SVK::Command::Delete - Remove versioned item
 
 =head1 SYNOPSIS
 
-    delete [PATH...]
-    delete [DEPOTPATH...]
+ delete [PATH...]
+ delete [DEPOTPATH...]
 
 =head1 OPTIONS
 
-    -m [--message] message: commit message
+ -m [--message] message:    commit message
 
 =head1 AUTHORS
 

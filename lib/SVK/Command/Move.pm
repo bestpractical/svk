@@ -70,15 +70,15 @@ SVK::Command::Move - Move a file or directory
 
 =head1 SYNOPSIS
 
-    move DEPOTPATH1 DEPOTPATH2
+ move DEPOTPATH1 DEPOTPATH2
 
 =head1 OPTIONS
 
-  -m [--message] arg:	Needs description
-  -C [--check-only]:	Needs description
-  -s [--sign]:	Needs description
-  -r [--revision] arg:	Needs description
-  --force:	Needs description
+ -m [--message] arg:     Needs description
+ -C [--check-only]:      Needs description
+ -s [--sign]:            Needs description
+ -r [--revision] arg:    Needs description
+ --force:                Needs description
 
 =head1 AUTHORS
 

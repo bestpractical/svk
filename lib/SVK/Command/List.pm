@@ -77,17 +77,16 @@ SVK::Command::List - List entries in a directory from depot
 
 =head1 SYNOPSIS
 
-    list [DEPOTPATH|PATH...]
+ list [DEPOTPATH|PATH...]
 
 =head1 OPTIONS
 
-    options:
-    -r [--revision] REV:    revision
-    -R [--recursive]:       recursive
-    -v [--verbose]:	Needs description
-    -d [--depth] LEVEL:     Recurse LEVEL levels.  Only useful with -R
-    -f [--full-path]:        Show the full path of each entry, rather than
-                            an indented hierarchy
+ -r [--revision] REV:    revision
+ -R [--recursive]:       recursive
+ -v [--verbose]:         Needs description
+ -d [--depth] LEVEL:     Recurse LEVEL levels.  Only useful with -R
+ -f [--full-path]:       Show the full path of each entry, rather than
+ 		        an indented hierarchy
 
 
 =head1 AUTHORS

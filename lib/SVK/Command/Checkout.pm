@@ -56,11 +56,11 @@ SVK::Command::Checkout - Checkout the depotpath
 
 =head1 SYNOPSIS
 
-    checkout DEPOTPATH [PATH]
+ checkout DEPOTPATH [PATH]
 
 =head1 OPTIONS
 
-    -r [--revision] rev:      revision
+ -r [--revision] rev:      revision
 
 =head1 AUTHORS
 

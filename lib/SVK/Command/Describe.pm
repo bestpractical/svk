@@ -37,12 +37,12 @@ SVK::Command::Describe - Describe a change
 
 =head1 SYNOPSIS
 
-    describe CHANGE DEPOTNAME
-    describe CHANGE [PATH]
+ describe CHANGE DEPOTNAME
+ describe CHANGE [PATH]
 
 =head1 OPTIONS
 
-   None
+ None
 
 =head1 AUTHORS
 

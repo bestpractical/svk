@@ -80,12 +80,12 @@ SVK::Command::Update - Bring changes from the repository into checkout copies
 
 =head1 SYNOPSIS
 
-    update [PATH...]
+ update [PATH...]
 
 =head1 OPTIONS
 
-    -r [--revision]:      revision
-    -N [--nonrecursive]:  update non-recursively
+ -r [--revision]:        revision
+ -N [--nonrecursive]:    update non-recursively
 
 =head1 DESCRIPTION
 

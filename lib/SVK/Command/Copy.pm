@@ -91,16 +91,16 @@ SVK::Command::Copy - Make a versioned copy
 
 =head1 SYNOPSIS
 
-    copy DEPOTPATH1 DEPOTPATH2
-    copy DEPOTPATH1 PATH
+ copy DEPOTPATH1 DEPOTPATH2
+ copy DEPOTPATH1 PATH
 
 =head1 OPTIONS
 
-  -m [--message] arg:	Needs description
-  -C [--check-only]:	Needs description
-  -s [--sign]:	Needs description
-  -r [--revision] arg:	Needs description
-  --force:	Needs description
+ -m [--message] arg:     Needs description
+ -C [--check-only]:      Needs description
+ -s [--sign]:            Needs description
+ -r [--revision] arg:    Needs description
+ --force:                Needs description
 
 =head1 AUTHORS
 

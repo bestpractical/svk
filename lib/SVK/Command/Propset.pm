@@ -77,14 +77,14 @@ SVK::Command::Propset - Set a property on path
 
 =head1 SYNOPSIS
 
-    propset PROPNAME PROPVAL [PATH|DEPOTPATH...]
+ propset PROPNAME PROPVAL [PATH|DEPOTPATH...]
 
 =head1 OPTIONS
 
-  -m [--message] message:	Commit message
-  -C [--check-only]:	Needs description
-  -s [--sign]:	Needs description
-  --force:	Needs description
+ -m [--message] message:    Commit message
+ -C [--check-only]:         Needs description
+ -s [--sign]:               Needs description
+ --force:                   Needs description
 
 =head1 AUTHORS
 

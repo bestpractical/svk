@@ -136,15 +136,15 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
 =head1 SYNOPSIS
 
-    diff [-r REV] [PATH]
-    diff -r N:M DEPOTPATH
-    diff DEPOTPATH1 DEPOTPATH2
-    diff DEPOTPATH PATH
+ diff [-r REV] [PATH]
+ diff -r N:M DEPOTPATH
+ diff DEPOTPATH1 DEPOTPATH2
+ diff DEPOTPATH PATH
 
 =head1 OPTIONS
 
-  -r [--revision] rev|old:new :	Needs description
-  -v [--verbose]:	Needs description
+ -r [--revision] rev|old:new :    Needs description
+ -v [--verbose]:                  Needs description
 
 =head1 AUTHORS
 

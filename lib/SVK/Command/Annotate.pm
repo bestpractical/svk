@@ -76,11 +76,11 @@ SVK::Command::Annotate - Print files with per-line revision and author info
 
 =head1 SYNOPSIS
 
-    annotate FILE
+ annotate FILE
 
 =head1 OPTIONS
 
-    -x [--cross]:      trace cross copied revisions
+ -x [--cross]:      trace cross copied revisions
 
 =head1 AUTHORS
 

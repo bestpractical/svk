@@ -305,16 +305,15 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 SYNOPSIS
 
-    commit [PATH...]
+ commit [PATH...]
 
 =head1 OPTIONS
 
-    options:
-    -m [--message] ARG:    specify commit message ARG
-    -s [--sign]:           sign the commit
-    -C [--check-only]:	Needs description
-    --force:	Needs description
-    --direct:	Commit directly even if the path is mirrored
+ -m [--message] ARG:    specify commit message ARG
+ -s [--sign]:           sign the commit
+ -C [--check-only]:     Needs description
+ --force:               Needs description
+ --direct:              Commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

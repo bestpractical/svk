@@ -41,11 +41,11 @@ SVK::Command::Resolved - Remove conflict mark from checkout items
 
 =head1 SYNOPSIS
 
-    resolved PATH...
+ resolved PATH...
 
 =head1 OPTIONS
 
-  -R [--recursive]:	Needs description
+ -R [--recursive]:    Needs description
 
 =head1 AUTHORS
 

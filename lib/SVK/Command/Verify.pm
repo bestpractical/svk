@@ -107,11 +107,11 @@ SVK::Command::Verify - Verify change signatures
 
 =head1 SYNOPSIS
 
-    verify CHANGE [DEPOTNAME]
+ verify CHANGE [DEPOTNAME]
 
 =head1 OPTIONS
 
-   None
+ None
 
 =head1 AUTHORS
 

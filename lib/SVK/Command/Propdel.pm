@@ -55,11 +55,11 @@ SVK::Command::Propdel - Delete a property on files or dirs
 
 =head1 SYNOPSIS
 
-    propdel PROPNAME PATH...
+ propdel PROPNAME PATH...
 
 =head1 OPTIONS
 
-    NONE
+ None
 
 =head1 AUTHORS
 

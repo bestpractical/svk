@@ -28,19 +28,19 @@ SVK::Command::Smerge - Automatic merge all changes between branches
 
 =head1 SYNOPSIS
 
-    smerge DEPOTPATH [PATH]
-    smerge DEPOTPATH1 DEPOTPATH2
+ smerge DEPOTPATH [PATH]
+ smerge DEPOTPATH1 DEPOTPATH2
 
 =head1 OPTIONS
 
-    -m [--message] message:             commit message
-    -C [--check-only]:      don't perform actual writes
-    -l [--log]:             brings the logs of merged revs to the message buffer
-    --no-ticket:            don't associate the ticket tracking merge history
-    -B [--baseless]:        use the oldest revision as the merge point
-    -b [--base] rev:        manually specify source revision as the merge point
-    --force:		    Needs description
-    -s [--sign]:	    Needs description
+ -m [--message] message:    commit message
+ -C [--check-only]:         don't perform actual writes
+ -l [--log]:                brings the logs of merged revs to the message buffer
+ --no-ticket:               don't associate the ticket tracking merge history
+ -B [--baseless]:           use the oldest revision as the merge point
+ -b [--base] rev:           manually specify source revision as the merge point
+ --force:                   Needs description
+ -s [--sign]:               Needs description
 
 =head1 AUTHORS
 

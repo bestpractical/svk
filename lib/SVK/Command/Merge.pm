@@ -114,20 +114,20 @@ SVK::Command::Merge - Apply differences between two sources
 
 =head1 SYNOPSIS
 
-    merge -r N:M DEPOTPATH [PATH]
-    merge -r N:M DEPOTPATH1 DEPOTPATH2
+merge -r N:M DEPOTPATH [PATH]\r
+merge -r N:M DEPOTPATH1 DEPOTPATH2
 
 =head1 OPTIONS
 
-    -r [--revision] rev:    revision
-    -m [--message] message: commit message
-    -C [--check-only]:      don't perform actual writes
-    -I [--incremental]:     apply changes individually
-    -a [--auto]:            automatically find merge points
-    -l [--log]:             brings the logs of merged revs to the message buffer
-    --no-ticket:            don't associate the ticket tracking merge history
-    --force:		    Needs description
-    -s [--sign]:	    Needs description
+ -r [--revision] rev:       revision
+ -m [--message] message:    commit message
+ -C [--check-only]:         don't perform actual writes
+ -I [--incremental]:        apply changes individually
+ -a [--auto]:               automatically find merge points
+ -l [--log]:                brings the logs of merged revs to the message buffer
+ --no-ticket:               don't associate the ticket tracking merge history
+ --force:                   Needs description
+ -s [--sign]:               Needs description
 
 =head1 AUTHORS
 
