@@ -187,7 +187,7 @@ sub find_repos_from_co {
 	$copath = '';
     }
     else {
-	$copath =~ s|^$coroot/|/|;
+	$copath =~ s|^\Q$coroot\E/|/|;
     }
 
     return ($repospath, $path eq '/' ? $copath : $path.$copath,
@@ -545,7 +545,7 @@ sub status {
 			     (copath => $copath, dpath => $path,
 			      rpath => $report),
 			     cb_conflict => \&SVN::StatusEditor::conflict,
-			     cb_unknown => sub {$_[1] =~ s|^$copath/|$report|;
+			     cb_unknown => sub {$_[1] =~ s|^\Q$copath\E/|$report|;
 						print "?  $_[1]\n"}
 			    );
 
@@ -678,7 +678,7 @@ sub condense {
     }
     $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
     return ($report, $anchor,
-	    map {s|^$anchor/||;$_} grep {$_ ne $anchor} @targets);
+	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
 }
 
 sub add {
@@ -997,12 +997,17 @@ Commit changes to depot.
 
 
 sub get_buffer_from_editor {
-    my ($what, $sep, $content, $file) = @_;
+    my ($what, $sep, $content, $file, $anchor, $targets_ref) = @_;
     my $fh;
     if (defined $content) {
 	($fh, $file) = mkstemps ($file, '.tmp');
 	print $fh $content;
 	close $file;
+    }
+    else {
+	open $fh, $file;
+	local $/;
+	$content = <$fh>;
     }
 
     while (1) {
@@ -1012,7 +1017,7 @@ sub get_buffer_from_editor {
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
 			: "vi"; # fall back to something
 	print "waiting for editor...\n";
-	system ("$editor $file");
+	system ($editor, $file);
 	last if (stat($file))[9] > $mtime;
 	do {
 	    print "$what not modified: a)bort, e)dit, c)ommit?\n";
@@ -1026,10 +1031,18 @@ sub get_buffer_from_editor {
 
     open $fh, $file;
     local $/;
-    my @ret = defined $sep ? split ("\n$sep\n", <$fh>, 2) : (<$fh>);
+    my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
     close $fh;
     unlink $file;
-    return wantarray ? @ret : $ret[0];
+    return $ret[0] unless wantarray;
+
+    my $old_targets = (split (/\n\Q$sep\E\n/, $content, 2))[1];
+    my @new_targets = map [split(/\s+/, $_, 2)], grep /\S/, split(/\n+/, $ret[1]);
+    if ($old_targets ne $ret[1]) {
+	@$targets_ref = map $_->[1], @new_targets;
+	s|^\Q$anchor\E/|| for @$targets_ref;
+    }
+    return ($ret[0], \@new_targets);
 }
 
 sub path_is_mirrored {
@@ -1103,9 +1116,9 @@ sub commit {
 
     if ($fh) {
 	close $fh;
-	$message =
+	($message, $targets) =
 	    get_buffer_from_editor ('log message', $target_prompt,
-				    undef, $file);
+				    undef, $file, $copath, \@targets);
     }
 
     # if $copath itself is a file or is in the targets,
@@ -1137,7 +1150,7 @@ sub commit {
 	    next if $_->[0] eq 'D';
 	    my ($action, $tpath) = @$_;
 	    my $cpath = $tpath;
-	    $tpath =~ s|^$copath||;
+	    $tpath =~ s|^\Q$copath\E||;
 	    my $layer = SVN::XD::get_keyword_layer ($root, "$path/$tpath");
 	    next unless $layer;
 
@@ -1267,7 +1280,7 @@ sub find_merge_history {
     if ($m) {
 	$uuid = $root->node_prop ($src, 'svm:uuid');
 	$src = $m->{source};
-	$src =~ s/^$m->{source_root}//;
+	$src =~ s/^\Q$m->{source_root}\E//;
     }
 
     $uuid ||= $repos->fs->get_uuid ();
@@ -1361,7 +1374,7 @@ sub resolve_svm_source {
     if ($m) {
 	$uuid = $root->node_prop ($path, 'svm:uuid');
 	$path = $m->{source};
-	$path =~ s/^$m->{source_root}//;
+	$path =~ s/^\Q$m->{source_root}\E//;
 	$rev = $m->{fromrev};
     }
     else {
