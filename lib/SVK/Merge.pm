@@ -105,8 +105,8 @@ sub find_merge_base {
 	    if !$basepath || $rev > $baserev;
     }
 
-    return ($src->new (revision => $self->{base}), $self->{base})
-        if $self->{base};
+    return ($src->new (revision => $self->{baserev}), $self->{baserev})
+        if $self->{baserev};
 
     return ($src->new (path => '/', revision => 0), 0)
         if $self->{baseless};
