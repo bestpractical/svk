@@ -304,13 +304,8 @@ sub prepare_fh {
 	# prepared tmp files.
 	if ($entry->[FILENAME]) {
 	    next unless $eol;
-	    if ($entry->[FH]->opened) {
-		seek $entry->[FH], 0, 0;
-	    }
-	    else {
-		# reopen the tmp file, since apply_textdelta closes it
-		open $entry->[FH], $entry->[FILENAME];
-	    }
+	    # reopen the tmp file, since apply_textdelta closes it
+	    open $entry->[FH], $entry->[FILENAME];
 	}
 	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
 	binmode $tmp->[FH], $eol if $eol;
