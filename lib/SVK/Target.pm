@@ -2,6 +2,7 @@ package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
+use SVK::I18N;
 use SVK::Util qw( get_anchor catfile abs2rel HAS_SVN_MIRROR IS_WIN32 );
 use SVK::Target::Universal;
 use Clone;
@@ -168,11 +169,11 @@ sub descend {
     $self->{path} .= "/$entry";
 
     if (defined $self->{copath}) {
-        $self->{report} = catfile ($self->{report}, $entry);
-        $self->{copath} = catfile ($self->{copath}, $entry);
+	$self->{report} = catfile ($self->{report}, $entry);
+	$self->{copath} = catfile ($self->{copath}, $entry);
     }
     else {
-        $self->{report} = "$self->{report}/$entry";
+	$self->{report} = "$self->{report}/$entry";
     }
 }
 
@@ -253,7 +254,7 @@ sub nearest_copy {
     my $rev = ($histself->location)[1];
 
     my $fs = $root->fs;
-    while ($rev) {
+    while (1) {
 	# Find history_prev revision, if the path is different, bingo.
 	my ($hppath, $hprev);
 	if (my $hist = $histself->prev(1)) {
@@ -262,15 +263,23 @@ sub nearest_copy {
 		return ($rev, $hprev, $hppath);
 	    }
 	}
-	# Find nearest copy of the current revision. if the copy
-	# contains us, bingo.
-	my ($prev, $copy) = _find_prev_copy ($fs, $rev);
+
+	# Find nearest copy of the current revision (up to but *not*
+	# including the revision itself). If the copy contains us, bingo.
+	my ($prev, $copy) = _find_prev_copy ($fs, $rev-1);
 	if ($copy && (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path))) {
 	    return ($prev, $fromrev, $frompath);
 	}
 	# Continue testing on min (history_prev, prev_copy), provided
 	# it's still a related to the current node.
-	$rev = min (grep defined,$prev, $hprev);
+	$rev = min (grep defined, $prev, $hprev) or last;
+
+	# Reset the hprev root to this earlier revision to avoid infinite looping
+	$root = $fs->revision_root ($rev);
+	if ($root->check_path ($path) == $SVN::Node::none) {
+	    last;
+	}
+	$histself = $root->node_history ($path)->prev(0);
     }
     return;
 }
@@ -332,39 +341,44 @@ sub related_to {
 	 $other->root->node_id ($other->path));
 }
 
+=head2 copied_from ($want_mirror)
+
+Return the nearest copy target that still exists.  If $want_mirror is true,
+only return one that was mirrored from somewhere.
+
+=cut
+
 sub copied_from {
     my ($self, $want_mirror) = @_;
-    my $merge = SVK::Merge->new (%$self);
 
-    # evil trick to take the first element from the array
-    my @ancestors = $merge->copy_ancestors (@{$self}{qw( repos path revision )}, 1);
-    while (my $ancestor = shift(@ancestors)) {
-        shift(@ancestors);
+    my $target = $self->new;
+    $target->{report} = '';
+    $target->as_depotpath;
 
-        my $path = (split (/:/, $ancestor))[1];
-        my $target = $self->new (
-            path => $path,
-            depotpath => '/' . $self->depotname . $path,
-            revision => undef,
-            report => '',
-        );
+    my $root = $target->root;
 
-        # make a depot path
-        $target->as_depotpath;
+    while ((undef, $target->{revision}, $target->{path}) = $target->nearest_copy) {
+	# Check for existence.
+	if ($root->check_path ($target->{path}) == $SVN::Node::none) {
+	    next;
+	}
 
-        next if $target->root->check_path (
-            $target->{path}
-        ) == $SVN::Node::none;
+	# Check for mirroredness.
+	if ($want_mirror and HAS_SVN_MIRROR) {
+	    my ($m, $mpath) = SVN::Mirror::is_mirrored (
+		$target->{repos}, $target->{path}
+	    );
+	    $m->{source} or next;
+	}
 
-        if ($want_mirror and HAS_SVN_MIRROR) {
-            my ($m, $mpath) = SVN::Mirror::is_mirrored (
-                $target->{repos},
-                $target->{path}
-            );
-            $m->{source} or next;
-        }
+	# It works!  Let's update it to the latest revision and return
+	# it as a fresh depot path.
+	$target->{depotpath} = '/' . $target->depotname . $target->path;
+	$target->refresh_revision;
+	$target->as_depotpath;
 
-        return $target;
+	delete $target->{targets};
+	return $target;
     }
 
     return undef;
