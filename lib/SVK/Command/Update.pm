@@ -58,7 +58,9 @@ sub run {
             }
         }
 
-        if ($self->{sync} and HAS_SVN_MIRROR) {
+        if ($self->{sync}) {
+            die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
+
             # Because syncing under the mirror anchor is impossible,
             # we always sync from the mirror anchor.
             my ($m, $mpath) = SVN::Mirror::is_mirrored (
