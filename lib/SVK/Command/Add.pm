@@ -27,7 +27,7 @@ sub run {
     if ($self->{nrec} && $target->{targets}) {
 	# check for multi-level targets
 	die loc ("Please add the parent directory first.\n")
-	    if grep {index ($_, $SEP) >= 0 } @{$target->{targets}};
+	    if grep { m{[/\Q$SEP\E]}o } @{$target->{targets}};
     }
 
     $self->{xd}->checkout_delta

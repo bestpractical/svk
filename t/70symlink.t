@@ -1,9 +1,10 @@
 #!/usr/bin/perl -w
 use Test::More;
 use Config;
+use SVK::Util qw( HAS_SYMLINK );
 
-if (!$Config{d_symlink}) {
-    plan 'skip_all';
+if (!HAS_SYMLINK) {
+    plan skip_all => 'no support for symbolic links';
     exit;
 }
 

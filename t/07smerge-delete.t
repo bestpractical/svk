@@ -36,13 +36,13 @@ my $oldwd = getcwd;
 chdir ($copath);
 is_output ($svk, 'up', [],
 	   ["Syncing //trunk(/trunk) in $corpath to 5.",
-	    'C   A',
-	    'D   A/bar',
-	    'D   A/deep',
-	    'C   A/foo',
-	    'D   A/normal',
-	    'C   A/unused',
-	    'D   B',
+	    __('C   A'),
+	    __('D   A/bar'),
+	    __('D   A/deep'),
+	    __('C   A/foo'),
+	    __('D   A/normal'),
+	    __('C   A/unused'),
+	    __('D   B'),
 	    '3 conflicts found.'
 	   ], 'delete entry but modified on checkout');
 chdir ($oldwd);

@@ -8,7 +8,7 @@ use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
-use SVK::Util qw( abs_path );
+use SVK::Util qw( abs_path $SEP );
 use SVK::I18N;
 
 my %alias = qw( co checkout
@@ -160,8 +160,10 @@ sub lock {
 sub arg_condensed {
     my ($self, @arg) = @_;
     return if $#arg < 0;
-    my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
+    s{[/\Q$SEP\E]$}{}o for @arg; # XXX band-aid
+
+    my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
     my $target = SVK::Target->new
 	( repos => $repos,

@@ -24,7 +24,7 @@ is_output ($svk, 'delete', ['A/foo'],
 	   [__('D   A/foo')], 'delete - file');
 ok (!-e 'A/foo', 'delete - copath deleted');
 is_output ($svk, 'status', [],
-	   ['D   A/foo'], 'delete - status');
+	   [__('D   A/foo')], 'delete - status');
 
 $svk->revert ('-R', '.');
 
@@ -32,7 +32,7 @@ is_output ($svk, 'delete', ['--keep-local', 'A/foo'],
 	   [__('D   A/foo')], '');
 ok (-e 'A/foo', 'copath not deleted');
 is_output ($svk, 'status', [],
-	   ['D   A/foo'], 'copath not deleted');
+	   [__('D   A/foo')], 'copath not deleted');
 
 
 is_output ($svk, 'delete', ["$corpath/A/foo"],

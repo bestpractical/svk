@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 6;
 use strict;
-require 't/tree.pl';
+BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('annotate');

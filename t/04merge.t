@@ -74,4 +74,4 @@ is_output_like ($svk, 'merge', ["-r", "3:2", '//'],
 		qr'not a checkout path');
 chdir ($copath);
 is_output ($svk, 'merge', ["-r", "3:2", '//'],
-	   [status ('GU ', 'A/foo')]);
+	   [status_native (undef, 'GU ', 'A/foo')]);

@@ -79,7 +79,7 @@ is_output($svk, 'add', ['A/exe'],
 $svk->commit ('-m', 'test exe bit');
 unlink ('A/exe');
 $svk->revert ('A/exe');
-ok (-x 'A/exe');
+ok (_x 'A/exe');
 SKIP: {
 
 skip 'File::MimeInfo not installed', 2 unless eval 'require File::MimeInfo::Magic; 1';
@@ -138,10 +138,10 @@ SKIP: {
 skip 'svn too old, does not support config enumerator', 2 if $@;
 
 is_output ($svk, 'add', ['A/autoprop'],
-	   ['A   A/autoprop',
-	    'A   A/autoprop/foo.bar',
-	    'A   A/autoprop/foo.pl',
-	    'A   A/autoprop/foo.txt']);
+	   [__('A   A/autoprop'),
+	    __('A   A/autoprop/foo.bar'),
+	    __('A   A/autoprop/foo.pl'),
+	    __('A   A/autoprop/foo.txt')]);
 
 is_output ($svk, 'pl', ['-v', <A/autoprop/*>],
 	   ['Properties on A/autoprop/foo.pl:',

@@ -35,7 +35,7 @@ overwrite_file ("A/another", "fnord");
 $svk->add ('A/another');
 $svk->ps ('someprop', 'somevalue', 'A/foo', 'A/another');
 is_output ($svk, 'status', [],
-	   [ 'MM  A/foo', 'A   A/another', '?   A/bar'], 'status - modified file and prop');
+	   [ map __($_), 'MM  A/foo', 'A   A/another', '?   A/bar'], 'status - modified file and prop');
 $svk->commit ('-m', 'some modification');
 overwrite_file ("A/foo", "fnord\nmore");
 $svk->commit ('-m', 'more modification');

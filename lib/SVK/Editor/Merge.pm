@@ -273,6 +273,7 @@ sub prepare_fh {
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
+    #print STDERR Carp::longmess("$path - $checksum");
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
     $pool->default if $pool && $pool->can ('default');

@@ -350,7 +350,7 @@ sub condense {
 	    unless $copath;
 	if (!$anchor) {
 	    $anchor = $copath;
-	    $report = $_[0]
+	    $report = $_[0];
 	}
 	my $cinfo = $self->{checkout}->get ($anchor);
 	my $schedule = $cinfo->{'.schedule'} || '';

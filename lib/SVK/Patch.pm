@@ -1,5 +1,6 @@
 package SVK::Patch;
 use strict;
+use SVK::I18N;
 our $VERSION = $SVK::VERSION;
 
 =head1 NAME
@@ -126,8 +127,12 @@ sub _path_attribute_text {
 	    ++$mirrored;
 	}
     }
-    return ($local ? ' [local]' : '').($mirrored ? ' [mirrored]' : '').
-	($self->{"_${type}_updated"} ? ' [updated]' : '');
+    return join(
+	' ', '',
+	($local ? '[local]' : ()),
+	($mirrored ? '[mirrored]' : ()),
+	($self->{"_${type}_updated"} ? '[updated]' : ())
+    );
 }
 
 sub view {
@@ -140,7 +145,7 @@ sub view {
 	$self->_path_attribute_text ('target')."\n";
     print "Log:\n".$self->{log}."\n";
 
-    die "Target not local nor mirrored, unable to view patch."
+    die loc("Target not local nor mirrored, unable to view patch.\n")
 	unless $self->{_target};
 
     my $baseroot = $self->{_target}->root;
@@ -172,7 +177,7 @@ sub apply {
 sub apply_to {
     my ($self, $target, $storage, %cb) = @_;
     my $base = $self->{_target}
-	or die "Target not local nor mirrored, unable to test patch.";
+	or die loc("Target not local nor mirrored, unable to test patch.");
     # XXX: cb_merged
     my $editor = SVK::Editor::Merge->new
 	( base_anchor => $base->path,
@@ -191,7 +196,7 @@ sub apply_to {
 # XXX: update and regen are identify.  the only difference is soruce or target to be updated
 sub update {
     my ($self) = @_;
-    die "Target not local nor mirrored, unable to update patch."
+    die loc("Target not local nor mirrored, unable to update patch.\n")
 	unless $self->{_target};
 
     return unless $self->{_target_updated};
@@ -217,7 +222,7 @@ sub update {
 sub regen {
     my ($self) = @_;
     my $target = $self->{_target}
-	or die "Target not local nor mirrored, unable to regen patch.";
+	or die loc("Target not local nor mirrored, unable to regen patch.");
     unless ($self->{level} == 0 || $self->{_source_updated}) {
 	print "Source of path <$self->{name}> not updated or not local. No need to update.\n";
 	return;

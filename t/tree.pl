@@ -10,7 +10,7 @@ require SVN::Fs;
 use File::Path;
 use SVK;
 use SVK::XD;
-use SVK::Util qw( catdir tmpdir abs_path $SEP IS_WIN32 );
+use SVK::Util qw( catdir tmpdir abs_path $SEP $EOL );
 use strict;
 use Carp;
 
@@ -205,7 +205,7 @@ sub create_basic_tree {
     my $pool = SVN::Pool->new_default;
     my ($repospath, $path, $repos) = $xd->find_repos ($depot, 1);
 
-    local $/ = (IS_WIN32 ? "\r\n" : "\n");
+    local $/ = $EOL;
     my $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();
 

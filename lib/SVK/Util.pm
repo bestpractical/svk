@@ -6,9 +6,9 @@ our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
 		    find_local_mirror abs_path mimetype mimetype_is_text
 		    abs2rel catfile catdir catpath splitpath splitdir tmpdir
-		    devnull $SEP %Config IS_WIN32 is_symlink);
+		    devnull is_symlink $SEP $EOL %Config
+		    HAS_SYMLINK IS_WIN32 TEXT_MODE DEFAULT_EDITOR);
 our $VERSION = $SVK::VERSION;
-our $SEP = catdir('');
 
 use Config;
 use SVK::I18N;
@@ -24,6 +24,9 @@ use constant HAS_SYMLINK => $Config{d_symlink};
 use constant IS_WIN32 => ($^O eq 'MSWin32');
 use constant TEXT_MODE => IS_WIN32 ? ':crlf' : '';
 use constant DEFAULT_EDITOR => IS_WIN32 ? 'notepad.exe' : 'vi';
+
+our $SEP = catdir('');
+our $EOL = IS_WIN32 ? "\015\012" : "\012";
 
 sub svn_mirror () {
     no warnings 'redefine';
