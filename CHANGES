@@ -1,3 +1,28 @@
+[Changes for 0.28 - 9 Jan, 2004]
+
+* Fix a bug that tabs are treated as binary for auto-prop upon svk
+  add. [Autrijus]
+
+* Fix 'svk add' to accept explicit targets which are in the ignore list.
+
+* Support -r in blame.
+
+* Die with a more helpful message when mirroring onto an existing path.
+
+* Propget now reports paths properly.
+
+* Fix a bug that symlinks to existing dirs is not properly given
+  svn:special properties.
+
+* Cleanup Editor::Sign and fix uncleaned tmp files.
+
+* Fix a bug that 'svk import' does not respect svn:ignore.
+
+* For unknown files, make revert report ignored only on explicit
+  targets.
+
+* Many code cleanups.
+
 [Changes for 0.27 - 20 Dec, 2004]
 
 * Allow "svk cp URI" to work akin to "svk co URI". [Autrijus]
