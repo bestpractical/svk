@@ -16,7 +16,7 @@ chmod (0755, "$copath/exe");
 mkdir "$copath/dir";
 overwrite_file ("$copath/dir/filed", "foobarbazz");
 
-$svk->import ('-m', 'test import', '//import', $copath);
+$svk->import ('-m', 'test import', $copath, '//import');
 
 overwrite_file ("$copath/filea", "foobarbazzblah");
 overwrite_file ("$copath/dir/filed", "foobarbazzbozo");

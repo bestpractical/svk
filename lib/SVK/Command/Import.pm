@@ -13,8 +13,20 @@ sub options {
 }
 sub parse_arg {
     my $self = shift;
-    my @arg = @_;
-    $arg[1] = '' if $#arg < 1;
+    my @arg = @_ or return;
+
+    return if @arg > 2;
+
+    if (@arg == 1) {
+        # Only DEPOTPATH is specified
+        return ($self->arg_depotpath($arg[0]), $self->arg_path(''));
+    }
+
+    local $@;
+    if (eval { $self->find_repos($arg[1]) }) {
+        # Reorder to put DEPOTPATH before PATH
+        @arg = reverse @arg;
+    }
 
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));
 }
@@ -111,6 +123,9 @@ SVK::Command::Import - Import directory into depot
 
 =head1 SYNOPSIS
 
+ import [PATH] DEPOTPATH
+
+ # You may also list the target part first:
  import DEPOTPATH [PATH]
 
 =head1 OPTIONS
