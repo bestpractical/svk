@@ -6,6 +6,8 @@ use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR traverse_history );
+use Date::Parse qw(str2time);
+use Date::Format qw(time2str);
 
 sub options {
     ('l|limit=i'	=> 'limit',
@@ -56,7 +58,7 @@ sub run {
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, 0, $print_rev)} );
+	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1)} );
     return;
 }
 
@@ -110,10 +112,11 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log {
-    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev) = @_;
+    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime) = @_;
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     no warnings 'uninitialized';
+    $date = time2str("%Y-%m-%d %T %z", str2time ($date)) if defined $use_localtime;
     $indent = (' ' x $indent);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n");
     if ($paths) {
