@@ -1,12 +1,12 @@
-This is the README file for svk 0.05 release, a decentralized version
+This is the README file for svk 0.06 release, a decentralized version
 control system.
 
-*NOTE* The 0.05 release is aimed to be a working prototype, all things
-are subject to change, including project name, binary name, perl
-module namespaces, depot spec, etc. Since the underlying local
-repository is still a subversion repository, you are free to switch
-back and forth between svn and svk, and you might want to use svn for
-some of the operations that svk does not yet implement.
+*NOTE* The release is aimed to be a working prototype, all things are
+subject to change, including project name, binary name, perl module
+namespaces, depot spec, etc. Since the underlying local repository is
+still a subversion repository, you are free to switch back and forth
+between svn and svk, and you might want to use svn for some of the
+operations that svk does not yet implement.
 
 * About
 
@@ -16,6 +16,8 @@ switched to other scm, and people who had not started using scm. It is
 written in Perl and is using subversion's underlying filesystem.
 
 A quick glance about svk for people already familiar with Subversion:
+
+(also take a look at the tutorial on svk.elixus.org)
 
 o the depot spec is like : /[depotname]/<path>
   ~/.svk/config holds a depotmap hash for mapping depotname (which
