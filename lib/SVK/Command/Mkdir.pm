@@ -17,24 +17,29 @@ sub parse_arg {
     my ($self, @arg) = @_;
     # XXX: support multiple
     #return if $#arg != 0;
-    my @targets;
     my @paths;
+    my @targets;
     my $parent = $self->{parent};
     for my $path (@arg) {
-	@targets = $self->create($path);
-	push @paths, $path if (@targets);
+	my ($addtargets, $addpaths) = $self->create($path);
+	push @paths, @$addpaths if defined ($addpaths);
+	push @targets, @$addtargets if defined ($addtargets);
 	$self->{parent} = $parent;
     }
-    $self->rebless (
-	add => {
-	    recursive => 1
-	}
-    )->parse_arg (@paths);
+    if (scalar @paths) {
+	return $self->rebless (
+	    add => {
+		recursive => 1
+	    }
+	)->parse_arg (@paths);
+    }
+    return @targets;
 }
 
 sub create {
     my $self = shift;
     my $path = shift;
+    my @paths;
     my @targets;
     # parsing all of the folder we need to add.
     until (@targets = eval { ($self->arg_co_maybe ($path)) }) {
@@ -45,7 +50,9 @@ sub create {
 	    # should tell the user about parent not exist
             return ($self->arg_depotpath($path));
         }
-        $self->create($parent);
+        my ($subtargets, $subpaths) = $self->create($parent);
+	push @paths, @$subpaths if defined $subpaths;
+	push @targets, @$subtargets if defined $subtargets;
 	undef $self->{parent};
     }
     # execute the mkdir
@@ -56,9 +63,9 @@ sub create {
 	    $self->{parent} ? mkpath ([$copath])
 	    	: mkdir ($copath) or die "$copath: $!";
         }
-	return @targets;
+	push @paths, $path;
     }
-    return 0;
+    return (\@targets, \@paths);
 }
 
 sub run {

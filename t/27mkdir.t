@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-use Test::More tests => 14;
+use Test::More tests => 16;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -39,6 +39,15 @@ is_output ($svk, 'mkdir', ["$copath/c-newdir/deeper"],
 is_output ($svk, 'mkdir', ['-p', "$copath/c-newdir/deeper"],
       [__"A   $copath/c-newdir",
        __"A   $copath/c-newdir/deeper"]);
+
+is_output ($svk, 'mkdir', ['-p', "foo bar"],
+     [__"A   foo",
+      __"A   bar"]);
+
+is_ouput ($svk, 'mkdir', ['-p', "d-newdir/foo e-newdir"],
+     [__"A   d-newdir",
+      __"A   d-newdir/foo",
+      __"A   e-newdir"]);
 
 SKIP: {
 skip 'SVN::Mirror not installed', 4
