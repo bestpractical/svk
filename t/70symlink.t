@@ -70,7 +70,10 @@ is_output ($svk, 'diff', [$copath],
 	    __('--- t/checkout/symlink/A/dir.lnk  (revision 1)'),
 	    __('+++ t/checkout/symlink/A/dir.lnk  (local)'),
 	    '@@ -1 +1 @@',
-	    '-link /tmp+link .'], 'modified diff');
+	    '-link /tmp',
+            '\ No newline at end of file',
+            '+link .',
+            '\ No newline at end of file'], 'modified diff');
 
 $svk->revert ("$copath/A/dir.lnk");
 is_output ($svk, 'status', [$copath], [], 'revert');
@@ -107,7 +110,10 @@ is_output ($svk, 'diff', [$copath],
 	    __('--- t/checkout/symlink/A/dir.lnk  (revision 4)'),
 	    __('+++ t/checkout/symlink/A/dir.lnk  (local)'),
 	    '@@ -1 +1 @@',
-	    '-link /tmp+link .'], 'merge');
+	    '-link /tmp',
+            '\ No newline at end of file',
+            '+link .',
+            '\ No newline at end of file'], 'merge');
 
 _symlink ('non', "$copath/B/new-non.lnk");
 $svk->import ('--force', '-m', 'use import', '//', $copath);

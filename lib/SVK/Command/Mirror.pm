@@ -7,9 +7,9 @@ use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
-    ('upgrade' => 'upgrade',
-     'list'    => 'list',
-     'delete'  => 'delete',
+    ('l|list'  => 'list',
+     'd|delete'=> 'delete',
+     'upgrade' => 'upgrade',
      'relocate'=> 'relocate');
 }
 

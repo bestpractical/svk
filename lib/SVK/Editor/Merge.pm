@@ -52,10 +52,6 @@ The anchor of the base tree.
 
 The root object of the base tree.
 
-=item external
-
-External tool that would be called upon textual conflicts.
-
 =item storage
 
 The editor that will receive the merged callbacks.
@@ -324,41 +320,44 @@ sub close_file {
 	}
 
 	$self->ensure_open ($path);
-	$fh->{base}[1] = devnull if $info->{addmerge};
+        if ($info->{addmerge}) {
+            $fh->{base}[1] = devnull;
+            open $fh->{base}[0], '<', $fh->{base}[1];
+        }
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
 	my $mfh = tmpfile ('merged-');
+        my $marker = time.int(rand(100000));
 	SVN::Core::diff_file_output_merge
 		( $mfh, $diff,
 		  (map {
 		      $fh->{$_}[1]
 		  } qw/base local new/),
-		  "||||||| base",
-		  "<<<<<<< local",
-		  ">>>>>>> new",
-		  "=======",
+                  "==== ORIGINAL VERSION $path $marker",
+                  ">>>> YOUR VERSION $path $marker",
+                  "<<<< $marker",
+                  "==== THEIR VERSION $path $marker",
 		  1, 0, $pool);
 
-	my $conflict = SVN::Core::diff_contains_conflicts ($diff);
-	my $mfn;
-	if ($conflict && $self->{external}) {
-	    $mfn = tmpfile ('merged-', OPEN => 0);
-	    # maybe some message here
-	    print "Invoking external merge tool for $path.\n";
-	    system (split (' ', $self->{external}),
-		    "$path (YOURS)", $fh->{local}[1],
-		    "$path (BASE)", $fh->{base}[1],
-		    "$path (THEIRS)", $fh->{new}[1],
-		    $mfn
-		    );
-	    if (-e $mfn) {
-		open $mfh, '<:raw', $mfn or die $!;
-		$conflict = 0;
-	    }
-	    else {
-		print "$path not merged.\n"
-	    }
-	}
+        my $mfn;
+        my $conflict = SVN::Core::diff_contains_conflicts ($diff);
+
+        if (my $resolve = $self->{resolve}) {
+            $resolve->run(
+                fh              => $fh,
+                mfh             => $mfh,
+                path            => $path,
+                marker          => $marker,
+                diff            => $diff,
+
+                # Do not run resolve for diffs with no conflicts
+                ($conflict ? (has_conflict => 1) : ()),
+            );
+
+            $conflict = 0 if $resolve->{merged};
+            $mfn = $resolve->{merged} || $resolve->{conflict};
+            open $mfh, '<:raw', $mfn or die "Cannot read $mfn: $!" if $mfn;
+        }
 
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
 	seek $mfh, 0, 0;
@@ -377,7 +376,7 @@ sub close_file {
 		seek $fh->{local}[0], 0, 0;
 		my $txstream = SVN::TxDelta::new
 		    ($fh->{local}[0], $mfh, $pool);
-		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool)
+		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	    }
 	}
 

@@ -14,7 +14,6 @@ clean_files	('t/checkout');
 requires(
         'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
-        'Text::Diff'            => '0',
         'Algorithm::Diff'       => '0',
         'YAML'                  => '0',
         'Regexp::Shellish'      => '0',

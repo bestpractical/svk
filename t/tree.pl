@@ -3,17 +3,25 @@ END {
     rm_test($_) for @TOCLEAN;
 }
 
+use strict;
 require Data::Hierarchy;
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use File::Path;
 use File::Temp;
+use SVK::Util qw( catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
+
+# Fake standard input
+our $answer = 's'; # skip
+BEGIN {
+    no warnings 'redefine';
+    *SVK::Util::get_prompt = sub { $answer };
+}
+
+use Carp;
 use SVK;
 use SVK::XD;
-use SVK::Util qw( catdir tmpdir abs_path $SEP $EOL IS_WIN32 );
-use strict;
-use Carp;
 
 our @TOCLEAN;
 END {
@@ -24,7 +32,7 @@ END {
 our $output = '';
 our $copath;
 
-for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
+for (qw/SVKRESOLVE SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
     $ENV{$_} = '' if $ENV{$_};
 }
 $ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';
@@ -311,7 +319,7 @@ sub set_editor {
     print $tmp $_[0];
     $tmp->close;
 
-    my $perl = $^X;
+    my $perl = can_run($^X);
     my $tmpfile = $tmp->filename;
 
     if (defined &Win32::GetShortPathName) {

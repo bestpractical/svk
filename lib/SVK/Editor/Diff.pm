@@ -6,7 +6,6 @@ our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;
 use SVK::Util qw( slurp_fh tmpfile mimetype_is_text catfile );
-use Text::Diff;
 
 sub set_target_revision {
     my ($self, $revision) = @_;
@@ -106,20 +105,38 @@ sub _full_label {
 }
 
 sub output_diff {
-    my ($self, $path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
+    my ($self, $path, $llabel, $rlabel, $lpath, $rpath) = splice(@_, 0, 6);
+    my $fh = $self->_output_fh;
 
-    # XXX: this slurp is dangerous. waiting for streamy svndiff routine
-    local $/;
-    $ltext = \<$ltext> if ref ($ltext) && ref ($ltext) ne 'SCALAR';
-    $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
-
-    $self->_print (
+    print $fh (
         "=== $path\n",
         '=' x 66, "\n",
-        "--- "._full_label ($path, $lpath, $llabel), "\n",
-        "+++ "._full_label ($path, $rpath, $rlabel), "\n",
-        Text::Diff::diff ($ltext, $rtext)
     );
+
+    unshift @_, $self->_output_fh;
+    push @_, _full_label ($path, $lpath, $llabel),
+             _full_label ($path, $rpath, $rlabel);
+
+    goto &{$self->can('_output_diff_content')};
+}
+
+# _output_diff_content($fh, $ltext, $rtext, $llabel, $rlabel)
+sub _output_diff_content {
+    my $fh = shift;
+
+    my ($lfh, $lfn) = tmpfile ('diff');
+    my ($rfh, $rfn) = tmpfile ('diff');
+
+    slurp_fh (shift(@_) => $lfh); close ($lfh);
+    slurp_fh (shift(@_) => $rfh); close ($rfh);
+
+    my $diff = SVN::Core::diff_file_diff( $lfn, $rfn );
+
+    SVN::Core::diff_file_output_unified(
+        $fh, $diff, $lfn, $rfn, @_,
+    );
+
+    unlink ($lfn, $rfn);
 }
 
 sub output_prop_diff {
@@ -137,9 +154,13 @@ sub output_prop_diff {
                 map { (length || /\n$/) ? "$_\n" : $_ }
                     ($baseprop||''), ($self->{info}{$path}{prop}{$_}||'');
             @args = reverse @args if $self->{reverse};
-	    $self->_print(
-                Text::Diff::diff (@args, { STYLE => 'SVK::Editor::Diff::PropDiff' })
-            );
+
+            open my $fh, '>', \(my $diff);
+            _output_diff_content($fh, @args, '', '');
+            $diff =~ s/.*\n.*\n//;
+            $diff =~ s/^\@.*\n//mg;
+            $diff =~ s/^/ /mg;
+            $self->_print($diff);
 	}
 	$self->_print("\n");
     }
@@ -194,20 +215,14 @@ sub _print {
     ${ $self->{output} } .= $_ for @_;
 }
 
-package SVK::Editor::Diff::PropDiff;
-
-our @ISA = qw(Text::Diff::Unified);
-
-sub hunk_header {
-    return '';
-}
-
-sub hunk {
+sub _output_fh {
     my $self = shift;
 
-    my $s = $self->SUPER::hunk (@_);
-    $s =~ s/^/ /gm;
-    $s;
+    no strict 'refs';
+    $self->{output} or return \*{select()};
+
+    open my $fh, '>>', $self->{output};
+    return $fh;
 }
 
 =head1 AUTHORS

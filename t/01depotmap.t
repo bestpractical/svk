@@ -5,14 +5,7 @@ use File::Spec;
 use Test::More tests => 7;
 BEGIN { require 't/tree.pl' };
 
-# Fake standard input
-my $answer;
-{
-    no warnings 'redefine';
-    *SVK::Util::get_prompt = sub { $answer };
-}
-
-our ($output, @TOCLEAN);
+our ($answer, $output, @TOCLEAN);
 my $xd = SVK::XD->new (depotmap => {},
 		       checkout => Data::Hierarchy->new);
 my $svk = SVK->new (xd => $xd, output => \$output);

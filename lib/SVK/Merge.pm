@@ -379,8 +379,13 @@ sub run {
 	    } : undef,
 	  %cb,
 	);
-    $editor->{external} = $ENV{SVKMERGE}
-	if !$self->{check_only} && $ENV{SVKMERGE} && is_executable ((split (' ', $ENV{SVKMERGE}))[0]);
+    if (!$self->{check_only}) {
+        require SVK::Resolve;
+        $editor->{resolve} = SVK::Resolve->new(
+            action => $ENV{SVKRESOLVE},
+            external => $ENV{SVKMERGE},
+        );
+    }
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],

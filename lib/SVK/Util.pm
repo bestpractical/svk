@@ -14,7 +14,7 @@ our @EXPORT_OK = qw(
     abs_path abs2rel catdir catfile catpath devnull get_anchor 
     splitpath splitdir tmpdir tmpfile 
 
-    is_symlink is_executable
+    is_symlink is_executable can_run
 );
 our $VERSION = $SVK::VERSION;
 
@@ -280,15 +280,27 @@ sub write_file {
 =head3 slurp_fh ($input_fh, $output_fh)
 
 Read all data from the input filehandle and write them to the
-output filehandle.
+output filehandle.  The input may also be a scalar, or reference
+to a scalar.
 
 =cut
 
 sub slurp_fh {
-    my ($from, $to) = @_;
+    my $from = shift;
+    my $to = shift;
+
     local $/ = \16384;
-    while (<$from>) {
-	print $to $_;
+
+    if (!ref($from)) {
+        print $to $from;
+    }
+    elsif (ref($from) eq 'SCALAR') {
+        print $to $$from;
+    }
+    else {
+        while (<$from>) {
+            print $to $_;
+        }
     }
 }
 
@@ -353,6 +365,8 @@ sub mimetype_is_text {
                                           |ruby
                                           |php
                                           |java
+                                          |[kcz]?sh
+                                          |awk
                                           |shellscript)
                          |image/x-x(?:bit|pix)map)$}x;
 }
@@ -442,8 +456,10 @@ Return a file name suitable for reading, and guaranteed to be empty.
 
 =cut
 
+my $devnull;
 sub devnull () {
-    IS_WIN32 ? tmpfile('', UNLINK => 1) : File::Spec::Functions::devnull();
+    IS_WIN32 ? ($devnull ||= tmpfile('', UNLINK => 1))
+             : File::Spec::Functions::devnull();
 }
 
 =head3 get_anchor ($need_target)
@@ -521,7 +537,26 @@ Unlike C<is_symlink()>, the C<$filename> argument is not optional.
 =cut
 
 sub is_executable {
-    MM->maybe_command($_[0]);
+    defined($_[0]) and length($_[0]) and MM->maybe_command($_[0]);
+}
+
+=head3 can_run ($filename)
+
+Check if we can run some command.
+
+=cut
+
+sub can_run {
+    my ($_cmd, @path) = @_;
+
+    return $_cmd if (-x $_cmd or $_cmd = is_executable($_cmd));
+
+    for my $dir ((split /$Config::Config{path_sep}/, $ENV{PATH}), @path, '.') {
+        my $abs = catfile($dir, $_[0]);
+        return $abs if (-x $abs or $abs = is_executable($abs));
+    }
+
+    return;
 }
 
 1;
