@@ -84,7 +84,7 @@ sub update {
 
     # XXX: support via reporter facility in the future
 
-    $rev ||= $repos->fs->youngest_rev;
+    $rev = $repos->fs->youngest_rev unless defined $rev;
 
     SVN::XD::do_update ($info,
 			repos => $repos,

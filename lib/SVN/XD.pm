@@ -24,12 +24,13 @@ sub do_update {
 
     warn "syncing $arg{depotpath}($arg{path}) to $arg{copath} from $arg{startrev} to $arg{rev}";
     my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
-    $arg{copath} =~ s|/$target$||;
+    my (undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
     chop $anchor;
     SVN::Repos::dir_delta ($fs->revision_root ($arg{startrev}), $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
 			   SVN::XD::UpdateEditor->new (_debug => 0,
-						       copath => $arg{copath},
+						       target => $target,
+						       copath => $copath,
 						      ),
 #			   SVN::Delta::Editor->new(_debug=>1),
 			   1, 1, 0, 1);
@@ -88,14 +89,14 @@ sub open_root {
 
 sub add_file {
     my ($self, $path) = @_;
-    $path = "$self->{copath}/$path";
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
     $self->{info}{$path}{status} = (-e $path ? undef : ['A']);
     return $path;
 }
 
 sub open_file {
     my ($self, $path) = @_;
-    $path = "$self->{copath}/$path";
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
     $self->{info}{$path}{status} = (-e $path ? [] : undef);
     return $path;
 }
@@ -155,14 +156,16 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path) = @_;
-    $path = "$self->{copath}/$path";
+    $path = $self->{copath} if $path eq $self->{copath};
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
     mkdir ($path);
     return $path;
 }
 
 sub open_directory {
     my ($self, $path) = @_;
-    $path = "$self->{copath}/$path";
+    $path = $self->{copath} if $path eq $self->{copath};
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
     return $path;
 }
 

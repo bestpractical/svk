@@ -1,8 +1,11 @@
-svn aims to be the compelling replacement for cvs, svk will be the
-replacement for others, including people who already switched from svn
-to other scm, and people who had not started using scm.
+Design Notes for SubversionKeeper
 
-usage scenario:
+Subversion aims to take over the CVS user base, while SubversionKeeper
+attempts to take over the others - including people who already
+switched to other scm, and people who had not started using scm. It is
+written in Perl and is using subversion's underlying filesystem.
+
+advanced usage scenario:
 
 svk mirror //projectA/fromcvs vcp+cvs://...
 svk branch //projectA/fromcvs //projectA/trunk
@@ -23,12 +26,10 @@ resource definition
 
 depot_name default to something like SVK_DEPOT if ignored 
 
-name mapping stored in .svk/<someting>
-
 =================
 
 svk co //svn/local-works svn
-  => stores co information
+
 svk ci 
 svk diff
 svk 
