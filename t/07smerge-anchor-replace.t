@@ -1,10 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan_svm tests => 1 ;
-our $output;
+plan tests => 1 ;
 
-# build another tree to be mirrored ourself
 my ($xd, $svk) = build_test ();
 
 $svk->mkdir (-m => 'init', '//trunk');
