@@ -1362,6 +1362,7 @@ sub DESTROY {
 }
 
 package SVK::XD::Signature;
+use SVK::Util qw( $SEP );
 
 sub new {
     my ($class, @arg) = @_;
@@ -1374,7 +1375,9 @@ sub new {
 sub load {
     my ($factory, $path) = @_;
     my $spath = $path;
-    $spath =~ s{/}{_}g;
+    $spath =~ s{(?=[_=])}{=}g;
+    $spath =~ s{:}{=-}g;
+    $spath =~ s{\Q$SEP}{_}go;
     my $self = bless { root => $factory->{root},
 		       path => $path, spath => $spath }, __PACKAGE__;
     $self->read;
@@ -1383,7 +1386,7 @@ sub load {
 
 sub path {
     my $self = shift;
-    return "$self->{root}/$self->{spath}";
+    return "$self->{root}$SEP$self->{spath}";
 }
 
 sub lock_path {
