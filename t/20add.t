@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 28;
+use Test::More tests => 30;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -130,6 +130,29 @@ is_output ($svk, 'pl', ['-v', <A/mime/*>],
 
 
 $svk->revert ('-R', 'A');
+
+mkdir ('Ai');
+overwrite_file ("Ai/foo", "foobar");
+overwrite_file ("Ai/bar", "foobar");
+$svk->add ('-N', 'Ai');
+$svk->propset ('svn:ignore', 'f*', 'Ai');
+
+TODO: {
+local $TODO = 'should allow overriding svn:ignore with explicit target';
+
+is_output ($svk, 'add', ['Ai/foo', 'Ai/bar'],
+	   [map __($_), 'A   Ai/foo', 'A   Ai/bar']);
+$svk->revert ('-R', 'Ai');
+
+}
+
+TODO: {
+local $TODO = 'svn:ignore on checkout should take effect';
+
+is_output ($svk, 'add', ['Ai'],
+	   [map __($_), 'A   Ai/bar']);
+$svk->revert ('-R', 'Ai');
+}
 
 # auto-prop
 use File::Temp qw/tempdir/;
