@@ -38,7 +38,13 @@ features(
 	'SVN::Mirror'    => '0.35',
     ],
 );
-
+# requires svn 1.0.3 :(
+features(
+    'Patch management' => [
+	-default => 1,
+	'Compress::Zlib'    => '0',
+    ],
+);
 include('ExtUtils::AutoInstall');
 auto_install();
 

@@ -59,7 +59,7 @@ sub run {
 	$self->{message} = get_buffer_from_editor
 	    ('log message', $self->target_prompt,
 	     ($self->{log} ?
-	      $self->log_for_merge ($repos, $src->{path}, $fromrev+1, $torev) : '').
+	      $self->{merge}->log ($repos, $src->{path}, $fromrev+1, $torev) : '').
 	     "\n".$self->target_prompt."\n", 'commit');
     }
 
@@ -91,15 +91,6 @@ sub run {
 
     return;
 }
-
-sub log_for_merge {
-    my $self = shift;
-    open my $buf, '>', \(my $tmp);
-    SVK::Command::Log::do_log (@_, 0, 0, 0, 1, $buf);
-    $tmp =~ s/^/ /mg;
-    return $tmp;
-}
-
 
 1;
 

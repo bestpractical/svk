@@ -164,5 +164,13 @@ sub get_new_ticket {
     return join ("\n", map {"$_:$newinfo->{$_}"} sort keys %$newinfo);
 }
 
+sub log {
+    my $self = shift;
+    open my $buf, '>', \(my $tmp);
+    SVK::Command::Log::do_log (@_, 0, 0, 0, 1, $buf);
+    $tmp =~ s/^/ /mg;
+    return $tmp;
+}
+
 1;
 

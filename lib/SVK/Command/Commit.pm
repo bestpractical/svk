@@ -176,6 +176,10 @@ sub run {
     print $fh "\n$target_prompt\n" if $fh;
 
     my $targets = [];
+    my $statuseditor = SVK::CommitStatusEditor->new
+	( copath => $target->{copath},
+	  dpath => $target->{path},
+	  targets => $targets, fh => $fh);
     $self->{xd}->checkout_delta
 	( %$target,
 	  baseroot => $xdroot,
@@ -183,14 +187,11 @@ sub run {
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  absent_ignore => 1,
-	  editor => SVK::CommitStatusEditor->new
-	  ( copath => $target->{copath},
-	    dpath => $target->{path},
-	    targets => $targets, fh => $fh),
+	  editor => $statuseditor,
 	  cb_conflict => \&SVK::StatusEditor::conflict,
 	);
 
-    my $conflicts = grep {$_->[0] eq 'C'} @$targets;
+    my $conflicts = keys %{$statuseditor->{conflict}};
     if ($conflicts) {
 	if ($fh) {
 	    close $fh;

@@ -10,7 +10,8 @@ use YAML;
 use File::Path;
 
 sub options {
-    ('l|list' => 'list');
+    ('l|list' => 'list',
+     'i|init' => 'init');
 }
 
 sub run {
@@ -37,14 +38,17 @@ sub _do_edit {
     my $sep = '===edit the above depot map===';
     my $map = YAML::Dump ($self->{xd}{depotmap});
     my $new;
-    do {
-	$map = get_buffer_from_editor ('depot map', $sep, "$map\n$sep\n",
-				       'depotmap');
-	$new = eval { YAML::Load ($map) };
-	print "$@\n" if $@;
-    } while ($@);
-    print loc("New depot map saved.\n");
-    $self->{xd}{depotmap} = $new;
+    if ( !$self->{'init'} ) {
+        do {
+            $map =
+              get_buffer_from_editor( 'depot map', $sep, "$map\n$sep\n",
+                'depotmap' );
+            $new = eval { YAML::Load($map) };
+            print "$@\n" if $@;
+        } while ($@);
+        print loc("New depot map saved.\n");
+        $self->{xd}{depotmap} = $new;
+    }
     for my $path (values %{$self->{xd}{depotmap}}) {
 	next if -d $path;
 	my $ans = get_prompt(
@@ -76,6 +80,7 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
     options:
     -l [--list]:    List current depot mapping
+    -i [--init]:    Initialize a default deopt
 
 =head1 DESCRIPTION
 

@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('tests', 4);
+Test::More->import ('tests', 5);
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -110,6 +110,8 @@ Empty merge.
 $svk->smerge ('-C', '//m', $copath);
 $svk->smerge ('//m', $copath);
 $svk->status ($copath);
+$svk->commit ('-m', 'commit with conflict state', $copath);
+ok ($output =~ m/conflict/, 'forbid commit with conflict state');
 $svk->revert ("$copath/be");
 $svk->resolved ("$copath/be");
 # XXX: newfile2 conflicted but not added

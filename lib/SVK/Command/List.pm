@@ -9,6 +9,8 @@ use SVK::I18N;
 sub options {
     ('r|revision=i'  => 'rev',
      'v|verbose'	   => 'verbose',
+     'f|full-path'      => 'fullpath',
+     'd|depth=i'      => 'depth',
      'R|recursive'   => 'recursive');
 }
 
@@ -30,6 +32,7 @@ sub _do_list {
     my ($self, $level, @arg) = @_;
     for (@arg) {
 	my (undef, $path, $copath, undef, $repos) = $self->{xd}->find_repos_from_co_maybe ($_, 1);
+
 	my $pool = SVN::Pool->new_default;
 	my $fs = $repos->fs;
 	my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
@@ -37,11 +40,21 @@ sub _do_list {
 	    print loc("Path %1 is not a versioned directory\n", $path) unless ($root->check_path($path) == $SVN::Node::file);
 	    next;
 	}
-	my $entries = $root->dir_entries ($path);
+	
+    $path .= "/" if ($root->check_path ($path) == $SVN::Node::dir);
+    $path =~ s#/+#/#g;
+    $path = "/$path";
+
+    my $entries = $root->dir_entries ($path);
 	for (sort keys %$entries) {
-	    print "\t" x ($level);
+        if ($self->{'fullpath'}) {
+            print $path;
+        }
+        else {
+    	    print " " x ($level);
+        }
 	    print $_.($entries->{$_}->kind == $SVN::Node::dir ? '/' : '')."\n";
-	    if (($self->{recursive}) && 
+	    if (($self->{recursive}) && (!$self->{'depth'} ||( $level < $self->{'depth'} )) &&
 	    	($entries->{$_}->kind == $SVN::Node::dir)) {
                 if (defined $copath) {
 		    _do_list($self, $level+1, "$copath/$_");
@@ -72,6 +85,10 @@ SVK::Command::List - List entries in a directory from depot
     -r [--revision] REV:    revision
     -R [--recursive]:       recursive
     -v [--verbose]:	Needs description
+    -d [--depth] LEVEL:     Recurse LEVEL levels.  Only useful with -R
+    -f [--full-path]:        Show the full path of each entry, rather than
+                            an indented hierarchy
+
 
 =head1 AUTHORS
 

@@ -104,7 +104,7 @@ sub close_directory {
 	delete $self->{conflict}{$_};
 	s|^\Q$self->{copath}\E/|$self->{rpath}|;
 
-	print sprintf ("%1s%1s \%s\n", 'C', '', $_);
+	print sprintf ("%1s%1s  \%s\n", 'C', '', $_);
     }
 
 }
