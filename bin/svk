@@ -1058,7 +1058,6 @@ sub commit {
 						  repos => $repos,
 						  copath => $copath);
 
-
     my ($fh, $file);
 
     unless (defined $message) {
@@ -1167,9 +1166,14 @@ sub commit {
 			     ( send_delta => 1, 
 			       cb_rev => sub {
 				   my $target = shift;
+				   my $cotarget = $target;
 				   my $fs = $repos->fs;
+				   $cotarget = $cotarget ? "$copath/$cotarget" : $copath;
 				   $target = $target ? "$path/$target" : $path;
-				   $fs->revision_prop ($xdroot->node_created_rev ($target),
+
+				   my $root = $fs->revision_root
+				       ($info->{checkout}->get($cotarget)->{revision});
+				   $fs->revision_prop ($root->node_created_rev ($target),
 						       "svm:headrev:$cb{mirror}{source}");
 			       }) : (),
 			    );
