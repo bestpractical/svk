@@ -35,26 +35,22 @@ sub _do_list {
     my $fs = $target->{repos}->fs;
     my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
-	print loc("Path %1 is not a versioned directory\n", $target->{path})
-	    unless $kind == $SVN::Node::file;
-	return;
+       print loc("Path %1 is not a versioned directory\n", $target->{path})
+           unless $kind == $SVN::Node::file;
+       return;
     }
 
-    my $depotname = '';
-    if(m{^/(.+?)/}) {
-        $depotname = $1 if defined $self->{xd}->{depotmap}->{$1};
-    }
-
+    # XXX: SVK::Target should take care of this.
+    $target->{depotpath} =~ s|/$||;
     my $entries = $root->dir_entries ($target->{path});
     for (sort keys %$entries) {
 	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
         if ($self->{'fullpath'}) {
-            print $target->{depotpath};
+	    print $target->{depotpath}.'/';
         }
         else {
-    	    print " " x ($level);
+	    print " " x ($level);
         }
-
 	print $_.($isdir ? '/' : '')."\n";
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
@@ -62,7 +58,7 @@ sub _do_list {
 		     SVK::Target->new (%$target,
 				       copath => $target->{copath} ? "$target->{copath}/$_" : undef,
 				       path => "$target->{path}/$_",
-				       depotpath => "$target->{path}/$_"));
+				       depotpath => "$target->{depotpath}/$_"));
 	}
     }
 }
@@ -86,8 +82,7 @@ SVK::Command::List - List entries in a directory from depot
  -v [--verbose]:         Needs description
  -d [--depth] LEVEL:     Recurse LEVEL levels.  Only useful with -R
  -f [--full-path]:       Show the full path of each entry, rather than
- 		        an indented hierarchy
-
+                         an indented hierarchy
 
 =head1 AUTHORS
 
