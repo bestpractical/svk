@@ -904,6 +904,7 @@ sub resolve_revspec {
 
 sub resolve_revision {
     my ($self,$target,$revstr) = @_;
+    return unless defined $revstr;
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
