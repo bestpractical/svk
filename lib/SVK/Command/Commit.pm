@@ -252,10 +252,10 @@ sub committed_commit {
 	    $path = '' if $path eq '/';
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
 	    my $prop = $root->node_proplist ($dpath);
-	    # XXX: some mode in get_fh for modification only
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
-	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop);
-	    next unless $layer || ($eol ne ':raw' && $eol ne '');
+	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop, '>');
+	    # XXX: can't bypass eol translation when normalization needed
+	    next unless $layer || ($eol ne ':raw' && $eol ne ' ');
 
 	    my $fh = $root->file_contents ($dpath);
 	    my $perm = (stat ($copath))[2];

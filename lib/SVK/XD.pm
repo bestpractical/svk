@@ -16,7 +16,7 @@ use File::Spec;
 use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
-use PerlIO::eol 0.03;
+use PerlIO::eol 0.04 qw ( LF NATIVE );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
@@ -1157,8 +1157,12 @@ sub do_resolved {
 }
 
 sub get_eol_layer {
-    my ($root, $path, $prop) = @_;
+    my ($root, $path, $prop, $mode) = @_;
     my $k = $prop->{'svn:eol-style'} or return ':raw';
+    # short-circuit no-op write layers on lf platforms
+    if (NATIVE eq LF) {
+	return ':raw' if $mode eq '>' && ($k eq 'native' or $k eq 'LF');
+    }
     if ($k eq 'native') {
         return ':raw:eol(LF-Native)';
     }
@@ -1278,7 +1282,7 @@ sub get_fh {
 	if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
     if (keys %$prop) {
 	$layer ||= get_keyword_layer ($root, $path, $prop);
-	$eol ||= get_eol_layer($root, $path, $prop);
+	$eol ||= get_eol_layer($root, $path, $prop, $mode);
     }
     $eol ||= ':raw';
     open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!\n";
