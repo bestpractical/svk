@@ -39,6 +39,10 @@ ok (!-e "$copath/B/fe");
 ok (!-e "$copath/D");
 ok (-e "$copath/A/P");
 
+run_svkup ($copath);
+
+run_svkup ($copath);
+
 # recheckout base if it's modified.
 #append_file ("$copath/me", "modified\n");
 #run_svkup ($copath);

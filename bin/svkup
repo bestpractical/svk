@@ -125,8 +125,8 @@ sub send_delta_request {
     my $sock = shift;
     my $editor = SVK::Editor::Local->new (get_copath =>
 					  sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) },
-					  xd => SVK::XD->new (checkout => Data::Hierarchy->new),
-					  update => 1,
+					  notify =>
+					  SVK::Notify->new_with_report ($copath, '', 1),
 					 );
     my $dispatch = SVK::Editor::Network->new (editor => $editor);
     send_cmd ($sock, "delta $resource $target\n", sub { emit_editor_call ($dispatch, @_) });

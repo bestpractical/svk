@@ -1,7 +1,7 @@
 package SVK::Editor::Network;
 use strict;
 our $VERSION = $SVK::VERSION;
-use base qr(SVK::Editor::Patch);
+use base qw(SVK::Editor::Patch);
 use FreezeThaw qw(freeze);
 
 sub emit {
@@ -28,7 +28,7 @@ sub freeze_fd {
 sub write_call {
     my ($self, $call) = @_;
     $self->{sock}->print ($self->{prefix}) if defined $self->{prefix};
-    freeze_fd ($self->{sock}, $self->{textdelta}{$arg[0]}) or die $!;
+    freeze_fd ($self->{sock}, $call) or die $!;
 }
 
 our $AUTOLOAD;
