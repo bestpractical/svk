@@ -1,0 +1,18 @@
+[Changes for 0.03 - 26 Nov, 2003]
+
+* Merge editor now calls open_file only when necessary.
+  This makes merge back to RA a lot faster for mutual merged branches.
+
+* Merge editor status 'g' means file merged bug unmodified.
+
+* Fix a xdroot creation bug.
+
+* New - svk log -r.
+
+[Changes for 0.02 - 19 Nov, 2003]
+
+* Fix packaging problem for missed Makefile.PL.
+
+[Changes for 0.01 - 19 Nov, 2003]
+
+Initial Release.
