@@ -39,7 +39,8 @@ sub apply_textdelta {
 	my $tmp = File::Temp->new ( TEMPLATE => 'svk-diffXXXXX',
 				    DIR => '/tmp',
 				  );
-	slurp_fh ($self->{info}{$path}{base}, $tmp);
+	slurp_fh ($self->{info}{$path}{base}, $tmp)
+	    if $self->{info}{$path}{base};
 	seek $tmp, 0, 0;
 	$self->{info}{$path}{base} = $tmp;
 	$self->{info}{$path}{new} = $new =
@@ -110,9 +111,14 @@ sub output_prop_diff {
 	print $fh "\n", loc("Property changes on: %1\n", $path), ('_' x 67), "\n";
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    print $fh loc("Name: %1\n", $_);
-	    print $fh Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
-		\$self->{info}{$path}{prop}{$_}, { STYLE => 'SVK::DiffEditor::NoHeader' });
+	    my $baseprop;
+	    $baseprop = &{$self->{cb_baseprop}} ($path, $_)
+		unless $self->{info}{$path}{added};
+	    print $fh Text::Diff::diff (\ ($baseprop || ''),
+					\$self->{info}{$path}{prop}{$_},
+					{ STYLE => 'SVK::DiffEditor::NoHeader' });
 	}
+	print "\n\n";
     }
 }
 
