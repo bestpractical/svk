@@ -7,7 +7,6 @@
   - SIGINT should be handled gracefully.
 
 * path reporting
-  - $target->{report} should really be handled automatically.
   - show paths in import and commit.
 
 * svk diff
@@ -16,10 +15,6 @@
 * better tree merger
   - Merge added directories.
   - Merge moved files and directories.
-
-* properties
-  - Support svn:eol-style.
-  - Support svn:special.
 
 * checkout maintenance
   - move checkouts.
@@ -32,5 +27,3 @@
 
 * improve mirror information
   - svk mirror --relocate
-
-* list should report error with non-existing targets
