@@ -65,7 +65,7 @@ sub help {
 	$parser->select ('COMMANDS');
 	$parser->parse_from_file ($0, $ofh);
 	print "Available commands:\n";
-	print join("\n", ($list =~ m/^=head2\s(.*)$/mg), '');
+	print join("\n", sort ($list =~ m/^=head2\s(.*)$/mg), '');
     }
 }
 
@@ -90,6 +90,10 @@ Each line contains a map entry, the format is:
 
  depotname: 'path/to/repos'
 
+The depotname could be used in DEPOTPATH as
+
+ /depotname/path/in/repos
+
 =cut
 
 sub depotmap {
@@ -107,7 +111,7 @@ sub depotmap {
     for my $path(values %{$info->{depotmap}}) {
 	my $ans;
 	next if -d $path;
-	print "Repository $path does not exist, create?";
+	print "Repository $path does not exist, create? (y/n) ";
 	while (<STDIN>) {
 	    $ans = $1 if $_ =~ m/^([yn])/i;
 	    last if $ans;
