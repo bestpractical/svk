@@ -15,6 +15,10 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
+sub lock {
+    $_[0]->lock_target ($_[1]);
+}
+
 sub run {
     my ($self, $target) = @_;
 

@@ -8,7 +8,12 @@ use SVK::XD;
 sub parse_arg {
     my ($self, @arg) = @_;
     $self->usage if $#arg < 0;
-    return map {$self->arg_condensed ($_)} @arg;
+    return map {$self->arg_copath ($_)} @arg;
+}
+
+sub lock {
+    my $self = shift;
+    $self->lock_target ($_) for @_;
 }
 
 sub run {

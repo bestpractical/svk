@@ -16,6 +16,8 @@ sub parse_arg {
     return ($arg[0], $self->arg_depotname ($arg[1] || '//'));
 }
 
+sub lock { $_[0]->lock_none }
+
 sub run {
     my ($self, $chg, $depot) = @_;
     my $target = $self->arg_depotpath ("/$depot/");

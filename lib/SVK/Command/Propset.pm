@@ -9,7 +9,10 @@ sub parse_arg {
     return (@arg[0,1], $self->arg_co_maybe ($arg[2]));
 }
 
-sub lock { return $_[0]->lock_none }
+sub lock {
+    my $self = shift;
+    $_[2]->{copath} ? $self->lock_target ($_[2]) : $self->lock_none;
+}
 
 sub do_propset_direct {
     my ($self, %arg) = @_;

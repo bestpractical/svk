@@ -17,6 +17,8 @@ sub parse_arg {
     return @arg;
 }
 
+sub lock { $_[0]->lock_none }
+
 sub run {
     my ($self, @arg) = @_;
     for (@arg) {
