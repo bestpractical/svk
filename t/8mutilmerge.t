@@ -98,4 +98,56 @@ svk::update ($copath);
 svk::proplist ('-v', "$copath/work");
 svk::proplist ('-v', "$copath/feature");
 
+svk::smerge ('-m', 'merge from //work to //trunk', '//work', '//trunk');
+svk::smerge ('-m', 'merge from //trunk to //feature', '//trunk', '//feature');
+
 ok (1);
+
+__END__
+
+test plan:
+
+//test/trunk
+r1-r5
+
+//test/work
+r6 (from trunk:5)
+
+//test/work
+r7
+
+//test/trunk
+r8
+
+//test/trunk
+r9 (merged from work:8)
+
+//test/work
+r10 (merged from trunk:9)
+
+//test/trunk
+r11
+
+//test/feature
+r12 (from trunk:11)
+
+*note that /feature also has the ticket work:8 from copy*
+
+//test/work
+r13
+
+//test/feature
+r14
+
+//test/work
+r15 (merged from feature:14)
+<base should be trunk:9>
+# auto merge (9, 14) /feature -> /work (base /trunk)
+
+//test/trunk
+r16 (merged from work:15)
+<ticket: feature:14, work:15>
+
+//test/feature
+r17 (merged from trunk:16)
+<base should be feature:14>

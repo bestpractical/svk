@@ -1180,9 +1180,8 @@ sub get_new_ticket {
 
     for (keys %{{%$srcinfo,%$dstinfo}}) {
 	next if $_ eq "$myuuid:$dst";
-	$newinfo->{$_} = $srcinfo->{$_};
-	$newinfo->{$_} = $dstinfo->{$_}
-	    if $dstinfo->{$_} && $dstinfo->{$_} > $newinfo->{$_};
+	no warnings 'uninitialized';
+	$newinfo->{$_} = $srcinfo->{$_} > $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
 	print "new merge ticket: $_:$newinfo->{$_}\n"
 	    if !$dstinfo->{$_} || $newinfo->{$_} > $dstinfo->{$_};
     }
