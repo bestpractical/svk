@@ -9,9 +9,6 @@ use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh find_svm_source tmpfile abs2rel );
 use SVN::Simple::Edit;
 
-use constant target_prompt => '=== Targets to commit (you may delete items from it) ===';
-use constant message_prompt => '=== This line, and those below, will be ignored ===';
-
 sub options {
     ('m|message=s'  => 'message',
      'C|check-only' => 'check_only',
@@ -30,6 +27,14 @@ sub parse_arg {
 }
 
 sub lock { $_[0]->lock_target ($_[1]) }
+
+sub target_prompt {
+    loc('=== Targets to commit (you may delete items from it) ===');
+}
+
+sub message_prompt {
+    loc('=== This line, and those below, will be ignored ===');
+}
 
 sub under_mirror {
     my ($self, $target) = @_;
