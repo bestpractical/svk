@@ -228,7 +228,8 @@ sub is_ancestor {
     my ($svk, $path, @expected) = @_;
     $svk->info ($path);
     my (@copied) = $output =~ m/Copied From: (.*?), Rev. (\d+)/mg;
-    is_deeply (\@copied, \@expected);
+    @_ = (\@copied, \@expected);
+    goto &is_deeply;
 }
 
 sub copath {

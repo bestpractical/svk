@@ -231,13 +231,16 @@ sub depotname {
 sub copy_ancestors {
     my $self = shift;
     my $fs = $self->{repos}->fs;
-    my $t = $self->new;
-    warn "==> ".$t->path;
+    my $t = $self->new->as_depotpath;
+    my @result;
     while (my ($copyto, $copyfrom_rev, $copyfrom_path) = $t->nearest_copy) {
 	$t->{path} = $copyfrom_path;
 	$t->{revision} = $copyfrom_rev;
-	warn "==> . ".$t->path." @ $t->{revision}";
+	push @result, [@{$t}{qw(path revision)}];
+	# if the original target is anchorified, do so too.
+	delete $t->{targets}, $t->anchorify if exists $self->{targets}[0];
     }
+    return @result;
 }
 
 use List::Util qw(min);
@@ -325,7 +328,7 @@ sub _find_prev_copy {
 	    return ($cache, _copies_in_rev ($fs, $cache));
 	}
 	if (my $copy = _copies_in_rev ($fs, $rev)) {
-	    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev), warn "write $_"
+	    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev)
 		for $startrev..$endrev;
 	    return ($rev, $copy);
 	}
