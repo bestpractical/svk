@@ -7,7 +7,7 @@ eval { require SVN::Mirror; 1 } or do {
     plan skip_all => "SVN::Mirror not installed";
     exit;
 };
-plan tests => 24;
+plan tests => 25;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -237,7 +237,6 @@ is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '/client2/m-
 	    "Syncing $uri",
 	    'Retrieving log information from 12 to 12',
 	    'Committed revision 13 from revision 12.']);
-
 overwrite_file ("$copath/Q/qu", "on local\nfirst line in qu\n2nd line in qu\n");
 is_output ($svk, 'commit', ['-m', 'more on local', $copath],
 	   ['Committed revision 12.']);
@@ -246,3 +245,14 @@ is_output ($svk, 'smerge', ['-m', 'merge back', '//l', '//m'],
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    qr'Transaction is out of date.*',
 	   'Please sync mirrored path /m first.']);
+
+$svk->update ($scopath);
+overwrite_file ("$scopath/A/Q/qu", "on trunk\nfirst line in qu\non cp branch\n2nd line in qu\n");
+$svk->commit ('-m', 'commit on source', $scopath);
+$svk->sync ('-a', '/client2/');
+is_output ($svk, 'smerge', ['-C', '/client2/m-all/A-cp', '/client2/m-all/A'],
+	   ['Auto-merging (0, 13) /m-all/A-cp to /m-all/A (base /m-all/A:12).',
+	    "Merging back to SVN::Mirror source $uri.",
+	    'Checking against mirrored directory locally.',
+	    'g   Q/qu',
+	    "New merge ticket: $suuid:/A-cp:12"]);

@@ -191,19 +191,18 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
-    ++$self->{changes};
     if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
 	$self->{info}{$path}{fpool} = pop @arg;
-	return $path;
     }
     else {
+	++$self->{changes};
 	$self->{notify}->node_status ($path, 'A');
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg);
-	return $path;
     }
+    return $path;
 }
 
 sub open_file {
@@ -239,6 +238,8 @@ sub ensure_close {
     $self->{notify}->flush ($path, 1);
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
+    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool)
+	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
 
     if (my $baton = $self->{storage_baton}{$path}) {
 	$self->{storage}->close_file ($baton, $checksum, $pool);
@@ -323,8 +324,8 @@ sub close_file {
 	$self->prepare_fh ($fh);
 
 	if ($checksum eq $fh->{local}[CHECKSUM] ||
-	    # XXX: mark this as a change too?
 	    File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0) {
+	    ++$self->{changes};
 	    $self->{notify}->node_status ($path, 'g');
 	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
@@ -406,9 +407,6 @@ sub close_file {
 	}
     }
 
-    $self->{notify}->flush ($path, 1);
-    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool)
-	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
     $checksum = $iod->hexdigest if $iod;
     $self->ensure_close ($path, $checksum, $pool);
 }
