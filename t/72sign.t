@@ -67,7 +67,7 @@ is_output ($svk, 'pl', ['--revprop', '-r3', '/test/'],
 	    '  svn:author',
 	    '  svn:date',
 	    '  svn:log',
-]);
+	   ]);
 
 is_output ($svk, 'verify', [3, '/test/'],
 	  ['Signature verified.']);
