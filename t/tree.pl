@@ -344,6 +344,22 @@ sub set_editor {
     $ENV{SVN_EDITOR} = "$perl $tmpfile";
 }
 
+sub replace_file {
+    my ($file, $from, $to) = @_;
+    my @content;
+
+    open my $fh, '<', $file or croak "Cannot open $file: $!";
+    while (<$fh>) {
+        s/$from/$to/g;
+        push @content, $_;
+    }
+    close $fh;
+
+    open $fh, '>', $file or croak "Cannot open $file: $!";
+    print $fh @content;
+    close $fh;
+}
+
 END {
     unlink $_ for @unlink;
 }
