@@ -14,7 +14,14 @@ sub parse_arg {
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));
 }
 
-sub lock { $_[0]->lock_none }
+sub lock {
+    my ($self, $target, $source) = @_;
+    return $self->lock_none
+	unless $self->{xd}{checkout}->get ($source)->{depotpath};
+    $source = $self->arg_copath ($source);
+    ($self->{force} && $target->{path} eq $source->{path}) ?
+	$self->lock_target ($source) : $self->lock_none;
+}
 
 sub run {
     my ($self, $target, $source) = @_;

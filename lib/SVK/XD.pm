@@ -868,7 +868,9 @@ sub do_import {
 	    "file://$arg{repospath}",
 	    $arg{path}, $ENV{USER},
 	    $arg{message},
-	    sub { print loc("Directory %1 imported to depotpath %2 as revision %3.\n", $arg{copath}, $arg{depotpath}, $_[0]) }));
+	    sub { $yrev = $_[0];
+		  print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
+			    $arg{copath}, $arg{depotpath}, $yrev) }));
 
     $editor = SVK::XD::CheckEditor->new ($editor)
 	if $arg{check_only};
@@ -904,13 +906,24 @@ sub do_import {
 
     $editor->close_edit ();
 
-    $self->{checkout}->store ($arg{copath},
-			      {depotpath => undef,
-			       revision => undef,
-			       '.schedule' => undef})
-	unless $arg{is_checkout};
-
-
+    if ($arg{is_checkout}) {
+	my (undef, $path) = $self->find_repos_from_co ($arg{copath}, 0);
+	warn "Import to $arg{path}, from a checkout of $path";
+	warn "to store recursively for $arg{copath}";
+	$self->{checkout}->store_recursively ($arg{copath},
+					      {revision => $yrev,
+					       '.copyfrom' => undef,
+					       '.copyfrom_rev' => undef,
+					       '.schedule' => undef})
+	    if $path eq $arg{path};
+	warn YAML::Dump ($self->{checkout});
+    }
+    else {
+	$self->{checkout}->store ($arg{copath},
+				  {depotpath => undef,
+				   revision => undef,
+				   '.schedule' => undef})
+    }
 }
 
 sub get_keyword_layer {
