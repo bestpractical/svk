@@ -113,6 +113,9 @@ sub find_merge_base {
 	    ($basepath, $baserev) = ($path, $rev);
 	}
     }
+    die loc("Can't find merge base for %1 and %2\n", $src, $dst)
+	unless $basepath;
+
     return ($basepath, $baserev, $dstinfo->{$repos->fs->get_uuid.':'.$src} || $baserev);
 }
 

@@ -27,6 +27,7 @@ sub run {
 
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 
+    # XXX: check relation between target_path and path
     $depotpath->{target_path} = $target->{path};
     $self->SUPER::run ($depotpath);
 
