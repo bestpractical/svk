@@ -191,6 +191,11 @@ sub create_basic_tree {
     return $tree;
 }
 
+sub waste_rev {
+    my ($svk, $path) = @_;
+    $svk->mkdir('-m', 'create', $path);
+    $svk->rm('-m', 'create', $path);
+}
 
 sub tree_from_fsroot {
     # generate a hash describing a given fs root

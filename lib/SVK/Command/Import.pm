@@ -82,7 +82,7 @@ sub run {
 	  copath => $copath,
 	  auto_add => 1,
 	  base => 1,
-	  cb_rev => sub { $yrev },
+	  cb_rev => $cb{cb_rev},
 	  editor => $editor,
 	  base_root => $root,
 	  base_path => $target->{path},

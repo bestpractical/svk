@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 5;
+use Test::More tests => 6;
 use strict;
 use File::Path;
 require 't/tree.pl';
@@ -30,8 +30,15 @@ ok (!-e "$copath/fileb");
 ok (-e "$copath/filec");
 ok (-e "$copath/dir/filed");
 
-my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
+my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
+$svk->mkdir ('-m', 'init', '/test/A');
 $svk->mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 $svk->sync ('//m');
+waste_rev ($svk, '/test/F') for 1..10;
 $svk->import ('--force', '-m', 'import into mirrored path', '//m', $copath);
-is ($srepos->fs->youngest_rev, 1, 'import to remote directly');
+is ($srepos->fs->youngest_rev, 22, 'import to remote directly');
+
+append_file ("$copath/filea", "fnord");
+
+$svk->import ('--force', '-m', 'import into mirrored path', '//m', $copath);
+is ($srepos->fs->youngest_rev, 23, 'import to remote directly with proper base rev');

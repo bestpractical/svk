@@ -1329,7 +1329,6 @@ my $globaldestroy;
 sub DESTROY {
     # XXX: maybe just for 5.8.0 ?
     # return if $globaldestroy;
-    warn "===> abort transaction" if $_[0][0];
     $_[0][0]->abort if $_[0][0];
 }
 
