@@ -148,9 +148,7 @@ sub find_merge_sources {
     my ($self, $target, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
     my $info = $self->merge_info ($target->new);
-    my $utarget = $target->universal;
-    $info->{join(':', $utarget->{uuid}, $utarget->{path})} = $utarget
-	unless $noself;
+    $info->add_target ($target) unless $noself;
 
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
     return $minfo if $verbatim;
@@ -222,19 +220,14 @@ sub copy_ancestors {
 
 sub get_new_ticket {
     my ($self) = @_;
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_, 1)} @{$self}{qw/src dst/};
-    my ($newinfo);
-    # bring merge history up to date as from source
-    my ($uuid, $dstpath) = find_svm_source ($self->{repos}, $self->{dst}->path);
-    for (sort keys %{ { %$srcinfo, %$dstinfo } }) {
-	next if $_ eq "$uuid:$dstpath";
-	no warnings 'uninitialized';
-	$newinfo->{$_} = $srcinfo->{$_} > $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
-	print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_})
-	    if !$dstinfo->{$_} || $newinfo->{$_} > $dstinfo->{$_};
+    # XXX: in patch context, the src ticket comes externally.
+    my ($srcinfo, $dstinfo) = map {$self->merge_info ($_)} @{$self}{qw/src dst/};
+    my $newinfo = $dstinfo->union ($srcinfo->add_target ($self->{src}))->del_target ($self->{dst});
+    for (sort keys %$newinfo) {
+	print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_}{rev})
+	    if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
     }
-
-    return join ("\n", map {"$_:$newinfo->{$_}"} sort keys %$newinfo);
+    return $newinfo->as_string;
 }
 
 sub log {
@@ -405,6 +398,22 @@ sub new {
     return $minfo;
 }
 
+sub add_target {
+    my ($self, $target) = @_;
+    $target = $target->universal
+	if UNIVERSAL::isa ($target, 'SVK::Target');
+    $self->{join(':', $target->{uuid}, $target->{path})} = $target;
+    return $self;
+}
+
+sub del_target {
+    my ($self, $target) = @_;
+    $target = $target->universal
+	if UNIVERSAL::isa ($target, 'SVK::Target');
+    delete $self->{join(':', $target->{uuid}, $target->{path})};
+    return $self;
+}
+
 sub subset_of {
     my ($self, $other) = @_;
     my $subset = 1;
@@ -412,6 +421,22 @@ sub subset_of {
 	return unless exists $other->{$_} && $self->{$_}{rev} <= $other->{$_}{rev};
     }
     return 1;
+}
+
+sub union {
+    my ($self, $other) = @_;
+    # bring merge history up to date as from source
+    my $new = SVK::Merge::Info->new;
+    for (keys %{ { %$self, %$other } }) {
+	if ($self->{$_} && $other->{$_}) {
+	    $new->{$_} = $self->{$_}{rev} > $other->{$_}{rev}
+		? $self->{$_} : $other->{$_};
+	}
+	else {
+	    $new->{$_} = $self->{$_} ? $self->{$_} : $other->{$_};
+	}
+    }
+    return $new;
 }
 
 sub resolve {
@@ -425,6 +450,11 @@ sub resolve {
 sub verbatim {
     my ($self) = @_;
     return { map { $_ => $self->{$_}{rev}; } keys %$self };
+}
+
+sub as_string {
+    my $self = shift;
+    return join ("\n", map {"$_:$self->{$_}{rev}"} sort keys %$self);
 }
 
 =head1 TODO

@@ -241,7 +241,7 @@ sub apply_to {
     return $editor->{conflicts};
 }
 
-# XXX: update and regen are identify.  the only difference is soruce or target to be updated
+# XXX: update and regen are identical.  the only difference is soruce or target to be updated
 sub update {
     my ($self) = @_;
     die loc("Target not local nor mirrored, unable to update patch.\n")
