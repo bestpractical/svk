@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 7;
+plan_svm tests => 8;
 
 our $output;
 # build another tree to be mirrored ourself
@@ -102,4 +102,32 @@ $svk->smerge ('-BCI', '//m', '//new');
 $svk->smerge ('-BI', '--remoterev', '--host', 'source', '//m', '//new');
 is ($srepos->fs->youngest_rev, 5);
 
+
+TODO: {
+    local $TODO = "Don't commit an empty merge created by pushing changes immediately after a pull";
+
+    $svk->smerge ('-m', 'sync before simultaneous changes - pull', '//m', '//l');
+    $svk->smerge ('-I', '//l', '//m');
+
+    append_file ("$copath/Q/qu", "foo\n");
+    $svk->commit ($copath, "-m", "simultaneous changes - local");
+    $svk->switch ('//m', $copath);
+    append_file ("$copath/Q/qz", "bar\n");
+    $svk->commit ($copath, "-m", "simultaneous changes - remote");
+
+    $svk->smerge ('-m', 'simultaneous changes - pull', '//m', '//l');
+    is_output ($svk, 'smerge', ['-I', '//l', '//m'],
+	       ['Auto-merging (6, 17) /l to /m (base /m:16).',
+		'===> Auto-merging (6, 15) /l to /m (base /l:6).',
+		"Merging back to mirror source $uri/A.",
+		"U   Q/qu",
+		"New merge ticket: $uuid:/l:15",
+		'Merge back committed as revision 6.',
+		"Syncing $uri/A",
+		'Retrieving log information from 6 to 6',
+		'Committed revision 18 from revision 6.',
+		'===> Auto-merging (15, 17) /l to /m (base /m:16).',
+		"Merging back to mirror source $uri/A.",
+		"Empty merge."]);
+}
 
