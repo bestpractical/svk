@@ -58,7 +58,15 @@ sub run {
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();
-	$m->run ($self->{torev});
+
+        if ($self->{sync_all}) {
+            print loc("Starting to synchronize %1\n", $target->{depotpath});
+            eval { $m->run ($self->{torev}); 1 } or warn $@;
+            next;
+        }
+        else {
+            $m->run ($self->{torev});
+        }
     }
     return;
 }
