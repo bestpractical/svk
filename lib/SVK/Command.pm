@@ -688,6 +688,14 @@ sub msg_handler {
 	 });
 }
 
+sub command {
+    my ($self, $command, $args) = @_;
+    require "SVK/Command/$command.pm";
+
+    my $cmd = "SVK::Command::$command"->new(%$self);
+    $cmd->{$_} = $args->{$_} for sort keys %$args;
+    return $cmd;
+}
 
 1;
 

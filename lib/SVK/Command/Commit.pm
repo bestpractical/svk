@@ -34,12 +34,13 @@ sub target_prompt { $target_prompt }
 
 sub under_mirror {
     my ($self, $target) = @_;
+    return if $self->{direct};
     HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
 }
 
 sub check_mirrored_path {
     my ($self, $target) = @_;
-    if (!$self->{direct} && $self->under_mirror ($target)) {
+    if ($self->under_mirror ($target)) {
 	print loc ("%1 is under mirrored path.\n", $target->{depotpath});
 	return;
     }

@@ -150,29 +150,20 @@ sub recover_headrev {
         qr/^[YyNn]/,
     ) =~ /^[Yy]/ or die loc("Aborted.\n");
 
-    my $rm_edit = $self->get_commit_editor(
-        $fs->revision_root ($fs->youngest_rev),
-        sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %$target
-    );
-    $rm_edit->open_root;
-    $rm_edit->delete_entry ($m->{target_path});
-    $rm_edit->close_edit;
+    $self->command(
+        Delete => { direct => 1, message => '' }
+    )->run($target);
 
-    my $cp_edit = $self->get_commit_editor(
-        $fs->revision_root ($fs->youngest_rev),
-        sub {
-            print loc("Committed revision %1.\n", $_[0]);
-            $fs->change_rev_prop ($_[0], $_ => $props->{$_})
-                foreach sort keys %$props;
-        }, '/', %$target
-    );
-    $cp_edit->open_root;
-    $cp_edit->copy_directory (
-        $m->{target_path},
-        "file://$m->{target}$m->{target_path}",
-        $rev,
-    );
-    $cp_edit->close_edit;
+    $self->command(
+        Copy => { rev => $rev, direct  => 1, message => '' },
+    )->run($target => $target);
+
+    # XXX - race condition? should get the last committed rev instead
+    $target->refresh_revision;
+
+    $self->command(
+        Propset => { direct  => 1, revprop => 1 },
+    )->run($_ => $props->{$_}, $target) for sort keys %$props;
 
     print loc("Mirror state successfully recovered.\n");
     return;
