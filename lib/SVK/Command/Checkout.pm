@@ -66,6 +66,8 @@ sub _do_detach {
         $checkout->store ($copath, _remove_entry);
         print loc("Checkout path '%1' detached.\n", $copath);
     }
+
+    $self->{xd}{modified}++;
     return;
 }
 
