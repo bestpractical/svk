@@ -4,6 +4,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -34,7 +35,7 @@ sub do_delete_direct {
 
     die loc("path %1 does not exist.\n", $arg{path}) if $kind == $SVN::Node::none;
 
-    if ($self->svn_mirror &&
+    if (HAS_SVN_MIRROR and
 	(my ($m, $mpath) = SVN::Mirror::is_mirrored ($arg{repos},
 						     $arg{path}))) {
 	die "Can't delete something inside mirrored path"

@@ -5,7 +5,7 @@ our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
 use SVN::Delta;
 use File::Path;
-use SVK::Util qw( get_anchor md5 );
+use SVK::Util qw( get_anchor md5_fh );
 
 =head1 NAME
 
@@ -118,7 +118,7 @@ sub apply_textdelta {
 
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
 	if ($checksum) {
-	    my $md5 = md5($base);
+	    my $md5 = md5_fh ($base);
 	    die loc("source checksum mismatch") if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}

@@ -6,7 +6,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
-use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile abs2rel);
+use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh find_svm_source tmpfile abs2rel );
 use SVN::Simple::Edit;
 
 my $target_prompt = '=== below are targets to be committed ===';
@@ -34,7 +34,7 @@ sub target_prompt { $target_prompt }
 
 sub under_mirror {
     my ($self, $target) = @_;
-    svn_mirror && SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
+    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
 }
 
 sub check_mirrored_path {
@@ -93,7 +93,7 @@ sub get_editor {
 
     my ($base_rev, $m, $mpath);
 
-    if (!$self->{direct} && svn_mirror &&
+    if (!$self->{direct} and HAS_SVN_MIRROR and
 	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
 	print loc("Merging back to SVN::Mirror source %1.\n", $m->{source});
 	if ($self->{check_only}) {

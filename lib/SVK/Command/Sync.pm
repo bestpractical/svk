@@ -4,6 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
+use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -26,7 +27,7 @@ sub copy_notify {
 
 sub run {
     my ($self, @arg) = @_;
-    die loc("cannot load SVN::Mirror") unless $self->svn_mirror;
+    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
 
     die loc("argument skipto not allowed when multiple target specified")
 	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);

@@ -3,8 +3,8 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
-use SVK::Util qw(svn_mirror);
 use SVK::I18N;
+use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('upgrade' => 'upgrade',
@@ -27,7 +27,7 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    die loc("cannot load SVN::Mirror") unless svn_mirror;
+    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
 
     if ($self->{upgrade}) {
 	SVN::Mirror::upgrade ($target->{repos});

@@ -1,6 +1,6 @@
 package SVK::Merge;
 use strict;
-use SVK::Util qw (find_svm_source find_local_mirror svn_mirror is_executable);
+use SVK::Util qw(HAS_SVN_MIRROR find_svm_source find_local_mirror is_executable);
 use SVK::I18N;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;
@@ -197,7 +197,7 @@ sub copy_ancestors {
 	    ($uuid, $hpath, $hrev) = split ':', $source;
 	    if ($uuid ne $myuuid) {
 		my ($m, $mpath);
-		if (svn_mirror &&
+		if (HAS_SVN_MIRROR &&
 		    (($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
 		    ($hpath, $hrev) = ($m->{target_path}, $m->find_local_rev ($hrev));
 		    # XXX: WTF? need test suite for this

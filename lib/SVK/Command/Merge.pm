@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Delay;
 use SVK::Command::Log;
 use SVK::Merge;
-use SVK::Util qw (get_buffer_from_editor find_svm_source svn_mirror);
+use SVK::Util qw( get_buffer_from_editor find_svm_source );
 
 sub options {
     ($_[0]->SUPER::options,

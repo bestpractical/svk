@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP is_symlink is_executable splitpath HAS_SYMLINK );
+use SVK::Util qw( slurp_fh md5_fh get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP is_symlink is_executable splitpath HAS_SYMLINK );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -423,7 +423,7 @@ sub xd_storage_cb {
 			       $arg{get_path} ($path);
 			       my $base = get_fh ($arg{oldroot}, '<',
 						  $path, $copath);
-			       my $md5 = md5 ($base);
+			       my $md5 = md5_fh ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
 			       return [$base, undef, $md5];
@@ -888,7 +888,7 @@ sub _delta_file {
     }
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, 0, undef, undef,
 		     $fullprop);
-    my $mymd5 = md5($fh);
+    my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
 
     $arg{base} = 0 if $arg{in_copy};

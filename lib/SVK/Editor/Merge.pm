@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor tmpfile devnull );
+use SVK::Util qw( slurp_fh md5_fh get_anchor tmpfile devnull );
 use IO::Digest;
 
 =head1 NAME

@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util 'svn_mirror';
+use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('l|limit=i'	=> 'limit',
@@ -18,7 +18,7 @@ sub options {
 sub _log_remote_rev {
     my ($repos, $path, $remoteonly, $host) = @_;
     $host ||= '';
-    return sub {"r$_[0]$host"} unless svn_mirror and SVN::Mirror::list_mirror ($repos);
+    return sub {"r$_[0]$host"} unless HAS_SVN_MIRROR and SVN::Mirror::list_mirror ($repos);
     # save some initialization
     my $m = SVN::Mirror::is_mirrored ($repos, $path) || 'SVN::Mirror';
     sub {
