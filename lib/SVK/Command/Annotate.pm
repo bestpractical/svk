@@ -85,7 +85,7 @@ SVK::Command::Annotate - Display per-line revision and author info
 
  annotate [PATH][@REV]
  annotate [-r REV] [PATH]
- annotate DEPOTPATH[@rev]
+ annotate DEPOTPATH[@REV]
  annotate [-r REV] DEPOTPATH
 
 =head1 OPTIONS

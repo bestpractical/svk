@@ -814,7 +814,7 @@ sub prompt_depotpath {
     if (defined $default and $default =~ m{(^/[^/]*/)}) {
         my $depot = $1;
         my $prompt = loc("
-Next, you need to choose another depot path to serve as your private branch,
+Next, please choose another depot path to serve as your private branch,
 usually something like %1your_project/.  SVK will copy the mirrored path
 into this new path, so you can commit into it without affecting the remote
 repository.  Enter a suitable name below to place it under %1; you may also
