@@ -111,7 +111,11 @@ sub run {
     my @depots = (defined($_[1])) ? @_[1..$#_] : sort keys %{$self->{xd}{depotmap}};
     foreach my $depot (@depots) {
 	$depot =~ s{/}{}g;
-	$target = $self->arg_depotpath ("/$depot/");
+	$target = eval { $self->arg_depotpath ("/$depot/") };
+	if ($@) {
+	    warn loc ("Depot /%1/ not loadable.\n", $depot);
+	    next;
+	}
 	my @paths = SVN::Mirror::list_mirror ($target->{repos});
 	my $fs = $target->{repos}->fs;
 	my $root = $fs->revision_root ($fs->youngest_rev);
