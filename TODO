@@ -21,3 +21,7 @@
   - cache for modified files also, but the gain is marginal.
 
 * finalize SVK::Patch interface
+
+* improve mirror information
+  - svk mirror --list
+  - svk mirror --relocate

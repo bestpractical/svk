@@ -153,6 +153,7 @@ sub add_directory {
     my ($self, $path) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
+    die loc("path %1 already exists", $copath) if -e $copath;
     mkdir ($copath) unless $self->{check_only};
     my $report = $path;
     $report =~ s/^\Q$self->{target}\E/$self->{report}/ if $self->{report};

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 9;
+use Test::More tests => 10;
 use strict;
 require 't/tree.pl';
 use SVK::Command;
@@ -36,3 +36,10 @@ ok ($@ =~ qr'overlapping checkout');
 
 $svk->checkout ('-r5', '//V-3.1', 'V-3.1-r5');
 ok (-e 'V-3.1-r5/A/P/pe');
+
+TODO: {
+local $TODO = 'checkout target is file';
+
+$svk->checkout ('//V-3.1/A/Q/qu');
+ok (-e 'Q/qu');
+}

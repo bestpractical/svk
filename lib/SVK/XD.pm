@@ -494,7 +494,6 @@ sub do_update {
 	$update_target->anchorify;
     }
     else {
-	# XXX: should let Editor::XD take care of mkdir with add_directory
 	mkdir ($cotarget->{copath})
 	    unless $arg{check_only};
     }
@@ -504,13 +503,13 @@ sub do_update {
 
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
-	 src => $update_target, xd => $self);
+	 src => $update_target, xd => $self, check_only => $arg{check_only});
     $merge->run ($self->get_editor (copath => $copath, path => $path,
 				    oldroot => $xdroot, newroot => $update_target->root,
 				    revision => $update_target->{revision},
 				    anchor => $cotarget->{path},
 				    target => $cotarget->{targets}[0] || '',
-				    update => 1));
+				    update => 1, check_only => $arg{check_only}));
 }
 
 sub do_add {
