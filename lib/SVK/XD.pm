@@ -272,7 +272,7 @@ repository to be opened.
 sub find_repos {
     my ($self, $depotpath, $open) = @_;
     die loc("no depot spec") unless $depotpath;
-    my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*?)/?$|
+    my ($depot, $path) = $depotpath =~ m|^/([^/]*)(/.*?)/?$|
 	or die loc("%1 is not a depot path.\n", $depotpath);
 
     my $repospath = $self->{depotmap}{$depot} or die loc("no such depot: %1", $depot);

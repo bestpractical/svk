@@ -157,7 +157,7 @@ sub get_editor {
     if ($self->{patch}) {
 	require SVK::Patch;
 	die loc ("Illegal patch name: %1.\n", $self->{patch})
-	    if $self->{patch} !~ m/^[\w\-]+$/;
+	    if $self->{patch} =~ m!/!;
 	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
 				     $target->depotname, $source, $target);
 	$patch->{ticket} = SVK::Merge->new (xd => $self->{xd})->merge_info ($source)->add_target ($source)->as_string

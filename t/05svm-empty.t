@@ -9,13 +9,13 @@ or plan skip_all => "SVN::Mirror not installed";
 plan tests => 2;
 
 # build another tree to which we want to mirror ourselves.
-my ($xd, $svk) = build_test('svm_empty');
-$svk->mkdir ('-m', 'remote trunk', '/svm_empty/trunk');
-$svk->ps ('-m', 'foo', 'bar' => 'baz', '/svm_empty/trunk');
+my ($xd, $svk) = build_test('svm-empty');
+$svk->mkdir ('-m', 'remote trunk', '/svm-empty/trunk');
+$svk->ps ('-m', 'foo', 'bar' => 'baz', '/svm-empty/trunk');
 $svk->mkdir ('-m', 'this is the local tree', '//local');
 waste_rev ($svk, '//local/tree');
 
-my ($drepospath, $dpath, $drepos) = $xd->find_repos ('/svm_empty/trunk', 1);
+my ($drepospath, $dpath, $drepos) = $xd->find_repos ('/svm-empty/trunk', 1);
 my $uri = uri($drepospath);
 $svk->mirror ('//remote', $uri.($dpath eq '/' ? '' : $dpath));
 

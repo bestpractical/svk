@@ -372,7 +372,7 @@ sub arg_uri_maybe {
 
     my $path = get_prompt(
         loc("Name a depot path for this mirror (under //mirror/ if no leading '/'): "),
-        qr{^(?:/(?:$depots)/)?\w+},
+        qr{^(?:/(?:$depots)/)?[^/]},
     );
     $path = "//mirror/$path" unless $path =~ m!^/!;
 
