@@ -36,24 +36,39 @@ sub do_update {
 			   1, 1, 0, 1);
 }
 
+sub do_add {
+    my ($info, %arg) = @_;
+
+    $info->{checkout}->store ($arg{copath}, { schedule => 'add' });
+}
+
 use File::Find;
 
 sub checkout_crawler {
     my ($info, %arg) = @_;
+
+    my %schedule = map {$_ => $info->{checkout}->get ($_)->{schedule}}
+	$info->{checkout}->find ($arg{copath}, {schedule => qr'.*'});
 
     find(sub {
 	     my $cpath = $File::Find::name;
 	     return if -d $cpath;
 	     $cpath =~ s|^$arg{copath}/|$arg{path}/|;
 
+	     if (exists $schedule{$File::Find::name}) {
+		 &{$arg{cb_add}} ($cpath, $File::Find::name)
+		     if $arg{cb_add};
+		 return;
+	     }
 	     my $kind = $arg{root}->check_path ($cpath);
 	     if ($kind == $SVN::Node::none) {
-		 &{$arg{cb_unknown}} ($cpath, $File::Find::name);
+		 &{$arg{cb_unknown}} ($cpath, $File::Find::name)
+		     if $arg{cb_unknown};
 		 return;
 	     }
 
 	     &{$arg{cb_changed}} ($cpath, $File::Find::name)
-		 if md5file($File::Find::name) ne
+		 if $arg{cb_changed} && md5file($File::Find::name) ne
 		     $arg{root}->file_md5_checksum ($cpath);
 	  }, $arg{copath});
 

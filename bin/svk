@@ -148,6 +148,10 @@ sub diff {
 			       sub {
 				   print "?  $_[1]\n";
 			       },
+			       cb_add =>
+			       sub {
+				   print Text::Diff::diff (\'', $_[1]);
+			       },
 			       cb_changed =>
 			       sub {
 				   print Text::Diff::diff ($root->file_contents($_[0]), $_[1])
@@ -176,6 +180,10 @@ sub status {
 			       cb_unknown =>
 			       sub {
 				   print "?  $_[1]\n";
+			       },
+			       cb_add =>
+			       sub {
+				   print "A  $_[1]\n";
 			       },
 			       cb_changed =>
 			       sub {
@@ -247,11 +255,15 @@ sub annotate {
 sub add {
     my ($copath) = @_;
     $copath = File::Spec->rel2abs ($copath);
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
 
     die "no dir yet" if -d $copath;
 
-    $info->{checkout}->store ($copath, { schedule => 'add' });
+    SVN::XD::do_add ($info,
+		     copath => $copath,
+		     path => $path,
+		    );
+
     print "A  $copath\n";
 }
 
@@ -266,11 +278,7 @@ sub commit {
     $copath = File::Spec->rel2abs ($copath);
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    for ($info->{checkout}->find ($copath, {schedule => qr'.*'})) {
-	my $action = $info->{checkout}->get ($_)->{schedule};
-	print "A  $_ ($action)\n";
-    }
-
+    # harvest
     SVN::XD::checkout_crawler ($info,
 			       repos => $repos,
 			       copath => $copath,
@@ -279,12 +287,15 @@ sub commit {
 			       root => $repos->fs->revision_root ($cinfo->{revision}),
 			       cb_unknown =>
 			       sub {},
+			       cb_add =>
+			       sub {
+				   print "A  $_[1]\n";
+			       },
 			       cb_changed =>
 			       sub {
 				   print "M  $_[1]\n";
 			       },
 			      );
-
 }
 
 *co = *checkout;
