@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 26;
+use Test::More tests => 27;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -135,3 +135,7 @@ $svk->checkout ('//', $copath);
 $svk->admin ('rmcache');
 is_output ($svk, 'st', [$copath],
 	   [__"M   $copath/le/mixed2"]);
+
+$svk->commit (-m => 'fix eol', $copath);
+$svk->admin ('rmcache');
+is_output ($svk, 'st', [$copath], []);
