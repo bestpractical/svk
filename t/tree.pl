@@ -27,7 +27,7 @@ BEGIN {
         ref($answer) ? shift(@$answer) : $answer
     } unless $ENV{DEBUG_INTERACTIVE};
 
-    chdir catdir( dirname(__FILE__), '..' );
+    chdir catdir(abs_path(dirname(__FILE__)), '..' );
 }
 
 sub plan_svm {
