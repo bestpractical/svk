@@ -165,7 +165,10 @@ sub find_merge_sources {
     my ($self, $target, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
     my $info = $self->merge_info ($target->new);
-    $info->add_target ($target) unless $noself;
+
+    $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath)->{revision})
+	if defined $target->{copath};
+    $info->add_target ($target, $self->{xd}) unless $noself;
 
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
     return $minfo if $verbatim;

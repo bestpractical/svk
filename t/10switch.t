@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 10;
 require 't/tree.pl';
 
 # build another tree to be mirrored ourself
@@ -38,6 +38,11 @@ is_output ($svk, 'switch', ['//A-branch', 'P'],
 
 is_output ($svk, 'switch', ['//A-branch-sdnfosa'],
 	   ['path //A-branch-sdnfosa does not exist.']);
+
+$svk->mv (-m => 'mv', '//A-branch' => '//A-branch-renamed');
+
+is_output ($svk, 'switch', ['//A-branch-renamed'],
+	   ["Syncing //A-branch(/A-branch) in $corpath to 4."]);
 
 is_output ($svk, 'switch', ['--detach'],
 	   [__("Checkout path '$corpath' detached.")]);
