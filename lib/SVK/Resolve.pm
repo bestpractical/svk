@@ -39,7 +39,6 @@ sub init {
     $self->{merged} = tmpfile ('merged-', OPEN => 0, UNLINK => 0);
     $self->{conflict} = "$self->{mfh}";
     close $self->{mfh};
-#    close $self->{fh}{$_}[0] for qw( local new base );
 
     $self->{this_action} = $self->{action};
     File::Copy::copy ($self->{conflict} => $self->{merged});

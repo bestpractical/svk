@@ -1,3 +1,33 @@
+[Changes for 0.23 - 18 Oct, 2004]
+
+* New: commit / smerge -P creats patch, and obsoletes unintuitive svk
+  patch create.
+
+* New: svk merge now supports -cN which means -r N-1:N.
+
+* New: svk mirror --recover. [Autrijus]
+
+* Proper svn:eol-style support with the same semantics as svn. [Autrijus]
+
+* The SVK Help system, as SVK/Help/[lang/]/*.pod. [Autrijus]
+
+* The log produced by smerge -l no longer contains the duplicated logs
+  that were merged from the current target.
+
+* smerge -I and repeated smerge now works on checkout.
+
+* commit --import or import now treats obstructed items as replaced.
+
+* Don't skip explicit targets on svk add.
+
+* Correctly obtain the user name on non-unix platforms. [Autrijus]
+
+* Fix pool abuse in history tracing code. [Autrijus]
+
+* Fix smerge -IB.
+
+* svk patch delete now works.
+
 [Changes for 0.22 - 4 Oct, 2004]
 
 * Interactive merge support is now default. [Autrijus]
