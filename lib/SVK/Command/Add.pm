@@ -4,6 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 
 sub options {
     ('N|non-recursive'	=> 'nrec',
@@ -22,6 +23,8 @@ sub lock {
 sub run {
     my ($self, $target) = @_;
 
+    return loc ("Can't find %1.\n", $target->{report})
+	unless -l $target->{copath} || -e _;
     $self->{xd}->do_add ( %$target,
 			  recursive => !$self->{nrec},
 			  quiet => $self->{quiet},

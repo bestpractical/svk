@@ -338,17 +338,19 @@ sub condense {
     my $self = shift;
     my @targets = map {abs_path($_)} @_;
     my ($anchor, $report);
-    $report = $_[0];
-    for (@targets) {
+    for my $path (@_) {
+	my $copath = abs_path ($path);
+	die loc("path %1 is not a checkout path\n", $path)
+	    unless $copath;
 	if (!$anchor) {
-	    $anchor = $_;
+	    $anchor = $copath;
 	    $report = $_[0]
 	}
 	my $cinfo = $self->{checkout}->get ($anchor);
 	my $schedule = $cinfo->{'.schedule'} || '';
-	if ($anchor ne $_ || -f $anchor || $cinfo->{scheduleanchor} ||
+	if ($anchor ne $copath || -f $anchor || $cinfo->{scheduleanchor} ||
 	    $schedule eq 'add' || $schedule eq 'delete') {
-	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1) ||
+	    while ($anchor.'/' ne substr ($copath, 0, length($anchor)+1) ||
 		   $self->{checkout}->get ($anchor)->{scheduleanchor}) {
 		($anchor, $report) = get_anchor (0, $anchor, $report);
 	    }

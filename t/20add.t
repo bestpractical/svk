@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
+use Test::More tests => 18;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -8,7 +8,8 @@ my ($copath, $corpath) = get_copath ('add');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 is_output_like ($svk, 'add', [], qr'SYNOPSIS', 'add - help');
-
+is_output_like ($svk, 'add', ['nonexist'],
+		qr'not a checkout path');
 chdir ($copath);
 mkdir ('A');
 mkdir ('A/deep');
@@ -21,11 +22,11 @@ overwrite_file ("test.txt", "test..\n");
 is_output ($svk, 'add', ['test.txt'],
 	   ['A   test.txt']);
 
-TODO: {
-local $TODO = 'file not found';
-is_output ($svk, 'add', ['Z/bzz'],
-	   ["Can't find Z/bzz"]);
-}
+is_output_like ($svk, 'add', ['Z/bzz'],
+		qr'not a checkout path');
+is_output ($svk, 'add', ['asdf'],
+	   ["Can't find asdf."]);
+
 is_output ($svk, 'add', ['A/foo'],
 	   ['A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');
