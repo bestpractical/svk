@@ -38,7 +38,7 @@ features(
 );
 
 if( eval{ require SVN::Mirror } ) {
-    requires( 'SVN::Mirror' => '0.45' );
+    requires( 'SVN::Mirror' => '0.48' );
 } else {
     features( 'SVN::Mirror support' => [
                -default => 1,
