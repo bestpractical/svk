@@ -9,7 +9,7 @@ use File::Spec;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0 || $#arg > 1;
+    return if $#arg < 0 || $#arg > 1;
     my $depotpath = $self->arg_depotpath ($arg[0]);
     return ($depotpath, $self->arg_copath ($arg[1] || ''));
 }

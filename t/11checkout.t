@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 20;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -44,6 +44,11 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu'],
 	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in $corpath/qu to 6.",
 	    'A   qu']);
 ok (-e 'qu');
+
+is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu', 'boo'],
+	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in $corpath/boo to 6.",
+	    'A   boo']);
+ok (-e 'boo');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
 	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/just-q to 6.",

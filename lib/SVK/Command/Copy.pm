@@ -115,6 +115,7 @@ sub run {
     return "Different sources.\n"
 	if $m && !$dst->same_source (@src);
     $self->check_src (@src);
+    # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
     if ($dst->{copath}) {
 	# XXX: check if dst is versioned

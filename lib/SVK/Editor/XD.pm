@@ -14,7 +14,7 @@ SVK::Editor::XD - An editor for modifying checkout copies
 =head1 SYNOPSIS
 
 $editor = SVK::Editor::XD->new
-    ( anchor => $anchor,
+    ( path => $path,
       target => $target,
       oldroot => $fs->revision_root ($fromrev),
       newroot => $fs->revision_root ($torev),
@@ -37,13 +37,13 @@ which is used for bringing changes from depot to checkout copies.
 
 =over
 
-=item anchor
+=item path
 
 The anchor of the editor calls.
 
 =item target
 
-The target path of the editor calls.
+The target path of the editor calls.  Used only for path reporting translation.
 
 =item xd
 
@@ -122,6 +122,7 @@ sub apply_textdelta {
 	$self->{base}{$path} = [$base, $basename,
 				-l $basename ? () : [stat($base)]];
     }
+    # XXX: should test merge to co with keywords
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath, 0, undef, undef,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
@@ -149,13 +150,13 @@ sub close_file {
 			     copath => $copath, quiet => $self->{quiet});
     }
     if ($self->{update}) {
-	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}});
+	# XXX: use store_fast with new data::hierarchy release.
+	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}}, 1);
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
     delete $self->{props}{$path};
     delete $self->{added}{$path};
-
 }
 
 sub add_directory {

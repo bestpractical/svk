@@ -9,7 +9,7 @@ use SVK::Command::Log;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg != 0;
+    return if $#arg != 0;
     return ($self->arg_depotpath ($arg[0]));
 }
 

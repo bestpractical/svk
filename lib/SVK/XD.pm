@@ -475,10 +475,10 @@ L<SVK::Editor::Merge> when called in array context.
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my ($copath, $anchor) = @arg{qw/copath path/};
-    $anchor = '' if $anchor eq '/';
+    my ($copath, $path) = @arg{qw/copath path/};
+    $path = '' if $path eq '/';
     $arg{get_copath} = sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) };
-    $arg{get_path} = sub { $_[0] = "$anchor/$_[0]" };
+    $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
     return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
@@ -580,6 +580,13 @@ sub do_delete {
     my @deleted;
 
     # check for if the file/dir is modified.
+    unless ($arg{targets}) {
+	my $target;
+	($arg{path}, $target, $arg{copath}, undef, $arg{report}) =
+	    get_anchor (1, @arg{qw/path copath report/});
+	$arg{targets} = [$target];
+    }
+
     $self->checkout_delta ( %arg,
 			    xdroot => $xdroot,
 			    absent_as_delete => 1,
@@ -744,6 +751,11 @@ generate cb_unknown calls for sub-entries within absent entry.
 =item absent_ignore
 
 Don't generate absent_* calls.
+
+=item expand_copy
+
+Mimic the behavior like SVN::Repos::dir_delta, lose copy information
+and treat all copied descendents as added too.
 
 =back
 
@@ -955,20 +967,27 @@ sub _delta_dir {
 
     # XXX: Merge this with @direntries so we have single entry to descendents
     for my $entry (sort keys %$entries) {
-	next if defined $targets && !exists $targets->{$entry};
+	my $newtarget;
+	if (defined $targets) {
+	    next unless exists $targets->{$entry};
+	    $newtarget = delete $targets->{$entry};
+	}
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	my $copath = SVK::Target->copath ($arg{copath}, $entry);
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
+	my $expanding = ($arg{expand_copy} && $arg{in_copy});
 	$self->$delta ( %arg,
-			add => 0,
-			base => 1,
+			add => $expanding,
+			# when expanding, dir still needs base to read entries,
+			# while file needs non-base to generate text delta
+			base => !($expanding && $kind == $SVN::Node::file),
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
 			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			kind => $kind,
-			targets => $targets ? $targets->{$entry} : undef,
+			targets => $newtarget,
 			baton => $baton,
 			root => 0,
 			cinfo => $ccinfo,
@@ -976,7 +995,6 @@ sub _delta_dir {
 			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			copath => $copath)
 	    and ($signature && $signature->invalidate ($entry));
-	delete $targets->{$entry} if defined $targets;
     }
 
     if ($signature) {
@@ -991,17 +1009,24 @@ sub _delta_dir {
 				($arg{xdroot}, $arg{path},
 				 $arg{copath}, $cinfo)->{'svn:ignore'} || ''));
 
-    opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
-    my @direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
-    closedir $dir;
+    my @direntries;
+    unless (defined $targets && !keys %$targets) {
+	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
+	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
+    }
 
     for my $entry (@direntries) {
 	next if $entry =~ m/$ignore/;
-	next if	defined $targets && !exists $targets->{$entry};
+	my $newtarget;
+	if (defined $targets) {
+	    next unless exists $targets->{$entry};
+	    $newtarget = delete $targets->{$entry};
+	}
 	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $entry),
 			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
-			 targets => $targets ? $targets->{$entry} : undef);
+			 base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
+			 targets => $newtarget, kind => $SVN::Node::none);
 	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
 	my $sche = $ccinfo->{'.schedule'} || '';
 	my $add = ($sche || $arg{auto_add}) ||
@@ -1016,38 +1041,34 @@ sub _delta_dir {
 		    $arg{cb_unknown}->($newpaths{path}, $newpaths{copath})
 			if $arg{cb_unknown};
 		}
-		delete $targets->{$entry} if defined $targets;
 	    }
 	    next;
 	}
 	lstat ($newpaths{copath});
+	# XXX: warn about unreadable entry?
 	next unless -r _ || -l _;
 	my $delta = (-d _ && !-l _)
 	    ? \&_delta_dir : \&_delta_file;
-	my $kind = $ccinfo->{'.copyfrom'} ?
-	    $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'}) : $SVN::Node::none;
-	$self->$delta ( %arg,
-			%newpaths,
-			add => $add,
-			base => exists $ccinfo->{'.copyfrom'},
-			kind => $kind,
-			baton => $baton,
-			root => 0,
-			path => $ccinfo->{'.copyfrom'} || $newpaths{path},
-			base_root => $ccinfo->{'.copyfrom'} ?
-			    $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : $arg{base_root},
-			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$entry",
-			cinfo => $ccinfo );
-	delete $targets->{$entry} if defined $targets;
+	my $copyfrom = $ccinfo->{'.copyfrom'};
+	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
+	$self->$delta ( %arg, %newpaths, add => 1, baton => $baton,
+			root => 0, base => 0, cinfo => $ccinfo,
+			$copyfrom ?
+			( base => 1,
+			  in_copy => $arg{expand_copy},
+			  kind => $fromroot->check_path ($copyfrom),
+			  path => $copyfrom,
+			  base_root => $fromroot,
+			  base_path => $copyfrom) : (),
+		      );
     }
 
     if (defined $targets) {
 	print loc ("Unknown target: %1.\n", $_) for keys %$targets;
     }
 
-    # chekc prop diff
     $arg{editor}->close_directory ($baton, $pool)
-	unless $arg{root} || $schedule eq 'delete';
+	unless $arg{root};
     return 0;
 }
 
@@ -1060,6 +1081,8 @@ sub checkout_delta {
     $arg{base_root} ||= $arg{xdroot};
     $arg{base_path} ||= $arg{path};
     my $kind = $arg{kind} = $arg{base_root}->check_path ($arg{base_path});
+    die "calling checkout_delta with file"
+	if $kind == $SVN::Node::file;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
@@ -1067,20 +1090,19 @@ sub checkout_delta {
 	if $arg{debug};
     $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Target->copath ($copath, $_[0])) };
     # XXX: translate $repospath to use '/'
-    $arg{cb_copyfrom} ||= sub { ("file://$repospath$_[0]", $_[1]) };
+    $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
+	: sub { ("file://$repospath$_[0]", $_[1]) };
     my $rev = $arg{cb_rev}->('');
     my $baton = $arg{editor}->open_root ($rev);
     local $SIG{INT} = sub {
 	$arg{editor}->abort_edit;
 	die loc("Interrupted.\n");
     };
-    if ($kind == $SVN::Node::file) {
-	$self->_delta_file (%arg, baton => $baton, base => 1);
-    }
-    elsif ($kind == $SVN::Node::dir) {
+    if ($kind == $SVN::Node::dir) {
 	$self->_delta_dir (%arg, baton => $baton, root => 1, base => 1);
     }
     else {
+	# this can be removed once condense eliminates unknowns
 	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
 	my $sche =
 	    $self->{checkout}->get ($arg{copath})->{'.schedule'} || '';
@@ -1242,7 +1264,7 @@ sub get_fh {
     }
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
-	    if defined $prop->{'svn:special'} || -l $fname;
+	    if defined $prop->{'svn:special'} || ($mode eq '<' && -l $fname);
 	if (keys %$prop) {
 	    $layer ||= get_keyword_layer ($root, $path, $prop);
 	    $eol ||= get_eol_layer($root, $path, $prop);

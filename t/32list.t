@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 25;
+use Test::More tests => 49;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -34,6 +34,41 @@ foreach my $depot ('','bob') {
 	       ["/$depot/A/B/","/$depot/A/foo"]);
     is_output ($svk, 'ls', ['-f','-R',"/$depot/A/"], ["/$depot/A/B/","/$depot/A/B/foo", "/$depot/A/foo"]);
     is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap is not a versioned directory']);
+
+    my $re_date = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{2} \\d{2}:\\d{2}";
+    my $re_user = "(?:\\w+\\s+)";
+    is_output ($svk, 'ls', ['-v'],
+               [qr"      2 $re_user          $re_date A/"]);
+    is_output ($svk, 'ls', ['-v', '-r1'],
+               [qr"      1 $re_user          $re_date A/"]);
+    is_output ($svk, 'ls', ['-v', 'A/foo'], []);
+    is_output ($svk, 'ls', ['-v', '-r1', '-R'],
+               [qr"      1 $re_user          $re_date A/",
+                qr"      1 $re_user        7 $re_date  foo"]);
+    is_output ($svk, 'ls', ['-v', '-R'],
+               [qr"      2 $re_user          $re_date A/",
+                qr"      2 $re_user          $re_date  B/",
+                qr"      2 $re_user        7 $re_date   foo",
+                qr"      1 $re_user        7 $re_date  foo"]);
+    is_output ($svk, 'ls', ['-v', '-R', '-d1'],
+               [qr"      2 $re_user          $re_date A/",
+                qr"      2 $re_user          $re_date  B/",
+                qr"      1 $re_user        7 $re_date  foo"]);
+    is_output ($svk, 'ls', ['-v', '-f'],
+               [qr"      2 $re_user          $re_date /$depot/A/"]);
+    is_output ($svk, 'ls', ['-v', '-f', 'A/foo'], []);
+    is_output ($svk, 'ls', ['-v', '-f', "/$depot/"],
+               [qr"      2 $re_user          $re_date /$depot/A/"]);
+    is_output ($svk, 'ls', ['-v', '-f', "/$depot/A/"],
+               [qr"      2 $re_user          $re_date /$depot/A/B/",
+                qr"      1 $re_user        7 $re_date /$depot/A/foo"]);
+    is_output ($svk, 'ls', ['-v', '-f', '-R', "/$depot/A/"],
+               [qr"      2 $re_user          $re_date /$depot/A/B/",
+                qr"      2 $re_user        7 $re_date /$depot/A/B/foo",
+                qr"      1 $re_user        7 $re_date /$depot/A/foo"]);
+    is_output ($svk, 'ls', ['-v', '-f',"/$depot/crap/"],
+               ['Path /crap is not a versioned directory']);
+
     chdir("..");
 }
 

@@ -56,7 +56,7 @@ sub run {
 			      repos => $target->{repos},
 			      options => \@options,
 			      config => $self->{svnconfig},
-			      pool => SVN::Pool->new, auth => $self->auth,
+			      pool => SVN::Pool->new,
 			      # XXX: remove in next svn::mirror release
 			      target => $target->{repospath},
 			     );

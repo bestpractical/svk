@@ -37,8 +37,9 @@ sub new_repos {
 	$repospath = $reposbase . '-'. (++$i);
     }
     my $pool = SVN::Pool->new_default;
+    $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
     $repos = SVN::Repos::create("$repospath", undef, undef, undef,
-				{'fs-type' => $ENV{SVNFSTYPE} || 'bdb'})
+				{'fs-type' => $ENV{SVNFSTYPE}})
 	or die "failed to create repository at $repospath";
     return $repospath;
 }

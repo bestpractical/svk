@@ -17,6 +17,7 @@ my %alias = qw( co checkout
 		ci commit
 		del delete
 		rm delete
+		pg propget
 		ps propset
 		pe propedit
 		pl proplist
@@ -82,6 +83,7 @@ sub invoke {
 	    unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
 
 	if ($help || !(@args = $cmd->parse_arg(@ARGV))) {
+	    select STDERR unless $output;
 	    $cmd->usage;
 	}
 	else {
@@ -90,9 +92,10 @@ sub invoke {
 	    die $@ if $@;
 	}
     };
+    $ofh = select STDERR unless $output;
     print $ret if $ret;
     print $@ if $@;
-    select $ofh if $output;
+    select $ofh if $ofh
 }
 
 sub brief_usage {

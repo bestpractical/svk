@@ -11,7 +11,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0;
+    return if $#arg < 0;
     return ($arg[0], $self->arg_depotname ($arg[1] || '//'));
 }
 
