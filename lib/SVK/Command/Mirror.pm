@@ -14,14 +14,19 @@ sub options {
 }
 
 sub parse_arg {
-    my ($self, $path, @arg) = @_;
+    my ($self, @arg) = @_;
+
+    return (@arg ? @arg : undef) if $self->{list};
+    @arg = ('//') if $self->{upgrade} and !@arg;
+    return if !@arg;
+
+    my $path = shift(@arg);
 
     # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
     if (@arg and $path =~ /^[A-Za-z][-+.A-Za-z0-9]*:/) {
 	($arg[0], $path) = ($path, $arg[0]);
     }
 
-    $path ||= '//';
     return ($self->arg_depotpath ($path), @arg);
 }
 
@@ -36,20 +41,28 @@ sub run {
 	return;
     }
     elsif ($self->{list}) {
-	my @paths = SVN::Mirror::list_mirror ($target->{repos});
-	my $fs = $target->{repos}->fs;
-	my $root = $fs->revision_root ($fs->youngest_rev);
-	local $\ = "\n";
-	my $fmt = "%-20s %-s\n";
-	printf $fmt, loc('Path'), loc('Source');
-	print '=' x 60;
-	my $depot = $target->depotname;
-	for (@paths) {
-	    my $m = SVN::Mirror->new (target_path => $_, repos => $target->{repos},
-				      get_source => 1);
-	    printf $fmt, "/$depot$_", $m->{source};
-	}
-	return;
+        my $fmt = "%-20s\t%-s\n";
+        printf $fmt, loc('Path'), loc('Source');
+        print '=' x 60, "\n";
+        my @depots = (defined($_[1])) ? @_[1..$#_] : sort keys %{$self->{xd}{depotmap}};
+        foreach my $depot (@depots) {
+            $depot =~ s{/}{}g;
+            $target = $self->arg_depotpath ("/$depot/");
+
+            my @paths = SVN::Mirror::list_mirror ($target->{repos});
+            my $fs = $target->{repos}->fs;
+            my $root = $fs->revision_root ($fs->youngest_rev);
+            my $name = $target->depotname;
+            foreach my $path (@paths) {
+                my $m = SVN::Mirror->new(
+                    target_path => $path,
+                    repos => $target->{repos},
+                    get_source => 1
+                );
+                printf $fmt, "/$name$path", $m->{source};
+            }
+        }
+        return;
     }
     elsif ($self->{detach}) {
 	my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos},
@@ -100,7 +113,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  # You may also list the target part first:
  mirror DEPOTPATH [http|svn]://host/path
 
- mirror --list
+ mirror --list [DEPOT...]
  mirror --relocate DEPOTPATH [http|svn]://host/path 
  mirror --detach DEPOTPATH
  mirror --upgrade //

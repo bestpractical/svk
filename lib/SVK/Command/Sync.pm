@@ -14,7 +14,8 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    @arg = ('//') if $#arg < 0;
+    return (@arg ? @arg : undef) if $self->{sync_all};
+    @arg = ('//') if !@arg;
     return map {$self->arg_depotpath ($_)} @arg;
 }
 
@@ -33,13 +34,17 @@ sub run {
 	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);
 
     if ($self->{sync_all}) {
-	my @newarg;
-	for (@arg) {
-	    my ($depotname) = $self->{xd}->find_depotname ($_->{depotpath});
-	    push @newarg, $self->parse_arg
-		(map {"/$depotname$_"} SVN::Mirror::list_mirror ($_->{repos}));
+	@arg = (defined($arg[0]) ? @arg : sort keys %{$self->{xd}{depotmap}});
+        my @newarg;
+        foreach my $depot (@arg) {
+            $depot =~ s{/}{}g;
+            my $target = $self->arg_depotpath ("/$depot/");
+	    push @newarg, (
+                map {$self->arg_depotpath("/$depot$_")}
+                    SVN::Mirror::list_mirror ($target->{repos})
+            );
 	}
-	@arg = @newarg;
+        @arg = @newarg;
     }
 
     for my $target (@arg) {
@@ -68,7 +73,7 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 =head1 SYNOPSIS
 
  sync DEPOTPATH
- sync -a
+ sync --all [DEPOT...]
 
 =head1 OPTIONS
 
