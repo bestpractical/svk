@@ -32,13 +32,16 @@ requires(
         'URI'                   => '0',
         'PerlIO::eol'           => '0.13',
 	'Class::Autouse'	=> '1.15',
-        'IO::Pager'             => '0',
 );
 features(
     'Localized messages' => [
 	-default => 1,
         'Locale::Maketext::Lexicon' => '0.42',
         'Locale::Maketext::Simple'  => '0.12',
+    ],
+    'Message display through a pager' => [
+        -default => 1,
+        'IO::Pager'             => '0',
     ],
 );
 
