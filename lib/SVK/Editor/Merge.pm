@@ -307,27 +307,31 @@ sub prepare_fh {
     }
 }
 
+sub _retrieve_base
+{
+    my ($self, $path, $pool) = @_;
+    my @base = tmpfile('base-');
+    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
+    slurp_fh ($self->{base_root}->file_contents ($path, $pool), $base[FH]);
+    seek $base[FH], 0, 0;
+    return @base;
+}
+
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
 
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
-    my ($base);
     if (($pool = $info->{fpool}) &&
 	($fh->{local} = $self->{cb_localmod}->($path, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
-	    $fh->{base} = [tmpfile('base-')];
-	    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
-	    slurp_fh ($self->{base_root}->file_contents ($path, $pool),
-		      $fh->{base}[FH]);
-	    $base = $fh->{base}[FH];
-	    seek $base, 0, 0;
+	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
 	}
 	# get new
 	$fh->{new} = [tmpfile('new-')];
-	return [SVN::TxDelta::apply ($base, $fh->{new}[FH], undef, undef, $pool)];
+	return [SVN::TxDelta::apply ($fh->{base}[FH], $fh->{new}[FH], undef, undef, $pool)];
     }
     $self->{notify}->node_status ($path, 'U')
 	unless $self->{notify}->node_status ($path);
@@ -372,6 +376,24 @@ sub _merge_text_change {
     return ($conflict, $mfh);
 }
 
+sub _overwrite_local_file {
+    my ($self, $fh, $path, $nfh, $pool) = @_;
+    my $handle = $self->{storage}->
+	apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
+		$pool);
+    
+    if ($handle && $#{$handle} >= 0) {
+	if ($self->{send_fulltext}) {
+	    SVN::TxDelta::send_stream ($nfh, @$handle, $pool);
+	}
+	else {
+	    seek $fh->{local}[FH], 0, 0;
+	    my $txstream = SVN::TxDelta::new($fh->{local}[FH], $nfh, $pool);
+	    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
+	}
+    }
+}
+
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
@@ -401,22 +423,7 @@ sub close_file {
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
-	my $handle = $self->{storage}->
-	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
-			     $pool);
-
-	if ($handle && $#{$handle} >= 0) {
-	    if ($self->{send_fulltext}) {
-		SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
-			if $handle && $#{$handle} >= 0;
-	    }
-	    else {
-		seek $fh->{local}[FH], 0, 0;
-		my $txstream = SVN::TxDelta::new
-		    ($fh->{local}[FH], $mfh, $pool);
-		SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
-	    }
-	}
+	$self->_overwrite_local_file ($fh, $path, $mfh, $pool);
 
 	undef $fh->{base}[FILENAME] if $info->{addmerge};
 	$self->cleanup_fh ($fh);
@@ -495,15 +502,51 @@ sub close_directory {
 	unless $path eq '';
 }
 
+sub _merge_file_delete {
+    my ($self, $path, $rpath, $pdir, $pool) = @_;
+    return undef unless $self->{cb_localmod}->(
+		$path,
+		$self->{base_root}->file_md5_checksum ($rpath, $pool),
+		$pool);
+    return {} unless $self->{resolve};
+
+    my $fh = $self->{info}{$path}->{fh} || {};
+    $fh->{base} ||= [$self->_retrieve_base($path, $pool)];
+    $fh->{new} = [tmpfile('new-')];
+    $fh->{local} = [tmpfile('local-')];
+    my ($tmp) = $self->{cb_localmod}->($path, '', $pool);
+    slurp_fh ( $tmp->[FH], $fh->{local}[FH]);
+    seek $fh->{local}[FH], 0, 0;
+    $fh->{local}[CHECKSUM] = $tmp->[CHECKSUM];
+
+    my ($conflict, $mfh) = $self->_merge_text_change( $fh, $path, $pool);
+    if( $conflict ) {
+	$self->clean_up($fh);
+	return {};
+    } elsif( !(stat($mfh))[7] ) {
+	#delete file if merged size is 0
+	$self->clean_up($fh);
+	return undef;
+    }
+    seek $mfh, 0, 0;
+    my $iod = IO::Digest->new ($mfh, 'MD5');
+
+    $self->{info}{$path}{open} = [$pdir, -1];
+    $self->{info}{$path}{fpool} = $pool;
+    $self->ensure_open ($path);
+    $self->_overwrite_local_file ($fh, $path, $mfh, $pool);
+    ++$self->{changes};
+    $self->ensure_close ($path, $iod->hexdigest, $pool);
+
+    return 1;
+}
 # returns undef for deleting this, a hash for partial delete.
 # returns 1 for merged delete
 # Note that empty hash means don't delete.
 sub _check_delete_conflict {
     my ($self, $path, $rpath, $kind, $pdir, $pool) = @_;
-    return $self->{cb_localmod}->
-	($path, $self->{base_root}->file_md5_checksum ($rpath, $pool), $pool)
-	    ? {} : undef
-		if $kind == $SVN::Node::file;
+
+    return $self->_merge_file_delete($path, $rpath, $pdir, $pool) if $kind == $SVN::Node::file;
 
     my $dirmodified = $self->{cb_dirdelta}->($path, $self->{base_root}, $rpath);
     my $entries = $self->{base_root}->dir_entries ($rpath);
@@ -584,11 +627,12 @@ sub delete_entry {
     my $torm = $self->_check_delete_conflict ($path, $rpath,
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
 
-    if ($torm) {
+    if (ref($torm)) {
 	$self->node_conflict ($path);
 	$self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, @arg);
-    }
-    else {
+    } elsif( $torm && $torm == 1) {
+	$self->{notify}->node_status ($path, 'G');
+    } else {
 	$self->{storage}->delete_entry ($path, $self->{cb_rev}->($path),
 					$self->{storage_baton}{$pdir}, @arg);
 	$self->{notify}->node_status ($path, 'D');
