@@ -46,7 +46,7 @@ sub parse_arg {
         die loc("Cannot specify both 'to' and 'from'.\n");
     }
 
-    my $target1 = $self->arg_co_maybe ($arg[0]);
+    my $target1 = $self->arg_co_maybe (@arg ? $arg[0] : '');
     my $target2 = $target1->copied_from;
 
     if (!defined ($target2)) {
@@ -54,6 +54,10 @@ sub parse_arg {
     }
 
     if ($self->{from}) {
+        # When using "from", $target1 must be a depotpath.
+        if ($target1->{copath}) {
+            $target1 = $self->arg_depotpath ($target1->{depotpath});
+        }
         return ($target1, $target2);
     }
     else {

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 6;
+use Test::More tests => 7;
 use strict;
 use File::Path;
 use Cwd;
@@ -45,6 +45,15 @@ is_output ($svk, 'smerge', ['-m', 'merging from local', '--from', '//local'],
                  "D   B",
                  "New merge ticket: $uuid:/local:7",
                  "Committed revision 8."]);
+
+$svk->rm ('-m', 'rm B on local', '//local/test.pl');
+$svk->switch ('//local', $copath);
+
+is_output ($svk, 'smerge', ['-m', 'merging from copath', '--from', $copath],
+                ["Auto-merging (7, 9) /local to /trunk (base /local:7).",
+                 "D   test.pl",
+                 "New merge ticket: $uuid:/local:9",
+                 "Committed revision 10."]);
 
 is_output ($svk, 'smerge', ['-m', 'failed merge', '--from', '--to', '//local'],
                 ["Cannot specify both 'to' and 'from'."]);
