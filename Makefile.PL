@@ -12,7 +12,7 @@ version_from	('lib/SVK.pm');
 install_script	('bin/svk');
 clean_files	('t/checkout');
 requires(
-        'SVN::Core'   => $required_svn,
+#        'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Algorithm::Diff'       => '0',
         'YAML'                  => '0',
@@ -63,5 +63,9 @@ auto_install();
 WriteAll( sign => 1 );
 
 $::VERSION = $required_svn;
-die "SVN::Core $required_svn must be manually installed"
-    unless eval {require SVN::Core; SVN::Core->VERSION >= main->VERSION };
+die << "." unless eval {require SVN::Core; SVN::Core->VERSION >= main->VERSION };
+===> Warning: SVN::Core missing or outdated.
+Please manually install SVN::Core by compiling Subversion
+(version $required_svn or above) with SWIG/Perl bindings,
+and try this installation process again.
+.
