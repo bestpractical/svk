@@ -543,6 +543,7 @@ sub _delta_content {
 sub _delta_file {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
+    $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none;
     my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry});
     my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
@@ -588,6 +589,7 @@ sub _delta_file {
 sub _delta_dir {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
+    $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none;
     my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry} || '');
     my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
@@ -653,6 +655,7 @@ sub _delta_dir {
 	my $kind = $entries->{$_}->kind;
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
 	$self->$delta ( %arg,
+			add => 0,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   kind => $kind,
 		   targets => $targets->{$_},
@@ -677,7 +680,7 @@ sub _delta_dir {
 	next if m/$ignore/;
 	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$_");
 	my $sche = $ccinfo->{'.schedule'} || '';
-	unless ($sche || ($arg{auto_add} && $arg{add})) {
+	unless ($sche || $arg{auto_add}) {
 	    if ($arg{cb_unknown} &&
 		(!defined $arg{targets} || exists $targets->{$_})) {
 		if ($arg{unknown_verbose}) {
@@ -863,8 +866,7 @@ sub do_import {
 			       '.conflict' => undef,
 			       revision =>0});
 
-    $self->_delta_dir (%arg,
-		add => 1,
+    $self->_delta_dir ( %arg,
 	        auto_add => 1,
 		cb_rev => sub { $yrev },
 		editor => $editor,
