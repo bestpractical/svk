@@ -42,7 +42,7 @@ o using a local repository holding the subversion tree for benchmark,
 
 * Installation
 
-You need subversion 0.35 release or newer, with perl bindings support
+You need subversion 0.36 release or newer, with perl bindings support
 to use svk.
 
 svk uses the stanard perl module install process:
