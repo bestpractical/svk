@@ -768,7 +768,6 @@ sub _unknown_verbose {
 	    sub {
 		$File::Find::prune = 1, return if m/$ignore/;
 		my $dpath = catdir($File::Find::dir, $_);
-		warn "==> $dpath ($File::Find::dir <=> $_)";
 		my $copath = $dpath;
 		return if $seen{$copath};
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
