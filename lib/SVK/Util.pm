@@ -4,8 +4,10 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
-		    find_local_mirror abs_path mimetype mimetype_is_text);
+		    find_local_mirror abs_path mimetype mimetype_is_text
+		    abs2rel catfile catdir $SEP);
 our $VERSION = $SVK::VERSION;
+our $SEP = catdir('');
 
 use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
@@ -63,7 +65,8 @@ sub get_buffer_from_editor {
 
     my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
-			: "vi"; # fall back to something
+			: ($^O eq 'MSWin32') ? "notepad.exe"
+		       	: "vi"; # fall back to something
     my @editor = split (' ', $editor);
     while (1) {
 	my $mtime = (stat($file))[9];
@@ -109,9 +112,9 @@ sub slurp_fh {
 sub get_anchor {
     my $needtarget = shift;
     map {
-	my (undef,$anchor,$target) = File::Spec->splitpath ($_);
+	my ($volume,$anchor,$target) = File::Spec->splitpath ($_);
 	chop $anchor if length ($anchor) > 1;
-	($anchor, $needtarget ? ($target) : ())
+	($volume.$anchor, $needtarget ? ($target) : ())
     } @_;
 }
 
@@ -165,7 +168,7 @@ sub resolve_svm_source {
 
 sub tmpfile {
     my ($temp, %args) = @_;
-    my $dir = $ENV{TMPDIR} || '/tmp';
+    my $dir = File::Spec->tmpdir;
     $temp = "svk-${temp}XXXXX";
     return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
@@ -173,7 +176,8 @@ sub tmpfile {
 				SUFFIX => '.tmp',
 				%args
 			      );
-
+    # XXX - hard code
+    binmode($tmp, ':crlf') if $^O eq 'MSWin32';
     return wantarray ? ($tmp, $tmp->filename) : $tmp;
 }
 
@@ -183,6 +187,7 @@ sub tmpfile {
 
 sub abs_path {
     my $path = shift;
+    return scalar Win32::GetFullPathName($path) if $^O eq 'MSWin32';
     return Cwd::abs_path ($path) unless -l $path;
     my (undef, $dir, $pathname) = File::Spec->splitpath ($path);
     return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
@@ -208,6 +213,21 @@ sub mimetype_is_text {
                                           |java
                                           |shellscript)
                          |image/x-x(?:bit|pix)map)$}xo;
+}
+
+sub abs2rel {
+    my ($child, $parent) = @_;
+    $child = File::Spec->abs2rel($child, $parent);
+    $child =~ s{\\}{/}g;
+    return '/'.$child;
+}
+
+sub catfile {
+    File::Spec->catfile(@_);
+}
+
+sub catdir {
+    File::Spec->catdir(@_);
 }
 
 1;
