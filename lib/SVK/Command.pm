@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case);
 use Pod::Text;
+use File::Find;
 use Cwd;
 
 my %alias = qw( co checkout
@@ -55,7 +56,18 @@ sub get_cmd {
 }
 
 sub help {
-    my ($pkg, $info, $cmd) = @_;
+    my ($pkg, $cmd) = @_;
+    unless ($cmd) {
+	my @cmd;
+	my $dir = $INC{'SVK/Command.pm'};
+	$dir =~ s/\.pm$//;
+	print "Available commands:\n";
+	find (sub {
+		  push @cmd, lc($_) if s/\.pm$//;
+	      }, $dir);
+	print "  $_\n" for sort @cmd;
+	return;
+    }
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->usage (1);
 }

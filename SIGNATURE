@@ -1,0 +1,88 @@
+This file contains message digests of all files listed in MANIFEST,
+signed via the Module::Signature module, version 0.37.
+
+To verify the content in this distribution, first make sure you have
+Module::Signature installed, then type:
+
+    % cpansign -v
+
+It would check each file's integrity, as well as the signature's
+validity.  If "==> Signature verified OK! <==" is not displayed,
+the distribution may already have been compromised, and you should
+not run its Makefile.PL or Build.PL.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+SHA1 29cfdc32ee91fa53bf87dd07c72fac3f4562cb0c CHANGES
+SHA1 c17822ea9791eda4e17572d0d5a202138e183f3d MANIFEST
+SHA1 1b4935be07eeacb96ea98913ddb7f1152d86b4eb META.yml
+SHA1 ddcda4eefbcac0a05886aad3758ee8999ffe90c4 Makefile.PL
+SHA1 9d2c65d31a7d76e588dfb8203251bcdcb71dfc7d README
+SHA1 367169b4af2f071266f740842ced9e44a61d6f22 bin/svk
+SHA1 516611014c1018d65b0b7188b77d216a7be44238 inc/ExtUtils/AutoInstall.pm
+SHA1 d78c824a321715b390518287a8929623d7a55050 inc/Module/Install.pm
+SHA1 e69e76e2d33f34a90382c6ab74ebf9cf2dc858e5 inc/Module/Install/AutoInstall.pm
+SHA1 adfc45c82642d3726cc2c871c49062c000ccb0e4 inc/Module/Install/Base.pm
+SHA1 ba881ecfb8e8b9c4ebbc409b8025cac973511197 inc/Module/Install/Can.pm
+SHA1 c03e641fcc136de2fbdd62ce4e82e2dfa8410962 inc/Module/Install/Fetch.pm
+SHA1 8119fb04681f0085c6b466f592adc8d408861610 inc/Module/Install/Include.pm
+SHA1 876226cc896a285b2409db88d9033071c68cec50 inc/Module/Install/Makefile.pm
+SHA1 2a0dd241db019def435fde8537e600a182750824 inc/Module/Install/Metadata.pm
+SHA1 04d629dd71239bb9c4d79415fd7c932ce5be1bf6 inc/Module/Install/Scripts.pm
+SHA1 1915204e46fcee6faf528f8d86aec215e332cc7b inc/Module/Install/Win32.pm
+SHA1 acf1fd355f805442c195dc9dc4e764ad742862e1 inc/Module/Install/WriteAll.pm
+SHA1 1d7bcf33eae63a9962388b8b15a1296b687a007b lib/SVK.pm
+SHA1 5340f081ffa71419f96effbbc8c96d88c63f4aec lib/SVK/CombineEditor.pm
+SHA1 7fc17c8c6034b8aed3b203b6023c640c1e6036ec lib/SVK/Command.pm
+SHA1 72af1043dcdff863fc0e9bd860a80cf089e7bb88 lib/SVK/Command/Add.pm
+SHA1 f2b945bf5498ef2f34ff71621ef79df14fcbc4db lib/SVK/Command/Cat.pm
+SHA1 88510fae3ca41032ec21d1b82324719a452cca13 lib/SVK/Command/Checkout.pm
+SHA1 370603fbcace35aa0e33c4744929f6f4472150e2 lib/SVK/Command/Cmerge.pm
+SHA1 7078c15b6503b87a8ad4eeb1fa755cd9148c5b49 lib/SVK/Command/Commit.pm
+SHA1 1974621e95cff23975ef1234b1e7d59cece7b9fe lib/SVK/Command/Copy.pm
+SHA1 8c39bb796c4cb97f1c81538ac5da2babaebe1568 lib/SVK/Command/Delete.pm
+SHA1 5afdcbb1666f3bb4aae869b196f6c052861cbc52 lib/SVK/Command/Depotmap.pm
+SHA1 223e3fa01f84d3563af3128232d08b4452f12cc4 lib/SVK/Command/Diff.pm
+SHA1 d25c47007fc335f3e9b3443bbe310f5729b1ea90 lib/SVK/Command/Import.pm
+SHA1 aa3bc5b3189f145fbd313b2a57db36898e454e3a lib/SVK/Command/Info.pm
+SHA1 26bce91b96d03e04f0a3e0aee846d242e3b18847 lib/SVK/Command/List.pm
+SHA1 e2ac96093d44540d896ef925dba1d6e7d9997aec lib/SVK/Command/Log.pm
+SHA1 4150afa4096019946dceffaa45f404016325af80 lib/SVK/Command/Merge.pm
+SHA1 f8dd300c359b4b29b97d02d047a3ac42ad710463 lib/SVK/Command/Mirror.pm
+SHA1 3a297b8e307e9ac6ab9a05f270837f88ca31b97d lib/SVK/Command/Propedit.pm
+SHA1 52b315944fec1a750f523b4a6f2dc6f45451a990 lib/SVK/Command/Proplist.pm
+SHA1 44919418839ef4296ee05e6fb4730fee66205986 lib/SVK/Command/Propset.pm
+SHA1 0efd4f92e517e4c59f49098a073edc5720ac3816 lib/SVK/Command/Resolved.pm
+SHA1 095f2e962e277db8acaa93dd84f16791263657ce lib/SVK/Command/Revert.pm
+SHA1 84770daa1cc9bf7d05a772048defb52416a3cc53 lib/SVK/Command/Smerge.pm
+SHA1 929d36b739a831d4418a70e36fd0a47b38504e3a lib/SVK/Command/Status.pm
+SHA1 7d0b042995a98255e5d5e2a9472fd31669039f16 lib/SVK/Command/Switch.pm
+SHA1 80d76b2213b3cea30b458b7f56ace705c82bedef lib/SVK/Command/Sync.pm
+SHA1 bb37d06a4425b186bc6139f03fc63280516b920d lib/SVK/Command/Update.pm
+SHA1 7b3b9f8004ce3918c47092ea3c196187f6372f38 lib/SVK/CommitStatusEditor.pm
+SHA1 24c1f1ddb76d79b091f9f9b9d7d13895103a19ec lib/SVK/DeleteEditor.pm
+SHA1 9779fc2ab29e34d509f89d53a67806d38e9a4844 lib/SVK/DiffEditor.pm
+SHA1 5ecd450b28930143c2c8b9b7de3f32b2512f357e lib/SVK/MergeEditor.pm
+SHA1 817276fc013c0e2e289472612eaecf45c2f539c7 lib/SVK/RevertEditor.pm
+SHA1 ad3589fc80d689fd096a2f501e399e418a6836f7 lib/SVK/StatusEditor.pm
+SHA1 ae01e5439791b848e4a8b73903539b2b08cfd2c0 lib/SVK/Util.pm
+SHA1 ef2af419bc80a4bd24c57d51c6aadf97921b4837 lib/SVK/XD.pm
+SHA1 18bbe584c288fd763491311b17bfae918f599a3b t/10switch.t
+SHA1 6d7a923efb6d468631a7c24101b83da014335bf4 t/1use.t
+SHA1 db6c08787f8253b26c9f95ace44a604b48282b5b t/2basic.t
+SHA1 64d92c41f81df49eddadc3270fb9cc6a1fd4665e t/3import.t
+SHA1 0e7adbe651a4336d2917fdf61e8ca8c734e7ade3 t/4merge.t
+SHA1 f433dbdc3085ed16b8557b8fffd6c06fade5f1d5 t/5svm.t
+SHA1 867925e4f4ea1612af81f4ad01f1353e92bc1a98 t/6keyword.t
+SHA1 6e640719ae3523e49e7ac2d8c64725aab3e189ba t/7smerge.t
+SHA1 8f23c99498bddf2a026363a39fb0945785537817 t/8multimerge.t
+SHA1 a14fa09c7a418126e94e33434eb076cb0dd39e9f t/9cherrypicking.t
+SHA1 1acac1fd1542687d9c1f902feeae28eb2e8c30f9 t/tree.pl
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.4 (FreeBSD)
+
+iD8DBQFASB9Dk1XldlEkA5YRArOZAJ9upYPluqRJCU07q4Ok+bMYhJ2DpQCdHKOc
+ORbGiBdcGyDKT99XsRm3fVQ=
+=UzK9
+-----END PGP SIGNATURE-----

@@ -422,7 +422,7 @@ sub _delta_content {
     my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef, $arg{pool});
     return unless $handle && $#{$handle} > 0;
 
-    if ($arg{send_delta}) {
+    if ($arg{send_delta} && !$arg{add}) {
 	my $txstream = SVN::TxDelta::new
 	    ($arg{xdroot}->file_contents ($arg{path}), $arg{fh}, $arg{pool});
 
@@ -457,8 +457,8 @@ sub _delta_file {
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
     my $mymd5 = SVK::MergeEditor::md5($fh);
 
-    return if !$schedule && !$arg{add}
-	&& $mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
+    return unless $schedule || $arg{add}
+	|| $mymd5 ne $arg{xdroot}->file_md5_checksum ($arg{path});
 
     my $baton = $arg{add} ?
 	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1, $pool) :

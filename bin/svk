@@ -145,20 +145,19 @@ if ($show_version) {
     exit 0;
 }
 
-unless ($cmd) {
-    print "Type 'svk help' for usage.\n";
-    exit 0;
-}
-
-if ($cmd eq 'help') {
-    SVK::Command->help ($info, @ARGV);
-}
-
-no strict 'refs';
-
 #$xd = SVK::XD->new (%$info);
 
 if ($0 eq __FILE__) {
+    unless ($cmd) {
+	print "Type 'svk help' for usage.\n";
+	exit 0;
+    }
+
+    if ($cmd eq 'help') {
+	SVK::Command->help (@ARGV);
+	exit 0;
+    }
+
     _init();
     $SIG{INT} = sub {
 	_update_info();

@@ -45,7 +45,9 @@ lib/SVK/DiffEditor.pm
 lib/SVK/MergeEditor.pm
 lib/SVK/RevertEditor.pm
 lib/SVK/StatusEditor.pm
+lib/SVK/Util.pm
 lib/SVK/XD.pm
+lib/SVK.pm
 Makefile.PL
 MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
