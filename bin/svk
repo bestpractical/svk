@@ -73,6 +73,10 @@ if ($cmd eq 'help' or $cmd eq '--help') {
 }
 
 $ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
+$ENV{USER} ||= (
+    (defined &Win32::LoginName) ? Win32::LoginName() : ''
+) || $ENV{USERNAME};
+
 my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 {
     my $xd = SVK::XD->new ( giantlock => "$svkpath/lock",
