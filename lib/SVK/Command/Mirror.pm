@@ -13,6 +13,12 @@ sub options {
 
 sub parse_arg {
     my ($self, $path, @arg) = @_;
+
+    # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
+    if (@arg and $path =~ m{\w://} and $arg[0] !~ m{\w://}) {
+	($arg[0], $path) = ($path, $arg[0]);
+    }
+
     $path ||= '//';
     return ($self->arg_depotpath ($path), @arg);
 }
@@ -68,9 +74,12 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 SYNOPSIS
 
+ mirror [http|svn]://server.host/path DEPOTPATH
+ mirror cvs::pserver:user@host:/cvsroot:module/... DEPOTPATH
+ mirror p4:user@host:1666://depot/module/... DEPOTPATH
+
+ # You may also list the target part first:
  mirror DEPOTPATH [http|svn]://server.host/path
- mirror DEPOTPATH cvs::pserver:user@host:/cvsroot:module/...
- mirror DEPOTPATH p4:user@host:1666://depot/module/...
 
  mirror --list
  mirror --upgrade /DEPOT/

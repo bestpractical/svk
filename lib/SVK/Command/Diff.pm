@@ -10,6 +10,7 @@ use SVK::Editor::Diff;
 
 sub options {
     ("v|verbose"    => 'verbose',
+     "s|summarize"  => 'summarize',
      "r|revision=s" => 'revspec');
 }
 
@@ -70,7 +71,9 @@ sub run {
     $oldroot ||= $fs->revision_root ($r1);
     $newroot ||= $fs->revision_root ($r2);
 
-    my $editor = SVK::Editor::Diff->new
+    my $editor = $self->{summarize} ?
+	SVK::Editor::Status->new
+	: SVK::Editor::Diff->new
 	( cb_basecontent =>
 	  sub { my ($rpath) = @_;
 		my $base = $oldroot->file_contents ("$target->{path}/$rpath");
@@ -150,6 +153,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 =head1 OPTIONS
 
  -r [--revision] rev|old:new :    Needs description
+ -s [--summarize] :               Show summary only
  -v [--verbose]:                  Needs description
 
 =head1 AUTHORS

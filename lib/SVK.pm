@@ -1,6 +1,6 @@
 package SVK;
 use strict;
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 use SVK::Command;
 our $AUTOLOAD;
 

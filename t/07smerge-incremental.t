@@ -69,8 +69,8 @@ $svk->mkdir ('-m', 'fnord', '/new/A');
 ($srepospath, $spath, $srepos) = $xd->find_repos ('/new/A', 1);
 $svk->mirror ('//new', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 $svk->sync ('//new');
-$svk->smerge ('-CI', '//m', '//new');
-ok ($@ =~ m"Can't find merge base for /m and /new");
+is_output_like ($svk, 'smerge', ['-CI', '//m', '//new'],
+		qr"Can't find merge base for /m and /new");
 $svk->smerge ('-BCI', '//m', '//new');
 $svk->smerge ('-BI', '--remoterev', '--host', 'source', '//m', '//new');
 is ($srepos->fs->youngest_rev, 5);

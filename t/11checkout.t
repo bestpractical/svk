@@ -26,13 +26,10 @@ ok (-e "$copath/co-root-v3.1/A/Q/qu");
 chdir ($copath);
 $svk->checkout ('//V-3.1');
 ok (-e 'V-3.1/A/Q/qu');
-$svk->checkout ('//');
-ok ($@ =~ qr"don't know where to checkout");
+is_output_like ($svk, 'checkout', ['//'], qr"don't know where to checkout");
 
-$svk->checkout ('//V-3.1');
-ok ($@ =~ qr'already exists');
-$svk->checkout ('//V-3.1', 'V-3.1/l2');
-ok ($@ =~ qr'overlapping checkout');
+is_output_like ($svk, 'checkout', ['//V-3.1'], qr'already exists');
+is_output_like ($svk, 'checkout', ['//V-3.1', 'V-3.1/l2'], qr'overlapping checkout');
 
 $svk->checkout ('-r5', '//V-3.1', 'V-3.1-r5');
 ok (-e 'V-3.1-r5/A/P/pe');
@@ -68,5 +65,5 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q-slashco/"],
 	   ], 'checkout report');
 
 
-$svk->checkout ('//V-3.1-non');
-ok ($@ =~ qr'not exist');
+is_output_like ($svk, 'checkout', ['//V-3.1-non'],
+		qr'not exist');

@@ -16,8 +16,8 @@ $svk->checkout ('//new', $copath);
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', $copath],
 	   ["A   $copath/me",
 	    "A   $copath/de"]);
-$svk->cp ('//V/me', $copath);
-is ($@, "Path $corpath/me already exists.\n");
+is_output ($svk, 'cp', ['//V/me', $copath],
+	   ["Path $corpath/me already exists."]);
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   ["$corpath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
@@ -48,8 +48,8 @@ is_copied_from ("$copath/me-copy", '/V/me', 3);
 is_copied_from ("$copath/D-copy/de", '/V/D/de', 3);
 is_copied_from ("$copath/D-copy", '/V/D', 3);
 
-$svk->copy ('-m', 'more than one', '//V/me', '//V/D', '//V/new');
-is ($@, "Copying more than one source requires //V/new to be directory.\n");
+is_output ($svk, 'copy', ['-m', 'more than one', '//V/me', '//V/D', '//V/new'],
+	   ["Copying more than one source requires //V/new to be directory."]);
 
 $svk->mkdir ('-m', 'directory for multiple source cp', '//V/new');
 is_output ($svk, 'copy', ['-m', 'more than one', '//V/me', '//V/D', '//V/new'],
@@ -92,8 +92,8 @@ is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 10);
 is_copied_from ("/foo/me-rcopied.again", '/me', 2);
 
 append_file ("$copath/me", "bzz\n");
-$svk->copy ('-m', 'from co, modified', "$copath/me", '//foo-remote/me-rcopied.modified');
-ok ($@ =~ m/modified/);
+is_output_like ($svk, 'copy', ['-m', 'from co, modified', "$copath/me", '//foo-remote/me-rcopied.modified'],
+		qr/modified/);
 $svk->revert ('-R', $copath);
 $svk->copy ("$copath/me", "$copath/me-cocopied");
 is_output ($svk, 'status', [$copath],

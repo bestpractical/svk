@@ -58,13 +58,13 @@ sub _cmd_map {
 
 sub get_cmd {
     my ($pkg, $cmd, $xd) = @_;
-    local $@;
+    die "Command not recognized, try $0 help.\n"
+	unless $cmd =~ m/^[a-z]+$/;
     $pkg = join('::', 'SVK::Command', _cmd_map ($cmd));
     unless (eval "require $pkg; 1" && UNIVERSAL::can($pkg, 'run')) {
 	$pkg =~ s|::|/|g;
 	warn $@ if $@ && exists $INC{"$pkg.pm"};
-	print "Command not recognized, try $0 help.\n";
-	die;
+	die "Command not recognized, try $0 help.\n";
     }
     $pkg->new ($xd);
 }
@@ -77,7 +77,8 @@ sub invoke {
     $ofh = select $output if $output;
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
-	die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
+	die loc ("Unknown options.\n")
+	    unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
 
 	if ($help || !(@args = $cmd->parse_arg(@ARGV))) {
 	    $cmd->usage;
@@ -89,8 +90,8 @@ sub invoke {
 	}
     };
     print $ret if $ret;
+    print $@ if $@;
     select $ofh if $output;
-    die $@ if $@;
 }
 
 sub brief_usage {

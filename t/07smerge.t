@@ -50,8 +50,8 @@ is_output ($svk, 'smerge', ['-C', '//m/be', '//l/'],
 
 }
 
-$svk->smerge ('-C', '//m/Q', '//l/');
-ok ($@ =~ m/find merge base/);
+is_output_like ($svk, 'smerge', ['-C', '//m/Q', '//l/'],
+		qr/find merge base/);
 
 is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 	   ['Auto-merging (3, 6) /m to /l (base /m:3).',
@@ -178,8 +178,8 @@ ok (-e "$copath/newdir", 'smerge to checkout - add directory');
 $svk->copy ('-m', 'branch on source', '/test/A', '/test/A-cp');
 $svk->ps ('-m', 'prop on A', 'blah', 'tobemerged', '/test/A');
 
-$svk->mirror ('//m-all', "file://${srepospath}/");
-ok ($@ =~ m'Mirroring overlapping paths not supported');
+is_output ($svk, 'mirror', ['//m-all', "file://${srepospath}/"],
+	   ['Mirroring overlapping paths not supported']);
 $svk->mirror ('/client2/m-all', "file://${srepospath}/");
 $svk->sync ('/client2/m-all');
 $svk->smerge ('-C', '/client2/m-all/A', '/client2/m-all/A-cp');

@@ -28,7 +28,6 @@ sub run {
     my ($self, @arg) = @_;
     die loc("cannot load SVN::Mirror") unless $self->svn_mirror;
 
-    # XXX: support HEAD
     die loc("argument skipto not allowed when multiple target specified")
 	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);
 

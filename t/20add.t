@@ -54,9 +54,9 @@ is_output ($svk, 'add', ['A/foo'],
 	   'add - nonrecursive target');
 $svk->revert ('-R', '.');
 
-$svk->add (qw|-N A/foo|);
-ok ($@ =~ m'do_add with targets and non-recursive not handled',
-    'add - nonrecursive target only');
+is_output_like ($svk, 'add', ['-N', 'A/foo'],
+		qr'do_add with targets and non-recursive not handled',
+		'add - nonrecursive target only');
 
 overwrite_file ("A/exe", "foobar");
 chmod (0755, "A/exe");

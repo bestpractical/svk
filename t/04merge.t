@@ -72,8 +72,8 @@ is_output ($svk, 'update', [$copath],
 is_file_content ("$copath/B/foo", "foobar\n",
 		 'merge via update');
 $svk->revert ('-R', $copath);
-$svk->merge ("-r", "3:2", '//');
-ok ($@ =~ m'not a checkout path');
+is_output_like ($svk, 'merge', ["-r", "3:2", '//'],
+		qr'not a checkout path');
 chdir ($copath);
 is_output ($svk, 'merge', ["-r", "3:2", '//'],
 	   ["GU  A/foo"]);

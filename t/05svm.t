@@ -79,8 +79,8 @@ ok ($output =~ /under mirrored path/);
 is_output_like ($svk, 'mirror', ['--list'],
 		qr"/m.*file://$srepospath/A\n/m-99.*file://$srepospath/A-99");
 
-$svk->delete ('-m', 'die!', '//m-99/be');
-ok ($@ =~ m'inside mirrored path', 'delete failed');
+is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
+		qr'inside mirrored path', 'delete failed');
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
 	   ['Committed revision 12.', 'Committed revision 13.']);
 

@@ -71,7 +71,7 @@ sub handle_direct_item {
 	    or die "Can't find remote revision of for $path";
     }
     else {
-	$path = "file://$src->{repospath}/$path";
+	$path = "file://$src->{repospath}$path";
     }
     my $dstpath = $dst->path;
     $dstpath =~ s|^\Q$m->{target_path}\E/?|| if $m;

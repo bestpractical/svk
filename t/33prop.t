@@ -16,8 +16,7 @@ is_output_like ($svk, 'ps', [], qr'SYNOPSIS', 'ps - help');
 is_output_like ($svk, 'pe', [], qr'SYNOPSIS', 'ps - help');
 is_output_like ($svk, 'propdel', [], qr'SYNOPSIS', 'propdel - help');
 
-$svk->pl ("$copath/A");
-ok ($@ =~ 'not found');
+is_output_like ($svk, 'pl', ["$copath/A"], qr'not found');
 
 $svk->add ($copath);
 is_output ($svk, 'pl', ["$copath/A"],
@@ -73,8 +72,8 @@ is_output ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A'],
 is_output ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A/foo'],
 	   ['Committed revision 5.']);
 #	   [' M  A']);
-$svk->ps ('-m', 'direct', 'direct', 'directly', '//A/non');
-ok ($@ =~ 'not exist');
+is_output_like ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A/non'],
+		qr'not exist');
 is_output ($svk, 'pl', ['-v', "//A"],
 	   ["Properties on //A:",
 	    '  direct: directly',

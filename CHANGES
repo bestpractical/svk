@@ -1,3 +1,30 @@
+[Changes for 0.19 -  Aug, 2004]
+
+* Support merge --track-rename.
+
+* Support svk diff -s or --summarize.
+
+* Support checking out a single file.
+
+* Supoprt multiple sources in svk copy and move.
+
+* Support direct copy and move in mirrored path.
+
+* Support proper merge anchoring. This allows smerge point to be a file.
+
+* Supoprt svn:eol-style. (native, LF, CRLF. no CR support)
+
+* Fix a bug committing added directories to mirrored path directly would fail.
+
+* Auto-prop support: adding svn:mime-type according to file magic upon
+  add or import.
+
+* Symlink support fixes.
+
+* Fix a memory leak due to circular reference in SVK::Editor::XD callbacks.
+
+* Misc performance and memory usage improvements to checkout.
+
 [Changes for 0.18 - 4 Aug, 2004]
 
 ***WANRING*** 

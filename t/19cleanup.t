@@ -30,8 +30,8 @@ is ($xd->{checkout}->get ($corpath)->{lock}, $$, 'copath locked');
 $xd->{checkout}->store ($corpath, {lock => $$+1});
 $xd->store;
 $xd->load;
-$svk->update ($copath);
-ok ($@ =~ qr'already locked', 'command not allowed when copath locked');
+is_output_like ($svk, 'update', [$copath],
+		qr'already locked', 'command not allowed when copath locked');
 chdir ($copath);
 is_output_like ($svk, 'cleanup', [], qr'Cleaned up stalled lock');
 is ($xd->{checkout}->get ($corpath)->{lock}, undef,  'unlocked');
