@@ -567,6 +567,7 @@ sub change_dir_prop {
     # be dealt.
     return if $arg[0] eq 'svk:merge';
     return if $arg[0] =~ m/^svm:/;
+    $path = '' unless defined $path;
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
     $self->{notify}->prop_status ($path, 'U');
     ++$self->{changes};
