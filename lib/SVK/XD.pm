@@ -87,8 +87,12 @@ sub new {
     my $class = shift;
     my $self = bless {}, $class;
     %$self = @_;
-    $self->{signature} ||= SVK::XD::Signature->new (root => $self->cache_directory)
-	if $self->{svkpath};
+
+    if ($self->{svkpath}) {
+        mkdir($self->{svkpath}) or die loc("Cannot create svk-config-directory at '%1': %2", $self->{svkpath}, $!) unless -d $self->{svkpath};
+        $self->{signature} ||= SVK::XD::Signature->new (root => $self->cache_directory)
+    }
+
     $self->{checkout} ||= Data::Hierarchy->new( sep => $SEP );
     return $self;
 }
@@ -110,9 +114,6 @@ C<load>.
 sub load {
     my ($self) = @_;
     my $info;
-
-    mkdir($self->{svkpath}) or die loc("Cannot create svk-config-directory at '%1': %2", $self->{svkpath}, $!)
-        unless -d $self->{svkpath};
 
     $self->giant_lock ();
 
