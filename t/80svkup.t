@@ -28,6 +28,7 @@ my $svkupd_pid;
 
 my ($copath, $corpath) = get_copath ('svkup');
 
+sleep 1;
 run_svkup ($copath, "$uuid:/");
 ok (-e "$copath/A/be");
 is_file_content ("$copath/me", "first line in me\n2nd line in me - mod\n");
