@@ -8,6 +8,9 @@ use SVK::XD;
 sub options {
     ('f|from=s'         => 'from_path',
      'l|lump'           => 'lump',
+     'C|check-only'     => 'check_only',
+     'S|sign'	        => 'sign',
+     'P|patch=s'        => 'patch',
     );
 }
 
@@ -21,7 +24,9 @@ sub parse_arg {
         unshift @arg, $self->{from_path};
     }
 
-    if ($self->{lump}) {
+    # "svk push -P" has the same effect as "svk push -l",
+    # because incremental patches is not yet implemented.
+    if ($self->{lump} or $self->{patch}) {
         $self->{log}++;
         $self->{message} = '';
         delete $self->{incremental};
@@ -49,6 +54,8 @@ SVK::Command::Push - Move changes into another repository
 
  -f [--from] arg        : push from the specified path
  -l [--lump]            : merge everything into a single commit log
+ -C [--check-only]      : try operation but make no changes
+ -S [--sign]            : sign this change
 
 =head1 AUTHORS
 

@@ -156,8 +156,14 @@ sub descend {
     my ($self, $entry) = @_;
     $self->{depotpath} .= "/$entry";
     $self->{path} .= "/$entry";
-    $self->{report} = catfile ($self->{report}, $entry);
-    $self->{copath} = catfile ($self->{copath}, $entry);
+
+    if (defined $self->{copath}) {
+        $self->{report} = catfile ($self->{report}, $entry);
+        $self->{copath} = catfile ($self->{copath}, $entry);
+    }
+    else {
+        $self->{report} = "$self->{report}/$entry";
+    }
 }
 
 =head2 universal

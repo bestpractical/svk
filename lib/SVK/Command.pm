@@ -8,7 +8,7 @@ use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
-use SVK::Util qw( get_prompt abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
+use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
 use SVK::I18N;
 
 =head1 NAME
@@ -738,6 +738,38 @@ sub rebless {
     my ($self, $command, $args) = @_;
     return $self->command($command, $args, 1);
 }
+
+sub find_checkout_anchor {
+    my ($self, $target, $track_merge, $track_sync) = @_;
+
+    my $entry = $self->{xd}{checkout}->get ($target->{copath});
+    my $anchor_target = $self->arg_depotpath ($entry->{depotpath});
+
+    return ($anchor_target, undef) unless $track_merge;
+
+    my @rel_path = split(
+        '/',
+        abs2rel ($target->{path}, $anchor_target->{path}, undef, '/')
+    );
+
+    my $copied_from;
+    while (!$copied_from) {
+        $copied_from = $anchor_target->copied_from ($track_sync);
+
+        if ($copied_from) {
+            return ($anchor_target, $copied_from);
+            last;
+        }
+        elsif (@rel_path) {
+            $anchor_target->descend (shift (@rel_path));
+        }
+        else {
+            return ($self->arg_depotpath ($entry->{depotpath}), undef);
+            last;
+        }
+    }
+}
+
 
 1;
 
