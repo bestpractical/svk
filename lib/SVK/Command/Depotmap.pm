@@ -55,7 +55,8 @@ sub _do_edit {
 	);
 	next if $ans =~ /^n/i;
 	SVN::Repos::create($path, undef, undef, undef,
-			   {'bdb-txn-nosync' => '1',
+			   {'fs-type' => $ENV{SVNFSTYPE} || 'bdb',
+			    'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
     }
     return;
