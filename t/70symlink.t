@@ -116,8 +116,10 @@ $svk->commit ('-m', 'change something', "$copath/B");
 is_output ($svk, 'status', [$copath], [], 'committed');
 
 $svk->smerge ('-C', '//B', "$copath/A");
+# Symlink correction adds a revision
+my $baserev = (HAS_SYMLINK ? 1 : 2);
 is_output ($svk, 'smerge', ['--no-ticket', '//B', "$copath/A"],
-	   ['Auto-merging (0, 4) /B to /A (base /A:1).',
+	   ["Auto-merging (0, 4) /B to /A (base /A:$baserev).",
 	    __("U   $copath/A/dir.lnk")], 'merge');
 is_output ($svk, 'diff', [$copath],
 	   [__('=== t/checkout/symlink/A/dir.lnk'),
