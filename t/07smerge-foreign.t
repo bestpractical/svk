@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w
-use Test::More tests => 1;
 use strict;
-require 't/tree.pl';
+use Test::More;
+BEGIN { require 't/tree.pl' };
+eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
+plan tests => 1;
 our $output;
 my ($xd, $svk) = build_test('mac', 'linux');
 my ($copath) = get_copath ('obra');

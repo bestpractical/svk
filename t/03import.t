@@ -1,9 +1,12 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
 use strict;
-use File::Path;
-use Cwd;
+use Test::More;
 BEGIN { require 't/tree.pl' };
+eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
+plan tests => 16;
+
+use Cwd;
+use File::Path;
 
 my ($xd, $svk) = build_test('test');
 our ($copath, $corpath) = get_copath ('import');
