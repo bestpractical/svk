@@ -4,17 +4,22 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
 		    find_svm_source resolve_svm_source svn_mirror tmpfile
-		    find_local_mirror abs_path mimetype mimetype_is_text);
+		    find_local_mirror abs_path mimetype mimetype_is_text
+		    abs2rel catfile catdir catpath splitpath tmpdir $SEP);
 our $VERSION = $SVK::VERSION;
+our $SEP = catdir('');
 
 use SVK::I18N;
-use Digest::MD5 qw(md5_hex);
-use File::Spec;
+use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
+use File::Spec::Functions qw(catfile catdir catpath splitpath tmpdir);
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
+
+use constant TEXT_MODE => ($^O eq 'MSWin32') ? ':crlf' : '';
+use constant DEFAULT_EDITOR => ($^O eq 'MSWin32') ? 'notepad.exe' : 'vi';
 
 sub svn_mirror () {
     no warnings 'redefine';
@@ -50,6 +55,7 @@ sub get_buffer_from_editor {
     my $fh;
     if (defined $content) {
 	($fh, $file) = tmpfile ($file, UNLINK => 0);
+	binmode($fh, TEXT_MODE);
 	print $fh $content;
 	close $fh;
     }
@@ -61,7 +67,7 @@ sub get_buffer_from_editor {
 
     my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
-			: "vi"; # fall back to something
+			: DEFAULT_EDITOR; # fall back to something
     my @editor = split (' ', $editor);
     while (1) {
 	my $mtime = (stat($file))[9];
@@ -107,9 +113,9 @@ sub slurp_fh {
 sub get_anchor {
     my $needtarget = shift;
     map {
-	my (undef,$anchor,$target) = File::Spec->splitpath ($_);
+	my ($volume,$anchor,$target) = splitpath ($_);
 	chop $anchor if length ($anchor) > 1;
-	($anchor, $needtarget ? ($target) : ())
+	($volume.$anchor, $needtarget ? ($target) : ())
     } @_;
 }
 
@@ -163,7 +169,7 @@ sub resolve_svm_source {
 
 sub tmpfile {
     my ($temp, %args) = @_;
-    my $dir = $ENV{TMPDIR} || '/tmp';
+    my $dir = tmpdir;
     $temp = "svk-${temp}XXXXX";
     return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
@@ -171,7 +177,6 @@ sub tmpfile {
 				SUFFIX => '.tmp',
 				%args
 			      );
-
     return wantarray ? ($tmp, $tmp->filename) : $tmp;
 }
 
@@ -181,9 +186,13 @@ sub tmpfile {
 
 sub abs_path {
     my $path = shift;
+    if (defined &Win32::GetFullPathName) {
+	$path = '.' if !length $path;
+	return scalar Win32::GetFullPathName($path)
+    }
     return Cwd::abs_path ($path) unless -l $path;
-    my (undef, $dir, $pathname) = File::Spec->splitpath ($path);
-    return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
+    my (undef, $dir, $pathname) = splitpath ($path);
+    return catpath (undef, Cwd::abs_path ($dir), $pathname);
 }
 
 sub mimetype {
@@ -207,6 +216,19 @@ sub mimetype_is_text {
                                           |java
                                           |shellscript)
                          |image/x-x(?:bit|pix)map)$}xo;
+}
+
+sub abs2rel {
+    my ($child, $parent, $new_parent) = @_;
+    my $rel = File::Spec::Functions::abs2rel($child, $parent);
+    if (index($rel, '..') > -1) {
+        $rel = $child;
+    }
+    elsif (defined $new_parent) {
+        $rel = "$new_parent/$rel";
+    }
+    $rel =~ s{\Q$SEP\E}{/}go if $SEP ne '/';
+    return $rel;
 }
 
 1;

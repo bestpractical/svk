@@ -8,7 +8,7 @@ use SVK::Target;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
-use Cwd;
+use SVK::Util qw( abs_path );
 use SVK::I18N;
 
 my %alias = qw( co checkout
@@ -203,7 +203,7 @@ sub arg_copath {
 	( repos => $repos,
 	  repospath => $repospath,
 	  report => $arg,
-	  copath => Cwd::abs_path ($arg),
+	  copath => abs_path ($arg),
 	  path => $path,
 	  cinfo => $cinfo,
 	  depotpath => $cinfo->{depotpath},
@@ -234,7 +234,7 @@ sub arg_depotname {
 sub arg_path {
     my ($self, $arg) = @_;
 
-    return Cwd::abs_path ($arg);
+    return abs_path ($arg);
 }
 
 my %empty = map { ($_ => undef) } qw/.schedule copyfrom copyfrom_rev .newprop scheduleanchor/;

@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use Cwd;
+use SVK::Util 'abs_path';
 use File::Spec;
 
 sub parse_arg {
@@ -19,11 +19,11 @@ sub parse_arg {
     return ($depotpath, $arg[1]);
 }
 
-sub lock { $_[0]->{xd}->lock (Cwd::abs_path ($_[2])) }
+sub lock { $_[0]->{xd}->lock (abs_path ($_[2])) }
 
 sub run {
     my ($self, $target, $report) = @_;
-    my $copath = Cwd::abs_path ($report);
+    my $copath = abs_path ($report);
 
     die loc("checkout path %1 already exists\n", $copath) if -e $copath;
 

@@ -10,6 +10,7 @@ require SVN::Fs;
 use File::Path;
 use SVK;
 use SVK::XD;
+use SVK::Util qw( catdir tmpdir abs_path );
 use strict;
 use Carp;
 
@@ -29,7 +30,7 @@ for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
 my $pool = SVN::Pool->new_default;
 
 sub new_repos {
-    my $repospath = "/tmp/svk-$$";
+    my $repospath = catdir(tmpdir(), "svk-$$");
     my $reposbase = $repospath;
     my $repos;
     my $i = 0;
@@ -95,14 +96,14 @@ sub append_file {
 
 sub overwrite_file {
     my ($file, $content) = @_;
-    open my ($fh), '>:raw', $file or confess $!;
+    open my ($fh), '>:raw', $file or confess "Cannot overwrite $file: $!";
     print $fh $content;
     close $fh;
 }
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
-    open my ($fh), '<:raw', $file or confess $!;
+    open my ($fh), '<:raw', $file or confess "Cannot read from $file: $!";
     local $/;
     is (<$fh>, $content, $test);
 }
