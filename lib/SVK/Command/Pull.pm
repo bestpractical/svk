@@ -65,7 +65,7 @@ SVK::Command::Pull - Bring changes from another repository
 
  -a [--all]             : pull into all checkout paths
  -l [--lump]            : merge everything into a single commit log
-                          (always enabled for "pull PATH" for now)
+                          (always enabled for 'pull PATH' for now)
 
 =head1 AUTHORS
 

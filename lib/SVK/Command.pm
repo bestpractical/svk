@@ -523,7 +523,7 @@ Parse -c or -r to a list of [from, to] pairs.
 sub parse_revlist {
     my $self = shift;
     die loc("Revision required.\n") unless $self->{revspec} or $self->{chgspec};
-    die loc("Can't assign -r and -c at the same time.\n")
+    die loc("Can't assign --revision and --change at the same time.\n")
 	if $self->{revspec} and $self->{chgspec};
     my ($fromrev, $torev);
     if ($self->{chgspec}) {

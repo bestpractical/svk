@@ -103,7 +103,7 @@ is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
 
 is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
                             '-c14,16', '-r15', '//feature', '//work'],
-	   ["Can't assign -r and -c at the same time."]);
+	   ["Can't assign --revision and --change at the same time."]);
 
 is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
                             '//feature', '//work'],

@@ -95,7 +95,7 @@ SVK::Command::Propset - Set a property on path
 
 =head1 SYNOPSIS
 
- propset PROPNAME PROPVAL [PATH|DEPOTPATH...]
+ propset PROPNAME PROPVAL [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 

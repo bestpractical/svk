@@ -46,7 +46,7 @@ SVK::Command::Propedit - Edit a property on path
 
 =head1 SYNOPSIS
 
- propedit PROPNAME [PATH|DEPOTPATH...]
+ propedit PROPNAME [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 

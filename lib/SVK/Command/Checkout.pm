@@ -169,8 +169,8 @@ SVK::Command::Checkout - Checkout the depotpath
 
  checkout DEPOTPATH [PATH]
  checkout --list
- checkout --detach [DEPOTPATH|PATH]
- checkout --relocate [DEPOTPATH|PATH] PATH
+ checkout --detach [DEPOTPATH | PATH]
+ checkout --relocate [DEPOTPATH | PATH] PATH
 
 =head1 OPTIONS
 

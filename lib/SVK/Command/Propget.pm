@@ -47,7 +47,7 @@ SVK::Command::Propget - Display a property on path
 
 =head1 SYNOPSIS
 
- propget PROPNAME [PATH|DEPOTPATH...]
+ propget PROPNAME [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 

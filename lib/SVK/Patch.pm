@@ -77,7 +77,7 @@ sub load {
     my ($class, $file, $xd, $depot) = @_;
 
     my $content = do {
-        open my $fh, "< $file" or die loc("Cannot open %1: %2", $file, $!);
+        open my $fh, "< $file" or die loc("cannot open %1: %2", $file, $!);
 
         # Serialized patches always begins with a block marker.
         # We need the \nVersion: to not trip over inlined block makers.
@@ -278,7 +278,7 @@ sub regen {
     my $target = $self->{_target}
 	or die loc("Target not local nor mirrored, unable to regen patch.\n");
     unless ($self->{level} == 0 || $self->{_source_updated}) {
-	print loc("Source of patch %1 not updated or not local. No need to update.\n", $self->{name});
+	print loc("Source of patch %1 not updated or not local, no need to regen patch.\n", $self->{name});
 	return;
     }
     my $source = $self->{_source}->new (revision => undef);

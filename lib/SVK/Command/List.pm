@@ -89,7 +89,7 @@ SVK::Command::List - List entries in a directory from depot
 
 =head1 SYNOPSIS
 
- list [DEPOTPATH|PATH...]
+ list [DEPOTPATH | PATH...]
 
 =head1 OPTIONS
 

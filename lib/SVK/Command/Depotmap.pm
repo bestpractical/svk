@@ -158,11 +158,11 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 =head1 SYNOPSIS
 
  depotmap [OPTIONS]
- depotmap DEPOT /path/to/repository
+ depotmap DEPOTNAME /path/to/repository
 
  depotmap --list
- depotmap --detach [DEPOT|PATH]
- depotmap --relocate [DEPOT|PATH] PATH
+ depotmap --detach [DEPOTNAME | PATH]
+ depotmap --relocate [DEPOTNAME | PATH] PATH
 
 =head1 OPTIONS
 

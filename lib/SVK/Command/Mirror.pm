@@ -126,9 +126,9 @@ sub recover_headrev {
                 ($uuid, $rrev) = split(/[:\n]/, $headrev);
                 $props = $fs->revision_proplist($rev);
                 get_prompt(loc(
-                    "Found merge ticket at revision %1 (remote %2); use it? [y] ",
+                    "Found merge ticket at revision %1 (remote %2); use it? (y/n) ",
                     $rev, $rrev
-                )) =~ /^[Nn]/ or return 0; # last
+                ), qr/^[YyNn]/) =~ /^[Nn]/ or return 0; # last
                 undef $headrev;
             }
             $skipped++;
@@ -145,8 +145,10 @@ sub recover_headrev {
         return;
     }
 
-    get_prompt(loc("Revert to revision %1 and discard %*(%2,revision)? [n] ", $rev, $skipped))
-        =~ /^[Yy]/ or die loc("Aborted.\n");
+    get_prompt(
+        loc("Revert to revision %1 and discard %*(%2,revision)? (y/n) ", $rev, $skipped),
+        qr/^[YyNn]/,
+    ) =~ /^[Yy]/ or die loc("Aborted.\n");
 
     my $rm_edit = $self->get_commit_editor(
         $fs->revision_root ($fs->youngest_rev),

@@ -43,7 +43,7 @@ SVK::Command::Push - Move changes into another repository
 
 =head1 SYNOPSIS
 
- push [DEPOTPATH|PATH]
+ push [DEPOTPATH | PATH]
 
 =head1 OPTIONS
 

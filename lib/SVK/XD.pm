@@ -295,7 +295,7 @@ sub find_repos_from_co {
 	unless abs_path ($copath);
     $copath = abs_path ($copath);
     my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
-    die loc("path %1 is not a checkout path\n", $copath) unless %$cinfo;
+    die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
     my ($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, $open);
 
     if ($copath eq $coroot) {
@@ -356,7 +356,7 @@ sub condense {
     my ($anchor, $report);
     for my $path (@_) {
 	my $copath = abs_path ($path);
-	die loc("path %1 is not a checkout path\n", $path)
+	die loc("path %1 is not a checkout path.\n", $path)
 	    unless $copath;
 	if (!$anchor) {
 	    $anchor = $copath;
