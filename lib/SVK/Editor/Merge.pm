@@ -474,6 +474,7 @@ sub delete_entry {
 					$self->{storage_baton}{$pdir}, @arg);
 	$self->{notify}->node_status ($path, 'D');
     }
+    ++$self->{changes};
 }
 
 sub change_file_prop {
