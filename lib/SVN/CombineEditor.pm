@@ -44,7 +44,6 @@ sub replay {
 	    if $self->{added}{$_};
 	open $fh, $fname;
 	$edit->modify_file ($_, $fh, $self->{md5}{$_});
-	delete $self->{files}{$_};
     }
     $edit->close_edit;
 }
@@ -114,6 +113,13 @@ sub close_file {
     unlink ${*{$self->{base}{$path}}}
 	if $self->{base}{$path} && ${*{$self->{base}{$path}}};
     $self->{md5}{$path} = $md5;
+}
+
+sub DESTROY {
+    my ($self) = @_;
+    for (keys %{$self->{files}}) {
+	unlink ${*{$self->{files}{$_}}};
+    }
 }
 
 =head1 AUTHORS

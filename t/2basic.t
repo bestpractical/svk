@@ -35,13 +35,20 @@ overwrite_file ("$copath/A/baz", "zzzz");
 append_file ("$copath/A/foo", "foobar");
 svk::add ("$copath/A/baz");
 svk::ps ('someprop', 'propvalue', "$copath/A/baz");
-svk::rm ("$copath/A/bar");
-ok(!-e "$copath/A/bar");
 svk::status ("$copath/A");
 svk::pl ('-v', "$copath/A/baz");
 
 svk::commit ('-m', 'commit message here', "$copath/A");
+svk::rm ("$copath/A/bar");
+ok(!-e "$copath/A/bar");
+svk::commit ('-m', 'remove files', "$copath/A");
+
+svk::revert ("$copath/A/bar");
+ok(!-e "$copath/A/bar");
+
 svk::revert ('-R', "$copath/A");
+ok(!-e "$copath/A/bar");
+
 svk::pl ('-v', "$copath/A/baz");
 
 svk::status ("$copath/A");

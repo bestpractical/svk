@@ -304,6 +304,7 @@ sub checkout {
 					  {depotpath => $depotpath,
 					   schedule => undef,
 					   newprop => undef,
+					   deleted => undef,
 					   conflict => undef,
 					   revision =>0});
 

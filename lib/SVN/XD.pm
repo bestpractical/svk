@@ -36,6 +36,7 @@ sub create_xd_root {
 
     for (@paths) {
 	my $rev = $info->{checkout}->get ($_)->{revision};
+	my $deleted = $info->{checkout}->get ($_)->{deleted};
 	unless ($root) {
 	    $txn = $fs->begin_txn ($rev);
 	    $root = $txn->root();
@@ -44,8 +45,13 @@ sub create_xd_root {
 	s|^$arg{copath}/||;
 	$root->make_dir ($arg{path})
 	    if $root->check_path ($arg{path}) == $SVN::Node::none;
-	SVN::Fs::revision_link ($fs->revision_root ($rev),
-				$root, "$arg{path}/$_");
+	if ($deleted) {
+	    $root->delete ("$arg{path}/$_");
+	}
+	else {
+	    SVN::Fs::revision_link ($fs->revision_root ($rev),
+				    $root, "$arg{path}/$_");
+	}
     }
     return ($txn, $root);
 }
@@ -300,8 +306,9 @@ sub do_revert {
 	my $kind = $xdroot->check_path ($_[0]);
 	if ($kind == $SVN::Node::none) {
 	    print "$_[1] is not versioned, ignored\n";
+	    return;
 	}
-	elsif ($kind == $SVN::Node::dir) {
+	if ($kind == $SVN::Node::dir) {
 	    mkdir $_[1] unless -e $_[1];
 	}
 	else {
@@ -899,14 +906,13 @@ sub do_commit {
     my $committed = sub {
 	my ($rev) = @_;
 	for (reverse @{$arg{targets}}) {
-	    my $result_rev = $_->[0] eq 'D' ? undef : $rev;
-	    my $store = ($_[0] eq 'D' || -d $_->[1]) ?
+	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
 		'store_recursively' : 'store';
 	    $info->{checkout}->$store ($_->[1], { schedule => undef,
 						  newprop => undef,
-						  revision => $result_rev,
+						  $_->[0] eq 'D' ? (deleted => 1) : (),
+						  revision => $rev,
 						});
-
 	}
 	my $root = $arg{repos}->fs->revision_root ($rev);
 	for (@{$arg{targets}}) {
@@ -1231,7 +1237,8 @@ sub close_directory {
     eval {$self->{get_copath}($copath)};
     return if $@;
     $self->{checkout}->store_recursively ($copath,
-					  {revision => $self->{revision}})
+					  {revision => $self->{revision},
+					   deleted => undef})
 	if $self->{update};
 }
 
