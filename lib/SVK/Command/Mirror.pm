@@ -107,8 +107,8 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 OPTIONS
 
- --list                 : list mirrored paths
- --delete               : mark a path as no longer mirrored
+ -l [--list]            : list mirrored paths
+ -d [--delete]          : mark a path as no longer mirrored
  --upgrade              : upgrade mirror state to the latest version
  --relocate             : relocate the mirror to another URI
 

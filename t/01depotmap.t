@@ -2,7 +2,7 @@
 use strict;
 use SVK::Util qw( catdir tmpdir );
 use File::Spec;
-use Test::More tests => 3;
+use Test::More tests => 7;
 BEGIN { require 't/tree.pl' };
 
 # Fake standard input
@@ -43,4 +43,12 @@ $svk->depotmap ('--init');
 ok (-d $repospath);
 is_output_like ($svk, 'depotmap', ['--list'],
 	       qr"//.*\Q$repospath\E", 'depotpath - list');
+is_output ($svk, 'depotmap', ['--delete', '//'],
+	   ['New depot map saved.'], 'depotpath - delete');
+is_output ($svk, 'depotmap', ['--delete', '//'],
+	   ["Depot '' does not exist in the depot map."], 'depotpath - delete again');
+is_output ($svk, 'depotmap', ['--add', '//', $repospath],
+	   ['New depot map saved.'], 'depotpath - add');
+is_output ($svk, 'depotmap', ['--add', '//', $repospath],
+	   ["Depot '' already exists; use --delete to remove it first."], 'depotpath - add again');
 rmtree [$repospath];

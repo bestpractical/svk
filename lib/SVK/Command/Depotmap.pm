@@ -11,13 +11,45 @@ use File::Path;
 
 sub options {
     ('l|list' => 'list',
-     'i|init' => 'init');
+     'i|init' => 'init',
+     'd|delete' => 'delete',
+     'a|add' => 'add');
+}
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    if ($self->{add} or $self->{delete}) {
+        @arg or die loc("Need to specify a depot name");
+
+        my $depot = shift(@arg);
+        $depot =~ s{/}{}g;
+
+        @arg or die loc("Need to specify a repository path")
+            if $self->{add};
+
+        return ($depot, @arg);
+    }
+    else {
+        return undef;
+    }
 }
 
 sub run {
-    my ($self) = @_;
-    return $self->_do_list() if($self->{list});
-    $self->_do_edit();
+    my $self = shift;
+
+    if ($self->{list}) {
+        return $self->_do_list();
+    }
+    elsif ($self->{add}) {
+        return $self->_do_add(@_);
+    }
+    elsif ($self->{delete}) {
+        return $self->_do_delete(@_);
+    }
+    else {
+        return $self->_do_edit();
+    }
 }
 
 sub _do_list {
@@ -47,6 +79,34 @@ sub _do_edit {
         print loc("New depot map saved.\n");
         $self->{xd}{depotmap} = $new;
     }
+    $self->create_depots;
+    return;
+}
+
+sub _do_add {
+    my ($self, $depot, $path) = @_;
+
+    die loc("Depot '$depot' already exists; use --delete to remove it first.\n")
+        if $self->{xd}{depotmap}{$depot};
+
+    $self->{xd}{depotmap}{$depot} = $path;
+
+    print loc("New depot map saved.\n");
+    $self->create_depots;
+}
+
+sub _do_delete {
+    my ($self, $depot) = @_;
+
+    delete $self->{xd}{depotmap}{$depot}
+        or die loc("Depot '$depot' does not exist in the depot map.\n");
+
+    print loc("New depot map saved.\n");
+    return;
+}
+
+sub create_depots {
+    my ($self) = @_;
     for my $path (values %{$self->{xd}{depotmap}}) {
 	next if -d $path;
 	my $ans = get_prompt(
@@ -75,10 +135,15 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
  depotmap [OPTIONS]
 
+ depotmap --add DEPOT /path/to/repository
+ depotmap --delete DEPOT
+
 =head1 OPTIONS
 
+ -a [--add]             : add a depot to the mapping
+ -d [--delete]          : remove a depot from the mapping
  -l [--list]            : list current depot mappings
- -i [--init]            : initialize a default deopt
+ -i [--init]            : initialize a default depot
 
 =head1 DESCRIPTION
 
