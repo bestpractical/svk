@@ -629,7 +629,7 @@ sub do_delete {
 					@arg{qw/copath report/};
 				    my $st = $status->[0];
 				    if ($st eq 'M') {
-					die loc("%1 changed", $report);
+					die loc("%1 is modified, use 'svk revert' first.\n", $report);
 				    }
 				    elsif ($st eq 'D') {
 					push @deleted, $copath;
