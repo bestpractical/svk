@@ -39,7 +39,7 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target) = @_;
-
+    $target->depotpath;
     my $fs = $target->{repos}->fs;
     my ($fromrev, $torev);
     ($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
@@ -47,21 +47,21 @@ sub run {
 	    if $self->{revspec};
     $fromrev ||= $fs->youngest_rev;
     $torev ||= 0;
-
     $self->{cross} ||= 0;
 
     my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
 
     my $sep = ('-' x 70)."\n";
     print $sep;
-    _get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
+    _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
 	       sub {_show_log (@_, $sep, undef, 0, $print_rev)} );
     return;
 }
 
 sub _get_logs {
-    my ($fs, $limit, $path, $fromrev, $torev, $verbose, $cross, $callback) = @_;
+    my ($root, $limit, $path, $fromrev, $torev, $verbose, $cross, $callback) = @_;
+    my $fs = $root->fs;
     my $reverse = ($fromrev < $torev);
     my @revs;
     ($fromrev, $torev) = ($torev, $fromrev) if $reverse;
@@ -77,9 +77,10 @@ sub _get_logs {
     };
 
     my $pool = SVN::Pool->new_default;
-    my $hist = $fs->revision_root ($fromrev)->node_history ($path);
+    my $hist = $root->node_history ($path);
     while (($hist = $hist->prev ($cross)) && $limit--) {
 	my $rev = ($hist->location)[1];
+	next if $rev > $fromrev;
 	last if $rev < $torev;
 	$reverse ?  unshift @revs, $rev : $docall->($rev);
 	$pool->clear;
@@ -128,7 +129,10 @@ sub _show_log {
 sub do_log {
     my (%arg) = @_;
     $arg{cross} ||= 0, $arg{limit} ||= -1;
-    _get_logs ($arg{repos}->fs, @arg{qw/limit path fromrev torev verbose cross cb_log/});
+    my $fs = $arg{repos}->fs;
+    my $rev = $arg{fromrev} > $arg{torev} ? $arg{fromrev} : $arg{torev};
+    _get_logs ($fs->revision_root ($rev),
+	       @arg{qw/limit path fromrev torev verbose cross cb_log/});
 }
 
 1;

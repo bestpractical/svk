@@ -276,8 +276,9 @@ C<SVN::Repos> object if caller wants the repository to be opened.
 
 sub find_repos_from_co {
     my ($self, $copath, $open) = @_;
+    die loc("path %1 is not a checkout path\n", $copath)
+	unless abs_path ($copath);
     $copath = abs_path ($copath);
-
     my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
     die loc("path %1 is not a checkout path\n", $copath) unless %$cinfo;
     my ($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, $open);

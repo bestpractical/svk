@@ -1,10 +1,13 @@
 #!/usr/bin/perl -w
-use Test::More tests => 24;
+use Test::More tests => 25;
 use strict;
 require 't/tree.pl';
 our $output;
 
 my ($xd, $svk) = build_test('bob');
+
+$svk->ls ('http://foobar');
+ok ($@ =~ m|not a checkout path|, 'bad path');
 
 foreach my $depot ('','bob') {
     my ($copath) = get_copath ("list$depot");

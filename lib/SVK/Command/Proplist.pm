@@ -24,11 +24,8 @@ sub run {
     my ($self, @arg) = @_;
 
     for my $target (@arg) {
-	my $rev = $self->{rev};
-	if (defined $self->{rev}) {
-	    delete $target->{copath};
-	    $target->{revision} = $rev;
-	}
+	$target->depotpath ($self->{rev})
+	    if defined $self->{rev};
 	my $props = $self->{xd}->do_proplist ( $target );
 	return unless %$props;
 	print loc("Properties on %1:\n", $target->{report} || '.');

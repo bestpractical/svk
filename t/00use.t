@@ -12,4 +12,6 @@ BEGIN {
 	s|/|::|g;
 	use_ok ($_);
     }
+    my $svk = SVK->new;
+    $svk->help;
 }

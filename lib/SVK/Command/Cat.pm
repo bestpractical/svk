@@ -11,7 +11,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return @arg;
+    return map { $self->arg_co_maybe ($_) } @arg;
 }
 
 sub lock { $_[0]->lock_none }
@@ -19,14 +19,13 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, @arg) = @_;
     my $pool = SVN::Pool->new_default;
-    for (@arg) {
-	my (undef, $path, undef, undef, $repos) = $self->{xd}->find_repos_from_co_maybe ($_, 1);
+    for my $target (@arg) {
 	$pool->clear;
-	my $fs = $repos->fs;
-	my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
-	my $stream = $root->file_contents ($path);
+	$target->depotpath ($self->{rev});
+	my $root = $target->root ($self->{xd});
+	my $stream = $root->file_contents ($target->{path});
 	# XXX: the keyword layer interface should also have reverse
-	my $layer = SVK::XD::get_keyword_layer ($root, $path);
+	my $layer = SVK::XD::get_keyword_layer ($root, $target->{path});
 	no strict 'refs';
 	my $io = \*{select()};
 	$layer->via ($io) if $layer;

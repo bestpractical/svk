@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 5;
+use Test::More tests => 6;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -9,6 +9,7 @@ my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 
 is_output_like ($svk, 'blame', ['--help'], qr'SYNOPSIS', 'annotate - help');
+is_output_like ($svk, 'blame', [], qr'SYNOPSIS', 'annotate - help');
 
 chdir ($copath);
 mkdir ('A');

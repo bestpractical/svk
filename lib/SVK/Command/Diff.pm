@@ -21,6 +21,8 @@ sub parse_arg {
 
 sub lock { $_[0]->lock_none }
 
+# XXX: need to handle peg revisions, ie
+# -r N PATH@M means the node PATH@M at rev N
 sub run {
     my ($self, $target, $target2) = @_;
     my $fs = $target->{repos}->fs;
@@ -41,20 +43,20 @@ sub run {
 	}
     }
     else {
-	delete $target->{copath} if $r1 && $r2;
+	$target->depotpath if $r1 && $r2;
 	if ($target->{copath}) {
-	    %$target2 = %$target;
-	    delete $target->{copath};
+	    $target2 = SVK::Target->new (%$target);
+	    $target->depotpath;
 	    $report = $target->{report};
 	}
 	else {
 	    # XXX: require revspec;
-	    %$target2 = %$target;
+	    $target2 = SVK::Target->new (%$target);
 	}
     }
 
     if ($target2->{copath}) {
-	$newroot = $self->{xd}->xdroot (%$target2);
+	$newroot = $target2->root ($self->{xd});
 	$oldroot = $newroot unless $r1;
 	my $lrev = $r1; # for the closure
 	$cb_llabel =

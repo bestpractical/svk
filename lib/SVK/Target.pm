@@ -68,6 +68,12 @@ sub normalize {
 
 }
 
+sub depotpath {
+    my ($self, $revision) = @_;
+    delete $self->{copath};
+    $self->{revision} = $revision if defined $revision;
+}
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

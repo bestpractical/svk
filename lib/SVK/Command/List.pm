@@ -30,10 +30,9 @@ sub run {
 
 sub _do_list {
     my ($self, $level, $target) = @_;
-
     my $pool = SVN::Pool->new_default;
-    my $fs = $target->{repos}->fs;
-    my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
+    $target->depotpath ($self->{rev});
+    my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
        print loc("Path %1 is not a versioned directory\n", $target->{path})
            unless $kind == $SVN::Node::file;
@@ -56,7 +55,6 @@ sub _do_list {
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
 	    _do_list($self, $level+1,
 		     SVK::Target->new (%$target,
-				       copath => $target->{copath} ? "$target->{copath}/$_" : undef,
 				       path => "$target->{path}/$_",
 				       depotpath => "$target->{depotpath}/$_"));
 	}

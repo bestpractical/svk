@@ -44,8 +44,9 @@ sub run {
 	my ($path, $rev) = @$_;
 	my $content = $fs->revision_root ($rev)->file_contents ($path);
 	$content = [split "[\n\r]", <$content>];
+	no warnings 'uninitialized';
 	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $rev,
-			    $fs->revision_prop ($rev, 'svn:author') || '',
+			    $fs->revision_prop ($rev, 'svn:author'),
 			    substr($fs->revision_prop ($rev, 'svn:date'),0,10)),
 		    $content);
     }
