@@ -23,7 +23,8 @@ sub run {
 	my $yrev = $repos->fs->youngest_rev;
 	my $rev = $target->{copath} ?
 	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
-	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
+	$target->{revision} = $rev;
+	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path,$rev));
 	print loc("Checkout Path: %1\n",$copath) if($copath);
 	print loc("Depot Path: %1\n", $depotpath);
 	print loc("Revision: %1\n", $rev);
