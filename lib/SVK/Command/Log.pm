@@ -156,13 +156,6 @@ SVK::Command::Log - Show log messages for revisions
  -x [--cross]:           display cross copied nodes
  -v [--verbose]:         print changed path in changes
 
-=head1 OPTIONS
-
- -r [--revision] arg:    Needs description
- -l [--limit] arg:       Needs description
- -x [--cross]:           Needs description
- -v [--verbose]:         Needs description
-
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

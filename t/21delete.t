@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 4;
+use Test::More tests => 9;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -22,8 +22,18 @@ $svk->commit ('-m', 'init');
 
 is_output ($svk, 'delete', ['A/foo'],
 	   ['D   A/foo'], 'delete - file');
+ok (!-e 'A/foo', 'delete - copath deleted');
+is_output ($svk, 'status', [],
+	   ['D   A/foo'], 'delete - status');
 
 $svk->revert ('-R', '.');
+
+is_output ($svk, 'delete', ['--keep-local', 'A/foo'],
+	   ['D   A/foo'], '');
+ok (-e 'A/foo', 'copath not deleted');
+is_output ($svk, 'status', [],
+	   ['D   A/foo'], 'copath not deleted');
+
 
 is_output ($svk, 'delete', ["$corpath/A/foo"],
 	   ["D   $corpath/A/foo"], 'delete - file - abspath');

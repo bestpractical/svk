@@ -35,7 +35,7 @@ sub _default_gettext {
 	(?:			# either one of
 	    \d+			#   a digit, like %1
 	    |			#     or
-	    (\w+)\(		#   a function call -- 1
+	    (\w+|\*)\(		#   a function call -- 1
 		(?:		#     either
 		    %\d+	#	an interpolation
 		    |		#     or
@@ -57,7 +57,7 @@ sub _default_gettext {
 	$digit . (
 	    $1 ? (
 		($1 eq 'tense') ? (($3 eq 'present') ? 'ing' : 'ed') :
-		($1 eq 'quant') ? ' ' . (($digit > 1) ? ($4 || "$3s") : $3) :
+		($1 eq 'quant' || $1 eq '*') ? ' ' . (($digit > 1) ? ($4 || "$3s") : $3) :
 		''
 	    ) : ''
 	);

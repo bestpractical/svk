@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 19;
+plan tests => 21;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -170,7 +170,6 @@ $svk->resolved ("$copath/be");
 # XXX: newfile2 conflicted but not added
 $svk->status ($copath);
 $svk->commit ('-m', 'merge down committed from checkout', $copath);
-$svk->proplist ('-v', $copath);
 rmdir "$copath/newdir";
 $svk->revert ('-R', $copath);
 ok (-e "$copath/newdir", 'smerge to checkout - add directory');
@@ -192,7 +191,6 @@ is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/
 	    "Syncing file://$srepospath",
 	    'Retrieving log information from 8 to 8',
 	    'Committed revision 9 from revision 8.']);
-$svk->pl ('-v', '/client2/m-all/A-cp');
 
 is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
 	   ['Auto-merging (8, 8) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
@@ -210,3 +208,25 @@ is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/
 	    "Syncing file://$srepospath",
 	    'Retrieving log information from 10 to 10',
 	    'Committed revision 11 from revision 10.']);
+$svk->update ($scopath);
+overwrite_file ("$scopath/A/Q/qu", "on trunk\nfirst line in qu\n2nd line in qu\n");
+overwrite_file ("$scopath/A-cp/Q/qu", "first line in qu\non cp branch\n2nd line in qu\n");
+$svk->commit ('-m', 'commit on source', $scopath);
+$svk->sync ('/client2/m-all');
+is_output ($svk, 'smerge', ['-C', '/client2/m-all/A', '/client2/m-all/A-cp'],
+	   ['Auto-merging (10, 12) /m-all/A to /m-all/A-cp (base /m-all/A:10).',
+	    "Merging back to SVN::Mirror source file://$srepospath.",
+	    'Checking against mirrored directory locally.',
+	    'G   Q/qu',
+	    "New merge ticket: $suuid:/A:11"]);
+
+is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '/client2/m-all/A', '/client2/m-all/A-cp'],
+	   ['Auto-merging (10, 12) /m-all/A to /m-all/A-cp (base /m-all/A:10).',
+	    "Merging back to SVN::Mirror source file://$srepospath.",
+	    'G   Q/qu',
+	    "New merge ticket: $suuid:/A:11",
+	    'Merge back committed as revision 12.',
+	    "Syncing file://$srepospath",
+	    'Retrieving log information from 12 to 12',
+	    'Committed revision 13 from revision 12.']);
+

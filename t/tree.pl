@@ -38,7 +38,7 @@ sub new_repos {
     while (-e $repospath) {
 	$repospath = $reposbase . '-'. (++$i);
     }
-    my $pool = SVN::Pool->new;
+    my $pool = SVN::Pool->new_default;
     $repos = SVN::Repos::create("$repospath", undef, undef, undef,
 				{'fs-type' => $ENV{SVNFSTYPE} || 'bdb'})
 	or die "failed to create repository at $repospath";
@@ -111,14 +111,37 @@ sub is_file_content {
 sub is_output {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
     $svk->$cmd (@$arg);
-    is_deeply ([split ("\n", $output)], $expected,
-	       $test || join(' ', $cmd, @$arg));
+    my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
+	? \&is_deeply_like : \&is_deeply;
+    $cmp->([split ("\n", $output)], $expected,
+	   $test || join(' ', $cmd, @$arg));
+}
+
+sub is_deeply_like {
+    my ($got, $expected, $test) = @_;
+    for (0..$#{$expected}) {
+	if (ref ($expected->[$_]) eq 'Regexp' ) {
+	    unless ($got->[$_] =~ m/$expected->[$_]/) {
+		diag "Different at $_:\n$got->[$_]";
+		ok (0, $test);
+		return;
+	    }
+	}
+	else {
+	    if ($got->[$_] ne $expected->[$_]) {
+		diag "Different at $_:\n$got->[$_]\n$expected->[$_]";
+		ok (0, $test);
+		return;
+	    }
+	}
+    }
+    is ($#{$expected}, $#{$got}, $test);
 }
 
 sub is_output_like {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
     $svk->$cmd (@$arg);
-    ok ($output =~ m/$expected/, $test || join(' ', $cmd, @$arg));
+    like ($output, $expected, $test || join(' ', $cmd, @$arg));
 }
 
 sub copath {

@@ -258,16 +258,14 @@ sub prepare_fh {
     my ($self, $fh) = @_;
     # XXX: need to respect eol-style here?
     for my $name (qw/base new local/) {
-	next unless $fh->{$name}[0];
-	next if $fh->{$name}[1];
-	my $tmp = [tmpfile("$name-")];
-	my $slurp = $fh->{$name}[0];
-
-	slurp_fh ($slurp, $tmp->[0]);
-
-	close $fh->{$name}[0];
-	$fh->{$name} = $tmp;
-	seek $fh->{$name}[0], 0, 0;
+	my $entry = $fh->{$name};
+	next unless $entry->[0];
+	next if $entry->[1];
+	my $tmp = [tmpfile("$name-"), $entry->[2]];
+	slurp_fh ($entry->[0], $tmp->[0]);
+	close $entry->[0];
+	$entry = $fh->{$name} = $tmp;
+	seek $entry->[0], 0, 0;
     }
 }
 
@@ -324,6 +322,7 @@ sub close_file {
 	$fh->{base}[1] = '/dev/null' if $info->{addmerge};
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
+	# XXX: why do in-memory here? use some tee'ed io to get md5 upon written.
 	open my $mfh, '+>', \ (my $merged);
 	SVN::Core::diff_file_output_merge
 		( $mfh, $diff,

@@ -361,8 +361,6 @@ Display usage. An optional argument is to display detail or not.
 
 =back
 
-=head1 TODO
-
 =head1 SEE ALSO
 
 L<SVK>, L<SVK::XD>, C<SVK::Command::*>

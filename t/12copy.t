@@ -1,9 +1,8 @@
 #!/usr/bin/perl -w
-use Test::More tests => 28;
+use Test::More tests => 30;
 use strict;
 our $output;
 require 't/tree.pl';
-use SVK::Command;
 my ($xd, $svk) = build_test('foo');
 $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
@@ -102,6 +101,10 @@ is_output ($svk, 'status', [$copath],
 
 $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
+
+is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/A/Q/'],
+	   ['Committed revision 15.']);
+is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 sub is_copied_from {
     my ($path, @expected) = @_;

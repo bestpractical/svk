@@ -15,7 +15,7 @@ sub parse_arg {
     my ($self, $path, @arg) = @_;
 
     # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
-    if (@arg and $path =~ m{\w://} and $arg[0] !~ m{\w://}) {
+    if (@arg and $path =~ m{^\w+:}) {
 	($arg[0], $path) = ($path, $arg[0]);
     }
 
@@ -83,8 +83,6 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
  mirror --list
  mirror --upgrade /DEPOT/
-
-=head1 DESCRIPTION
 
 =head1 OPTIONS
 

@@ -5,6 +5,11 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 
+sub options {
+    ($_[0]->SUPER::options,
+     'K|keep-local'	=> 'keep');
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
@@ -50,7 +55,7 @@ sub run {
     my ($self, $target) = @_;
 
     if ($target->{copath}) {
-	$self->{xd}->do_delete ( %$target );
+	$self->{xd}->do_delete ( %$target, no_rm => $self->{keep} );
     }
     else {
 	$self->get_commit_message ();
@@ -79,6 +84,7 @@ SVK::Command::Delete - Remove versioned item
 =head1 OPTIONS
 
  -m [--message] message:    commit message
+ -K [--keep-local]:         Do not remove the local file
 
 =head1 AUTHORS
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # XXX: skip on platform not supporting symlinks
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict;
 use File::Path;
 require 't/tree.pl';
@@ -13,13 +13,15 @@ mkdir ("$copath/A");
 overwrite_file ("$copath/A/bar", "foobar\n");
 symlink ("bar", "$copath/A/bar.lnk");
 symlink ('/tmp', "$copath/A/dir.lnk");
-symlink ('/non-exists', "$copath/A/non.lnk");
 is_output ($svk, 'add', ["$copath/A"],
 	   ["A   $copath/A",
 	    "A   $copath/A/bar",
 	    "A   $copath/A/bar.lnk",
-	    "A   $copath/A/dir.lnk",
-	    "A   $copath/A/non.lnk"], 'add symlinks');
+	    "A   $copath/A/dir.lnk"], 'add symlinks');
+symlink ('/non-exists', "$copath/A/non.lnk");
+is_output ($svk, 'add', ["$copath/A/non.lnk"],
+	   ["A   $copath/A/non.lnk"], 'dangling symlink');
+
 #warn $output;
 is_output ($svk, 'status', ["$copath/A"],
 	   ["A   $copath/A",

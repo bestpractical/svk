@@ -76,12 +76,12 @@ A scalar reference. After command invocation the output will be stored
 in the scalar. By default the output is not held in any scalar and
 will be printed to STDOUT.
 
+=back
+
 =head1 METHODS
 
 All methods are autoloaded and deferred to
 C<SVK::Command-E<gt>invoke>.
-
-=back
 
 =head1 SEE ALSO
 

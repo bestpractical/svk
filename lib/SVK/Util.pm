@@ -26,6 +26,7 @@ use constant DEFAULT_EDITOR => ($^O eq 'MSWin32') ? 'notepad.exe' : 'vi';
 my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 sub svn_mirror () {
     no warnings 'redefine';
+    local $@;
     my $svn_mirror = eval { require SVN::Mirror; 1 };
     *svn_mirror = $svn_mirror ? sub () { 1 } : sub () { 0 };
     return $svn_mirror;
@@ -199,11 +200,12 @@ sub abs_path {
 
 sub mimetype {
     no warnings 'redefine';
+    local $@;
     my $mimetype = eval {
-        require File::MimeInfo::Magic; 
+        require File::MimeInfo::Magic;
         \&File::MimeInfo::Magic::mimetype;
     };
-    *mimetype = $mimetype || sub { undef };
+    *mimetype = $mimetype ||= sub { undef };
     goto &$mimetype;
 }
 

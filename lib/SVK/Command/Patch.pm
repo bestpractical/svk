@@ -11,86 +11,89 @@ use SVK::I18N;
 use SVK::Util qw (resolve_svm_source);
 use SVK::Command::Log;
 
+my %cmd = map {$_ => 1} qw/view dump update regen update test send delete/;
+$cmd{create} = $cmd{list} = 0;
+
+sub options {
+    ('depot=s' => 'depot');
+}
+
 sub lock { $_[0]->lock_none }
 
 sub parse_arg {
     my ($self, $cmd, @arg) = @_;
-    my @cmd = qw/create view dump update test send list delete/;
-    return unless $cmd && (1 == grep {$_ eq $cmd} @cmd);
+    return unless $cmd && exists $cmd{$cmd};
+    if ($cmd{$cmd}) {
+	die loc ("Filename required.\n")
+	    unless $arg[0];
+	$arg[0] = $self->_load ($arg[0]);
+    }
     return ($cmd, @arg);
 }
 
 sub create {
     my ($self, $name, @arg) = @_;
-    # call svk::command::merge
     my $fname = "$self->{xd}{svkpath}/patch";
     mkdir ($fname);
     $fname .= "/$name.svkpatch";
-    return "file $fname already exists, use $0 patch update $name instead\n"
+    return "file $fname already exists, use $0 patch regen or update $name instead\n"
 	if -e $fname;
 
     my ($src, $dst) = map {$self->arg_depotpath ($_) } @arg;
-    die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
+    die loc("repos paths mismatch") unless $src->same_repos ($dst);
 
-    my $repos = $src->{repos};
-    my $fs = $repos->fs;
-
-    my $patch = SVK::Patch->new (name => $name, level => 0, _repos => $repos);
-    $patch->from ($src->{path});
-    # XXX: from/to should just take SVK::Target
-    $patch->{source_rev} = 0;
-    $patch->{_source_updated} = 1;
-    $patch->applyto ($dst->{path});
-
-    $self->_do_update ($name, $patch);
+    my $patch = SVK::Patch->new ($name, $self->{xd}, $self->{xd}->find_depotname ($arg[0]),
+				 $src, $dst);
+    my $ret = $self->regen ($patch);
+    unless ($ret) {
+	print loc ("Patch $name created.\n");
+    }
+    return $ret;
 }
 
 sub view {
-    my ($self, $name) = @_;
-    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
-
-    $patch->view ($repos);
+    my ($self, $patch) = @_;
+    $patch->view;
     return;
 }
 
 sub dump {
-    my ($self, $name) = @_;
-    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
-    warn YAML::Dump ($patch);
+    my ($self, $patch) = @_;
+    print YAML::Dump ($patch);
     return;
 }
 
 sub test {
-    my ($self, $name) = @_;
-    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
+    my ($self, $patch) = @_;
 
-    if (my $conflicts = $patch->applicable) {
+    if (my $conflicts = $patch->apply (1)) {
 	print loc("%*(%1,conflict) found.\n", $conflicts);
-	print loc("Please do a merge to resolve conflicts and update the patch.\n");
+	print loc("Please do a merge to resolve conflicts and regen the patch.\n");
     }
 
     return;
 }
 
-sub _do_update {
-    my ($self, $name, $patch) = @_;
-
-    if (my $conflicts = $patch->update ()) {
-	return loc("%*(%1,conflict) found, patch abandoned.\n", $conflicts)
+sub regen {
+    my ($self, $patch) = @_;
+    if (my $conflicts = $patch->regen) {
+	# XXX: check empty too? probably already applied.
+	return loc("%*(%1,conflict) found, patch aborted.\n", $conflicts)
     }
-    $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.svkpatch");
+    $self->_store ($patch);
     return;
+
 }
 
 sub update {
-    my ($self, $name) = @_;
-    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
-    # XXX: check update here
-    $self->_do_update ($name, $patch);
+    my ($self, $patch) = @_;
+    if (my $conflicts = $patch->update) {
+	# XXX: check empty too? probably already applied.
+	return loc("%*(%1,conflict) found, update aborted.\n", $conflicts)
+    }
+    $self->_store ($patch);
+    return;
+
 }
 
 sub list {
@@ -99,10 +102,23 @@ sub list {
     opendir DIR, "$self->{xd}{svkpath}/patch";
     for (readdir (DIR)) {
 	next if m/^\./;
-	my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$_", $repos);
+	s/\.svkpatch$//;
+	my $patch = $self->_load ($_);
 	print "$patch->{name}\@$patch->{level}: \n";
     }
     return;
+}
+
+sub _store {
+    my ($self, $patch) = @_;
+    $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.svkpatch");
+}
+
+sub _load {
+    my ($self, $name) = @_;
+    # XXX: support alternative path
+    SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch",
+		      $self->{xd}, $self->{depot} || '');
 }
 
 sub run {
@@ -121,11 +137,12 @@ SVK::Command::Patch - Manage patches
 =head1 SYNOPSIS
 
  patch create NAME DEPOTPATH DEPOTPATH
+ patch list
  patch view NAME
+ patch regen NAME
  patch update NAME
- patch test NAME
+ patch apply NAME
  patch send NAME
- patch list NAME
  patch delete NAME
 
 =head1 OPTIONS

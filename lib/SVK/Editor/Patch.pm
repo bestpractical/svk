@@ -69,8 +69,8 @@ sub drive {
     $calls ||= $self->{edit_tree}[0];
     # XXX: Editor::Merge calls $pool->default, which is unhappy with svn::pool objects.
     my $pool = SVN::Pool::create (undef);
-    for (@$calls) {
-	my ($next, $func, @arg) = @$_;
+    for my $entry (@$calls) {
+	my ($next, $func, @arg) = @$entry;
 	next unless $func;
 	my ($ret, $baton_at);
 	$arg[$baton_at] = $baton

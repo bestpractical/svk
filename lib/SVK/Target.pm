@@ -3,6 +3,7 @@ use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
 use SVK::Util qw( get_anchor );
+use SVK::Target::Universal;
 use Clone;
 
 =head1 NAME
@@ -11,8 +12,12 @@ SVK::Target - SVK targets
 
 =head1 SYNOPSIS
 
+ See below
 
 =head1 DESCRIPTION
+
+For a target given in command line, the class is about locating the
+path in the depot, the checkout path, and others.
 
 =cut
 
@@ -120,21 +125,22 @@ Return the checkout path of the target, optionally with additional
 path component.
 
 =cut
+
 my $_copath_catsplit = $^O eq 'MSWin32' ?
-sub { File::Spec->catfile ($_[0], File::Spec::Unix->splitdir ($_[1])) } :
-sub { "$_[0]/$_[1]" };
+sub { File::Spec->catfile (defined $_[0] && length $_[0] ? ($_[0]) : (), File::Spec::Unix->splitdir ($_[1])) } :
+sub { defined $_[0] && length $_[0] ? "$_[0]/$_[1]" : $_[1] };
 
 sub copath {
     my $self = shift;
     my $copath = ref ($self) ? $self->{copath} : shift;
     my $paths = shift;
-    return $copath unless $paths;
+    return $copath unless defined $paths && length ($paths);
     return $_copath_catsplit->($copath, $paths);
 }
 
 =head2 descend
 
-Make target descend into C<$entry>
+Makes target descend into C<$entry>
 
 =cut
 
@@ -144,6 +150,16 @@ sub descend {
     $self->{path} .= "/$entry";
     $self->{report} = File::Spec->catfile ($self->{report}, $entry);
     $self->{copath} = File::Spec->catfile ($self->{copath}, $entry);
+}
+
+=head2 universal
+
+Returns corresponding L<SVK::Target::Universal> object.
+
+=cut
+
+sub universal {
+    SVK::Target::Universal->new ($_[0]);
 }
 
 =head1 AUTHORS

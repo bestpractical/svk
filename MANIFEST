@@ -66,6 +66,7 @@ lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Target.pm
+lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
 lib/SVK/XD.pm
 Makefile.PL
