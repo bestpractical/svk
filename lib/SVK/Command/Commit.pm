@@ -7,11 +7,12 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
-use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh
+use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy );
 
 sub options {
     ('m|message=s'  => 'message',
+     'F|file=s'     => 'message_file',
      'C|check-only' => 'check_only',
      'S|sign'	  => 'sign',
      'P|patch=s'  => 'patch',
@@ -52,8 +53,18 @@ sub check_mirrored_path {
     return 1;
 }
 
+sub fill_commit_message {
+    my $self = shift;
+    if ($self->{message_file}) {
+	die loc ("Can't use -F with -m.\n")
+	    if defined $self->{message};
+	$self->{message} = read_file ($self->{message_file});
+    }
+}
+
 sub get_commit_message {
     my ($self, $msg) = @_;
+    $self->fill_commit_message;
     return if defined $self->{message};
     $self->{message} = get_buffer_from_editor
 	(loc('log message'), $self->message_prompt, join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
@@ -205,6 +216,7 @@ sub exclude_mirror {
 sub get_committable {
     my ($self, $target, $root) = @_;
     my ($fh, $file);
+    $self->fill_commit_message;
     unless (defined $self->{message}) {
 	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }

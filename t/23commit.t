@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 41;
+plan tests => 44;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -228,3 +228,14 @@ append_file ("A/bar", "foobar2");
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    'Aborted.'], 'buffer unmodified');
+
+overwrite_file ('svk-commit', 'my log message');
+
+is_output ($svk, 'commit', [-F => 'svk-commit', -m => 'hate'],
+	   ["Can't use -F with -m."]);
+
+is_output ($svk, 'commit', [-F => 'svk-commit'],
+	   ['Committed revision 19.'], 'commit with -F');
+
+is_output_like ($svk, 'log', [-r => 19],
+		qr/my log message/);
