@@ -44,7 +44,6 @@ is_output ($svk, 'smerge', ['-C', '//m/be', '//l/be'],
 	   ['Auto-merging (2, 6) /m/be to /l/be (base /m/be:2).',
 	    'U   be',
 	    "New merge ticket: $suuid:/A/be:3"]);
-
 TODO: {
 local $TODO = 'better target checks';
 

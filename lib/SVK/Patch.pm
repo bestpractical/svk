@@ -291,6 +291,7 @@ sub regen {
 	$self->{_source} = $source;
 	$self->{source} = $source->universal;
 	$self->{editor} = $patch;
+	$self->{ticket} = $merge->merge_info ($source)->add_target ($source)->as_string;
     }
     return $conflict;
 }

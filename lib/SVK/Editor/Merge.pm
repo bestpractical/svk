@@ -177,6 +177,14 @@ sub open_root {
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     $self->{notify}->node_status ('', '');
+
+    my $ticket = $self->{ticket};
+    $self->{cb_merged} =
+	sub { my ($editor, $baton, $type, $pool) = @_;
+	      my $func = "change_${type}_prop";
+	      $editor->$func ($baton, 'svk:merge', $ticket->(), $pool);
+	  } if $ticket;
+
     return '';
 }
 
@@ -399,7 +407,7 @@ sub close_file {
     }
 
     $self->{notify}->flush ($path, 1);
-    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, $pool)
+    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool)
 	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
     $checksum = $iod->hexdigest if $iod;
     $self->ensure_close ($path, $checksum, $pool);
@@ -447,7 +455,7 @@ sub close_directory {
     $self->{notify}->flush_dir ($path);
 
     my $baton = $self->{storage_baton}{$path};
-    $self->{cb_merged}->($self->{storage}, $baton, $pool)
+    $self->{cb_merged}->($self->{storage}, $baton, 'dir', $pool)
 	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
 
     $self->{storage}->close_directory ($baton, $pool);

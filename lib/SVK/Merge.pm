@@ -219,10 +219,10 @@ sub copy_ancestors {
 }
 
 sub get_new_ticket {
-    my ($self) = @_;
-    # XXX: in patch context, the src ticket comes externally.
-    my ($srcinfo, $dstinfo) = map {$self->merge_info ($_)} @{$self}{qw/src dst/};
-    my $newinfo = $dstinfo->union ($srcinfo->add_target ($self->{src}))->del_target ($self->{dst});
+    my ($self, $srcinfo) = @_;
+    my $dstinfo = $self->merge_info ($self->{dst});
+    # We want the ticket representing src, but not dst.
+    my $newinfo = $dstinfo->union ($srcinfo)->del_target ($self->{dst});
     for (sort keys %$newinfo) {
 	print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_}{rev})
 	    if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
@@ -354,23 +354,12 @@ sub run {
 	  storage => $storage,
 	  notify => $notify,
 	  allow_conflicts => $is_copath,
+	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},
-	  cb_merged => $self->{ticket} ?
-	  sub { my ($editor, $baton, $pool) = @_;
-		my $func = $base_root->check_path ($base->path) == $SVN::Node::file ?
-		    'change_file_prop' : 'change_dir_prop';
-		$editor->$func
-		    ($baton, 'svk:merge', $self->get_new_ticket, $pool);
-	    } : undef,
+	  ticket => $self->{ticket} ?
+	      sub { $self->get_new_ticket ($self->merge_info ($src)->add_target ($src)) } : undef,
 	  %cb,
 	);
-    if (!$self->{check_only}) {
-        require SVK::Resolve;
-        $editor->{resolve} = SVK::Resolve->new(
-            action => $ENV{SVKRESOLVE},
-            external => $ENV{SVKMERGE},
-        );
-    }
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
@@ -384,9 +373,14 @@ sub run {
     return $editor->{conflicts};
 }
 
-package SVK::Merge::Info;
+sub resolver {
+    return undef if $_[0]->{check_only};
+    require SVK::Resolve;
+    return SVK::Resolve->new (action => $ENV{SVKRESOLVE},
+			      external => $ENV{SVKMERGE});
+}
 
-# XXX: cleanup minfo handling and put them here
+package SVK::Merge::Info;
 
 sub new {
     my ($class, $merge) = @_;
@@ -449,7 +443,7 @@ sub resolve {
 
 sub verbatim {
     my ($self) = @_;
-    return { map { $_ => $self->{$_}{rev}; } keys %$self };
+    return { map { $_ => $self->{$_}{rev} } keys %$self };
 }
 
 sub as_string {

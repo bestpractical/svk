@@ -7,7 +7,7 @@ our $output;
 
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 24;
+plan tests => 27;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
@@ -27,7 +27,6 @@ $svk2->sync ('//trunk');
 $svk2->copy ('-m', 'local branch', '//trunk', '//local');
 
 my ($copath, $corpath) = get_copath ('patch');
-
 $svk2->checkout ('//local', $copath);
 
 append_file ("$copath/B/fe", "fnord\n");
@@ -35,6 +34,8 @@ $svk2->commit ('-m', "modified on local", $copath);
 
 my ($uuid, $uuid2) = map {$_->fs->get_uuid} ($repos, $repos2);
 
+is_output ($svk2, 'patch', ['create', '//local', '//trunk'],
+	   ['Illegal patch name: //local.']);
 is_output ($svk2, 'patch', ['create', 'test-1', '//local', '//trunk'],
 	   ['U   B/fe',
 	    'Patch test-1 created.']);
@@ -141,9 +142,16 @@ is_output ($svk, 'patch', ['view', 'test-1'],
 	    "Target: $uuid:/trunk:4 [local]",
 	    @$log1, @$patch2]);
 
+is_output ($svk, 'patch', ['apply', 'test-1', $scopath, '--', '-C'],
+	   [__('U   B/fe'),
+	    "New merge ticket: $uuid2:/local:6"]);
+$svk2->cp ('-m', 'branch', '//trunk', '//patch-branch');
+is_output ($svk2, 'patch', ['apply', 'test-1', '//patch-branch', '--', '-C'],
+	   ['U   B/fe',
+	    'Empty merge.']);
+
 overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
 $svk->commit ('-m', "modified on trunk", $scopath);
-
 is_output ($svk, 'patch', [qw/test test-1/],
 	   ['C   B/fe', 'Empty merge.', '1 conflict found.',
 	    'Please do a merge to resolve conflicts and regen the patch.'],
@@ -161,7 +169,7 @@ is_output ($svk2, 'patch', [qw/regen test-1/],
 
 is_output ($svk2, 'patch', ['view', 'test-1'],
 	   ['==== Patch <test-1> level 2',
-	    "Source: $uuid2:/local:8 [local]",
+	    "Source: $uuid2:/local:9 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
             "        ($uri/trunk)",
 	    @$log1,
@@ -182,7 +190,7 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 $svk2->sync ('-a');
 is_output ($svk2, 'patch', ['view', 'test-1'],
 	   ['==== Patch <test-1> level 2',
-	    "Source: $uuid2:/local:8 [local]",
+	    "Source: $uuid2:/local:9 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored] [updated]",
             "        ($uri/trunk)",
 	    @$log1,

@@ -53,6 +53,11 @@ sub local {
 	);
 }
 
+sub same_resource {
+    my ($self, $other) = @_;
+    return ($self->{uuid} eq $other->{uuid} && $self->{path} eq $other->{path});
+}
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
