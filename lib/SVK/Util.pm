@@ -58,8 +58,7 @@ sub get_buffer_from_editor {
     my ($what, $sep, $content, $file, $anchor, $targets_ref) = @_;
     my $fh;
     if (defined $content) {
-	($fh, $file) = tmpfile ($file, UNLINK => 0);
-	binmode($fh, TEXT_MODE);
+	($fh, $file) = tmpfile ($file, TEXT => 1, UNLINK => 0);
 	print $fh $content;
 	close $fh;
     }
@@ -174,6 +173,7 @@ sub resolve_svm_source {
 sub tmpfile {
     my ($temp, %args) = @_;
     my $dir = tmpdir;
+    my $text = delete $args{TEXT};
     $temp = "svk-${temp}XXXXX";
     return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
@@ -181,6 +181,7 @@ sub tmpfile {
 				SUFFIX => '.tmp',
 				%args
 			      );
+    binmode($tmp, TEXT_MODE) if $text;
     return wantarray ? ($tmp, $tmp->filename) : $tmp;
 }
 

@@ -150,7 +150,7 @@ sub get_committable {
     my ($self, $target, $root) = @_;
     my ($fh, $file);
     unless (defined $self->{message}) {
-	($fh, $file) = tmpfile ('commit', UNLINK => 0);
+	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }
 
     print $fh "\n$target_prompt\n" if $fh;
