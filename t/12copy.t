@@ -22,14 +22,14 @@ append_file ("$copath/V-copy/D/de", "foobar");
 $svk->rm ("$copath/V-copy/B/fe");
 $svk->status ($copath);
 
-is ($output, 'A + t/checkout/copy/me
-A + t/checkout/copy/de
-M + t/checkout/copy/me-copy
-A + t/checkout/copy/de-copy
-A + t/checkout/copy/D-copy
+is ($output, 'A + t/checkout/copy/D-copy
 D   t/checkout/copy/V-copy/B/fe
 M   t/checkout/copy/V-copy/D/de
 A + t/checkout/copy/V-copy
+A + t/checkout/copy/de
+A + t/checkout/copy/de-copy
+A + t/checkout/copy/me
+M + t/checkout/copy/me-copy
 ');
 $svk->commit ('-m', 'commit depot -> checkout copies', $copath);
 is_copied_from ("$copath/me", '/V/me', 3);

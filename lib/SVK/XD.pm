@@ -707,7 +707,7 @@ sub _delta_dir {
 				       $arg{copath})->{'svn:ignore'}
         if $arg{kind} == $SVN::Node::dir;
     my $ignore = ignore (split ("\n", $svn_ignore || ''));
-    for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
+    for (sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
 	next if m/$ignore/;
 	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$_");
 	my $sche = $ccinfo->{'.schedule'} || '';
