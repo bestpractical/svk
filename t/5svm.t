@@ -5,8 +5,7 @@ require Test::More;
 require 't/tree.pl';
 eval "require SVN::Mirror"
 or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('no_plan');
-package main;
+Test::More->import ('tests', 1);
 
 # build another tree to be mirrored ourself
 $svk::info = build_test ('test');

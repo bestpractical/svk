@@ -410,7 +410,8 @@ sub _delta_file {
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
     my $mymd5 = SVN::MergeEditor::md5($fh);
 
-    return if !$schedule && $mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
+    return if !$schedule && !$arg{add}
+	&& $mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
 
     my $baton = $arg{add} ?
 	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1) :

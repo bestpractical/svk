@@ -1,10 +1,7 @@
 #!/usr/bin/perl
-use Test::More qw(no_plan);
+use Test::More tests => 9;
 use strict;
 require 't/tree.pl';
-package svk;
-require 'bin/svk';
-package main;
 
 $svk::info = build_test();
 my ($copath, $corpath) = get_copath ('basic');

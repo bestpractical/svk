@@ -1,9 +1,8 @@
 #!/usr/bin/perl
 use strict;
 no warnings 'once';
-use Test::More qw(no_plan);
+use Test::More tests => 4;
 require 't/tree.pl';
-package main;
 
 $svk::info = build_test ('');
 

@@ -14,6 +14,7 @@ bin/svk
 t/tree.pl
 t/1use.t
 t/2basic.t
+t/3import.t
 t/4merge.t
 t/5svm.t
 t/6keyword.t
