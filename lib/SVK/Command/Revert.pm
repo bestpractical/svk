@@ -34,6 +34,7 @@ sub run {
 	      cb_conflict => \&SVK::Editor::Status::conflict,
 	      cb_unknown => sub {
 		  my ($path, $copath) = @_;
+		  return unless $target->contains_copath ($copath);
 		  print loc("%1 is not versioned; ignored.\n", $copath);
 		  return;
 	      },
