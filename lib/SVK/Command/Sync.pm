@@ -73,7 +73,7 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 =head1 SYNOPSIS
 
  sync DEPOTPATH
- sync --all [DEPOT...]
+ sync --all [DEPOTNAME...]
 
 =head1 OPTIONS
 

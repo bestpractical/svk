@@ -1649,7 +1649,7 @@ msgid "mirror --detach DEPOTPATH"
 msgstr ""
 
 #: lib/SVK/Command.pod:218
-msgid "mirror --list [DEPOT...]"
+msgid "mirror --list [DEPOTNAME...]"
 msgstr ""
 
 #: lib/SVK/Command.pod:219
@@ -1908,7 +1908,7 @@ msgid "sync - Synchronize a mirrored depotpath"
 msgstr ""
 
 #: lib/SVK/Command.pod:269
-msgid "sync --all [DEPOT...]"
+msgid "sync --all [DEPOTNAME...]"
 msgstr ""
 
 #: lib/SVK/Command.pod:270

@@ -202,7 +202,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  # You may also list the target part first:
  mirror DEPOTPATH [http|svn]://host/path
 
- mirror --list [DEPOT...]
+ mirror --list [DEPOTNAME...]
  mirror --relocate DEPOTPATH [http|svn]://host/path 
  mirror --detach DEPOTPATH
  mirror --recover DEPOTPATH

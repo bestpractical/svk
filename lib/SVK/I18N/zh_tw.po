@@ -51,9 +51,8 @@ msgid ""
 "    first synchronize the mirrored copy source path, and then smerge from\n"
 "    it."
 msgstr ""
-"    如果同時指定 --sync 及 --merge，像「svk up -sm」這樣，則會先同步化映射"
-"的\n"
-"    來源目錄，然後再以它為來源進行 smerge。"
+"    如果同時指定 --sync 及 --merge，像「svk up -sm」這樣，則會先同步化\n"
+"    映射的來源目錄，然後再以它為來源進行 smerge。"
 
 #: lib/SVK/Command.pod:16
 msgid ""
@@ -1684,8 +1683,8 @@ msgid "mirror --detach DEPOTPATH"
 msgstr "mirror --detach 檔案庫路徑"
 
 #: lib/SVK/Command.pod:218
-msgid "mirror --list [DEPOT...]"
-msgstr "mirror --list [檔案庫...]"
+msgid "mirror --list [DEPOTNAME...]"
+msgstr "mirror --list [檔案庫名稱...]"
 
 #: lib/SVK/Command.pod:219
 msgid "mirror --recover DEPOTPATH"
@@ -1943,8 +1942,8 @@ msgid "sync - Synchronize a mirrored depotpath"
 msgstr "sync - 同步化映射的檔案庫路徑"
 
 #: lib/SVK/Command.pod:269
-msgid "sync --all [DEPOT...]"
-msgstr "sync --all [檔案庫...]"
+msgid "sync --all [DEPOTNAME...]"
+msgstr "sync --all [檔案庫名稱...]"
 
 #: lib/SVK/Command.pod:270
 msgid "sync DEPOTPATH"
