@@ -2,10 +2,8 @@ package SVK::Command;
 use strict;
 our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case);
-# XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
-use SVN::Simple::Edit;
+use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
-use Pod::Text ();
 use File::Find ();
 use Cwd;
 
@@ -98,7 +96,9 @@ sub brief_usage {
     my @rows = @{$parser->parse_file($file || $INC{"$fname.pm"})->root};
     while (my $row = shift @rows) {
         if ( ref($row) eq 'ARRAY' && $row->[0] eq 'head1' && $row->[2] eq 'NAME')  {
-            print "\t". $rows[0]->[2]."\n";
+            my $buf = $rows[0][2];
+            $buf =~ s/SVK::Command::(\w+)/\L$1/g;
+            print "   $buf\n";
             last;
         }
     }
@@ -106,12 +106,19 @@ sub brief_usage {
 
 sub usage {
     my ($self, $detail) = @_;
-    my $parser = new Pod::Text->new ();
     # XXX: the order from selected is not preserved.
     my $fname = ref($self);
     $fname =~ s|::|/|g;
-    $parser->select ( $detail ? 'NAME|SYNOPSIS|OPTIONS|DESCRIPTION' : 'SYNOPSIS|OPTIONS');
-    $parser->parse_from_file ($INC{"$fname.pm"});
+    my $parser = Pod::Simple::Text->new;
+    my $buf;
+    $parser->output_string(\$buf);
+    $parser->parse_file($INC{"$fname.pm"});
+
+    $buf =~ s/SVK::Command::(\w+)/\L$1/g;
+    $buf =~ s/^AUTHORS.*//sm;
+    $buf =~ s/^DESCRIPTION.*//sm unless $detail;
+    print $buf;
+
     exit 0;
 }
 

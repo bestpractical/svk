@@ -94,7 +94,7 @@ sub do_log {
 
 =head1 NAME
 
-log - Show the log messages for revisions.
+SVK::Command::Log - Show log messages for revisions
 
 =head1 SYNOPSIS
 

@@ -29,7 +29,7 @@ sub run {
 
 =head1 NAME
 
-delete - Remove versioned item.
+SVK::Command::Delete - Remove versioned item
 
 =head1 SYNOPSIS
 

@@ -30,7 +30,7 @@ sub run {
 
 =head1 NAME
 
-info - Display information about a file or directory.
+SVK::Command::Info - Display information about a file or directory
 
 =head1 SYNOPSIS
 

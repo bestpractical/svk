@@ -37,7 +37,7 @@ sub run {
 
 =head1 NAME
 
-switch - Switch to another branch and keep local modifications.
+SVK::Command::Switch - Switch to another branch and keep local modifications
 
 =head1 SYNOPSIS
 

@@ -45,7 +45,7 @@ sub run {
 
 =head1 NAME
 
-switch - List all properties on files or dirs.
+SVK::Command::Proplist - List all properties on files or dirs
 
 =head1 SYNOPSIS
 

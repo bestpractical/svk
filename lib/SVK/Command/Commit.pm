@@ -315,7 +315,7 @@ sub run {
 
 =head1 NAME
 
-commit - Commit changes to depot.
+SVK::Command::Commit - Commit changes to depot
 
 =head1 SYNOPSIS
 

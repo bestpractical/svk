@@ -43,7 +43,7 @@ sub run {
 
 =head1 NAME
 
-mkdir - Create versioned directory.
+SVK::Command::Mkdir - Create a versioned directory
 
 =head1 SYNOPSIS
 

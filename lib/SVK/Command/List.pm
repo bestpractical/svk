@@ -52,7 +52,7 @@ sub _do_list {
 
 =head1 NAME
 
-list - List entries in a directory from depot.
+SVK::Command::List - List entries in a directory from depot
 
 =head1 SYNOPSIS
 

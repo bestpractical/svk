@@ -39,7 +39,7 @@ sub run {
 
 =head1 NAME
 
-update - Bring changes from the repository into checkout copies.
+SVK::Command::Update - Bring changes from the repository into checkout copies
 
 =head1 SYNOPSIS
 

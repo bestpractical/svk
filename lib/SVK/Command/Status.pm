@@ -38,7 +38,7 @@ sub run {
 
 =head1 NAME
 
-status - Display the status of files and directories of the checkout copy.
+SVK::Command::Status - Display the status of items in the checkout copy
 
 =head1 SYNOPSIS
 

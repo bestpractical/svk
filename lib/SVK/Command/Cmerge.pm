@@ -126,7 +126,7 @@ sub run {
 
 =head1 NAME
 
-smerge - Merge specific changes.
+SVK::Command::Cmerge - Merge specific changes
 
 =head1 SYNOPSIS
 

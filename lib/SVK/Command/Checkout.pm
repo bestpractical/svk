@@ -50,7 +50,7 @@ sub run {
 
 =head1 NAME
 
-checkout - Checkout the depotpath.
+SVK::Command::Checkout - Checkout the depotpath
 
 =head1 SYNOPSIS
 

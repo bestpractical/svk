@@ -15,7 +15,7 @@ sub run {
 
 =head1 NAME
 
-smerge - Automatic merge all changes between branches.
+SVK::Command::Smerge - Automatic merge all changes between branches
 
 =head1 SYNOPSIS
 

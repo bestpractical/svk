@@ -120,7 +120,7 @@ sub run {
 
 =head1 NAME
 
-diff - Display diff between revisions or checkout copies.
+SVK::Command::Diff - Display diff between revisions or checkout copies
 
 =head1 SYNOPSIS
 

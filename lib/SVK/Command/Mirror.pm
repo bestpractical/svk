@@ -27,7 +27,7 @@ sub run {
 
 =head1 NAME
 
-mirror - Initialize a mirrored depotpath.
+SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 SYNOPSIS
 

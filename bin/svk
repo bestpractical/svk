@@ -12,6 +12,38 @@ use File::Spec;
 use Data::Hierarchy;
 use SVK::Command;
 
+=head1 NAME
+
+svk - A Distributed Version Control System
+
+=head1 SYNOPSIS
+
+B<svk> I<commands> S<[I<options>]> [I<args>]
+
+=head1 DESCRIPTION
+
+B<svk> is a decentralized version control system written in Perl.
+It uses the subversion filesystem but provides additional features:
+
+=over 4
+
+=item * Offline operations like C<checkin>, C<log>, C<merge>.
+
+=item * Distributed branches.
+
+=item * Lightweight checkout copy management (no F<.svn> directories).
+
+=item * Advanced merge algorithms, like I<star-merge> and I<cherry picking>.
+
+=back
+
+For more information about the Subversion project, visit
+L<http://svk.elixus.org/>.
+
+Run C<svk help> to access the built-in tool documentation.
+
+=cut
+
 use vars qw/$xd $info/;
 
 my %REPOS;

@@ -249,7 +249,7 @@ sub get_new_ticket {
 
 =head1 NAME
 
-merge - Apply the differences between two sources.
+SVK::Command::Merge - Apply differences between two sources
 
 =head1 SYNOPSIS
 

@@ -37,11 +37,11 @@ sub run {
 
 =head1 NAME
 
-smerge - Import directory into depot.
+SVK::Command::Import - Import directory into depot
 
 =head1 SYNOPSIS
 
-  import DEPOTPATH [PATH]
+    import DEPOTPATH [PATH]
 
 =head1 OPTIONS
 

@@ -69,7 +69,7 @@ sub run {
 
 =head1 NAME
 
-propset - Set a property on path.
+SVK::Command::Propset - Set a property on path
 
 =head1 SYNOPSIS
 

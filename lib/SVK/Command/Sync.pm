@@ -53,7 +53,7 @@ sub run {
 
 =head1 NAME
 
-sync - synchronize a mirrored depotpath.
+SVK::Command::Sync - Synchronize a mirrored depotpath
 
 =head1 SYNOPSIS
 

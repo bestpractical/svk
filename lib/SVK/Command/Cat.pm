@@ -38,7 +38,7 @@ sub run {
 
 =head1 NAME
 
-cat - Output the file from depot.
+SVK::Command::Cat - Output the file from depot
 
 =head1 SYNOPSIS
 

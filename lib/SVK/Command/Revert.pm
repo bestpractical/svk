@@ -34,7 +34,7 @@ sub run {
 
 =head1 NAME
 
-revert - Revert changes made in checkout copies.
+SVK::Command::Revert - Revert changes made in checkout copies
 
 =head1 SYNOPSIS
 

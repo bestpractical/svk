@@ -32,7 +32,7 @@ sub run {
 
 =head1 NAME
 
-add - Put files and directories under version control.
+SVK::Command::Add - Put files and directories under version control
 
 =head1 SYNOPSIS
 

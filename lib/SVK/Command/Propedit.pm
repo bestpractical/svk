@@ -35,7 +35,7 @@ sub run {
 
 =head1 NAME
 
-propedit - Edit a property on path.
+SVK::Command::Propedit - Edit a property on path
 
 =head1 SYNOPSIS
 

@@ -40,7 +40,7 @@ sub run {
 
 =head1 NAME
 
-depotmap - Create or edit the depot mapping configuration.
+SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
 =head1 SYNOPSIS
 

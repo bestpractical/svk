@@ -46,7 +46,7 @@ sub run {
 
 =head1 NAME
 
-copy - Make a versioned copy.
+SVK::Command::Copy - Make a versioned copy
 
 =head1 SYNOPSIS
 

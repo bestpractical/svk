@@ -31,7 +31,7 @@ sub run {
 
 =head1 NAME
 
-describe - Describe a change.
+SVK::Command::Describe - Describe a change
 
 =head1 SYNOPSIS
 

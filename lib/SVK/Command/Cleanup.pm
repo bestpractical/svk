@@ -31,7 +31,7 @@ sub run {
 
 =head1 NAME
 
-cleanup - Cleanup stalled locks.
+SVK::Command::Cleanup - Remove stalled locks
 
 =head1 SYNOPSIS
 

@@ -67,13 +67,11 @@ sub run {
 
 =head1 NAME
 
-merge - Output the content of specified files or DEPOTPATHs with
-revision and author information in-line.
+SVK::Command::Annotate - Print files with per-line revision and author info
 
 =head1 SYNOPSIS
 
-    annotate PATH
-    annotate DEPOTPATH
+    annotate FILE
 
 =head1 OPTIONS
 
