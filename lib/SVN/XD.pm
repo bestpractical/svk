@@ -6,8 +6,9 @@ require SVN::Fs;
 require SVN::Delta;
 use Data::Hierarchy;
 use File::Spec;
+use File::Path;
 use YAML;
-use Algorithm::Merge; # Text::Merge instead
+use Algorithm::Merge;
 
 our $VERSION = '0.01';
 
@@ -25,9 +26,9 @@ sub create_xd_root {
 
     my @paths = $info->{checkout}->find ($arg{copath}, {revision => qr'.*'});
 
-    return (undef,
-	    $fs->revision_root ($info->{checkout}->get ($paths[0])->{revision}))
-	unless $#paths;
+    return (undef, $fs->revision_root
+	    ($info->{checkout}->get ($arg{copath})->{revision}))
+	if $#paths <= 0;
 
     for (@paths) {
 	my $rev = $info->{checkout}->get ($_)->{revision};
@@ -95,9 +96,30 @@ sub do_delete {
     my ($info, %arg) = @_;
 
     # check for if the file/dir is modified.
+    checkout_crawler ($info,
+		      (%arg,
+		       cb_unknown =>
+		       sub { die "$_[1] is not under version control" },
+		       cb_add =>
+		       sub {
+			   die "$_[1] scheduled for add, use revert instead";
+		       },
+		       cb_changed =>
+		       sub {
+			   die "$_[1] changed";
+		       },
+		      )
+		     );
 
     # actually remove it from checkout path
-    die "not yet";
+    find(sub {
+	     my $cpath = $File::Find::name;
+	     print "D  $cpath\n";
+	     $info->{checkout}->store ($cpath, {schedule => 'delete'});
+	 },
+	 $arg{copath});
+
+    -d $arg{copath} ? rmtree ([$arg{copath}]) : unlink($arg{copath});
 }
 
 use File::Find;
@@ -108,17 +130,39 @@ sub checkout_crawler {
     my %schedule = map {$_ => $info->{checkout}->get ($_)->{schedule}}
 	$info->{checkout}->find ($arg{copath}, {schedule => qr'.*'});
 
+    my %torm;
+    for ($info->{checkout}->find ($arg{copath}, {schedule => 'delete'})) {
+	my (undef,$pdir,undef) = File::Spec->splitpath ($_);
+	chop $pdir;
+
+	push @{$torm{$pdir}}, $_
+	    unless exists $schedule{$pdir};
+    }
+
     my ($txn, $xdroot) = create_xd_root ($info, %arg);
 
     find(sub {
 	     my $cpath = $File::Find::name;
 
 	     $cpath =~ s|^$arg{copath}/|$arg{path}/|;
+	     # XXX: the case should only happen when copath is dir
+	     # seems gotta do anchor/target in a upper level?
 	     $cpath = '' if $cpath eq $arg{copath};
+	     if (exists $torm{$File::Find::name}) {
+		 for ($info->{checkout}->find ($File::Find::name,
+					       {schedule => 'delete'})) {
+		     my $rmpath = $_;
+		     s|^$arg{copath}/|$arg{path}/|;
+		     &{$arg{cb_delete}} ($_, $rmpath)
+			 if $arg{cb_delete};
+		 }
+	     }
 	     if (exists $schedule{$File::Find::name}) {
-		 &{$arg{cb_add}} ($cpath, $File::Find::name)
-		     if $arg{cb_add};
-		 return;
+		 if ($schedule{$File::Find::name} eq 'add') {
+		     &{$arg{cb_add}} ($cpath, $File::Find::name)
+			 if $arg{cb_add};
+		     return;
+		 }
 	     }
 	     my $kind = $xdroot->check_path ($cpath);
 	     if ($kind == $SVN::Node::none) {
@@ -127,6 +171,7 @@ sub checkout_crawler {
 		 return;
 	     }
 	     return if -d $File::Find::name;
+	     warn "checksuming $File::Find::name";
 	     &{$arg{cb_changed}} ($cpath, $File::Find::name)
 		 if $arg{cb_changed} && md5file($File::Find::name) ne
 		     $xdroot->file_md5_checksum ($cpath);
@@ -248,6 +293,9 @@ sub apply_textdelta {
 		close $base;
 		undef $self->{info}{$path}{status};
 		return undef;
+		# we need a fs ref to get the base for merging
+		# also need to store the status from within the editor
+		# better than in the upper level
 #		$self->{info}{$path}{status}[0] = 'G';
 	    }
 	    seek $base, 0, 0;

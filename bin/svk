@@ -177,6 +177,10 @@ sub status {
 			       sub {
 				   print "A  $_[1]\n";
 			       },
+			       cb_delete =>
+			       sub {
+				   print "D  $_[1]\n";
+			       },
 			       cb_changed =>
 			       sub {
 				   print "M  $_[1]\n";
@@ -262,9 +266,10 @@ sub add {
 sub delete {
     my ($copath) = @_;
     $copath = File::Spec->rel2abs ($copath);
-    my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::do_delete ($info,
+			repos => $repos,
 			copath => $copath,
 			path => $path,
 		       );

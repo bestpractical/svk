@@ -30,4 +30,12 @@ sub cleanup_test {
     }
 }
 
+sub tree_from_fsroot {
+    # generate a hash describing a given fs root
+}
+
+sub tree_from_xdroot {
+    # generate a hash describing the content in an xdroot
+}
+
 1;

@@ -21,8 +21,12 @@ mkdir "$copath/A";
 open my ($fh), '>', "$copath/A/foo";
 print $fh "foobar";
 close $fh;
+open $fh, '>', "$copath/A/bar";
+print $fh "foobarbazz";
+close $fh;
 svk::add ("$copath/A");
 svk::add ("$copath/A/foo");
+svk::add ("$copath/A/bar");
 # check output with selecting some io::stringy object?
 #svk::status ("$copath");
 svk::commit ('-m', 'commit message here', "$copath");
@@ -30,5 +34,9 @@ ok($svk::info->{checkout}->get ("$corpath")->{revision} == 0);
 ok($svk::info->{checkout}->get ("$corpath/A/foo")->{revision} == 1);
 svk::update ("$copath");
 ok($svk::info->{checkout}->get ("$corpath")->{revision} == 1);
+
+svk::rm ("$copath/A/bar");
+#ok(!-e "$copath/A/bar");
+#svk::commit ('-m', 'commit message here', "$copath");
 
 cleanup_test($svk::info)
