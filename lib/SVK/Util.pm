@@ -300,6 +300,9 @@ Calculate MD5 checksum for data in the input filehandle.
 
 =cut
 
+push @EXPORT_OK, qw( md5 ); # deprecated compatibility API
+*md5 = *md5_fh;
+
 sub md5_fh {
     my $fh = shift;
     my $ctx = Digest::MD5->new;
