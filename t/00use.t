@@ -14,6 +14,4 @@ BEGIN {
     }
     my $svk = SVK->new;
     $svk->help;
-    $svk = SVK->new (xd => SVK::XD->new);
-    $svk->help;
 }

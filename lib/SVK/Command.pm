@@ -82,6 +82,7 @@ sub invoke {
 	    unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
 
 	if ($help || !(@args = $cmd->parse_arg(@ARGV))) {
+	    select STDERR unless $output;
 	    $cmd->usage;
 	}
 	else {
@@ -90,6 +91,7 @@ sub invoke {
 	    die $@ if $@;
 	}
     };
+    select STDERR unless $output;
     print $ret if $ret;
     print $@ if $@;
     select $ofh if $output;
