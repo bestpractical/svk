@@ -65,7 +65,7 @@ sub new {
 
 sub new_with_report {
     my ($class, $report, $target, $is_copath) = @_;
-    $report =~ s|$SEP$|| if $report;
+    $report =~ s/\Q$SEP\E$//o if $report; # strip trailing slash
     $class->new	( cb_skip => print_report (\&skip_print, $is_copath, $report),
 		  cb_flush => print_report (\&flush_print, $is_copath, $report, $target));
 }
