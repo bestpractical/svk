@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 20;
+use Test::More tests => 22;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -48,9 +48,14 @@ $svk->commit ('-m', 'adding a file', $copath);
 
 is_file_content ("$copath/A/foo", "\$Rev: 999 \$", 'commit unreverted ref');
 append_file ("$copath/A/foo", "some more\n");
-$svk->ps ('svn:keywords', 'URL Author Rev Date Id FileRev', "$copath/A/foo");
+$svk->ps ('svn:keywords', 'Rev', "$copath/A/foo");
 $svk->commit ('-m', 'appending a file and change props', $copath);
-is_output ($svk, 'st', ["$copath/A/foo"], [], 'commit does keyword expansion');
+is_file_content ("$copath/A/foo", "\$Rev: 6 \$some more\n");
+is_output ($svk, 'st', ["$copath/A/foo"], [], 'commit does keyword expansion - rev');
+append_file ("$copath/A/foo", "<!-- \$Id\$ -->\n");
+$svk->ps ('svn:keywords', 'Rev Id', "$copath/A/foo");
+$svk->commit ('-m', 'test $Id$', $copath);
+is_output ($svk, 'st', ["$copath/A/foo"], [], 'commit does keyword expansion - id');
 
 my ($CR, $LF, $CRLF) = ("\015", "\012", "\015\012");
 my $Native = (
