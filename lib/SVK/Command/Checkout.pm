@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP );
+use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP get_encoding );
 use File::Path;
 
 sub options {
@@ -61,6 +61,7 @@ sub run {
 
     $self->{xd}{checkout}->store_recursively ( $copath,
 					       { depotpath => $target->{depotpath},
+						 encoding => get_encoding,
 						 revision => 0,
 						 '.schedule' => undef,
 						 '.newprop' => undef,

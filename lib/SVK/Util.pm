@@ -7,7 +7,7 @@ our @EXPORT_OK = qw(
 
     get_prompt get_buffer_from_editor
 
-    get_encoding
+    get_encoding from_native
 
     find_local_mirror find_svm_source resolve_svm_source traverse_history
     find_prev_copy
@@ -26,6 +26,7 @@ use Config ();
 use SVK::I18N;
 use SVN::Core;
 use SVN::Ra;
+use autouse 'Encode'            => qw(resolve_alias decode encode);
 use autouse 'File::Glob' 	=> qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
 use autouse 'File::Spec::Functions' => 
@@ -253,14 +254,29 @@ Get the current encoding from locale
 sub get_encoding {
     local $@;
     # substr( __FILE__, 0 );
-    return eval {
+    return resolve_alias (eval {
 	require Locale::Maketext::Lexicon;
         local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
         Locale::Maketext::Lexicon::encoding();
     } || eval {
         require 'open.pm';
         return open::_get_locale_encoding();
-    } || 'utf8';
+    } || 'utf8');
+}
+
+=head3 from_native ($octets, [$encoding])
+
+=cut
+
+sub from_native {
+    my $enc = $_[2] || get_encoding;
+    if (!ref($enc)) {
+	$enc = Encode::find_encoding ($enc);
+    }
+    $_[0] = eval { decode ($enc, $_[0], 1) };
+    die loc ("Can't decode %1 as %2, try --encoding.\n", $_[1], $enc->name) if $@;
+    Encode::_utf8_off ($_[0]);
+    return;
 }
 
 =head2 Mirror Handling

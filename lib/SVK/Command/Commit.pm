@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
-		  find_svm_source tmpfile abs2rel find_prev_copy get_encoding);
+		  find_svm_source tmpfile abs2rel find_prev_copy from_native);
 
 sub options {
     ('m|message=s'  => 'message',
@@ -75,10 +75,7 @@ sub get_commit_message {
 
 sub decode_commit_message {
     my $self = shift;
-    require Encode;
-    my $enc = $self->{encoding} || get_encoding;
-    eval { Encode::from_to ($self->{message}, $enc, 'UTF-8', 1) };
-    die loc ("Can't decode commit message as UTF-8, try --encoding.\n") if $@;
+    from_native ($self->{message}, 'commit message', $self->{encoding});
 }
 
 # XXX: This should just return Editor::Dynamic objects

@@ -138,6 +138,7 @@ sub _show_log {
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
     if ($paths) {
 	$output->print ($indent.loc("Changed paths:\n"));
+	my $enc = get_encoding;
 	for (sort keys %$paths) {
 	    my $entry = $paths->{$_};
 	    my ($action, $propaction) = ($chg->[$entry->change_kind], ' ');
@@ -145,9 +146,11 @@ sub _show_log {
 	    $propaction = 'M' if $action eq 'M' && $entry->prop_mod;
 	    $action = ' ' if $action eq 'M' && !$entry->text_mod;
 	    $action = 'M' if $action eq 'A' && $copyfrom_path && $entry->text_mod;
+	    Encode::from_to ($_, 'utf8', $enc);
+	    Encode::from_to ($copyfrom_path, 'utf8', $enc) if defined $copyfrom_path;
 	    $output->print ($indent.
 		"  $action$propaction $_".
-		    ($copyfrom_path ?
+		    (defined $copyfrom_path ?
 		     ' ' . loc("(from %1:%2)", $copyfrom_path, $copyfrom_rev) : ''
 		    )."\n");
 	}

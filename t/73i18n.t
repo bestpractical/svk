@@ -7,7 +7,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 
-plan tests => 5;
+plan tests => 8;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -15,9 +15,9 @@ my ($copath, $corpath) = get_copath ('i18n');
 
 my $tree = create_basic_tree ($xd, '//');
 
-$svk->co ('//', $copath);
+$svk->co ('//A', $copath);
 
-append_file ("$copath/A/Q/qu", "some changes\n");
+append_file ("$copath/Q/qu", "some changes\n");
 
 my $msg = "\x{ab}\x{eb}"; # Chinese hate in big5
 my $msgutf8 = '恨';
@@ -37,17 +37,25 @@ is_output ($svk, 'cp', [-m => $msg, '--encoding', 'big5', '//A' => '//A-cp'],
 
 is_output ($svk, 'commit', [$copath],
 	   ['Waiting for editor...',
-	    "Can't decode commit message as UTF-8, try --encoding."]);
+	    "Can't decode commit message as utf8, try --encoding."]);
 is_output ($svk, 'commit', [$copath, '--encoding', 'big5'],
 	   ['Waiting for editor...',
 	    'Committed revision 4.']);
-$svk->up ($copath);
 is_output_like ($svk, 'log', [-r4 => $copath],
 		qr/\Q$msgutf8\E/);
 
-setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5') or die "can't setlocale";
+is_output ($svk, 'mkdir', [-m => $msg, '--encoding', 'big5', "//A/$msgutf8-dir"],
+	   ["Can't decode path as big5-eten, try --encoding."]);
+is_output ($svk, 'mkdir', [-m => $msg, '--encoding', 'big5', "//A/$msg-dir"],
+	   ['Committed revision 5.']);
+$svk->up ($copath);
+
+setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => $copath],
 		qr/\Q$msg\E/);
+is_output_like ($svk, 'log', [-vr5 => $copath],
+		qr/\Q$msg-dir\E/);
+
 overwrite_file ("$copath/$msg", "with big5 filename\n");
 $svk->add ("$copath/$msg");
 

@@ -3,9 +3,10 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
-use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
+use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
+		  $SEP IS_WIN32 HAS_SVN_MIRROR );
 use SVK::I18N;
-
+use Encode;
 
 =head1 NAME
 
@@ -493,6 +494,7 @@ sub arg_co_maybe {
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
+    from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -513,6 +515,7 @@ Argument is a checkout path.
 sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
+    from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -535,7 +538,7 @@ sub arg_depotpath {
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
-
+    from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -627,7 +630,7 @@ sub parse_revlist {
     }
 }
 
-my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor/;
+my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor encoding/;
 sub _schedule_empty { %empty };
 
 =head3 lock_target ($target)
