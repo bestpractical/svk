@@ -155,7 +155,8 @@ sub output_prop_diff {
                     ($baseprop||''), ($self->{info}{$path}{prop}{$_}||'');
             @args = reverse @args if $self->{reverse};
 
-            open my $fh, '>', \(my $diff);
+            my $diff = '';
+            open my $fh, '>', \$diff;
             _output_diff_content($fh, @args, '', '');
             $diff =~ s/.*\n.*\n//;
             $diff =~ s/^\@.*\n//mg;

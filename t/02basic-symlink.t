@@ -3,8 +3,10 @@ use Test::More;
 use strict;
 BEGIN { require 't/tree.pl' };
 use SVK::Util qw(HAS_SYMLINK);
-plan skip_all => 'symlink not supported'
-    unless HAS_SYMLINK;
+
+if (!HAS_SYMLINK) {
+    plan(skip_all => 'symlink not supported');
+}
 
 no warnings 'redefine';
 sub get_copath {
