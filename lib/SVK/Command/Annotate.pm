@@ -8,7 +8,8 @@ use SVK::Util qw( traverse_history );
 use Algorithm::Annotate;
 
 sub options {
-    ('x|cross'  => 'cross');
+    ('x|cross'  => 'cross',
+     'r|revision=i'  => 'rev');
 }
 
 sub parse_arg {
@@ -23,6 +24,7 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, $target) = @_;
 
+    $target->as_depotpath ($self->{rev}) if defined $self->{rev};
     my $fs = $target->{repos}->fs;
     my $ann = Algorithm::Annotate->new;
     my @revs;
