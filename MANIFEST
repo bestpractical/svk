@@ -44,6 +44,7 @@ lib/SVK/Command/Status.pm
 lib/SVK/Command/Switch.pm
 lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
+lib/SVK/Command/Verify.pm
 lib/SVK/CommitStatusEditor.pm
 lib/SVK/DelayEditor.pm
 lib/SVK/DeleteEditor.pm

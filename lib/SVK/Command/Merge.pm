@@ -7,7 +7,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::DelayEditor;
 use SVK::Command::Log;
-use SVK::Util qw (get_buffer_from_editor);
+use SVK::Util qw (get_buffer_from_editor find_svm_source svn_mirror);
 
 sub options {
     ($_[0]->SUPER::options,
@@ -130,12 +130,12 @@ sub find_merge_sources {
 	$minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
 			my $m;
 			($verbatim || ($uuid eq $myuuid)) ? ("$uuid:$path" => $rev) :
-			    ($self->svn_mirror && ($m = SVN::Mirror::has_local ($repos, "$uuid:$path"))) ?
+			    (svn_mirror && ($m = SVN::Mirror::has_local ($repos, "$uuid:$path"))) ?
 				("$myuuid:$m->{target_path}" => $m->find_local_rev ($rev)) : ()
 			    } split ("\n", $minfo) };
     }
     if ($verbatim) {
-	my ($uuid, $path, $rev) = $self->resolve_svm_source ($repos, $path);
+	my ($uuid, $path, $rev) = find_svm_source ($repos, $path);
 	$minfo->{join(':', $uuid, $path)} = $rev
 	    unless $noself;
 	return $minfo;
@@ -180,9 +180,10 @@ sub copy_ancestors {
 	    ($uuid, $hpath, $hrev) = split ':', $source;
 	    if ($uuid ne $myuuid) {
 		my ($m, $mpath);
-		if ($self->svn_mirror &&
+		if (svn_mirror &&
 		    (($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
 		    ($hpath, $hrev) = ($m->{target_path}, $m->find_local_rev ($hrev));
+		    # XXX: WTF? need test suite for this
 		    $hpath =~ s/\Q$mpath\E$//;
 		}
 		else {
@@ -217,7 +218,7 @@ sub get_new_ticket {
     my ($uuid, $newinfo);
 
     # bring merge history up to date as from source
-    ($uuid, $dst) = $self->resolve_svm_source ($repos, $dst);
+    ($uuid, $dst) = find_svm_source ($repos, $dst);
 
     for (sort keys %{ { %$srcinfo, %$dstinfo } }) {
 	next if $_ eq "$uuid:$dst";

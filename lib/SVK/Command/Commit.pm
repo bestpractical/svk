@@ -6,12 +6,10 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::CommitStatusEditor;
 use SVK::SignEditor;
-use SVK::Util qw(get_buffer_from_editor slurp_fh);
+use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror);
 use File::Temp;
 use SVN::Simple::Edit;
 
-my $svn_mirror;
-eval 'require SVN::Mirror' and ++$svn_mirror;
 my $target_prompt = '=== below are targets to be committed ===';
 
 my $auth;
@@ -37,7 +35,7 @@ sub lock {
 }
 
 sub target_prompt { $target_prompt }
-sub svn_mirror { $svn_mirror }
+
 sub auth {
     eval 'require SVN::Client' or die $@;
     $auth ||= SVN::Core::auth_open
@@ -79,32 +77,6 @@ sub get_commit_message {
 	unless defined $self->{message};
 }
 
-sub resolve_svm_source {
-    my ($self, $repos, $path) = @_;
-    my ($uuid, $rev, $m, $mpath);
-    my $mirrored;
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-
-    if ($self->svn_mirror) {
-	($m, $mpath) = eval 'SVN::Mirror::is_mirrored ($repos, $path)';
-	undef $@;
-    }
-
-    if ($m) {
-	$path =~ s/\Q$mpath\E$//;
-	$uuid = $root->node_prop ($path, 'svm:uuid');
-	$path = $m->{source}.$mpath;
-	$path =~ s/^\Q$m->{source_root}\E//;
-	$rev = $m->{fromrev};
-    }
-    else {
-	($rev, $uuid) = ($fs->youngest_rev, $fs->get_uuid);
-    }
-
-    return ($uuid, $path, $rev);
-}
-
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be XD::Editor, repos_commit_editor, or svn::mirror merge back editor.
 sub get_editor {
@@ -126,7 +98,7 @@ sub get_editor {
 
     my ($base_rev, $m, $mpath);
 
-    if ($svn_mirror && (($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
+    if (svn_mirror && (($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
 	print loc("Merging back to SVN::Mirror source %1.\n", $m->{source});
 	if ($self->{check_only}) {
 	    print loc("Checking against mirrored directory locally.\n");
@@ -165,7 +137,7 @@ sub get_editor {
     $base_rev ||= $target->{repos}->fs->youngest_rev;
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = $self->resolve_svm_source ($target->{repos}, $target->{path});
+	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
 	$self->{signeditor} = $editor = SVK::SignEditor->new (_editor => [$editor],
 							      anchor => "$uuid:$dst"
 							     );
@@ -223,7 +195,7 @@ sub run {
 
     my $is_mirrored;
     $is_mirrored = $self->path_is_mirrored ($target->{repos}, $target->{path})
-	if $svn_mirror;
+	if svn_mirror;
     print loc("Commit into mirrored path: merging back directly.\n")
 	if $is_mirrored;
 
