@@ -446,7 +446,7 @@ will be splitted off to the end of C<@directories>.
 sub catfile {
     my $pathname = pop;
     return File::Spec::Functions::catfile (
-	grep {defined and length} @_, splitdir($pathname)
+	(grep {defined and length} @_), splitdir($pathname)
     )
 }
 
