@@ -41,12 +41,9 @@ is_output ($svk, 'add', ['../add/A/foo'],
 	   ["A   ../add/A", "A   ../add/A/foo"], 'add - descendent target only - relpath');
 $svk->revert ('-R', '.');
 
-TODO: {
-local $TODO = 'get proper anchor';
 is_output ($svk, 'add', ['A/deep/baz'],
 	   ['A   A', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - deep descendent target only');
-}
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['A'],
@@ -67,8 +64,8 @@ is_output ($svk, 'add', ['A/foo'],
 	   'add - nonrecursive target');
 $svk->revert ('-R', '.');
 
-is_output_like ($svk, 'add', ['-N', 'A/foo'],
-		qr'do_add with targets and non-recursive not handled',
+is_output ($svk, 'add', ['-N', 'A/foo'],
+		["Please add the parent directory first."],
 		'add - nonrecursive target only');
 
 overwrite_file ("A/exe", "foobar");

@@ -81,10 +81,13 @@ sub anchorify {
     my ($self) = @_;
     die "anchorify $self->{depotpath} already with targets: ".join(',', @{$self->{targets}})
 	if exists $self->{targets}[0];
-    ($self->{path}, $self->{targets}[0], $self->{depotpath}, undef, $self->{report}) =
-	get_anchor (1, $self->{path}, $self->{depotpath}, $self->{report});
+    ($self->{path}, $self->{targets}[0], $self->{depotpath}) =
+	get_anchor (1, $self->{path}, $self->{depotpath});
     ($self->{copath}, $self->{copath_target}) = get_anchor (1, $self->{copath})
 	if $self->{copath};
+    # XXX: prepend .. if exceeded report?
+    ($self->{report}) = get_anchor (0, $self->{report})
+	if $self->{report}
 }
 
 =head2 normalize

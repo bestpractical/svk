@@ -83,9 +83,4 @@ mkdir ('A/newdir');
 overwrite_file ("A/newdir/bar", "fnord");
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/newdir/bar'],
 	   ['Committed revision 10.']);
-TODO: {
-local $TODO = 'commit --import unknown descendents ';
-
-
 is_output ($svk, 'status', [], []);
-}

@@ -162,13 +162,22 @@ sub arg_condensed {
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
-    return SVK::Target->new
+    my $target = SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
+	  depotpath => $cinfo->{depotpath},
 	  copath => $copath,
 	  path => $path,
 	  report => $report,
 	  targets => @targets ? \@targets : undef );
+    my $root = $target->root ($self->{xd});
+    until ($root->check_path ($target->{path}) == $SVN::Node::dir) {
+	my $targets = delete $target->{targets};
+	$target->anchorify;
+	$target->{targets} = [map {"$target->{targets}[0]/$_"} @$targets]
+	    if $targets;
+    }
+    return $target;
 }
 
 sub arg_co_maybe {

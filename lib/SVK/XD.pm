@@ -355,7 +355,7 @@ sub condense {
 	my $cinfo = $self->{checkout}->get ($anchor);
 	my $schedule = $cinfo->{'.schedule'} || '';
 	while (!-d $anchor || $cinfo->{scheduleanchor} ||
-	       $schedule eq 'add' || $schedule eq 'delete' ||
+	       $schedule eq 'add' || $schedule eq 'delete' || $schedule eq 'replace' ||
 	       ($anchor ne $copath && $anchor.'/' ne substr ($copath, 0, length($anchor)+1))) {
 	    ($anchor, $report) = get_anchor (0, $anchor, $report);
 	    # XXX: put .. to report if it's anchorified beyond
@@ -511,7 +511,7 @@ sub auto_prop {
     $prop->{'svn:executable'} = '*' if -x $copath;
     # auto mime-type
     require IO::File;
-    my $fh = IO::File->new ($copath) or die $!;
+    my $fh = IO::File->new ($copath) or die "$copath: $!";
     if (my $type = mimetype($fh)) {
 	# add only binary mime types or text/* but not text/plain
 	$prop->{'svn:mime-type'} = $type
@@ -531,47 +531,6 @@ sub auto_prop {
 	}
     }
     return $prop;
-}
-
-sub do_add {
-    my ($self, %arg) = @_;
-
-    if ($arg{recursive}) {
-	my $xdroot = $self->xdroot (%arg);
-	$self->checkout_delta ( %arg,
-				xdroot => $xdroot,
-				editor => SVK::Editor::Status->new
-				( notify => SVK::Notify->new
-				  ( cb_flush => sub {
-					my ($path, $status) = @_;
-					my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
-					    @arg{qw/copath report/};
-					if ($status->[0] eq 'D' && -e $copath) {
-					    $self->{checkout}->store ($copath, { '.schedule' => 'replace' });
-					    print "R   $report\n" unless $arg{quiet};
-					}
-				    })),
-				delete_verbose => 1,
-				unknown_verbose => 1,
-				cb_unknown => sub {
-				    $self->{checkout}->store
-					($_[1], { '.schedule' => 'add',
-						  ($arg{no_autoprop} || -d $_[1]) ? () :
-						  ('.newprop'  => $self->auto_prop ($_[1]))
-						});
-				    my $report = SVK::Target->copath ($arg{report}, $_[0]);
-				    print "A   $report\n" unless $arg{quiet};
-				},
-			      );
-    }
-    else {
-	die "do_add with targets and non-recursive not handled" if $arg{targets};
-	$self->{checkout}->store ($arg{copath}, { '.schedule' => 'add',
-						  '.copyfrom' => $arg{copyfrom},
-						  '.copyfrom_rev' => $arg{copyfrom_rev},
-						});
-	print "A   $arg{report}\n" unless $arg{quiet};
-    }
 }
 
 sub do_delete {
@@ -793,12 +752,27 @@ sub _delta_content {
 sub _unknown_verbose {
     my ($self, %arg) = @_;
     my $ignore = ignore;
+    my %seen;
+    if ($arg{targets}) {
+	$arg{cb_unknown}->($arg{entry}, $arg{copath});
+	for my $entry (@{$arg{targets}}) {
+	    my $now = '';
+	    for my $dir (File::Spec->splitdir ($entry)) {
+		$now .= $now ? "/$dir" : $dir;
+		my $copath = SVK::Target->copath ($arg{copath}, $now);
+		next if $seen{$copath};
+		$arg{cb_unknown}->("$arg{entry}/$now", $copath);
+		$seen{$copath} = 1;
+	    }
+	}
+    }
     find ({ preprocess => sub { sort @_ },
 	    wanted =>
 	    sub {
 		$File::Find::prune = 1, return if m/$ignore/;
 		my $dpath = $File::Find::name;
 		my $copath = $dpath;
+		return if $seen{$copath};
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
 		# XXX: translate $dpath from SEP to /
@@ -1038,8 +1012,7 @@ sub _delta_dir {
 		    $self->_unknown_verbose (%arg, %newpaths);
 		}
 		else {
-		    $arg{cb_unknown}->($newpaths{path}, $newpaths{copath})
-			if $arg{cb_unknown};
+		    $arg{cb_unknown}->($newpaths{entry}, $newpaths{copath});
 		}
 	    }
 	    next;
@@ -1081,8 +1054,8 @@ sub checkout_delta {
     $arg{base_root} ||= $arg{xdroot};
     $arg{base_path} ||= $arg{path};
     my $kind = $arg{kind} = $arg{base_root}->check_path ($arg{base_path});
-    die "calling checkout_delta with file"
-	if $kind == $SVN::Node::file;
+    die "checkout_delta called with non-dir node"
+	unless $kind == $SVN::Node::dir;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
@@ -1098,30 +1071,8 @@ sub checkout_delta {
 	$arg{editor}->abort_edit;
 	die loc("Interrupted.\n");
     };
-    if ($kind == $SVN::Node::dir) {
-	$self->_delta_dir (%arg, baton => $baton, root => 1, base => 1);
-    }
-    else {
-	# this can be removed once condense eliminates unknowns
-	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
-	my $sche =
-	    $self->{checkout}->get ($arg{copath})->{'.schedule'} || '';
 
-	if ($sche eq 'add') {
-	    $self->$delta ( %arg, add => 1, baton => $baton, root => 1);
-	}
-	else {
-	    if ($arg{unknown_verbose}) {
-		$arg{cb_unknown}->('', $arg{copath})
-		    if $arg{targets};
-		$self->_unknown_verbose (%arg);
-	    }
-	    else {
-		$arg{cb_unknown}->($arg{path}, $arg{copath})
-		    if $arg{cb_unknown};
-	    }
-	}
-    }
+    $self->_delta_dir (%arg, baton => $baton, root => 1, base => 1);
 
     $arg{editor}->close_directory ($baton);
 
