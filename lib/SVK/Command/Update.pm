@@ -42,7 +42,9 @@ sub run {
 sub do_update {
     my ($self, $cotarget, $update_target) = @_;
     my $xdroot = $cotarget->root ($self->{xd});
-    my ($path, $copath) = @{$cotarget}{qw/path copath/}; # unanchorified
+    # unanchorified
+    my ($path, $copath) = @{$cotarget}{qw/path copath/};
+    my $report = $update_target->{report};
 
     print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
 	      $update_target->{revision});
@@ -55,8 +57,9 @@ sub do_update {
 	    unless $self->{check_only};
     }
     # XXX: this should really be in SVK::Target
-    $update_target->{report} .= '/'
-	if $update_target->{report} ne '' && substr($update_target->{report}, -1, 1) ne '/';
+    $report .= '/'
+	if $report ne '' && substr($report, -1, 1) ne '/';
+    $update_target->{report} = $report;
 
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,

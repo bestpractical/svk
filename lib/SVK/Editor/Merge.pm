@@ -154,7 +154,7 @@ sub open_root {
     $self->{baserev} = $baserev;
     $self->{notify} = SVK::Notify->new
 	( cb_skip => \&SVK::Notify::skip_print,
-	  cb_flush => SVK::Notify::flush_print_report ($self->{report}));
+	  cb_flush => SVK::Notify::flush_print_report ($self->{report}, $self->{target}));
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     return '';

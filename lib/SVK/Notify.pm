@@ -32,11 +32,19 @@ sub skip_print {
 }
 
 sub flush_print_report {
-    my $report = shift;
+    my ($report, $target) = @_;
     return \&flush_print unless defined $report;
     sub {
-	my $path = $_[0] ? "$report$_[0]" : $report || '.';
-	flush_print ($path, $_[1]);
+	my $path = shift;
+	if ($target) {
+	    if ($target eq $path) {
+		$path = '';
+	    }
+	    else {
+		$path =~ s|^\Q$target/||;
+	    }
+	}
+	flush_print ($path ? "$report$path" : $report || '.', @_);
     };
 }
 
