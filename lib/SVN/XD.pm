@@ -7,8 +7,10 @@ require SVN::Fs;
 require SVN::Delta;
 require SVN::MergeEditor;
 use SVN::RevertEditor;
+use SVN::DeleteEditor;
 use Data::Hierarchy;
 use File::Spec;
+use File::Find;
 use File::Path;
 use YAML;
 use File::Temp qw/:mktemp/;
@@ -138,12 +140,21 @@ sub do_add {
     my ($info, %arg) = @_;
 
     if ($arg{recursive}) {
-	find(sub {
-		 my $cpath = $File::Find::name;
-		 # do dectation also
-		 $info->{checkout}->store ($cpath, { schedule => 'add' });
-		 print "A  $cpath\n";
-	     }, $arg{copath})
+	my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+	SVN::XD::checkout_delta ($info,
+				 %arg,
+				 baseroot => $xdroot,
+				 xdroot => $xdroot,
+				 editor => SVN::Delta::Editor->new (),
+				 targets => $arg{targets},
+				 unknown_verbose => 1,
+				 strict_add => 1,
+				 cb_unknown => sub {
+				     $info->{checkout}->store ($_[1], { schedule => 'add' });
+				     print "A  $_[1]\n" unless $arg{quiet};
+				 },
+			    );
+	$txn->abort if $txn;
     }
     else {
 	$info->{checkout}->store ($arg{copath}, { schedule => 'add' });
@@ -153,32 +164,50 @@ sub do_add {
 
 sub do_delete {
     my ($info, %arg) = @_;
+    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+    my @deleted;
 
     # check for if the file/dir is modified.
-    checkout_crawler ($info,
-		      (%arg,
-		       cb_unknown =>
-		       sub { die "$_[1] is not under version control" },
-		       cb_add =>
-		       sub {
-			   die "$_[1] scheduled for add, use revert instead";
-		       },
-		       cb_changed =>
-		       sub {
-			   die "$_[1] changed";
-		       },
-		      )
-		     );
+    SVN::XD::checkout_delta ($info,
+			     %arg,
+			     baseroot => $xdroot,
+			     xdroot => $xdroot,
+			     absent_as_delete => 1,
+			     delete_verbose => 1,
+			     absent_verbose => 1,
+			     strict_add => 1,
+			     editor => SVN::DeleteEditor->new
+			     (copath => $arg{copath},
+			      dpath => $arg{path},
+			      cb_delete => sub {
+				  push @deleted, $_[1];
+			      }
+			     ),
+			     cb_unknown => sub {
+				 die "$_[0] is not under version control";
+			     }
+			    );
+
+    $txn->abort if $txn;
 
     # actually remove it from checkout path
+    my @paths = grep {-e $_} ($arg{targets} ?
+			      map { "$arg{copath}/$_" } @{$arg{targets}}
+			      : $arg{copath});
     find(sub {
 	     my $cpath = $File::Find::name;
-	     print "D  $cpath\n";
-	     $info->{checkout}->store ($cpath, {schedule => 'delete'});
-	 },
-	 $arg{copath});
+	     no warnings 'uninitialized';
+	     return if $info->{checkout}->get_single ($cpath)->{schedule}
+		 eq 'delete';
+	     push @deleted, $cpath;
+	 }, @paths) if @paths;
 
-    -d $arg{copath} ? rmtree ([$arg{copath}]) : unlink($arg{copath});
+    for (@deleted) {
+	print "D  $_\n";
+	$info->{checkout}->store ($_, {schedule => 'delete'});
+    }
+
+    rmtree (\@paths) if @paths;
 }
 
 sub do_proplist {
@@ -247,12 +276,13 @@ sub do_revert {
 	    mkdir $_[1];
 	}
 	else {
-	    # XXX: use keyword layer here
-	    open my ($fh), '>', $_[1];
+	    my $fh = get_fh ($xdroot, '>', $_[0], $_[1]);
 	    my $content = $xdroot->file_contents ($_[0]);
-	    local $/;
-	    my $buf = <$content>;
-	    print $fh $buf;
+	    local $/ = \16384;
+	    while (<$content>) {
+		print $fh $_;
+	    }
+	    close $fh;
 	}
 	$info->{checkout}->store ($_[1],
 				  {schedule => undef});
@@ -319,6 +349,7 @@ sub _delta_file {
     my $pool = SVN::Pool->new_default (undef);
     unless (-e $arg{copath}) {
 	my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
+	return if $schedule ne 'delete' && $arg{absent_ignore};
 	if ($schedule eq 'delete' || $arg{absent_as_delete}) {
 	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
 	}
@@ -346,11 +377,24 @@ sub _delta_dir {
     my ($info, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
+
+    # compute targets for children
+    my $targets;
+    for (@{$arg{targets} || []}) {
+	my ($a, $b) = m|^(.*?)(?:/(.*))?$|;
+	if ($b) {
+	    push @{$targets->{$a}}, $b
+	}
+	else {
+	    $targets->{$a} = undef;
+	}
+    }
+
     unless (-d $arg{copath}) {
 	if ($schedule ne 'delete') {
+	    return if $arg{absent_ignore};
 	    if ($arg{absent_as_delete}) {
 		$arg{editor}->delete_entry ($arg{entry}, $arg{baton});
-		return;
 	    }
 	    else {
 		$arg{editor}->absent_directory ($arg{entry}, $arg{baton});
@@ -361,6 +405,9 @@ sub _delta_dir {
 
     my ($entries, $baton) = ({});
     if ($schedule eq 'delete') {
+	# XXX: limit with targets
+	# XXX: should still be recursion since the entries
+	# might not be consistent
 	$arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
 	if ($arg{delete_verbose}) {
 	    for ($info->{checkout}->find
@@ -387,10 +434,13 @@ sub _delta_dir {
 	    ? \&_delta_file : \&_delta_dir;
 	&{$delta} ($info, %arg,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+		   targets => $targets->{$_},
 		   baton => $baton,
 		   root => 0,
 		   path => "$arg{path}/$_",
-		   copath => "$arg{copath}/$_");
+		   copath => "$arg{copath}/$_")
+	    if !defined $arg{targets} || exists $targets->{$_};
+
     }
     # check scheduled addition
     opendir my ($dir), $arg{copath};
@@ -407,8 +457,24 @@ sub _delta_dir {
 	    $info->{checkout}->get_single ("$arg{copath}/$_")->{schedule} :
 	    $info->{checkout}->get ("$arg{copath}/$_")->{schedule};
 	unless ($sche) {
-	    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_")
-		if $arg{cb_unknown};
+	    if ($arg{cb_unknown} &&
+		(!defined $arg{targets} || exists $targets->{$_})) {
+		if ($arg{unknown_verbose}) {
+		    my $newco = "$arg{copath}/$_";
+		    find (sub {
+			      return if m/$ignore/;
+			      my $dpath = $File::Find::name;
+			      $dpath =~ s/^$arg{copath}/$arg{path}/;
+			      &{$arg{cb_unknown}} ($dpath, $File::Find::name);
+			  },
+			  $targets->{$_} ? map {"$newco/$_"} @{$targets->{$_}}
+			                : $newco);
+		}
+		else {
+		    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_");
+		}
+
+	    }
 	    next;
 	}
 	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
@@ -416,9 +482,12 @@ sub _delta_dir {
 		   add => 1,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   baton => $baton,
+		   targets => $targets->{$_},
 		   root => 0,
 		   path => "$arg{path}/$_",
-		   copath => "$arg{copath}/$_");
+		   copath => "$arg{copath}/$_")
+	    if !defined $arg{targets} || exists $targets->{$_};
+
     }
 
     closedir $dir;
@@ -429,6 +498,13 @@ sub _delta_dir {
     $arg{editor}->close_directory ($baton)
 	unless $arg{root} || $schedule eq 'delete';
 }
+
+# options:
+#  delete_verbose: generate delete_entry calls for subdir within deleted entry
+#  absent_verbose: generate absent_* calls for subdir within absent entry
+#  unknown_verbose: generate cb_unknwon calls for subdir within absent entry
+#  absent_ignore: don't generate absent_* calls.
+#  strict_add: add schedule must be on the entry check, not any parent.
 
 sub checkout_delta {
     my ($info, %arg) = @_;
@@ -444,96 +520,39 @@ sub checkout_delta {
 	_delta_dir ($info, %arg, baton => $baton, root => 1);
     }
     else {
-	die "unknown node type $arg{path}";
+	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
+	my $sche = $arg{strict_add} ?
+	    $info->{checkout}->get_single ($arg{copath})->{schedule} :
+	    $info->{checkout}->get ($arg{copath})->{schedule};
+
+	if ($sche) {
+	    &{$delta} ($info, %arg,
+		       add => 1,
+		       baton => $baton,
+		       root => 1);
+	}
+	else {
+	    if ($arg{unknown_verbose}) {
+		find (sub {
+#			  return if m/$ignore/;
+			  my $dpath = $File::Find::name;
+			  $dpath =~ s/^$arg{copath}/$arg{path}/;
+			  &{$arg{cb_unknown}} ($dpath, $File::Find::name);
+		      },
+		      $arg{targets} ? map {"$arg{copath}/$_"} @{$arg{targets}}
+		      : $arg{copath});
+	    }
+	    else {
+		&{$arg{cb_unknown}} ($arg{path}, $arg{copath});
+	    }
+
+	}
+
     }
 
     $arg{editor}->close_directory ($baton);
 
     $arg{editor}->close_edit ();
-}
-
-use File::Find;
-
-sub checkout_crawler {
-    my ($info, %arg) = @_;
-
-    my %schedule = map {$_ => $info->{checkout}->get ($_)->{schedule}}
-	$info->{checkout}->find ($arg{copath}, {schedule => qr'.*'});
-
-    my %torm;
-    for ($info->{checkout}->find ($arg{copath}, {schedule => 'delete'})) {
-	die "auto anchor not supported yet, call with upper level directory"
-	    if $_ eq $arg{copath};
-
-	my (undef,$pdir,undef) = File::Spec->splitpath ($_);
-	chop $pdir;
-
-	push @{$torm{$pdir}}, $_
-	    unless exists $schedule{$pdir} && $schedule{$pdir} eq 'delete';
-    }
-
-    my ($txn, $xdroot) = create_xd_root ($info, %arg);
-
-    find(sub {
-	     my $cpath = $File::Find::name;
-	     my $hasprop;
-
-	     # seems gotta do anchor/target in a upper level?
-	     if (-d $arg{copath}) {
-		 $cpath =~ s|^$arg{copath}/|$arg{path}/|;
-		 $cpath = $arg{path} if $cpath eq $arg{copath};
-	     }
-	     else {
-		 my (undef, $anchor) = File::Spec->splitpath ($arg{copath});
-		 my (undef, $canchor) = File::Spec->splitpath ($arg{path});
-		 $cpath =~ s|^$anchor|$canchor|;
-	     }
-	     if (exists $torm{$File::Find::name}) {
-		 my @items = ($arg{delete_only_parent}) ?
-		     @{$torm{$File::Find::name}} :
-			 $info->{checkout}->find ($File::Find::name,
-						  {schedule => 'delete'});
-
-		 for (@items) {
-		     my $rmpath = $_;
-		     s|^$arg{copath}/|$arg{path}/|;
-		     &{$arg{cb_delete}} ($_, $rmpath, $xdroot)
-			 if $arg{cb_delete};
-		 }
-	     }
-	     if (exists $schedule{$File::Find::name}) {
-		 # we need an option to decide how to use the add/prop callback
-		 # 1. akin to the editor interface, add and prop are separate
-		 if ($schedule{$File::Find::name} eq 'add') {
-		     &{$arg{cb_add}} ($cpath, $File::Find::name, $xdroot)
-			 if $arg{cb_add};
-		     return;
-		 }
-		 $hasprop++
-		     if $schedule{$File::Find::name} eq 'prop';
-	     }
-	     my $kind = $xdroot->check_path ($cpath);
-	     if ($kind == $SVN::Node::none) {
-		 &{$arg{cb_unknown}} ($cpath, $File::Find::name, $xdroot)
-		     if $arg{cb_unknown};
-		 return;
-	     }
-	     if (-d $File::Find::name) {
-		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot)
-		     if $hasprop && $arg{cb_prop};
-		 return;
-	     }
-
-	     my $fh = get_fh ($xdroot, '<', $cpath, $File::Find::name);
-	     if ($arg{cb_changed} && SVN::MergeEditor::md5($fh) ne
-		 $xdroot->file_md5_checksum ($cpath)) {
-		 &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot);
-	     }
-	     elsif ($hasprop &&$arg{cb_prop}) {
-		 &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot);
-	     }
-	  }, $arg{copath});
-    $txn->abort if $txn;
 }
 
 sub resolved_entry {

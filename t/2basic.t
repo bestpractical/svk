@@ -14,8 +14,11 @@ overwrite_file ("$copath/A/foo", "foobar");
 overwrite_file ("$copath/A/bar", "foobarbazz");
 
 svk::add ("$copath/A");
-svk::add ("$copath/A/foo");
-svk::add ("$copath/A/bar");
+overwrite_file ("$copath/A/notused", "foobarbazz");
+ok(exists $svk::info->{checkout}->get_single
+   ("$corpath/A/foo")->{schedule}, 'add recursively');
+ok(!exists $svk::info->{checkout}->get_single
+   ("$corpath/A/notused")->{schedule}, 'add works on specified target only');
 # check output with selecting some io::stringy object?
 #svk::status ("$copath");
 svk::commit ('-m', 'commit message here', "$copath");

@@ -2,10 +2,12 @@ README
 CHANGES
 MANIFEST
 Makefile.PL
+lib/SVN/DeleteEditor.pm
 lib/SVN/DiffEditor.pm
 lib/SVN/MergeEditor.pm
 lib/SVN/RevertEditor.pm
 lib/SVN/StatusEditor.pm
+lib/SVN/CommitStatusEditor.pm
 lib/SVN/XD.pm
 bin/svk
 t/tree.pl

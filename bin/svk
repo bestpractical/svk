@@ -13,6 +13,7 @@ use Data::Hierarchy;
 use IO::String;
 use SVN::DiffEditor;
 use SVN::StatusEditor;
+use SVN::CommitStatusEditor;
 
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc ver/;
@@ -421,8 +422,10 @@ sub diff {
 =cut
 
 sub status {
-    my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
+    local @ARGV = @_;
+    my ($copath, @targets);
+    @ARGV = ('') if $#ARGV == -1;
+    ($copath, @targets )= condense (@ARGV);
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
@@ -433,6 +436,7 @@ sub status {
     SVN::XD::checkout_delta ($info,
 			     repos => $repos,
 			     copath => $copath,
+			     targets => @targets ? \@targets : undef,
 			     path => $path,
 			     baseroot => $xdroot,
 			     xdroot => $xdroot,
@@ -540,21 +544,42 @@ sub annotate {
 
 =cut
 
+sub condense {
+    my @targets = map {File::Spec->rel2abs ($_ || '')} @_;
+    return $targets[0] if $#targets == 0;
+    my $anchor;
+    for (@targets) {
+	if ($anchor) {
+	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
+		(undef, $anchor, undef) = File::Spec->splitpath ($anchor);
+		chop $anchor;
+	    }
+	}
+	else {
+	    $anchor = $_;
+	}
+    }
+    return ($anchor, map {s|^$anchor/||;$_} @targets);
+}
+
 sub add {
     local @ARGV = @_;
     my $nrec = 0;
     die unless GetOptions ("N|non-recursive"	=> \$nrec);
 
-    for my $copath (@ARGV) {
-	$copath = File::Spec->rel2abs ($copath || '');
-	my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
+    my ($copath, @targets);
+    die unless @ARGV;
+    ($copath, @targets) = condense (@ARGV);
 
-	SVN::XD::do_add ($info,
-			 copath => $copath,
-			 path => $path,
-			 recursive => !$nrec,
-			);
-    }
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    SVN::XD::do_add ($info,
+		     repos => $repos,
+		     copath => $copath,
+		     targets => @targets ? \@targets : undef,
+		     path => $path,
+		     recursive => !$nrec,
+		    );
 }
 
 =head2 delete
@@ -562,13 +587,17 @@ sub add {
 =cut
 
 sub delete {
-    my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '');
+    local @ARGV = @_;
+    my ($copath, @targets);
+    die unless @ARGV;
+    ($copath, @targets) = condense (@ARGV);
+
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::do_delete ($info,
 			repos => $repos,
 			copath => $copath,
+			targets => @targets ? \@targets : undef,
 			path => $path,
 		       );
 }
@@ -839,54 +868,48 @@ sub commit {
     die unless GetOptions ("m|message=s"  => \$message,
 			   "force",	  => \$force,
 			  );
-    my ($fh, $file);
 
-    # XXX: support multiple target
-    my ($copath) = @ARGV;
-    $copath = File::Spec->rel2abs ($copath || '');
+    my ($copath, @targets);
+    @ARGV = ('') if $#ARGV == -1;
+    ($copath, @targets )= condense (@ARGV);
+
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
-    my $targets;
 
-    # XXX: other commands committing to target should have this check too
     die "Commit into mirrored path will ruin the mirror state!\n".
 	"Use --force to override if you know what you are doing"
 	    unless $force || !path_is_mirrored ($repos, $path);
 
-    # harvest
+    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
+						  path => $path,
+						  repos => $repos,
+						  copath => $copath);
+
+
+    my ($fh, $file);
+
     unless (defined $message) {
 	($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
     }
 
     print $fh "\n$target_prompt\n" if $fh;
-    SVN::XD::checkout_crawler ($info,
-			       repos => $repos,
-			       copath => $copath,
-			       path => $path,
-			       rev => $cinfo->{revision},
-			       delete_only_parent => 1,
-			       cb_unknown =>
-			       sub {},
-			       cb_add =>
-			       sub {
-				   push @$targets, ['A', $_[1]];
-				   print $fh "A  $_[1]\n" if $fh;
-			       },
-			       cb_prop =>
-			       sub {
-				   push @$targets, ['P', $_[1]];
-				   print $fh " M $_[1]\n" if $fh;
-			       },
-			       cb_delete =>
-			       sub {
-				   push @$targets, ['D', $_[1]];
-				   print $fh "D  $_[1]\n" if $fh;
-			       },
-			       cb_changed =>
-			       sub {
-				   push @$targets, ['M', $_[1]];
-				   print $fh "M  $_[1]\n" if $fh;
-			       },
-			      );
+
+    my $targets = [];
+    SVN::XD::checkout_delta ($info,
+			     repos => $repos,
+			     copath => $copath,
+			     targets => @targets ? \@targets : undef,
+			     path => $path,
+			     baseroot => $xdroot,
+			     xdroot => $xdroot,
+			     delete_verbose => 1,
+			     absent_ignore => 1,
+			     strict_add => 1,
+			     editor => SVN::CommitStatusEditor->new
+			     (copath => $copath, dpath => $path,
+			      targets => $targets, fh => $fh),
+			    );
+
+    $txn->abort if $txn;
 
     die "no targets to commit" if $#{$targets} < 0;
 
@@ -899,6 +922,8 @@ sub commit {
 
     # if $copath itself is a file or is in the targets,
     # should get the anchor instead, tweak copath for the s// in XD.pm
+
+    $targets = [sort {$a->[1] cmp $b->[1]} @$targets];
 
     SVN::XD::do_commit ($info,
 			author => $ENV{USER},

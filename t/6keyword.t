@@ -18,9 +18,13 @@ append_file ("$copath/A/be", "some more\n");
 svk::ps ('svn:executable', 'on', "$copath/A/be");
 svk::commit ('-m', 'some modifications', $copath);
 
-is_file_content ("$copath/A/be",
-		 "\$Rev: 3\$\nfirst line in be\n2nd line in be\nsome more\n",
-		 'commit Id');
+my $newcontent = "\$Rev: 3\$\nfirst line in be\n2nd line in be\nsome more\n";
+
+is_file_content ("$copath/A/be", $newcontent, 'commit Id');
+
+append_file ("$copath/A/be", "some more\n");
+svk::revert ("$copath/A/be");
+is_file_content ("$copath/A/be", $newcontent, 'commit Id');
 
 TODO: {
 local $TODO = "take care of svn:executable after commit";
