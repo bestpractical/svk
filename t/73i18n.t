@@ -7,6 +7,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
     or plan skip_all => 'cannot set locale to zh_TW.Big5';
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
+plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
 plan tests => 31;
 our ($answer, $output);
