@@ -249,37 +249,42 @@ sub nearest_copy {
     if (ref ($root) eq __PACKAGE__) {
 	($root, $path) = ($root->root, $root->path);
     }
+    my $fs = $root->fs;
+    my $spool = SVN::Pool->new_default;
+    my $old_pool = SVN::Pool->new;
+    my $new_pool = SVN::Pool->new;
+
     # normalize;
     my $histself = $root->node_history ($path)->prev(0);
     my $rev = ($histself->location)[1];
-
-    my $fs = $root->fs;
     while (1) {
 	# Find history_prev revision, if the path is different, bingo.
-	my ($hppath, $hprev);
-	if (my $hist = $histself->prev(1)) {
-	    ($hppath, $hprev) = $hist->location;
-	    if ($hppath ne $path) {
-		return ($rev, $hprev, $hppath);
-	    }
-	}
+	my $hist = $histself->prev(1, $new_pool) or last; # no more history
+	my ($hppath, $hprev) = $hist->location;
+	return ($rev, $hprev, $hppath) if $hppath ne $path; # got it
+	$histself = $hist;
 
 	# Find nearest copy of the current revision (up to but *not*
 	# including the revision itself). If the copy contains us, bingo.
 	my ($prev, $copy) = _find_prev_copy ($fs, $rev-1);
+	last unless $prev; # no more copies
 	if ($copy && (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path))) {
+	    # there were copy, but the descendent might not exist there
+	    last unless $fs->revision_root ($fromrev)->check_path ($frompath);
 	    return ($prev, $fromrev, $frompath);
+	}
+	elsif ($prev < $hprev) {
+	    last unless $fs->revision_root ($prev)->check_path ($path);
+	    $root = $fs->revision_root ($prev, $new_pool);
+	    $histself = $root->node_history ($path)->prev(0, $new_pool);
 	}
 	# Continue testing on min (history_prev, prev_copy), provided
 	# it's still a related to the current node.
-	$rev = min (grep defined, $prev, $hprev) or last;
-
+	$rev = min ($prev, $hprev) or last;
 	# Reset the hprev root to this earlier revision to avoid infinite looping
-	$root = $fs->revision_root ($rev);
-	if ($root->check_path ($path) == $SVN::Node::none) {
-	    last;
-	}
-	$histself = $root->node_history ($path)->prev(0);
+        $old_pool->clear;
+	$spool->clear;
+        ($old_pool, $new_pool) = ($new_pool, $old_pool);
     }
     return;
 }
@@ -311,18 +316,23 @@ sub _find_prev_copy {
     my ($fs, $endrev) = @_;
     my $pool = SVN::Pool->new_default;
     my $rev = $endrev;
+    my $startrev = $endrev;
     while ($rev > 0) {
 	$pool->clear;
-	if (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev')) {
+	if (defined (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev'))) {
+	    $startrev = $rev + 1;
 	    $rev = $cache;
+	    return ($cache, _copies_in_rev ($fs, $cache));
 	}
 	if (my $copy = _copies_in_rev ($fs, $rev)) {
-	    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev)
-		for $rev..$endrev;
+	    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev), warn "write $_"
+		for $startrev..$endrev;
 	    return ($rev, $copy);
 	}
 	--$rev;
     }
+    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', 0)
+	for $rev..$endrev;
     return undef;
 }
 
