@@ -16,7 +16,6 @@ use File::Spec;
 use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
-use File::Temp qw/:mktemp/;
 use PerlIO::via::dynamic;
 
 sub new {
@@ -330,7 +329,8 @@ sub do_update {
 	 storage => $storage,
 	 %cb
 	);
-
+    $editor->{external} = $ENV{SVKMERGE}
+	if $ENV{SVKMERGE} && -x $ENV{SVKMERGE} && !$self->{check_only};
     SVN::Repos::dir_delta ($xdroot->[1], $anchor, $target,
 			   $newroot, $arg{target_path},
 			   $editor, undef,

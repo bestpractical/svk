@@ -24,7 +24,7 @@ sub run {
 	(%$target, rev => $target->{repos}->fs->youngest_rev)->{$pname};
 
     $pvalue = get_buffer_from_editor ("property $pname", undef, $pvalue || '',
-				      '/tmp/svk-propXXXXX');
+				      'prop');
 
     $self->do_propset ($pname, $pvalue, $target);
 

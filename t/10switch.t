@@ -5,7 +5,7 @@ require 't/tree.pl';
 my $pool = SVN::Pool->new;
 
 # build another tree to be mirrored ourself
-my ($xd, $svk) = build_test('');
+my ($xd, $svk) = build_test();
 
 my $tree = create_basic_tree ($xd, '//');
 

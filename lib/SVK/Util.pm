@@ -3,12 +3,12 @@ use strict;
 require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
-		    find_svm_source resolve_svm_source svn_mirror);
+		    find_svm_source resolve_svm_source svn_mirror tmpfile);
 our $VERSION   = '0.09';
 
 use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
-use File::Temp;
+use File::Temp qw(mktemp);
 use Term::ReadLine;
 my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 
@@ -38,9 +38,9 @@ sub get_buffer_from_editor {
     my ($what, $sep, $content, $file, $anchor, $targets_ref) = @_;
     my $fh;
     if (defined $content) {
-	($fh, $file) = mkstemps ($file, '.tmp');
+	($fh, $file) = tmpfile ($file, UNLINK => 0);
 	print $fh $content;
-	close $file;
+	close $fh;
     }
     else {
 	open $fh, $file;
@@ -130,6 +130,19 @@ sub resolve_svm_source {
     my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
     return unless $m;
     return ("$m->{target_path}$mpath", $m);
+}
+
+sub tmpfile {
+    my ($temp, %args) = @_;
+    $temp = "svk-${temp}XXXXX";
+    return mktemp ($temp) if exists $args{OPEN} && $args{OPEN} == 0;
+    my $tmp = File::Temp->new ( TEMPLATE => $temp,
+				DIR => $ENV{TMPDIR} || '/tmp',
+				SUFFIX => 'tmp',
+				%args
+			      );
+
+    return wantarray ? ($tmp, $tmp->filename) : $tmp;
 }
 
 1;

@@ -5,7 +5,7 @@ our $VERSION = '0.09';
 our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;
-use SVK::Util qw( slurp_fh );
+use SVK::Util qw( slurp_fh tmpfile );
 use Text::Diff;
 
 sub set_target_revision {
@@ -36,17 +36,12 @@ sub apply_textdelta {
 
     my $new;
     if ($self->{external}) {
-	my $tmp = File::Temp->new ( TEMPLATE => 'svk-diffXXXXX',
-				    DIR => '/tmp',
-				  );
+	my $tmp = tmpfile ('diff');
 	slurp_fh ($self->{info}{$path}{base}, $tmp)
 	    if $self->{info}{$path}{base};
 	seek $tmp, 0, 0;
 	$self->{info}{$path}{base} = $tmp;
-	$self->{info}{$path}{new} = $new =
-	    File::Temp->new ( TEMPLATE => 'svk-diffXXXXX',
-			      DIR => '/tmp',
-			    );
+	$self->{info}{$path}{new} = $new = tmpfile ('diff');
     }
     else {
 	open $new, '>', \$self->{info}{$path}{new};

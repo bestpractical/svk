@@ -57,7 +57,7 @@ sub run {
 	    ('log message', $self->target_prompt,
 	     ($self->{log} ?
 	      $self->log_for_merge ($repos, $src->{path}, $fromrev+1, $torev) : '').
-	     "\n".$self->target_prompt."\n", "svk-commitXXXXX");
+	     "\n".$self->target_prompt."\n", 'commit');
     }
 
     # editor for the target
@@ -75,6 +75,8 @@ sub run {
 	  storage => $storage,
 	  %cb,
 	);
+    $editor->{external} = $ENV{SVKMERGE}
+	if $ENV{SVKMERGE} && -x $ENV{SVKMERGE} && !$self->{check_only};
     SVN::Repos::dir_delta ($fs->revision_root ($baserev),
 			   $base_path, '',
 			   $fs->revision_root ($torev), $src->{path},

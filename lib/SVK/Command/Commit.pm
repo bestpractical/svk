@@ -6,8 +6,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::CommitStatusEditor;
 use SVK::SignEditor;
-use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror);
-use File::Temp;
+use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile);
 use SVN::Simple::Edit;
 
 my $target_prompt = '=== below are targets to be committed ===';
@@ -53,7 +52,7 @@ sub under_mirror {
 sub check_mirrored_path {
     my ($self, $target) = @_;
     if (!$self->{direct} && $self->under_mirror ($target)) {
-	print loc ("%1 is under mirrored path, use --force to override.\n",
+	print loc ("%1 is under mirrored path, use --direct to override.\n",
 		    $target->{depotpath});
 	return;
     }
@@ -79,8 +78,7 @@ sub get_commit_editor {
 sub get_commit_message {
     my ($self) = @_;
     $self->{message} = get_buffer_from_editor ('log message', $target_prompt,
-					       "\n$target_prompt\n",
-					       "/tmp/svk-commitXXXXX")
+					       "\n$target_prompt\n", 'commit')
 	unless defined $self->{message};
 }
 
@@ -185,7 +183,7 @@ sub run {
     my $xdroot = $self->{xd}->xdroot (%$target);
 
     unless (defined $self->{message}) {
-	($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
+	($fh, $file) = tmpfile ('commit', UNLINK => 0);
     }
 
     print $fh "\n$target_prompt\n" if $fh;
@@ -209,7 +207,7 @@ sub run {
     if ($conflicts) {
 	if ($fh) {
 	    close $fh;
-	    unlink $fh;
+	    unlink $file;
 	}
 	print loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
 	return;

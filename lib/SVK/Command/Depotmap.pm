@@ -39,7 +39,7 @@ sub _do_edit {
     my $new;
     do {
 	$map = get_buffer_from_editor ('depot map', $sep, "$map\n$sep\n",
-				       '/tmp/svk-depotmapXXXXX');
+				       'depotmap');
 	$new = eval { YAML::Load ($map) };
 	print "$@\n" if $@;
     } while ($@);

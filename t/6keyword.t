@@ -3,7 +3,7 @@ use strict;
 use Test::More tests => 5;
 require 't/tree.pl';
 
-my ($xd, $svk) = build_test('');
+my ($xd, $svk) = build_test();
 
 my $tree = create_basic_tree ($xd, '//');
 my ($copath, $corpath) = get_copath ('keyword');

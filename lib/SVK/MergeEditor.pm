@@ -3,7 +3,7 @@ use strict;
 our $VERSION = '0.14';
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
-use SVK::Util qw( slurp_fh md5 get_anchor );
+use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
 
 =head1 NAME
 
@@ -96,7 +96,6 @@ Called after each file close call.
 
 use Digest::MD5 qw(md5_hex);
 use File::Compare ();
-use File::Temp qw/:mktemp/;
 
 sub set_target_revision {
     my ($self, $revision) = @_;
@@ -168,8 +167,6 @@ sub cleanup_fh {
     for (qw/base new local/) {
 	close $fh->{$_}[0]
 	    if $fh->{$_}[0];
-	unlink $fh->{$_}[1]
-	    if $fh->{$_}[1]
     }
 }
 
@@ -178,7 +175,7 @@ sub prepare_fh {
     for my $name (qw/base new local/) {
 	next unless $fh->{$name}[0];
 	next if $fh->{$name}[1];
-	my $tmp = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	my $tmp = [tmpfile('merge')];
 	my $slurp = $fh->{$name}[0];
 
 	slurp_fh ($slurp, $tmp->[0]);
@@ -201,14 +198,14 @@ sub apply_textdelta {
 	$fh->{local} = $self->{cb_localmod}->($path, $checksum, $pool) or
 	    $self->{notify}->node_status ($path) = 'U';
 	# retrieve base
-	$fh->{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	$fh->{base} = [tmpfile('merge')];
 	my $rpath = $path;
 	$rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
 	my $buf = $self->{base_root}->file_contents ($rpath, $pool);
 	slurp_fh ($buf, $fh->{base}[0]);
 	seek $fh->{base}[0], 0, 0;
 	# get new
-	$fh->{new} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	$fh->{new} = [tmpfile('merge')];
 	return [SVN::TxDelta::apply ($fh->{base}[0],
 				     $fh->{new}[0], undef, undef, $pool)];
     }
@@ -275,16 +272,27 @@ sub close_file {
 		  1, 0, $pool);
 
 	my $conflict = SVN::Core::diff_contains_conflicts ($diff);
+	my $mfn;
         $self->{notify}->node_status ($path) = $conflict ? 'C' : 'G';
 	if ($conflict && $self->{external}) {
+	    $mfn = tmpfile ('merge', OPEN => 0);
 	    # invoking external merge tool
+	    system ($self->{external},
+		    "$path (YOURS)", $fh->{local}[1],
+		    "$path (BASE)", $fh->{base}[1],
+		    "$path (THEIRS)", $fh->{new}[1],
+		    $mfn,
+		    );
+	    open $mfh, $mfn;
+	    $checksum = md5 ($mfh);
+	    $conflict = 0;
 	}
+
+	$checksum ||= md5_hex ($merged);
 
 	my $handle = $self->{storage}->
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
 			     $pool);
-
-	$checksum = md5_hex ($merged);
 
 	if ($handle && $#{$handle} >= 0) {
 	    seek $mfh, 0, 0;
@@ -301,6 +309,7 @@ sub close_file {
 	}
 
 	close $mfh;
+	unlink $mfn if $mfn;
 	$self->cleanup_fh ($fh);
 
 	if ($conflict) {

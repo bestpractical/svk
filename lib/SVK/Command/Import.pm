@@ -29,7 +29,7 @@ sub run {
     unless (defined $self->{message} || $self->{check_only}) {
 	$self->{message} = get_buffer_from_editor
 	    ('log message', $self->target_prompt,
-	     "\n".$self->target_prompt."\n", "svk-commitXXXXX");
+	     "\n".$self->target_prompt."\n", 'commit');
     }
 
     $self->{xd}->do_import ( %$self,

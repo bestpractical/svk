@@ -84,7 +84,7 @@ SVK::Command::Propset - Set a property on path
   -m [--message] message:	Commit message
   -C [--check-only]:	Needs description
   -s [--sign]:	Needs description
-  -force:	Needs description
+  --force:	Needs description
 
 =head1 AUTHORS
 
