@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( get_encoding );
+use SVK::Util qw( get_encoder );
 use autouse 'File::Find' => qw(find);
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
@@ -37,10 +37,7 @@ sub run {
 
             $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
-            require Encode;
-            my $encoder = Encode::find_encoding(get_encoding())
-                       || Encode::find_encoding('utf8');
-            print $encoder->encode($buf);
+            print get_encoder->encode($buf);
         }
         else {
             die loc("Cannot find help topic '%1'.\n", $topic);
