@@ -10,7 +10,7 @@ use File::Spec;
 use Data::Hierarchy;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps/;
+use subs qw/co up st blame ci del rm ps cp/;
 
 =head1 NAME
 
@@ -43,7 +43,8 @@ sub update_info {
 
 sub find_repos {
     my ($depotpath, $open) = @_;
-    my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|;
+    my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|
+	or die "not depot spec";
 
     my $repospath = $info->{depotmap}{$depot} or die "no such depot: $depot";
 
@@ -148,6 +149,10 @@ sub diff {
 #			       },
 			       cb_add =>
 			       sub {
+				   return if -d $_[1];
+				   print "Index: $_[0]\n";
+				   print '=' x 66;
+				   print "\n";
 				   print Text::Diff::diff (\'', $_[1]);
 			       },
 			       cb_changed =>
@@ -182,6 +187,7 @@ sub status {
 			       rev => $cinfo->{revision},
 			       cb_unknown =>
 			       sub {
+				   return if $_[1] =~ m/~$/;
 				   print "?  $_[1]\n";
 			       },
 			       cb_add =>
@@ -217,8 +223,13 @@ sub annotate {
     my $cross = 0;
     die unless GetOptions ("x|cross"  => \$cross);
     my ($copath) = @ARGV;
-
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    my ($repospath, $path, $repos) = eval { find_repos ($copath, 1) };
+    if ($repospath) {
+	undef $copath;
+    }
+    else {
+	($repospath, $path, undef, $repos) = find_repos_from_co ($copath, 1);
+    }
 
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
@@ -246,15 +257,18 @@ sub annotate {
 		    $content);
     }
 
-    open my ($fh), $copath;
-
-    $ann->add ( "\t(working copy): \t\t", [map {chomp;$_}<$fh>]);
-
-    seek $fh, 0, 0;
-
+    my $final;
+    if ($copath) {
+	open $final, $copath;
+	$ann->add ( "\t(working copy): \t\t", [map {chomp;$_}<$final>]);
+	seek $final, 0, 0;
+    }
+    else {
+	$final = $fs->revision_root($revs[-1])->file_contents($path);
+    }
     my $result = $ann->result;
     while (my $info = shift @$result) {
-	print $info.<$fh>;
+	print $info.<$final>;
     }
 
 }
@@ -264,13 +278,18 @@ sub annotate {
 =cut
 
 sub add {
-    my ($copath) = @_;
+    local @ARGV = @_;
+    my $nrec = 0;
+    die unless GetOptions ("N|non-recursive"	=> \$nrec);
+
+    my ($copath) = @ARGV;
     $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
 
     SVN::XD::do_add ($info,
 		     copath => $copath,
 		     path => $path,
+		     recursive => !$nrec,
 		    );
 }
 
@@ -313,7 +332,11 @@ sub propset {
 =cut
 
 sub revert {
-    my ($copath) = @_;
+    local @ARGV = @_;
+    my $rec = 0;
+    die unless GetOptions ("R|recursive"	=> \$rec);
+
+    my ($copath) = @ARGV;
     $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
@@ -321,6 +344,7 @@ sub revert {
 			repos => $repos,
 			copath => $copath,
 			path => $path,
+			recursive => $rec,
 		       );
 }
 
@@ -377,6 +401,24 @@ sub log {
 my $target_prompt = '=== below are targets to be committed ===';
 use File::Temp qw/:mktemp/;
 
+sub get_commit_message {
+    my ($file) = @_;
+    while (1) {
+	my $mtime = (stat($file))[7];
+	my $ans;
+	print "waiting for editor...\n";
+	system ("\$EDITOR $file");
+	last if (stat($file))[7] > $mtime;
+	do {
+	    print "log message not modified: a)bort, e)dit, c)ommit?\n";
+	    $ans = <STDIN>;
+	    chomp $ans;
+	    die "Aborted" if $ans eq 'a';
+	}
+	    while ($ans !~ m/^[aec]/);
+    }
+}
+
 sub commit {
     local @ARGV = @_;
     my $message;
@@ -418,22 +460,11 @@ sub commit {
 			       },
 			      );
 
+    die "no targets to commit" if $#{$targets} < 0;
+
     if ($fh) {
 	close $fh;
-	while (1) {
-	    my $mtime = (stat($file))[7];
-	    my $ans;
-	    print "waiting for editor...\n";
-	    system ("\$EDITOR $file");
-	    last if (stat($file))[7] > $mtime;
-	    do {
-		print "log message not modified: a)bort, e)dit, c)ommit?\n";
-		$ans = <STDIN>;
-		chomp $ans;
-		die "Aborted" if $ans eq 'a';
-	    }
-	    while ($ans !~ m/^[aec]/);
-	}
+	get_commit_message ($file);
 	open $fh, '<', $file;
 	local $/;
 	$message = <$fh>;
@@ -459,6 +490,39 @@ sub commit {
 		       );
 }
 
+=head2 copy / cp
+
+    svk copy
+
+=cut
+
+sub copy {
+    local @ARGV = @_;
+    my $message;
+    my $rev;
+    die unless GetOptions ("m|message=s"  => \$message,
+			   "r|revision=i" => \$rev);
+    my ($fh, $file);
+
+    my ($src, $dst) = @ARGV;
+    my ($repospath, $path, $repos) = find_repos ($src, 1);
+    my ($drepospath, $dpath, $editor, $copath);
+    unless (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
+	die "copy doesn't work on checkout yet";
+    }
+
+    die "different repos?" if $repospath ne $drepospath;
+
+    SVN::XD::do_copy_direct ($info,
+			     repospath => $repospath,
+			     repos => $repos,
+			     path => $path,
+			     dpath => $dpath,
+			     message => $message,
+			     rev => $rev || $repos->fs->youngest_rev,
+			    );
+}
+
 =head2 merge
 
     svk merge
@@ -467,26 +531,51 @@ sub commit {
 
 sub merge {
     local @ARGV = @_;
-    my ($check_only, $revspec);
+    my ($check_only, $message, $revspec);
     die unless GetOptions ("C|check-only"	=> \$check_only,
+			   "m|message=s"	=> \$message,
 			   "r|revision=s"	=> \$revspec);
 
     die "revision required" unless $revspec;
     my ($src, $dst) = @ARGV;
     my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
 	or die "revision must be N:M";
-    my ($repospath, $path) = find_repos ($src, 0);
-    # XXX: try to see if dst is copath or depot
-    my ($drepospath, $dpath, $cinfo, $repos) = find_repos_from_co ($dst, 1);
-    die "different repos?" unless $repospath eq $drepospath;
-    my $copath = File::Spec->rel2abs ($dst || '');
+    my ($repospath, $path, $repos) = find_repos ($src, 1);
+    my ($drepospath, $dpath, $editor, $copath);
+    if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
+	unless ($message || $check_only) {
+	    my ($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
+	    print $fh "$target_prompt\n";
+	    close $fh;
+	    get_commit_message ($file);
+	    open $fh, '<', $file;
+	    local $/;
+	    $message = <$fh>;
+	    my $target;
+	    ($message, undef) = split ("\n$target_prompt\n", $message, 2);
+	    # XXX: parse and check target sanity
+	    close $fh;
+	    unlink $file;
+	}
+    }
+    else {
+	undef $@;
+	($drepospath, $dpath) = find_repos_from_co ($dst, 0);
+	die "different repos?" unless $repospath eq $drepospath;
+	$copath = File::Spec->rel2abs ($dst || '');
+    }
 
+    # support incremental merging (merge one revision by one)
     SVN::XD::do_merge ($info,
 		       repos => $repos,
+		       repospath => $repospath,
 		       path => $path,
+		       dpath => $dpath,
 		       copath => $copath,
+		       editor => $editor,
 		       fromrev => $fromrev,
 		       check_only => $check_only,
+		       message => $message,
 		       torev => $torev,
 		      );
 }
@@ -498,6 +587,7 @@ sub merge {
 *ci = *commit;
 *del = *rm = *delete;
 *ps = *propset;
+*cp = *copy;
 
 my $defaultdepot;
 
@@ -509,18 +599,22 @@ no strict 'refs';
 
 #$xd = SVN::XD->new (%$info);
 
-$SIG{INT} = sub {
-    update_info();
-    die "interrupted\n";
-};
+if ($0 eq __FILE__) {
+    if ($cmd && main->can($cmd)) {
+	init();
 
-if (main->can($cmd)) {
-    init();
-    &$cmd(@ARGV);
-    update_info()
-}
-else {
-    print "command not recognized\n";
+	$SIG{INT} = sub {
+	    update_info();
+	    die "interrupted\n";
+	};
+
+	&$cmd(@ARGV);
+	update_info()
+    }
+    else {
+	print "command not recognized\n";
+    }
 }
 
 #%$info = %$xd;
+1;

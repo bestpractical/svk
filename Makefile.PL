@@ -13,7 +13,7 @@ require CPANPLUS;CPANPLUS::install$p};eval"use $p $v;1"or eval{
 require CPAN;CPAN::install$p};eval"use $p $v;1"||die"*** Please
 manually install $p $v from cpan.org first...\n"}}}
 
-my $required_svn = '0.31.0';
+my $required_svn = '0.32.0';
 
 use ExtUtils::AutoInstall
     ( -version        => '0.40',
@@ -25,7 +25,7 @@ use ExtUtils::AutoInstall
       ],
       'SVN::Mirror support' =>
       [ -default    => 1,
-	SVN::Mirror    => '0.20',
+	SVN::Mirror    => '0.21',
       ],
     );
 

@@ -5,22 +5,15 @@ use SVN::XD;
 require 't/tree.pl';
 package svk;
 require 'bin/svk';
-
 package main;
 
 $svk::info = build_test();
-my $copath = 't/checkout/basic';
-my $corpath = File::Spec->rel2abs($copath);
-`rm -rf $copath` if -e $copath;
-
+my ($copath, $corpath) = get_copath ('basic');
 svk::checkout ('//', $copath);
 mkdir "$copath/A";
-open my ($fh), '>', "$copath/A/foo";
-print $fh "foobar";
-close $fh;
-open $fh, '>', "$copath/A/bar";
-print $fh "foobarbazz";
-close $fh;
+overwrite_file ("$copath/A/foo", "foobar");
+overwrite_file ("$copath/A/bar", "foobarbazz");
+
 svk::add ("$copath/A");
 svk::add ("$copath/A/foo");
 svk::add ("$copath/A/bar");
