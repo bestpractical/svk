@@ -1,0 +1,148 @@
+#!/usr/bin/perl -w
+use strict;
+package SVK::Server;
+use Net::Daemon;
+use SVN::Core;
+use SVK::XD;
+use SVK::Editor::Network;
+use SVK::Editor::Delay;
+use PerlIO::gzip;
+use SVK::Target;
+
+use vars qw($VERSION @ISA);
+$VERSION = '0.01';
+@ISA = qw(Net::Daemon); # to inherit from Net::Daemon
+
+sub Version ($) { 'svkup Server, 0.01'; }
+
+# Add a command line option "--base"
+sub Options ($) {
+    my($self) = @_;
+    my($options) = $self->SUPER::Options();
+    $options->{'depot'} = { 'template' => 'depot=s',
+			    'description' => '--depot <path>              '
+			    . 'path to the depot'
+			 };
+    $options;
+}
+
+sub new ($$;$) {
+    my($class, $attr, $args) = @_;
+    my($self) = $class->SUPER::new($attr, $args);
+    die "--depot required"
+	unless $self->{'options'}  &&  $self->{'options'}->{'depot'};
+    $self->{xd} = SVK::XD->new (depotmap => {'' => $self->{'options'}->{'depot'}});
+    $self;
+}
+
+sub Run ($) {
+    my ($self) = @_;
+    my ($req, $line);
+    my $sock = $self->{'socket'};
+    $sock->autoflush (1);
+    while (1) {
+	$self->process_request ($sock);
+    }
+}
+
+sub send_response {
+    my ($self, $req, @other) = @_;
+    $self->{socket}->print (pack ('n', $req), @other);
+#    $self->{socket}->flush;
+}
+
+sub send_message {
+    my ($self, $error, $msg) = @_;
+    $self->{socket}->print (pack ('nn', $error ? -1 : 0, length ($msg)), $msg);
+}
+
+sub init {
+    my ($self, $req, @arg) = @_;
+    my $ret = $self->send_response ($req);
+#    binmode $self->{socket}, ':gzip(none)' or die $!;
+#    warn "binmode on server";
+    return $ret;
+}
+
+sub read_request {
+    my ($self, $sock) = @_;
+
+    my $rstate = '';
+    vec($rstate,fileno($sock),1) = 1;
+    select($rstate, undef, undef, 0);;
+    return unless vec($rstate,fileno($sock),1);
+
+    $self->process_request ($sock);
+}
+
+# allowed commmands
+my %cmd = map {$_ => 1} qw/delta init/;
+
+sub process_request {
+    my ($self, $sock) = @_;
+    my ($header, $line);
+    read ($sock, $header, 4) or $sock->close(), die "client closed";
+
+    my ($req, $length) = unpack ('nn', $header);
+    read $sock, $line, $length or die $!;
+    $line =~ s/\s+$//;
+    warn "got $line";
+
+    my ($cmd, @arg) = split (' ', $line);
+    unless (exists $cmd{$cmd}) {
+	$self->send_message (1, "unsupported command $cmd");
+	die;
+    }
+    my $ret = $self->$cmd ($req, @arg);
+
+    if ($ret <= 0) {
+	$sock->close;
+	die $sock->error();
+    }
+}
+
+sub fatal {
+    my ($self, $msg) = @_;
+    $self->send_message (1, $msg);
+    die $msg;
+}
+
+sub delta {
+    my ($self, $req, $resource, $target) = @_;
+    my ($oldtarget, $newtarget) =
+	map { SVK::Target::Universal->new (split (':', $_, 3)) }
+	    ($resource, $target);
+
+    ($oldtarget, $newtarget) =
+	map {   $_->local ($self->{xd}, '') or $self->fatal ("Can't find $_->{uuid}:$_->{path}") }
+	    ($oldtarget, $newtarget);
+
+    $self->fatal ("cross depot not supported")
+	unless $oldtarget->same_repos ($newtarget);
+
+    my $editor = SVK::Editor::Network->new (sock => $self->{socket},
+					    read_callback => sub { $self->read_request (@_) },
+					    prefix => pack ('n', $req));
+    my $oldroot = $oldtarget->root;
+    if ($oldroot->check_path ($oldtarget->{path}) == $SVN::Node::none) {
+	$oldtarget = $oldtarget->new (path => '/', revision => 0);
+	$oldroot = $oldtarget->root;
+    }
+    $self->{socket}->autoflush (0);
+    $self->{xd}->depot_delta (oldroot => $oldroot,
+			      oldpath => [$oldtarget->{path}, ''],
+			      newroot => $newtarget->root,
+			      newpath => $newtarget->{path},
+			      editor => SVK::Editor::Delay->new ($editor));
+    $self->{socket}->autoflush (1);
+    return 1;
+}
+
+package main;
+
+my $server = SVK::Server->new({'pidfile' => 'none',
+#			       'mode'    => 'single',
+			       'log' => 'STDERR',
+			       'localport' => 3699}, \@ARGV);
+
+$server->Bind();

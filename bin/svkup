@@ -1,0 +1,142 @@
+#!/usr/bin/perl -w
+use strict;
+use SVN::Core;
+use Storable qw/retrieve_fd/;
+use IO::Socket::INET;
+use PerlIO::gzip;
+use SVK::XD;
+use Data::Hierarchy;
+use SVK::Editor::Local;
+use SVK::Editor::Network;
+use SVK::Target;
+use YAML;
+
+
+=head2 TODO
+
+=over
+
+=item on base checksum mismatch, issue oob retrieval
+
+=item abstract SVK::Editor::Local
+
+=item signature caching
+
+
+=back
+
+
+=cut
+
+die "Usage: $0 <server> <copath> [target]\n" if $#ARGV < 1;
+my ($server, $copath, $target) = @ARGV;
+my $resource;
+
+$server .= ':3699' unless index ($server, ':') >= 0;
+
+if (-e $copath) {
+    die unless -d $copath;
+    open my $fh, '<', "$copath/.svkup" or die $!;
+    $resource = <$fh>;
+    chomp $resource;
+    unless ($target) {
+	$target = $resource;
+	$target =~ s/:\d+$//;
+    }
+}
+else {
+    mkdir $copath or die $!;
+    $resource = $target;
+    $resource =~ s/:\d+$/:0/ or $resource .= ':0';
+}
+
+my %handler;
+my $myreq = 1;
+my $iostat;
+my $done;
+
+sub read_msg {
+    my ($error, $sock, $req) = @_;
+    my ($len, $msg);
+    read $sock, $len, 2 or die $!;
+    $len = unpack ('n', $len);
+    read $sock, $msg, $len or die $!;
+    print "$server: $msg\n";
+    $done = 1 if $error;
+}
+
+$handler{0} = sub { read_msg (0, @_) };
+$handler{65535} = sub { read_msg (1, @_) };
+
+sub main {
+    my $sock = IO::Socket::INET->new ( PeerAddr => $server,
+				       Blocking => 1,
+				     ) or die "$server: $!";
+    $sock->autoflush (1);
+
+    my ($read, $write) = (0, 0);
+    eval { require IO::Statistics; 1} and $iostat++;
+    IO::Statistics->count (\$read, \$write, $sock);
+    init ($sock);
+
+
+    while (!$done) {
+	my $req;
+	my $ret = read $sock, $req, 2;
+	last if $ret == 0;
+	die "$server: $! ($ret) [$req]" unless $ret > 0;
+	$req = unpack ('n', $req);
+	dispatch ($sock, $req);
+    }
+
+    print "read $read bytes, wrote $write bytes\n" if $iostat;
+}
+
+sub dispatch {
+    my ($sock, $req) = @_;
+    die "no such request sent $req" unless exists $handler{$req};
+    $handler{$req}->($sock);
+}
+
+sub send_cmd {
+    my ($sock, $cmd, $handler) = @_;
+    print $sock pack ('nn', $myreq, length ($cmd)), $cmd;
+    $handler{$myreq} = $handler;
+    ++$myreq;
+}
+
+sub init {
+    my $sock = shift;
+    send_cmd ($sock, "init version=1a compress transport=storable\n",
+	      sub {
+#		  binmode $sock, ':gzip(none)' or die $!;
+#		  warn "binmode on client";
+		  send_delta_request (@_) });
+}
+
+sub send_delta_request {
+    my $sock = shift;
+    my $editor = SVK::Editor::Local->new (get_copath =>
+					  sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) },
+					  xd => SVK::XD->new (checkout => Data::Hierarchy->new),
+					  update => 1,
+					 );
+    my $dispatch = SVK::Editor::Network->new (editor => $editor);
+    send_cmd ($sock, "delta $resource $target\n", sub { emit_editor_call ($dispatch, @_) });
+}
+
+sub emit_editor_call {
+    my ($dispatch, $sock) = @_;
+    my $call = retrieve_fd ($sock);
+#    nstore_fd ($call, \*STDOUT);
+#    warn YAML::Dump ($call);
+    $dispatch->emit ($call);
+    return unless $call->[1] eq 'close_edit';
+    my $rev = $dispatch->{editor}{revision};
+    open my $fh, '>', "$copath/.svkup" or die $!;
+    $target =~ s/:\d+$/:$rev/ or $target .= ":$rev";
+    print $fh "$target\n";
+    $done = 1;
+}
+
+&main;
