@@ -253,7 +253,7 @@ sub log {
     no warnings 'uninitialized';
     use Sys::Hostname;
     my $print_rev = SVK::Command::Log::_log_remote_rev
-	($self->{repos}, $self->{remoterev},
+	($self->{repos}, $self->{src}{path}, $self->{remoterev},
 	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
     SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{src}{path},
 			       fromrev => $self->{fromrev}+1, torev => $self->{src}{revision},

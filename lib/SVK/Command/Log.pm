@@ -15,11 +15,11 @@ sub options {
 
 # returns a sub for getting remote rev
 sub _log_remote_rev {
-    my ($repos, $remoteonly, $host) = @_;
+    my ($repos, $path, $remoteonly, $host) = @_;
     $host ||= '';
     return sub {"r$_[0]$host"} unless SVN::Mirror::list_mirror ($repos);
     # save some initialization
-    my $m = SVN::Mirror::is_mirrored (@_) || 'SVN::Mirror';
+    my $m = SVN::Mirror::is_mirrored ($repos, $path) || 'SVN::Mirror';
     sub {
 	my $rrev = $m->find_remote_rev ($_[0], $repos);
 	$remoteonly ? "r$rrev$host" :
@@ -50,7 +50,7 @@ sub run {
 
     $self->{cross} ||= 0;
 
-    my $print_rev = _log_remote_rev ($target->{repos});
+    my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
 
     my $sep = ('-' x 70)."\n";
     print $sep;
