@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 19;
+use Test::More tests => 21;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -19,6 +19,10 @@ $svk->commit ('-m', 'init');
 overwrite_file ("A/binary", "foobar\nfnord\n");
 $svk->add ('A/binary');
 $svk->propset ('svn:mime-type', 'image/png', 'A/binary');
+is_output ($svk, 'diff', ['//asdf-non'],
+	   ['path //asdf-non does not exist.']);
+is_output ($svk, 'diff', ['//asdf-non', 'A/binary'],
+	   ['path //asdf-non does not exist.']);
 is_output ($svk, 'diff', [],
            ['=== A/binary',
             '==================================================================',

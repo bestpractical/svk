@@ -41,6 +41,9 @@ sub run {
 	    die loc("invalid arguments") if $target->{copath};
 	    # prevent oldroot being xdroot below
 	    $r1 ||= $yrev;
+	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
+	    die loc("path %1 does not exist.\n", $target->{report})
+		if $fs->revision_root ($r1)->check_path ($target->{path}) == $SVN::Node::none;
 	}
     }
     else {
@@ -95,8 +98,9 @@ sub run {
 	  oldtarget => $target, oldroot => $oldroot,
 	);
 
+    my $kind = $oldroot->check_path ($target->{path});
     if ($target2->{copath}) {
-	if ($oldroot->check_path ($target2->{path}) != $SVN::Node::dir) {
+	if ($kind != $SVN::Node::dir) {
 	    my $tgt;
 	    ($target2->{path}, $tgt) = get_anchor (1, $target2->{path});
 	    ($target->{path}, $target2->{copath}) =
@@ -104,7 +108,6 @@ sub run {
 	    $target2->{targets} = [$tgt];
 	    ($report) = get_anchor (0, $report) if defined $report;
 	}
-
 	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
 	    ( %$target2,
@@ -117,7 +120,10 @@ sub run {
     }
     else {
 	my $tgt = '';
-	if ($oldroot->check_path ($target2->{path}) != $SVN::Node::dir) {
+	die loc("path %1 does not exist.\n", $target->{report})
+	    if $kind == $SVN::Node::none;
+
+	if ($kind != $SVN::Node::dir) {
 	    ($target->{path}, $tgt) =
 		get_anchor (1, $target->{path});
 	    ($report) = get_anchor (0, $report) if defined $report;
