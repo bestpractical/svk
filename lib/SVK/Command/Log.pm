@@ -68,7 +68,6 @@ sub do_log {
     no warnings 'uninitialized';
     use Sys::Hostname;
     my ($host) = split ('\.', hostname, 2);
-    warn $host;
     $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
 		     sub { my ($paths, $rev, $author, $date, $message) = @_;
 			   no warnings 'uninitialized';

@@ -66,6 +66,7 @@ META.yml			Module meta-data (added by MakeMaker)
 README
 SIGNATURE
 t/10switch.t
+t/11checkout.t
 t/1use.t
 t/2basic.t
 t/3import.t

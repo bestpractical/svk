@@ -171,26 +171,24 @@ sub translator {
     my ($target) = @_;
     $target .= '/' if $target;
     $target ||= '';
-    return qr/^$target/;
+    return qr/^\Q$target\E/;
 }
 
 sub xd_storage_cb {
     my ($self, %arg) = @_;
-    my $t = translator ($arg{target});
-
     # translate to abs path before any check
     return
-	( cb_exist => sub { $_ = shift; s|$t|$arg{copath}/|; -e $_},
-	  cb_rev => sub { $_ = shift; s|$t|$arg{copath}/|;
+	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_},
+	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
 			  $self->{checkout}->get ($_)->{revision} },
-	  cb_conflict => sub { $_ = shift; s|$t|$arg{copath}/|;
+	  cb_conflict => sub { $_ = shift; $arg{get_copath} ($_);
 			       $self->{checkout}->store ($_, {'.conflict' => 1})
 				   unless $arg{check_only};
 			   },
 	  cb_localmod => sub { my ($path, $checksum) = @_;
-			       $_ = $path; s|$t|$arg{copath}/|;
+			       $arg{get_copath} ($path);
 			       my $base = get_fh ($arg{oldroot}, '<',
-						  "$arg{anchor}/$arg{path}", $_);
+						  "$arg{anchor}/$arg{path}", $path);
 			       my $md5 = md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
@@ -201,15 +199,15 @@ sub xd_storage_cb {
 sub get_editor {
     my ($self, %arg) = @_;
 
+    my $t = translator($arg{target});
+    $arg{get_copath} = sub { $_[0] = $arg{copath}, return
+				 if $arg{target} eq $_[0];
+			     $_[0] =~ s|$t|$arg{copath}/|
+				 or die loc("unable to translate %1 with %2", $_[0], $t);
+			     $_[0] =~ s|/$||;
+			 };
     my $storage = SVK::XD::Editor->new
 	( %arg,
-	  get_copath => sub { my $t = translator($arg{target});
-			      $_[0] = $arg{copath}, return
-				  if $arg{target} eq $_[0];
-			      $_[0] =~ s|$t|$arg{copath}/|
-				  or die loc("unable to translate %1 with %2", $_[0], $t);
-			      $_[0] =~ s|/$||;
-			  },
 	  checkout => $self->{checkout},
 	  xd => $self,
 	);
@@ -230,8 +228,13 @@ sub do_update {
 
     print loc("Syncing %1(%2) in %3 to %4.\n", @arg{qw( depotpath path copath rev )});
     unless ($xdroot->check_path ($arg{path}) == $SVN::Node::dir) {
-	($anchor, $target, $tanchor, $ttarget) = 
+	($anchor, $target, $tanchor, $ttarget) =
 	    get_anchor (1, $arg{path}, $arg{target_path});
+    }
+    else {
+	# no anchor
+	mkdir ($arg{copath})
+	    unless $arg{check_only};
     }
 
     my $newroot = $fs->revision_root ($arg{rev});

@@ -31,7 +31,6 @@ sub run {
 	    if exists $entry->{depotpath} && $where[-1] ne $copath;
     }
 
-    mkdir ($copath);
     $self->{xd}{checkout}->store_recursively ( $copath,
 					       { depotpath => $target->{depotpath},
 						 revision => 0,

@@ -133,13 +133,14 @@ sub create_basic_tree {
 			    B => {},
 			    C => { child => { R => { child => {}}}}
 			  }};
+    my $rev = $repos->fs->youngest_rev;
     $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();
     $edit->modify_file ('/me', "first line in me\n2nd line in me - mod\n");
     $edit->modify_file ($edit->add_file ('/B/fe'),
 			"file fe added later\n");
     $edit->delete_entry ('/A/P');
-    $edit->copy_directory('/B/S', "file://${repospath}A", 1);
+    $edit->copy_directory('/B/S', "file://${repospath}/${path}/A", $rev);
     $edit->modify_file ($edit->add_file ('/D/de'),
 			"file de added later\n");
     $edit->close_edit ();
