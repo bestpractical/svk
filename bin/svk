@@ -550,10 +550,12 @@ sub condense {
     my @targets = map {File::Spec->rel2abs ($_ || '')} @_;
     my ($anchor, $report);
     $report = $_[0];
-    $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
-    return ($report, $targets[0]) if $#targets == 0;
     for (@targets) {
-	if ($anchor) {
+	if (!$anchor) {
+	    $anchor = $_;
+	    $report = $_[0]
+	}
+	if ($anchor ne $_ || -f $anchor) {
 	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
 		(undef, $anchor, undef) = File::Spec->splitpath ($anchor);
 		chop $anchor;
@@ -561,13 +563,10 @@ sub condense {
 		chop $report;
 	    }
 	}
-	else {
-	    $anchor = $_;
-	    $report = $_[0]
-	}
     }
     $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
-    return ($report, $anchor, map {s|^$anchor/||;$_} @targets);
+    return ($report, $anchor,
+	    map {s|^$anchor/||;$_} grep {$_ ne $anchor} @targets);
 }
 
 sub add {

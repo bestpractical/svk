@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+no warnings 'once';
 require Test::More;
 require 't/tree.pl';
 eval "require SVN::Mirror"

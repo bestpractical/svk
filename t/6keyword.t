@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+no warnings 'once';
 use Test::More qw(no_plan);
 require 't/tree.pl';
 package main;
