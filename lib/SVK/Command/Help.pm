@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-
+use SVK::Util qw( get_encoding );
 use autouse 'File::Find' => qw(find);
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
@@ -38,7 +38,7 @@ sub run {
             $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
             require Encode;
-            my $encoder = Encode::find_encoding($self->_find_encoding)
+            my $encoder = Encode::find_encoding(get_encoding())
                        || Encode::find_encoding('utf8');
             print $encoder->encode($buf);
         }
@@ -47,18 +47,6 @@ sub run {
         }
     }
     return;
-}
-
-sub _find_encoding {
-    local $@;
-    # substr( __FILE__, 0 );
-    return eval {
-        local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
-        Locale::Maketext::Lexicon::encoding();
-    } || eval {
-        require 'open.pm';
-        return open::_get_locale_encoding();
-    } || 'utf8';
 }
 
 my ($inc, @prefix);

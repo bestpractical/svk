@@ -80,6 +80,7 @@ sub get_commit_message {
     $self->{message} = defined $self->{message} ?
 	join ("\n", grep {length $_} ($self->{message}, $log))
 	    : $self->SUPER::get_commit_message ($log);
+    $self->decode_commit_message;
 }
 
 sub run {

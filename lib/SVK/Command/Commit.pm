@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
-		  find_svm_source tmpfile abs2rel find_prev_copy );
+		  find_svm_source tmpfile abs2rel find_prev_copy get_encoding);
 
 sub options {
     ('m|message=s'  => 'message',
@@ -16,8 +16,9 @@ sub options {
      'C|check-only' => 'check_only',
      'S|sign'	  => 'sign',
      'P|patch=s'  => 'patch',
-     'import',	  => 'import',
-     'direct',	  => 'direct',
+     'import'	  => 'import',
+     'encoding=s' => 'encoding',
+     'direct'	  => 'direct',
     );
 }
 
@@ -65,9 +66,19 @@ sub fill_commit_message {
 sub get_commit_message {
     my ($self, $msg) = @_;
     $self->fill_commit_message;
-    return if defined $self->{message};
     $self->{message} = get_buffer_from_editor
-	(loc('log message'), $self->message_prompt, join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
+	(loc('log message'), $self->message_prompt,
+	 join ("\n", $msg || '', $self->message_prompt, ''), 'commit')
+	    unless defined $self->{message};
+    $self->decode_commit_message;
+}
+
+sub decode_commit_message {
+    my $self = shift;
+    require Encode;
+    my $enc = $self->{encoding} || get_encoding;
+    eval { Encode::from_to ($self->{message}, $enc, 'UTF-8', 1) };
+    die loc ("Can't decode commit message as UTF-8, try --encoding.\n") if $@;
 }
 
 # XXX: This should just return Editor::Dynamic objects
@@ -269,7 +280,7 @@ sub get_committable {
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	unlink $file;
     }
-
+    $self->decode_commit_message;
     return [sort {$a->[1] cmp $b->[1]} @$targets];
 }
 
@@ -426,6 +437,7 @@ SVK::Command::Commit - Commit changes to depot
  -C [--check-only]      : try operation but make no changes
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ --encoding ENC         : treat value as being in charset encoding ENC
  --import               : import mode; automatically add and delete nodes
  --direct               : commit directly even if the path is mirrored
 

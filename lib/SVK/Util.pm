@@ -7,6 +7,8 @@ our @EXPORT_OK = qw(
 
     get_prompt get_buffer_from_editor
 
+    get_encoding
+
     find_local_mirror find_svm_source resolve_svm_source traverse_history
     find_prev_copy
 
@@ -240,6 +242,25 @@ sub get_buffer_from_editor {
 	@$targets_ref = map abs2rel($_->[1], $anchor, undef, '/'), @new_targets;
     }
     return ($ret[0], \@new_targets);
+}
+
+=head3 get_encoding
+
+Get the current encoding from locale
+
+=cut
+
+sub get_encoding {
+    local $@;
+    # substr( __FILE__, 0 );
+    return eval {
+	require Locale::Maketext::Lexicon;
+        local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
+        Locale::Maketext::Lexicon::encoding();
+    } || eval {
+        require 'open.pm';
+        return open::_get_locale_encoding();
+    } || 'utf8';
 }
 
 =head2 Mirror Handling
