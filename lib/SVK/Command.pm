@@ -76,6 +76,11 @@ sub invoke {
     local @ARGV = @args;
     my $pool = SVN::Pool->new_default;
     $ofh = select $output if $output;
+    my $error;
+    local $SVN::Error::handler = sub {
+	$error = $_[0];
+	SVN::Error::croak_on_error (@_);
+    };
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
@@ -94,8 +99,10 @@ sub invoke {
 	}
     };
     $ofh = select STDERR unless $output;
-    print $ret if $ret;
-    print $@ if $@;
+    unless ($error and $cmd->handle_error ($error)) {
+	print $ret if $ret;
+	print $@ if $@;
+    }
     select $ofh if $ofh
 }
 
@@ -242,6 +249,34 @@ sub arg_path {
 
 my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor/;
 sub _schedule_empty { %empty };
+
+# error handling
+
+# XXX: here we should really just use $SVN::Error::handler.  But the
+# problem is that it's called within the contxt of editor calls, so
+# returning causes continuation; while dying would cause
+# SVN::Delta::Editor to confess.
+
+sub handle_error {
+    my ($self, $error) = @_;
+    my $err_code = $error->apr_err;
+    return unless $self->{$err_code};
+    $_->($error) for @{$self->{$err_code}};
+    return 1;
+}
+
+sub add_handler {
+    my ($self, $err, $handler) = @_;
+    push @{$self->{$err}}, $handler;
+}
+
+sub msg_handler {
+    my ($self, $err, $msg) = @_;
+    $self->add_handler
+	($err, sub {
+	     print $_[0]->expanded_message."\n$msg\n";
+	 });
+}
 
 1;
 

@@ -1101,16 +1101,14 @@ sub checkout_delta {
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
 	: sub { ("file://$repospath$_[0]", $_[1]) };
     my $rev = $arg{cb_rev}->('');
-    my $baton = $arg{editor}->open_root ($rev);
     local $SIG{INT} = sub {
 	$arg{editor}->abort_edit;
 	die loc("Interrupted.\n");
     };
 
+    my $baton = $arg{editor}->open_root ($rev);
     $self->_delta_dir (%arg, baton => $baton, root => 1, base => 1);
-
     $arg{editor}->close_directory ($baton);
-
     $arg{editor}->close_edit ();
 }
 

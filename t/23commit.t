@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
+use Test::More tests => 18;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -35,9 +35,23 @@ $svk->update ('-r', 1);
 overwrite_file ("A/barnew", "fnord");
 $svk->add ('A/barnew');
 $svk->commit ('-m', 'nonconflict new file', 'A/barnew');
-
+overwrite_file ("A/deep/baz", "foobar\nmodified");
+is_output ($svk, 'commit', ['-m', 'conflicted new file'],
+	   [qr'Transaction is out of date: .*',
+	    "Please update checkout first."],
+	  'commit - need update');
+$svk->revert ('A/deep/baz');
+overwrite_file ("A/deep/new", "this is bad");
+$svk->add ('A/deep/new');
+is_output ($svk, 'commit', ['-m', 'conflicted new file'],
+	   [qr'Item already exists.*',
+	    "Please update checkout first."],
+	  'commit - need update');
+$svk->revert ('A/deep/new');
+unlink ('A/deep/new');
 is_output ($svk, 'status', [], [__('M   A/bar'),
 				__('?   A/deep/X')]);
+
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 	   [$corpath, __"$corpath/A/barnew"]);
 
@@ -83,4 +97,5 @@ mkdir ('A/newdir');
 overwrite_file ("A/newdir/bar", "fnord");
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/newdir/bar'],
 	   ['Committed revision 10.']);
-is_output ($svk, 'status', [], []);
+is_output ($svk, 'status', [], [], 'import finds anchor');
+$svk->update ('-r9');

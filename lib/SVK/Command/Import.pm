@@ -93,7 +93,6 @@ sub run {
 
     $self->{import} = 1;
     $self->run_delta ($target->new (copath => $copath), $root, $editor, %cb);
-    return;
 }
 
 

@@ -92,7 +92,6 @@ sub get_editor {
     }
 
     my ($base_rev, $m, $mpath);
-
     if (!$self->{direct} and HAS_SVN_MIRROR and
 	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
 	print loc("Merging back to SVN::Mirror source %1.\n", $m->{source});
@@ -141,6 +140,15 @@ sub get_editor {
 
     %cb = SVK::Editor::Merge::cb_for_root
 	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
+
+    unless ($self->{check_only}) {
+	for ($SVN::Error::FS_TXN_OUT_OF_DATE, $SVN::Error::FS_ALREADY_EXISTS) {
+	    # XXX: there's no copath info here
+	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
+				       : "Please update checkout first.");
+	    $self->add_handler ($_, sub { $editor->abort_edit });
+	}
+    }
 
     return ($editor, %cb, mirror => $m, callback => \$callback);
 }
@@ -280,7 +288,6 @@ sub run {
 	if $is_mirrored && !$self->{direct} && !$cb{mirror};
 
     $self->run_delta ($target, $xdroot, $editor, %cb);
-    return;
 }
 
 sub run_delta {
@@ -289,6 +296,7 @@ sub run_delta {
     my %revcache;
     $self->{xd}->checkout_delta
 	( %$target,
+	  error => $self->{error},
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  $self->{import} ?

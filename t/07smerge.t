@@ -7,7 +7,7 @@ eval { require SVN::Mirror; 1 } or do {
     plan skip_all => "SVN::Mirror not installed";
     exit;
 };
-plan tests => 21;
+plan tests => 23;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -233,3 +233,11 @@ is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '/client2/m-
 	    'Retrieving log information from 12 to 12',
 	    'Committed revision 13 from revision 12.']);
 
+overwrite_file ("$copath/Q/qu", "on local\nfirst line in qu\n2nd line in qu\n");
+is_output ($svk, 'commit', ['-m', 'more on local', $copath],
+	   ['Committed revision 12.']);
+is_output ($svk, 'smerge', ['-m', 'merge back', '//l', '//m'],
+	   ['Auto-merging (7, 12) /l to /m (base /l:7).',
+	    "Merging back to SVN::Mirror source $uri/A.",
+	    qr'Transaction is out of date.*',
+	   'Please sync mirrored path /m first.']);
