@@ -79,8 +79,8 @@ sub output_prop_diff {
 	print $fh "\n", loc("Property changes on: %1\n", $path), ('_' x 67), "\n";
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    print $fh loc("Name: %1\n", $_);
-	    print $fh  Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
-		\$self->{info}{$path}{prop}{$_});
+	    print $fh Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
+		\$self->{info}{$path}{prop}{$_}, { STYLE => 'SVK::DiffEditor::NoHeader' });
 	}
     }
 }
@@ -117,6 +117,14 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self, @arg) = @_;
+}
+
+package SVK::DiffEditor::NoHeader;
+
+our @ISA = qw(Text::Diff::Unified);
+
+sub hunk_header {
+    return '';
 }
 
 =head1 AUTHORS
