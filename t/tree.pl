@@ -23,6 +23,8 @@ sub build_test {
 
 sub cleanup_test {
     my $info = shift;
+    use YAML;
+    warn Dump($info) if $ENV{TEST_VERBOSE};
     for (values %{$info->{depotmap}}) {
 	die if $_ eq '/';
 	print `svn log -v file://$_`;

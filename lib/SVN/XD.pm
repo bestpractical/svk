@@ -38,6 +38,8 @@ sub create_xd_root {
 	    next;
 	}
 	s|^$arg{copath}/||;
+	$root->make_dir ($arg{path})
+	    if $root->check_path ($arg{path}) == $SVN::Node::none;
 	SVN::Fs::revision_link ($fs->revision_root ($rev),
 				$root, "$arg{path}/$_");
     }
@@ -53,19 +55,21 @@ sub do_update {
     print "syncing $arg{depotpath}($arg{path}) to $arg{copath} to $arg{rev}\n";
     my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
     my (undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
-    if ($anchor eq '/') {
+    if ($anchor eq '/' && $target eq '') {
 	$anchor = '';
 	$target = '/';
     }
     chop $anchor if length($anchor) > 1;
 
-#    warn "$anchor $target ($arg{path} -> $arg{copath})";
-#    $target ||= '/';
     ($txn, $xdroot) = create_xd_root ($info, %arg);
 
     SVN::Repos::dir_delta ($xdroot, $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
 			   SVN::XD::UpdateEditor->new (_debug => 0,
+						       fs => $fs,
+						       anchor => $anchor,
+						       xdroot => $xdroot,
+						       checkout => $info->{checkout},
 						       target => $target eq '/' ? '' : $target,
 						       copath => $arg{copath},
 						      ),
@@ -73,9 +77,6 @@ sub do_update {
 			   1, 1, 0, 1);
 
     SVN::Fs::close_txn ($txn) if $txn;
-
-    $info->{checkout}->store_recursively ($arg{copath},
-					  {revision => $arg{rev}});
 }
 
 sub do_add {
@@ -227,7 +228,7 @@ sub checkout_crawler {
 		 for (@items) {
 		     my $rmpath = $_;
 		     s|^$arg{copath}/|$arg{path}/|;
-		     &{$arg{cb_delete}} ($_, $rmpath)
+		     &{$arg{cb_delete}} ($_, $rmpath, $xdroot)
 			 if $arg{cb_delete};
 		 }
 	     }
@@ -235,24 +236,24 @@ sub checkout_crawler {
 		 # we need an option to decide how to use the add/prop callback
 		 # 1. akin to the editor interface, add and prop are separate
 		 if ($schedule{$File::Find::name} eq 'add') {
-		     &{$arg{cb_add}} ($cpath, $File::Find::name)
+		     &{$arg{cb_add}} ($cpath, $File::Find::name, $xdroot)
 			 if $arg{cb_add};
 		     return;
 		 }
 		 if ($schedule{$File::Find::name} eq 'prop') {
-		     &{$arg{cb_prop}} ($cpath, $File::Find::name)
+		     &{$arg{cb_prop}} ($cpath, $File::Find::name, $xdroot)
 			 if $arg{cb_prop};
 		     return;
 		 }
 	     }
 	     my $kind = $xdroot->check_path ($cpath);
 	     if ($kind == $SVN::Node::none) {
-		 &{$arg{cb_unknown}} ($cpath, $File::Find::name)
+		 &{$arg{cb_unknown}} ($cpath, $File::Find::name, $xdroot)
 		     if $arg{cb_unknown};
 		 return;
 	     }
 	     return if -d $File::Find::name;
-	     &{$arg{cb_changed}} ($cpath, $File::Find::name)
+	     &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot)
 		 if $arg{cb_changed} && md5file($File::Find::name) ne
 		     $xdroot->file_md5_checksum ($cpath);
 	  }, $arg{copath});
@@ -289,7 +290,7 @@ sub do_commit {
     print "targets:\n";
     print "$_->[1]\n" for @{$arg{targets}};
 
-    my $fs = $arg{repos}->fs;
+    my ($txn, $xdroot) = create_xd_root ($info, %arg);
 
     my $edit = SVN::Simple::Edit->new
 	(_editor => [SVN::Repos::get_commit_editor($arg{repos},
@@ -298,10 +299,12 @@ sub do_commit {
 						   $arg{author}, $arg{message},
 						   $committed)],
 	 base_path => $arg{path},
+	 root => $xdroot,
+#	 root => $arg{repos}->fs->revision_root ($arg{baserev}),
 	 missing_handler =>
-	 SVN::Simple::Edit::check_missing ($fs->revision_root ($arg{baserev})));
+	 SVN::Simple::Edit::check_missing ());
 
-    $edit->open_root($arg{baserev});
+    $edit->open_root();
     for (@{$arg{targets}}) {
 	my ($action, $tpath) = @$_;
 	my $cpath = $tpath;
@@ -322,7 +325,7 @@ sub do_commit {
 	$edit->modify_file ($tpath, $fh, $md5);
     }
     $edit->close_edit();
-
+    SVN::Fs::close_txn ($txn) if $txn;
 }
 
 sub md5file {
@@ -347,6 +350,11 @@ sub md5 {
     return $ctx->hexdigest;
 }
 
+sub set_target_revision {
+    my ($self, $revision) = @_;
+    $self->{revision} = $revision;
+}
+
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
@@ -355,6 +363,7 @@ sub open_root {
 
 sub add_file {
     my ($self, $path) = @_;
+    # tag for merge of file adding
     $path =~ s|^$self->{target}/|$self->{copath}/|;
     $self->{info}{$path}{status} = (-e $path ? undef : ['A']);
     return $path;
@@ -362,6 +371,7 @@ sub add_file {
 
 sub open_file {
     my ($self, $path) = @_;
+    # modified but rm locally - tag for conflict?
     $path =~ s|^$self->{target}/|$self->{copath}/|;
     $self->{info}{$path}{status} = (-e $path ? [] : undef);
     return $path;
@@ -378,26 +388,35 @@ sub apply_textdelta {
 	if ($checksum) {
 	    my $md5 = md5($base);
 	    if ($checksum ne $md5) {
-		warn "base checksum mismatch for $path, should do merge";
-		warn "$checksum vs $md5($path)\n";
-		close $base;
-		undef $self->{info}{$path}{status};
-		return undef;
-		# we need a fs ref to get the base for merging
-		# also need to store the status from within the editor
-		# better than in the upper level
-#		$self->{info}{$path}{status}[0] = 'G';
+#		close $base;
+#		undef $self->{info}{$path}{status};
+#		return undef;
+		# prepare for merge to be done in close_file
+		my $localname = "$dir.svk.$file.localmod";
+		rename ($path, $localname);
+		seek $base, 0, 0;
+		$self->{info}{$path}{merge} = [$base, $localname];
+		undef $base;
+		local $/;
+		# XXX: try to use some slurp function
+		my $rpath = $path;
+		$rpath =~ s|^$self->{copath}/|$self->{target}/|;
+		$rpath = "$self->{anchor}/$rpath" if $self->{anchor};
+		my $buf = $self->{xdroot}->file_contents ($rpath);
+		open $base, '+>', $path or die $!;
+		print $base (<$buf>);
 	    }
 	    seek $base, 0, 0;
 	}
-	$self->{info}{$path}{status}[0] = 'U';
+	$self->{info}{$path}{status}[0] = 'U'
+	    unless exists $self->{info}{$path}{merge};
 
 	my $basename = "$dir.svk.$file.base";
 	rename ($path, $basename);
 	$self->{info}{$path}{base} = [$base, $basename];
 
     }
-    open $fh, '>', $path or warn "can't open $path";
+    open $fh, '+>', $path or warn "can't open $path";
     $self->{info}{$path}{fh} = $fh;
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty(),
 				 $fh, undef, undef)];
@@ -408,9 +427,49 @@ sub close_file {
     my $info = $self->{info}{$path};
     no warnings 'uninitialized';
     # let close_directory reports about its children
+    if ($info->{merge}) {
+	my ($orig, $new, $local) = ($info->{base}[0], $info->{fh}, $info->{merge}[0]);
+	open my ($fh), '+<', $path;
+	seek $orig, 0, 0;
+	seek $local, 0, 0;
+	{
+	    local $/;
+	    $orig = <$orig>;
+	    $new = <$fh>;
+	    $local = <$local>;
+	}
+	# XXX: use traverse so we just output the result instead of
+	# buffering it
+	$info->{status}[0] = 'G';
+	my $merged = Algorithm::Merge::merge
+	    ([split "\n", $orig],
+	     [split "\n", $new],
+	     [split "\n", $local],
+	     {CONFLICT => sub {
+		  my ($left, $right) = @_;
+		  $info->{status}[0] = 'C';
+		  q{<!-- ------ START CONFLICT ------ -->},
+		  (@$left),
+		  q{<!-- ---------------------------- -->},
+		  (@$right),
+		  q{<!-- ------  END  CONFLICT ------ -->},
+	      }},
+	    );
+	seek $fh, 0, 0;
+	truncate $fh, 0;
+	print $fh join("\n", @$merged)."\n";
+	close $info->{merge}[0];
+	unlink $info->{merge}[1];
+	undef $info->{merge};
+	if ($info->{status}[0] eq 'C') {
+	    $self->{checkout}->store ($path, {conflict => 1});
+	}
+    }
     if ($info->{status}) {
-	print sprintf ("%1s%1s \%s\n",$info->{status}[0],
+	print sprintf ("%1s%1s \%s\n", $info->{status}[0],
 		       $info->{status}[1], $path);
+	$self->{checkout}->store ($path,
+				  {revision => $self->{revision}})
     }
     else {
 	print "   $path - skipped\n";
@@ -440,9 +499,13 @@ sub open_directory {
 
 sub close_directory {
     my ($self, $path) = @_;
+
+    $self->{checkout}->store_recursively ($path,
+					  {revision => $self->{revision}})
+	if $path;
+
     print ".  $path\n";
 }
-
 
 sub delete_entry {
     my ($self, $path, $revision) = @_;

@@ -2,6 +2,7 @@
 use strict;
 require SVN::Core;
 require SVN::Repos;
+require SVN::Fs;
 use SVN::XD;
 use YAML qw(LoadFile DumpFile);
 use Getopt::Long;
@@ -51,7 +52,7 @@ sub find_repos {
 
 sub find_repos_from_co {
     my ($copath, $open) = @_;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
 
     my ($cinfo, $coroot) = $info->{checkout}->get ($copath);
     die "$copath not a checkout path" unless %$cinfo;
@@ -81,7 +82,7 @@ sub update {
 
     my ($copath) = @ARGV;
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
 
     # XXX: support via reporter facility in the future
 
@@ -118,7 +119,7 @@ sub checkout {
     die "checkout path $copath already exists" if -e $copath;
 
     mkdir ($copath);
-    $info->{checkout}->store($copath, {depotpath => $depotpath, revision =>0});
+    $info->{checkout}->store_recursively ($copath, {depotpath => $depotpath, revision =>0});
 
     update ($copath, $rev)
 }
@@ -133,26 +134,31 @@ use Text::Diff ();
 
 sub diff {
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath || '.');
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    my $root = $repos->fs->revision_root ($cinfo->{revision});
     SVN::XD::checkout_crawler ($info,
 			       repos => $repos,
 			       copath => $copath,
 			       path => $path,
 			       rev => $cinfo->{revision},
-			       cb_unknown =>
-			       sub {
-				   print "?  $_[1]\n";
-			       },
+#			       cb_unknown =>
+#			       sub {
+#				   print "?  $_[1]\n";
+#			       },
 			       cb_add =>
 			       sub {
 				   print Text::Diff::diff (\'', $_[1]);
 			       },
 			       cb_changed =>
 			       sub {
-				   print Text::Diff::diff ($root->file_contents($_[0]), $_[1])
+				   my $content = $_[2]->file_contents($_[0]);
+				   print "Index: $_[0]\n";
+				   print '=' x 66;
+				   print "\n";
+				   local $/;
+				   $content = <$content>;
+				   print Text::Diff::diff (\$content, $_[1])
 			       },
 			      );
 
@@ -166,7 +172,7 @@ sub diff {
 
 sub status {
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::checkout_crawler ($info,
@@ -259,7 +265,7 @@ sub annotate {
 
 sub add {
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
 
     SVN::XD::do_add ($info,
@@ -274,7 +280,7 @@ sub add {
 
 sub delete {
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::do_delete ($info,
@@ -290,7 +296,7 @@ sub delete {
 
 sub propset {
     my ($pname, $pvalue, $copath) = @_;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::do_propset ($info,
@@ -308,7 +314,7 @@ sub propset {
 
 sub revert {
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::do_revert ($info,
@@ -318,6 +324,50 @@ sub revert {
 		       );
 }
 
+=head2 log
+
+    svk log
+
+=cut
+
+sub log {
+    local @ARGV = @_;
+    my ($limit, $revspec, $cross, $verbose) = (undef, undef, 0, 0);
+    die unless GetOptions ("l|limit=i"		=> \$limit,
+			   "r|revision=s"	=> \$revspec,
+			   "x|cross"		=> \$cross,
+			   "v|verbose"		=> \$verbose);
+
+    my ($copath) = @ARGV;
+
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    my $fs = $repos->fs;
+    my ($fromrev, $torev) = ($fs->youngest_rev);
+    if ($limit) {
+	my $hist = $fs->revision_root ($fromrev)->node_history ($path);
+	while (($hist = $hist->prev($cross)) && $limit--) {
+	    $torev = ($hist->location)[1];
+	}
+    }
+
+    print ('-' x 70);
+    print "\n";
+    $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
+		     sub { my ($paths, $rev, $author, $date, $message) = @_;
+			   print "rev $rev:  $author | $date\n";
+			   if ($paths) {
+			       print "Changed paths:\n";
+			       for (keys %$paths) {
+				   print '  '.$paths->{$_}->action." $_\n";
+			       }
+			   }
+			   print "\n$message\n";
+			   print ('-' x 70);
+			   print "\n";
+		       });
+
+}
+
 =head2 commit / ci
 
     svk commit
@@ -325,19 +375,24 @@ sub revert {
 =cut
 
 my $target_prompt = '=== below are targets to be committed ===';
+use File::Temp qw/:mktemp/;
 
 sub commit {
     local @ARGV = @_;
     my $message;
     die unless GetOptions ("m|message=s"  => \$message);
-    die "no message" unless $message;
+    my ($fh, $file);
 
     my ($copath) = @ARGV;
-    $copath = File::Spec->rel2abs ($copath);
+    $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
     my $targets;
     # harvest
-    print "$target_prompt\n";
+    unless ($message) {
+	($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
+    }
+
+    print $fh "\n$target_prompt\n" if $fh;
     SVN::XD::checkout_crawler ($info,
 			       repos => $repos,
 			       copath => $copath,
@@ -349,19 +404,45 @@ sub commit {
 			       cb_add =>
 			       sub {
 				   push @$targets, ['A', $_[1]];
-				   print "A  $_[1]\n";
+				   print $fh "A  $_[1]\n" if $fh;
 			       },
 			       cb_delete =>
 			       sub {
 				   push @$targets, ['D', $_[1]];
-				   print "D  $_[1]\n";
+				   print $fh "D  $_[1]\n" if $fh;
 			       },
 			       cb_changed =>
 			       sub {
 				   push @$targets, ['M', $_[1]];
-				   print "M  $_[1]\n";
+				   print $fh "M  $_[1]\n" if $fh;
 			       },
 			      );
+
+    if ($fh) {
+	close $fh;
+	while (1) {
+	    my $mtime = (stat($file))[7];
+	    my $ans;
+	    print "waiting for editor...\n";
+	    system ("\$EDITOR $file");
+	    last if (stat($file))[7] > $mtime;
+	    do {
+		print "log message not modified: a)bort, e)dit, c)ommit?\n";
+		$ans = <STDIN>;
+		chomp $ans;
+		die "Aborted" if $ans eq 'a';
+	    }
+	    while ($ans !~ m/^[aec]/);
+	}
+	open $fh, '<', $file;
+	local $/;
+	$message = <$fh>;
+	my $target;
+	($message, $target) = split ("\n$target_prompt\n", $message, 2);
+	# XXX: parse and check target sanity
+	close $fh;
+	unlink $file;
+    }
 
     # if $copath itself is a file or is in the targets,
     # should get the anchor instead, tweak copath for the s// in XD.pm
@@ -395,6 +476,11 @@ my $cmd = shift;
 no strict 'refs';
 
 #$xd = SVN::XD->new (%$info);
+
+$SIG{INT} = sub {
+    update_info();
+    die "interrupted\n";
+};
 
 if (main->can($cmd)) {
     init();
