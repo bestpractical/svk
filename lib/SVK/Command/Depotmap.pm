@@ -4,7 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
-use SVK::Util qw(get_buffer_from_editor);
+use SVK::Util qw(get_buffer_from_editor get_prompt);
 use YAML;
 use File::Path;
 
@@ -22,14 +22,12 @@ sub run {
     print "New depot map saved.\n";
     $self->{xd}{depotmap} = $new;
     for my $path (values %{$self->{xd}{depotmap}}) {
-	my $ans;
 	next if -d $path;
-	print "Repository $path does not exist, create? (y/n) ";
-	while (<STDIN>) {
-	    $ans = $1 if $_ =~ m/^([yn])/i;
-	    last if $ans;
-	}
-	next if $ans eq 'n';
+	my $ans = get_prompt(
+	    "Repository $path does not exist, create? (y/n)",
+	    qr/^[yn]/i,
+	);
+	next if $ans =~ /^n/i;
 	File::Path::mkpath([$path], 0, 0711);
 	SVN::Repos::create($path, undef, undef, undef,
 			   {'bdb-txn-nosync' => '1',
