@@ -188,11 +188,13 @@ sub getopt {
     my ($self, $argv, %opt) = @_;
     local *ARGV = $argv;
     my $recursive = $self->opt_recursive;
-    $self->{recursive}++ if $recursive;
-    $opt{$recursive ? 'N||non-recursive' : 'R|recursive'} = \$self->{recursive}
+    my $toggle = 0;
+    $opt{$recursive ? 'N||non-recursive' : 'R|recursive'} = \$toggle
 	if defined $recursive;
     die loc ("Unknown options.\n")
 	unless GetOptions (%opt, $self->_opt_map ($self->options));
+    $self->{recursive} = ($recursive + $toggle) % 2
+	if defined $recursive;
 }
 
 =head2 Instance Methods
