@@ -37,7 +37,7 @@ foreach my $depot ('','bob') {
     is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap is not a versioned directory']);
 
     my $re_date = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{2} \\d{2}:\\d{2}";
-    my $re_user = "(?:\\w*\\s+)";
+    my $re_user = "(?:\\S*\\s+)";
     is_output ($svk, 'ls', ['-v'],
                [qr"      2 $re_user          $re_date A/"]);
     is_output ($svk, 'ls', ['-v', '-r1'],
