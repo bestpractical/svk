@@ -187,8 +187,7 @@ is_output ($svk, 'diff', ['-sr1:2'],
 	    'D   A/nor']);
 
 is_output ($svk, 'diff', ['-sr1'],
-	   [map __($_),
-	    'M   A/bar',
+	   ['M   A/bar',
 	    'M   A/foo',
 	    'A   A/baz',
 	    'A   A/binary',
