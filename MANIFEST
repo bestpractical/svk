@@ -157,6 +157,7 @@ t/33prop.t
 t/34revprop.t
 t/35admin.t
 t/36push-pull.t
+t/37revspec.t
 t/50dav.t
 t/70symlink.t
 t/71autovivify.t
