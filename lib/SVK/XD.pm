@@ -541,7 +541,7 @@ sub get_editor {
     my ($copath, $path) = @arg{qw/copath path/};
     my $encoding = $self->{checkout}->get ($copath)->{encoding};
     $path = '' if $path eq '/';
-    $arg{get_copath} = sub { Encode::from_to ($_[0], 'utf8', $encoding);
+    $arg{get_copath} = sub { Encode::from_to ($_[0], 'utf8', $encoding) if $encoding;
 			     $_[0] = SVK::Target->copath ($copath,  $_[0]) };
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);

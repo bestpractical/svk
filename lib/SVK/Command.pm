@@ -630,7 +630,7 @@ sub parse_revlist {
     }
 }
 
-my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor encoding/;
+my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor/;
 sub _schedule_empty { %empty };
 
 =head3 lock_target ($target)

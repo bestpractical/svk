@@ -171,7 +171,7 @@ sub parse_arg {
 
 sub lock { ++$_[0]->{hold_giant} }
 
-sub _remove_entry { {depotpath => undef, revision => undef} }
+sub _remove_entry { (depotpath => undef, revision => undef, encoding => undef) }
 
 sub run {
     my ($self, $path) = @_;
@@ -181,7 +181,7 @@ sub run {
 
     my $checkout = $self->{xd}{checkout};
     foreach my $copath (sort @copath) {
-        $checkout->store ($copath, _remove_entry);
+        $checkout->store_recursively ($copath, {_remove_entry, $self->_schedule_empty});
         print loc("Checkout path '%1' detached.\n", $copath);
     }
 

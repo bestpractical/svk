@@ -7,7 +7,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 
-plan tests => 8;
+plan tests => 9;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -49,6 +49,7 @@ is_output ($svk, 'mkdir', [-m => $msg, '--encoding', 'big5', "//A/$msgutf8-dir"]
 is_output ($svk, 'mkdir', [-m => $msg, '--encoding', 'big5', "//A/$msg-dir"],
 	   ['Committed revision 5.']);
 $svk->up ($copath);
+ok (-e "$copath/$msgutf8-dir");
 
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => $copath],
