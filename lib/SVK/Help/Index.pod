@@ -1,0 +1,12 @@
+=head1 NAME
+
+SVK::Help::Index - List of SVK's help topics
+
+=head1 DESCRIPTION
+
+    svk help commands      list all commands
+    svk help command-name  help on a specific command
+
+The full user manual is available at L<http://svk.elixus.org/>.
+
+=cut

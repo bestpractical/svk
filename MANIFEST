@@ -62,6 +62,8 @@ lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/XD.pm
+lib/SVK/Help/Index.pod
+lib/SVK/Help/zh_tw/Index.pod
 lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
 lib/SVK/I18N/zh_cn.po
@@ -98,6 +100,8 @@ t/02basic-symlink.t
 t/02basic.t
 t/03import.t
 t/04merge.t
+t/05svm-empty.t
+t/05svm-move.t
 t/05svm.t
 t/06keyword.t
 t/07smerge-anchor.t

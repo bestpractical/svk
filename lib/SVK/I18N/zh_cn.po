@@ -1850,3 +1850,6 @@ msgstr "verify 更动 档案库名称"
 #: lib/SVK/Command.pod:259
 msgid "y: Keep only changes to your file."
 msgstr "y: 仅保留已方更动，舍弃对方的更动。"
+
+msgid "SVK::Help"
+msgstr "SVK::Help::zh_cn"
