@@ -4,9 +4,12 @@ use SVN::Delta;
 our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
+use SVK::I18N;
+use SVK::Util qw( slurp_fh tmpfile mimetype_is_text catfile );
+
 =head1 NAME
 
-SVK::Editor::Diff - An editor outputs textual diff
+SVK::Editor::Diff - An editor for producing textual diffs
 
 =head1 SYNOPSIS
 
@@ -19,26 +22,6 @@ SVK::Editor::Diff - An editor outputs textual diff
       # or rlabel => 'revision <left>',
       oldtarget => $target, oldroot => $root,
     );
-
-=cut
-
-use SVK::I18N;
-use SVK::Util qw( slurp_fh tmpfile mimetype_is_text catfile );
-
-=head1 NAME
-
-SVK::Editor::Diff - An editor that produces diffs
-
-=head1 SYNOPSIS
-
- my $editor = SVK::Editor::Diff->new (
-    cb_basecontent => sub { my ($path) = @_; ... },
-    cb_baseprop => sub { my ($path, $pname) = @_; ... },
-    llabel => '...',
-    rlabel => '...',
-    external => $ENV{SVKDIFF},
-    output => $output,
- );
  $xd->depot_delta ( editor => $editor, ... );
 
 =cut
