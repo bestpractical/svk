@@ -28,7 +28,7 @@ sub parse_arg {
         # (otherwise it hurts when user types //deep/directory/name)
         $self->{parent} = 1;
 
-        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
+        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): ")) || '//A';
         $path =~ s{^//+}{};
         $path =~ s{//+}{/};
         $path = "//$path" unless $path =~ m!^/!;

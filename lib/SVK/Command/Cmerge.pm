@@ -116,6 +116,7 @@ SVK::Command::Cmerge - Merge specific changes
  -a [--auto]            : merge from the previous merge point
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
 
 =head1 AUTHORS

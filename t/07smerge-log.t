@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 7;
+use Test::More tests => 8;
 BEGIN { require 't/tree.pl' };
 our $output;
 
@@ -70,6 +70,9 @@ append_file (copath ('fix/fileb.txt'), "fileb fixes on branch\n");
 $svk->commit ('-m', 'modify fileb on fix', $copath);
 $svk->smerge ('-lm', 'Merge from fix to local', '--host', 'fix', '-f', '//fix');
 $svk->smerge ('-lm', 'Merge from local to trunk', '--host', 'svk', '-f', '//local');
+append_file (copath ('fix/fileb.txt'), "more fileb fixes on branch\n");
+$svk->commit ('-m', 'modify fileb on fix', $copath);
+$svk->smerge ('-lm', 'Merge from fix to local with verbatim log', '--verbatim', '--host', 'fix', '-f', '//fix');
 
 is_output ($svk, 'log', ['-r12', '//'],
 	   ['-' x 70,
@@ -94,5 +97,11 @@ is_output ($svk, 'log', ['-r13', '//'],
 	    ' ',
 	    '',
 	    '-' x 70]);
+is_output ($svk, 'log', ['-r14', '//'],
+	   ['-' x 70,
+	    qr'r14: .*', '',
+	    'modify fileb on fix',
+	    '-' x 70
+            ]);
 
 # XXX: may lose something if we do "local -> fix merge" first

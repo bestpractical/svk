@@ -18,6 +18,7 @@ sub options {
      'track-rename'	=> 'track_rename',
      'host=s'   	=> 'host',
      'I|incremental'	=> 'incremental',
+     'verbatim'		=> 'verbatim',
      'no-ticket'	=> 'no_ticket',
      'r|revision=s'	=> 'revspec',
      'c|change=s',	=> 'chgspec',
@@ -211,6 +212,7 @@ SVK::Command::Merge - Apply differences between two sources
  -f [--from]            : merge from the specified path
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
 
