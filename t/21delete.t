@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 13;
 use strict;
 use File::Path;
 BEGIN { require 't/tree.pl' };
@@ -19,6 +19,8 @@ overwrite_file ("A/bar", "foobar");
 overwrite_file ("A/deep/baz", "foobar");
 
 $svk->add ('A');
+is_output ($svk, 'rm', ['A/foo'],
+	   [__"A/foo is scheduled, use 'svk revert'."]);
 $svk->commit ('-m', 'init');
 
 is_output ($svk, 'delete', ['A/foo'],
