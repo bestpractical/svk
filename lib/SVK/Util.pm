@@ -138,8 +138,9 @@ sub get_prompt { {
             Term::ReadKey::ReadMode('restore');
             *STDIN = *SAVED;
             Term::ReadKey::ReadMode('restore');
-            print loc("Interrupted.\n"), $formfeed;
-            exit 1;
+            my $msg = loc("Interrupted.\n");
+            $msg =~ s{\n\z}{$formfeed\n};
+            die $msg;
         }
         elsif ($key eq "\cH") {
             next unless length $answer;
