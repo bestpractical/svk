@@ -1342,16 +1342,18 @@ sub get_keyword_layer {
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
 		       my $fs = $root->fs;
-			$fs->revision_prop ($rev, 'svn:author');
+		       my $author = $fs->revision_prop ($rev, 'svn:author');
+			$author =~ s/[\r\n\$]/ /g;
 		 },
 		 Id =>
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
 		       my $fs = $root->fs;
-		       join( ' ', $path, $rev,
+		       my $id = join( ' ', $path, $rev,
 			     $fs->revision_prop ($rev, 'svn:date'),
 			     $fs->revision_prop ($rev, 'svn:author'), ''
 			   );
+			$id =~ s/[\r\n\$]/ /g;
 		   },
 		 URL =>
 		 sub { my ($root, $path) = @_;
@@ -1393,9 +1395,9 @@ sub get_keyword_layer {
 
     return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
+         sub { $_[1] =~ s/\$($keyword)\b.*?\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
 	 untranslate =>
-	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g; });
+	 sub { $_[1] =~ s/\$($keyword)\b.*?\$/\$$1\$/g; });
 }
 
 sub _fh_symlink {
