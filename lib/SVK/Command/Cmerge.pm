@@ -8,8 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Combine;
 
 sub options {
-    ($_[0]->SUPER::options,
-     'c|change=s',	=> 'chgspec');
+    ($_[0]->SUPER::options);
 }
 
 sub parse_arg {
@@ -25,18 +24,10 @@ sub lock {
 sub run {
     my ($self, $src, $dst) = @_;
     # XXX: support checkonly
-    die loc("revision required") unless $self->{revspec} || $self->{chgspec};
-    my ($fromrev, $torev);
-    if ($self->{revspec}) {
-	($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
-	    or die loc("revision must be N:M");
-    }
+    my @revlist = $self->parse_revlist;
 
-    die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
     my $repos = $src->{repos};
     my $fs = $repos->fs;
-    $src->{revision} ||= $fs->youngest_rev;
-    $dst->{revision} ||= $fs->youngest_rev;
     my $base = SVK::Merge->auto (%$self, repos => $repos, src => $src, dst => $dst,
 				 ticket => 1)->{base};
     # find a branch target
@@ -58,31 +49,17 @@ sub run {
 					    pool => SVN::Pool->new,
 					   );
 
-    my @chgs = split ',', $self->{chgspec};
-    for (@chgs) {
-	# back to normally auto merge if $fromrev is what we get from the base
-	my ($fromrev, $torev);
-	if (($fromrev, $torev) = m/^(\d+):(\d+)$/) {
-	    --$fromrev;
-	}
-	elsif (($torev) = m/^(\d+)$/) {
-	    $fromrev = $torev - 1;
-	}
-	else {
-	    die loc("chgspec not recognized");
-	}
-
+    for (@revlist) {
+	my ($fromrev, $torev) = @$_;
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
 		  @{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev);
 
 	SVK::Merge->new (%$self, repos => $repos,
 			 base => $src->new (revision => $fromrev),
 			 src => $src->new (revision => $torev), dst => $dst,
-			)->run ($ceditor,
-				cb_exist => sub { $ceditor->cb_exist (@_) },
-				cb_localmod => sub { $ceditor->cb_localmod (@_) },
-				cb_rev => sub { $fs->youngest_rev },
-			       );
+			)->run ($ceditor, $ceditor->callbacks,
+				# XXX: should be base_root's rev?
+				cb_rev => sub { $fs->youngest_rev });
     }
 
     $ceditor->replay (SVN::Delta::Editor->new
@@ -98,7 +75,8 @@ sub run {
     my $uuid = $fs->get_uuid;
 
     # give ticket to src
-    my $ticket = SVK::Merge->find_merge_sources ($src->new (revision => $newrev), 1, 1);
+    my $ticket = SVK::Merge->new (xd => $self->{xd})->
+	find_merge_sources ($src->new (revision => $newrev), 1, 1);
     $ticket->{"$uuid:$tmpbranch"} = $newrev;
 
     $self->do_propset_direct

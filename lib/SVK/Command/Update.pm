@@ -70,7 +70,7 @@ sub run {
 
         if ($self->{merge}) {
             require SVK::Command::Smerge;
-            my $smerge = SVK::Command::Smerge->new;
+            my $smerge = SVK::Command::Smerge->new ($self->{xd});
             %$smerge = (
                 ($self->{incremental} ? () : (message => '', log => 1)),
                 %$self, %$smerge, sync => 0,

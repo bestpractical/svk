@@ -1,6 +1,5 @@
 package SVK::Editor::Combine;
 use strict;
-use File::Temp;
 use SVN::Simple::Edit;
 
 our $VERSION = $SVK::VERSION;
@@ -12,18 +11,18 @@ SVK::Editor::Combine - An editor combining several editor calls to one
 
 =head1 SYNOPSIS
 
-$editor = SVK::Editor::Combine->new
+ $editor = SVK::Editor::Combine->new
     ( base_root => $fs->revision_root ($rev),
-      storage => $storage_editor,
     );
 
-# feed several editor calls to $editor
+ # feed several sets of editor calls to $editor
 
-$editor->replay ($other_editor);
+ # drive $other_editor with the combined editor calls
+ $editor->replay ($other_editor);
 
 =cut
 
-require SVK::Editor::Merge;
+use SVK::Util qw( tmpfile );
 
 sub replay {
     my ($self, $editor, $base_rev) = @_;
@@ -38,7 +37,7 @@ sub replay {
     $edit->open_root ($base_rev);
 
     for (sort keys %{$self->{files}}) {
-	my $fname = ${*{$self->{files}{$_}}};
+	my $fname = $self->{files}{$_}->filename;
 	my $fh;
 	$edit->add_file ($_)
 	    if $self->{added}{$_};
@@ -46,6 +45,13 @@ sub replay {
 	$edit->modify_file ($_, $fh, $self->{md5}{$_});
     }
     $edit->close_edit;
+}
+
+sub callbacks {
+    my $self = shift;
+    ( cb_exist => sub { $self->cb_exist (@_) },
+      cb_localmod => sub { $self->cb_localmod (@_) },
+    );
 }
 
 sub cb_exist {
@@ -59,7 +65,7 @@ sub cb_localmod {
     my ($self, $path, $checksum, $pool) = @_;
     if (exists $self->{files}{$path}) {
 	return if $self->{md5}{$path} eq $checksum;
-	my $fname = ${*{$self->{files}{$path}}};
+	my $fname = $self->{files}{$path}->filename;
 	open my ($fh), '<:raw', $fname or die $!;
 	return [$fh, $fname, $self->{md5}{$path}];
     }
@@ -91,36 +97,23 @@ sub apply_textdelta {
 	$base = $self->{files}{$path};
 	my $fname = ${*$base};
 	open $base, '<:raw', $fname or die $!;
-	${*$base} = $fname;
     }
     else {
 	$base = $self->{base_root}->file_contents ("$self->{tgt_anchor}/$path")
 	    unless $self->{added}{$path};
     }
 
-    my ($fh, $file) = mkstemps ('svk-combineXXXXX', '.tmp');
-    $self->{files}{$path} = $fh;
-
-    ${*$fh} = $file;
+    $self->{files}{$path} = tmpfile ('combine');
     $self->{base}{$path} = $base;
 
     $base ||= SVN::Core::stream_empty();
-    return [SVN::TxDelta::apply ($base, $fh, undef, undef)];
+    return [SVN::TxDelta::apply ($base, $self->{files}{$path}, undef, undef)];
 }
 
 sub close_file {
     my ($self, $path, $md5) = @_;
-    unlink ${*{$self->{base}{$path}}}
-	if $self->{base}{$path} && ${*{$self->{base}{$path}}};
     delete $self->{base}{$path};
     $self->{md5}{$path} = $md5;
-}
-
-sub DESTROY {
-    my ($self) = @_;
-    for (sort keys %{$self->{files}}) {
-	unlink ${*{$self->{files}{$_}}};
-    }
 }
 
 =head1 AUTHORS

@@ -162,9 +162,7 @@ sub run {
 
     if (my $copath = $self->{_checkout_path}) {
         require SVK::Command::Checkout;
-        my $checkout = SVK::Command::Checkout->new;
-        $checkout->{xd} = $self->{xd};
-
+        my $checkout = SVK::Command::Checkout->new ($self->{xd});
         my @arg = $checkout->parse_arg ($dst->{report}, $copath);
         $checkout->lock (@arg);
         $checkout->run (@arg);

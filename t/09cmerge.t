@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 1;
+use Test::More tests => 5;
 use strict;
 require 't/tree.pl';
 
@@ -96,6 +96,22 @@ $svk->commit ('-m', 'more features unreleated to c14', "$copath/feature");
 
 my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-c14:16', '//feature', '//work'],
+           ['Change spec 14:16 not recognized.']);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-c14,16', '-r15', '//feature', '//work'],
+	   ["Can't assign -r and -c at the same time."]);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '//feature', '//work'],
+	   ['Revision required.']);
+
+is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
+                            '-r16', '//feature', '//work'],
+	   ['Revision spec must be N:M.']);
 
 is_output ($svk, 'cmerge', ['-m', 'merge change 14,16 from feature to work',
                             '-c', '14,16', '//feature', '//work'],

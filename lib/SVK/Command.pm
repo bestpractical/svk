@@ -513,6 +513,44 @@ sub arg_path {
     return abs_path ($arg);
 }
 
+=head3 parse_revlist ()
+
+Parse -c or -r to a list of [from, to] pairs.
+
+=cut
+
+sub parse_revlist {
+    my $self = shift;
+    die loc("Revision required.\n") unless $self->{revspec} or $self->{chgspec};
+    die loc("Can't assign -r and -c at the same time.\n")
+	if $self->{revspec} and $self->{chgspec};
+    my ($fromrev, $torev);
+    if ($self->{chgspec}) {
+	my @revlist;
+	for (split (',', $self->{chgspec})) {
+	    if (($fromrev, $torev) = m/^(\d+)-(\d+)$/) {
+		--$fromrev;
+	    }
+	    elsif (($torev) = m/^(\d+)$/) {
+		$fromrev = $torev - 1;
+	    }
+	    else {
+		die loc("Change spec %1 not recognized.\n", $_);
+	    }
+	    push @revlist , [$fromrev, $torev];
+	}
+	return @revlist;
+    }
+
+    # revspec
+    if (($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/) {
+	return ([$fromrev, $torev]);
+    }
+    else {
+	die loc ("Revision spec must be N:M.\n");
+    }
+}
+
 my %empty = map { ($_ => undef) } qw/.schedule .copyfrom .copyfrom_rev .newprop scheduleanchor/;
 sub _schedule_empty { %empty };
 

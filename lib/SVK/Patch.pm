@@ -282,9 +282,8 @@ sub regen {
     }
     my $source = $self->{_source}->new (revision => undef);
     $source->normalize;
-    my $merge = SVK::Merge->auto (repos => $self->{_repos},
-				  src => $source,
-				  dst => $target);
+    my $merge = SVK::Merge->auto (repos => $self->{_repos}, xd => $self->{_xd},
+				  src => $source, dst => $target);
     my $conflict;
     my $patch = SVK::Editor::Patch->new;
     # XXX: handle empty

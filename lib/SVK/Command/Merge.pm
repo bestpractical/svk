@@ -20,6 +20,7 @@ sub options {
      'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
      'r|revision=s'	=> 'revspec',
+     'c|change=s',	=> 'chgspec',
      't|to'             => 'to',
      'f|from'           => 'from',
      's|sync'           => 'sync');
@@ -30,12 +31,10 @@ sub parse_arg {
     return if $#arg > 1;
 
     if (!$self->{to} && !$self->{from}) {
-
-        if (scalar (@arg) == 0) {
-            return;
-        }
-
-        return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
+        return if scalar (@arg) == 0;
+	my ($src, $dst) = ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
+	die loc("Can't merge across depots.\n") unless $src->same_repos ($dst);
+        return ($src, $dst);
     }
 
     if (scalar (@arg) == 2) {
@@ -82,15 +81,13 @@ sub get_commit_message {
 sub run {
     my ($self, $src, $dst) = @_;
     my $merge;
-    die loc("repos paths mismatch") unless $src->same_repos ($dst);
     my $repos = $src->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
 
     if ($self->{sync}) {
         require SVK::Command::Sync;
-        my $sync = SVK::Command::Sync->new;
-        %$sync = (%$self, %$sync);
+        my $sync = SVK::Command::Sync->new ($self->{xd});
 	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));
         if ($m->{target_path}) {
             $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
@@ -101,9 +98,6 @@ sub run {
     if ($dst->root ($self->{xd})->check_path ($dst->path) != $SVN::Node::dir) {
 	$src->anchorify; $dst->anchorify;
     }
-
-    die loc ("Can't merge to checkout path incrementally.\n")
-	if $dst->{copath} and $self->{incremental};
 
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
@@ -117,13 +111,12 @@ sub run {
     }
     else {
 	die loc("Incremental merge not supported\n") if $self->{incremental};
-	die loc("Revision required\n") unless $self->{revspec};
-	my ($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
-	    or die loc("Revision must be N:M\n");
-	$src->{revision} = $torev;
+	my @revlist = $self->parse_revlist;
+	die "multi-merge not yet" if $#revlist > 0;
+	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
-	    (%$self, repos => $repos, src => $src, dst => $dst,
-	     base => $src->new (revision => $baserev), target => '');
+	    (%$self, repos => $repos, src => $src->new (revision => $torev),
+	     dst => $dst, base => $src->new (revision => $baserev), target => '');
     }
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
@@ -146,9 +139,7 @@ sub run {
 	    $spool->clear;
 	}
 	for (@rev) {
-	    $src->{revision} = $_;
-	    $merge = SVK::Merge->auto (%$self, repos => $repos, ticket => 1,
-				       src => $src, dst => $dst);
+	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $_));
 	    print '===> '.$merge->info;
 	    $self->{message} = $merge->log (1);
 	    last if $merge->run ($self->get_editor ($dst));

@@ -71,6 +71,7 @@ sub _is_merge_from {
     my $fs = $self->{repos}->fs;
     my $u = $target->universal;
     my $resource = join (':', $u->{uuid}, $u->{path});
+    local $@;
     my ($merge, $pmerge) =
 	map {SVK::Merge::Info->new (eval { $fs->revision_root ($_)->node_prop
 					       ($path, 'svk:merge') })->{$resource}{rev} || 0}
@@ -149,11 +150,10 @@ sub find_merge_base {
 
 sub merge_info {
     my ($self, $target) = @_;
-    # XXX: support xdroot
-    $target->as_depotpath;
-    my $root = $target->root; # ($self->{xd});
-    my $info = SVK::Merge::Info->new ($root->node_prop ($target->path, 'svk:merge'));
-    return $info;
+    return SVK::Merge::Info->new
+	( $self->{xd}->get_props
+	  ($target->root ($self->{xd}), $target->path,
+	   $target->copath ($target->{copath_target}))->{'svk:merge'} );
 }
 
 sub find_merge_sources {

@@ -6,7 +6,7 @@ our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
 
-plan tests => 5;
+plan tests => 7;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'new');
@@ -28,13 +28,41 @@ $svk->copy ('-m', 'branch', '//m', '//l');
 $svk->checkout ('//l', $copath);
 append_file ("$copath/Q/qu", "modified on local branch\n");
 $svk->commit ('-m', 'commit on local branch', $copath);
-$svk->checkout ('//l', $copath);
+
 append_file ("$copath/Q/qu", "modified on local branch\n");
 append_file ("$copath/Q/qz", "modified on local branch\n");
 $svk->commit ('-m', 'commit on local branch', $copath);
 
-is_output ($svk, 'smerge', ['-CI', '//m', $copath],
-	   ["Can't merge to checkout path incrementally."]);
+$svk->switch ('//m', $copath);
+
+my $uuid = $repos->fs->get_uuid;
+
+is_output ($svk, 'smerge', ['-I', '//l', $copath],
+	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
+	    '===> Auto-merging (0, 4) /l to /m (base /m:3).',
+	    '===> Auto-merging (0, 5) /l to /m (base /m:3).',
+	    __("U   $copath/Q/qu"),
+	    "New merge ticket: $uuid:/l:5",
+	    '===> Auto-merging (5, 6) /l to /m (base /l:5).',
+	    __("U   $copath/Q/qu"),
+	    __("U   $copath/Q/qz"),
+	    "New merge ticket: $uuid:/l:6"]);
+
+$svk->revert ('-R', $copath);
+
+is_output ($svk, 'smerge', ['//l@5', $copath],
+	   ['Auto-merging (0, 5) /l to /m (base /m:3).',
+	    __("U   $copath/Q/qu"),
+	    "New merge ticket: $uuid:/l:5"]);
+
+is_output ($svk, 'smerge', ['//l', $copath],
+	   ['Auto-merging (5, 6) /l to /m (base /l:5).',
+	    __("U   $copath/Q/qu"),
+	    __("U   $copath/Q/qz"),
+	    "New merge ticket: $uuid:/l:6"], 'smerge respects ticket on copath');
+$svk->revert ('-R', $copath);
+
+$svk->switch ('//l', $copath);
 
 is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
@@ -43,7 +71,7 @@ is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 	    'Checking against mirrored directory locally.',
 	    'U   Q/qu',
 	    'U   Q/qz',
-	    'New merge ticket: '.$repos->fs->get_uuid.':/l:6']);
+	    "New merge ticket: $uuid:/l:6"]);
 
 is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
@@ -53,7 +81,7 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    '===> Auto-merging (0, 5) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'U   Q/qu',
-	    'New merge ticket: '.$repos->fs->get_uuid.':/l:5',
+	    "New merge ticket: $uuid:/l:5",
 	    'Merge back committed as revision 3.',
 	    "Syncing $uri/A",
 	    'Retrieving log information from 3 to 3',
@@ -62,7 +90,7 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    "Merging back to SVN::Mirror source $uri/A.",
 	    'U   Q/qu',
 	    'U   Q/qz',
-	    'New merge ticket: '.$repos->fs->get_uuid.':/l:6',
+	    "New merge ticket: $uuid:/l:6",
 	    'Merge back committed as revision 4.',
 	    "Syncing $uri/A",
 	    'Retrieving log information from 4 to 4',
