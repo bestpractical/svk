@@ -2,7 +2,7 @@
 use Test::More tests => 10;
 use strict;
 require 't/tree.pl';
-
+use SVK::Command;
 $svk::info = build_test();
 my ($copath, $corpath) = get_copath ('basic');
 my ($repospath, undef, $repos) = svk::find_repos ('//', 1);

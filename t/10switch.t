@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict;
-no warnings 'once';
 use Test::More tests => 2;
 require 't/tree.pl';
+my $pool = SVN::Pool->new;
 
 # build another tree to be mirrored ourself
 $svk::info = build_test ('');
@@ -20,6 +20,6 @@ overwrite_file ("$copath/Q/qu", "first line in qu\nlocally modified on branch\n2
 #svk::switch ('-C', '//A');
 svk::switch ('//A', $copath);
 
-ok ($svk::info->{checkout}->get ($corpath)->{depotpath} ==  '//A', 'switched');
+ok ($svk::info->{checkout}->get ($corpath)->{depotpath} eq  '//A', 'switched');
 
 is_file_content ("$copath/Q/qu", "first line in qu\nlocally modified on branch\n2nd line in qu\n");

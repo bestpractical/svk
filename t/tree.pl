@@ -12,19 +12,26 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use strict;
+no warnings 'once';
+
+for (qw/find_repos find_repos_from_co find_repos_from_co_maybe find_depotname condense/) {
+    no strict 'refs';
+    *{$_} = *{'svk::'.$_};
+}
 
 my $output = '';
 #select IO::Scalar->new (\$output);
 
+my $pool = SVN::Pool->new_default;
+
 sub new_repos {
-    my $repospath = "/tmp/svn-$$";
+    my $repospath = "/tmp/svk-$$";
     my $reposbase = $repospath;
     my $repos;
     my $i = 0;
     while (-e $repospath) {
 	$repospath = $reposbase . '-'. (++$i);
     }
-    my $pool = SVN::Pool->new_default;
     $repos = SVN::Repos::create("$repospath", undef, undef, undef, undef)
 	or die "failed to create repository at $repospath";
     return $repospath;
@@ -98,8 +105,9 @@ sub get_editor {
 
 sub create_basic_tree {
     my ($depot) = @_;
-    my ($repospath, $path, $repos) = svk::find_repos ($depot, 1);
     my $pool = SVN::Pool->new_default;
+    my ($repospath, $path, $repos) = svk::find_repos ($depot, 1);
+
     my $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();
     $edit->modify_file ($edit->add_file ('/me'),

@@ -32,6 +32,29 @@ sub get_anchor {
     } @_;
 }
 
+sub condense {
+    my $info = shift;
+    my @targets = map {Cwd::abs_path ($_ || '')} @_;
+    my ($anchor, $report);
+    $report = $_[0];
+    for (@targets) {
+	if (!$anchor) {
+	    $anchor = $_;
+	    $report = $_[0]
+	}
+	my $schedule = $info->{checkout}->get_single ($anchor)->{schedule} || '';
+	if ($anchor ne $_ || -f $anchor ||
+	    $schedule eq 'add' || $schedule eq 'delete') {
+	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
+		($anchor, $report) = get_anchor (0, $anchor, $report);
+	    }
+	}
+    }
+    $report .= '/' unless $report eq '' || substr($report, -1, 1) eq '/';
+    return ($report, $anchor,
+	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
+}
+
 sub create_xd_root {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
