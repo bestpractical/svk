@@ -38,7 +38,7 @@ sub replay {
     $edit->open_root ($base_rev);
 
     for (sort keys %{$self->{files}}) {
-	my $fname = $self->{files}{$_}->filename;
+	my $fname = ${*{$self->{files}{$_}}};
 	my $fh;
 	$edit->add_file ($_)
 	    if $self->{added}{$_};
@@ -60,7 +60,7 @@ sub cb_localmod {
     my ($self, $path, $checksum, $pool) = @_;
     if (exists $self->{files}{$path}) {
 	return if $self->{md5}{$path} eq $checksum;
-	my $fname = $self->{files}{$path}->filename;
+	my $fname = ${*{$self->{files}{$path}}};
 	open my ($fh), $fname or die $!;
 	return [$fh, $fname, $self->{md5}{$path}];
     }
@@ -90,7 +90,7 @@ sub apply_textdelta {
 
     if (exists $self->{files}{$path}) {
 	$base = $self->{files}{$path};
-	my $fname = $base->filename;
+	my $fname = ${*$base};
 	open $base, $fname;
 	${*$base} = $fname;
     }
@@ -99,18 +99,21 @@ sub apply_textdelta {
 	    unless $self->{added}{$path};
     }
 
-    $self->{files}{$path} = File::Temp->new ( DIR => '/tmp', TEMPLATE => 'svk-combineXXXXX', UNLINK => 0);
+    my ($fh, $file) = mkstemps ('svk-combineXXXXX', '.tmp');
+    $self->{files}{$path} = $fh;
+
+    ${*$fh} = $file;
     $self->{base}{$path} = $base;
 
     $base ||= SVN::Core::stream_empty();
-    return [SVN::TxDelta::apply ($base, $self->{files}{$path}, undef, undef)];
+    return [SVN::TxDelta::apply ($base, $fh, undef, undef)];
 }
 
 sub close_file {
     my ($self, $path, $md5) = @_;
-    unlink ${*{$self->{base}{$path}}} if $self->{base}{$path} && ref ($self->{base}{$path}) eq 'GLOB';
+    unlink ${*{$self->{base}{$path}}}
+	if $self->{base}{$path} && ${*{$self->{base}{$path}}};
     $self->{md5}{$path} = $md5;
-    my $fname =  $self->{files}{$path}->filename;
 }
 
 =head1 AUTHORS
