@@ -16,7 +16,8 @@ use SVK::Util qw( catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
 our $answer = 's'; # skip
 BEGIN {
     no warnings 'redefine';
-    *SVK::Util::get_prompt = sub { $answer };
+    *SVK::Util::get_prompt = sub { $answer }
+        unless $ENV{DEBUG_INTERACTIVE};
 }
 
 use Carp;
@@ -76,7 +77,7 @@ sub build_test {
     my $xd = SVK::XD->new (depotmap => $depotmap,
 			   svkpath => $depotmap->{''},
 			   checkout => Data::Hierarchy->new( sep => $SEP ));
-    my $svk = SVK->new (xd => $xd, output => \$output);
+    my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
     push @TOCLEAN, [$xd, $svk];
     return ($xd, $svk);
 }
