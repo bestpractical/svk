@@ -7,7 +7,8 @@ require SVN::Fs;
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
-		  md5_fh get_prompt traverse_history make_path dirname );
+		  md5_fh get_prompt traverse_history make_path dirname
+		  to_native );
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML'	 => qw(LoadFile DumpFile);
@@ -541,7 +542,8 @@ sub get_editor {
     my ($copath, $path) = @arg{qw/copath path/};
     my $encoding = $self->{checkout}->get ($copath)->{encoding};
     $path = '' if $path eq '/';
-    $arg{get_copath} = sub { Encode::from_to ($_[0], 'utf8', $encoding) if $encoding;
+    $encoding = Encode::find_encoding($encoding) if $encoding;
+    $arg{get_copath} = sub { to_native ($_[0], 'path', $encoding) if $encoding;
 			     $_[0] = SVK::Target->copath ($copath,  $_[0]) };
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
