@@ -17,7 +17,7 @@ overwrite_file ("$copath/A/foo", "foobar2");
 $svk->commit('-m' => 'log2', "$copath/A");
 is_output_like(
     $svk, 'proplist', ['--revprop'],
-    qr{Properties on //:\n.*  svn:date\n.*  svn:log}s,
+    qr{Unversioned properties on revision 2:\n.*  svn:date\n.*  svn:log}s,
 );
 is_output(
     $svk, 'propget', ['-r' => 1, '--revprop', 'svn:log'],
@@ -29,7 +29,8 @@ is_output(
 );
 
 is_output(
-    $svk, 'propset', ['--revprop', 'svn:log', 'log2.new'], []
+    $svk, 'propset', ['--revprop', 'svn:log', 'log2.new'],
+    ["Property 'svn:log' set on repository revision 2."]
 );
 is_output(
     $svk, 'propget', ['--revprop', 'svn:log'],
@@ -37,11 +38,12 @@ is_output(
 );
 
 is_output(
-    $svk, 'propdel', ['--revprop', 'svn:log'], []
+    $svk, 'propdel', ['--revprop', 'svn:log'],
+    ["Property 'svn:log' set on repository revision 2."]
 );
 is_output_like(
     $svk, 'proplist', ['--revprop'],
-    qr{(?!.*svn:log)Properties on //:\n.*  svn:date\n}s,
+    qr{(?!.*svn:log)Unversioned properties on revision 2:\n.*  svn:date\n}s,
 );
 
 set_editor(<< 'TMP');
@@ -58,7 +60,7 @@ TMP
 
 is_output(
     $svk, 'propedit', ['-r' => 1, '--revprop', 'svn:log'],
-    ['Waiting for editor...']
+    ['Waiting for editor...', "Property 'svn:log' set on repository revision 1."]
 );
 is_output(
     $svk, 'propget', ['-r' => 1, '--revprop', 'svn:log'],

@@ -32,10 +32,9 @@ sub do_propset_direct {
     my $fs = $arg{repos}->fs;
 
     if ($self->{revprop}) {
-        $fs->change_rev_prop (
-            (defined($self->{rev}) ? $self->{rev} : $arg{revision}),
-            $arg{propname} => $arg{propvalue},
-        );
+        my $rev = (defined($self->{rev}) ? $self->{rev} : $arg{revision});
+        $fs->change_rev_prop ($rev, $arg{propname} => $arg{propvalue});
+        print loc("Property '%1' set on repository revision %2.\n", $arg{propname}, $rev);
         return;
     }
 

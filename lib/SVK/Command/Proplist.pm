@@ -28,13 +28,11 @@ sub run {
 
     for my $target (@arg) {
         if ($self->{revprop}) {
+            my $rev = (defined($self->{rev}) ? $self->{rev} : $target->{revision});
             $self->show_props (
                 $target,
-                $target->{repos}->fs->revision_proplist(
-                    (defined($self->{rev})
-                        ? $self->{rev}
-                        : $target->{repos}->fs->youngest_rev),
-                )
+                $target->{repos}->fs->revision_proplist($rev),
+                $rev,
             );
             next;
         }
@@ -47,11 +45,17 @@ sub run {
 }
 
 sub show_props {
-    my ($self, $target, $props) = @_;
+    my ($self, $target, $props, $rev) = @_;
 
     %$props or return;
 
-    print loc("Properties on %1:\n", $target->{report} || '.');
+    if ($self->{revprop}) {
+        print loc("Unversioned properties on revision %1:\n", $rev);
+    }
+    else {
+        print loc("Properties on %1:\n", $target->{report} || '.');
+    }
+
     for my $key (sort keys %$props) {
         my $value = $props->{$key};
         print $self->{verbose} ? "  $key: $value\n" : "  $key\n";
@@ -59,7 +63,8 @@ sub show_props {
 }
 
 sub _arg_revprop {
-    goto &{$_[0]->can($_[0]->{revprop} ? 'arg_depotroot' : 'arg_co_maybe')};
+    my $self = shift;
+    goto &{$self->can($self->{revprop} ? 'arg_depotroot' : 'arg_co_maybe')};
 }
 
 sub _proplist {
@@ -67,9 +72,7 @@ sub _proplist {
 
     if ($self->{revprop}) {
         return $target->{repos}->fs->revision_proplist(
-            (defined($self->{rev})
-                ? $self->{rev}
-                : $target->{repos}->fs->youngest_rev),
+            (defined($self->{rev}) ? $self->{rev} : $target->{revision})
         )
     }
 
