@@ -641,7 +641,9 @@ sub do_delete {
 				    }
 				})),
 			    cb_unknown => sub {
-				die loc("%1 is not under version control", $_[0]);
+				die loc("%1 is not under version control.\n",
+					abs2rel($_[1], $arg{copath} => $arg{report}));
+
 			    }
 			  );
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict;
 use File::Path;
 BEGIN { require 't/tree.pl' };
@@ -79,3 +79,6 @@ is_output ($svk, 'st', [],
 is_output ($svk, 'rm', ['A/something'],
 	   [__('D   A/something')]);
 
+overwrite_file ('A/stalled', "foo");
+is_output ($svk, 'rm', ['A/stalled'],
+	   [__('A/stalled is not under version control.')]);
