@@ -92,7 +92,7 @@ Called after each file close call.
 
 =cut
 
-use Digest::MD5;
+use Digest::MD5 qw(md5_hex);
 use File::Compare ();
 use YAML;
 use File::Temp qw/:mktemp/;
@@ -257,12 +257,9 @@ sub close_file {
 
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
-	my $merge_fname = mktemp ("/tmp/svk-mergeXXXXX");
-	# XXX: stream_from_aprfile not guarantee closing file on closing stream
-	my $merge_stream = SVN::Core::stream_from_aprfile
-	    ($merge_fname, $pool);
+	my $mfh = IO::String->new;
 	SVN::Core::diff_file_output_merge
-		( $merge_stream, $diff,
+		( $mfh, $diff,
 		  (map {
 		      $fh->{$_}[1]
 		  } qw/base local new/),
@@ -279,8 +276,7 @@ sub close_file {
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
 			     $pool);
 
-	open my ($mfh), $merge_fname;
-	$checksum = md5 ($mfh);
+	$checksum = md5_hex (${$mfh->string_ref});
 
 	if ($handle && $#{$handle} > 0) {
 	    seek $mfh, 0, 0;
@@ -297,7 +293,6 @@ sub close_file {
 	}
 
 	close $mfh;
-	unlink ($merge_fname);
 	$self->cleanup_fh ($fh);
 
 	&{$self->{cb_conflict}} ($path)

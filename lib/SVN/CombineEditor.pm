@@ -83,8 +83,8 @@ sub open_file {
 
 sub apply_textdelta {
     my ($self, $path, $checksum) = @_;
-    my $pool = $self->{pool};
-    $pool->default if $pool && $pool->can ('default');
+#    my $pool = $self->{pool};
+#    $pool->default if $pool && $pool->can ('default');
     my $base;
 
     if (exists $self->{files}{$path}) {

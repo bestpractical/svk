@@ -157,6 +157,13 @@ sub _update_info {
     unlink ("$svkpath/lock");
 }
 
+my %REPOS;
+
+sub open_repos {
+    my ($repospath) = @_;
+    $REPOS{$repospath} ||= SVN::Repos::open ($repospath);
+}
+
 sub find_repos {
     my ($depotpath, $open) = @_;
     die "not depotspec" unless $depotpath;
@@ -165,7 +172,7 @@ sub find_repos {
 
     my $repospath = $info->{depotmap}{$depot} or die "no such depot: $depot";
 
-    return ($repospath, $path, $open && SVN::Repos::open ($repospath));
+    return ($repospath, $path, $open && open_repos ($repospath));
 }
 
 sub find_repos_from_co {

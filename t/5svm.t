@@ -11,17 +11,16 @@ plan tests => 3;
 $svk::info = build_test ('test');
 
 my $tree = create_basic_tree ('/test/');
-my $pool = SVN::Pool->new_default;
 
 my ($copath, $corpath) = get_copath ('svm');
+
 my ($srepospath, $spath) = svk::find_repos ('/test/A');
+
 svk::copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for (1..20);
 
 svk::mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 
 svk::sync ('//m');
-
-$pool = SVN::Pool->new_default; # for some reasons
 
 svk::copy ('-m', 'branch', '//m', '//l');
 svk::checkout ('//l', $copath);
@@ -38,8 +37,6 @@ svk::commit ('-m', 'local modification from branch', "$copath");
 svk::merge (qw/-C -r 4:5/, '-m', 'merge back to remote', '//l', '//m');
 svk::merge (qw/-r 4:5/, '-m', 'merge back to remote', '//l', '//m');
 svk::sync ('//m');
-
-$pool = SVN::Pool->new_default; # for some reasons
 
 #svk::merge (qw/-r 5:6/, '//m', $copath);
 svk::switch ('//m', $copath);

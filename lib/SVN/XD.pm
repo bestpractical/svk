@@ -132,9 +132,10 @@ sub do_update {
 	    get_anchor (1, $arg{path}, $arg{target_path});
     }
 
+    my $newroot = $fs->revision_root ($arg{rev});
     my ($storage, %cb) = get_editor ($info, %arg,
 				     oldroot => $xdroot,
-				     newroot => $fs->revision_root ($arg{rev}),
+				     newroot => $newroot,
 				     anchor => $anchor,
 				     target => $target,
 				     update => 1);
@@ -151,8 +152,9 @@ sub do_update {
 	 %cb
 	);
 
+
     SVN::Repos::dir_delta ($xdroot, $anchor, $target,
-			   $fs->revision_root ($arg{rev}), $arg{target_path},
+			   $newroot, $arg{target_path},
 			   $editor, undef,
 			   1, 1, 0, 1);
 

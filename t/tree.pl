@@ -24,9 +24,10 @@ sub new_repos {
     while (-e $repospath) {
 	$repospath = $reposbase . '-'. (++$i);
     }
+    my $pool = SVN::Pool->new_default;
     $repos = SVN::Repos::create("$repospath", undef, undef, undef, undef)
 	or die "failed to create repository at $repospath";
-    return ($repospath, $repos);
+    return $repospath;
 }
 
 sub build_test {
@@ -97,8 +98,8 @@ sub get_editor {
 
 sub create_basic_tree {
     my ($depot) = @_;
-    my $pool = SVN::Pool->new_default;
     my ($repospath, $path, $repos) = svk::find_repos ($depot, 1);
+    my $pool = SVN::Pool->new_default;
     my $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();
     $edit->modify_file ($edit->add_file ('/me'),
