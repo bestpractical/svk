@@ -209,32 +209,6 @@ sub copy_ancestors {
     return ("$myuuid:$hpath" => $hrev, $self->copy_ancestors ($repos, $hpath, $hrev));
 }
 
-sub resolve_svm_source {
-    my ($self, $repos, $path) = @_;
-    my ($uuid, $rev, $m, $mpath);
-    my $mirrored;
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-
-    if ($self->svn_mirror) {
-	($m, $mpath) = eval 'SVN::Mirror::is_mirrored ($repos, $path)';
-	undef $@;
-    }
-
-    if ($m) {
-	$path =~ s/\Q$mpath\E$//;
-	$uuid = $root->node_prop ($path, 'svm:uuid');
-	$path = $m->{source}.$mpath;
-	$path =~ s/^\Q$m->{source_root}\E//;
-	$rev = $m->{fromrev};
-    }
-    else {
-	($rev, $uuid) = ($fs->youngest_rev, $fs->get_uuid);
-    }
-
-    return ($uuid, $path, $rev);
-}
-
 sub get_new_ticket {
     my ($self, $repos, $src, $dst) = @_;
 

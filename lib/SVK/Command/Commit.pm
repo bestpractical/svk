@@ -79,6 +79,32 @@ sub get_commit_message {
 	unless defined $self->{message};
 }
 
+sub resolve_svm_source {
+    my ($self, $repos, $path) = @_;
+    my ($uuid, $rev, $m, $mpath);
+    my $mirrored;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root ($fs->youngest_rev);
+
+    if ($self->svn_mirror) {
+	($m, $mpath) = eval 'SVN::Mirror::is_mirrored ($repos, $path)';
+	undef $@;
+    }
+
+    if ($m) {
+	$path =~ s/\Q$mpath\E$//;
+	$uuid = $root->node_prop ($path, 'svm:uuid');
+	$path = $m->{source}.$mpath;
+	$path =~ s/^\Q$m->{source_root}\E//;
+	$rev = $m->{fromrev};
+    }
+    else {
+	($rev, $uuid) = ($fs->youngest_rev, $fs->get_uuid);
+    }
+
+    return ($uuid, $path, $rev);
+}
+
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be XD::Editor, repos_commit_editor, or svn::mirror merge back editor.
 sub get_editor {
@@ -107,6 +133,7 @@ sub get_editor {
 	}
 	else {
 	    $m->{auth} = $self->auth;
+	    $m->{revprop} = ['svk:signature'];
 	    ($base_rev, $editor) = $m->get_merge_back_editor
 		($mpath, $self->{message},
 		 sub { print loc("Merge back committed as revision %1.\n", $_[0]);
@@ -137,8 +164,12 @@ sub get_editor {
 	  ));
     $base_rev ||= $target->{repos}->fs->youngest_rev;
 
-    $self->{signeditor} = $editor = SVK::SignEditor->new ($editor)
-	if $self->{sign};
+    if ($self->{sign}) {
+	my ($uuid, $dst) = $self->resolve_svm_source ($target->{repos}, $target->{path});
+	$self->{signeditor} = $editor = SVK::SignEditor->new (_editor => [$editor],
+							      anchor => "$uuid:$dst"
+							     );
+    }
 
     $editor = SVK::XD::CheckEditor->new ($editor)
 	if $self->{check_only};

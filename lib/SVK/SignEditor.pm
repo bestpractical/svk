@@ -28,7 +28,9 @@ sub close_edit {
     my ($self, $baton) = @_;
     my ($fh, $fname) =  mkstemps ("/tmp/svk-sigXXXXX", '.tmp');
 
-    $self->{sig} =_sign_gpg ($fname, join("\n", (map {"MD5 $_->[0] $_->[1]"} @{$self->{checksum}})),'');
+    $self->{sig} =_sign_gpg
+	($fname, join("\n", "ANCHOR: $self->{anchor}",
+		      (map {"MD5 $_->[0] $_->[1]"} @{$self->{checksum}})),'');
     $self->SUPER::close_edit ($baton);
 }
 
