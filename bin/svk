@@ -1121,8 +1121,16 @@ sub find_merge_sources {
 				("$myuuid:$m->{target_path}" => $m->find_local_rev ($rev)) : ()
 			    } split ("\n", $minfo) };
     }
-    $minfo->{join(':', $myuuid, $path)} = $fs->youngest_rev;
+    if ($verbatim) {
+	my ($uuid, $path, $rev) = resolve_svm_source ($repos, $path);
+	$minfo->{join(':', $uuid, $path)} = $rev;
+    }
+    else {
+	$minfo->{join(':', $myuuid, $path)} = $fs->youngest_rev;
+    }
 
+
+    # XXX: follow the copy history provided by svm too
     my $hist = $root->node_history ($path);
     while ($hist = $hist->prev (1)) {
 	my ($hpath, $rev) = $hist->location ();
@@ -1163,8 +1171,8 @@ sub resolve_svm_source {
 sub get_new_ticket {
     my ($repos, $src, $dst) = @_;
 
-    my $srcinfo = find_merge_sources ($repos, $src);
-    my $dstinfo = find_merge_sources ($repos, $dst);
+    my $srcinfo = find_merge_sources ($repos, $src, 1);
+    my $dstinfo = find_merge_sources ($repos, $dst, 1);
     my $newinfo;
 
     # bring merge history up to date as from source
