@@ -80,8 +80,7 @@ is_output ($svk2, 'smerge', ['-lm', '', '-P', '-', '//local', '//trunk'],
             '==== BEGIN SVK PATCH BLOCK ====',
             qr'Version: svk .*',
             '',
-            ((qr'.*') x (9)),
-            '==== END SVK PATCH BLOCK ====',
+            \'...',
             ]);
 
 ok (-e "$xd2->{svkpath}/patch/test-1.patch");

@@ -176,7 +176,11 @@ sub is_sorted_output {
 sub is_deeply_like {
     my ($got, $expected, $test) = @_;
     for (0..$#{$expected}) {
-	if (ref ($expected->[$_]) eq 'Regexp' ) {
+	if (ref ($expected->[$_]) eq 'SCALAR' ) {
+	    @_ = ($#{$got}, $#{$got}, $test);
+	    goto &is;
+	}
+	elsif (ref ($expected->[$_]) eq 'Regexp' ) {
 	    unless ($got->[$_] =~ m/$expected->[$_]/) {
 		diag "Different at $_:\n$got->[$_]\n$expected->[$_]";
 		@_ = (0, $test);
