@@ -166,8 +166,8 @@ msgid "-x [--cross-copy]:      trace cross copied revisions"
 msgstr "-x [--cross-copy]:      追蹤交叉複製的版本"
 
 #: lib/SVK/Command.pod:21
-msgid "-x [--cross]:           cross copied node"
-msgstr "-x [--cross]:           交又複製的項目"
+msgid "-x [--cross]:           display cross copied nodes"
+msgstr "-x [--cross]:           顯示交叉複製的項目"
 
 #: lib/SVK/Util.pm:51 lib/SVK/Util.pm:58
 msgid "Aborted.\n"
@@ -357,7 +357,7 @@ msgid "add [PATH...]"
 msgstr "add [路徑...]"
 
 #: lib/SVK/Command.pod:28
-msgid "annotate - Print files with per-line revision and author"
+msgid "annotate - Print files with per-line revision and author info"
 msgstr "annotate - 顯示檔案的逐列修訂版本與作者資訊"
 
 #: lib/SVK/Command.pod:29
@@ -733,7 +733,7 @@ msgid "status [PATH..]"
 msgstr "status [路徑..]"
 
 #: lib/SVK/Command.pod:86
-msgid "switch - Switch to another branch and keep local"
+msgid "switch - Switch to another branch and keep local modifications"
 msgstr "switch - 切換到另一個分支，並保留本地版本"
 
 #: lib/SVK/Command.pod:87
@@ -758,7 +758,7 @@ msgid "unexpected error: commit to mirrored path but no mirror object"
 msgstr "未預期的錯誤: 送交變動至映射的路徑，但找不到映射物件"
 
 #: lib/SVK/Command.pod:90
-msgid "update - Bring changes from the repository into checkout"
+msgid "update - Bring changes from the repository into checkout copies"
 msgstr "update - 把檔案庫上已有的變動更新到本地工作複本上"
 
 #: lib/SVK/Command.pod:91

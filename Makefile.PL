@@ -23,8 +23,13 @@ requires(
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.02',
         'SVN::Simple::Edit'     => '0.21',
+);
+features(
+    'Localized messages' => [
+	-default => 1,
         'Locale::Maketext::Lexicon' => '0.36',
         'Locale::Maketext::Simple'  => '0.12',
+    ],
 );
 features(
     'SVN::Mirror support' => [

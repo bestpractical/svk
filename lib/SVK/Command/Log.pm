@@ -105,7 +105,7 @@ SVK::Command::Log - Show log messages for revisions
 
     -r [--revision]:        revision spec from:to
     -l [--limit]:           limit the number of revisions displayed
-    -x [--cross]:           cross copied node
+    -x [--cross]:           display cross copied nodes
     -v [--verbose]:         print changed path in changes
 
 =head1 OPTIONS

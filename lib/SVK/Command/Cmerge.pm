@@ -68,7 +68,7 @@ sub run {
 	    die loc("chgspec not recognized");
 	}
 
-	print loc("Merging with base %1 %2: applying %3 %4:%5\n", $base_path, $base_rev, $src->{path}, $fromrev, $torev);
+	print loc("Merging with base %1 %2: applying %3 %4:%5.\n", $base_path, $base_rev, $src->{path}, $fromrev, $torev);
 
 	my $fs = $repos->fs;
 	my $editor = SVK::MergeEditor->new
