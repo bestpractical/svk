@@ -1126,12 +1126,12 @@ msgstr "U  更新"
 
 #: lib/SVK/Command.pm:185
 msgid "Unknown options.\n"
-msgstr "末知的選項。\n"
+msgstr "未知的選項。\n"
 
 #. ($_)
 #: lib/SVK/XD.pm:1082
 msgid "Unknown target: %1.\n"
-msgstr "末知的目標：%1。\n"
+msgstr "未知的目標：%1。\n"
 
 #. ($rev)
 #: lib/SVK/Command/Proplist.pm:52
