@@ -62,6 +62,7 @@ lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/XD.pm
+lib/SVK/Help/Environment.pod
 lib/SVK/Help/Index.pod
 lib/SVK/Help/Intro.pod
 lib/SVK/Help/zh_cn/Index.pod
