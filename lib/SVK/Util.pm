@@ -12,9 +12,13 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
-my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 
-sub svn_mirror { $svn_mirror }
+sub svn_mirror () {
+    no warnings 'redefine';
+    my $svn_mirror = eval { require SVN::Mirror; 1 };
+    *svn_mirror = $svn_mirror ? sub () { 1 } : sub () { 0 };
+    return $svn_mirror;
+}
 
 sub get_prompt {
     my ($prompt, $regex) = @_;
@@ -178,10 +182,15 @@ sub abs_path {
     return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
 }
 
-*mimetype = eval {
-    require File::MimeInfo::Magic; 
-    \&File::MimeInfo::Magic::mimetype;
-} || sub { undef };
+sub mimetype {
+    no warnings 'redefine';
+    my $mimetype = eval {
+        require File::MimeInfo::Magic; 
+        \&File::MimeInfo::Magic::mimetype;
+    };
+    *mimetype = $mimetype || sub { undef };
+    goto &$mimetype;
+}
 
 sub mimetype_is_text {
     my $type = shift;
