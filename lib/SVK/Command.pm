@@ -916,7 +916,7 @@ sub resolve_revision {
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
     } elsif ($revstr =~ /\D/) {
-        die loc("%1 is not a number",$revstr)
+        die loc("%1 is not a number.\n",$revstr)
     } else {
         $rev = $revstr;
     }
