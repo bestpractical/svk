@@ -1,9 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
-require Test::More;
-require 't/tree.pl';
 use Test::More;
-eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
+BEGIN { require 't/tree.pl' };
+eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
 plan tests => 14;
 our $output;
 # build another tree to be mirrored ourself
@@ -91,13 +90,13 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             "New merge ticket: $suuid:/A-99:28",
             'Committed revision 13.',
             "Syncing //m-99-copy(/m-99-copy) in $corpath2 to 13.",
-            'A   t/checkout/svm2/Q',
-            'A   t/checkout/svm2/Q/qz',
-            'A   t/checkout/svm2/T',
-            'A   t/checkout/svm2/T/foo',
-            'A   t/checkout/svm2/T/xd',
-            'A   t/checkout/svm2/be',
-            'A   t/checkout/svm2/N', ]);
+            __('A   t/checkout/svm2/Q'),
+            __('A   t/checkout/svm2/Q/qz'),
+            __('A   t/checkout/svm2/T'),
+            __('A   t/checkout/svm2/T/foo'),
+            __('A   t/checkout/svm2/T/xd'),
+            __('A   t/checkout/svm2/be'),
+            __('A   t/checkout/svm2/N'), ]);
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 # has some output

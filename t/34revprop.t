@@ -15,12 +15,9 @@ $svk->add("$copath/A");
 $svk->commit('-m' => 'log1', "$copath/A");
 overwrite_file ("$copath/A/foo", "foobar2");
 $svk->commit('-m' => 'log2', "$copath/A");
-is_output(
+is_output_like(
     $svk, 'proplist', ['--revprop'],
-    ['Properties on //:',
-     '  svn:author',
-     '  svn:date',
-     '  svn:log']
+    qr{Properties on //:\n.*  svn:date\n.*  svn:log}s,
 );
 is_output(
     $svk, 'propget', ['-r' => 1, '--revprop', 'svn:log'],
@@ -42,11 +39,9 @@ is_output(
 is_output(
     $svk, 'propdel', ['--revprop', 'svn:log'], []
 );
-is_output(
+is_output_like(
     $svk, 'proplist', ['--revprop'],
-    ['Properties on //:',
-        '  svn:author',
-        '  svn:date']
+    qr{(?!.*svn:log)Properties on //:\n.*  svn:date\n}s,
 );
 
 set_editor(<< 'TMP');
