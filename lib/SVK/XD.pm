@@ -11,12 +11,12 @@ use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5_fh get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP is_symlink is_executable splitpath HAS_SYMLINK );
-use Data::Hierarchy '0.18';
+use Data::Hierarchy 0.18;
 use File::Spec;
 use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
-use PerlIO::eol;
+use PerlIO::eol 0.03;
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
@@ -1147,7 +1147,7 @@ sub get_eol_layer {
     my ($root, $path, $prop) = @_;
     my $k = $prop->{'svn:eol-style'} or return ':raw';
     if ($k eq 'native') {
-        return ' ';
+        return ':raw:eol(LF-Native)';
     }
     elsif ($k eq 'CRLF' or $k eq 'CR' or $k eq 'LF') {
         return ":raw:eol($k)";
