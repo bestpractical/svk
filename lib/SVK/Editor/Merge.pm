@@ -266,8 +266,11 @@ sub ensure_close {
     $self->{notify}->flush ($path, 1);
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
-    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool)
-	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
+
+    if ($path eq $self->{target} && $self->{changes} && $self->{cb_merged}) {
+	$self->ensure_open ($path);
+	$self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool);
+    }
 
     if (my $baton = $self->{storage_baton}{$path}) {
 	$self->{storage}->close_file ($baton, $checksum, $pool);
