@@ -1,6 +1,6 @@
 package SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( abs2rel );
+use SVK::Util qw( abs2rel $SEP );
 use strict;
 
 =head1 NAME
@@ -65,6 +65,7 @@ sub new {
 
 sub new_with_report {
     my ($class, $report, $target, $is_copath) = @_;
+    $report =~ s|$SEP$|| if $report;
     $class->new	( cb_skip => print_report (\&skip_print, $is_copath, $report),
 		  cb_flush => print_report (\&flush_print, $is_copath, $report, $target));
 }

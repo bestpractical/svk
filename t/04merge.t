@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 14;
 use strict;
 require 't/tree.pl';
 
@@ -54,6 +54,8 @@ overwrite_file (copath ("A/foo"), "late modification...\nfoobar\n\nsome more foo
 $svk->status ($copath);
 $svk->commit ('-m', 'commit message here (r4)', $copath);
 $svk->update ($copath);
+is_output ($svk, 'merge', ["-Cr", "3:2", '//', "$copath/"],
+	   [status_native ($copath, 'GU ', 'A/foo')]);
 is_output ($svk, 'merge', ["-r", "3:2", '//', $copath],
 	   [status_native ($copath, 'GU ', 'A/foo')]);
 

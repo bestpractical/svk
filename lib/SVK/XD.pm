@@ -371,7 +371,6 @@ sub condense {
 	    $schedule = $cinfo->{'.schedule'} || '';
 	}
     }
-    $report =~ s|/$||;
     return ($report, $anchor, map { abs2rel($_, $anchor) } grep {$_ ne $anchor} @targets);
 }
 
