@@ -425,7 +425,7 @@ sub add_directory {
 	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
-					      $self->{cb_rev}->($path), @arg);
+					      $self->{cb_rev}->($path), $arg[2]);
 	$self->{notify}->node_status ($path, 'G');
     }
     else {
