@@ -1,4 +1,4 @@
-package SVK::SignEditor;
+package SVK::Editor::Sign;
 our @ISA = qw (SVN::Delta::Editor);
 use SVK::I18N;
 use File::Temp;

@@ -1,4 +1,4 @@
-package SVK::DelayEditor;
+package SVK::Editor::Delay;
 use strict;
 our $VERSION = '0.14';
 our @ISA = qw(SVN::Delta::Editor);

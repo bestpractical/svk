@@ -1,8 +1,8 @@
-package SVK::DeleteEditor;
+package SVK::Editor::Delete;
 use strict;
-use SVK::StatusEditor;
+use SVK::Editor::Status;
 our $VERSION = '0.05';
-our @ISA = qw(SVK::StatusEditor);
+our @ISA = qw(SVK::Editor::Status);
 use SVK::I18N;
 
 sub close_file {

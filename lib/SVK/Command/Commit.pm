@@ -4,8 +4,8 @@ our $VERSION = '0.14';
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::CommitStatusEditor;
-use SVK::SignEditor;
+use SVK::Editor::CommitStatus;
+use SVK::Editor::Sign;
 use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile);
 use SVN::Simple::Edit;
 
@@ -145,7 +145,7 @@ sub get_editor {
 
     if ($self->{sign}) {
 	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
-	$self->{signeditor} = $editor = SVK::SignEditor->new (_editor => [$editor],
+	$self->{signeditor} = $editor = SVK::Editor::Sign->new (_editor => [$editor],
 							      anchor => "$uuid:$dst"
 							     );
     }
@@ -153,7 +153,7 @@ sub get_editor {
     $editor = SVK::XD::CheckEditor->new ($editor)
 	if $self->{check_only};
 
-    %cb = SVK::MergeEditor::cb_for_root ($root, $target->{path}, $base_rev);
+    %cb = SVK::Editor::Merge::cb_for_root ($root, $target->{path}, $base_rev);
 
     return ($editor, %cb, mirror => $m, callback => \$callback);
 }
@@ -176,7 +176,7 @@ sub run {
     print $fh "\n$target_prompt\n" if $fh;
 
     my $targets = [];
-    my $statuseditor = SVK::CommitStatusEditor->new
+    my $statuseditor = SVK::Editor::CommitStatus->new
 	( copath => $target->{copath},
 	  dpath => $target->{path},
 	  targets => $targets, fh => $fh);
@@ -188,7 +188,7 @@ sub run {
 	  delete_verbose => 1,
 	  absent_ignore => 1,
 	  editor => $statuseditor,
-	  cb_conflict => \&SVK::StatusEditor::conflict,
+	  cb_conflict => \&SVK::Editor::Status::conflict,
 	);
 
     my $conflicts = keys %{$statuseditor->{conflict}};

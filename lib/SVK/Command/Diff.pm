@@ -5,7 +5,7 @@ our $VERSION = '0.14';
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::DiffEditor;
+use SVK::Editor::Diff;
 
 sub options {
     ("v|verbose"    => 'verbose',
@@ -41,7 +41,7 @@ sub run {
 	my $newroot = $fs->revision_root ($torev);
 
 	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
-	    SVK::DiffEditor::output_diff ($target->{path}, "revision $fromrev",
+	    SVK::Editor::Diff::output_diff ($target->{path}, "revision $fromrev",
 					  "revision $torev",
 					  $target->{path}, $target2->{path},
 					  $baseroot->file_contents ($target->{path}),
@@ -49,7 +49,7 @@ sub run {
 	    return;
 	}
 
-	my $editor = SVK::DiffEditor->new
+	my $editor = SVK::Editor::Diff->new
 	    ( cb_basecontent => sub { my ($rpath) = @_;
 				      my $base = $baseroot->file_contents ("$target->{path}/$rpath");
 				      return $base;
@@ -78,7 +78,7 @@ sub run {
 	my $baseroot = $self->{revspec} ? $fs->revision_root ($self->{revspec}) : $xdroot;
 
 	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
-	    SVK::DiffEditor::output_diff ($target->{path},
+	    SVK::Editor::Diff::output_diff ($target->{path},
 					  'revision '.
 					  ($self->{revspec} || $self->{xd}{checkout}->get
 					   ($target->{copath})->{revision}),
@@ -90,7 +90,7 @@ sub run {
 	    return;
 	}
 
-	my $editor = SVK::DiffEditor->new
+	my $editor = SVK::Editor::Diff->new
 	    ( cb_basecontent =>
 	      sub { my ($rpath) = @_;
 		    $baseroot->file_contents ("$target->{path}/$rpath");

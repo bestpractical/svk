@@ -5,10 +5,10 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
-require SVK::MergeEditor;
-use SVK::RevertEditor;
-use SVK::DelayEditor;
-use SVK::DeleteEditor;
+require SVK::Editor::Merge;
+use SVK::Editor::Revert;
+use SVK::Editor::Delay;
+use SVK::Editor::Delete;
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor );
 use Data::Hierarchy '0.15';
@@ -316,8 +316,8 @@ sub do_update {
 					    target => $target,
 					    update => 1);
 
-    $storage = SVK::DelayEditor->new ($storage);
-    my $editor = SVK::MergeEditor->new
+    $storage = SVK::Editor::Delay->new ($storage);
+    my $editor = SVK::Editor::Merge->new
 	(_debug => 0,
 	 fs => $fs,
 	 send_fulltext => 1,
@@ -378,7 +378,7 @@ sub do_delete {
 			    absent_as_delete => 1,
 			    delete_verbose => 1,
 			    absent_verbose => 1,
-			    editor => SVK::DeleteEditor->new
+			    editor => SVK::Editor::Delete->new
 			    ( copath => $arg{copath},
 			      dpath => $arg{path},
 			      cb_delete => sub {
@@ -511,7 +511,7 @@ sub do_revert {
 				targets => $arg{targets},
 				delete_verbose => 1,
 				absent_verbose => 1,
-				editor => SVK::RevertEditor->new
+				editor => SVK::Editor::Revert->new
 				( copath => $arg{copath},
 				  dpath => $arg{path},
 				  cb_revert => $revert,
@@ -781,7 +781,7 @@ sub checkout_delta {
     my ($self, %arg) = @_;
     my $kind = $arg{xdroot}->check_path ($arg{path});
     my $copath = $arg{copath};
-    $arg{editor} = SVK::DelayEditor->new ($arg{editor})
+    $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
     $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
 	if $arg{debug};

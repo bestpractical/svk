@@ -1,4 +1,4 @@
-package SVK::StatusEditor;
+package SVK::Editor::Status;
 use strict;
 require SVN::Delta;
 our $VERSION = '0.05';

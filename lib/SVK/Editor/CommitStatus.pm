@@ -1,8 +1,8 @@
-package SVK::CommitStatusEditor;
+package SVK::Editor::CommitStatus;
 use strict;
-require SVK::StatusEditor;
+require SVK::Editor::Status;
 our $VERSION = '0.05';
-our @ISA = qw(SVK::StatusEditor);
+our @ISA = qw(SVK::Editor::Status);
 
 sub close_file {
     my ($self, $path) = @_;

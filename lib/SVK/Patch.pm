@@ -27,7 +27,7 @@ info and anchor for the patch to be applied.
 use SVK::Editor::Patch;
 use SVK::Util qw(find_svm_source resolve_svm_source);
 use SVK::Merge;
-use SVK::DiffEditor;
+use SVK::Editor::Diff;
 use Storable qw/nfreeze thaw/;
 use MIME::Base64;
 use Compress::Zlib;
@@ -160,7 +160,7 @@ sub view {
     print "Log:\n".$self->{log}."\n";
     my $baseroot = $fs->revision_root ($mrev);
     $self->editor->drive
-	( SVK::DiffEditor->new
+	( SVK::Editor::Diff->new
 	  ( cb_basecontent => sub { my ($path) = @_;
 				    my $base = $baseroot->file_contents ("$anchor/$path");
 				    return $base;
@@ -189,14 +189,14 @@ sub applicable {
 
     my $yrev = $fs->youngest_rev;
     my ($base_path, $baserev) = @{$self}{qw/target_path target_rev/};
-    my $editor = SVK::MergeEditor->new
+    my $editor = SVK::Editor::Merge->new
 	( anchor => $anchor,
 	  base_anchor => $anchor,
 	  base_root => $fs->revision_root ($mrev),
 	  target => '',
 	  send_fulltext => 0,
 	  storage => SVN::Delta::Editor->new,
-	  SVK::MergeEditor::cb_for_root ($fs->revision_root ($yrev), $anchor, $yrev),
+	  SVK::Editor::Merge::cb_for_root ($fs->revision_root ($yrev), $anchor, $yrev),
 	);
     $self->{editor}->drive ($editor);
     return $editor->{conflicts};
@@ -217,14 +217,14 @@ sub update {
     my ($base_path, $baserev, $fromrev, $torev) =
 	($merge->find_merge_base ($repos, $self->{source_path}, $anchor), $yrev);
     $self->{log} = $merge->log ($repos, $self->{source_path}, $fromrev+1, $torev);
-    my $editor = SVK::MergeEditor->new
+    my $editor = SVK::Editor::Merge->new
 	( anchor => $self->{source_path},
 	  base_anchor => $base_path,
 	  base_root => $fs->revision_root ($baserev),
 	  target => '',
 	  send_fulltext => 0,
 	  storage => $self->editor,
-	  SVK::MergeEditor::cb_for_root ($fs->revision_root ($yrev), $anchor, $yrev),
+	  SVK::Editor::Merge::cb_for_root ($fs->revision_root ($yrev), $anchor, $yrev),
 	);
     SVN::Repos::dir_delta ($fs->revision_root ($baserev),
 			   $base_path, '',

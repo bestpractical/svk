@@ -5,7 +5,7 @@ our $VERSION = '0.14';
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::DelayEditor;
+use SVK::Editor::Delay;
 use SVK::Command::Log;
 use SVK::Merge;
 use SVK::Util qw (get_buffer_from_editor find_svm_source svn_mirror);
@@ -67,8 +67,8 @@ sub run {
     my ($storage, %cb) = $self->get_editor ($dst);
 
     my $fs = $repos->fs;
-    $storage = SVK::DelayEditor->new ($storage);
-    my $editor = SVK::MergeEditor->new
+    $storage = SVK::Editor::Delay->new ($storage);
+    my $editor = SVK::Editor::Merge->new
 	( anchor => $src->{path},
 	  base_anchor => $base_path,
 	  base_root => $fs->revision_root ($baserev),

@@ -1,4 +1,4 @@
-package SVK::MergeEditor;
+package SVK::Editor::Merge;
 use strict;
 our $VERSION = '0.14';
 our @ISA = qw(SVN::Delta::Editor);
@@ -8,11 +8,11 @@ use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
 
 =head1 NAME
 
-SVK::MergeEditor - An editor wrapper that merges for the storage editor
+SVK::Editor::Merge - An editor wrapper that merges for the storage editor
 
 =head1 SYNOPSIS
 
-$editor = SVK::MergeEditor->new
+$editor = SVK::Editor::Merge->new
     ( anchor => $anchor,
       base_anchor => $base_anchor,
       base_root => $fs->revision_root ($arg{fromrev}),
@@ -24,7 +24,7 @@ $editor = SVK::MergeEditor->new
 
 =head1 DESCRIPTION
 
-Given the base root and callbacks for local tree, SVK::MergeEditor
+Given the base root and callbacks for local tree, SVK::Editor::Merge
 forwards the incoming editor calls to the storage editor for modifying
 the local tree, and merges the tree delta and text delta
 transparently.

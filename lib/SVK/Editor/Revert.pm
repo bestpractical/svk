@@ -1,8 +1,8 @@
-package SVK::RevertEditor;
+package SVK::Editor::Revert;
 use strict;
-use SVK::StatusEditor;
+use SVK::Editor::Status;
 our $VERSION = '0.05';
-our @ISA = qw(SVK::StatusEditor);
+our @ISA = qw(SVK::Editor::Status);
 
 sub close_file {
     my ($self, $path) = @_;

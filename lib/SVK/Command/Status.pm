@@ -4,7 +4,7 @@ our $VERSION = '0.14';
 
 use base qw( SVK::Command );
 use SVK::XD;
-use SVK::StatusEditor;
+use SVK::Editor::Status;
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -23,11 +23,11 @@ sub run {
 	  xdroot => $xdroot,
 	  nodelay => 1,
 	  delete_verbose => 1,
-	  editor => SVK::StatusEditor->new
+	  editor => SVK::Editor::Status->new
 	  ( copath => $target->{copath},
 	    dpath => $target->{path},
 	    rpath => $target->{report}),
-	  cb_conflict => \&SVK::StatusEditor::conflict,
+	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_unknown =>
 	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$target->{report}|;
 		print "?   $_[1]\n" }

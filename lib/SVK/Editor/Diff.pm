@@ -1,4 +1,4 @@
-package SVK::DiffEditor;
+package SVK::Editor::Diff;
 use strict;
 use SVN::Delta;
 our $VERSION = '0.09';
@@ -110,7 +110,7 @@ sub output_prop_diff {
 		unless $self->{info}{$path}{added};
 	    print Text::Diff::diff (\ ($baseprop || ''),
 				    \$self->{info}{$path}{prop}{$_},
-				    { STYLE => 'SVK::DiffEditor::NoHeader' });
+				    { STYLE => 'SVK::Editor::Diff::NoHeader' });
 	}
 	print "\n\n";
     }
@@ -150,7 +150,7 @@ sub close_edit {
     my ($self, @arg) = @_;
 }
 
-package SVK::DiffEditor::NoHeader;
+package SVK::Editor::Diff::NoHeader;
 
 our @ISA = qw(Text::Diff::Unified);
 

@@ -5,7 +5,7 @@ our $VERSION = '0.14';
 use base qw( SVK::Command::Merge SVK::Command::Copy SVK::Command::Propset );
 use SVK::XD;
 use SVK::I18N;
-use SVK::CombineEditor;
+use SVK::Editor::Combine;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -50,7 +50,7 @@ sub run {
 	) unless $self->{check_only};
 
     my $fs = $repos->fs;
-    my $ceditor = SVK::CombineEditor->new(tgt_anchor => $base_path, #$check_only ? $base_path : $tmpbranch,
+    my $ceditor = SVK::Editor::Combine->new(tgt_anchor => $base_path, #$check_only ? $base_path : $tmpbranch,
 					  base_root  => $fs->revision_root ($base_rev),
 					  pool => SVN::Pool->new,
 					 );
@@ -72,7 +72,7 @@ sub run {
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n", $base_path, $base_rev, $src->{path}, $fromrev, $torev);
 
 	my $fs = $repos->fs;
-	my $editor = SVK::MergeEditor->new
+	my $editor = SVK::Editor::Merge->new
 	    ( anchor => $src->{path},
 	      base_anchor => $src->{path},
 	      base_root => $fs->revision_root ($fromrev),
