@@ -108,6 +108,7 @@ sub get_editor {
 	}
 	else {
 	    $m->{auth} = $self->auth;
+	    $m->{config} = $self->{svnconfig};
 	    $m->{revprop} = ['svk:signature'];
 	    ($base_rev, $editor) = $m->get_merge_back_editor
 		($mpath, $self->{message},

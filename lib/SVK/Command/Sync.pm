@@ -46,6 +46,7 @@ sub run {
 				  target => $target->{repospath},
 				  repos => $target->{repos},
 				  pool => SVN::Pool->new, auth => $self->auth,
+				  config => $self->{svnconfig},
 				  cb_copy_notify => \&copy_notify,
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 19;
+use Test::More tests => 21;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -112,4 +112,49 @@ is_output ($svk, 'pl', ['-v', <A/mime/*>],
 	    'Properties on A/mime/foo.jpg:',
 	    '  svn:mime-type: image/jpeg',
 	   ]);
+}
+
+$svk->revert ('-R', 'A');
+
+# auto-prop
+use File::Temp qw/tempdir/;
+my $dir = tempdir ( CLEANUP => 1 );
+overwrite_file (File::Spec->catfile ($dir, 'servers'), '');
+overwrite_file (File::Spec->catfile ($dir, 'config'), << "EOF");
+[miscellany]
+enable-auto-props = yes
+[auto-props]
+*.txt = svn:eol-style=native;svn:keywords=Revision Id
+*.pl = svn:eol-style=native;svn:mime-type=text/perl
+
+EOF
+
+$xd->{svnconfig} = SVN::Core::config_get_config ($dir);
+mkdir ('A/autoprop');
+overwrite_file ("A/autoprop/foo.pl", "#!/usr/bin/perl\n");
+overwrite_file ("A/autoprop/foo.txt", "Text file\n");
+overwrite_file ("A/autoprop/foo.bar", "this is just a test\n");
+
+# test enumerator
+eval { $xd->{svnconfig}{config}->enumerate ('auto-props', sub {}) };
+
+SKIP: {
+
+skip 'svn too old, does not support config enumerator', 2 if $@;
+
+is_output ($svk, 'add', ['A/autoprop'],
+	   ['A   A/autoprop',
+	    'A   A/autoprop/foo.bar',
+	    'A   A/autoprop/foo.pl',
+	    'A   A/autoprop/foo.txt']);
+
+is_output ($svk, 'pl', ['-v', <A/autoprop/*>],
+	   ['Properties on A/autoprop/foo.pl:',
+	    '  svn:eol-style: native',
+	    '  svn:mime-type: text/perl',
+	    'Properties on A/autoprop/foo.txt:',
+	    '  svn:eol-style: native',
+	    '  svn:keywords: Revision Id'
+	   ]);
+
 }

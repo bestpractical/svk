@@ -179,6 +179,7 @@ sub create_basic_tree {
 
     my $edit = get_editor ($repospath, $path, $repos);
     $edit->open_root ();
+
     $edit->modify_file ($edit->add_file ('/me'),
 			"first line in me\n2nd line in me\n");
     $edit->modify_file ($edit->add_file ('/A/be'),
@@ -189,6 +190,7 @@ sub create_basic_tree {
     $edit->add_directory ('/B');
     $edit->add_directory ('/C');
     $edit->add_directory ('/A/Q');
+    $edit->change_dir_prop ('/A/Q', 'foo', 'prop on A/Q');
     $edit->modify_file ($edit->add_file ('/A/Q/qu'),
 			"first line in qu\n2nd line in qu\n");
     $edit->modify_file ($edit->add_file ('/A/Q/qz'),

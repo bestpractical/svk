@@ -18,7 +18,7 @@ use File::Path;
 use YAML qw(LoadFile DumpFile);
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
-
+use Regexp::Shellish qw( compile_shellish ) ;
 
 =head1 NAME
 
@@ -481,12 +481,25 @@ automatically when added.
 
 =cut
 
+sub _load_svn_autoprop {
+    my $self = shift;
+    $self->{svnautoprop} = {};
+    local $@;
+    eval {
+	$self->{svnconfig}{config}->
+	    enumerate ('auto-props',
+		       sub { $self->{svnautoprop}{compile_shellish $_[0]} = $_[1]} );
+    };
+    warn "Your svn is too old, auto-prop in svn config is not supported: $@\n" if $@;
+}
+
 sub auto_prop {
     my ($self, $copath) = @_;
     # no other prop for links
     return {'svn:special' => '*'} if -l $copath;
     my $prop;
     $prop->{'svn:executable'} = '*' if -x $copath;
+    # auto mime-type
     require IO::File;
     my $fh = IO::File->new ($copath) or die $!;
     if (my $type = mimetype($fh)) {
@@ -495,7 +508,18 @@ sub auto_prop {
 	    if $type ne 'text/plain' &&
 		($type =~ m/^text/ || !mimetype_is_text ($type));
     }
-    # XXX: autoprop stuff
+    # svn auto-prop
+    if ($self->{svnconfig} && $self->{svnconfig}{config}->get_bool ('miscellany', 'enable-auto-props', 0)) {
+	$self->_load_svn_autoprop unless $self->{svnautoprop};
+	my (undef, undef, $filename) = File::Spec->splitpath ($copath);
+	while (my ($pattern, $value) = each %{$self->{svnautoprop}}) {
+	    next unless $filename =~ m/$pattern/;
+	    for (split (';', $value)) {
+		my ($propname, $propvalue) = split ('=', $_, 2);
+		$prop->{$propname} = $propvalue;
+	    }
+	}
+    }
     return $prop;
 }
 
@@ -714,7 +738,6 @@ Don't generate absent_* calls.
 
 =cut
 
-use Regexp::Shellish qw( :all ) ;
 # XXX: checkout_delta is getting too complicated and too many options
 my %ignore_cache;
 

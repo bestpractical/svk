@@ -176,6 +176,7 @@ sub open_root {
     $self->{notify} ||= SVK::Notify->new_with_report ($self->{report}, $self->{target});
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
+    $self->{notify}->node_status ('', '');
     return '';
 }
 
@@ -422,6 +423,7 @@ sub open_directory {
 	    return undef;
 	}
     }
+    $self->{notify}->node_status ($path, '');
     $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);

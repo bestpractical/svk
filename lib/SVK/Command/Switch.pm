@@ -23,8 +23,11 @@ sub run {
     my ($entry, @where) = $self->{xd}{checkout}->get ($cotarget->{copath});
     die loc("can only switch checkout root") unless $where[0] eq $cotarget->{copath};
 
-    # XXX: check relation between target_path and path
     $self->{update_target_path} = $target->{path};
+    # check if the switch has a base at all
+    SVK::Merge->auto (%$self, repos => $target->{repos},
+		      src => $cotarget, dst => $target);
+
     $self->SUPER::run ($cotarget);
 
     $self->{xd}{checkout}->store ($cotarget->{copath}, {depotpath => $target->{depotpath}});

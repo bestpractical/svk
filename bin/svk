@@ -81,6 +81,8 @@ my $svkpath = $ENV{SVKROOT} || "$ENV{HOME}/.svk";
     $SIG{INT} = sub {
 	die loc("Interrupted.\n");
     };
+    $xd->{svnconfig} = SVN::Core::config_get_config (undef)
+	unless $ENV{SVKNOSVNCONFIG};
     SVK::Command->invoke ($xd, $cmd, undef, @ARGV);
     $xd->store ();
 }

@@ -11,7 +11,7 @@ use File::Spec;
 sub parse_arg {
     my ($self, @arg) = @_;
     my $depotpath = $self->arg_depotpath ($arg[0]);
-    die loc("don't know where to checkout") unless $arg[1] || $depotpath->{path} ne '/';
+    die loc("don't know where to checkout $arg[0]\n") unless $arg[1] || $depotpath->{path} ne '/';
 
     $arg[1] =~ s|/$|| if $arg[1];
     $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
@@ -25,7 +25,7 @@ sub run {
     my ($self, $target, $report) = @_;
     my $copath = Cwd::abs_path ($report);
 
-    die loc("checkout path %1 already exists", $copath) if -e $copath;
+    die loc("checkout path %1 already exists\n", $copath) if -e $copath;
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
     die loc("overlapping checkout path not supported yet (%1)", $where[0])
