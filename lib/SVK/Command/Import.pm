@@ -61,7 +61,7 @@ sub run {
 	    unless $self->{force};
 	# XXX: check if anchor matches
 	my (undef, $path) = $self->{xd}->find_repos_from_co ($copath, 0);
-	die loc("Import path ($target->{path}) is different from the copath ($path)\n")
+	die loc("Import path (%1) is different from the copath (%2)\n", $target->{path}, $path)
 	    unless $path eq $target->{path};
 
     }
@@ -110,10 +110,10 @@ SVK::Command::Import - Import directory into depot
 
 =head1 OPTIONS
 
- -m [--message] message:    commit message
- -C [--check-only]:         don't perform actual writes
- -s [--sign]:               Needs description
- --force:                   Needs description
+ -m [--message] arg     : specify commit message ARG
+ -C [--check-only]      : try operation but make no changes
+ -s [--sign]            : sign this change
+ --force                : force import from a checkout path
 
 =head1 AUTHORS
 

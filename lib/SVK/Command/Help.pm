@@ -33,7 +33,11 @@ SVK::Command::Help - Show help
 
 =head1 SYNOPSIS
 
- help command
+ help COMMAND
+
+=head1 OPTIONS
+
+ None
 
 =head1 AUTHORS
 

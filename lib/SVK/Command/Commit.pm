@@ -15,7 +15,6 @@ sub options {
     ('m|message=s'  => 'message',
      'C|check-only' => 'check_only',
      's|sign'	  => 'sign',
-     'force',	  => 'force',
      'import',	  => 'import',
      'direct',	  => 'direct',
     );
@@ -338,12 +337,11 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 OPTIONS
 
- -m [--message] ARG:    specify commit message ARG
- -s [--sign]:           sign the commit
- -C [--check-only]:     Needs description
- --force:               Needs description
- --import:              Import mode, nodes are automatically added and deleted
- --direct:              Commit directly even if the path is mirrored
+ -m [--message] arg     : specify commit message ARG
+ -C [--check-only]      : try operation but make no changes
+ -s [--sign]            : sign this change
+ --import               : import mode; automatically add and delete nodes
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

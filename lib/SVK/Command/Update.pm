@@ -8,7 +8,7 @@ use SVK::I18N;
 
 sub options {
     ('r|revision=i'   => 'rev',
-     'N|nonrecursive' => 'nonrecursive');
+     'N|non-recursive' => 'nonrecursive');
 }
 
 sub parse_arg {
@@ -94,8 +94,8 @@ SVK::Command::Update - Bring changes from the repository into checkout copies
 
 =head1 OPTIONS
 
- -r [--revision]:        revision
- -N [--nonrecursive]:    update non-recursively
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -N [--non-recursive]   : do not descend recursively
 
 =head1 DESCRIPTION
 

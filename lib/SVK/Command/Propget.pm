@@ -49,9 +49,9 @@ SVK::Command::Propget - Display a property on path
 
 =head1 OPTIONS
 
- --strict:                  Do not print an extra newline at the end of the
-                            property values; when there are multiple paths
-                            involved, do not prefix path names before values
+ --strict               : do not print an extra newline at the end of the
+                          property values; when there are multiple paths
+                          involved, do not prefix path names before values
 
 =head1 AUTHORS
 

@@ -52,8 +52,8 @@ SVK::Command::Proplist - List all properties on files or dirs
 
 =head1 OPTIONS
 
- -r [--revision] rev:    revision
- -v [--verbose]:         print extra information
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -v [--verbose]         : print extra information
 
 =head1 AUTHORS
 

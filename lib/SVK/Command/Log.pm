@@ -151,10 +151,10 @@ SVK::Command::Log - Show log messages for revisions
 
 =head1 OPTIONS
 
- -r [--revision]:        revision spec from:to
- -l [--limit]:           limit the number of revisions displayed
- -x [--cross]:           display cross copied nodes
- -v [--verbose]:         print changed path in changes
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -l [--limit] arg       : stop after displaying ARG revisions
+ -x [--cross]           : track revisions copied from elsewhere
+ -v [--verbose]         : print extra information
 
 =head1 AUTHORS
 

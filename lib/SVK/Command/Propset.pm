@@ -81,10 +81,9 @@ SVK::Command::Propset - Set a property on path
 
 =head1 OPTIONS
 
- -m [--message] message:    Commit message
- -C [--check-only]:         Needs description
- -s [--sign]:               Needs description
- --force:                   Needs description
+ -m [--message] arg     : specify commit message ARG
+ -C [--check-only]      : try operation but make no changes
+ -s [--sign]            : sign this change
 
 =head1 AUTHORS
 

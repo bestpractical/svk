@@ -128,16 +128,15 @@ merge -r N:M DEPOTPATH1 DEPOTPATH2
 
 =head1 OPTIONS
 
- -r [--revision] rev:       revision
- -m [--message] message:    commit message
- -C [--check-only]:         don't perform actual writes
- -I [--incremental]:        apply changes individually
- -a [--auto]:               automatically find merge points
- -l [--log]:                brings the logs of merged revs to the message buffer
- --no-ticket:               don't associate the ticket tracking merge history
- --track-rename:            track the changes made to renamed node
- --force:                   Needs description
- -s [--sign]:               Needs description
+ -r [--revision] N:M    : act on revisions between N and M
+ -m [--message] arg     : specify commit message ARG
+ -C [--check-only]      : try operation but make no changes
+ -I [--incremental]     : apply each change individually
+ -a [--auto]            : merge from the previous merge point
+ -l [--log]             : use logs of merged revisions as commit message
+ -s [--sign]            : sign this change
+ --no-ticket            : do not record this merge point
+ --track-rename         : track changes made to renamed node
 
 =head1 AUTHORS
 

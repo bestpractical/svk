@@ -160,11 +160,10 @@ SVK::Command::Copy - Make a versioned copy
 
 =head1 OPTIONS
 
- -m [--message] arg:     Needs description
- -C [--check-only]:      Needs description
- -s [--sign]:            Needs description
- -r [--revision] arg:    Needs description
- --force:                Needs description
+ -r [--revision] arg    : act on revision ARG instead of the head revision
+ -m [--message] arg     : specify commit message ARG
+ -C [--check-only]      : try operation but make no changes
+ -s [--sign]            : sign this change
 
 =head1 AUTHORS
 

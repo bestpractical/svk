@@ -432,10 +432,10 @@ sub usage {
     $buf =~ s/^AUTHORS.*//sm;
     $buf =~ s/^DESCRIPTION.*//sm unless $want_detail;
     foreach my $line (split(/\n/, $buf, -1)) {
-	if ($line =~ /^(\s*)(.+?: )( *)(.+?)(\s*)$/) {
+	if ($line =~ /^(\s*)(.+?)( +)(: .+?)(\s*)$/) {
 	    my $spaces = $3;
 	    my $loc = $1 . loc($2 . $4) . $5;
-	    $loc =~ s/: /: $spaces/ if $spaces;
+	    $loc =~ s/: /$spaces: / if $spaces;
 	    print $loc, "\n";
 	}
 	elsif ($line =~ /^(\s*)(.+?)(\s*)$/) {

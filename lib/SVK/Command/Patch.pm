@@ -46,7 +46,7 @@ sub create {
 				 $src, $dst);
     my $ret = $self->regen ($patch);
     unless ($ret) {
-	print loc ("Patch $name created.\n");
+	print loc ("Patch %1 created.\n", $name);
     }
     return $ret;
 }

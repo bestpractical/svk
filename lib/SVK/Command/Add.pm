@@ -79,7 +79,8 @@ SVK::Command::Add - Put files and directories under version control
 
 =head1 OPTIONS
 
- -N [--non-recursive]:   operate on single directory only
+ -N [--non-recursive]   : do not descend recursively
+ -q [--quiet]           : do not display changed nodes
 
 =head1 DESCRIPTION
 

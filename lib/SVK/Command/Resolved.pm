@@ -45,7 +45,7 @@ SVK::Command::Resolved - Remove conflict mark from checkout items
 
 =head1 OPTIONS
 
- -R [--recursive]:    Needs description
+ -R [--recursive]       : descend recursively
 
 =head1 AUTHORS
 

@@ -51,7 +51,7 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
 =head1 OPTIONS
 
-None.
+ None
 
 =head1 AUTHORS
 

@@ -50,7 +50,7 @@ SVK::Command::Cat - Output the file from depot
 
 =head1 OPTIONS
 
- -r [--revision] REV:    revision
+ -r [--revision] arg    : act on revision ARG instead of the head revision
 
 =head1 AUTHORS
 

@@ -109,7 +109,7 @@ sub load {
     my ($self) = @_;
     my $info;
 
-    mkdir($self->{svkpath}) || die loc("Cannot create svk-config-directory at '$self->{svkpath}': $!")
+    mkdir($self->{svkpath}) || die loc("Cannot create svk-config-directory at '%1': %2", $self->{svkpath}, $!)
         unless -d $self->{svkpath};
 
     $self->giant_lock ();

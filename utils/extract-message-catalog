@@ -29,9 +29,9 @@ foreach my $pm (@pms) {
 	elsif ($line =~ /^([A-Z_]+)/) {
 	    $strings{$1}++;
 	}
-	elsif (my @lines = $line =~ /^ {8}\s*(.+)\s*$/mg) {
+	elsif (my @lines = $line =~ /^\s+(.+)\s*$/mg) {
 	    foreach my $chunk (@lines) { 
-		$chunk =~ s/: +/: /;
+		$chunk =~ s/ +: /: /;
 		$strings{$chunk}++;
 	    }
 	}
@@ -40,7 +40,6 @@ foreach my $pm (@pms) {
 }
 
 if (%strings) {
-    die if -e "lib/SVK/Command.pod";
     open my $fh, ">", "lib/SVK/Command.pod" or die $!;
     print $fh "{{$_}}\n" for sort keys %strings;
     close $fh;

@@ -109,7 +109,7 @@ SVK::Command::Revert - Revert changes made in checkout copies
 
 =head1 OPTIONS
 
- -R [--recursive]:    Needs description
+ -R [--recursive]       : descend recursively
 
 =head1 AUTHORS
 

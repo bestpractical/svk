@@ -48,7 +48,7 @@ SVK::Command::Switch - Switch to another branch and keep local modifications
 
 =head1 OPTIONS
 
- -r [--revision]:        revision
+ -r [--revision] arg    : act on revision ARG instead of the head revision
 
 =head1 AUTHORS
 

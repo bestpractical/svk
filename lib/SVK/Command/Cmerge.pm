@@ -132,15 +132,14 @@ SVK::Command::Cmerge - Merge specific changes
 
 =head1 OPTIONS
 
- -m [--message] message:    commit message
- -c [--change] chgspec:     change spec to merge
- -C [--check-only]:         don't perform actual writes
- -l [--log]:                brings the logs of merged revs to the message buffer
- --no-ticket:               don't associate the ticket tracking merge history
- -r [--revision] arg:       Needs description
- -a [--auto]:               Needs description
- --force:                   Needs description
- -s [--sign]:               Needs description
+ -m [--message] arg     : specify commit message ARG
+ -c [--change] arg      : act on comma-separated revisions ARG
+ -C [--check-only]      : try operation but make no changes
+ -l [--log]             : use logs of merged revisions as commit message
+ -r [--revision] N:M    : act on revisions between N and M
+ -a [--auto]            : merge from the previous merge point
+ -s [--sign]            : sign this change
+ --no-ticket            : do not record this merge point
 
 =head1 AUTHORS
 

@@ -87,8 +87,8 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 OPTIONS
 
- --list:               List mirrored path
- --upgrade:            Upgrade mirror state to latest version
+ --list                 : list mirrored paths
+ --upgrade              : upgrade mirror state to the latest version
 
 =head1 AUTHORS
 

@@ -77,8 +77,8 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
 =head1 OPTIONS
 
- -l [--list]:    List current depot mapping
- -i [--init]:    Initialize a default deopt
+ -l [--list]            : list current depot mappings
+ -i [--init]            : initialize a default deopt
 
 =head1 DESCRIPTION
 
