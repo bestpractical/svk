@@ -959,6 +959,7 @@ sub find_base_rev {
 
 sub find_head_rev {
     my ($self,$target) = @_;
+    $target->as_depotpath;
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
