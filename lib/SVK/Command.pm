@@ -36,25 +36,34 @@ information is displayed instead.
 
 =cut
 
-my %alias = qw( blame		annotate
+my %alias = qw( ann		annotate
+                blame		annotate
+                praise		annotate
 		co		checkout
 		cm		cmerge
 		ci		commit
 		cp		copy
 		del		delete
+		remove		delete
 		rm		delete
 		depot		depotmap
 		desc		describe
+		di		diff
 		ls		list
 		mi		mirror
 		mv		move
 		ren		move
 		rename	    	move
 		pd		propdel
+		pdel		propdel
 		pe		propedit
+		pedit		propedit
 		pg		propget
+		pget		propget
 		pl		proplist
+		plist		proplist
 		ps		propset
+		pset		propset
 		sm		smerge
 		st		status
 		stat		status
@@ -131,7 +140,7 @@ sub invoke {
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
-	$cmd->getopt (\@args, 'h|help' => \$help);
+	$cmd->getopt (\@args, '?|h|help' => \$help);
 
 	# Fake shell globbing on Win32 if we are called from main
 	if (IS_WIN32 and caller(1) eq 'main') {
