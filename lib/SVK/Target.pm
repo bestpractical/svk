@@ -3,6 +3,7 @@ use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
 use SVK::Util qw( get_anchor );
+use SVK::Target::Universal;
 use Clone;
 
 =head1 NAME
@@ -139,7 +140,7 @@ sub copath {
 
 =head2 descend
 
-Make target descend into C<$entry>
+Makes target descend into C<$entry>
 
 =cut
 
@@ -149,6 +150,16 @@ sub descend {
     $self->{path} .= "/$entry";
     $self->{report} = File::Spec->catfile ($self->{report}, $entry);
     $self->{copath} = File::Spec->catfile ($self->{copath}, $entry);
+}
+
+=head2 universal
+
+Returns corresponding L<SVK::Target::Universal> object.
+
+=cut
+
+sub universal {
+    SVK::Target::Universal->new ($_[0]);
 }
 
 =head1 AUTHORS
