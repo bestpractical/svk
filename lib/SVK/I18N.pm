@@ -8,6 +8,7 @@ our @EXPORT = 'loc';
 sub loc {
     no strict 'refs';
     local $SIG{__WARN__} = sub {};
+    local $@;
 
     if (eval {
 	require Locale::Maketext::Simple;

@@ -49,7 +49,6 @@ lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Delay.pm
-lib/SVK/Editor/Delete.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Merge.pm
@@ -71,6 +70,8 @@ META.yml			Module meta-data (added by MakeMaker)
 README
 SIGNATURE
 t/00use.t
+t/01depotmap.t
+t/01help.t
 t/02basic.t
 t/03import.t
 t/04merge.t
@@ -84,7 +85,11 @@ t/10switch.t
 t/11checkout.t
 t/12copy.t
 t/13patch.t
-t/tree.pl
+t/20add.t
+t/21delete.t
+t/22status.t
+t/30annotate.t
+t/31cat.t
 utils/extract-docs
 utils/svk-ediff.el
 utils/svk-merge-filemerge

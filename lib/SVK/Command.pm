@@ -40,7 +40,7 @@ sub new {
 
 sub options { () }
 
-sub parse_arg {}
+sub parse_arg { return (undef) }
 
 sub _opt_map {
     my ($self, %opt) = @_;

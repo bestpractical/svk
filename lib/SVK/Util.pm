@@ -9,18 +9,18 @@ our $VERSION   = '0.09';
 use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
 use File::Temp qw(mktemp);
-use Term::ReadLine;
 my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 
 sub svn_mirror { $svn_mirror }
 
-my $tr;
 sub get_prompt {
     my ($prompt, $regex) = @_;
-    $tr ||= Term::ReadLine->new($0);
+    local $|;
+    $|++;
 
     {
-	my $answer = $tr->readline("$prompt ");
+	print "$prompt";
+	my $answer = <STDIN>;
 	chomp $answer;
 	redo if $regex and $answer !~ $regex;
 	return $answer;
@@ -48,13 +48,14 @@ sub get_buffer_from_editor {
 	$content = <$fh>;
     }
 
-    while (1) {
-	my $mtime = (stat($file))[9];
-	my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
+    my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
 			: "vi"; # fall back to something
+    my @editor = split (' ', $editor);
+    while (1) {
+	my $mtime = (stat($file))[9];
 	print loc("Waiting for editor...\n");
-	system ($editor, $file) and die loc("Aborted.\n");
+	system (@editor, $file) and die loc("Aborted: %1\n", $!);
 	last if (stat($file))[9] > $mtime;
 	my $ans = get_prompt(
 	    loc("%1 not modified: a)bort, e)dit, c)ommit?", $what),

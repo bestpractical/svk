@@ -56,7 +56,6 @@ sub _do_edit {
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;
-	File::Path::mkpath([$path], 0, 0711);
 	SVN::Repos::create($path, undef, undef, undef,
 			   {'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
