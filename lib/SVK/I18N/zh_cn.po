@@ -1723,7 +1723,7 @@ msgstr "pull [路径...]"
 
 #: lib/SVK/Command.pod:236
 msgid "push - Move changes into another repository"
-msgstr "pull - 推送更动到远程档案库里"
+msgstr "push - 推送更动到远程档案库里"
 
 #: lib/SVK/Command.pod:237
 msgid "push [DEPOTPATH | PATH]"
