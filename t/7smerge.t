@@ -4,7 +4,7 @@ require 't/tree.pl';
 require Test::More;
 eval "require SVN::Mirror"
 or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('tests', 2);
+Test::More->import ('tests', 3);
 
 # build another tree to be mirrored ourself
 $svk::info = build_test ('test', 'client2');
@@ -74,6 +74,8 @@ svk::smerge ('-m', 'mergedown', '//m', '//l');
 svk::smerge ('-m', 'mergedown', '//m', '//l');
 svk::update ($scopath);
 append_file ("$scopath/A/be", "more modification on trunk\n");
+mkdir "$scopath/A/newdir";
+#svk::add ("$scopath/A/newdir");
 svk::propset ("bzz", "newprop", "$scopath/A/Q/qu");
 svk::commit ('-m', 'commit on trunk', $scopath);
 svk::sync ('//m');
@@ -88,7 +90,12 @@ svk::smerge ('//m', $copath);
 svk::status ($copath);
 svk::revert ("$copath/be");
 svk::resolved ("$copath/be");
+print "====>\n";
+svk::status ($copath);
 svk::commit ('-m', 'merge down committed from checkout', $copath);
+unlink ("$copath/newdir");
+svk::revert ('-R', $copath);
+ok (-e "$copath/newdir", 'smerge to checkout - added directory');
 
 svk::mirror ('/client2/trunk', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 
