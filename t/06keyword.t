@@ -62,7 +62,7 @@ mkdir ("$copath/le");
 overwrite_file_raw ("$copath/le/dos", "dos$CR");
 overwrite_file_raw ("$copath/le/unix", "unix$CR");
 overwrite_file_raw ("$copath/le/mac", "mac$CRLF");
-overwrite_file_raw ("$copath/le/native", "native$CR");
+overwrite_file_raw ("$copath/le/native", "native$Native");
 overwrite_file_raw ("$copath/le/na", "na$CR");
 overwrite_file_raw ("$copath/le/mixed", "mixed$CRLF...endings$CR");
 $svk->add ("$copath/le");
@@ -74,10 +74,6 @@ $svk->ps ('svn:eol-style', 'NA', "$copath/le/na");
 $svk->commit ('-m', 'test line ending', $copath);
 
 is_file_content_raw ("$copath/le/na", "na$CR");
-
-TODO: {
-    local $TODO = 'Sane eol handling';
-
 is_file_content_raw ("$copath/le/dos", "dos$CRLF");
 is_file_content_raw ("$copath/le/unix", "unix$LF");
 is_file_content_raw ("$copath/le/mac", "mac$CR");
@@ -86,6 +82,9 @@ is_file_content_raw ("$copath/le/native", "native$Native");
 $svk->pd ('svn:eol-style', "$copath/le/native");
 $svk->commit ('-m', 'test line ending', $copath);
 is_file_content_raw ("$copath/le/native", "native$LF");
+
+TODO: {
+    local $TODO = 'Sane eol handling';
 
 $SIG{__DIE__} = sub {
     $_[0] =~ /Mixed newlines/ or return;
