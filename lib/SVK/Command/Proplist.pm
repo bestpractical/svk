@@ -63,7 +63,7 @@ sub show_props {
 }
 
 sub _arg_revprop {
-    my $self = shift;
+    my $self = $_[0];
     goto &{$self->can($self->{revprop} ? 'arg_depotroot' : 'arg_co_maybe')};
 }
 
