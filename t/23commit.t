@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 6;
+use Test::More tests => 7;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -17,10 +17,11 @@ overwrite_file ("A/bar", "foobar");
 overwrite_file ("A/deep/baz", "foobar");
 overwrite_file ("A/deep/la/no", "foobar");
 
-is_output_like ($svk, 'commit', [], qr'no targets to commit', 'commit - no target');
+is_output ($svk, 'commit', [], ['No targets to commit.'], 'commit - no target');
 $svk->add ('A');
 $svk->commit ('-m', 'foo');
 
+is_output ($svk, 'status', [], []);
 overwrite_file ("A/deep/baz", "fnord");
 overwrite_file ("A/bar", "fnord");
 overwrite_file ("A/deep/la/no", "fnord");
@@ -28,6 +29,7 @@ overwrite_file ("A/deep/X", "fnord");
 overwrite_file ("A/deep/new", "fnord");
 $svk->add ('A/deep/new');
 $svk->commit ('-m', 'commit from deep anchor', 'A/deep');
+
 $svk->update ('-r', 1);
 overwrite_file ("A/barnew", "fnord");
 $svk->add ('A/barnew');

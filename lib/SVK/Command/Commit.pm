@@ -154,16 +154,9 @@ sub get_editor {
 }
 
 
-sub run {
-    my ($self, $target) = @_;
-
-    my $is_mirrored = $self->under_mirror ($target);
-    print loc("Commit into mirrored path: merging back directly.\n")
-	if $is_mirrored;
-
+sub get_committable {
+    my ($self, $target, $root) = @_;
     my ($fh, $file);
-    my $xdroot = $target->root ($self->{xd});
-
     unless (defined $self->{message}) {
 	($fh, $file) = tmpfile ('commit', UNLINK => 0);
     }
@@ -183,7 +176,7 @@ sub run {
 	    }));
     $self->{xd}->checkout_delta
 	( %$target,
-	  xdroot => $xdroot,
+	  xdroot => $root,
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  absent_ignore => 1,
@@ -191,7 +184,7 @@ sub run {
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	);
 
-    return loc("no targets to commit\n") if $#{$targets} < 0;
+    die loc("No targets to commit.\n") if $#{$targets} < 0;
 
     my $conflicts = grep {$_->[0] eq 'C'} @$targets;
     if ($conflicts) {
@@ -199,9 +192,8 @@ sub run {
 	    close $fh;
 	    unlink $file;
 	}
-	return loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
+	die loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
     }
-
 
     if ($fh) {
 	close $fh;
@@ -210,10 +202,20 @@ sub run {
 				    undef, $file, $target->{copath}, $target->{targets});
     }
 
-    # if $copath itself is a file or is in the targets,
-    # should get the anchor instead, tweak copath for the s// in XD.pm
+    return [sort {$a->[1] cmp $b->[1]} @$targets];
+}
 
-    $targets = [sort {$a->[1] cmp $b->[1]} @$targets];
+sub run {
+    my ($self, $target) = @_;
+
+    my $is_mirrored = $self->under_mirror ($target) && !$self->{direct};
+    print loc("Commit into mirrored path: merging back directly.\n")
+	if $is_mirrored;
+
+    my $xdroot = $target->root ($self->{xd});
+    # XXX: should use some status editor to get the committed list for post-commit handling
+    # while printing the modified nodes.
+    my $targets = $self->get_committable ($target, $xdroot);
 
     my ($editor, %cb) = $self->get_editor ({%$target, copath => undef});
     my $fs = $target->{repos}->fs;
@@ -246,26 +248,27 @@ sub run {
 		    unless $self->{xd}{checkout}->get ($path)->{revision} == $rev;
 	}
 	my $root = $fs->revision_root ($rev);
-	# update keyword-trnslated files
+	# update keyword-translated files
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
 	    my $dpath = $copath;
-	    $dpath =~ s|^\Q$target->{copath}\E|$target->{path}|;
+	    my $path = $target->{path};
+	    $path = '' if $path eq '/';
+	    # XXX: translate SEP to /
+	    $dpath =~ s|^\Q$target->{copath}\E|$path|;
 	    my $prop = $root->node_proplist ($dpath);
+	    # XXX: some mode in get_fh for modification only
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
 	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop);
 	    next unless $layer || ($eol ne ':raw' && $eol ne '');
 
-	    my $fh = SVK::XD::get_fh ($root, '<', $dpath, $copath, 0, $layer, $eol, $prop);
-	    my $fname = "$copath.svk.old";
-	    rename $copath, $fname or die $!;
+	    my $fh = $root->file_contents ($dpath);
+	    my $perm = (stat ($copath))[2];
 	    open my ($newfh), ">$eol", $copath or die $!;
 	    $layer->via ($newfh) if $layer;
 	    slurp_fh ($fh, $newfh);
-	    chmod ((stat ($fh))[2], $copath);
-	    close $fh;
-	    unlink $fname;
+	    chmod ($perm, $copath);
 	}
     };
 

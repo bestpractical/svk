@@ -1160,7 +1160,7 @@ sub get_keyword_layer {
 		 sub { my ($root, $path) = @_;
 		       my $rev = 0;
 		       my $fs = $root->fs;
-		       my $hist = $fs->revision_root ($fs->youngest_rev)->node_history ($path);
+		       my $hist = $root->node_history ($path);
 		       my $spool = SVN::Pool->new_default_sub;
 		       $rev++, $spool->clear while $hist = $hist->prev (0);
 		       "#$rev";

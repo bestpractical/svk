@@ -81,7 +81,7 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
 
 =head1 DESCRIPTION
 
-Run this command with any options would bring up your $EDITOR,
+Run this command without any options would bring up your C<$EDITOR>,
 and let you edit your depot-directory mapping.
 
 Each line contains a map entry, the format is:
