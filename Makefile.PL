@@ -25,6 +25,7 @@ use ExtUtils::AutoInstall
         'IO::String'            => '0',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.13',
+        'PerlIO::via::dynamic'  => '0',
         'SVN::Simple::Edit'     => '0.21',
       ],
       'SVN::Mirror support' =>

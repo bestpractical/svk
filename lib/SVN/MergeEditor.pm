@@ -40,7 +40,7 @@ The anchor of the target tree.
 
 The target path component of the target tree.
 
-=item base_annchor
+=item base_anchor
 
 The anchor of the base tree.
 
@@ -50,7 +50,7 @@ The root object of the base tree.
 
 =item storage
 
-The editor that will recieve the merged callbacks.
+The editor that will receive the merged callbacks.
 
 =back
 

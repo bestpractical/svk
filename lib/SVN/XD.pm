@@ -14,6 +14,7 @@ use File::Find;
 use File::Path;
 use YAML;
 use File::Temp qw/:mktemp/;
+use PerlIO::via::dynamic;
 
 sub new {
     my $class = shift;
@@ -503,7 +504,7 @@ sub _delta_dir {
 # options:
 #  delete_verbose: generate delete_entry calls for subdir within deleted entry
 #  absent_verbose: generate absent_* calls for subdir within absent entry
-#  unknown_verbose: generate cb_unknwon calls for subdir within absent entry
+#  unknown_verbose: generate cb_unknown calls for subdir within absent entry
 #  absent_ignore: don't generate absent_* calls.
 #  strict_add: add schedule must be on the entry check, not any parent.
 
@@ -964,9 +965,11 @@ sub get_keyword_layer {
 
     my $keyword = '('.join('|', @key).')';
 
-    my $p = PerlIO::via::keyword->new
-	({translate => sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).'$'/e },
-	  undo => sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/\$$1\$/}});
+    my $p = PerlIO::via::dynamic->new
+	(translate =>
+         sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).'$'/e },
+	 untranslate =>
+	 sub { $_[1] =~ s/\$($keyword)[:\w\s\-\.\/]*\$/\$$1\$/});
     return $p->via;
 }
 
@@ -1191,60 +1194,6 @@ sub change_dir_prop {
 sub close_edit {
     my ($self) = @_;
     $self->close_directory('');
-}
-
-use strict;
-package PerlIO::via::keyword;
-
-sub PUSHED {
-    die "this should now be via directly"
-	if $_[0] eq __PACKAGE__;
-    bless \*PUSHED, $_[0];
-}
-
-sub translate {
-}
-
-sub undo {
-}
-
-sub FILL {
-    my $line = readline( $_[1] );
-    $_[0]->undo ($line) if defined $line;
-    $line;
-}
-
-sub WRITE {
-    my $buf = $_[1];
-    $_[0]->translate($buf);
-    (print {$_[2]} $buf) ? length($buf) : -1;
-}
-
-sub SEEK {
-    seek ($_[3], $_[1], $_[2]);
-}
-
-sub new {
-    my ($class, $arg) = @_;
-    my $self = {};
-    my $package = 'PerlIO::via::keyword'.substr("$self", 7, -1);
-    eval qq|
-package $package;
-our \@ISA = qw($class);
-
-1;
-| or die $@;
-
-    no strict 'refs';
-    for (keys %$arg) {
-	*{"$package\::$_"} = $arg->{$_};
-    }
-    bless $self, $package;
-    return $self;
-}
-
-sub via {
-    ':via('.ref ($_[0]).')';
 }
 
 =head1 AUTHORS
