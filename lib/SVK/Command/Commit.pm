@@ -39,8 +39,7 @@ sub under_mirror {
 sub check_mirrored_path {
     my ($self, $target) = @_;
     if (!$self->{direct} && $self->under_mirror ($target)) {
-	print loc ("%1 is under mirrored path, use --direct to override.\n",
-		    $target->{depotpath});
+	print loc ("%1 is under mirrored path.\n", $target->{depotpath});
 	return;
     }
     return 1;

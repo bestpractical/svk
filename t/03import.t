@@ -68,16 +68,10 @@ overwrite_file ("$copath/filea", "foobarbazz");
 waste_rev ($svk, '/test/F') for 1..10;
 $svk->import ('--from-checkout', '-m', 'import into mirrored path', '//m', $copath);
 
-TODO: {
-    local $TODO = 'need to reconcile import vs mirrored path';
-    is ($srepos->fs->youngest_rev, 22, 'import to remote directly');
-}
+is ($srepos->fs->youngest_rev, 22, 'import to remote directly');
 
 append_file ("$copath/filea", "fnord");
 
 $svk->import ('--from-checkout', '-m', 'import into mirrored path', '//m', $copath);
 
-TODO: {
-    local $TODO = 'need to reconcile import vs mirrored path';
-    is ($srepos->fs->youngest_rev, 23, 'import to remote directly with proper base rev');
-}
+is ($srepos->fs->youngest_rev, 23, 'import to remote directly with proper base rev');
