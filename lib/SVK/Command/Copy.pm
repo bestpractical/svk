@@ -165,6 +165,7 @@ sub run {
 
     if (my $copath = $self->{_checkout_path}) {
         my $checkout = $self->command ('checkout');
+	$checkout->getopt ([]);
         my @arg = $checkout->parse_arg ($dst->{report}, $copath);
         $checkout->lock (@arg);
         $checkout->run (@arg);
