@@ -28,7 +28,13 @@ sub parse_arg {
         # (otherwise it hurts when user types //deep/directory/name)
         $self->{parent} = 1;
 
-        my $path = $self->prompt_depotpath("copy");
+        # -- make a sane default here for mirroring --
+        my $default = undef;
+        if (@src == 1 and $src[0]->path =~ m{/mirror/([^/]+)$}) {
+            $default = "/" . $src[0]->depotname . "/$1";
+        }
+
+        my $path = $self->prompt_depotpath("copy", $default);
 
         if ($dst =~ /^\.?$/) {
             $self->{_checkout_path} = (splitdir($path))[-1];

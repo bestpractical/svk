@@ -403,10 +403,9 @@ sub arg_uri_maybe {
     }
 
     my $prompt = loc("
-First of all, you have to choose a depot path to store this mirrored
-repository, usually something like //mirror/your_project/.  Enter a suitable
-name below to place it under //mirror/; you may also hit Enter and accept
-SVK's default.
+First, you need to choose a depot path to store this mirrored repository,
+usually something like //mirror/your_project/.  Enter a suitable name below
+to place it under //mirror/; you may also press enter and accept the default.
 
 ");
 
@@ -796,12 +795,32 @@ sub find_checkout_anchor {
 }
 
 sub prompt_depotpath {
-    my ($self, $action) = @_;
+    my ($self, $action, $default) = @_;
 
-    my $path = get_prompt(loc(
-        "Enter a depot path to %1 into (under // if no leading '/'): ",
-        loc($action),
-    ));
+    my $path;
+
+    if (defined $default and $default =~ m{(^/[^/]*/)}) {
+        my $depot = $1;
+        my $prompt = loc("
+Next, you need to choose another depot path to serve as your private branch,
+usually something like %1your_project/.  SVK will copy the mirrored path
+into this new path, so you can commit into it without affecting the remote
+repository.  Enter a suitable name below to place it under %1; you may also
+press enter and accept the default.
+
+", $depot);
+        $path = get_prompt($prompt . loc(
+            "Enter a depot path to %1 into: [%2] ",
+            loc($action), $default
+        ));
+        $path = $default unless length $path;
+    }
+    else {
+        $path = get_prompt(loc(
+            "Enter a depot path to %1 into (under // if no leading '/'): ",
+            loc($action),
+        ));
+    }
 
     $path =~ s{^//+}{};
     $path =~ s{//+}{/};
