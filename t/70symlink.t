@@ -1,12 +1,10 @@
 #!/usr/bin/perl -w
-use Test::More;
-use Config;
+use strict;
+use Test::More tests => 20;
+BEGIN { require 't/tree.pl' };
+
 use SVK::Util qw( HAS_SYMLINK );
 
-plan tests => 20;
-use strict;
-use File::Path;
-BEGIN { require 't/tree.pl' };
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('symlink');
