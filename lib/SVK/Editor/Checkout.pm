@@ -6,6 +6,7 @@ use SVK::I18N;
 use SVN::Delta;
 use File::Path;
 use SVK::Util qw( get_anchor md5_fh catpath );
+use IO::Digest;
 
 =head1 NAME
 
