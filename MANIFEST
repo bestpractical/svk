@@ -80,6 +80,7 @@ t/01depotmap.t
 t/01editor.t
 t/01help.t
 t/02basic.t
+t/02basic-symlink.t
 t/03import.t
 t/04merge.t
 t/05svm.t
