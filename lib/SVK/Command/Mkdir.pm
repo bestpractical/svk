@@ -6,7 +6,6 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( abs2rel get_anchor );
-use File::Path;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -60,8 +59,7 @@ sub create {
         my $target = $self->arg_condensed ($path);
         foreach (@{$target->{targets}}) {
             my $copath = $target->copath ($_);
-	    $self->{parent} ? mkpath ([$copath])
-	    	: mkdir ($copath) or die "$copath: $!";
+	    mkdir ($copath) or die "$copath: $!";
         }
 	push @paths, $path;
     }
