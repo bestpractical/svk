@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 42;
+use Test::More tests => 45;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -157,6 +157,14 @@ is_copied_from ("/foo/me-cocopied", '/me', 2);
 
 is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/A/Q/'],
 	   ['Committed revision 17.']);
+is_copied_from ("//V/A/Q/me", '/V/me', 3);
+
+is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/newdir-with-p/me-dcopied'],
+	   [qr'Transaction is out of date',
+	    'Please update checkout first.']);
+is_output ($svk, 'cp', ['-p', '-m', 'copy direcly', '//V/me', '//V/newdir-with-p/me-dcopied'],
+	   ['Committed revision 18.']);
+
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 sub is_copied_from {

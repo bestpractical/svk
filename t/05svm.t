@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 20;
+plan tests => 18;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -127,17 +127,12 @@ is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], 
         __("U   $copath2/T/xd"),
         ]);
 
-$svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
-# has some output
-ok ($output =~ /under mirrored path/);
+
 is_output_like ($svk, 'mirror', ['--list'],
             qr"//m.*$uri/A\n//m-99.*$uri/A-99");
 
 is_output_like ($svk, 'mirror', ['//m-99', "$uri/A-99"],
             qr"already", 'repeated mirror failed');
-
-is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
-            qr'inside mirrored path', 'delete failed');
 
 is_output_like ($svk, 'mirror', ['--detach', '//l'],
             qr"not a mirrored", '--detach on non-mirrored path');

@@ -122,8 +122,14 @@ sub open_parent {
 
     ++$self->{batons};
 
-    unshift @{$self->{edit_tree}[$pbaton]},
-	[$self->{batons}, 'open_directory', $parent, $ppbaton, -1];
+    if ($self->{cb_exist} && !$self->{cb_exist}->($parent)) {
+	unshift @{$self->{edit_tree}[$pbaton]},
+	    [$self->{batons}, 'add_directory', $parent, $ppbaton, undef, -1];
+    }
+    else {
+	unshift @{$self->{edit_tree}[$pbaton]},
+	    [$self->{batons}, 'open_directory', $parent, $ppbaton, -1];
+    }
 
     $self->{edit_tree}[$self->{batons}] = [[undef, 'close_directory', $self->{batons}]];
     $self->{opened_baton}{$parent} = [$self->{batons}, $pbaton];

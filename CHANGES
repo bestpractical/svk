@@ -7,6 +7,8 @@
 
 * New: svk mirror --recover. [Autrijus]
 
+* New: svk mkdir -p and svk copy -p to create intermediate directories.
+
 * Proper svn:eol-style support with the same semantics as svn. [Autrijus]
 
 * The SVK Help system, as SVK/Help/[lang/]/*.pod. [Autrijus]
@@ -27,6 +29,8 @@
 * Fix smerge -IB.
 
 * svk patch delete now works.
+
+* svk delete now works within mirrored paths.
 
 [Changes for 0.22 - 4 Oct, 2004]
 

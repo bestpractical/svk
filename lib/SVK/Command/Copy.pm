@@ -1,8 +1,8 @@
 package SVK::Command::Copy;
 use strict;
 our $VERSION = $SVK::VERSION;
-use base qw( SVK::Command::Commit );
-use SVK::Util qw( get_anchor get_prompt );
+use base qw( SVK::Command::Mkdir );
+use SVK::Util qw( get_anchor get_prompt abs2rel );
 use SVK::I18N;
 
 sub options {
@@ -81,7 +81,7 @@ sub handle_co_item {
 }
 
 sub handle_direct_item {
-    my ($self, $editor, $m, $src, $dst) = @_;
+    my ($self, $editor, $anchor, $m, $src, $dst) = @_;
     $src->normalize;
     my ($path, $rev) = @{$src}{qw/path revision/};
     if ($m) {
@@ -92,11 +92,9 @@ sub handle_direct_item {
     else {
 	$path = "file://$src->{repospath}$path";
     }
-    my $dstpath = $dst->path;
-    $dstpath =~ s|^\Q$m->{target_path}\E/?|| if $m;
     $editor->close_directory
-	($editor->add_directory ($dstpath, 0, $path, $rev));
-    $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
+	($editor->add_directory (abs2rel ($dst->path, $anchor => undef, '/'), 0, $path, $rev));
+    $self->adjust_anchor ($editor);
 }
 
 sub _unmodified {
@@ -148,16 +146,13 @@ sub run {
 	    $dst->anchorify;
 	}
 	$self->get_commit_message ();
-	my ($storage, %cb) = $self->get_editor ($dst->new (path => $m ? $m->{target_path} : '/'));
-	my $editor = SVK::Editor::Rename->new ( editor => $storage );
-	my $baton = $editor->open_root ($cb{cb_rev}->(''));
+	my ($anchor, $editor) = $self->get_dynamic_editor ($dst);
 	for (@src) {
-	    $self->handle_direct_item ($editor, $m, $_,
+	    $self->handle_direct_item ($editor, $anchor, $m, $_,
 				       $dst->{targets} ? $dst :
 				       $dst->new (targets => [$_->{path} =~ m|/([^/]+)/?$|]));
 	}
-	$editor->close_directory ($baton);
-	$editor->close_edit;
+	$self->finalize_dynamic_editor ($editor);
     }
 
     if (my $copath = $self->{_checkout_path}) {

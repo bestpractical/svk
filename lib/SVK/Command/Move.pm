@@ -2,16 +2,16 @@ package SVK::Command::Move;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Copy );
+use SVK::Util qw ( abs2rel );
 use SVK::I18N;
 
 sub handle_direct_item {
     my $self = shift;
     $self->SUPER::handle_direct_item (@_);
-    my ($editor, $m, $src, $dst) = @_;
-    my $path = $src->path;
-    $path =~ s|^\Q$m->{target_path}\E/?|| if $m;
-    $editor->delete_entry ($path, $m ? $m->find_remote_rev ($src->{revision}) : $src->{revision}, 0);
-    $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
+    my ($editor, $anchor, $m, $src, $dst) = @_;
+    $editor->delete_entry (abs2rel ($src->path, $anchor => undef, '/'),
+			   $m ? $m->find_remote_rev ($src->{revision}) : $src->{revision}, 0);
+    $self->adjust_anchor ($editor);
 }
 
 sub handle_co_item {

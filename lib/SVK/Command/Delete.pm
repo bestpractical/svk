@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
+use SVK::Util qw( abs2rel );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -28,28 +28,22 @@ sub lock {
 }
 
 sub do_delete_direct {
-    my ($self, %arg) = @_;
-    my $fs = $arg{repos}->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-    my $kind = $root->check_path ($arg{path});
-
-    die loc("path %1 does not exist.\n", $arg{path}) if $kind == $SVN::Node::none;
-
-    if (HAS_SVN_MIRROR and
-	(my ($m, $mpath) = SVN::Mirror::is_mirrored ($arg{repos},
-						     $arg{path}))) {
-	die "Can't delete something inside mirrored path"
-	    if $mpath;
+    my ($self, $target) = @_;
+    my $m = $self->under_mirror ($target);
+    if ($m && $m->{target_path} eq $target->path) {
 	$m->delete;
+	$target->refresh_revision;
+	undef $m;
     }
 
-    my $edit = $self->get_commit_editor
-	($root, sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %arg);
-    $edit->open_root();
-
-    $edit->delete_entry ($arg{path});
-
-    $edit->close_edit();
+    $self->get_commit_message ();
+    $target->normalize;
+    my ($anchor, $editor) = $self->get_dynamic_editor ($target);
+    my $rev = $target->{revision};
+    $rev = $m->find_remote_rev ($rev) if $m;
+    $editor->delete_entry (abs2rel ($target->path, $anchor => undef, '/'), $rev, 0);
+    $self->adjust_anchor ($editor);
+    $self->finalize_dynamic_editor ($editor);
 }
 
 sub run {
@@ -59,11 +53,7 @@ sub run {
 	$self->{xd}->do_delete ( %$target, no_rm => $self->{keep} );
     }
     else {
-	$self->get_commit_message ();
-	$self->do_delete_direct ( author => $ENV{USER},
-				  %$target,
-				  message => $self->{message},
-				);
+	$self->do_delete_direct ( $target );
     }
 
     return;

@@ -46,6 +46,8 @@ sub check_mirrored_path {
     return 1;
 }
 
+# OBSOLETED: do not create new callers to this function.
+# Use get_dynamic_editor instead.
 sub get_commit_editor {
     my ($self, $xdroot, $committed, $path, %arg) = @_;
     ${$arg{callback}} = $committed if $arg{editor};
@@ -68,6 +70,30 @@ sub get_commit_message {
     return if defined $self->{message};
     $self->{message} = get_buffer_from_editor
 	(loc('log message'), $target_prompt, join ("\n", $msg || '', $target_prompt, ''), 'commit');
+}
+
+# XXX: This should just return Editor::Dynamic objects
+sub get_dynamic_editor {
+    my ($self, $target) = @_;
+    my $m = $self->under_mirror ($target);
+    my $anchor = $m ? $m->{target_path} : '/';
+    my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
+    my $editor = SVK::Editor::Rename->new
+	( editor => $storage,
+	  cb_exist => $self->{parent} ? $cb{cb_exist} : undef);
+    $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
+    return ($anchor, $editor);
+}
+
+sub finalize_dynamic_editor {
+    my ($self, $editor) = @_;
+    $editor->close_directory ($editor->{_root_baton});
+    $editor->close_edit;
+}
+
+sub adjust_anchor {
+    my ($self, $editor) = @_;
+    $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
 }
 
 # Return the editor according to copath, path, and is_mirror (path)

@@ -273,7 +273,7 @@ sub find_repos {
     my ($self, $depotpath, $open) = @_;
     die loc("no depot spec") unless $depotpath;
     my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*?)/?$|
-	or die loc("invalid depot spec");
+	or die loc("%1 is not a depot path.\n", $depotpath);
 
     my $repospath = $self->{depotmap}{$depot} or die loc("no such depot: %1", $depot);
 
@@ -291,7 +291,7 @@ C<SVN::Repos> object if caller wants the repository to be opened.
 
 sub find_repos_from_co {
     my ($self, $copath, $open) = @_;
-    die loc("path %1 is not a checkout path\n", $copath)
+    die loc("path %1 is not a checkout path.\n", $copath)
 	unless abs_path ($copath);
     $copath = abs_path ($copath);
     my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
