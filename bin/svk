@@ -4,6 +4,7 @@ require SVN::Core;
 require SVN::Repos;
 use SVN::XD;
 use YAML qw(LoadFile DumpFile);
+use Getopt::Long;
 use File::Spec;
 use Data::Hierarchy;
 
@@ -73,7 +74,11 @@ sub find_repos_from_co {
 =cut
 
 sub update {
-    my ($copath, $rev) = @_;
+    local @ARGV = @_;
+    my $rev;
+    die unless GetOptions ("r|revision=i"  => \$rev);
+
+    my ($copath) = @ARGV;
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
     $copath = File::Spec->rel2abs ($copath);
 
@@ -94,7 +99,11 @@ sub update {
 }
 
 sub checkout {
-    my ($depotpath, $rev, $copath) = @_;
+    local @ARGV = @_;
+    my $rev;
+    die unless GetOptions ("r|revision=i"  => \$rev);
+    my ($depotpath, $copath) = @ARGV;
+
 
     my ($repospath, $path) = find_repos ($depotpath, 0);
     $copath = File::Spec->rel2abs ($copath ||
@@ -161,7 +170,11 @@ sub status {
 use Algorithm::Annotate;
 
 sub annotate {
-    my ($copath) = @_;
+    local @ARGV = @_;
+    my $cross = 0;
+    die unless GetOptions ("x|cross"  => \$cross);
+    my ($copath) = @ARGV;
+
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     my $fs = $repos->fs;
@@ -170,7 +183,7 @@ sub annotate {
     my @revs;
     my $hist = $root->node_history ($path);
 
-    while ($hist = $hist->prev(0)) {
+    while ($hist = $hist->prev($cross)) {
 	my ($path, $rev) = $hist->location;
 	unshift @revs, $rev;
     }
