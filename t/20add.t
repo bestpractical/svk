@@ -85,7 +85,7 @@ $svk->revert ('A/exe');
 ok (-x 'A/exe');
 SKIP: {
 
-skip 'File::MimeInfo not installed', 1 unless eval 'require File::MimeInfo::Magic; 1';
+skip 'File::MimeInfo not installed', 2 unless eval 'require File::MimeInfo::Magic; 1';
 
 mkdir ('A/mime');
 overwrite_file ("A/mime/foo.pl", "#!/usr/bin/perl\n");

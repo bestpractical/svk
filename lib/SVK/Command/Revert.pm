@@ -26,14 +26,9 @@ sub lock {
 sub run {
     my ($self, $target) = @_;
     my $xdroot = $self->{xd}->xdroot (%$target);
-    my $storeundef = {'.schedule' => undef,
-		      scheduleanchor => undef,
-		      '.copyfrom' => undef,
-		      '.copyfrom_rev' => undef,
-		      '.newprop' => undef};
 
     my $unschedule = sub {
-	$self->{xd}{checkout}->store ($_[1], $storeundef);
+	$self->{xd}{checkout}->store ($_[1], {$self->_schedule_empty});
 	print loc("Reverted %1\n", $_[1]);
     };
     my $revert = sub {

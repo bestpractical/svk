@@ -64,6 +64,24 @@ sub apply_textdelta {
     return [SVN::TxDelta::to_svndiff ($svndiff)];
 }
 
+sub emit {
+    my ($self, $editor, $func, $pool, @arg) = @_;
+    my ($ret, $baton_at);
+    if ($func eq 'apply_textdelta') {
+#	$pool->default;
+	my $svndiff = pop @arg;
+	$ret = $editor->apply_textdelta (@arg, $pool);
+	if ($ret && $#$ret > 0) {
+	    my $stream = SVN::TxDelta::parse_svndiff (@$ret, 1, $pool);
+	    print $stream $svndiff;
+	}
+    }
+    else {
+	$ret = $editor->$func (@arg, $pool);
+    }
+    return $ret;
+}
+
 sub drive {
     my ($self, $editor, $calls, $baton) = @_;
     $calls ||= $self->{edit_tree}[0];
@@ -76,17 +94,7 @@ sub drive {
 	$arg[$baton_at] = $baton
 	    if ($baton_at = $self->baton_at ($func)) >= 0;
 
-	if ($func eq 'apply_textdelta') {
-	    my $svndiff = pop @arg;
-	    $ret = $editor->apply_textdelta (@arg, $pool);
-	    if ($ret && $#$ret > 0) {
-		my $stream = SVN::TxDelta::parse_svndiff (@$ret, 1, $pool);
-		print $stream $svndiff;
-	    }
-	}
-	else {
-	    $ret = $editor->$func (@arg, $pool);
-	}
+	$ret = $self->emit ($editor, $func, $pool, @arg);
 
 	$self->drive ($editor, $self->{edit_tree}[$next], $ret)
 	    if $next;

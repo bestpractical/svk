@@ -63,11 +63,13 @@ sub close_file {
 	my @showpath = map { $showpath ? $self->{$_} : undef } qw/lpath rpath/;
 	if ($self->{external}) {
 	    # XXX: the 2nd file could be - and save some disk IO
+	    my @content = map { ($self->{info}{$path}{$_}->filename) } qw/base new/;
+	    @content = reverse @content if $self->{reverse};
 	    system (split (' ', $self->{external}),
 		    '-L', _full_label ($rpath, $showpath[0], $label[0]),
-		    $self->{info}{$path}{base}->filename,
+		    $content[0],
 		    '-L', _full_label ($rpath, $showpath[1], $label[1]),
-		    $self->{info}{$path}{new}->filename);
+		    $content[1]);
 	}
 	else {
 	    my @content = ($base, \$self->{info}{$path}{new});

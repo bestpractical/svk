@@ -206,14 +206,6 @@ sub get_committable {
     return [sort {$a->[1] cmp $b->[1]} @$targets];
 }
 
-sub _schedule_empty {
-    ('.schedule' => undef,
-     '.copyfrom' => undef,
-     '.copyfrom_rev' => undef,
-     '.newprop' => undef,
-     scheduleanchor => undef);
-}
-
 sub committed_commit {
     my ($self, $target, $targets) = @_;
     my $fs = $target->{repos}->fs;
