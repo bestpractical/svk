@@ -51,7 +51,7 @@ sub open_file {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
-    my $info = $self->{info}{$path} ||= {};
+    my $info = $self->{info}{$path};
     $info->{new} = '';
     $info->{base} = $self->{cb_basecontent} ($path, $info->{fpool})
 	unless $info->{added};
