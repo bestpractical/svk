@@ -21,7 +21,6 @@ requires(
         'Data::Hierarchy'       => '0.15',
         'Clone'	                => '0',
         'Pod::Simple'           => '0',
-        'Pod::Escape'           => '0',
         'PerlIO::via::dynamic'  => '0.02',
         'SVN::Simple::Edit'     => '0.21',
 );

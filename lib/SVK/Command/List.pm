@@ -21,21 +21,31 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, @arg) = @_;
+    _do_list($self, 0, @arg);
+    return;
+}
+
+sub _do_list {
+    my ($self, $level, @arg) = @_;
     for (@arg) {
-	my (undef, $path, undef, undef, $repos) = main::find_repos_from_co_maybe ($_, 1);
+	my (undef, $path, $copath, undef, $repos) = main::find_repos_from_co_maybe ($_, 1);
 	my $pool = SVN::Pool->new_default;
 	my $fs = $repos->fs;
 	my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
 	unless ($root->check_path ($path) == $SVN::Node::dir) {
-	    print "$path is not a versioned directory\n";
+	    print "$path is not a versioned directory\n" unless ($root->check_path($path) == $SVN::Node::file);
 	    next;
 	}
 	my $entries = $root->dir_entries ($path);
 	for (sort keys %$entries) {
+	    print "\t" x ($level-1);
 	    print $_.($entries->{$_}->kind == $SVN::Node::dir ? '/' : '')."\n";
+	    if (($self->{recursive}) && 
+	    	($entries->{$_}->kind == $SVN::Node::dir)) {
+		_do_list($self, $level+1, "$copath/$_");
+	    }
 	}
     }
-    return;
 }
 
 1;
