@@ -302,7 +302,16 @@ sub prepare_fh {
 	next unless $entry->[FH];
 	# if there's eol translation required, we can't use the
 	# prepared tmp files.
-	next if $entry->[FILENAME] && !$eol;
+	if ($entry->[FILENAME]) {
+	    next unless $eol;
+	    if ($entry->[FH]->opened) {
+		seek $entry->[FH], 0, 0;
+	    }
+	    else {
+		# reopen the tmp file, since apply_textdelta closes it
+		open $entry->[FH], $entry->[FILENAME];
+	    }
+	}
 	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
 	binmode $tmp->[FH], $eol if $eol;
 	slurp_fh ($entry->[FH], $tmp->[FH]);
@@ -422,10 +431,9 @@ sub close_file {
 	    if $checksum eq $fh->{local}[CHECKSUM];
 
 	my $eol = $self->{cb_localprop}->($path, 'svn:eol-style', $pool);
-	my $eol_layer = get_eol_layer({'svn:eol-style' => $eol}, '>');
+	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
 	$eol_layer = '' if $eol_layer eq ':raw';
 	$self->prepare_fh ($fh, $eol_layer);
-
 	# XXX: There used be a case that this explicit comparison is
 	# needed, but i'm not sure anymore.
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
@@ -439,8 +447,8 @@ sub close_file {
 	my ($conflict, $mfh) = $self->_merge_text_change ($fh, $path, $pool);
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
 
-	$eol_layer = get_eol_layer({'svn:eol-style' => $eol}, '<');
-	binmode $mfh, $eol_layer if $eol_layer;
+	$eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '<');
+	binmode $mfh, $eol_layer or die $! if $eol_layer;
 
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
