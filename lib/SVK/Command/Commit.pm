@@ -257,7 +257,7 @@ sub run {
 	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop);
 	    next unless $layer || ($eol ne ':raw' && $eol ne '');
 
-	    my $fh = SVK::XD::get_fh ($xdroot, '<', $dpath, $copath, 0, $layer, $eol);
+	    my $fh = SVK::XD::get_fh ($root, '<', $dpath, $copath, 0, $layer, $eol, $prop);
 	    my $fname = "$copath.svk.old";
 	    rename $copath, $fname or die $!;
 	    open my ($newfh), ">$eol", $copath or die $!;

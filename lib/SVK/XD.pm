@@ -447,7 +447,10 @@ sub xd_storage_cb {
 				     editor => $editor,
 				     absent_as_delete => 1,
 				     cb_unknown =>
-				     sub { # XXX: unkonwn as added?
+				     sub {
+					 my $unknown = shift;
+					 $unknown =~ s|^\Q$path\E/||;
+					 $modified->{$unknown} = '?';
 				     },
 				   );
 			       return $modified;
@@ -852,8 +855,13 @@ sub _delta_file {
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
-    lstat ($arg{copath});
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l _);
+    my $prop = $arg{add} ? {} : $arg{xdroot}->node_proplist ($arg{path});
+    my $newprop = $cinfo->{'.newprop'};
+    $newprop = $self->auto_prop ($arg{copath})
+	if !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
+    # symlink needs get_fh to append special prop
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, 0, undef, undef,
+		     _combine_prop ($prop, $newprop));
     my $mymd5 = md5($fh);
     my ($baton, $md5);
 
@@ -865,9 +873,6 @@ sub _delta_file {
 				     ($arg{cb_copyfrom}->(@{$cinfo}{qw/.copyfrom .copyfrom_rev/}))
 				     : (undef, -1), $pool)
 	if $arg{add};
-    my $newprop = $cinfo->{'.newprop'};
-    $newprop = $self->auto_prop ($arg{copath})
-	if !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
 
     $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool)
 	if keys %$newprop;
@@ -1186,9 +1191,9 @@ sub get_keyword_layer {
 
     return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg },
+         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
 	 untranslate =>
-	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g});
+	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g; });
 }
 
 sub _fh_symlink {
@@ -1243,6 +1248,17 @@ commit are merged if C<$copath> is given.
 
 =cut
 
+sub _combine_prop {
+    my ($props, $newprops) = @_;
+    return $props unless $newprops;
+    $props = {%$props, %$newprops};
+    for (keys %$props) {
+	delete $props->{$_}
+	    if ref ($props->{$_}) && !defined ${$props->{$_}};
+    }
+    return $props;
+}
+
 sub get_props {
     my ($self, $root, $path, $copath) = @_;
 
@@ -1257,13 +1273,7 @@ sub get_props {
 	    if $root->check_path ($path) == $SVN::Node::none;
 	$props = $root->node_proplist ($path);
     }
-    $props = {%$props, %{$entry->{'.newprop'}}};
-    for (keys %$props) {
-	delete $props->{$_}
-	    if ref ($props->{$_}) && !defined ${$props->{$_}};
-    }
-
-    return $props;
+    return _combine_prop ($props, $entry->{'.newprop'});
 }
 
 sub DESTROY {

@@ -471,6 +471,7 @@ sub _check_delete_conflict {
 		++$modified;
 		$self->node_conflict ($cpath);
 	    }
+	    delete $dirmodified->{$name};
 	}
 	else { # dir or unmodified file
 	    my $entry = $entries->{$name};
@@ -493,6 +494,11 @@ sub _check_delete_conflict {
 		++$merged;
 	    }
 	}
+    }
+    for my $name (keys %$dirmodified) {
+	my ($cpath, $crpath) = ("$path/$name", "$rpath/$name");
+	++$modified;
+	$self->node_conflict ($cpath);
     }
     if ($modified || $merged) {
 	# maybe leave the status to _partial delete?
