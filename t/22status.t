@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 15;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -18,15 +18,20 @@ overwrite_file ("A/deep/baz", "foobar");
 is_output_like ($svk, 'status', ['--help'], qr'SYNOPSIS');
 
 is_output ($svk, 'status', [],
-	   ['?   A'], 'status - unknwon');
+	   ['?   A'], 'status - unknown');
+is_output ($svk, 'status', ['-q'],
+           [],      '  -q');
+is_output ($svk, 'status', ['--quiet'],
+           [],      '  --quiet');
+
 $svk->add ('-N', 'A');
 $svk->add ('A/foo');
 is_output ($svk, 'status', [],
-	   [ map __($_), 'A   A', '?   A/bar', '?   A/deep', 'A   A/foo'], 'status - unknwon');
+	   [ map __($_), 'A   A', '?   A/bar', '?   A/deep', 'A   A/foo'], 'status - unknown');
 
 chdir('A');
 is_output ($svk, 'status', ['../A'],
-	   [ map __($_), 'A   ../A', '?   ../A/bar', '?   ../A/deep', 'A   ../A/foo'], 'status - unknwon');
+	   [ map __($_), 'A   ../A', '?   ../A/bar', '?   ../A/deep', 'A   ../A/foo'], 'status - unknown');
 chdir('..');
 $svk->add ('A/deep');
 $svk->commit ('-m', 'add a bunch for files');
@@ -50,6 +55,10 @@ $svk->delete ('A/deep');
 $svk->delete ('A/another');
 is_output ($svk, 'status', [],
 	   [ map __($_), '?   A/bar', 'D   A/another', 'D   A/deep', 'D   A/deep/baz'], 'status - deleted file and dir');
+
+is_output ($svk, 'status', ['-q'],
+	   [ map __($_), 'D   A/another', 'D   A/deep', 'D   A/deep/baz'], '  -q');
+
 $svk->revert ('-R', 'A');
 overwrite_file ("A/foo", "foo");
 TODO: {
