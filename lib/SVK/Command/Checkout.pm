@@ -12,10 +12,10 @@ sub parse_arg {
     my $depotpath = $self->arg_depotpath ($arg[0]);
     die "don't know where to checkout" unless $arg[1] || $depotpath->{path} ne '/';
 
-    return ($depotpath,
-	    $arg[1] = Cwd::abs_path ($arg[1] ||
-				     (File::Spec->splitdir($depotpath->{path}))[-1]));
+    $arg[1] =~ s|/$|| if $arg[1];
+    $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
 
+    return ($depotpath, Cwd::abs_path ($arg[1]));
 }
 
 sub lock { $_[0]->{xd}->lock ($_[2]) }
