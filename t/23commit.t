@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 39;
+plan tests => 41;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -187,8 +187,6 @@ is_output ($svk, 'pl', ['-v', '.'],
 is_output ($svk, 'st', [],
 	   [__('M   A/foo')]);
 
-
-append_file ("A/foo", "foobar2");
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    'No targets to commit.'], 'target edited to empty');
@@ -220,3 +218,13 @@ $svk->commit;
 is_output ($svk, 'status', [],
 	   [__('M   A/foo')]);
 
+$svk->revert ('-R');
+append_file ("A/bar", "foobar2");
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Committed revision 18.'], 'buffer unmodified');
+$answer = 'a';
+append_file ("A/bar", "foobar2");
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Aborted.'], 'buffer unmodified');
