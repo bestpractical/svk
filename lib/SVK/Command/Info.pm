@@ -15,8 +15,6 @@ sub parse_arg {
     return map {$self->arg_co_maybe ($_)} @arg;
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, @arg) = @_;
 

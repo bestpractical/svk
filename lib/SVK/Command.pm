@@ -162,11 +162,17 @@ sub invoke {
 	}
 	else {
 	    $cmd->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
-	    eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
+	    eval { $cmd->lock (@args);
+		   $xd->giant_unlock if $xd && !$cmd->{hold_giant};
+		   $ret = $cmd->run (@args) };
 	    $xd->unlock if $xd;
 	    die $@ if $@;
 	}
     };
+
+    # in case parse_arg dies
+    $xd->giant_unlock if $xd && ref ($cmd) && !$cmd->{hold_giant};
+
     $ofh = select STDERR unless $output;
     unless ($error and $cmd->handle_error ($error)) {
 	print $ret if $ret;
@@ -591,19 +597,11 @@ XXX Undocumented
 =cut
 
 sub lock_target {
-    my ($self, $target) = @_;
-    $self->{xd}->lock ($target->{copath});
-}
-
-=head3 lock_none ()
-
-XXX Undocumented
-
-=cut
-
-sub lock_none {
-    my ($self) = @_;
-    $self->{xd}->giant_unlock ();
+    my $self = shift;
+    for my $target (@_) {
+	$self->{xd}->lock ($target->{copath})
+	    if $target->{copath};
+    }
 }
 
 =head3 brief_usage ($file)

@@ -24,8 +24,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $_->{copath} ? $self->lock_target ($_) : $self->lock_none
-	for (@_[2..$#_]);
+    $self->lock_target (@_[2..$#_]);
 }
 
 sub do_propset_direct {

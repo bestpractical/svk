@@ -155,7 +155,6 @@ sub close_file {
 	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' });
     }
     if ($self->{update}) {
-	# XXX: use store_fast with new data::hierarchy release.
 	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};

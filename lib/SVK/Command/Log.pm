@@ -38,8 +38,6 @@ sub parse_arg {
     return $self->arg_co_maybe (@arg);
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, $target) = @_;
     $target->as_depotpath;

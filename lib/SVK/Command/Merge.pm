@@ -63,7 +63,7 @@ sub parse_arg {
 
     $target2 ||= $target1->copied_from($self->{sync});
     if (!defined ($target2)) {
-        die loc ("Cannot find the path which '%1' copied from.\n", $arg[0]);
+        die loc ("Cannot find the path which '%1' copied from.\n", $arg[0] || '');
     }
 
     return ( ($self->{from}) ? ($target1, $target2) : ($target2, $target1) );
@@ -71,7 +71,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $_[1]->{copath} ? $self->lock_target ($_[1]) : $self->lock_none;
+    $self->lock_target ($_[1]);
 }
 
 sub get_commit_message {

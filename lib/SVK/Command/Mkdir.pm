@@ -18,8 +18,6 @@ sub parse_arg {
     return ($self->arg_depotpath ($arg[0]));
 }
 
-sub lock { return $_[0]->lock_none }
-
 sub run {
     my ($self, $target) = @_;
     $self->get_commit_message ();

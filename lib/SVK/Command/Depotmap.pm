@@ -19,6 +19,7 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
 
+    ++$self->{hold_giant};
     $self->{add} = 1 if @arg >= 2 and !$self->{relocate};
 
     if ($self->{add} or $self->{detach} or $self->{relocate}) {

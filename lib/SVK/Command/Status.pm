@@ -17,8 +17,6 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, $target) = @_;
     my $xdroot = $self->{xd}->xdroot (%$target);

@@ -8,6 +8,9 @@ use Pod::Simple::Text ();
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
 
+# Note: lock is not called for help, as it's invoked differently from
+# other commands.
+
 sub run {
     my $self = shift;
     foreach my $topic (@_) {

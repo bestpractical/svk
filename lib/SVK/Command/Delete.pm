@@ -24,7 +24,7 @@ sub parse_arg {
 
 sub lock {
     my ($self, $target) = @_;
-    $target->{copath} ? $self->lock_target ($target) : $self->lock_none;
+    $self->lock_target ($target);
 }
 
 sub do_delete_direct {

@@ -12,6 +12,7 @@ sub options {
      't|to-checkout'	        => 'to_checkout',
     )
 }
+
 sub parse_arg {
     my $self = shift;
     my @arg = @_ or return;
@@ -35,8 +36,8 @@ sub parse_arg {
 sub lock {
     my ($self, $target, $source) = @_;
     unless ($self->{xd}{checkout}->get ($source)->{depotpath}) {
-	return $self->{to_checkout} ? $self->{xd}->lock ($source)
-	    : $self->lock_none;
+	$self->{xd}->lock ($source) if $self->{to_checkout};
+	return;
     }
     $source = $self->arg_copath ($source);
     die loc("Import source (%1) is a checkout path; use --from-checkout.\n", $source->{copath})

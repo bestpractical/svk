@@ -14,6 +14,8 @@ sub options {
      'recover'=> 'recover');
 }
 
+sub lock {} # override commit's locking
+
 sub parse_arg {
     my ($self, @arg) = @_;
 
@@ -30,8 +32,6 @@ sub parse_arg {
 
     return ($self->arg_depotpath ($path), @arg);
 }
-
-sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target, $source, @options) = @_;

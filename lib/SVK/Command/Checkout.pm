@@ -37,8 +37,11 @@ sub parse_arg {
 sub lock {
     my ($self, $src, $dst) = @_;
 
-    return if $self->{detach} or $self->{relocate}; # hold giant
-    return $self->lock_none if $self->{list};
+    if ($self->{detach} or $self->{relocate}) {
+	++$self->{hold_giant};
+	return;
+    }
+    return if $self->{list};
 
     my $abs_path = abs_path ($dst) or return;
     $self->{xd}->lock ($abs_path);

@@ -2,7 +2,7 @@ package SVK::Command::Sync;
 use strict;
 our $VERSION = $SVK::VERSION;
 
-use base qw( SVK::Command::Commit );
+use base qw( SVK::Command );
 use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR );
 
@@ -18,8 +18,6 @@ sub parse_arg {
 
     return map {$self->arg_uri_maybe ($_)} @arg;
 }
-
-sub lock { $_[0]->lock_none }
 
 sub copy_notify {
     my ($m, $path, $from_path, $from_rev) = @_;

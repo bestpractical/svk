@@ -17,8 +17,6 @@ sub parse_arg {
     return ($arg[0], $self->arg_depotroot($arg[1]));
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, $chg, $target) = @_;
     $self->{revspec} = $chg;

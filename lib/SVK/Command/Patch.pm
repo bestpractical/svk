@@ -18,7 +18,7 @@ sub options {
     ('depot=s' => 'depot');
 }
 
-sub lock { $_[0]->lock_none }
+# XXX: lock for apply?
 
 sub parse_arg {
     my ($self, $cmd, @arg) = @_;

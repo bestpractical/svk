@@ -20,8 +20,6 @@ sub parse_arg {
     return ($arg[0], map { $self->_arg_revprop ($_) } @arg[1..$#arg]);
 }
 
-sub lock { $_[0]->lock_none }
-
 sub run {
     my ($self, $pname, @targets) = @_;
 

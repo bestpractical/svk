@@ -20,8 +20,6 @@ sub parse_arg {
     return map {$self->arg_co_maybe ($_)} @arg;
 }
 
-sub lock { $_[0]->lock_none }
-
 # XXX: need to handle peg revisions, ie
 # -r N PATH@M means the node PATH@M at rev N
 sub run {

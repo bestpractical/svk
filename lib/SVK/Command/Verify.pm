@@ -15,8 +15,6 @@ sub parse_arg {
     return ($arg[0], $self->arg_depotname ($arg[1] || '//'));
 }
 
-sub lock { $_[0]->lock_none }
-
 sub _verify {
     my ($repos, $sig, $chg) = @_;
     my $fs = $repos->fs;
