@@ -31,9 +31,16 @@ sub lock_message {
     sub {
 	my ($mirror, $what, $who) = @_;
 	print loc("Waiting for %1 lock on %2: %3.\n", $what, $mirror->{target_path}, $who);
-	if (++$i > 3) {
-	    print loc ("If the mirror lock is stalled, please interrupt and run svk mirror --unlock %1\nTo check if the mirror lock is stalled, see if $who is a running pid.\n",
-		       $mirror->{target_path});
+	if (++$i % 3) {
+	    print loc ("
+The mirror is currently locked. This might be because the mirror is
+in the middle of a sensitive operation or because a process holding
+the lock hung or died.  To check if the mirror lock is stalled,  see 
+if $who is a running, valid process
+
+If the mirror lock is stalled, please interrupt this process and run:
+    svk mirror --unlock %1
+", $mirror->{target_path});
 	}
     }
 }
