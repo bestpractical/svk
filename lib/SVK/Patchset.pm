@@ -34,6 +34,7 @@ sub recalculate {
 
 use List::Util qw(reduce);
 
+# find out all the nodes in tree $rev that is depended on by $leaf
 sub dependencies_in_tree {
     my ($self, $repos, $rev, $leaf) = @_;
 
@@ -45,6 +46,11 @@ sub dependencies_in_tree {
 
     return reduce { $a == $b ? $a : ($a, $b)} sort # uniq
 	map { $self->dependencies_in_tree ($repos, $rev, $_) } @pp;
+}
+
+sub all_dependencies {
+    my ($self, $repos, $rev) = @_;
+    return map { ($_, $self->all_dependencies ($repos, $_)) } $self->dependencies ($repos, $rev);
 }
 
 sub dependencies {
@@ -59,20 +65,28 @@ sub dependencies {
 	# Here, we use history traversal and limit the domain of
 	# changes.  The domain grows if the change contains paths
 	# outside the current domain.
-
-	# XXX: doing so, we have to check more with those with svk:children
 	my $leaf = $rev;
-	while (1) {
-	    --$leaf > 0 or last;
-#	    warn "==> leaf is $leaf\n";
-#	    my $root = $fs->revision_root ($leaf);
-#	    my $anchor = anchor_in_change ($fs, $root);
-#	    my $hist = $root->node_history ($anchor)->prev(0) or last;
-#	    $leaf = ($hist->location)[1];
-	    next if defined $fs->revision_prop ($leaf, 'svk:children');
-	    push @$parents, $self->dependencies_in_tree ($repos, $rev, $leaf);
-#	    last if $leaf == 0;
+	my %parents = ($rev => 1);
+	my $anchor;
+	while ($leaf > 1) {
+	    my $root = $fs->revision_root ($leaf);
+	    $anchor = anchor_of (defined $anchor ? $anchor : (),
+				 anchor_in_change ($fs, $root));
+	    my $hist = $root->node_history ($anchor)->prev(0)->prev(0) or last;
+	    $leaf = ($hist->location)[1];
+	    if (defined $fs->revision_prop ($leaf, 'svk:children')) {
+		# if this is not a leaf node, we skip it if it's already
+		# marked as our ancestry
+		next if $parents{$leaf};
+	    }
+	    # XXX: make dependencies_in_tree also returns all parents
+	    # so we don't have to do that again for caching %parents
+	    my @parents = $self->dependencies_in_tree ($repos, $rev, $leaf);
+	    for (map { $self->all_dependencies ($repos, $_)} @parents ) {
+		++$parents{$_};
+	    }
 
+	    push @$parents, @parents;
 	}
 	$parents ||= [];
 	$fs->change_rev_prop ($rev, 'svk:parents', join(',',@$parents));
@@ -107,20 +121,24 @@ sub rev_depends_on {
     return $@ ? 1 : 0;
 }
 
-sub anchor_in_change {
-    my ($fs, $root) = @_;
-    my $changed = $root->paths_changed;
+sub anchor_of {
     my $anchor;
-    for (keys %$changed) {
+    for (@_) {
 	unless (defined $anchor) {
 	    $anchor = $_;
 	    next;
 	}
-	while ($anchor ne '/' && index ("$_/","$anchor/") != 0) {
+	while ($anchor ne '/' && index ("$_/", "$anchor/") != 0) {
 	    ($anchor) = get_depot_anchor (0, $anchor);
 	}
     }
     return $anchor;
+}
+
+sub anchor_in_change {
+    my ($fs, $root) = @_;
+    my $changed = $root->paths_changed;
+    return anchor_of (keys %$changed);
 }
 
 
