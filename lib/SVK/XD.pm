@@ -391,7 +391,7 @@ sub create_xd_root {
 	}
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	$root->delete ($path)
-	    if $root->check_path ($path) != $SVN::Node::none;
+	    if eval { $root->check_path ($path) != $SVN::Node::none };
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
 				$root, $path)
 		unless $cinfo->{'.deleted'};
