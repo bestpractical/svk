@@ -571,12 +571,12 @@ msgstr ""
 msgid "/depotname/path/inside/repos"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:32
-msgid "=== Targets to commit (you may delete items from it) ==="
+#: lib/SVK/Command/Commit.pm:36
+msgid "=== Please enter your commit message above this line ==="
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:36
-msgid "=== This line, and those below, will be ignored ==="
+#: lib/SVK/Command/Commit.pm:32
+msgid "=== Targets to commit (you may delete items from it) ==="
 msgstr ""
 
 #: lib/SVK/Command.pod:108

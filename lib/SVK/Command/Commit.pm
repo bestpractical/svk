@@ -33,7 +33,7 @@ sub target_prompt {
 }
 
 sub message_prompt {
-    loc('=== This line, and those below, will be ignored ===');
+    loc('=== Please enter your commit message above this line ===');
 }
 
 sub under_mirror {

@@ -592,14 +592,14 @@ msgid "/depotname/path/inside/repos"
 msgstr "/檔案庫名稱/內部的/路徑"
 
 # as-is
+#: lib/SVK/Command/Commit.pm:36
+msgid "=== Please enter your commit message above this line ==="
+msgstr "=== Please enter your commit message above this line ==="
+
+# as-is
 #: lib/SVK/Command/Commit.pm:32
 msgid "=== Targets to commit (you may delete items from it) ==="
 msgstr "=== Targets to commit (you may delete items from it) ==="
-
-# as-is
-#: lib/SVK/Command/Commit.pm:36
-msgid "=== This line, and those below, will be ignored ==="
-msgstr "=== This line, and those below, will be ignored ==="
 
 #: lib/SVK/Command.pod:108
 msgid "A  Added"
