@@ -188,7 +188,7 @@ sub tmpfile {
 
 sub abs_path {
     my $path = shift;
-    if (defined \&Win32::GetFullPathName) {
+    if (defined &Win32::GetFullPathName) {
 	$path = '.' if !length $path;
 	return scalar Win32::GetFullPathName($path)
     }
