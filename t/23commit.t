@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 16;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -71,7 +71,7 @@ is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
 is_output ($svk, 'status', [],
 	   ['?   A/deep/X']);
 
-is_output ($svk, 'commit', ['--import', '-m', 'commit --import'],
+is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/deep/X'],
 	   ['Committed revision 8.']);
 
 is_output ($svk, 'status', [], []);
@@ -79,3 +79,13 @@ unlink ('A/forimport/foo');
 
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/forimport/foo'],
 	   ['Committed revision 9.']);
+mkdir ('A/newdir');
+overwrite_file ("A/newdir/bar", "fnord");
+is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/newdir/bar'],
+	   ['Committed revision 10.']);
+TODO: {
+local $TODO = 'commit --import unknown descendents ';
+
+
+is_output ($svk, 'status', [], []);
+}

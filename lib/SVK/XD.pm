@@ -115,7 +115,13 @@ sub load {
     $self->giant_lock ();
 
     if (-e $self->{statefile}) {
-	$info = LoadFile ($self->{statefile});
+	local $@;
+	$info = eval {LoadFile ($self->{statefile})};
+	if ($@) {
+	    rename ($self->{statefile}, "$self->{statefile}.backup");
+	    print loc ("Can't load statefile, old statefile saved as %1\n",
+		     "$self->{statefile}.backup");
+	}
     }
 
     $info ||= { depotmap => {'' => "$self->{svkpath}/local" },
@@ -855,7 +861,7 @@ sub _delta_file {
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
-    my $prop = $arg{add} ? {} : $arg{xdroot}->node_proplist ($arg{path});
+    my $prop = $arg{add} ? {} : $arg{base_root}->node_proplist ($arg{base_path});
     my $newprop = $cinfo->{'.newprop'};
     $newprop = $self->auto_prop ($arg{copath})
 	if !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
@@ -977,6 +983,7 @@ sub _delta_dir {
     }
 
     # check scheduled addition
+    # XXX: does this work with copied directory?
     my $ignore = ignore ($arg{add} ? () :
 			 split ("\n", $self->get_props
 				($arg{xdroot}, $arg{path},
@@ -1025,7 +1032,8 @@ sub _delta_dir {
 			baton => $baton,
 			root => 0,
 			path => $ccinfo->{'.copyfrom'} || $newpaths{path},
-			# XXX: what shold base_path be when there's copyfrom?
+			base_root => $ccinfo->{'.copyfrom'} ?
+			    $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : $arg{base_root},
 			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$entry",
 			cinfo => $ccinfo );
 	delete $targets->{$entry} if defined $targets;

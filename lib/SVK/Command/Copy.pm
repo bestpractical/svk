@@ -42,6 +42,8 @@ sub handle_co_item {
     if (-d $dst->{copath}) {
 	$dst->descend ($src->{path} =~ m|/([^/]+)/?$|);
     }
+    die loc ("Path %1 does not exist.\n", $src->{path})
+	if $src->root->check_path ($src->{path}) == $SVN::Node::none;
     die loc ("Path %1 already exists.\n", $dst->{copath})
 	if -e $dst->{copath};
     my ($copath, $report) = @{$dst}{qw/copath report/};
