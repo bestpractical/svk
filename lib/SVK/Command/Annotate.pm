@@ -22,7 +22,7 @@ sub run {
 
     my $pool = SVN::Pool->new_default_sub;
     my $fs = $target->{repos}->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
+    my $root = $fs->revision_root ($target->{revision});
     my $ann = Algorithm::Annotate->new;
     my @revs;
 
