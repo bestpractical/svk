@@ -209,9 +209,14 @@ sub giant_lock {
     my ($self) = @_;
     return unless $self->{giantlock};
 
-    if (-e $self->{giantlock}) {
-	$self->{updated} = 1;
-	die loc("another svk might be running; remove %1 if not", $self->{giantlock});
+    LOCKED: {
+        for (1..5) {
+            -e $self->{giantlock} or last LOCKED;
+            sleep 1;
+        }
+
+        $self->{updated} = 1;
+        die loc("another svk might be running; remove %1 if not", $self->{giantlock});
     }
 
     open my ($lock), '>', $self->{giantlock}
