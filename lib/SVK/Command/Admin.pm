@@ -17,7 +17,7 @@ sub parse_arg {
     my $command = shift(@arg);
     return ($command, undef, @arg) if $command eq 'help';
 
-    my $depot = '/' . (@arg ? pop(@arg) : '');
+    my $depot = '/'.(@arg ? pop(@arg) : '').'/';
 
     return ($command, $self->arg_depotroot($depot), @arg);
 }
