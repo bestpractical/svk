@@ -105,15 +105,14 @@ sub find_merge_base {
 	    if !$basepath || $rev > $baserev;
     }
 
-    if (!$basepath) {
-	die loc("Can't find merge base for %1 and %2\n", $src->path, $dst->path)
-	    unless $self->{baseless} or $self->{base};
+    return ($src->new (revision => $self->{base}), $self->{base})
+        if $self->{base};
 
-	return ($src->new (revision => $self->{baserev}), $self->{baserev})
-	    if $self->{baserev};
+    return ($src->new (path => '/', revision => 0), 0)
+        if $self->{baseless};
 
-	return ($src->new (path => '/', revision => 0), 0);
-    }
+    die loc("Can't find merge base for %1 and %2\n", $src->path, $dst->path)
+        unless $basepath;
 
     # XXX: document this, cf t/07smerge-foreign.t
     if ($basepath ne $src->path && $basepath ne $dst->path) {
