@@ -46,7 +46,7 @@ SVK::Command::Propedit - Edit a property on path
 
  -m [--message] arg     : specify commit message ARG
  -C [--check-only]      : try operation but make no changes
- -s [--sign]            : sign this change
+ -S [--sign]            : sign this change
 
 =head1 AUTHORS
 

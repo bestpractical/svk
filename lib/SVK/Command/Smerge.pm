@@ -40,13 +40,14 @@ SVK::Command::Smerge - Automatic merge all changes between branches
  -l [--log]             : use logs of merged revisions as commit message
  -B [--baseless]        : use the earliest revision as the merge point
  -b [--base] arg        : use revision ARG as the merge point
- -s [--sign]            : sign this change
+ -s [--sync]            : synchronize mirrored sources before update
+ -t [--to]:             : merge to the specified path
+ -f [--from]:           : merge from the specified path
+ -S [--sign]            : sign this change
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
  --host arg             : use ARG as the hostname shown in merge log
  --remoterev            : use remote revision numbers in merge log
- -t [--to]:             : merge to the specified path
- -f [--from]:           : merge from the specified path
 
 =head1 AUTHORS
 

@@ -201,8 +201,8 @@ is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/
 	    'Empty merge.'], 'empty merge');
 
 $svk->ps ('-m', 'prop on A/be', 'proponly', 'proponly', '/test/A/be');
-$svk->sync ('/client2/m-all');
-is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
+
+is_output ($svk, 'smerge', ['-m', 'merge down prop only with --sync and --to', '-st' '/client2/m-all/A-cp'],
 	   ['Auto-merging (8, 10) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
 	    "Merging back to SVN::Mirror source $uri.",
 	    ' U  be',

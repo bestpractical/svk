@@ -117,7 +117,7 @@ SVK::Command::Import - Import directory into depot
 
  -m [--message] arg     : specify commit message ARG
  -C [--check-only]      : try operation but make no changes
- -s [--sign]            : sign this change
+ -S [--sign]            : sign this change
  --force                : force import from a checkout path
 
 =head1 AUTHORS

@@ -21,7 +21,8 @@ sub options {
      'no-ticket'	=> 'no_ticket',
      'r|revision=s'	=> 'revspec',
      't|to'             => 'to',
-     'f|from'           => 'from');
+     'f|from'           => 'from',
+     's|sync'           => 'sync');
 }
 
 sub parse_arg {
@@ -80,6 +81,14 @@ sub run {
     my $repos = $src->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
+
+    if ($self->{sync}) {
+        require SVK::Command::Sync;
+        my $sync = SVK::Command::Sync->new;
+        %$sync = (%$self, %$sync);
+        $sync->run($src);
+        $src->refresh_revision;
+    }
 
     if ($dst->root ($self->{xd})->check_path ($dst->path) != $SVN::Node::dir) {
 	$src->anchorify; $dst->anchorify;
@@ -167,11 +176,12 @@ SVK::Command::Merge - Apply differences between two sources
  -I [--incremental]     : apply each change individually
  -a [--auto]            : merge from the previous merge point
  -l [--log]             : use logs of merged revisions as commit message
- -s [--sign]            : sign this change
- --no-ticket            : do not record this merge point
- --track-rename         : track changes made to renamed node
+ -s [--sync]            : synchronize mirrored sources before update
  -t [--to]:             : merge to the specified path
  -f [--from]:           : merge from the specified path
+ -S [--sign]            : sign this change
+ --no-ticket            : do not record this merge point
+ --track-rename         : track changes made to renamed node
 
 =head1 AUTHORS
 

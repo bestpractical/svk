@@ -51,7 +51,7 @@ sub run {
         if ($self->{merge}) {
             require SVK::Command::Smerge;
             my $smerge = SVK::Command::Smerge->new;
-            %$smerge = ( message => '', log => 1, %$self, %$smerge);
+            %$smerge = ( message => '', log => 1, %$self, %$smerge, sync => 0);
             $smerge->run($sync_target => $update_target);
             $update_target->refresh_revision;
         }
@@ -118,8 +118,8 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -N [--non-recursive]   : do not descend recursively
- -s [--sync]            : synchronize mirrored targets before update
- -m [--merge]           : star merge from copied source before update
+ -s [--sync]            : synchronize mirrored sources before update
+ -m [--merge]           : star merge from copied sources before update
 
 =head1 DESCRIPTION
 
