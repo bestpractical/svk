@@ -926,7 +926,7 @@ sub _delta_dir {
 			add => 0,
 			base => 1,
 			depth => $arg{depth} ? $arg{depth} - 1: undef,
-			entry => $arg{entry} ? "$arg{entry}/$entry" : $entry,
+			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			kind => $kind,
 			targets => $targets ? $targets->{$entry} : undef,
 			baton => $baton,
@@ -958,7 +958,7 @@ sub _delta_dir {
 	    ($arg{xdroot} ne $arg{base_root} &&
 	     $arg{xdroot}->check_path ("$arg{path}/$_") != $SVN::Node::none);
 	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $_),
-			 entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+			 entry => defined $arg{entry} ? "$arg{entry}/$_" : $_,
 			 path => "$arg{path}/$_",
 			 targets => $targets ? $targets->{$_} : undef);
 	unless ($add) {
