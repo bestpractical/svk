@@ -16,7 +16,7 @@ use File::Spec;
 use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
-use PerlIO::eol 0.06;
+use PerlIO::eol 0.07;
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
