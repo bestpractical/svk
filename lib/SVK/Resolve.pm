@@ -177,8 +177,8 @@ sub filter_conflict {
     open my $ofh, '>', $self->{merged} or die $!;
 
     my $state = '';
-    my $in  = qr/^[>=]{4} (YOUR|ORIGINAL|THEIR) VERSION $self->{path} $self->{marker}$/;
     my $newline = "[\r\n|\n\r?]";
+    my $in  = qr/^[>=]{4} (YOUR|ORIGINAL|THEIR) VERSION $self->{path} $self->{marker}$newline$/;
     my $out = qr/<<<< $self->{marker}$newline/;
 
     while (<$ifh>) {
