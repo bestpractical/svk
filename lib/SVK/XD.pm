@@ -272,7 +272,7 @@ sub find_repos {
 
 =item find_repos_from_co
 
-Given the checkout path and an optiona bout if the repository should
+Given the checkout path and an optiona about if the repository should
 be opened. Returns an array of repository path, the path inside
 repository, the absolute checkout path, the checkout info, and the
 C<SVN::Repos> object if caller wants the repository to be opened.
@@ -644,9 +644,10 @@ sub do_propset {
 
     unless ($entry->{'.schedule'} eq 'add' || !$arg{repos}) {
 	$xdroot = $self->xdroot (%arg);
-
-	die loc("%1(%2) is not under version control", $arg{copath}, $arg{path})
-	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
+	my ($source_path, $source_root) = $self->_copy_source ($entry, $arg{copath}, $xdroot);
+	$source_path ||= $arg{path}; $source_root ||= $xdroot;
+	die loc("%1(%2) is not under version control", $arg{copath}, $source_path)
+	    if $xdroot->check_path ($source_path) == $SVN::Node::none;
     }
 
     #XXX: support working on multiple paths and recursive
@@ -987,7 +988,7 @@ sub _delta_dir {
     my $ignore = ignore ($arg{add} ? () :
 			 split ("\n", $self->get_props
 				($arg{xdroot}, $arg{path},
-				 $arg{copath})->{'svn:ignore'} || ''));
+				 $arg{copath}, $cinfo)->{'svn:ignore'} || ''));
 
     opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
     my @direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
@@ -1272,16 +1273,30 @@ sub _combine_prop {
     return $props;
 }
 
+sub _copy_source {
+    my ($self, $entry, $copath, $root) = @_;
+    return unless $entry->{scheduleanchor};
+    my $descendent = $copath;
+    $descendent =~ s/^\Q$entry->{scheduleanchor}\E//;
+    $entry = $self->{checkout}->get ($entry->{scheduleanchor})
+	if $entry->{scheduleanchor} ne $copath;
+    my $from = $entry->{'.copyfrom'} or return;
+    # XXX: translate SEP to /
+    $from .= $descendent;
+    return ($from, $root ? $root->fs->revision_root ($entry->{'.copyfrom_rev'})
+	    : $entry->{'.copyfrom_rev'});
+}
+
 sub get_props {
-    my ($self, $root, $path, $copath) = @_;
+    my ($self, $root, $path, $copath, $entry) = @_;
+    my $props = {};
+    $entry ||= $self->{checkout}->get ($copath) if $copath;
+    my $schedule = $entry->{'.schedule'} || '';
 
-    my ($props, $entry) = ({});
-
-    $entry = $self->{checkout}->get ($copath) if $copath;
-    $entry->{'.newprop'} ||= {};
-    $entry->{'.schedule'} ||= '';
-
-    unless ($entry->{'.schedule'} eq 'add') {
+    if (my ($source_path, $source_root) = $self->_copy_source ($entry, $copath, $root)) {
+	$props = $source_root->node_proplist ($source_path);
+    }
+    elsif ($schedule ne 'add' && $schedule ne 'replace') {
 	die loc("path %1 not found", $path)
 	    if $root->check_path ($path) == $SVN::Node::none;
 	$props = $root->node_proplist ($path);

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 36;
+use Test::More tests => 41;
 use strict;
 our $output;
 require 't/tree.pl';
@@ -7,7 +7,7 @@ my ($xd, $svk) = build_test('foo');
 $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
 $svk->mkdir ('-m', 'init', '//new');
-my ($copath, $corpath) = get_copath ('copy');
+our ($copath, $corpath) = get_copath ('copy');
 is_output_like ($svk, 'copy', [], qr'SYNOPSIS', 'copy - help');
 
 $svk->checkout ('//new', $copath);
@@ -72,6 +72,40 @@ is_output ($svk, 'commit', ['-m', 'commit file copied from entry removed later',
 	   ['Committed revision 9.']);
 is_copied_from ("//new/de-revive", '/V/D/de', 3);
 
+# proper anchoring
+$svk->copy ('//V/A/be', "$copath/be-alone");
+$svk->copy ('//V/A', "$copath/A-prop");
+$svk->ps ('newprop', 'prop after cp', "$copath/be-alone");
+$svk->ps ('newprop', 'prop after cp', "$copath/A-prop/be");
+
+is_output ($svk, 'pl', ["$copath/be-alone"],
+	   ["Properties on $copath/be-alone:",
+	    '  newprop', '  svn:keywords']);
+
+is_output ($svk, 'pl', ["$copath/A-prop/be"],
+	   ["Properties on $copath/A-prop/be:",
+	    '  newprop', '  svn:keywords']);
+
+mkdir ("$copath/newdir");
+$svk->add ("$copath/newdir");
+my $status = [status_native ($copath, 'A  ', 'newdir/A',
+			     'A  ', 'newdir/A/Q',
+			     'A  ', 'newdir/A/Q/qu',
+			     'A  ', 'newdir/A/Q/qz',
+			     'A  ', 'newdir/A/be')];
+
+is_output ($svk, 'copy', ['//V/A', "$copath/newdir"],
+	   $status);
+is_output ($svk, 'status', ["$copath/newdir", "$copath/A-prop"],
+	   [status_native ($copath, 'A +', 'A-prop', ' M ', 'A-prop/be',
+			   'A  ', 'newdir', 'A +', 'newdir/A')]);
+
+$svk->revert ('-R', $copath);
+TODO: {
+local $TODO = 'revert removes known nodes copied';
+is_output ($svk, 'status', [$copath], []);
+}
+# copy on mirrored paths
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/foo/', 1);
 create_basic_tree ($xd, '/foo/');
 $svk->mirror ('//foo-remote', "file://$srepospath");
