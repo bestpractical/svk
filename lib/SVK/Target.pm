@@ -56,8 +56,6 @@ sub anchorify {
     my ($self) = @_;
     die "anchorify $self->{depotpath} already with targets: ".join(',', @{$self->{targets}})
 	if exists $self->{targets}[0];
-    use Carp;
-    confess unless defined $self->{report};
     ($self->{path}, $self->{targets}[0], $self->{depotpath}, undef, $self->{report}) =
 	get_anchor (1, $self->{path}, $self->{depotpath}, $self->{report});
     ($self->{copath}, $self->{copath_target}) = get_anchor (1, $self->{copath})
@@ -94,6 +92,20 @@ sub path {
     my ($self) = @_;
     $self->{targets}[0]
 	? "$self->{path}/$self->{targets}[0]" : $self->{path};
+}
+
+=head2 descend
+
+Make target descend into C<$entry>
+
+=cut
+
+sub descend {
+    my ($self, $entry) = @_;
+    $self->{depotpath} .= "/$entry";
+    $self->{path} .= "/$entry";
+    $self->{report} = File::Spec->catfile ($self->{report}, $entry);
+    $self->{copath} = File::Spec->catfile ($self->{copath}, $entry);
 }
 
 =head1 AUTHORS

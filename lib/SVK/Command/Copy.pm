@@ -39,17 +39,14 @@ sub do_copy_co {
     my ($self, $src, $dst) = @_;
     my $xdroot = $dst->root ($self->{xd});
     if (-d $dst->{copath}) {
-	# XXX: proper descendent
-	my ($name) = $src->{depotpath} =~ m|(/[^/]+)/?$|;
-#	$dst = $self->arg_copath ("$dst->{depotpath}$name");
-	$dst->{depotpath} .= $name;
-	$dst->{path} .= $name;
-	$dst->{copath} .= $name;
+	$dst->descend ($src->{depotpath} =~ m|/([^/]+)/?$|);
     }
-    my $copath = $dst->{copath};
+    my ($copath, $report) = @{$dst}{qw/copath report/};
     $src->anchorify; $dst->anchorify;
+    # if SVK::Merge could take src being copath to do checkout_delta
+    # then we have 'svk cp copath... copath' for free.
     SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
-		     report => $dst->{report},
+		     report => $report,
 		     base => $src->new (path => '/', revision => 0),
 		     src => $src, dst => $dst)->run ($self->get_editor ($dst));
 

@@ -1126,7 +1126,7 @@ sub get_keyword_layer {
 		   },
 		 FileRev =>
 		 sub { my ($root, $path) = @_;
-		       my $rev = 1;
+		       my $rev = 0;
 		       my $fs = $root->fs;
 		       my $hist = $fs->revision_root ($fs->youngest_rev)->node_history ($path);
 		       my $spool = SVN::Pool->new_default_sub;
@@ -1327,8 +1327,6 @@ sub changed {
 
 sub invalidate {
     my ($self, $entry) = @_;
-    use Carp;
-    confess unless $entry;
     delete $self->{newsignature}{quotemeta($entry)."\n"};
 }
 

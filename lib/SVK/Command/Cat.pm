@@ -25,7 +25,8 @@ sub run {
 	my $root = $target->root ($self->{xd});
 	my $stream = $root->file_contents ($target->{path});
 	# XXX: the keyword layer interface should also have reverse
-	my $layer = SVK::XD::get_keyword_layer ($root, $target->{path});
+	my $layer = SVK::XD::get_keyword_layer ($root, $target->{path},
+						$root->node_proplist ($target->{path}));
 	no strict 'refs';
 	my $io = \*{select()};
 	$layer->via ($io) if $layer;

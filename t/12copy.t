@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 12;
 use strict;
 our $output;
 require 't/tree.pl';
@@ -12,14 +12,19 @@ my ($copath, $corpath) = get_copath ('copy');
 is_output_like ($svk, 'copy', [], qr'SYNOPSIS', 'copy - help');
 
 $svk->checkout ('//new', $copath);
-# XXX: fix and check the output of copy
-$svk->copy ('//V/me', '//V/D/de', $copath);
+is_output ($svk, 'copy', ['//V/me', '//V/D/de', $copath],
+	   ["A   $copath/me",
+	    "A   $copath/de"]);
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   ["$corpath/me is not a directory."], 'multi to nondir');
-$svk->copy ('//V/me', "$copath/me-copy");
+is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
+	   ["A   $copath/me-copy"]);
 $svk->copy ('//V/D/de', "$copath/de-copy");
-$svk->copy ('//V/D', "$copath/D-copy");
+is_output ($svk, 'copy', ['//V/D', "$copath/D-copy"],
+	   ["A   $copath/D-copy",
+	    "A   $copath/D-copy/de"]);
 $svk->copy ('//V', "$copath/V-copy");
+
 is_output ($svk, 'copy', ['//V', '/foo/bar', "$copath/V-copy"],
 	   ['Different depots.']);
 is_output ($svk, 'copy', ['//V/me', '//V/D', '//V/new'],
