@@ -14,6 +14,8 @@ sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
      'l|log'		=> 'log',
+     'remoterev'	=> 'remoterev',
+     'host=s'   	=> 'host',
      'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
      'r|revision=s'	=> 'revspec');

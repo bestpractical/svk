@@ -36,6 +36,8 @@ SVK::Command::Smerge - Automatic merge all changes between branches
  -m [--message] message:    commit message
  -C [--check-only]:         don't perform actual writes
  -l [--log]:                brings the logs of merged revs to the message buffer
+ --remoterev:               Use remote revision in merge log
+ --host host:               Use host as hostname shown in merge log
  --no-ticket:               don't associate the ticket tracking merge history
  -B [--baseless]:           use the oldest revision as the merge point
  -b [--base] rev:           manually specify source revision as the merge point

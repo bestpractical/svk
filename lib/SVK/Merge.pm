@@ -249,11 +249,16 @@ sub get_new_ticket {
 
 sub log {
     my ($self, $verbatim) = @_;
-    my $sep = $verbatim ? '' : ('-' x 70)."\n";
     open my $buf, '>', \ (my $tmp);
-    SVK::Command::Log::do_log ($self->{repos}, $self->{src}{path}, $self->{fromrev}+1,
-			       $self->{src}{revision}, 0, 0, 0, 1, $buf, $sep);
-    $tmp =~ s/^/ /mg;
+    no warnings 'uninitialized';
+    use Sys::Hostname;
+    my $print_rev = SVK::Command::Log::_log_remote_rev
+	($self->{repos}, $self->{remoterev},
+	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
+    SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{src}{path},
+			       fromrev => $self->{fromrev}+1, torev => $self->{src}{revision},
+			       print_rev => $print_rev, output => $buf, indent => 1,
+			       sep => $verbatim ? '' : ('-' x 70)."\n");
     return $tmp;
 }
 

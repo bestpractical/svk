@@ -138,7 +138,6 @@ sub get_editor {
 		      if $self->{sign};
 		  $callback->(@_) if $callback; }
 	  ));
-    $base_rev ||= $yrev;
 
     if ($self->{sign}) {
 	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
@@ -147,7 +146,8 @@ sub get_editor {
 							       );
     }
 
-    %cb = SVK::Editor::Merge::cb_for_root ($root, $target->{path}, $base_rev);
+    %cb = SVK::Editor::Merge::cb_for_root
+	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
 
     return ($editor, %cb, mirror => $m, callback => \$callback);
 }

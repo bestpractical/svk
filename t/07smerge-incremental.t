@@ -72,7 +72,7 @@ $svk->sync ('//new');
 $svk->smerge ('-CI', '//m', '//new');
 ok ($@ =~ m"Can't find merge base for /m and /new");
 $svk->smerge ('-BCI', '//m', '//new');
-$svk->smerge ('-BI', '//m', '//new');
+$svk->smerge ('-BI', '--remoterev', '--host', 'source', '//m', '//new');
 is ($srepos->fs->youngest_rev, 5);
 
 
