@@ -17,7 +17,7 @@ sub parse_arg {
     my ($self, @arg) = @_;
 
     if ($self->{detach}) {
-        goto &{ $self->rebless ('checkout')->can ('parse_arg') };
+        goto &{ $self->rebless ('checkout::detach')->can ('parse_arg') };
     }
 
     return if $#arg < 0 || $#arg > 1;

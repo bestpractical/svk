@@ -119,6 +119,17 @@ sub _cmd_map {
     return $cmd;
 }
 
+# rebless to subcommand class if eixsts
+sub _subcommand {
+    my ($self) = @_;
+    no strict 'refs';
+    for (grep {$self->{$_}} values %{{$self->options}}) {
+	if (exists ${ref($self).'::'}{$_.'::'}) {
+	    return bless ($self, (ref($self)."::$_"));
+	}
+    }
+}
+
 =head3 invoke ($xd, $cmd, $output_fh, @args)
 
 Takes a L<SVK::XD> object, the command name, the output scalar reference,
@@ -146,6 +157,7 @@ sub invoke {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
 	$cmd->getopt (\@args, 'h|help|?' => \$help);
+	$cmd->_subcommand;
 
 	# Fake shell globbing on Win32 if we are called from main
 	if (IS_WIN32 and caller(1) eq 'main') {
@@ -741,7 +753,7 @@ sub command {
     my ($self, $command, $args, $is_rebless) = @_;
 
     $command = ucfirst(lc($command));
-    require "SVK/Command/$command.pm";
+    require "SVK/Command/$command.pm" unless $command =~ m/::/;
 
     my $cmd = (
         $is_rebless ? bless($self, "SVK::Command::$command")
