@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-use SVK::Util;
+use SVK::Util qw( catdir tmpdir );
+use File::Spec;
 use Test::More tests => 3;
 BEGIN { require 't/tree.pl' };
 
@@ -17,14 +18,15 @@ my $xd = SVK::XD->new (depotmap => {},
 my $svk = SVK->new (xd => $xd, output => \$output);
 push @TOCLEAN, [$xd, $svk];
 
-my $repospath = "/tmp/svk-$$-".int(rand(1000));
+my $repospath = catdir(tmpdir(), "svk-$$-".int(rand(1000)));
+my $quoted = quotemeta($repospath);
 
 set_editor(<< "TMP");
 \$_ = shift;
 sleep 1;
 open _, ">\$_" or die $!;
 print _ << "EOF";
-'': '$repospath'
+'': '$quoted'
 
 ===edit the above depot map===
 
@@ -40,5 +42,5 @@ $answer = 'y';
 $svk->depotmap ('--init');
 ok (-d $repospath);
 is_output_like ($svk, 'depotmap', ['--list'],
-	       qr"//.*$repospath", 'depotpath - list');
+	       qr"//.*\Q$repospath\E", 'depotpath - list');
 rmtree [$repospath];
