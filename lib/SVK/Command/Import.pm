@@ -29,8 +29,10 @@ sub parse_arg {
 
 sub lock {
     my ($self, $target, $source) = @_;
-    return $self->lock_none
-	unless $self->{xd}{checkout}->get ($source)->{depotpath};
+    unless ($self->{xd}{checkout}->get ($source)->{depotpath}) {
+	return $self->{to_checkout} ? $self->{xd}->lock ($source)
+	    : $self->lock_none;
+    }
     $source = $self->arg_copath ($source);
     die loc("Import source ($source->{copath}) cannot be a checkout path, use --from-checkout.\n")
 	unless $self->{from_checkout};

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 15;
 use strict;
 use File::Path;
 use Cwd;
@@ -33,6 +33,7 @@ unlink "$copath/fileb";
 $svk->import ('-m', 'test import', '//import', $copath);
 unlink "$copath/filec";
 $svk->import ('-t', '-m', 'import -t', '//import', $copath);
+ok($xd->{modified}, 'will update svk config');
 is_output ($svk, 'status', [$copath], []);
 rmtree [$copath];
 $svk->checkout ('//import', $copath);
