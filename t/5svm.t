@@ -5,7 +5,7 @@ require Test::More;
 require 't/tree.pl';
 use Test::More;
 eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
-plan tests => 2;
+plan tests => 3;
 
 # build another tree to be mirrored ourself
 $svk::info = build_test ('test');
@@ -37,7 +37,6 @@ svk::delete ("$copath/Q/qu");
 svk::commit ('-m', 'local modification from branch', "$copath");
 svk::merge (qw/-C -r 4:5/, '-m', 'merge back to remote', '//l', '//m');
 svk::merge (qw/-r 4:5/, '-m', 'merge back to remote', '//l', '//m');
-
 svk::sync ('//m');
 
 $pool = SVN::Pool->new_default; # for some reasons
@@ -48,5 +47,11 @@ svk::update ($copath);
 
 append_file ("$copath/T/xd", "back to mirror directly\n");
 svk::status ($copath);
+
 svk::commit ('-m', 'commit to mirrored path', $copath);
 ok(1);
+
+append_file ("$copath/T/xd", "back to mirror directly again\n");
+svk::commit ('-m', 'commit to deep mirrored path', "$copath/T/xd");
+ok(1);
+

@@ -1150,7 +1150,7 @@ sub commit {
 	}
     };
 
-    die "commit to mirror with anchor not supported yet"
+    die "unexpected error: commit to mirrored path but no mirror object"
 	if $is_mirrored && !$cb{mirror};
 
     ${$cb{callback}} = $committed;
@@ -1431,8 +1431,9 @@ sub get_editor {
 	return ($editor, %cb, txn => $txn);
     }
 
-    my ($base_rev, $m);
-    if ($svn_mirror && ($m = SVN::Mirror::is_mirrored ($arg{repos}, $arg{path}))) {
+    my ($base_rev, $m, $mpath);
+
+    if ($svn_mirror && (($m, $mpath) = SVN::Mirror::is_mirrored ($arg{repos}, $arg{path}))) {
 	print "Merge back to SVN::Mirror source $m->{source}.\n";
 	if ($arg{check_only}) {
 	    print "Check against mirrored directory locally.\n";
@@ -1440,7 +1441,7 @@ sub get_editor {
 	else {
 	    $m->{auth} = $auth;
 	    ($base_rev, $editor) = $m->get_merge_back_editor
-		($arg{message},
+		($mpath, $arg{message},
 		 sub { print "Merge back committed as revision $_[0].\n";
 		       my $rev = shift;
 		       # XXX: some failsafe handler
@@ -1892,7 +1893,7 @@ if ($0 eq __FILE__) {
 END {
     my $svkpath = "$ENV{HOME}/.svk";
     return unless -e "$svkpath/lock";
-    warn "cleaning up after excepton";
+    warn "cleaning up after exception";
     unlink ("$svkpath/lock");
 }
 
