@@ -969,6 +969,7 @@ sub merge {
 		       dpath => $dpath,
 		       copath => $copath,
 		       editor => $editor,
+		       send_fulltext => $editor ? 0 : 1,
 		       base_path => $base_path,
 		       base_rev => $base_rev,
 		       fromrev => $fromrev,

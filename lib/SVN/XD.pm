@@ -107,6 +107,7 @@ sub do_update {
     my $editor = SVN::MergeEditor->new
 	(_debug => 0,
 	 fs => $fs,
+	 send_fulltext => 1,
 	 anchor => $anchor,
 	 base_anchor => $anchor,
 	 base_root => $xdroot,
@@ -583,6 +584,7 @@ sub do_merge {
 	  base_anchor => $base_anchor,
 	  base_root => $fs->revision_root ($arg{fromrev}),
 	  target => $target,
+	  send_fulltext => $arg{send_fulltext},
 	  cb_merged => $arg{cb_merged},
 	  storage => $storage,
 # SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),

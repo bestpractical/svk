@@ -9,7 +9,7 @@ require 't/tree.pl';
 package main;
 
 # build another tree to be mirrored ourself
-$svk::info = build_test ('test');
+$svk::info = build_test ('test', 'client2');
 
 my $tree = create_basic_tree ('/test/');
 my $pool = SVN::Pool->new_default;
@@ -19,6 +19,7 @@ my ($scopath, $scorpath) = get_copath ('smerge-source');
 
 my ($srepospath, $spath, $srepos) = svk::find_repos ('/test/A', 1);
 my ($repospath, undef, $repos) = svk::find_repos ('//', 1);
+my ($nrepospath, undef, $nrepos) = svk::find_repos ('/client2/', 1);
 
 svk::mirror ('//m', "file://${srepospath}".($spath eq '/' ? '' : $spath));
 
@@ -27,11 +28,11 @@ svk::sync ('//m');
 svk::copy ('-m', 'branch', '//m', '//l');
 
 svk::checkout ('/test/', $scopath);
-append_file ("$scopath/A/be", "modified on source\n");
-svk::commit ('-m', 'commit on source', $scopath);
+append_file ("$scopath/A/be", "modified on trunk\n");
+svk::commit ('-m', 'commit on trunk', $scopath);
 svk::checkout ('//l', $copath);
-append_file ("$copath/Q/qu", "modified on local\n");
-svk::commit ('-m', 'commit on local', $copath);
+append_file ("$copath/Q/qu", "modified on local branch\n");
+svk::commit ('-m', 'commit on local branch', $copath);
 
 svk::sync ('//m');
 
@@ -56,13 +57,20 @@ ok (eq_hash (SVN::XD::do_proplist ($svk::info,
 
 svk::merge ('-a', '-m', 'simple smerge from local', '//l', '//m');
 
-print `svn diff -r 3:4 file://$srepospath/A/be`;
+#print `svn diff -r 3:4 file://$srepospath/A/be`;
 
 svk::sync ('//m');
-print 'diff 7:8: '.`svn diff -r 7:8 file://$repospath`;
-svk::merge ('-a', '-C', '//m', '//l');
+#print 'diff 7:8: '.`svn diff -r 7:8 file://$repospath`;
+svk::smerge ('-C', '//m', '//l');
+svk::smerge ('-m', 'mergedown', '//m', '//l');
+svk::smerge ('-m', 'mergedown', '//m', '//l');
 
 #svk::proplist ('-v', $copath);
+
+svk::mirror ('/client2/trunk', "file://${srepospath}".($spath eq '/' ? '' : $spath));
+
+svk::sync ('/client2/trunk');
+svk::copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
 
 =comment
 

@@ -45,12 +45,12 @@ sub cleanup_test {
     my $info = shift;
     use YAML;
     print Dump($info) if $ENV{TEST_VERBOSE};
-    for (values %{$info->{depotmap}}) {
-	die if $_ eq '/';
-	print `svn log -v file://$_`
+    for my $depot (keys %{$info->{depotmap}}) {
+	my $path = $info->{depotmap}{$depot};
+	die if $path eq '/';
+	print "===> depot $depot:\n".`svn log -v file://$path`
 	    if $ENV{TEST_VERBOSE};
-#	diag "removing $_";
-	`rm -rf $_`;
+	`rm -rf $path`;
     }
 }
 

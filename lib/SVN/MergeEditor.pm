@@ -161,20 +161,11 @@ sub prepare_fh {
 	my $tmp = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
 	my $slurp = $fh->{$name}[0];
 
-=for future
-
-# wait for 0.35
-
-	$/ = \16384;
+	local $/ = \16384;
 	while (<$slurp>) {
 	    print {$tmp->[0]} $_;
 	}
 
-=cut
-
-	undef $/;
-	$slurp = <$slurp>;
-	print {$tmp->[0]} $slurp;
 	close $fh->{$name}[0];
 	$fh->{$name} = $tmp;
 	seek $fh->{$name}[0], 0, 0;
@@ -184,27 +175,27 @@ sub prepare_fh {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
-    return unless $self->{info}{$path}{status};
+    my $info = $self->{info}{$path};
+    my $fh = $info->{fh} = {};
+    return unless $info->{status};
     my ($base, $newname);
-    unless ($self->{info}{$path}{status}[0]) { # open, has base
-	$self->{info}{$path}{fh}{local} =
-	    &{$self->{cb_localmod}}($path, $checksum) or
-		$self->{info}{$path}{status}[0] = 'U';
+    unless ($info->{status}[0]) { # open, has base
+	$fh->{local} = &{$self->{cb_localmod}}($path, $checksum) or
+	    $info->{status}[0] = 'U';
 	# retrieve base
-	$self->{info}{$path}{fh}{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	$fh->{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
 	my $rpath = $path;
 	$rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
 	my $buf = $self->{base_root}->file_contents ($rpath);
 	local $/;
-	$self->{info}{$path}{fh}{base}[0]->print(<$buf>);
-	seek $self->{info}{$path}{fh}{base}[0], 0, 0;
+	$fh->{base}[0]->print(<$buf>);
+	seek $fh->{base}[0], 0, 0;
 	# get new
-	my ($fh, $file) = mkstemps("/tmp/svk-mergeXXXXX", '.tmp');
-	$self->{info}{$path}{fh}{new} = [$fh, $file];
-	return [SVN::TxDelta::apply ($self->{info}{$path}{fh}{base}[0],
-					 $fh, undef, undef, $pool)];
+	$fh->{new} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	return [SVN::TxDelta::apply ($fh->{base}[0],
+				     $fh->{new}[0], undef, undef, $pool)];
     }
-    $self->{info}{$path}{status}[0] ||= 'U';
+    $info->{status}[0] ||= 'U';
     $self->ensure_open ($path);
     return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
 					      $checksum, $pool);
