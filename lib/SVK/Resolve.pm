@@ -168,7 +168,7 @@ sub accept {
 sub skip {
     my $self = shift;
 
-    delete $self->{merged};
+    unlink delete $self->{merged};
     delete $self->{has_conflict};
 }
 
