@@ -4,14 +4,20 @@ use base 'SVK::Resolve';
 use File::Glob;
 use SVK::Util qw( catdir );
 
-sub commands { 'compare' }
+sub commands { 'consolecompare' }
 
 sub paths {
-    return File::Glob::bsd_glob(catdir(
+    my $araxis_dir = catdir(
 	($ENV{ProgramFiles} || 'C:\Program Files'), 
 	'Araxis',
-	'Araxis Merge*',
-    ));
+    );
+
+    return(
+        $araxis_dir,
+        File::Glob::bsd_glob(
+            catdir($araxis_dir, 'Araxis Merge*')
+        ),
+    );
 }
 
 sub arguments {
