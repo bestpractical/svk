@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 15;
+plan tests => 18;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -179,9 +179,38 @@ $svk->copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
 
 
 $svk->copy ('-m', 'branch on source', '/test/A', '/test/A-cp');
-$svk->ps ('-m', 'prop on A-cp', 'blah', 'tobemerged', '/test/A');
+$svk->ps ('-m', 'prop on A', 'blah', 'tobemerged', '/test/A');
 $svk->mirror ('//m-all', "file://${srepospath}/");
 $svk->sync ('//m-all');
 $svk->smerge ('-C', '//m-all/A', '//m-all/A-cp');
-$svk->smerge ('-m', 'merge down', '//m-all/A', '//m-all/A-cp');
-$svk->pl ('-v', '//');
+is_output ($svk, 'smerge', ['-m', 'merge down prop only', '//m-all/A', '//m-all/A-cp'],
+	   ['Auto-merging (17, 19) /m-all/A to /m-all/A-cp (base /m-all/A:17).',
+	    "Merging back to SVN::Mirror source file://$srepospath.",
+	    ' U  .',
+	    "New merge ticket: $suuid:/A:7",
+	    'Merge back committed as revision 8.',
+	    "Syncing file://$srepospath",
+	    'Retrieving log information from 8 to 8',
+	    'Committed revision 20 from revision 8.']);
+$svk->pl ('-v', '//m-all/A-cp');
+
+TODO: {
+local $TODO = 'this can fail with hash key randomization, fix has_local or forbid mirroring same repository';
+
+is_output ($svk, 'smerge', ['-m', 'merge down prop only', '//m-all/A', '//m-all/A-cp'],
+	   ['Auto-merging (19, 19) /m-all/A to /m-all/A-cp (base /m-all/A:19).',
+	    "Merging back to SVN::Mirror source file://$srepospath.",
+	    'Empty merge.'], 'empty merge');
+
+$svk->ps ('-m', 'prop on A/be', 'proponly', 'proponly', '/test/A/be');
+$svk->sync ('//m-all');
+is_output ($svk, 'smerge', ['-m', 'merge down prop only', '//m-all/A', '//m-all/A-cp'],
+	   ['Auto-merging (19, 21) /m-all/A to /m-all/A-cp (base /m-all/A:19).',
+	    "Merging back to SVN::Mirror source file://$srepospath.",
+	    ' U  be',
+	    "New merge ticket: $suuid:/A:9",
+	    'Merge back committed as revision 10.',
+	    "Syncing file://$srepospath",
+	    'Retrieving log information from 10 to 10',
+	    'Committed revision 22 from revision 10.']);
+}

@@ -512,7 +512,6 @@ sub change_file_prop {
     $self->ensure_open ($path);
     $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
     $self->{notify}->prop_status ($path, 'U');
-    ++$self->{changes};
 }
 
 sub change_dir_prop {
@@ -531,8 +530,8 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self, @arg) = @_;
-    if (defined $self->{storage_baton}{''} &&
-	($self->{allow_conflicts} || !$self->{conflicts}) && $self->{changes}) {
+    if ($self->{allow_conflicts} ||
+	(defined $self->{storage_baton}{''} && !$self->{conflicts}) && $self->{changes}) {
 	$self->{storage}->close_edit(@arg);
     }
     else {

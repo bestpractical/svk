@@ -24,7 +24,7 @@ sub flush_print {
     my ($path, $status, $extra) = @_;
     no warnings 'uninitialized';
     $extra = " - $extra" if $extra;
-    print sprintf ("%1s%1s%1s \%s\%s\n", @{$status}[0..2], $path, $extra);
+    print sprintf ("%1s%1s%1s \%s\%s\n", @{$status}[0..2], $path || '.', $extra);
 }
 
 sub skip_print {
@@ -71,7 +71,7 @@ sub node_status {
 sub prop_status {
     my ($self, $path, $s) = @_;
     $self->{status}{$path}[1] = $s if defined $s
-	&& exists $self->{status}{$path}[0] && $self->{status}{$path}[0] ne 'A';
+	&& (!exists $self->{status}{$path}[0] || $self->{status}{$path}[0] ne 'A');
     return $self->{status}{$path}[1];
 }
 
@@ -83,8 +83,8 @@ sub hist_status {
 
 sub flush {
     my ($self, $path, $anchor) = @_;
-    my $status;
-    if (($status = $self->{status}{$path}) && grep {$_} @{$status}[0..2]) {
+    my $status = $self->{status}{$path};
+    if ($status && grep {$_} @{$status}[0..2]) {
 	$self->{cb_flush}->($path, $status) if $self->{cb_flush};
     }
     elsif (!$status && !$anchor) {
@@ -95,7 +95,7 @@ sub flush {
 
 sub flush_dir {
     my ($self, $path) = @_;
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : $_ ne $path}
+    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : $_}
 	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }

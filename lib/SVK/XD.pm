@@ -877,7 +877,6 @@ sub _delta_dir {
     my $schedule = $cinfo->{'.schedule'} || '';
     $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none ||
 	$schedule eq 'replace';
-    my $rev = $arg{cb_rev}->($arg{entry} || '');
 
     # compute targets for children
     my $targets;
@@ -893,9 +892,7 @@ sub _delta_dir {
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
 	if $arg{cb_conflict} && $cinfo->{'.conflict'};
 
-    return if $self->_node_deleted_or_absent (%arg, pool => $pool, rev => $rev,
-					      type => 'directory');
-    $rev = 0 if $arg{add};
+    return if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'directory');
     $arg{base} = 0 if $schedule eq 'replace';
     my ($entries, $baton) = ({});
     if ($arg{add}) {
@@ -909,7 +906,9 @@ sub _delta_dir {
     $entries = $arg{base_root}->dir_entries ($arg{base_path})
 	if $arg{base} && $arg{kind} == $SVN::Node::dir;
 
-    $baton ||= $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton}, $rev, $pool);
+    $baton ||= $arg{root} ? $arg{baton}
+	: $arg{editor}->open_directory ($arg{entry}, $arg{baton},
+					$arg{cb_rev}->($arg{entry}), $pool);
 
     if (($schedule eq 'prop' || $arg{add}) && (!defined $targets)) {
 	my $newprop = $cinfo->{'.newprop'};
@@ -1342,6 +1341,7 @@ sub AUTOLOAD {
     return if $func =~ m/^[A-Z]*$/;
     no strict 'refs';
     my $self = shift;
+#    warn "===> $self $func: ".join(',',@_).' '.join(',', (caller(0))[0..3])."\n";
     $self->[1]->$func (@_);
 }
 
