@@ -23,8 +23,9 @@ requires(
         'Clone'	                => '0',
         'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',
-        'PerlIO::via::dynamic'  => '0.02',
+        'PerlIO::via::dynamic'  => '0.11',
         'PerlIO::via::symlink'  => '0.01',
+        'IO::Digest'		=> '0',
         'SVN::Simple::Edit'     => '0.21',
         'Date::Parse'           => '0',
 );

@@ -176,14 +176,14 @@ sub get_committable {
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	);
 
-    die loc("No targets to commit.\n") if $#{$targets} < 0;
-
     my $conflicts = grep {$_->[0] eq 'C'} @$targets;
-    if ($conflicts) {
+
+    if ($#{$targets} < 0 || $conflicts) {
 	if ($fh) {
 	    close $fh;
 	    unlink $file;
 	}
+	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	die loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
     }
 
@@ -192,6 +192,7 @@ sub get_committable {
 	($self->{message}, $targets) =
 	    get_buffer_from_editor ('log message', $target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
+	unlink $file;
     }
 
     return [sort {$a->[1] cmp $b->[1]} @$targets];
