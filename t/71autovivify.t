@@ -73,13 +73,12 @@ is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
             ]);
 is_ancestor ($svk, "C-hate", '/mirror/C', 6);
 
-TODO: {
-local $TODO = 'forbid autovivify copying to existing local path';
 rmtree ['C'];
-is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
-            "Committed revision 7.",
-	    "Syncing //C(/C) in ".__("$corpath/C to 7."),
-            __("A   C/R"),
+$answer = ['', 'C-bizzare'];
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"],
+	  [ 'Path //C already exists.',
+            "Committed revision 9.",
+	    "Syncing //C-bizzare(/C-bizzare) in ".__("$corpath/C-bizzare to 9."),
+            __("A   C-bizzare/R"),
             ]);
-}
 

@@ -831,12 +831,10 @@ sub find_checkout_anchor {
 
 sub prompt_depotpath {
     my ($self, $action, $default) = @_;
-
     my $path;
-
+    my $prompt = '';
     if (defined $default and $default =~ m{(^/[^/]*/)}) {
-        my $depot = $1;
-        my $prompt = loc("
+        $prompt = loc("
 Next, svk will create another depot path, and you have to name it too.
 It is usally something like %1your_project/. svk will copy what's in
 the mirrored path into the new path.  This depot path is where your
@@ -849,24 +847,28 @@ Please enter a name for your private branch, and it will be placed
 under %1.  If, again, you just don't care, simply press enter and let
 svk use the default.
 
-", $depot);
-        $path = get_prompt($prompt . loc(
-            "Enter a depot path to %1 into: [%2] ",
-            loc($action), $default
-        ));
-        $path = $default unless length $path;
+", $1);
+	$prompt .= loc("Enter a depot path to %1 into: [%2] ",
+		       loc($action), $default
+		      );
     }
     else {
-        $path = get_prompt(loc(
-            "Enter a depot path to %1 into (under // if no leading '/'): ",
-            loc($action),
-        ));
+	$prompt = loc ("Enter a depot path to %1 into (under // if no leading '/'): ",
+		       loc($action));
     }
+    while (1) {
+	$path = get_prompt($prompt);
+	$path = $default if defined $default && !length $path;
 
-    $path =~ s{^//+}{};
-    $path =~ s{//+}{/};
-    $path = "//$path" unless $path =~ m!^/!;
-    $path =~ s{/$}{};
+	$path =~ s{^//+}{};
+	$path =~ s{//+}{/};
+	$path = "//$path" unless $path =~ m!^/!;
+	$path =~ s{/$}{};
+
+	my $target = $self->arg_depotpath ($path);
+	last if $target->root->check_path ($target->path) == $SVN::Node::none;
+	print loc ("Path %1 already exists.\n", $path);
+    }
 
     return $path;
 }
