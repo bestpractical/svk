@@ -213,7 +213,6 @@ is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/
 
 is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
 	   ['Auto-merging (8, 8) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
-	    "Merging back to mirror source $uri.",
 	    'Empty merge.'], 'empty merge');
 
 $svk->ps ('-m', 'prop on A/be', 'proponly', 'proponly', '/test/A/be');

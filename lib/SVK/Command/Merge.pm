@@ -125,7 +125,13 @@ sub run {
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
-	     dst => $dst, base => $src->new (revision => $baserev), target => '');
+	     dst => $dst, base => $src->new (revision => $baserev), target => '',
+	     fromrev => $baserev);
+    }
+
+    if ($merge->{fromrev} == $merge->{src}{revision}) {
+	print loc ("Empty merge.\n");
+	return;
     }
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
