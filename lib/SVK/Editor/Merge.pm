@@ -173,11 +173,11 @@ sub cb_for_root {
 # translate the path before passing to cb_*
 sub cb_translate {
     my ($cb, $translate) = @_;
-    for (qw/cb_exist cb_rev cb_conflict cb_localmod cb_dirdelta/) {
+    for (qw/cb_exist cb_rev cb_conflict cb_localmod cb_localprop cb_dirdelta/) {
 	my $sub = $cb->{$_};
 	next unless $sub;
 	$cb->{$_} = sub { my $path = shift; $translate->($path);
-			  $sub->($path, @_)};
+			  unshift @_, $path; goto &$sub };
     }
 }
 

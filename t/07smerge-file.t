@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 6;
+plan_svm tests => 9;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -57,9 +57,36 @@ append_file ("$copath/be", "modified on after cp\n");
 $svk->commit ('-m', 'merge file-only', $copath);
 is_output ($svk, 'smerge', ['-C', '//l/be', '//l/be.cp'],
 	   ['Auto-merging (7, 10) /l/be to /l/be.cp (base /l/be:7).',
-	    'U   be',
+	    'U   be.cp',
 	    "New merge ticket: $uuid:/l/be:10"]);
 is_output ($svk, 'smerge', ['-C', '//l/be', "$copath/be.cp"],
 	   ['Auto-merging (7, 10) /l/be to /l/be.cp (base /l/be:7).',
-	   __ "U   $copath/be",
+	    __"U   $copath/be.cp",
 	    "New merge ticket: $uuid:/l/be:10"]);
+
+$svk->cp (-m => 'file-level branch', '//l/be' => '//l/be-copy');
+append_file ("$copath/be", "modified for file-level merge\n");
+$svk->commit ('-m', 'merge file-only', $copath);
+is_output ($svk, 'sm', [-m => 'file-level merge', -t => '//l/be-copy'],
+	   ["Auto-merging (10, 12) /l/be to /l/be-copy (base /l/be:10).",
+	    "U   be-copy",
+	    "New merge ticket: $uuid:/l/be:12",
+	    "Committed revision 13."]);
+$svk->up ($copath);
+append_file ("$copath/be", "modified for file-level merge\n");
+append_file ("$copath/be-copy", "modified for file-level merge\n");
+$svk->commit ('-m', 'prepare for g-merge on file', $copath);
+is_output ($svk, 'sm', [-m => 'file-level merge', -t => '//l/be-copy'],
+	   ["Auto-merging (12, 14) /l/be to /l/be-copy (base /l/be:12).",
+	    "g   be-copy",
+	    "New merge ticket: $uuid:/l/be:14",
+	    "Committed revision 15."]);
+
+$svk->ps (-m => 'prop merge', 'foo', 'bar', '//l/be');
+is_output ($svk, 'sm', [-m => 'file-level prop merge', -t => '//l/be-copy'],
+	   ["Auto-merging (14, 16) /l/be to /l/be-copy (base /l/be:14).",
+	    " U  be-copy",
+	    "New merge ticket: $uuid:/l/be:16",
+	    "Committed revision 17."]);
+
+$svk->st ($copath);

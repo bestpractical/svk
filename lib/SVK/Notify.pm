@@ -80,6 +80,17 @@ sub new_with_report {
 		  cb_flush => print_report (\&flush_print, $is_copath, $report, $target));
 }
 
+sub notify_translate {
+    my ($self, $translate) = @_;
+
+    for (qw/cb_skip cb_flush/) {
+	my $sub = $self->{$_} or next;
+	$self->{$_} = sub { my $path = shift;
+			    $translate->($path);
+			    unshift @_, $path; goto &$sub };
+    }
+}
+
 sub node_status {
     my ($self, $path, $s) = @_;
     $self->{status}{$path}[0] = $s if defined $s;

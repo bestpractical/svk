@@ -113,6 +113,9 @@ sub run {
 	$src->anchorify; $dst->anchorify;
     }
 
+    # for svk::merge constructor
+    $self->{dst} = $dst;
+    $self->{report} = defined $dst->{copath} ? $dst->{report} : undef;
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
@@ -121,7 +124,7 @@ sub run {
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
-				   src => $src, dst => $dst);
+				   src => $src);
 	print $merge->info;
 	print $merge->log(1) if $self->{summary};
     }
@@ -132,7 +135,7 @@ sub run {
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
-	     dst => $dst, base => $src->new (revision => $baserev), target => '',
+	     base => $src->new (revision => $baserev), target => '',
 	     fromrev => $baserev);
     }
 
@@ -143,9 +146,6 @@ sub run {
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
 	unless $dst->{copath};
-
-    $merge->{notify} = SVK::Notify->new_with_report
-	($dst->{report}, '', 1) if $dst->{copath};
 
     if ($self->{incremental} && !$self->{check_only}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")
