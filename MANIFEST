@@ -20,10 +20,6 @@ lib/SVN/MergeEditor.pm
 lib/SVN/RevertEditor.pm
 lib/SVN/StatusEditor.pm
 lib/SVN/XD.pm
-lib/SVN/XD.pm.orig
-lib/SVN/XD/Root.pm
-lib/SVN/XD/Root/Fs.pm
-lib/SVN/XD/Root/SVNFs.pm
 Makefile.PL
 MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
