@@ -184,6 +184,9 @@ The depotname may then be used as part of a DEPOTPATH:
 
  /depotname/path/inside/repos
 
+Depot creation respects $ENV{SVNFSTYPE}, which is default to fsfs for
+svn 1.1 or later, and bdb for svn 1.0.x.
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
