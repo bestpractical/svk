@@ -899,7 +899,7 @@ sub _delta_dir {
 	    push @{$targets->{$path}}, $file
 	}
 	else {
-	    $targets->{$file} = undef;
+	    $targets->{defined($file) ? $file : ''} = undef;
 	}
     }
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
