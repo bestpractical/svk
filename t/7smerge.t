@@ -43,7 +43,7 @@ my ($suuid, $srev) = ($srepos->fs->get_uuid, $srepos->fs->youngest_rev);
 
 svk::update ($copath);
 
-ok (eq_hash (SVN::XD::do_proplist ($svk::info,
+ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 				   repos => $repos,
 				   copath => $copath,
 				   path => '/l',
@@ -59,7 +59,7 @@ svk::smerge ('-m', 'simple smerge from local', '//l', '//m');
 
 svk::sync ('//m');
 
-ok (eq_hash (SVN::XD::do_proplist ($svk::info,
+ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 				   repos => $repos,
 				   path => '/m',
 				   rev => $repos->fs->youngest_rev,

@@ -1,4 +1,4 @@
-package SVN::DiffEditor;
+package SVK::DiffEditor;
 use strict;
 use SVN::Delta;
 our $VERSION = '0.09';

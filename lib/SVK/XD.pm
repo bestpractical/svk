@@ -1,13 +1,13 @@
-package SVN::XD;
+package SVK::XD;
 use strict;
 our $VERSION = '0.09';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
-require SVN::MergeEditor;
-use SVN::RevertEditor;
-use SVN::DeleteEditor;
+require SVK::MergeEditor;
+use SVK::RevertEditor;
+use SVK::DeleteEditor;
 use Data::Hierarchy;
 use File::Spec;
 use File::Find;
@@ -89,7 +89,7 @@ sub xd_storage_cb {
 			       $_ = $path; s|$t|$arg{copath}/|;
 			       my $base = get_fh ($arg{oldroot}, '<',
 						  "$arg{anchor}/$arg{path}", $_);
-			       my $md5 = SVN::MergeEditor::md5 ($base);
+			       my $md5 = SVK::MergeEditor::md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
 			       return [$base, undef, $md5];
@@ -99,7 +99,7 @@ sub xd_storage_cb {
 sub get_editor {
     my ($info, %arg) = @_;
 
-    my $storage = SVN::XD::Editor->new
+    my $storage = SVK::XD::Editor->new
 	( %arg,
 	  get_copath => sub { my $t = translator($arg{target});
 			      $_[0] = $arg{copath}, return
@@ -140,7 +140,7 @@ sub do_update {
 				     target => $target,
 				     update => 1);
 
-    my $editor = SVN::MergeEditor->new
+    my $editor = SVK::MergeEditor->new
 	(_debug => 0,
 	 fs => $fs,
 	 send_fulltext => 1,
@@ -165,8 +165,8 @@ sub do_add {
     my ($info, %arg) = @_;
 
     if ($arg{recursive}) {
-	my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
-	SVN::XD::checkout_delta ($info,
+	my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
+	SVK::XD::checkout_delta ($info,
 				 %arg,
 				 baseroot => $xdroot,
 				 xdroot => $xdroot,
@@ -189,11 +189,11 @@ sub do_add {
 
 sub do_delete {
     my ($info, %arg) = @_;
-    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+    my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
     my @deleted;
 
     # check for if the file/dir is modified.
-    SVN::XD::checkout_delta ($info,
+    SVK::XD::checkout_delta ($info,
 			     %arg,
 			     baseroot => $xdroot,
 			     xdroot => $xdroot,
@@ -201,7 +201,7 @@ sub do_delete {
 			     delete_verbose => 1,
 			     absent_verbose => 1,
 			     strict_add => 1,
-			     editor => SVN::DeleteEditor->new
+			     editor => SVK::DeleteEditor->new
 			     (copath => $arg{copath},
 			      dpath => $arg{path},
 			      cb_delete => sub {
@@ -315,7 +315,7 @@ sub do_propset {
 sub do_revert {
     my ($info, %arg) = @_;
 
-    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+    my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
 
     my $revert = sub {
 	my $kind = $xdroot->check_path ($_[0]);
@@ -353,7 +353,7 @@ sub do_revert {
     };
 
     if ($arg{recursive}) {
-	SVN::XD::checkout_delta ($info,
+	SVK::XD::checkout_delta ($info,
 				 %arg,
 				 baseroot => $xdroot,
 				 xdroot => $xdroot,
@@ -361,7 +361,7 @@ sub do_revert {
 				 delete_verbose => 1,
 				 absent_verbose => 1,
 				 strict_add => 1,
-				 editor => SVN::RevertEditor->new
+				 editor => SVK::RevertEditor->new
 				 (copath => $arg{copath},
 				  dpath => $arg{path},
 				  cb_revert => $revert,
@@ -432,7 +432,7 @@ sub _delta_file {
     }
 
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
-    my $mymd5 = SVN::MergeEditor::md5($fh);
+    my $mymd5 = SVK::MergeEditor::md5($fh);
 
     return if !$schedule && !$arg{add}
 	&& $mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
@@ -710,7 +710,7 @@ sub do_import {
 	    $arg{message},
 	    sub {print "Directory $arg{copath} imported to depotpath $arg{depotpath} as revision $_[0].\n"}));
 
-    $editor = SVN::XD::CheckEditor->new ($editor)
+    $editor = SVK::XD::CheckEditor->new ($editor)
 	if $arg{check_only};
 
     my $baton = $editor->open_root ($yrev);
@@ -900,7 +900,7 @@ sub md5file {
     return $ctx->hexdigest;
 }
 
-package SVN::XD::CheckEditor;
+package SVK::XD::CheckEditor;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub close_edit {
@@ -916,7 +916,7 @@ sub abort_edit {
     $self->{_editor}->abort_edit (@_);
 }
 
-package SVN::XD::Editor;
+package SVK::XD::Editor;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use File::Path;
@@ -955,19 +955,19 @@ sub apply_textdelta {
     my $copath = $path;
     $self->{get_copath}($copath);
     if (-e $copath) {
-	my ($dir,$file) = SVN::XD::get_anchor (1, $copath);
+	my ($dir,$file) = SVK::XD::get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
-	$base = SVN::XD::get_fh ($self->{oldroot}, '<',
+	$base = SVK::XD::get_fh ($self->{oldroot}, '<',
 				 "$self->{anchor}/$path", $copath);
 	if ($checksum) {
-	    my $md5 = SVN::MergeEditor::md5($base);
+	    my $md5 = SVK::MergeEditor::md5($base);
 	    die "source checksum mismatch" if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}
 	rename ($copath, $basename);
 	$self->{base}{$path} = [$base, $basename];
     }
-    my $fh = SVN::XD::get_fh ($self->{newroot}, '>',
+    my $fh = SVK::XD::get_fh ($self->{newroot}, '>',
 			      "$self->{anchor}/$path", $copath)
 	or warn "can't open $path";
 
@@ -985,7 +985,7 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	SVN::XD::do_add ($self->{info}, copath => $copath, quiet => 1);
+	SVK::XD::do_add ($self->{info}, copath => $copath, quiet => 1);
     }
     $self->{checkout}->store ($copath, {revision => $self->{revision}})
 	if $self->{update};
@@ -1035,7 +1035,7 @@ sub change_file_prop {
     # XXX: do executable unset also.
     $self->{exe}{$path}++
 	if $name eq 'svn:executable' && defined $value;
-    SVN::XD::do_propset ($self->{info},
+    SVK::XD::do_propset ($self->{info},
 			 quiet => 1,
 			 copath => $copath,
 			 propname => $name,

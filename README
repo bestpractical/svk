@@ -1,13 +1,6 @@
 This is the README file for svk 0.08 release, a decentralized version
 control system.
 
-*NOTE* The release is aimed to be a working prototype, all things are
-subject to change, including project name, binary name, perl module
-namespaces, depot spec, etc. Since the underlying local repository is
-still a subversion repository, you are free to switch back and forth
-between svn and svk, and you might want to use svn for some of the
-operations that svk does not yet implement.
-
 * About
 
 Subversion (svn) aims to take over the CVS user base, while svk

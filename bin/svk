@@ -5,7 +5,7 @@ require SVN::Core;
 require SVN::Client;
 require SVN::Repos;
 require SVN::Fs;
-use SVN::XD;
+use SVK::XD;
 use YAML qw(LoadFile DumpFile);
 use Getopt::Long qw(:config no_ignore_case);
 use Cwd;
@@ -13,9 +13,9 @@ use File::Spec;
 use File::Path ();
 use Data::Hierarchy;
 use IO::String;
-use SVN::DiffEditor;
-use SVN::StatusEditor;
-use SVN::CommitStatusEditor;
+use SVK::DiffEditor;
+use SVK::StatusEditor;
+use SVK::CommitStatusEditor;
 use File::Temp qw/:mktemp/;
 
 use vars qw/$xd $info/;
@@ -262,7 +262,7 @@ sub update {
 
 	$rev = $repos->fs->youngest_rev unless defined $rev;
 
-	SVN::XD::do_update ($info,
+	SVK::XD::do_update ($info,
 			    repos => $repos,
 			    depotpath => $cinfo->{depotpath},
 			    copath => $copath,
@@ -345,7 +345,7 @@ sub switch {
 
     $rev = $repos->fs->youngest_rev unless defined $rev;
 
-    SVN::XD::do_update ($info,
+    SVK::XD::do_update ($info,
 			repos => $repos,
 			depotpath => $cinfo->{depotpath},
 			copath => $copath,
@@ -427,7 +427,7 @@ sub diff {
 	my $newroot = $fs->revision_root ($torev);
 
 	if ($baseroot->check_path ($path) == $SVN::Node::file) {
-	    SVN::DiffEditor::output_diff ($path, "revision $fromrev",
+	    SVK::DiffEditor::output_diff ($path, "revision $fromrev",
 					  "revision $torev",
 					  $path, $path2,
 					  $baseroot->file_contents ($path),
@@ -435,7 +435,7 @@ sub diff {
 	    return;
 	}
 
-	my $editor = SVN::DiffEditor->new
+	my $editor = SVK::DiffEditor->new
 	    ( cb_basecontent => sub { my ($rpath) = @_;
 				      my $base = $baseroot->file_contents ("$path/$rpath");
 				      return $base;
@@ -462,7 +462,7 @@ sub diff {
 	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
 	my $fs = $repos->fs;
-	my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
+	my ($txn, $xdroot) = SVK::XD::create_xd_root ($info,
 						      path => $path,
 						      repos => $repos,
 						      copath => $copath);
@@ -470,18 +470,18 @@ sub diff {
 	my $baseroot = $revspec ? $fs->revision_root ($revspec) : $xdroot;
 
 	if ($baseroot->check_path ($path) == $SVN::Node::file) {
-	    SVN::DiffEditor::output_diff ($path,
+	    SVK::DiffEditor::output_diff ($path,
 					  'revision '.
 					  ($revspec || $info->{checkout}->get
 					   ($copath)->{revision}),
 					  "local",
 					  $path, $path,
 					  $baseroot->file_contents ($path),
-					  SVN::XD::get_fh ($xdroot, '<', $path, $copath));
+					  SVK::XD::get_fh ($xdroot, '<', $path, $copath));
 	    return;
 	}
 
-	my $editor = SVN::DiffEditor->new
+	my $editor = SVK::DiffEditor->new
 	    ( cb_basecontent =>
 	      sub { my ($rpath) = @_;
 		    $baseroot->file_contents ("$path/$rpath");
@@ -501,7 +501,7 @@ sub diff {
 
 	undef $@;
 
-	SVN::XD::checkout_delta ($info,
+	SVK::XD::checkout_delta ($info,
 				 repos => $repos,
 				 copath => $copath,
 				 path => $path,
@@ -527,12 +527,12 @@ sub status {
     ($report, $copath, @targets )= condense (@ARGV);
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
+    my ($txn, $xdroot) = SVK::XD::create_xd_root ($info,
 						  path => $path,
 						  repos => $repos,
 						  copath => $copath);
 
-    SVN::XD::checkout_delta ($info,
+    SVK::XD::checkout_delta ($info,
 			     repos => $repos,
 			     copath => $copath,
 			     targets => @targets ? \@targets : undef,
@@ -541,10 +541,10 @@ sub status {
 			     xdroot => $xdroot,
 			     delete_verbose => 1,
 			     strict_add => 1,
-			     editor => SVN::StatusEditor->new
+			     editor => SVK::StatusEditor->new
 			     (copath => $copath, dpath => $path,
 			      rpath => $report),
-			     cb_conflict => \&SVN::StatusEditor::conflict,
+			     cb_conflict => \&SVK::StatusEditor::conflict,
 			     cb_unknown => sub {$_[1] =~ s|^\Q$copath\E/|$report|;
 						print "?  $_[1]\n"}
 			    );
@@ -573,7 +573,7 @@ sub resolved {
 	my ($repospath, $path, undef, $repos) =
 	    find_repos_from_co ($copath, 1);
 
-	SVN::XD::do_resolved ($info,
+	SVK::XD::do_resolved ($info,
 			      repos => $repos,
 			      copath => $copath,
 			      path => $path,
@@ -657,7 +657,7 @@ them for addition to repository.  They will be added in next commit.
 
 =cut
 
-*get_anchor = *SVN::XD::get_anchor;
+*get_anchor = *SVK::XD::get_anchor;
 
 sub condense {
     my @targets = map {Cwd::abs_path ($_ || '')} @_;
@@ -692,7 +692,7 @@ sub add {
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    SVN::XD::do_add ($info,
+    SVK::XD::do_add ($info,
 		     repos => $repos,
 		     copath => $copath,
 		     targets => @targets ? \@targets : undef,
@@ -728,7 +728,7 @@ sub delete {
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    SVN::XD::do_delete ($info,
+    SVK::XD::do_delete ($info,
 			repos => $repos,
 			copath => $copath,
 			targets => @targets ? \@targets : undef,
@@ -761,7 +761,7 @@ sub proplist {
 	my ($repospath, $path, $copath, undef, $repos) = find_repos_from_co_maybe ($target, 1);
 	$rev ||= $repos->fs->youngest_rev unless $copath;
 
-	my $props = SVN::XD::do_proplist ($info,
+	my $props = SVK::XD::do_proplist ($info,
 					  repos => $repos,
 					  copath => $copath,
 					  path => $path,
@@ -788,7 +788,7 @@ sub propedit {
     $copath = Cwd::abs_path ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    my $pvalue = SVN::XD::do_proplist ($info,
+    my $pvalue = SVK::XD::do_proplist ($info,
 				       repos => $repos,
 				       copath => $copath,
 				       path => $path,
@@ -798,7 +798,7 @@ sub propedit {
     $pvalue = get_buffer_from_editor ("property $pname", undef, $pvalue,
 				      '/tmp/svk-propXXXXX');
 
-    SVN::XD::do_propset ($info,
+    SVK::XD::do_propset ($info,
 			 propname => $pname,
 			 propvalue => $pvalue,
 			 repos => $repos,
@@ -826,7 +826,7 @@ sub propset {
     my ($repospath, $path, $copath, undef, $repos) = find_repos_from_co_maybe ($target, 1);
 
     if ($copath) {
-	SVN::XD::do_propset ($info,
+	SVK::XD::do_propset ($info,
 			     propname => $pname,
 			     propvalue => $pvalue,
 			     repos => $repos,
@@ -840,7 +840,7 @@ sub propset {
 					   "/tmp/svk-commitXXXXX")
 	    unless defined $message;
 
-	SVN::XD::do_propset_direct ($info,
+	SVK::XD::do_propset_direct ($info,
 				    author => $ENV{USER},
 				    repospath => $repospath,
 				    propname => $pname,
@@ -872,7 +872,7 @@ sub revert {
 
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    SVN::XD::do_revert ($info,
+    SVK::XD::do_revert ($info,
 			repos => $repos,
 			copath => $copath,
 			path => $path,
@@ -1073,7 +1073,7 @@ sub commit {
     print "Commit into mirrored path, merge back directly\n"
 	if $is_mirrored;
 
-    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
+    my ($txn, $xdroot) = SVK::XD::create_xd_root ($info,
 						  path => $path,
 						  repos => $repos,
 						  copath => $copath);
@@ -1087,7 +1087,7 @@ sub commit {
     print $fh "\n$target_prompt\n" if $fh;
 
     my $targets = [];
-    SVN::XD::checkout_delta ($info,
+    SVK::XD::checkout_delta ($info,
 			     repos => $repos,
 			     copath => $copath,
 			     targets => @targets ? \@targets : undef,
@@ -1097,10 +1097,10 @@ sub commit {
 			     delete_verbose => 1,
 			     absent_ignore => 1,
 			     strict_add => 1,
-			     editor => SVN::CommitStatusEditor->new
+			     editor => SVK::CommitStatusEditor->new
 			     (copath => $copath, dpath => $path,
 			      targets => $targets, fh => $fh),
-			     cb_conflict => \&SVN::StatusEditor::conflict,
+			     cb_conflict => \&SVK::StatusEditor::conflict,
 			    );
 
     if (grep {$_->[0] eq 'C'} @$targets) {
@@ -1151,10 +1151,10 @@ sub commit {
 	    my ($action, $tpath) = @$_;
 	    my $cpath = $tpath;
 	    $tpath =~ s|^\Q$copath\E||;
-	    my $layer = SVN::XD::get_keyword_layer ($root, "$path/$tpath");
+	    my $layer = SVK::XD::get_keyword_layer ($root, "$path/$tpath");
 	    next unless $layer;
 
-	    my $fh = SVN::XD::get_fh ($xdroot, '<', "$path/$tpath", $cpath, $layer);
+	    my $fh = SVK::XD::get_fh ($xdroot, '<', "$path/$tpath", $cpath, $layer);
 	    # XXX: beware of collision
 	    # XXX: fix permission etc also
 	    my $fname = "$cpath.svk.old";
@@ -1175,7 +1175,7 @@ sub commit {
 
     ${$cb{callback}} = $committed;
 
-    SVN::XD::checkout_delta ($info,
+    SVK::XD::checkout_delta ($info,
 			     repos => $repos,
 			     copath => $copath,
 			     targets => @targets ? \@targets : undef,
@@ -1238,7 +1238,7 @@ sub copy {
 				       "/tmp/svk-commitXXXXX")
 	unless defined $message;
 
-    SVN::XD::do_copy_direct ($info,
+    SVK::XD::do_copy_direct ($info,
 			     author => $ENV{USER},
 			     repospath => $repospath,
 			     repos => $repos,
@@ -1440,9 +1440,9 @@ sub get_editor {
 
     if ($arg{copath}) {
 	# XXX: really need txn auto cleanup!
-	my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+	my ($txn, $xdroot) = SVK::XD::create_xd_root ($info, %arg);
 
-	($editor, %cb) = SVN::XD::get_editor ($info, %arg,
+	($editor, %cb) = SVK::XD::get_editor ($info, %arg,
 					       oldroot => $xdroot,
 					       newroot => $xdroot,
 					       anchor => $arg{path},
@@ -1482,7 +1482,7 @@ sub get_editor {
 	  ));
     $base_rev ||= $arg{repos}->fs->youngest_rev;
 
-    $editor = SVN::XD::CheckEditor->new ($editor)
+    $editor = SVK::XD::CheckEditor->new ($editor)
 	if $arg{check_only};
 
     my $fs = $arg{repos}->fs;
@@ -1586,7 +1586,7 @@ sub merge {
 				    );
 
     my $fs = $repos->fs;
-    my $editor = SVN::MergeEditor->new
+    my $editor = SVK::MergeEditor->new
 	( anchor => $path,
 	  base_anchor => $base_path,
 	  base_root => $fs->revision_root ($fromrev),
@@ -1648,7 +1648,7 @@ Cherry picking. This will eventually be integrated with smerge.
 
 =cut
 
-use SVN::CombineEditor;
+use SVK::CombineEditor;
 
 sub cmerge {
     local @ARGV = @_;
@@ -1682,7 +1682,7 @@ sub cmerge {
     die "can't find a path for tmp branch" if $base_path eq '/';
     my $tmpbranch = "$path-merge-$$";
 
-    SVN::XD::do_copy_direct ($info,
+    SVK::XD::do_copy_direct ($info,
 			     repospath => $repospath,
 			     repos => $repos,
 			     dpath => $tmpbranch,
@@ -1692,7 +1692,7 @@ sub cmerge {
 			    ) unless $check_only;
 
     my $fs = $repos->fs;
-    my $ceditor = SVN::CombineEditor->new(tgt_anchor => $base_path, #$check_only ? $base_path : $tmpbranch,
+    my $ceditor = SVK::CombineEditor->new(tgt_anchor => $base_path, #$check_only ? $base_path : $tmpbranch,
 					  base_root  => $fs->revision_root ($base_rev),
 					  pool => SVN::Pool->new,
 					 );
@@ -1714,7 +1714,7 @@ sub cmerge {
 	print "merging with base $base_path $base_rev applying $path $fromrev:$torev\n";
 
 	my $fs = $repos->fs;
-	my $editor = SVN::MergeEditor->new
+	my $editor = SVK::MergeEditor->new
 	    ( anchor => $path,
 	      base_anchor => $path,
 	      base_root => $fs->revision_root ($fromrev),
@@ -1750,7 +1750,7 @@ sub cmerge {
 
     $ticket .= "\n$uuid:$tmpbranch:$newrev";
 
-    SVN::XD::do_propset_direct ($info,
+    SVK::XD::do_propset_direct ($info,
 				author => $ENV{USER},
 				repospath => $repospath,
 				propname => 'svk:merge',
@@ -1852,7 +1852,7 @@ sub import {
 	     "\n$target_prompt\n", "svk-commitXXXXX");
     }
 
-    SVN::XD::do_import ($info,
+    SVK::XD::do_import ($info,
 			depotpath => $src,
 			repos => $repos,
 			repospath => $repospath,
@@ -1883,7 +1883,7 @@ sub cat {
 	my $root = $fs->revision_root ($rev || $fs->youngest_rev);
 	my $stream = $root->file_contents ($path);
 	# XXX: the keyword layer interface should also have reverse
-	my $layer = SVN::XD::get_keyword_layer ($root, "$path");
+	my $layer = SVK::XD::get_keyword_layer ($root, "$path");
 
 	my $io = new IO::Handle;
 	$io->fdopen(fileno(STDOUT),"w");
@@ -1960,7 +1960,7 @@ if ($show_version) {
 
 no strict 'refs';
 
-#$xd = SVN::XD->new (%$info);
+#$xd = SVK::XD->new (%$info);
 
 if ($0 eq __FILE__) {
     if ($cmd && $cmd !~ m/_/ && main->can($cmd)) {

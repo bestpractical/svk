@@ -64,7 +64,7 @@ svk::commit ('-m', 'commit message here', "$copath/A");
 svk::ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');
 svk::update ($copath);
 
-ok (eq_hash (SVN::XD::do_proplist ($svk::info,
+ok (eq_hash (SVK::XD::do_proplist ($svk::info,
 				   repos => $repos,
 				   copath => $copath,
 				   path => '/A',

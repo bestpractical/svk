@@ -12,14 +12,14 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Scripts.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
-lib/SVN/CombineEditor.pm
-lib/SVN/CommitStatusEditor.pm
-lib/SVN/DeleteEditor.pm
-lib/SVN/DiffEditor.pm
-lib/SVN/MergeEditor.pm
-lib/SVN/RevertEditor.pm
-lib/SVN/StatusEditor.pm
-lib/SVN/XD.pm
+lib/SVK/CombineEditor.pm
+lib/SVK/CommitStatusEditor.pm
+lib/SVK/DeleteEditor.pm
+lib/SVK/DiffEditor.pm
+lib/SVK/MergeEditor.pm
+lib/SVK/RevertEditor.pm
+lib/SVK/StatusEditor.pm
+lib/SVK/XD.pm
 Makefile.PL
 MANIFEST
 META.yml			Module meta-data (added by MakeMaker)

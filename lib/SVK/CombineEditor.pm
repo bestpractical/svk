@@ -1,4 +1,4 @@
-package SVN::CombineEditor;
+package SVK::CombineEditor;
 use strict;
 use File::Temp;
 use SVN::Simple::Edit;
@@ -8,11 +8,11 @@ our @ISA = qw(SVN::Delta::Editor);
 
 =head1 NAME
 
-SVN::CombineEditor - An editor combining several editor calls to one
+SVK::CombineEditor - An editor combining several editor calls to one
 
 =head1 SYNOPSIS
 
-$editor = SVN::CombineEditor->new
+$editor = SVK::CombineEditor->new
     ( base_root => $fs->revision_root ($rev),
       storage => $storage_editor,
     );
@@ -23,7 +23,7 @@ $editor->replay ($other_editor);
 
 =cut
 
-require SVN::MergeEditor;
+require SVK::MergeEditor;
 
 sub replay {
     my ($self, $editor, $base_rev) = @_;
