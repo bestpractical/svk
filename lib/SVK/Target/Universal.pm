@@ -1,6 +1,6 @@
 package SVK::Target::Universal;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::Util qw(find_svm_source find_local_mirror);
 
 =head1 NAME

@@ -1,6 +1,6 @@
 package SVK::Command::Move;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Copy );
 use SVK::Util qw ( abs2rel );
 use SVK::I18N;

@@ -87,6 +87,7 @@ lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Target.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
+lib/SVK/Version.pm
 lib/SVK/XD.pm
 Makefile.PL
 MANIFEST

@@ -1,6 +1,6 @@
 package SVK::Command::Delete;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;

@@ -1,6 +1,6 @@
 package SVK::Command::Copy;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
 use SVK::Util qw( get_anchor get_prompt abs2rel splitdir );
 use SVK::I18N;

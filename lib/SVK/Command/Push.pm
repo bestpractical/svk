@@ -1,6 +1,6 @@
 package SVK::Command::Push;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Smerge );
 use SVK::XD;

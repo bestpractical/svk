@@ -1,6 +1,6 @@
 package SVK::Command::Mirror;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
