@@ -603,7 +603,9 @@ sub _delta_content {
 sub _unknown_verbose {
     my ($self, %arg) = @_;
     my $ignore = ignore;
-    find (sub {
+    find ({ preprocess => sub { sort @_ },
+	    wanted =>
+	    sub {
 	      return if m/$ignore/;
 	      my $dpath = $File::Find::name;
 	      my $copath = $dpath;
@@ -621,7 +623,7 @@ sub _unknown_verbose {
 		  }
 	      }
 	      $arg{cb_unknown}->($dpath, $File::Find::name);
-	  }, defined $arg{targets} ?
+	  }}, defined $arg{targets} ?
 	  map {"$arg{copath}/$_"} @{$arg{targets}} : $arg{copath});
 }
 

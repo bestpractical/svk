@@ -42,7 +42,7 @@ is_output ($svk, 'add', ['A/deep/baz'],
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', ['A'],
-	   ['A   A/', 'A   A/foo', 'A   A/bar', 'A   A/deep', 'A   A/deep/baz'],
+	   ['A   A/', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor');
 $svk->revert ('-R', '.');
 

@@ -219,7 +219,7 @@ sub prepare_fh {
     for my $name (qw/base new local/) {
 	next unless $fh->{$name}[0];
 	next if $fh->{$name}[1];
-	my $tmp = [tmpfile('merge')];
+	my $tmp = [tmpfile("$name-")];
 	my $slurp = $fh->{$name}[0];
 
 	slurp_fh ($slurp, $tmp->[0]);
@@ -241,7 +241,7 @@ sub apply_textdelta {
 	($fh->{local} = $self->{cb_localmod}->($path, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
-	    $fh->{base} = [tmpfile('merge')];
+	    $fh->{base} = [tmpfile('base-')];
 	    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
 	    slurp_fh ($self->{base_root}->file_contents ($path, $pool),
 		      $fh->{base}[0]);
@@ -249,7 +249,7 @@ sub apply_textdelta {
 	    seek $base, 0, 0;
 	}
 	# get new
-	$fh->{new} = [tmpfile('merge')];
+	$fh->{new} = [tmpfile('new-')];
 	return [SVN::TxDelta::apply ($base, $fh->{new}[0], undef, undef, $pool)];
     }
     $self->{notify}->node_status ($path) ||= 'U';
@@ -297,7 +297,7 @@ sub close_file {
 	my $mfn;
         $self->{notify}->node_status ($path) = $conflict ? 'C' : 'G';
 	if ($conflict && $self->{external}) {
-	    $mfn = tmpfile ('merge', OPEN => 0);
+	    $mfn = tmpfile ('merged-', OPEN => 0);
 	    system (split (' ', $self->{external}),
 		    "$path (YOURS)", $fh->{local}[1],
 		    "$path (BASE)", $fh->{base}[1],

@@ -73,19 +73,20 @@ sub invoke {
     local @ARGV = @args;
     my $pool = SVN::Pool->new_default;
     $ofh = select $output if $output;
-    $cmd = get_cmd ($pkg, $cmd);
-    $cmd->{xd} = $xd;
-    die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
-    @args = eval { $cmd->parse_arg(@ARGV) };
-    if ($@) {
-    }
-    elsif ($help || $#args == -1) {
-	$cmd->usage;
-    }
-    else {
-	eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
-	$xd->unlock if $xd;
-    }
+    eval {
+	$cmd = get_cmd ($pkg, $cmd);
+	$cmd->{xd} = $xd;
+	die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
+	@args = $cmd->parse_arg(@ARGV);
+	if ($help || $#args == -1) {
+	    $cmd->usage;
+	}
+	else {
+	    eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
+	    $xd->unlock if $xd;
+	    die $@ if $@;
+	}
+    };
     print $ret if $ret;
     select $ofh if $output;
     die $@ if $@;
