@@ -954,7 +954,7 @@ sub _node_props {
     my $newprops = (!$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none && $arg{type} eq 'file')
 	? $self->auto_prop ($arg{copath}) : $arg{cinfo}{'.newprop'};
     my $fullprop = _combine_prop ($props, $newprops);
-    if ($arg{add}) {
+    if (!$arg{base} or $arg{in_copy}) {
 	$newprops = $fullprop;
     }
     elsif ($arg{base_root} ne $arg{xdroot} && $arg{base}) {
