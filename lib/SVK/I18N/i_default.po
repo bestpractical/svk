@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: SVK 0.12\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
@@ -15,73 +15,73 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/SVK/Command/Commit.pm:228
 #. ($conflicts)
+#: lib/SVK/Command/Commit.pm:228
 msgid "%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:919
 #. ($self->{conflicts})
+#: lib/SVK/XD.pm:919
 msgid "%*(%1,conflict) found.\n"
 msgstr ""
 
-#: lib/SVK/MergeEditor.pm:308
 #. ($path)
+#: lib/SVK/MergeEditor.pm:308
 msgid "%1 - skipped\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:70
 #. ($path)
+#: lib/SVK/XD.pm:70
 msgid "%1 already locked, use 'svk cleanup' if lock is stalled"
 msgstr ""
 
-#: lib/SVK/DeleteEditor.pm:12
 #. ($self->{info}{$path}{dpath})
+#: lib/SVK/DeleteEditor.pm:12
 msgid "%1 changed"
 msgstr ""
 
-#: lib/SVK/XD.pm:361
 #. ($arg{copath})
+#: lib/SVK/XD.pm:361
 msgid "%1 is already scheduled for delete"
 msgstr ""
 
-#: lib/SVK/XD.pm:306
 #. ($_[0])
+#: lib/SVK/XD.pm:306
 msgid "%1 is not under version control"
 msgstr ""
 
-#: lib/SVK/XD.pm:383
 #. ($_[1])
+#: lib/SVK/XD.pm:383
 msgid "%1 is not versioned; ignored.\n"
 msgstr ""
 
-#: lib/SVK/DeleteEditor.pm:15 lib/SVK/DeleteEditor.pm:21
 #. ($self->{info}{$path}{dpath})
+#: lib/SVK/DeleteEditor.pm:15 lib/SVK/DeleteEditor.pm:21
 msgid "%1 is scheduled, use 'svk revert'"
 msgstr ""
 
-#: lib/SVK/XD.pm:719
 #. ($entry)
+#: lib/SVK/XD.pm:719
 msgid "%1 marked as resolved.\n"
 msgstr ""
 
-#: lib/SVK/Util.pm:55
 #. ($what)
+#: lib/SVK/Util.pm:55
 msgid "%1 not modified: a)bort, e)dit, c)ommit?"
 msgstr ""
 
-#: lib/SVK/XD.pm:356
 #. ($arg{copath}, $arg{path})
+#: lib/SVK/XD.pm:356
 msgid "%1(%2) is not under version control"
 msgstr ""
 
-#: lib/SVK/Command/Proplist.pm:37
 #. ($key, $value)
+#: lib/SVK/Command/Proplist.pm:37
 msgid "%1: %2\n"
 msgstr ""
 
-#: lib/SVK/Command/Log.pm:83
 #. ($entry->copyfrom_path, $entry->copyfrom_rev)
+#: lib/SVK/Command/Log.pm:83
 msgid "(from %1:%2)"
 msgstr ""
 
@@ -162,24 +162,24 @@ msgid "-v [--verbose]:         print extra information"
 msgstr ""
 
 #: lib/SVK/Command.pod:20
-msgid "-x [--cross-copy]:      trace will cross copied revisions"
+msgid "-x [--cross-copy]:      trace cross copied revisions"
 msgstr ""
 
 #: lib/SVK/Command.pod:21
-msgid "-x [--cross]:           cross copied node"
+msgid "-x [--cross]:           display cross copied nodes"
 msgstr ""
 
 #: lib/SVK/Util.pm:51 lib/SVK/Util.pm:58
 msgid "Aborted.\n"
 msgstr ""
 
-#: lib/SVK/Command/Annotate.pm:36
 #. ($target->{path}, scalar @revs)
+#: lib/SVK/Command/Annotate.pm:36
 msgid "Annotations for %1 (%2 active revisions):\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:46
 #. ($fromrev, $torev, $src->{path}, $dst->{path}, $base_path)
+#: lib/SVK/Command/Merge.pm:46
 msgid "Auto-merging (%1, %2) %3 to %4 (base %5).\n"
 msgstr ""
 
@@ -195,8 +195,8 @@ msgstr ""
 msgid "Checking against mirrored directory locally.\n"
 msgstr ""
 
-#: lib/SVK/Command/Cleanup.pm:19
 #. ($_->{copath})
+#: lib/SVK/Command/Cleanup.pm:19
 msgid "Cleaned up stalled lock on %1.\n"
 msgstr ""
 
@@ -208,8 +208,8 @@ msgstr ""
 msgid "Commit into mirrored path: merging back directly.\n"
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:98 lib/SVK/Command/Commit.pm:130 lib/SVK/Command/Copy.pm:22 lib/SVK/Command/Mkdir.pm:23 lib/SVK/Command/Propset.pm:28
 #. ($_[0])
+#: lib/SVK/Command/Cmerge.pm:98 lib/SVK/Command/Commit.pm:130 lib/SVK/Command/Copy.pm:22 lib/SVK/Command/Mkdir.pm:23 lib/SVK/Command/Propset.pm:28
 msgid "Committed revision %1.\n"
 msgstr ""
 
@@ -217,13 +217,13 @@ msgstr ""
 msgid "DESCRIPTION"
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:22
 #. ($target->{depotpath})
+#: lib/SVK/Command/Info.pm:22
 msgid "Depot Path: %1\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:766
 #. ($arg{copath}, $arg{depotpath}, $_[0])
+#: lib/SVK/XD.pm:766
 msgid "Directory %1 imported to depotpath %2 as revision %3.\n"
 msgstr ""
 
@@ -231,8 +231,8 @@ msgstr ""
 msgid "Empty merge.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:750
 #. ($arg{path})
+#: lib/SVK/XD.pm:750
 msgid "Import path %1 initialized.\n"
 msgstr ""
 
@@ -240,8 +240,8 @@ msgstr ""
 msgid "Import source cannot be a checkout path"
 msgstr ""
 
-#: lib/SVK/DiffEditor.pm:67
 #. ($path)
+#: lib/SVK/DiffEditor.pm:67
 msgid "Index: %1\n"
 msgstr ""
 
@@ -249,32 +249,32 @@ msgstr ""
 msgid "Interrupted.\n"
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:26
 #. ($target->{repos}->fs->revision_root($rev)
+#: lib/SVK/Command/Info.pm:26
 msgid "Last Changed Rev.: %1\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:111
 #. ($_[0])
+#: lib/SVK/Command/Commit.pm:111
 msgid "Merge back committed as revision %1.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:103
 #. ($m->{source})
+#: lib/SVK/Command/Commit.pm:103
 msgid "Merging back to SVN::Mirror source %1.\n"
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:70
 #. ($base_path, $base_rev, $src->{path}, $fromrev, $torev)
-msgid "Merging with base %1 %2: applying %3 %4:%5\n"
+#: lib/SVK/Command/Cmerge.pm:70
+msgid "Merging with base %1 %2: applying %3 %4:%5.\n"
 msgstr ""
 
 #: lib/SVK/Command.pod:23
 msgid "NAME"
 msgstr ""
 
-#: lib/SVK/DiffEditor.pm:80
 #. ($_)
+#: lib/SVK/DiffEditor.pm:80
 msgid "Name: %1\n"
 msgstr ""
 
@@ -282,8 +282,8 @@ msgstr ""
 msgid "New depot map saved.\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:244
 #. ($_, $newinfo->{$_})
+#: lib/SVK/Command/Merge.pm:244
 msgid "New merge ticket: %1:%2\n"
 msgstr ""
 
@@ -291,38 +291,38 @@ msgstr ""
 msgid "OPTIONS"
 msgstr ""
 
-#: lib/SVK/Command/List.pm:36
 #. ($path)
+#: lib/SVK/Command/List.pm:36
 msgid "Path %1 is not a versioned directory\n"
 msgstr ""
 
-#: lib/SVK/Command/Cleanup.pm:23
 #. ($_->{copath})
+#: lib/SVK/Command/Cleanup.pm:23
 msgid "Path %1 was not locked.\n"
 msgstr ""
 
-#: lib/SVK/Command/Proplist.pm:35
 #. ($report)
+#: lib/SVK/Command/Proplist.pm:35
 msgid "Properties on %1:\n"
 msgstr ""
 
-#: lib/SVK/DiffEditor.pm:78
 #. ($path)
+#: lib/SVK/DiffEditor.pm:78
 msgid "Property changes on: %1\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:28
 #. ($path)
+#: lib/SVK/Command/Depotmap.pm:28
 msgid "Repository %1 does not exist, create? (y/n)"
 msgstr ""
 
-#: lib/SVK/XD.pm:397 lib/SVK/XD.pm:404
 #. ($_[1])
+#: lib/SVK/XD.pm:397 lib/SVK/XD.pm:404
 msgid "Reverted %1\n"
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:23
 #. ($rev)
+#: lib/SVK/Command/Info.pm:23
 msgid "Revision: %1\n"
 msgstr ""
 
@@ -330,13 +330,13 @@ msgstr ""
 msgid "SYNOPSIS"
 msgstr ""
 
-#: lib/SVK/XD.pm:229
 #. (@arg{qw( depotpath path copath rev)
+#: lib/SVK/XD.pm:229
 msgid "Syncing %1(%2) in %3 to %4.\n"
 msgstr ""
 
-#: bin/svk:145
 #. ($VERSION)
+#: bin/svk:145
 msgid "This is svk, version %1.\n"
 msgstr ""
 
@@ -357,15 +357,15 @@ msgid "add [PATH...]"
 msgstr ""
 
 #: lib/SVK/Command.pod:28
-msgid "annotate - Print files with per-line revision and author"
+msgid "annotate - Print files with per-line revision and author info"
 msgstr ""
 
 #: lib/SVK/Command.pod:29
 msgid "annotate FILE"
 msgstr ""
 
-#: lib/SVK/XD.pm:93
 #. ($self->{giantlock})
+#: lib/SVK/XD.pm:93
 msgid "another svk might be running; remove %1 if not"
 msgstr ""
 
@@ -377,8 +377,8 @@ msgstr ""
 msgid "can only switch checkout root"
 msgstr ""
 
-#: lib/SVK/SignEditor.pm:48
 #. ("$sigfile.sig")
+#: lib/SVK/SignEditor.pm:48
 msgid "cannot find %1, signing aborted"
 msgstr ""
 
@@ -390,8 +390,8 @@ msgstr ""
 msgid "cannot load SVN::Mirror"
 msgstr ""
 
-#: lib/SVK/SignEditor.pm:51
 #. ("$sigfile.sig", $!)
+#: lib/SVK/SignEditor.pm:51
 msgid "cannot open %1: %2"
 msgstr ""
 
@@ -411,8 +411,8 @@ msgstr ""
 msgid "checkout DEPOTPATH [PATH]"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:27
 #. ($copath)
+#: lib/SVK/Command/Checkout.pm:27
 msgid "checkout path %1 already exists"
 msgstr ""
 
@@ -445,11 +445,12 @@ msgid "commit - Commit changes to depot"
 msgstr ""
 
 #: lib/SVK/Command.pod:40
+#, fuzzy
 msgid "commit [PATH...]"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:150
 #. ("$target->{path}/$_[0]")
+#: lib/SVK/Command/Commit.pm:150
 msgid "conflict on %1"
 msgstr ""
 
@@ -461,18 +462,18 @@ msgstr ""
 msgid "copy DEPOTPATH1 DEPOTPATH2"
 msgstr ""
 
-#: lib/SVK/Command/Sync.pm:24
 #. (join(',',@_)
+#: lib/SVK/Command/Sync.pm:24
 msgid "copy_notify: %1"
 msgstr ""
 
-#: lib/SVK/SignEditor.pm:42
 #. ($!)
+#: lib/SVK/SignEditor.pm:42
 msgid "could not call gpg: %1"
 msgstr ""
 
-#: lib/SVK/SignEditor.pm:38
 #. ($sigfile)
+#: lib/SVK/SignEditor.pm:38
 msgid "could not write to %1"
 msgstr ""
 
@@ -612,8 +613,8 @@ msgstr ""
 msgid "no depot spec"
 msgstr ""
 
-#: bin/svk:64
 #. ($depot)
+#: bin/svk:64
 msgid "no such depot: %1"
 msgstr ""
 
@@ -625,29 +626,29 @@ msgstr ""
 msgid "options:"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:30
 #. ($where[-1])
+#: lib/SVK/Command/Checkout.pm:30
 msgid "overlapping checkout path not supported yet (%1)"
 msgstr ""
 
-#: lib/SVK/XD.pm:952
 #. ($path)
+#: lib/SVK/XD.pm:952
 msgid "path %1 already exists"
 msgstr ""
 
-#: lib/SVK/Command/Propset.pm:26 lib/SVK/XD.pm:960
 #. ($path)
 #. ($arg{path})
+#: lib/SVK/Command/Propset.pm:26 lib/SVK/XD.pm:960
 msgid "path %1 does not exist"
 msgstr ""
 
-#: bin/svk:74
 #. ($copath)
+#: bin/svk:74
 msgid "path %1 is not a checkout path"
 msgstr ""
 
-#: lib/SVK/XD.pm:902
 #. ($path)
+#: lib/SVK/XD.pm:902
 msgid "path %1 not found"
 msgstr ""
 
@@ -732,7 +733,7 @@ msgid "status [PATH..]"
 msgstr ""
 
 #: lib/SVK/Command.pod:86
-msgid "switch - Switch to another branch and keep local"
+msgid "switch - Switch to another branch and keep local modifications"
 msgstr ""
 
 #: lib/SVK/Command.pod:87
@@ -747,8 +748,8 @@ msgstr ""
 msgid "sync DEPOTPATH"
 msgstr ""
 
-#: lib/SVK/XD.pm:209
 #. ($_[0], $t)
+#: lib/SVK/XD.pm:209
 msgid "unable to translate %1 with %2"
 msgstr ""
 
@@ -757,7 +758,7 @@ msgid "unexpected error: commit to mirrored path but no mirror object"
 msgstr ""
 
 #: lib/SVK/Command.pod:90
-msgid "update - Bring changes from the repository into checkout"
+msgid "update - Bring changes from the repository into checkout copies"
 msgstr ""
 
 #: lib/SVK/Command.pod:91
