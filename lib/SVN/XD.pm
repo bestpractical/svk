@@ -11,8 +11,6 @@ use YAML;
 use Algorithm::Merge;
 use File::Temp qw/:mktemp/;
 
-our $VERSION = '0.01';
-
 sub new {
     my $class = shift;
     my $self = bless {}, $class;
@@ -368,7 +366,7 @@ sub do_merge {
     my ($info, %arg) = @_;
     # XXX: reorganize these shit
     my ($anchor, $target) = ($arg{path});
-    my ($base_anchor, $base_target) = ($arg{basepath} || $arg{path});
+    my ($base_anchor, $base_target) = ($arg{base_path} || $arg{path});
     my ($txn, $xdroot);
     my ($tgt_anchor, $tgt) = ($arg{dpath});
     my ($storage, $findanchor, %cb);
@@ -966,7 +964,8 @@ sub close_file {
 	    if ($_->[0] eq 'u' && ($_->[1] ne $_->[2] || $_->[2] ne $_->[3])) {
 		my $file = '/tmp/svk-merge-bug.yml';
 		unlink ($file);
-		YAML::DumpFile ($file, $diff3);
+		YAML::DumpFile ($file, { orig => $orig, new => $new,
+					 local => $local ,diff3 => $diff3 });
 		die "merge result inconsistent, please send the file $file to {clkao,jsmith}\@cpan.org";
 	    }
 	}

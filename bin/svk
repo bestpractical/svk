@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+$VERSION = '0.01';
 use strict;
 require SVN::Core;
 require SVN::Repos;
@@ -666,7 +667,12 @@ sub find_merge_info {
 
     my ($bpsrc, $bpdst) = find_branch_point ($repos, $src, $dst);
 
-    return ($mpsrc || $bpsrc, $fs->youngest_rev);
+    $mpsrc ||= $bpsrc;
+    $mpdst ||= $bpdst;
+
+    return ($mpsrc > $mpdst ? $src : $dst,
+	    $mpsrc > $mpdst ? $mpsrc : $mpdst,
+	    $fs->youngest_rev);
 }
 
 
@@ -704,7 +710,7 @@ sub merge {
 			   "r|revision=s"	=> \$revspec);
 
     my ($src, $dst) = @ARGV;
-    my ($fromrev, $torev, $cb_merged);
+    my ($base_path, $fromrev, $torev, $cb_merged);
     unless ($auto) {
 	die "revision required" unless $revspec;
 	($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
@@ -755,8 +761,9 @@ sub merge {
     }
 
     if ($auto) {
-	($fromrev, $torev) = find_merge_info ($repos, $path, $dpath);
-	print "auto merge ($fromrev, $torev) $path -> $dpath\n";
+	($base_path, $fromrev, $torev) =
+	    find_merge_info ($repos, $path, $dpath);
+	print "auto merge ($fromrev, $torev) $path -> $dpath (base $base_path)\n";
 	# XXX: resolve the uuid and torev with source path (see if it's svm'ed)
 	my ($uuid, $path, $rev) = resolve_svm_source ($repos, $path);
 	print "merge ticket: $uuid:$path:$rev\n" unless $no_ticket;
@@ -775,6 +782,7 @@ sub merge {
 		       dpath => $dpath,
 		       copath => $copath,
 		       editor => $editor,
+		       base_path => $base_path,
 		       base_rev => $base_rev,
 		       fromrev => $fromrev,
 		       check_only => $check_only,
@@ -810,8 +818,9 @@ sub mirror {
 sub sync {
     local @ARGV = @_;
     my ($check_only, $message, $revspec);
-    my $skip_to;
-    die unless GetOptions ("s|skipto=s"	=> \$skip_to);
+    my ($skip_to, $torev);
+    die unless GetOptions ("s|skipto=s"	=> \$skip_to,
+			   "t|torev=s"	=> \$torev);
     die "require SVN::Mirror" unless $svn_mirror;
 
     my ($dpath) = @ARGV;
@@ -821,7 +830,7 @@ sub sync {
 			      pool => SVN::Pool->new, auth => $auth,
 			      get_source => 1, skip_to => $skip_to);
     $m->init ();
-    $m->run ();
+    $m->run ($torev);
 }
 
 

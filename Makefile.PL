@@ -20,12 +20,13 @@ use ExtUtils::AutoInstall
       -core           =>
       [ 'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
+        'Algorithm::Merge'      => '0.05',
         'Data::Hierarchy'       => '0.13',
         'SVN::Simple::Edit'     => '0.21',
       ],
       'SVN::Mirror support' =>
       [ -default    => 1,
-	SVN::Mirror    => '0.22',
+	SVN::Mirror    => '0.25',
       ],
     );
 
@@ -33,7 +34,7 @@ WriteMakefile(
     AUTHOR              => 'Chia-liang Kao (clkao@clkao.org)',
     ABSTRACT            => 'A decentralized version control system',
     NAME                => 'SVN::XD',
-    VERSION_FROM        => 'lib/SVN/XD.pm',
+    VERSION_FROM        => 'bin/svk',
     DISTNAME            => 'SVN-XD',
     EXE_FILES    => [ 'bin/svk' ],
     dist                => {
