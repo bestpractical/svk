@@ -5,9 +5,10 @@ require SVN::Repos;
 use SVN::XD;
 use YAML qw(LoadFile DumpFile);
 use File::Spec;
+use Data::Hierarchy;
 
 use vars qw/$xd/;
-use subs qw/co up/;
+use subs qw/co up st blame/;
 
 my $info;
 
@@ -31,7 +32,9 @@ sub init {
 	mkdir "$ENV{HOME}/.svk";
     }
 
-    $info ||= {depotmap =>  {'' => '$ENV{HOME}/svn/svm' }};
+    $info ||= { depotmap => {'' => "$ENV{HOME}/svn/svm" },
+	        checkout => Data::Hierarchy->new(),
+	      };
 }
 
 sub update_info {
@@ -49,13 +52,19 @@ sub find_repos {
     return ($repospath, $path, $open && SVN::Repos::open ($repospath));
 }
 
-sub md5file {
-    my $fname = shift;
-    open my $fh, '<', $fname;
-    my $ctx = Digest::MD5->new;
-    $ctx->addfile($fh);
-    return $ctx->hexdigest;
+sub find_repos_from_co {
+    my ($copath, $open) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+
+    my ($cinfo, $coroot) = $info->{checkout}->get ($copath);
+    die "$copath not a checkout path" unless %$cinfo;
+    my ($repospath, $path, $repos) = find_repos ($cinfo->{depotpath}, $open);
+
+    $copath =~ s/^$coroot//;
+
+    return ($repospath, $path.$copath, $cinfo, $repos);
 }
+
 
 =head2 update / up
 
@@ -65,24 +74,23 @@ sub md5file {
 
 sub update {
     my ($copath, $rev) = @_;
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
     $copath = File::Spec->rel2abs ($copath);
+
     # XXX: support via reporter facility in the future
-    die "$copath not a checkout root" unless exists $info->{checkoutmap}{$copath};
-    my ($depotpath, $startrev) = @{$info->{checkoutmap}{$copath}};
-    my ($repospath, $path, $repos) = find_repos ($depotpath, 1);
 
     $rev ||= $repos->fs->youngest_rev;
 
     SVN::XD::do_update ($info,
 			repos => $repos,
-			depotpath => $depotpath,
+			depotpath => $cinfo->{depotpath},
 			copath => $copath,
 			repospath => $repospath,
 			path => $path,
-			startrev => $startrev,
+			startrev => $cinfo->{revision},
 			rev => $rev,
 		       );
-    $info->{checkoutmap}{$copath}[1] = $rev;
+    $info->{checkout}->store_recursively ($copath, {revision => $rev});
 }
 
 sub checkout {
@@ -91,73 +99,108 @@ sub checkout {
     my ($repospath, $path) = find_repos ($depotpath, 0);
     $copath = File::Spec->rel2abs ($copath ||
 				   (File::Spec->splitdir($path))[-1]);
-    die "don't know where to checkot"  unless $copath || $path;
+    die "don't know where to checkout" unless $copath || $path;
 
     die "checkout path $copath already exists" if -e $copath;
 
     mkdir ($copath);
-    $info->{checkoutmap}{$copath} = [$depotpath,0];
+    $info->{checkout}->store($copath, {depotpath => $depotpath, revision =>0});
 
     update ($copath, $rev)
 }
 
-
-use File::Find;
 use Text::Diff ();
 
 sub diff {
     my ($copath) = @_;
-    $copath = File::Spec->rel2abs ($copath);
-    my ($depotpath, $rev) = @{$info->{checkoutmap}{$copath}};
-    my ($repospath, $path, $repos) = find_repos ($depotpath, 1);
+    $copath = File::Spec->rel2abs ($copath || '.');
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($rev);
+    my $root = $repos->fs->revision_root ($cinfo->{revision});
+    SVN::XD::checkout_crawler ($info,
+			       repos => $repos,
+			       copath => $copath,
+			       path => $path,
+			       rev => $cinfo->{revision},
+			       root => $root,
+			       cb_unknown =>
+			       sub {
+				   print "?  $_[1]\n";
+			       },
+			       cb_changed =>
+			       sub {
+				   print Text::Diff::diff ($root->file_contents($_[0]), $_[1])
+			       },
+			      );
 
-    # XXX: move crawler to SVN::XD
-    find(sub {
-	     my $cpath = $File::Find::name;
-	     return if -d $cpath;
-	     $cpath =~ s|^$copath/|$path/|;
-	     my $kind = $root->check_path ($cpath);
-	     if ($kind == $SVN::Node::none) {
-		 print "? $File::Find::name\n";
-		 return;
-	     }
-	     print Text::Diff::diff ($root->file_contents($cpath), $File::Find::name)
-		 if md5file($File::Find::name) ne
-		     $root->file_md5_checksum ($cpath);
-	  }, $copath);
 }
 
 sub status {
     my ($copath) = @_;
     $copath = File::Spec->rel2abs ($copath);
-    my ($depotpath, $rev) = @{$info->{checkoutmap}{$copath}};
-    my ($repospath, $path, $repos) = find_repos ($depotpath, 1);
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    SVN::XD::checkout_crawler ($info,
+			       repos => $repos,
+			       copath => $copath,
+			       path => $path,
+			       rev => $cinfo->{revision},
+			       root => $repos->fs->revision_root ($cinfo->{revision}),
+			       cb_unknown =>
+			       sub {
+				   print "?  $_[1]\n";
+			       },
+			       cb_changed =>
+			       sub {
+				   print "M  $_[1]\n";
+			       },
+			      );
+
+}
+
+use Algorithm::Annotate;
+
+sub annotate {
+    my ($copath) = @_;
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     my $fs = $repos->fs;
-    my $root = $fs->revision_root ($rev);
+    my $root = $fs->revision_root ($fs->youngest_rev);
+    my $ann = Algorithm::Annotate->new;
+    my @revs;
+    my $hist = $root->node_history ($path);
 
-    # XXX: move crawler to SVN::XD
-    find(sub {
-	     my $cpath = $File::Find::name;
-	     return if -d $cpath;
-	     $cpath =~ s|^$copath/|$path/|;
-	     my $kind = $root->check_path ($cpath);
-	     if ($kind == $SVN::Node::none) {
-		 print "? $File::Find::name\n";
-		 return;
-	     }
-	     print "M $File::Find::name\n"
-		 if md5file($File::Find::name) ne
-		     $root->file_md5_checksum ($cpath);
-	  }, $copath);
+    while ($hist = $hist->prev(0)) {
+	my ($path, $rev) = $hist->location;
+	unshift @revs, $rev;
+    }
+
+    for (@revs) {
+	my $content = $fs->revision_root($_)->file_contents($path);
+	$content = [<$content>];
+	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $_,
+			    $fs->revision_prop ($_, 'svn:author'),
+			    substr($fs->revision_prop ($_, 'svn:date'),0,10)),
+		    $content);
+    }
+
+    open my ($fh), $copath;
+
+    $ann->add ( "\t(working copy): \t\t", [<$fh>]);
+
+    seek $fh, 0, 0;
+
+    my $result = $ann->result;
+    while (my $info = shift @$result) {
+	print $info.<$fh>;
+    }
+
 }
 
 *co = *checkout;
 *up = *update;
 *st = *status;
+*blame = *annotate;
 
 my $cmd = shift;
 

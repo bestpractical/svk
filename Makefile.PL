@@ -9,6 +9,8 @@ WriteMakefile(
     DISTNAME            => 'SVN-XD',
     PREREQ_PM           => {
         'SVN::Core'   => '0',
+        'Algorithm::Annotate'   => '0',
+        'Data::Hierarchy'   => '0',
     },
     EXE_FILES    => [ 'bin/svk' ],
     dist                => {

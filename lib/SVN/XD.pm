@@ -4,6 +4,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
+use Data::Hierarchy;
 use File::Spec;
 use YAML;
 
@@ -23,22 +24,48 @@ sub do_update {
 
     warn "syncing $arg{depotpath}($arg{path}) to $arg{copath} from $arg{startrev} to $arg{rev}";
     my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
+    $arg{copath} =~ s|/$target$||;
     chop $anchor;
     SVN::Repos::dir_delta ($fs->revision_root ($arg{startrev}), $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
-			   SVN::XD::UpdateEditor->new(_debug=>0),
+			   SVN::XD::UpdateEditor->new (_debug => 0,
+						       copath => $arg{copath},
+						      ),
 #			   SVN::Delta::Editor->new(_debug=>1),
 			   1, 1, 0, 1);
 }
 
-package TreeData;
+use File::Find;
 
-sub new {
-    my $class = shift;
-    my $self = bless {}, $class;
-    %$self = @_;
-    return $self;
+sub checkout_crawler {
+    my ($info, %arg) = @_;
+
+    find(sub {
+	     my $cpath = $File::Find::name;
+	     return if -d $cpath;
+	     $cpath =~ s|^$arg{copath}/|$arg{path}/|;
+
+	     my $kind = $arg{root}->check_path ($cpath);
+	     if ($kind == $SVN::Node::none) {
+		 &{$arg{cb_unknown}} ($cpath, $File::Find::name);
+		 return;
+	     }
+
+	     &{$arg{cb_changed}} ($cpath, $File::Find::name)
+		 if md5file($File::Find::name) ne
+		     $arg{root}->file_md5_checksum ($cpath);
+	  }, $arg{copath});
+
 }
+
+sub md5file {
+    my $fname = shift;
+    open my $fh, '<', $fname;
+    my $ctx = Digest::MD5->new;
+    $ctx->addfile($fh);
+    return $ctx->hexdigest;
+}
+
 
 package SVN::XD::UpdateEditor;
 require SVN::Delta;
@@ -61,12 +88,14 @@ sub open_root {
 
 sub add_file {
     my ($self, $path) = @_;
+    $path = "$self->{copath}/$path";
     $self->{info}{$path}{status} = (-e $path ? undef : ['A']);
     return $path;
 }
 
 sub open_file {
     my ($self, $path) = @_;
+    $path = "$self->{copath}/$path";
     $self->{info}{$path}{status} = (-e $path ? [] : undef);
     return $path;
 }
@@ -126,12 +155,14 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path) = @_;
+    $path = "$self->{copath}/$path";
     mkdir ($path);
     return $path;
 }
 
 sub open_directory {
     my ($self, $path) = @_;
+    $path = "$self->{copath}/$path";
     return $path;
 }
 
@@ -143,6 +174,7 @@ sub close_directory {
 
 sub delete_entry {
     my ($self, $path, $revision) = @_;
+    $path = "$self->{copath}/$path";
     # check if everyone under $path is sane for delete";
     rmtree ([$path]);
     $self->{info}{$path}{status} = ['D'];
