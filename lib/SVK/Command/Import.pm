@@ -101,6 +101,8 @@ sub run {
 	    ($copath, {revision => $yrev,
 		       '.copyfrom' => undef,
 		       '.copyfrom_rev' => undef,
+		       '.newprop' => undef,
+		       scheduleanchor => undef,
 		       '.schedule' => undef})
 	    if $path eq $target->{path};
     }
