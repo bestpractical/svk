@@ -11,6 +11,7 @@ sub options {
      'd|delete|detach'=> 'detach',
      'upgrade' => 'upgrade',
      'relocate'=> 'relocate',
+     'unlock'=> 'unlock',
      'recover'=> 'recover');
 }
 
@@ -89,6 +90,23 @@ use SVK::I18N;
 sub run {
     my ($self, $target) = @_;
     SVN::Mirror::upgrade ($target->{repos});
+    return;
+}
+
+package SVK::Command::Mirror::unlock;
+use base qw(SVK::Command::Mirror);
+use SVK::I18N;
+
+sub run {
+    my ($self, $target) = @_;
+    my $m = SVN::Mirror->new
+	( target_path => $target->path,
+	  repos => $target->{repos},
+	  get_source => 1
+	);
+    $m->init;
+    $m->unlock ('force');
+    print loc ("mirror locks on %1 removed.\n", $target->{report});
     return;
 }
 
@@ -259,6 +277,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  -d [--detach]          : mark a depotpath as no longer mirrored
  --relocate             : relocate the mirror to another URI
  --recover              : recover the state of a mirror path
+ --unlock               : forcibly remove stalled locks on a mirror
  --upgrade              : upgrade mirror state to the latest version
 
 =head1 AUTHORS

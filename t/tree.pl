@@ -227,6 +227,13 @@ sub is_output_like {
     goto &like;
 }
 
+sub is_output_unlike {
+    my ($svk, $cmd, $arg, $expected, $test) = @_;
+    $svk->$cmd (@$arg);
+    @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
+    goto &unlike;
+}
+
 sub is_ancestor {
     my ($svk, $path, @expected) = @_;
     $svk->info ($path);

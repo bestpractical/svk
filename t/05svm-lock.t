@@ -2,7 +2,7 @@
 use strict;
 BEGIN { require 't/tree.pl' };
 plan skip_all => "Doesn't work on win32" if $^O eq 'MSWin32';
-plan_svm tests => 1;
+plan_svm tests => 3;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('svm-lock');
@@ -26,6 +26,22 @@ if (($pid =fork) == 0) {
 waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
 sleep 2;
 is_output_like ($svk, 'sync', ['-a'],
-		qr"Waiting for mirror lock on /remote: .*:$pid.*Retrieving log information from 222 to 261"s);
+		qr"Waiting for (sync|mirror) lock on /remote: .*:$pid.*Retrieving log information from 222 to 261"s);
 
 wait;
+
+waste_rev ($svk, '/svm-lock/trunk/more') for (1..100);
+if (($pid =fork) == 0) {
+    $svk->sync ('-a');
+    exit;
+}
+waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
+sleep 2;
+kill (15, $pid);
+
+is_output_like ($svk, 'pl', ['-v', '--revprop', '-r', 0, '//'],
+		qr'lock');
+
+$svk->mirror ('--unlock', '//remote');
+is_output_unlike ($svk, 'pl',  ['-v', '--revprop', '-r', 0, '//'],
+		  qr'lock');
