@@ -1,6 +1,6 @@
 package SVK::Command::Annotate;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
@@ -12,7 +12,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    @arg = ('') if $#arg < 0;
+    return if $#arg < 0;
 
     return $self->arg_co_maybe (@arg);
 }

@@ -1,6 +1,6 @@
 package SVK::Editor::Merge;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::I18N;

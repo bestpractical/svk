@@ -1,6 +1,6 @@
 package SVK::XD;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
@@ -494,8 +494,8 @@ sub do_revert {
 				   '.copyfrom' => undef,
 				   '.copyfrom_rev' => undef,
 				   '.newprop' => undef});
-	-d $_[1] ? rmtree ([$_[1]]) : unlink($_[1])
-	    if $sche eq 'add';
+#	-d $_[1] ? rmtree ([$_[1]]) : unlink($_[1])
+#	    if $sche eq 'add';
 	print loc("Reverted %1\n", $_[1]);
     };
 
@@ -813,6 +813,8 @@ sub checkout_delta {
 	else {
 	    # XXX: duplicated with _delta_dir
 	    if ($arg{unknown_verbose}) {
+		$arg{cb_unknown}->('', $arg{copath})
+		    if $arg{targets};
 		find (sub {
 #			  return if m/$ignore/;
 			  my $dpath = $File::Find::name;
@@ -823,9 +825,9 @@ sub checkout_delta {
 			      $dpath =~ s|^\Q$arg{copath}\E/||;
 			  }
 			  $arg{cb_unknown}->($dpath, $File::Find::name);
-		      },
-		      $arg{targets} ? map {"$arg{copath}/$_"} @{$arg{targets}}
-		      : $arg{copath});
+		      }, $arg{targets} ?
+		      map {"$arg{copath}/$_"} @{$arg{targets}} :
+			  $arg{copath});
 	    }
 	    else {
 		$arg{cb_unknown}->($arg{path}, $arg{copath})

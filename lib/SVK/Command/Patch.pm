@@ -36,17 +36,19 @@ sub create {
     my $repos = $src->{repos};
     my $fs = $repos->fs;
 
-    my $patch = SVK::Patch->new (name => $name, level => 0);
-    $patch->from ($dst->{repos}, $src->{path});
-    $patch->applyto ($dst->{repos}, $dst->{path});
+    my $patch = SVK::Patch->new (name => $name, level => 0, _repos => $repos);
+    $patch->from ($src->{path});
+    # XXX: from/to should take rev too
+    $patch->{source_rev} = 0;
+    $patch->applyto ($dst->{path});
 
-    $self->_do_update ($name, $patch, $dst->{repos});
+    $self->_do_update ($name, $patch);
 }
 
 sub view {
     my ($self, $name) = @_;
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch");
     my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
+    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
 
     $patch->view ($repos);
     return;
@@ -54,17 +56,18 @@ sub view {
 
 sub dump {
     my ($self, $name) = @_;
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch");
+    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
+    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
     warn YAML::Dump ($patch);
     return;
 }
 
 sub test {
     my ($self, $name) = @_;
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch");
     my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
+    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
 
-    if (my $conflicts = $patch->applicable ($repos)) {
+    if (my $conflicts = $patch->applicable) {
 	print loc("%*(%1,conflict) found.\n", $conflicts);
 	print loc("Please do a merge to resolve conflicts and update the patch.\n");
     }
@@ -73,9 +76,9 @@ sub test {
 }
 
 sub _do_update {
-    my ($self, $name, $patch, $repos) = @_;
+    my ($self, $name, $patch) = @_;
 
-    if (my $conflicts = $patch->update ($repos, SVK::Merge->new (%$self))) {
+    if (my $conflicts = $patch->update (SVK::Merge->new (%$self))) {
 	return loc("%*(%1,conflict) found, patch abandoned.\n", $conflicts)
     }
     $patch->store ("$self->{xd}{svkpath}/patch/$patch->{name}.svkpatch");
@@ -84,18 +87,19 @@ sub _do_update {
 
 sub update {
     my ($self, $name) = @_;
-    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch");
     my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
+    my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$name.svkpatch", $repos);
     # XXX: check update here
-    $self->_do_update ($name, $patch, $repos);
+    $self->_do_update ($name, $patch);
 }
 
 sub list {
     my ($self) = @_;
+    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
     opendir DIR, "$self->{xd}{svkpath}/patch";
     for (readdir (DIR)) {
 	next if m/^\./;
-	my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$_");
+	my $patch = SVK::Patch->load ("$self->{xd}{svkpath}/patch/$_", $repos);
 	print "$patch->{name}\@$patch->{level}: \n";
     }
     return;

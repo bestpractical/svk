@@ -1,6 +1,6 @@
 package SVK::Command::Propdel;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Propset );
 use SVK::XD;
 use SVK::I18N;

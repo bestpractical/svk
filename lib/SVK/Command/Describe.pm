@@ -1,6 +1,6 @@
 package SVK::Command::Describe;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Diff SVK::Command::Log);
 use SVK::XD;

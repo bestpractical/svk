@@ -1,6 +1,6 @@
 package SVK;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 use SVK::Command;
 our $AUTOLOAD;
 
@@ -24,7 +24,7 @@ sub AUTOLOAD {
     return if $cmd =~ /^[A-Z]+$/;
     my ($buf, $output) = ('');
     open $output, '>', \$buf if $self->{output};
-    my $msg = SVK::Command->invoke ($self->{xd}, $cmd, $output, @_);
+    my $msg = eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
     if ($output) {
 	close $output;
 	${$self->{output}} = $buf;

@@ -1,6 +1,6 @@
 package SVK::Command::Cmerge;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Merge SVK::Command::Copy SVK::Command::Propset );
 use SVK::XD;

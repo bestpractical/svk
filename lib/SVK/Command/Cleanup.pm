@@ -1,6 +1,6 @@
 package SVK::Command::Cleanup;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;

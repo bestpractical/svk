@@ -19,7 +19,6 @@ END {
 
 
 our $output = '';
-#select IO::Scalar->new (\$output);
 
 my $pool = SVN::Pool->new_default;
 
@@ -99,6 +98,13 @@ sub is_file_content {
     open my ($fh), '<', $file or die $!;
     local $/;
     is (<$fh>, $content, $test);
+}
+
+sub is_output {
+    my ($svk, $cmd, $arg, $expected, $test) = @_;
+    $svk->$cmd (@$arg);
+    is_deeply ([split ("\n", $output)], $expected,
+	       $test || join(' ', $cmd, @$arg));
 }
 
 require SVN::Simple::Edit;

@@ -1,0 +1,92 @@
+#!/usr/bin/perl
+# based on prcs's ediff integration by Jesse N. Glick, Ulrich
+
+use strict;
+use Cwd qw(cwd);
+my $gnuclient = 'gnuclient-emacs';
+
+my $pwd = cwd;
+
+# Get the arguments
+my ($Working_label,  $Working_file,
+    $Common_label,   $Common_file,
+    $Selected_label, $Selected_file,
+    $Output_file,
+   ) = @ARGV;
+
+# Make paths absolute (could use &File::PathConvert::rel2abs)
+for ($Working_file, $Common_file, $Selected_file, $Output_file) {
+  $_ = $pwd . '/' . $_ unless m!^/!;
+}
+
+my $signal       = 'USR1';
+my $command;
+
+  # Ediff uses a global quit-hook. Since it does not support an output
+  # file as argument we use the quit-hook to store the file.
+  # State kept in control buffer for safety.
+
+  $command = <<LISP;
+(require 'svk-ediff)
+LISP
+
+  if ($Common_file ne '/dev/null') {
+      warn "merge with common $Common_file";
+    $command .= <<LISP;
+(ediff-files-internal
+ "$Working_file" "$Selected_file" "$Common_file"
+ nil 'ediff-merge-files-with-ancestor)
+LISP
+  } else {
+    $command .= <<LISP;
+(ediff-files-internal
+ "$Working_file" "$Selected_file" nil
+ nil 'ediff-merge-files)
+LISP
+  }
+
+  $command .= <<LISP;
+(svk-merge-startup '((working-file . "$Working_file")
+                       (selected-file . "$Selected_file")
+                       (common-file . "$Common_file")
+                       (working-label . "$Working_label")
+                       (selected-label . "$Selected_label")
+                       (common-label . "$Common_label")
+                       (output-file . "$Output_file")
+                       (process . $$)
+                       (signal . SIG$signal)))
+'OK!
+LISP
+
+
+# set up the signal handlers
+$SIG{$signal} = sub {
+  print STDERR "Emerge $$ done
+";
+  exit 0;
+};
+
+$SIG{CHLD} = sub {
+  my $waitedpid = wait;
+  my $code      = ($? >> 8);
+  my $sig       = ($? & 0xFF);
+
+  # does not seem to correspond to reality!
+  return;
+
+  if ($code) {
+    die "Merge failed (status $code, signal $sig)";
+    # We should restore the working file here ;-)
+  }
+};
+
+my $pid;
+
+if (!defined($pid = fork)) {
+  die  "cannot fork: $!";
+} elsif ($pid) {
+  print STDERR "Started $pid, Try 'kill -$signal $$' to terminate if things mess up";
+  sleep 5 while 1;
+} else {
+  exec $gnuclient, '--eval', $command or die "Could not run gnudoit: $!";
+}

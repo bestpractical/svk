@@ -1,6 +1,6 @@
 package SVK::Editor::Delay;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub _open_pdir {

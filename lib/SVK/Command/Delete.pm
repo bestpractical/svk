@@ -1,13 +1,13 @@
 package SVK::Command::Delete;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0;
+    return if $#arg < 0;
     my $target;
     if ($#arg == 0) {
 	$target = $self->arg_co_maybe ($arg[0]);

@@ -1,6 +1,6 @@
 package SVK::Command::Revert;
 use strict;
-our $VERSION = '0.14';
+our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::XD;

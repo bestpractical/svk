@@ -67,20 +67,24 @@ sub get_cmd {
 }
 
 sub invoke {
-    my ($pkg, $xd, $cmd, $output, @arg) = @_;
-    my ($help, $ofh);
-    local @ARGV = @arg;
+    my ($pkg, $xd, $cmd, $output, @args) = @_;
+    my ($help, $ofh, $ret);
+    local @ARGV = @args;
 
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->{xd} = $xd;
     die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
-    $cmd->usage, return if $help;
-    my @args = $cmd->parse_arg(@ARGV);
-    $cmd->lock (@args);
+    @args = $cmd->parse_arg(@ARGV);
     $ofh = select $output if $output;
-    my $ret = eval { $cmd->run (@args) };
+    if ($help || $#args == -1) {
+	$cmd->usage;
+    }
+    else {
+	$cmd->lock (@args);
+	$ret = eval { $cmd->run (@args) };
+	$xd->unlock () if $xd;
+    }
     select $ofh if $output;
-    $xd->unlock () if $xd;
     die $@ if $@;
     return $ret;
 }
@@ -145,7 +149,7 @@ sub lock {
 
 sub arg_condensed {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0;
+    return if $#arg < 0;
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
 
     my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);

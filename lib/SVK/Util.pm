@@ -3,7 +3,7 @@ use strict;
 require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
-		    find_svm_source resolve_svm_source svn_mirror tmpfile);
+		    find_svm_source resolve_svm_source svn_mirror tmpfile find_local_mirror);
 our $VERSION   = '0.09';
 
 use SVK::I18N;
@@ -122,6 +122,16 @@ sub find_svm_source {
     }
 
     return ($uuid, $path, $rev);
+}
+
+sub find_local_mirror {
+    my ($repos, $uuid, $path, $rev) = @_;
+    my $myuuid = $repos->fs->get_uuid;
+    if ($uuid ne $myuuid && svn_mirror &&
+	(my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path"))) {
+	return ("$m->{target_path}$mpath", $m->find_local_rev ($rev));
+    }
+    return;
 }
 
 sub resolve_svm_source {

@@ -25,7 +25,7 @@ info and anchor for the patch to be applied.
 =cut
 
 use SVK::Editor::Patch;
-use SVK::Util qw(find_svm_source resolve_svm_source);
+use SVK::Util qw(find_svm_source find_local_mirror resolve_svm_source);
 use SVK::Merge;
 use SVK::Editor::Diff;
 use Storable qw/nfreeze thaw/;
@@ -54,10 +54,14 @@ Load a SVK::Patch object from file.
 =cut
 
 sub load {
-    my ($class, $file) = @_;
+    my ($class, $file, $repos) = @_;
     open FH, '<', $file or die $!;
     local $/;
-    return thaw (uncompress (decode_base64(<FH>)));
+    my $self = thaw (uncompress (decode_base64(<FH>)));
+    $self->{_repos} = $repos;
+    $self->_resolve_path ('source', $repos);
+    $self->_resolve_path ('target', $repos);
+    return $self;
 }
 
 =head2 store
@@ -68,6 +72,7 @@ Store a SVK::Patch object to file.
 
 sub store {
     my ($self, $file) = @_;
+    # XXX: shouldn't alter self when store
     delete $self->{$_}
 	for grep {m/^_/} keys %$self;
     open FH, '>', $file;
@@ -87,8 +92,28 @@ sub editor {
 }
 
 sub _patch_path {
-    my ($self, $repos, $type, $path) = @_;
+    my ($self, $type, $path, $repos) = @_;
     @{$self}{map {"${type}_$_"} qw/uuid path rev/} = find_svm_source ($repos, $path);
+}
+
+sub _resolve_path {
+    my ($self, $type, $repos) = @_;
+    my ($local, $path, $rev);
+    if ($self->{"${type}_uuid"} ne $repos->fs->get_uuid) {
+	($path, $rev) = @{$self}{map {"_${type}_$_"} qw/path rev/} =
+	    find_local_mirror ($repos, @{$self}{map {"${type}_$_"} qw/uuid path rev/});
+    }
+    else {
+	$local = $self->{"_${type}_local"} = 1;
+    }
+    if ($local || $path) {
+	($path, $rev) = @{$self}{map {"${type}_$_"} qw/path rev/} if $local;
+	my $fs = $repos->fs;
+	my $nrev = ($fs->revision_root ($fs->youngest_rev)->
+		node_history ($path)->prev (0)->location)[1];
+	$self->{"_${type}_updated"} = 1
+	    if $nrev > $rev;
+    }
 }
 
 =head2 applyto
@@ -98,8 +123,10 @@ Assign the destination ($repos, $path) of the patch.
 =cut
 
 sub applyto {
-    my ($self, $repos, $path) = @_;
-    $self->_patch_path ($repos, 'target', $path);
+    my ($self, $path, $repos) = @_;
+    $repos ||= $self->{_repos};
+    $self->_patch_path ('target', $path, $repos);
+    $self->_resolve_path ('target', $repos);
 }
 
 =head2 from
@@ -109,55 +136,35 @@ Assign the source ($repos, $path) of the patch.
 =cut
 
 sub from {
-    my ($self, $repos, $path) = @_;
-    $self->_patch_path ($repos, 'source', $path);
-}
-
-sub _path_attribute {
-    my ($self, $fs, $uuid, $path, $rev) = @_;
-    my $mirror;
-    my $local = $self->local ($fs, $uuid);
-#    if (!$local) {
-#	$mirror = 
-#    }
-    my $updated = ($local &&
-		   ($fs->revision_root ($fs->youngest_rev)->
-		    node_history ($path)->prev (0)->location)[1] > $rev);
-    return ($local, $updated);
+    my ($self, $path, $repos) = @_;
+    $repos ||= $self->{_repos};
+    $self->_patch_path ('source', $path, $repos);
+    $self->_resolve_path ('source', $repos);
 }
 
 sub _path_attribute_text {
-    my $self = shift;
-    my ($local, $updated) = $self->_path_attribute (@_);
-    return ($local ? ' [local]' : '').($updated ? ' [updated]' : '');
-}
-
-sub local {
-    my ($self, $fs, $uuid) = @_;
-    return ($uuid eq $fs->get_uuid);
-}
-
-sub local_mirror {
-    my ($self, $repos) = @_;
-    my ($anchor, $m) = resolve_svm_source ($repos, @{$self}{qw/target_uuid target_path/});
-    return unless $anchor;
-    return ($anchor, $m ? $m->find_local_rev ($self->{target_rev}) : $self->{target_rev}, $m);
+    my ($self, $type) = @_;
+    my ($local, $path, $updated) = @{$self}{map {"_${type}_$_"} qw/local path updated/};
+    return ($local ? ' [local]' : '').($path ? ' [mirrored]' : '').
+	($updated ? ' [updated]' : '');
 }
 
 sub view {
     my ($self, $repos) = @_;
+    $repos ||= $self->{_repos};
     my $fs = $repos->fs;
     print "=== Patch <$self->{name}> level $self->{level}\n";
-    my ($anchor, $mrev, $mirrored) = $self->local_mirror ($repos)
-	or die "Target not local nor mirrored, unable to view patch.\n";
-
-    my @source = @{$self}{qw/source_uuid source_path source_rev/};
-    print "Source: ".join(':', @source).$self->_path_attribute_text ($fs, @source)."\n";
-
+    print "Source: ".join(':', @{$self}{qw/source_uuid source_path source_rev/}).
+	$self->_path_attribute_text ('source')."\n";
     print "Target: ".join(':', @{$self}{qw/target_uuid target_path target_rev/}).
-	$self->_path_attribute_text ($fs, $mirrored ? $self->{source_uuid} : $self->{target_uuid},
-				     $anchor, $mrev)."\n";
+	$self->_path_attribute_text ('target')."\n";
     print "Log:\n".$self->{log}."\n";
+
+    die "Target not local nor mirrored, unable to view patch."
+	unless $self->{_target_local} || $self->{_target_path};
+
+    my ($anchor, $mrev) = $self->{_target_local} ? @{$self}{qw/target_path target_rev/} :
+	@{$self}{qw/_target_path _target_rev/};
     my $baseroot = $fs->revision_root ($mrev);
     $self->editor->drive
 	( SVK::Editor::Diff->new
@@ -177,13 +184,14 @@ sub view {
 sub applicable {
     my ($self, $repos) = @_;
     # XXX: support testing with other path
-    my ($anchor, $mrev, $mirrored) = $self->local_mirror ($repos)
-	or die "Target not local nor mirrored, unable to test patch.\n";
+    $repos ||= $self->{_repos};
+    die "Target not local nor mirrored, unable to test patch."
+	unless $self->{_target_local} || $self->{_target_path};
+    my ($anchor, $mrev) = $self->{_target_local} ? @{$self}{qw/target_path target_rev/} :
+	@{$self}{qw/_target_path _target_rev/};
 
     my $fs = $repos->fs;
-    my (undef, $updated) = $self->_path_attribute ($fs, $mirrored ? $self->{source_uuid}
-						   : $self->{target_uuid}, $anchor, $mrev);
-    unless ($updated) {
+    unless ($self->{_target_updated}) {
 	print "Target of patch <$self->{name}> not updated. No need to test.\n";
 #	return;
     }
@@ -204,14 +212,16 @@ sub applicable {
 }
 
 sub update {
-    my ($self, $repos, $merge) = @_;
-    my ($anchor, $mrev) = $self->local_mirror ($repos)
-	or die "Target not local nor mirrored, unable to update patch.\n";
+    my ($self, $merge, $repos) = @_;
+    $repos ||= $self->{_repos};
+    die "Target not local nor mirrored, unable to update patch."
+	unless $self->{_target_local} || $self->{_target_path};
+    my ($anchor, $mrev) = $self->{_target_local} ? @{$self}{qw/target_path target_rev/} :
+	@{$self}{qw/_target_path _target_rev/};
     my $fs = $repos->fs;
-    my ($local, $updated) = $self->_path_attribute ($fs, @{$self}{qw/source_uuid source_path source_rev/});
-    unless ($local) {
+    unless ($self->{_source_updated}) {
 	print "Source of path <$self->{name}> not updated or not local. No need to update.\n";
-	return;
+#	return;
     }
 
     my $yrev = $fs->youngest_rev;

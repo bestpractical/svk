@@ -86,3 +86,9 @@ t/11checkout.t
 t/12copy.t
 t/13patch.t
 t/tree.pl
+utils/extract-docs
+utils/svk-ediff.el
+utils/svk-merge-filemerge
+utils/extract-message-catalog
+utils/svk-merge-emacs
+utils/svk-merge-meld
