@@ -148,6 +148,7 @@ sub find_merge_base {
 
     my $base = $src->new (path => $basepath, revision => $baserev, targets => undef);
     $base->anchorify if exists $src->{targets}[0];
+    $base->{path} = '/' if $base->{revision} == 0;
     return ($base, $dstinfo->{$fs->get_uuid.':'.$src->path} ||
 	    ($basepath eq $src->path ? $baserev : 0));
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 3;
+plan_svm tests => 4;
 
 our ($output, $answer);
 # build another tree to which we want to mirror ourselves.
@@ -31,11 +31,28 @@ is ($drepos->fs->youngest_rev, 4, 'smerge -IB is idempotent');
 
 my ($repospath, $path, $repos) = $xd->find_repos ('/real-empty/', 1);
 $uri = uri($repospath);
+my $uuid = $srepos->fs->get_uuid;
 $answer = ['', 'empty', ''];
 $svk->cp (-m => 'branch empty repository', $uri, '//test');
 
 $svk->co ('//test', $copath);
 chdir ($copath);
 is_output ($svk, 'push', [],
-	   ["Auto-merging (0, 10) /test to /mirror/empty (base /mirror/empty:0).",
+	   ["Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
+	    "===> Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
+	    "Merging back to mirror source $uri.",
 	    'Empty merge.']);
+$svk->mkdir ('-m', 'Added trunk', '//test/trunk');
+is_output ($svk, 'push', [],
+          ["Auto-merging (0, 11) /test to /mirror/empty (base /:0).",
+	   "===> Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
+	   "Merging back to mirror source $uri.",
+	   "Empty merge.",
+	   "===> Auto-merging (10, 11) /test to /mirror/empty (base /:0).",
+	   "Merging back to mirror source $uri.",
+	   "A   trunk",
+	   "New merge ticket: $uuid:/test:11",
+	   "Merge back committed as revision 1.",
+	   "Syncing $uri",
+	   "Retrieving log information from 1 to 1",
+	   "Committed revision 12 from revision 1."]);
