@@ -11,6 +11,7 @@ require SVN::Fs;
 use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
+use Test::More;
 
 # Fake standard input
 our $answer = 's'; # skip
@@ -21,6 +22,14 @@ BEGIN {
     } unless $ENV{DEBUG_INTERACTIVE};
 
     chdir catdir( dirname(__FILE__), '..' );
+}
+
+sub plan_svm {
+    eval { require SVN::Mirror; 1 } or do {
+	plan skip_all => "SVN::Mirror not installed";
+	exit;
+    };
+    plan @_;
 }
 
 use Carp;

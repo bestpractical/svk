@@ -86,8 +86,6 @@ sub run {
 			      options => \@options,
 			      config => $self->{svnconfig},
 			      pool => SVN::Pool->new,
-			      # XXX: remove in next svn::mirror release
-			      target => $target->{repospath},
 			     );
 
     if ($self->{relocate}) {

@@ -111,6 +111,7 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
+    # XXX: this anchorification is bad on checkout root
     $target->anchorify;
     $self->{xd}->checkout_delta
 	( %$target,

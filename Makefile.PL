@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 my $required_svn = '1.0.4';
+my $required_svm = '0.51';
 
 use strict;
 use inc::Module::Install;
@@ -40,11 +41,11 @@ features(
 );
 
 if( eval{ require SVN::Mirror } ) {
-    requires( 'SVN::Mirror' => '0.50' );
+    requires( 'SVN::Mirror' => $required_svm );
 } else {
     features( 'SVN::Mirror support' => [
                -default => 1,
-               'SVN::Mirror'    => '0.50',
+               'SVN::Mirror'    => $required_svm,
            ],
 	    );
 }
