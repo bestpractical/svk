@@ -56,12 +56,14 @@ sub run {
 		       } unless $self->{no_ticket};
     }
 
-    unless ($dst->{copath} || defined $self->{message} || $self->{check_only}) {
-	$self->{message} = get_buffer_from_editor
-	    ('log message', $self->target_prompt,
-	     ($self->{log} ?
-	      $self->{merge}->log ($repos, $src->{path}, $fromrev+1, $torev) : '').
-	     "\n".$self->target_prompt."\n", 'commit');
+    unless ($dst->{copath} || $self->{check_only}) {
+	my $log = ($self->{log} ? $self->{merge}->log ($repos, $src->{path},
+						       $fromrev+1, $torev)
+		   : '')."\n";
+	$self->{message} = defined $self->{message} ?
+	    join ("\n", $self->{message}, $log)
+	    : get_buffer_from_editor ('log message', $self->target_prompt,
+				      join ("\n", $log, $self->target_prompt), 'commit')
     }
 
     # editor for the target
