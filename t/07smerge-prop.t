@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 our ($output, $answer);
-plan tests => 6;
+plan tests => 12;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
@@ -54,5 +54,27 @@ is_output ($svk, 'smerge', ['-m', 'merge down', '-t', '//local'],
 is_output ($svk, 'pg', ['smerge-prop', "//local/A/be"],
 	   ['new prop on trunk'], 'theirs accepted');
 
+# test prop merge on checkout
+
+$svk->checkout ('//local' => $copath);
+$svk->ps (-m => 'foo', newprop => 'newvalue', '//local/A');
+$svk->ps (newprop => 'newvalue', "$copath/A");
+is_output ($svk, 'update', [-C => $copath],
+	   ["Syncing //local(/local) in $corpath to 9.",
+	    __" g  $copath/A"]);
+is_output ($svk, 'st',  [$copath],
+	   [__" M  $copath/A"], 'prop not cleared after update -C');
+is_output ($svk, 'update', [$copath],
+	   ["Syncing //local(/local) in $corpath to 9.",
+	    __" g  $copath/A"]);
+is_output ($svk, 'st',  [$copath], [], 'prop merged, checkout unscheduled');
+$svk->ps (-m => 'foo', newprop2 => 'newvalue2', '//local/A');
+$svk->ps (newprop2 => 'newvalue2', "$copath/A");
+$svk->ps (newprop3 => 'newvalue3', "$copath/A");
+is_output ($svk, 'update', [$copath],
+	   ["Syncing //local(/local) in $corpath to 10.",
+	    __" g  $copath/A"]);
+is_output ($svk, 'st',  [$copath],
+	   [__" M  $copath/A"], 'prop merged, but still something left');
+
 # XXX: test prop merge with base
-# XXX: test prop merge on checkout

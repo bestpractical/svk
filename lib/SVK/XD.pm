@@ -440,6 +440,17 @@ sub xd_storage_cb {
 			       $self->{checkout}->store ($_, {'.conflict' => 1})
 				   unless $arg{check_only};
 			   },
+	  cb_prop_merged => sub { return if $arg{check_only};
+				  $_ = shift; $arg{get_copath} ($_);
+				  my $name = shift;
+				  my $entry = $self->{checkout}->get ($_);
+				  my $prop = $entry->{'.newprop'};
+				  delete $prop->{$name};
+				  $self->{checkout}->store ($_, {'.newprop' => $prop,
+								 keys %$prop ? () :
+								 ('.schedule' => undef)}
+								);
+			      },
 	  cb_localmod => sub { my ($path, $checksum) = @_;
 			       my $copath = $path;
 			       # XXX: make use of the signature here too
