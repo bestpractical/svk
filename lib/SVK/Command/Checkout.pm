@@ -132,7 +132,7 @@ sub _do_checkout {
 	my ($anchor) = get_anchor (0, $report);
 	if (length $anchor && !-e $anchor) {
 	    mkpath [$anchor] or
-		die loc ("Can't create checkout path %1: $!\n", $anchor);
+		die loc ("Can't create checkout path %1: %2\n", $anchor, $!);
 	}
     }
 
