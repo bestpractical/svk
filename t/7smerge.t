@@ -87,7 +87,7 @@ $svk->sync ('//m');
 
 $svk->update ($copath);
 overwrite_file ("$copath/newfile", "new file added on source\n");
-overwrite_file ("$copath/newfile2", "new file added on source\nalso on local");
+overwrite_file ("$copath/newfile2", "new file added on source\nalso on local\n");
 mkdir ("$copath/newdir");
 $svk->add ("$copath/newfile", "$copath/newdir");
 append_file ("$copath/be", "modification on local\n");
@@ -112,6 +112,7 @@ $svk->smerge ('//m', $copath);
 $svk->status ($copath);
 $svk->revert ("$copath/be");
 $svk->resolved ("$copath/be");
+# XXX: newfile2 conflicted but not added
 $svk->status ($copath);
 $svk->commit ('-m', 'merge down committed from checkout', $copath);
 $svk->proplist ('-v', $copath);

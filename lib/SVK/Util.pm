@@ -113,6 +113,7 @@ sub find_svm_source {
 	$uuid = $root->node_prop ($path, 'svm:uuid');
 	$path = $m->{source}.$mpath;
 	$path =~ s/^\Q$m->{source_root}\E//;
+	$path ||= '/';
 	$rev = $m->{fromrev};
     }
     else {

@@ -49,14 +49,16 @@ variable to your preferred svk depot path.
 
 =cut
 
-my $show_version;
-
-die unless GetOptions ("version"  => \$show_version);
 my $cmd = shift;
+{
+    my $show_version;
+    local *ARGV = [$cmd];
+    die unless GetOptions ('version' => \$show_version);
 
-if ($show_version) {
-    print loc("This is svk, version %1.\n", $VERSION);
-    exit 0;
+    if ($show_version) {
+	print loc("This is svk, version %1.\n", $VERSION);
+	exit 0;
+    }
 }
 
 unless ($cmd) {
