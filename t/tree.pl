@@ -252,4 +252,18 @@ sub __ {
     return $path;
 }
 
+sub _x {
+    ($^O eq 'MSWin32') ? 1 : -x $_[0];
+}
+
+sub _not_x {
+    ($^O eq 'MSWin32') ? 1 : not -x $_[0];
+}
+
+sub uri {
+    my $file = shift;
+    $file =~ s{^|\\}{/}g if ($^O eq 'MSWin32');
+    return "file://$file";
+}
+
 1;
