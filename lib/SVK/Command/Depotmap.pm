@@ -12,14 +12,14 @@ use File::Path;
 sub options {
     ('l|list' => 'list',
      'i|init' => 'init',
-     'd|delete' => 'delete',
+     'd|delete|detach' => 'detach',
      'a|add' => 'add');
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    if ($self->{add} or $self->{delete}) {
+    if ($self->{add} or $self->{detach}) {
         @arg or die loc("Need to specify a depot name");
 
         my $depot = shift(@arg);
@@ -44,8 +44,8 @@ sub run {
     elsif ($self->{add}) {
         return $self->_do_add(@_);
     }
-    elsif ($self->{delete}) {
-        return $self->_do_delete(@_);
+    elsif ($self->{detach}) {
+        return $self->_do_detach(@_);
     }
     else {
         return $self->_do_edit();
@@ -86,7 +86,7 @@ sub _do_edit {
 sub _do_add {
     my ($self, $depot, $path) = @_;
 
-    die loc("Depot '%1' already exists; use 'svk depotmap --delete' to remove it first.\n", $depot)
+    die loc("Depot '%1' already exists; use 'svk depotmap --detach' to remove it first.\n", $depot)
         if $self->{xd}{depotmap}{$depot};
 
     $self->{xd}{depotmap}{$depot} = $path;
@@ -95,7 +95,7 @@ sub _do_add {
     $self->create_depots;
 }
 
-sub _do_delete {
+sub _do_detach {
     my ($self, $depot) = @_;
 
     delete $self->{xd}{depotmap}{$depot}
@@ -142,12 +142,12 @@ SVK::Command::Depotmap - Create or edit the depot mapping configuration
  depotmap [OPTIONS]
 
  depotmap --add DEPOT /path/to/repository
- depotmap --delete DEPOT
+ depotmap --detach DEPOT
 
 =head1 OPTIONS
 
  -a [--add]             : add a depot to the mapping
- -d [--delete]          : remove a depot from the mapping
+ -d [--detach]          : remove a depot from the mapping
  -l [--list]            : list current depot mappings
  -i [--init]            : initialize a default depot
 

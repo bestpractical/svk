@@ -113,15 +113,15 @@ is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
 	   ['Committed revision 14.', 'Committed revision 15.']);
 
-is_output_like ($svk, 'mirror', ['--delete', '//l'],
-		qr"not a mirrored", '--delete on non-mirrored path');
+is_output_like ($svk, 'mirror', ['--detach', '//l'],
+		qr"not a mirrored", '--detach on non-mirrored path');
 
-is_output_like ($svk, 'mirror', ['--delete', '//m/T'],
-		qr"inside", '--delete inside a mirrored path');
+is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
+		qr"inside", '--detach inside a mirrored path');
 
-is_output_like ($svk, 'mirror', ['--delete', '//m'],
-		qr"Committed revision 16.", '--delete on mirrored path');
+is_output_like ($svk, 'mirror', ['--detach', '//m'],
+		qr"Committed revision 16.", '--detach on mirrored path');
 
-is_output_like ($svk, 'mirror', ['--delete', '//m'],
-		qr"not a mirrored", '--delete on non-mirrored path');
+is_output_like ($svk, 'mirror', ['--detach', '//m'],
+		qr"not a mirrored", '--detach on non-mirrored path');
 

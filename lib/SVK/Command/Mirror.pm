@@ -8,7 +8,7 @@ use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('l|list'  => 'list',
-     'd|delete'=> 'delete',
+     'd|delete|detach'=> 'detach',
      'upgrade' => 'upgrade',
      'relocate'=> 'relocate');
 }
@@ -51,7 +51,7 @@ sub run {
 	}
 	return;
     }
-    elsif ($self->{delete}) {
+    elsif ($self->{detach}) {
 	my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos},
 						    $target->{path});
 
@@ -78,7 +78,7 @@ sub run {
         return;
     }
 
-    $m->init or die loc("%1 already mirrored, use 'svk mirror --delete' to remove it first.\n", $target->{depotpath});
+    $m->init or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n", $target->{depotpath});
 
     return;
 }
@@ -102,14 +102,14 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
  mirror --list
  mirror --relocate DEPOTPATH [http|svn]://host/path 
- mirror --delete DEPOTPATH
+ mirror --detach DEPOTPATH
  mirror --upgrade //
  mirror --upgrade /DEPOT/
 
 =head1 OPTIONS
 
  -l [--list]            : list mirrored paths
- -d [--delete]          : mark a path as no longer mirrored
+ -d [--detach]          : mark a path as no longer mirrored
  --upgrade              : upgrade mirror state to the latest version
  --relocate             : relocate the mirror to another URI
 
