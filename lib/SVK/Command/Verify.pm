@@ -1,6 +1,7 @@
 package SVK::Command::Verify;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
+use SVK::I18N;
 
 use base qw( SVK::Command );
 
