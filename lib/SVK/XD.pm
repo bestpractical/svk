@@ -1128,9 +1128,18 @@ sub _delta_dir {
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
 	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
-	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} }
-	    map { eval {from_native($_, 'path', $arg{encoder}); 1} ? $_ : () }
-	    readdir ($dir);
+	for (readdir($dir)) {
+	    if (eval {from_native($_, 'path', $arg{encoder}); 1}) {
+		push @direntries, $_;
+	    }
+	    elsif ($arg{auto_add}) { # fatal for auto_add
+		die "$_: $@";
+	    }
+	    else {
+		print "$_: $@";
+	    }
+	}
+	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } @direntries;
     }
 
     for my $copath (@direntries) {

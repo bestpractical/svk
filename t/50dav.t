@@ -72,7 +72,7 @@ append_file ("$copath/Q/qu", "some changes\n");
 append_file ("$copath/be", "changes\n");
 
 is_output ($svk, 'commit', [-m => "L\x{e9}on is a nice guy.", $copath],
-	   ["Can't decode commit message as utf8, try --encoding."]);
+	   ["Can't decode commit message as utf8.", "try --encoding."]);
 is_output ($svk, 'commit', [-m => "L\x{e9}on is a nice guy.", '--encoding', 'iso-8859-1', $copath],
 	   ["Committed revision 5."]);
 $svk->smerge (-Cm => 'foo', -f => '//local/');
@@ -93,7 +93,7 @@ $svk->switch ('//remote', $copath);
 append_file ("$copath/Q/qu", "More changes in iso-8859-1\n");
 is_output ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", $copath],
 	   ["Commit into mirrored path: merging back directly.",
-	    "Can't decode commit message as utf8, try --encoding."]);
+	    "Can't decode commit message as utf8.", "try --encoding."]);
 is_output_like ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", '--encoding', 'iso-8859-1', $copath],
 		qr'Committed revision');
 $server->stop;

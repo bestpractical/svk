@@ -76,7 +76,8 @@ sub get_commit_message {
 
 sub decode_commit_message {
     my $self = shift;
-    from_native ($self->{message}, 'commit message', $self->{encoding});
+    eval { from_native ($self->{message}, 'commit message', $self->{encoding}); 1 }
+	or die $@.loc("try --encoding.\n");
 }
 
 # XXX: This should just return Editor::Dynamic objects
