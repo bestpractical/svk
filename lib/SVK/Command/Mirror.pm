@@ -176,15 +176,10 @@ sub recover_list_entry {
 
     return if $mirrors{$m->{target_path}}++;
 
-    my $fs = $m->{fs};
-    my $pool = SVN::Pool->new_default ($m->{pool});
-    my $ps_edit = $self->get_commit_editor(
-        $fs->revision_root ($fs->youngest_rev),
-        sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %$target
+    $self->command ( propset => { direct => 1, message => 'foo' } )->run (
+        'svm:mirror' => join ("\n", (grep length, sort keys %mirrors), ''),
+        $self->arg_depotpath ('/'.$target->depotname.'/'),
     );
-    $ps_edit->open_root;
-    $ps_edit->change_dir_prop ('/', 'svm:mirror', join("\n", (grep length, sort keys %mirrors), ''));
-    $ps_edit->close_edit;
 
     print loc("%1 added back to the list of mirrored paths.\n", $target->{report}); 
     return;
