@@ -19,7 +19,6 @@ sub options {
         'regen'   => 'regen',
         'update'  => 'update',
         'test'    => 'test',
-        'send'    => 'send',
         'apply'   => 'apply',
         'delete'  => 'delete',
         'list'    => 'list',
@@ -196,7 +195,6 @@ SVK::Command::Patch - Manage patches
  patch --regen PATCHNAME
  patch --update PATCHNAME
  patch --apply PATCHNAME [DEPOTPATH | PATH] [-- MERGEOPTIONS]
- patch --send PATCHNAME
  patch --delete PATCHNAME
 
 =head1 OPTIONS
