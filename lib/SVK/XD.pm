@@ -354,12 +354,13 @@ sub condense {
 	}
 	my $cinfo = $self->{checkout}->get ($anchor);
 	my $schedule = $cinfo->{'.schedule'} || '';
-	if ($anchor ne $copath || !-d $anchor || $cinfo->{scheduleanchor} ||
-	    $schedule eq 'add' || $schedule eq 'delete') {
-	    while ($anchor.'/' ne substr ($copath, 0, length($anchor)+1) ||
-		   $self->{checkout}->get ($anchor)->{scheduleanchor}) {
-		($anchor, $report) = get_anchor (0, $anchor, $report);
-	    }
+	while (!-d $anchor || $cinfo->{scheduleanchor} ||
+	       $schedule eq 'add' || $schedule eq 'delete' ||
+	       ($anchor ne $copath && $anchor.'/' ne substr ($copath, 0, length($anchor)+1))) {
+	    ($anchor, $report) = get_anchor (0, $anchor, $report);
+	    # XXX: put .. to report if it's anchorified beyond
+	    $cinfo = $self->{checkout}->get ($anchor);
+	    $schedule = $cinfo->{'.schedule'} || '';
 	}
     }
     $report =~ s|/$||;

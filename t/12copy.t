@@ -96,10 +96,11 @@ my $status = [status_native ($copath, 'A  ', 'newdir/A',
 
 is_output ($svk, 'copy', ['//V/A', "$copath/newdir"],
 	   $status);
-is_output ($svk, 'status', ["$copath/newdir", "$copath/A-prop"],
+is_output ($svk, 'status', ["$copath/newdir/A", "$copath/A-prop"],
 	   [status_native ($copath, 'A +', 'A-prop', ' M ', 'A-prop/be',
 			   'A  ', 'newdir', 'A +', 'newdir/A')]);
 
+$svk->status ("$copath/newdir/A");
 $svk->revert ('-R', $copath);
 TODO: {
 local $TODO = 'revert removes known nodes copied';
