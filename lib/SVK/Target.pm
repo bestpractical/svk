@@ -188,7 +188,7 @@ sub universal {
 
 sub contains_copath {
     my ($self, $copath) = @_;
-    foreach my $base (@{$self->{targets}}) {
+    foreach my $base (@{$self->{targets} || []}) {
 	if ($copath ne abs2rel ($copath, $self->copath ($base))) {
 	    return 1;
 	}
@@ -256,6 +256,12 @@ sub copied_from {
     }
 
     return undef;
+}
+
+sub report_copath {
+    my ($self, $copath) = @_;
+    my $report = length ($self->{report}) ? $self->{report} : undef;
+    abs2rel ($copath, $self->{copath} => $report);
 }
 
 =head1 AUTHORS
