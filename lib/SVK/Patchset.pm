@@ -1,6 +1,7 @@
 package SVK::Patchset;
 use strict;
 use SVK::Util qw(get_depot_anchor);
+use SVK::Editor::Combiner;
 
 =head1 NAME
 
@@ -48,6 +49,7 @@ sub dependencies_in_tree {
 	map { $self->dependencies_in_tree ($repos, $rev, $_) } @pp;
 }
 
+# XXX: bad recusion, eliminate duplicated node as early as possible
 sub all_dependencies {
     my ($self, $repos, $rev) = @_;
     return map { ($_, $self->all_dependencies ($repos, $_)) } $self->dependencies ($repos, $rev);
@@ -56,6 +58,7 @@ sub all_dependencies {
 sub dependencies {
     my ($self, $repos, $rev) = @_;
     return if $rev == 0;
+    my $pool = SVN::Pool->new_default;
     my $fs = $repos->fs;
     my $parents = $fs->revision_prop ($rev, 'svk:parents');
     if (defined $parents) {
@@ -68,6 +71,7 @@ sub dependencies {
 	my $leaf = $rev;
 	my %parents = ($rev => 1);
 	my $anchor;
+	my $spool = SVN::Pool->new_default;
 	while ($leaf > 1) {
 	    my $root = $fs->revision_root ($leaf);
 	    $anchor = anchor_of (defined $anchor ? $anchor : (),
@@ -87,12 +91,14 @@ sub dependencies {
 	    }
 
 	    push @$parents, @parents;
+	    $spool->clear;
 	}
 	$parents ||= [];
 	$fs->change_rev_prop ($rev, 'svk:parents', join(',',@$parents));
 	for (@$parents) {
 	    $fs->change_rev_prop ($_, 'svk:children',
 				  join(',', $rev, split /,/, ($fs->revision_prop ($_, 'svk:children') || '')));
+	    $spool->clear;
 	}
     }
     return @$parents;
@@ -100,6 +106,7 @@ sub dependencies {
 
 sub rev_depends_on {
     my ($self, $repos, $rev, $prev) = @_;
+    my $pool = SVN::Pool->new_default;
     my $xd = $self->{xd};
     Carp::confess unless $prev;
     my $txn = $repos->fs_begin_txn_for_commit ($prev-1, 'svk', 'not for commit');
