@@ -252,8 +252,6 @@ sub info {
 
 =cut
 
-use Text::Diff ();
-
 sub diff {
     local @ARGV = @_;
     my $verbose = 0;
@@ -266,16 +264,23 @@ sub diff {
 
     my ($repospath, $path, $cinfo, $repos);
 
-    if (($repospath, $path, $repos) = eval { find_repos ($tgt, 1) }) {
-	my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
-	    or die "require revspec";
+    if ($revspec && (my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/)) {
+	($repospath, $path, $repos) = eval { find_repos ($tgt, 1) };
+	($repospath, $path, undef, $repos) =
+	    find_repos_from_co (File::Spec->rel2abs ($tgt || ''), 1)
+		if $@;
+
+	undef $@;
+
 	my $fs = $repos->fs;
 	my $baseroot = $fs->revision_root ($fromrev);
 	my $editor = SVN::DiffEditor->new
 	    ( cb_basecontent => sub { my ($rpath) = @_;
 				      my $base = $baseroot->file_contents ("$path/$rpath");
 				      return $base;
-				  }
+				  },
+	      llabel => "revision $fromrev",
+	      rlabel => "revision $torev",
 	    );
 	SVN::Repos::dir_delta ($baseroot,
 			       $path, undef,
@@ -285,13 +290,18 @@ sub diff {
 
     }
     else {
+	die "revision should be N:M or N"
+	    if $revspec && $revspec !~ /^\d+$/;
 	my $copath = File::Spec->rel2abs ($tgt || '');
 	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-	my ($txn, $baseroot) = SVN::XD::create_xd_root ($info,
-							path => $path,
-							repos => $repos,
-							copath => $copath);
+	my $fs = $repos->fs;
+	my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
+						      path => $path,
+						      repos => $repos,
+						      copath => $copath);
+
+	my $baseroot = $revspec ? $fs->revision_root ($revspec) : $xdroot;
 	my $editor = SVN::DiffEditor->new
 	    ( cb_basecontent =>
 	      sub { my ($rpath) = @_;
@@ -301,6 +311,12 @@ sub diff {
 	      sub { my ($rpath, $prop) = @_;
 		    $baseroot->node_prop ("$path/$rpath", $prop);
 	      },
+	      cb_llabel =>
+	      sub { my ($rpath) = @_;
+		    'revision '.
+			$info->{checkout}->get ("$copath/$rpath")->{revision};
+	      },
+	      rlabel => "local",
 	    );
 
 	undef $@;
@@ -309,7 +325,8 @@ sub diff {
 				 repos => $repos,
 				 copath => $copath,
 				 path => $path,
-				 xdroot => $baseroot,
+				 baseroot => $baseroot,
+				 xdroot => $xdroot,
 				 editor => $editor,
 				);
 	$txn->abort if $txn;

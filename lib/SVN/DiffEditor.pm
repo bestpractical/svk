@@ -42,10 +42,14 @@ sub close_file {
     my $base = $self->{info}{$path}{added} ?
 	undef : $self->{cb_basecontent} ($path);
     local $/;
+    # XXX: this slurp is dangerous. waiting for streamy svndiff routine
     $base = $base ? <$base> : '';
+    my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
+    my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
     print "Index: $path\n";
-    print '=' x 66;
-    print "\n";
+    print '=' x 66,"\n";
+    print "--- $path  ($llabel)\n";
+    print "+++ $path  ($rlabel)\n";
     print Text::Diff::diff (\$base, \$self->{info}{$path}{new});
     delete $self->{info}{$path};
 
