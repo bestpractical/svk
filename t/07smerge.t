@@ -246,6 +246,8 @@ is_output ($svk, 'smerge', ['-m', 'merge back', '//l', '//m'],
 $svk->update ($scopath);
 overwrite_file ("$scopath/A/Q/qu", "on trunk\nfirst line in qu\non cp branch\n2nd line in qu\n");
 $svk->commit ('-m', 'commit on source', $scopath);
+# osx is not happy with too many files opened by default
+SVK::XD->_reset_repos;
 $svk->sync ('-a', '/client2/');
 is_output ($svk, 'smerge', ['-C', '/client2/m-all/A-cp', '/client2/m-all/A'],
 	   ['Auto-merging (0, 13) /m-all/A-cp to /m-all/A (base /m-all/A:12).',

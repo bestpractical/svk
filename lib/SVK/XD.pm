@@ -260,6 +260,11 @@ sub _open_repos {
     $REPOS{$repospath} ||= SVN::Repos::open ($repospath, $REPOSPOOL);
 }
 
+sub _reset_repos {
+    %REPOS = ();
+    $REPOSPOOL = SVN::Pool->new;
+}
+
 =item find_repos
 
 Given depotpath and an option about if the repository should be
