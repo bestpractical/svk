@@ -248,8 +248,11 @@ sub close_file {
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
 	my $merge_fname = mktemp ("/tmp/svk-mergeXXXXX");
+	# XXX: stream_from_aprfile not guarantee closing file on closing stream
+	my $merge_stream = SVN::Core::stream_from_aprfile
+	    ($merge_fname, $pool);
 	SVN::Core::diff_file_output_merge
-		( $merge_fname, $diff,
+		( $merge_stream, $diff,
 		  (map {
 		      $fh->{$_}[1]
 		  } qw/base local new/),
@@ -257,7 +260,7 @@ sub close_file {
 		  "<<<<<<< local",
 		  ">>>>>>> new",
 		  "=======",
-		  1, 0);
+		  1, 0, $pool);
 
 	$info->{status}[0] = SVN::Core::diff_contains_conflicts ($diff)
 	    ? 'C' : 'G';

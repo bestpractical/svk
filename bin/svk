@@ -1248,6 +1248,13 @@ if ($0 eq __FILE__) {
     }
 }
 
+END {
+    my $svkpath = "$ENV{HOME}/.svk";
+    return unless -e "$svkpath/lock";
+    warn "cleaning up after excepton";
+    unlink ("$svkpath/lock");
+}
+
 #%$info = %$xd;
 1;
 

@@ -485,8 +485,7 @@ sub resolved_entry {
     my ($info, $entry) = @_;
     my $val = $info->{checkout}->get_single ($entry);
     return unless $val && $val->{conflict};
-    $info->{checkout}->store_single
-	($entry, {%$val, conflict => undef});
+    $info->{checkout}->store ($entry, {%$val, conflict => undef});
     print "$entry marked as resolved.\n";
 }
 
