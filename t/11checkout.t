@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 36;
+use Test::More tests => 37;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -20,6 +20,9 @@ ok (-e "$copath/co-root/V/A/Q/qu");
 
 $svk->checkout ('//V/A', "$copath/co-root-a");
 ok (-e "$copath/co-root-a/Q/qu");
+
+$svk->checkout ('//V/A', "$copath/co-root-deep/there");
+ok (-e "$copath/co-root-deep/there/Q/qu");
 
 $svk->checkout ('//V-3.1', "$copath/co-root-v3.1");
 ok (-e "$copath/co-root-v3.1/A/Q/qu");
@@ -92,6 +95,7 @@ is_output ($svk, 'checkout', ['--list'], [
             "//V-3.1/A/Q/qu      \t".__("$corpath/boo"),
             "//V-3.1/A/Q/qu      \t".__("$corpath/qu"),
             "//V/A               \t".__("$corpath/co-root-a"),
+	    "//V/A               \t".__("$corpath/co-root-deep/there"),
             ]);
 
 is_output ($svk, 'checkout', ['--detach', '//V-3.1'], [

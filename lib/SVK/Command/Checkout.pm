@@ -5,7 +5,8 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( abs_path move_path is_empty_path splitdir $SEP );
+use SVK::Util qw( get_anchor abs_path move_path is_empty_path splitdir $SEP );
+use File::Path;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -120,8 +121,21 @@ sub _do_relocate {
 sub _do_checkout {
     my ($self, $target, $report) = @_;
 
+    if (-e $report) {
+	die loc("Checkout path %1 already exists.\n", $report);
+    }
+    else {
+	# Cwd is annoying, returning undef for paths whose parent.
+	# we can't just mkdir -p $report because it might be a file,
+	# so let C::Update take care about it.
+	my ($anchor) = get_anchor (0, $report);
+	if (length $anchor && !-e $anchor) {
+	    mkpath [$anchor] or
+		die loc ("Can't create checkout path %1: $!\n", $anchor);
+	}
+    }
+
     my $copath = abs_path ($report);
-    die loc("Checkout path %1 already exists.\n", $copath) if -e $copath;
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
     die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
