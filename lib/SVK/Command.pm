@@ -29,7 +29,7 @@ sub new {
     bless {}, $class;
 }
 
-sub options {}
+sub options { () }
 
 sub parse_arg {}
 
