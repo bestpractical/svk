@@ -128,10 +128,3 @@ TODO
 utils/extract-docs
 utils/extract-message-catalog
 utils/svk-ediff.el
-utils/svk-merge
-utils/svk-merge-emacs
-utils/svk-merge-filemerge
-utils/svk-merge-guiffy.bat
-utils/svk-merge-meld
-utils/svk-merge-p4winmrg.bat
-utils/svk-merge-tortoisemerge.bat
