@@ -1322,6 +1322,15 @@ sub get_eol_layer {
     }
 }
 
+# Remove anything from the keyword value that could prevent us from being able
+# to correctly collapse it again later.
+sub _sanitize_keyword_value {
+    my $value = shift;
+    $value =~ s/[\r\n]/ /g;
+    $value =~ s/ +\$/\$/g;
+    return $value;
+}
+
 sub get_keyword_layer {
     my ($root, $path, $prop) = @_;
     my $k = $prop->{'svn:keywords'};
@@ -1342,18 +1351,16 @@ sub get_keyword_layer {
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
 		       my $fs = $root->fs;
-		       my $author = $fs->revision_prop ($rev, 'svn:author');
-			$author =~ s/[\r\n\$]/ /g;
+		       $fs->revision_prop ($rev, 'svn:author');
 		 },
 		 Id =>
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
 		       my $fs = $root->fs;
-		       my $id = join( ' ', $path, $rev,
+		       join( ' ', $path, $rev,
 			     $fs->revision_prop ($rev, 'svn:date'),
 			     $fs->revision_prop ($rev, 'svn:author'), ''
 			   );
-			$id =~ s/[\r\n\$]/ /g;
 		   },
 		 URL =>
 		 sub { my ($root, $path) = @_;
@@ -1395,7 +1402,7 @@ sub get_keyword_layer {
 
     return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
+         sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/"\$$1: "._sanitize_keyword_value($kmap{$1}->($root, $path)).' $'/eg; },
 	 untranslate =>
 	 sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/\$$1\$/g; });
 }
