@@ -591,6 +591,7 @@ sub do_delete {
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
 
+    return if $arg{no_rm};
     rmtree (\@paths) if @paths;
 }
 
