@@ -15,7 +15,11 @@ sub parse_arg {
 
     @arg = ('') if $#arg < 0;
 
-    if ( @arg == 1 and !$self->arg_co_maybe($arg[0])->{'copath'}) {
+    if ($self->{all}) {
+        my $checkout = $self->{xd}{checkout}{hash};
+        @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
+    } 
+    elsif ( @arg == 1 and !$self->arg_co_maybe($arg[0])->{'copath'}) {
         # If the last argument is a depot path, rather than a copath
         # then we should do a merge to the local depot, rather than 
         # an update to the path
@@ -28,11 +32,6 @@ sub parse_arg {
             }
         )->parse_arg (@arg);
     }
-
-    if ($self->{all}) {
-        my $checkout = $self->{xd}{checkout}{hash};
-        @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
-    } 
 
     $self->{lump} = 1; # -- XXX -- will break otherwise -- XXX ---
 
