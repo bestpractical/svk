@@ -3,74 +3,70 @@ use strict;
 our $VERSION = '0.12';
 our @ISA = qw(SVN::Delta::Editor);
 
-sub _latest_baton {
-    my ($self) = @_;
-    return (@{$self->{bstack}} && $self->{bstack}[-1][0]) || ($self->{root});
-}
-
 sub _open_pdir {
-    my ($self) = @_;
+    my ($self, $pbaton) = @_;
     my $baton;
-    for (@{$self->{stack}}) {
-	my ($path, $pbaton, @arg) = @$_;
-	$baton = $self->SUPER::open_directory ($path, $pbaton || $self->_latest_baton, @arg);
-	push @{$self->{bstack}}, [$baton, $arg[-1]];
+
+    unless ($self->{opened}{$pbaton}) {
+	my ($path, $ppbaton, @arg) = @{$self->{batoninfo}{$pbaton}};
+	$self->{batons}{$pbaton} = $self->SUPER::open_directory
+	    ($path, $self->_open_pdir ($ppbaton), @arg);
+	$self->{opened}{$pbaton} = 1;
     }
-    @{$self->{stack}} = ();
-    return $self->_latest_baton;
+
+    return $self->{batons}{$pbaton};
 }
 
 sub open_root {
     my ($self, @arg) = @_;
-    $self->{bstack} = [];
-    $self->{stack} = [];
-    $self->{root} = $self->SUPER::open_root (@arg);
+    $self->{nbaton} = 0;
+    $self->{batons}{$self->{nbaton}} = $self->SUPER::open_root (@arg);
+    $self->{opened}{$self->{nbaton}} = 1;
+    return $self->{nbaton}++;
 }
 
 sub add_file {
     my ($self, $path, $pbaton, @arg) = @_;
-    $self->SUPER::add_file ($path, $self->_open_pdir, @arg);
+    $self->SUPER::add_file ($path, $self->_open_pdir ($pbaton), @arg);
 }
 
 sub open_file {
     my ($self, $path, $pbaton, @arg) = @_;
-    $self->SUPER::open_file ($path, $self->_open_pdir, @arg);
+    $self->SUPER::open_file ($path, $self->_open_pdir ($pbaton), @arg);
 }
 
 sub add_directory {
     my ($self, $path, $pbaton, @arg) = @_;
-    my $baton = $self->SUPER::add_directory ($path, $self->_open_pdir, @arg);
-    push @{$self->{bstack}}, [$baton, $arg[-1]];
-    return $baton;
+    my $baton = $self->SUPER::add_directory ($path, $self->_open_pdir ($pbaton), @arg);
+    $self->{batons}{$self->{nbaton}} = $baton;
+    $self->{opened}{$self->{nbaton}} = 1;
+    return $self->{nbaton}++;
 }
 
 sub delete_entry {
     my ($self, $path, $rev, $pbaton, $pool) = @_;
-    $self->SUPER::delete_entry ($path, $rev, $self->_open_pdir, $pool);
+    $self->SUPER::delete_entry ($path, $rev, $self->_open_pdir ($pbaton), $pool);
 }
 
 sub change_dir_prop {
     my ($self, $baton, @arg) = @_;
-    $self->SUPER::change_dir_prop ($self->_open_pdir, @arg);
+    $self->SUPER::change_dir_prop ($self->_open_pdir ($baton), @arg);
 }
 
 sub open_directory {
-    my ($self, $path, @arg) = @_;
-    push @{$self->{stack}}, [$path, @arg];
-    return undef;
+    my ($self, $path, $pbaton, @arg) = @_;
+    $self->{batoninfo}{$self->{nbaton}} = [$path, $pbaton, @arg];
+    return $self->{nbaton}++;
 }
 
 sub close_directory {
-    my ($self, @arg) = @_;
-    if (@{$self->{stack}}) {
-	pop @{$self->{stack}};
+    my ($self, $baton, $pool) = @_;
+    if ($self->{opened}{$baton}) {
+	$self->SUPER::close_directory ($self->{batons}{$baton}, $pool);
+	delete $self->{opened}{$baton};
     }
-    elsif (my $now = pop @{$self->{bstack}}) {
-	$self->SUPER::close_directory (@$now);
-    }
-    else {
-	$self->SUPER::close_directory (@arg);
-    }
+    delete $self->{batons}{$baton};
+    delete $self->{batoninfo}{$baton};
 }
 
 1;

@@ -214,6 +214,22 @@ sub arg_path {
     return Cwd::abs_path ($arg);
 }
 
+1;
+
+__END__
+our $AUTOLOAD;
+
+use Sub::WrapPackages (
+        subs     => [qw(SVN::Delta::Editor::AUTOLOAD)],
+        pre      => sub {
+	    warn "my autoload is $AUTOLOAD ".caller(4);
+            warn "$SVN::Delta::Editor::AUTOLOAD called with params ".
+              join(', ', @_[1..$#_])."\n";
+        },
+        post     => sub {
+            warn "$_[0] returned $_[1]\n";
+        });
+
 =comment
 
 # workaround the svn::delta::editor problem in 1.0.x

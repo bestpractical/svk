@@ -1,6 +1,6 @@
 package SVK::MergeEditor;
 use strict;
-our $VERSION = '0.05';
+our $VERSION = '0.12';
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor );
@@ -129,15 +129,18 @@ sub open_file {
     # modified but rm locally - tag for conflict?
     $self->{info}{$path}{status} =
 	(defined $pdir && &{$self->{cb_exist}}($path) ? [] : undef);
-    $self->{info}{$path}{open} = [$pdir, $rev, $pool]
-	if $self->{info}{$path}{status};
+    if ($self->{info}{$path}{status}) {
+	$self->{info}{$path}{open} = [$pdir, $rev];
+	$self->{info}{$path}{fpool} = $pool;
+    }
     return $path;
 }
 
 sub ensure_open {
     my ($self, $path) = @_;
     return unless $self->{info}{$path}{open};
-    my ($pdir, $rev, $pool) = @{$self->{info}{$path}{open}};
+    my ($pdir, $rev, $pool) = (@{$self->{info}{$path}{open}},
+			       $self->{info}{$path}{fpool});
     $self->{storage_baton}{$path} ||=
 	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
 				     &{$self->{cb_rev}}($path), $pool);
@@ -167,18 +170,18 @@ sub prepare_fh {
 	close $fh->{$name}[0];
 	$fh->{$name} = $tmp;
 	seek $fh->{$name}[0], 0, 0;
-
     }
 }
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
-    $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
     return unless $info->{status};
+    $pool->default if $pool && $pool->can ('default');
     my ($base, $newname);
     unless ($info->{status}[0]) { # open, has base
+	$pool = $self->{info}{$path}{fpool};
 	$fh->{local} = &{$self->{cb_localmod}}($path, $checksum, $pool) or
 	    $info->{status}[0] = 'U';
 	# retrieve base
@@ -204,6 +207,7 @@ sub close_file {
     $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
+
     no warnings 'uninitialized';
 
     # let close_directory reports about its children

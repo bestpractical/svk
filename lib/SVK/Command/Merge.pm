@@ -64,6 +64,7 @@ sub run {
     my ($storage, %cb) = $self->get_editor ($dst);
 
     my $fs = $repos->fs;
+    $storage = SVK::DelayEditor->new ($storage);
     my $editor = SVK::MergeEditor->new
 	( anchor => $src->{path},
 	  base_anchor => $base_path,
@@ -74,7 +75,6 @@ sub run {
 	  storage => $storage,
 	  %cb,
 	);
-    $editor = SVK::DelayEditor->new ($editor);
     SVN::Repos::dir_delta ($fs->revision_root ($baserev),
 			   $base_path, '',
 			   $fs->revision_root ($torev), $src->{path},
