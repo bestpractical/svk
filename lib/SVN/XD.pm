@@ -261,6 +261,7 @@ sub do_commit {
 						   $arg{path},
 						   $arg{author}, $arg{message},
 						   $committed)],
+	 base_path => $arg{path},
 	 missing_handler =>
 	 SVN::Simple::Edit::check_missing ($fs->revision_root ($arg{baserev})));
 

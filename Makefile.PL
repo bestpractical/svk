@@ -11,7 +11,7 @@ WriteMakefile(
         'SVN::Core'   => '0.31',
         'Algorithm::Annotate'   => '0',
         'Data::Hierarchy'       => '0.12',
-        'SVN::Simple::Edit'     => '0.20',
+        'SVN::Simple::Edit'     => '0.21',
     },
     EXE_FILES    => [ 'bin/svk' ],
     dist                => {
