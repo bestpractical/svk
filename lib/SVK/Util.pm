@@ -169,7 +169,9 @@ sub get_buffer_from_editor {
 	    qr/^[aec]/,
 	);
 	last if $ans =~ /^c/;
-	die loc("Aborted.\n") if $ans =~ /^a/;
+	# XXX: save the file somewhere
+	warn "==> abort" if $ans =~ m/^a/;
+	unlink ($file), die loc("Aborted.\n") if $ans =~ /^a/;
     }
 
     open $fh, $file or die $!;
