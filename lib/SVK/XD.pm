@@ -129,7 +129,7 @@ sub load {
         }
     }
 
-    $info ||= { depotmap => {'' => "$self->{svkpath}/local" },
+    $info ||= { depotmap => {'' => catdir($self->{svkpath}, 'local') },
 	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
 }
