@@ -223,9 +223,10 @@ sub get_resolver {
         );
         my $answer = get_prompt(
             join(
-                ', ',
-                map { "$_)".$resolver[$_-1][0]->name } 1..@resolver
-            ) . ', q)uit? ', qr/^(?:$range|[qQ])$/,
+                loc(', '),
+                (map { "$_)".$resolver[$_-1][0]->name } 1..@resolver),
+                loc('q)uit? ')
+            ), qr/^(?:$range|[qQ])$/,
         );
         return if $answer =~ /[qQ]/;
         @resolver = $resolver[$answer-1];

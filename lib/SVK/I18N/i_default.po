@@ -250,6 +250,10 @@ msgstr ""
 msgid "(to skip this question, set the %1 environment variable to one of them)\n"
 msgstr ""
 
+#: lib/SVK/Resolve.pm:226
+msgid ", "
+msgstr ""
+
 #: lib/SVK/Command.pod:41
 msgid "--direct: commit directly even if the path is mirrored"
 msgstr ""
@@ -637,7 +641,7 @@ msgstr ""
 msgid "Emerge %1 done.\n"
 msgstr ""
 
-#: lib/SVK/Editor/Merge.pm:586
+#: lib/SVK/Editor/.Merge.pm.swp:20 lib/SVK/Editor/Merge.pm:586
 msgid "Empty merge.\n"
 msgstr ""
 
@@ -1444,6 +1448,10 @@ msgstr ""
 
 #: lib/SVK/Command.pod:205
 msgid "propset PROPNAME PROPVAL [PATH|DEPOTPATH...]"
+msgstr ""
+
+#: lib/SVK/Resolve.pm:228
+msgid "q)uit? "
 msgstr ""
 
 #: lib/SVK/Editor/XD.pm:121

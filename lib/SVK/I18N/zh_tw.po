@@ -179,7 +179,7 @@ msgid "%1 already locked, use 'svk cleanup' if lock is stalled\n"
 msgstr "%1 已被鎖定，若卡住時請用「svk cleanup」解除\n"
 
 #. ($target->{depotpath})
-#: lib/SVK/Command/Mirror.pm:79
+#: lib/SVK/Command/Mirror.pm:80
 msgid "%1 already mirrored, use 'svk mirror --delete' to remove it first.\n"
 msgstr "%1 已經是映射路徑，請先用「svk mirror --delete」移除原本的映射設定。\n"
 
@@ -267,7 +267,11 @@ msgstr "(來自 %1:%2)"
 #: lib/SVK/Resolve.pm:222
 msgid ""
 "(to skip this question, set the %1 environment variable to one of them)\n"
-msgstr "(如果不想再看到這個問題，請將 %1 環境變數設為上列名稱之一)\n"
+msgstr "(如果不想再看到這個問題，請將 %1 環境變數設為下列名稱之一)\n"
+
+#: lib/SVK/Resolve.pm:226
+msgid ", "
+msgstr "，"
 
 #: lib/SVK/Command.pod:41
 msgid "--direct: commit directly even if the path is mirrored"
@@ -662,7 +666,7 @@ msgstr "編輯："
 msgid "Emerge %1 done.\n"
 msgstr "Emerge %1 執行完畢。\n"
 
-#: lib/SVK/Editor/Merge.pm:586
+#: lib/SVK/Editor/.Merge.pm.swp:20 lib/SVK/Editor/Merge.pm:586
 msgid "Empty merge.\n"
 msgstr "合併後無任何更動。\n"
 
@@ -908,7 +912,7 @@ msgstr "SVKMERGE: 要在 'm' 時採用的外部合併工具。"
 
 #: lib/SVK/Command.pod:111
 msgid "SVKRESOLVE: The resolve action to take, instead of asking."
-msgstr "SVKRESOLVE: 在解決衝突時預設要採取的動作。"
+msgstr "SVKRESOLVE: 在解決衝突時，要自動採取的動作。"
 
 #: lib/SVK/Command.pod:112
 msgid "SYNOPSIS"
@@ -1189,11 +1193,11 @@ msgstr "不知道要將 %1 取出到哪裡\n"
 
 #: lib/SVK/Command.pod:150
 msgid "dt: See their changes alone."
-msgstr "dt: 顯示對方的更動。"
+msgstr "dt: 檢視對方的更動。"
 
 #: lib/SVK/Command.pod:151
 msgid "dy: See your changes alone."
-msgstr "dy: 顯示已方的更動。"
+msgstr "dy: 檢視已方的更動。"
 
 #: lib/SVK/Command.pod:152
 msgid "e: Edit merged file with an editor."
@@ -1474,6 +1478,10 @@ msgstr "propset - 設定路徑的某項屬性"
 #: lib/SVK/Command.pod:205
 msgid "propset PROPNAME PROPVAL [PATH|DEPOTPATH...]"
 msgstr "propset 屬性名稱 屬性值 [路徑|檔案庫路徑...]"
+
+#: lib/SVK/Resolve.pm:228
+msgid "q)uit? "
+msgstr "q)離開？"
 
 #. ($copath, $basename, $!)
 #: lib/SVK/Editor/XD.pm:121
