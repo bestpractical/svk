@@ -779,7 +779,8 @@ sub _node_deleted_or_absent {
 	return 1 if $schedule eq 'delete';
     }
 
-    unless (-e $arg{copath} || -l $arg{copath}) {
+    lstat ($arg{copath});
+    unless (-e _ || -l _) {
 	return 1 if $arg{absent_ignore};
 	if ($arg{absent_as_delete}) {
 	    $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
@@ -811,7 +812,8 @@ sub _delta_file {
 						type => 'file');
 
     $rev = 0 if $arg{add};
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, undef, $arg{add});
+
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, undef, $arg{add} && !-l _);
     my $mymd5 = md5($fh);
     my $md5;
 
@@ -827,8 +829,7 @@ sub _delta_file {
     my $newprop = $cinfo->{'.newprop'};
     # XXX: generic auto prop for auto-added items
     $newprop = {'svn:special' => '*'}
-	if -l $arg{copath} && !$schedule
-	    && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
+	if -l _ && !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
 
     $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool)
 	if keys %$newprop;
@@ -958,8 +959,9 @@ sub _delta_dir {
 	    }
 	    next;
 	}
-	next unless -r $newpaths{copath};
-	my $delta = (-d $newpaths{copath} && !-l $newpaths{copath})
+	lstat ($newpaths{copath});
+	next unless -r _ || -l _;
+	my $delta = (-d _ && !-l _)
 	    ? \&_delta_dir : \&_delta_file;
 	my $kind = $ccinfo->{'.copyfrom'} ?
 	    $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'}) : $SVN::Node::none;

@@ -1,5 +1,13 @@
+* install
+  - make pperl suggested dependecies and automatic enable it.
+
 * signal handling
   - SIGINT should be handled gracefully.
+
+* path reporting
+  - $target->{report} should really be handled automatically.
+  - show paths in import.
+  - show correct paths in checkout.
 
 * svk diff
   - use tmp files and libsvn_diff's output_diff function instead of non-streamy Text::Diff.
