@@ -9,7 +9,8 @@ use SVK::Util qw( HAS_SVN_MIRROR );
 sub options {
     ('upgrade' => 'upgrade',
      'list'    => 'list',
-     'delete'  => 'delete');
+     'delete'  => 'delete',
+     'relocate'=> 'relocate');
 }
 
 sub parse_arg {
@@ -72,6 +73,10 @@ sub run {
 			      target => $target->{repospath},
 			     );
 
+    if ($self->{relocate}) {
+        return $m->relocate;
+    }
+
     $m->init or die loc("%1 already mirrored, use 'svk mirror --delete' to remove it first.\n", $target->{depotpath});
 
     return;
@@ -95,6 +100,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  mirror DEPOTPATH [http|svn]://host/path
 
  mirror --list
+ mirror --relocate DEPOTPATH [http|svn]://host/path 
  mirror --delete DEPOTPATH
  mirror --upgrade //
  mirror --upgrade /DEPOT/
@@ -104,6 +110,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  --list                 : list mirrored paths
  --delete               : mark a path as no longer mirrored
  --upgrade              : upgrade mirror state to the latest version
+ --relocate             : relocate the mirror to another URI
 
 =head1 AUTHORS
 
