@@ -1,6 +1,6 @@
 package SVN::DiffEditor;
 use strict;
-our $VERSION = '0.05';
+our $VERSION = '0.08';
 our @ISA = qw(SVN::Delta::Editor);
 
 use IO::String;
@@ -39,17 +39,18 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
-    return unless defined $self->{info}{$path}{new};
+    if ($self->{info}{$path}{new}) {
+	my $base = $self->{info}{$path}{added} ?
+	    \'' : $self->{cb_basecontent} ($path);
+	my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
+	my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
 
-    my $base = $self->{info}{$path}{added} ?
-	\'' : $self->{cb_basecontent} ($path);
-    my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
-    my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
+	output_diff ($path, $llabel, $rlabel,
+		     $self->{lpath} || '', $self->{rpath} || '',
+		     $base, \$self->{info}{$path}{new});
+    }
 
-    output_diff ($path, $llabel, $rlabel,
-		 $self->{lpath} || '', $self->{rpath} || '',
-		 $base, \$self->{info}{$path}{new});
-
+    $self->output_prop_diff ($path, $pool);
     delete $self->{info}{$path};
 }
 
@@ -69,6 +70,18 @@ sub output_diff {
     print Text::Diff::diff ($ltext, $rtext);
 }
 
+sub output_prop_diff {
+    my ($self, $path, $pool) = @_;
+    if ($self->{info}{$path}{prop}) {
+	print "\nProperty changes on: $path\n".('_' x 67)."\n";
+	for (keys %{$self->{info}{$path}{prop}}) {
+	    print "Name: $_\n";
+	    print Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
+		\$self->{info}{$path}{prop}{$_});
+	}
+    }
+}
+
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return $path;
@@ -81,6 +94,8 @@ sub open_directory {
 
 sub close_directory {
     my ($self, $path, $pool) = @_;
+    $self->output_prop_diff ($path, $pool);
+    delete $self->{info}{$path};
 }
 
 sub delete_entry {
@@ -88,11 +103,13 @@ sub delete_entry {
 }
 
 sub change_file_prop {
-    my ($self, $path, @arg) = @_;
+    my ($self, $path, $name, $value) = @_;
+    $self->{info}{$path}{prop}{$name} = $value;
 }
 
 sub change_dir_prop {
-    my ($self, $path, @arg) = @_;
+    my ($self, $path, $name, $value) = @_;
+    $self->{info}{$path}{prop}{$name} = $value;
 }
 
 sub close_edit {

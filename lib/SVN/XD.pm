@@ -297,8 +297,12 @@ sub do_revert {
     my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
 
     my $revert = sub {
-	unless (-e $_[1] || $xdroot->check_path ($_[0]) == $SVN::Node::file) {
-	    mkdir $_[1];
+	my $kind = $xdroot->check_path ($_[0]);
+	if ($kind == $SVN::Node::none) {
+	    print "$_[1] is not versioned, ignored\n";
+	}
+	elsif ($kind == $SVN::Node::dir) {
+	    mkdir $_[1] unless -e $_[1];
 	}
 	else {
 	    my $fh = get_fh ($xdroot, '>', $_[0], $_[1]);
@@ -321,11 +325,17 @@ sub do_revert {
 	print "Reverted $_[1]\n";
     };
 
+    my $revert_item = sub {
+	exists $info->{checkout}->get ($_[1])->{schedule} ?
+	    &$unschedule (@_) : &$revert (@_);
+    };
+
     if ($arg{recursive}) {
 	SVN::XD::checkout_delta ($info,
 				 %arg,
 				 baseroot => $xdroot,
 				 xdroot => $xdroot,
+				 targets => $arg{targets},
 				 delete_verbose => 1,
 				 absent_verbose => 1,
 				 strict_add => 1,
@@ -335,14 +345,15 @@ sub do_revert {
 				  cb_revert => $revert,
 				  cb_unschedule => $unschedule,
 				 ),
-			    );
+				);
     }
     else {
-	if (exists $info->{checkout}->get ($arg{copath})->{schedule}) {
-	    &$unschedule (undef, $arg{copath});
+	if ($arg{targets}) {
+	    &$revert_item ("$arg{path}/$_", "$arg{copath}/$_")
+		for @{$arg{targets}};
 	}
 	else {
-	    &$revert ($arg{path}, $arg{copath});
+	    &$revert_item ($arg{path}, $arg{copath});
 	}
     }
 

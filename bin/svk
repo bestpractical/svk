@@ -198,6 +198,23 @@ sub find_repos_from_co_maybe {
     return ($repospath, $path, $copath, $cinfo, $repos);
 }
 
+sub find_depotname {
+    my ($target, $can_be_co) = @_;
+    my ($cinfo);
+    if ($can_be_co) {
+	(undef, undef, $cinfo) = eval { find_repos_from_co ($target, 0) };
+	if ($@) {
+	    undef $@;
+	}
+	else {
+	    $target = $cinfo->{depotpath};
+	}
+    }
+
+    find_repos ($target, 0);
+    return ($target =~ m|^/(.*?)/|);
+}
+
 =head2 update (up)
 
 Bring changes from the repository into checkout copies.
@@ -375,6 +392,9 @@ sub diff {
 				      my $base = $baseroot->file_contents ("$path/$rpath");
 				      return $base;
 				  },
+	      cb_baseprop => sub { my ($rpath, $pname) = @_;
+				   return $baseroot->node_prop ("$path/$rpath", $pname);
+			       },
 	      llabel => "revision $fromrev",
 	      rlabel => "revision $torev",
 	      lpath  => $path,
@@ -420,8 +440,8 @@ sub diff {
 		    $baseroot->file_contents ("$path/$rpath");
 		},
 	      cb_baseprop =>
-	      sub { my ($rpath, $prop) = @_;
-		    $baseroot->node_prop ("$path/$rpath", $prop);
+	      sub { my ($rpath, $pname) = @_;
+		    return $baseroot->node_prop ("$path/$rpath", $pname);
 	      },
 	      cb_llabel =>
 	      sub { my ($rpath) = @_;
@@ -793,18 +813,17 @@ sub revert {
     my $rec = 0;
     die unless GetOptions ("R|recursive"	=> \$rec);
 
-    for my $copath (@ARGV) {
-	$copath = Cwd::abs_path ($copath || '');
-	my ($repospath, $path, undef, $repos) =
-	    find_repos_from_co ($copath, 1);
+    my (undef, $copath, @targets) = condense (@ARGV);
 
-	SVN::XD::do_revert ($info,
-			    repos => $repos,
-			    copath => $copath,
-			    path => $path,
-			    recursive => $rec,
-			   );
-    }
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    SVN::XD::do_revert ($info,
+			repos => $repos,
+			copath => $copath,
+			path => $path,
+			targets => @targets ? \@targets : undef,
+			recursive => $rec,
+		       );
 }
 
 =head2 log
@@ -902,10 +921,11 @@ Describe a change.
 
 sub describe {
     local @ARGV = @_;
-    my ($rev) = (@ARGV);
+    my ($chg, $target) = @ARGV;
+    my ($depot) = find_depotname ($target || '//', 1);
 
-    &log ('-r', $rev, '//');
-    &diff ('-r', ($rev-1).":$rev", '//');
+    &log ('-r', $chg, "/$depot/");
+    &diff ('-r', ($chg-1).":$chg", "/$depot/");
 }
 
 =head2 commit (ci)
@@ -1573,8 +1593,7 @@ sub cmerge {
 				path => $path,
 				message => "cherry picking merge $chgspec to $dst",
 			       ) unless $check_only;
-    # XXX: clean me up!
-    my ($depot) = $src =~ m|^/(.*?)/|;
+    my ($depot) = find_depotname ($src);
 
     merge ('-a', ($message) ? ('-m', $message) : (), "/$depot$tmpbranch", $dst);
 }
