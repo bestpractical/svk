@@ -278,6 +278,85 @@ sub do_revert {
     }
 }
 
+sub _delta_content {
+    my ($info, %arg) = @_;
+
+    my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef);
+
+    SVN::TxDelta::send_stream ($arg{fh}, @$handle)
+	    if $handle && $#{$handle} > 0;
+}
+
+sub _delta_file {
+    my ($info, %arg) = @_;
+
+    unless (-e $arg{copath}) {
+	warn "$arg{path} removed";
+	if ($info->{checkout}->get_single ($arg{copath})->{schedule} eq 'delete') {
+	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
+	}
+	else {
+	    $arg{editor}->absent_file ($arg{entry}, $arg{baton});
+	}
+	return;
+    }
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
+    return if SVN::MergeEditor::md5($fh) eq
+	$arg{xdroot}->file_md5_checksum ($arg{path});
+
+    my $baton = $arg{editor}->open_file ($arg{entry}, $arg{baton}, 0);
+    seek $fh, 0, 0;
+    _delta_content ($info, %arg, baton => $baton, fh => $fh);
+    $arg{editor}->close_file ($baton);
+}
+
+sub _delta_dir {
+    my ($info, %arg) = @_;
+    my $entries = $arg{xdroot}->dir_entries ($arg{path});
+    unless (-d $arg{copath}) {
+	warn "$arg{path} removed";
+	if ($info->{checkout}->get_single ($arg{copath})->{schedule} eq 'delete') {
+	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
+	}
+	else {
+	    $arg{editor}->absent_directory ($arg{entry}, $arg{baton});
+	}
+	return;
+    }
+    my $baton = $arg{editor}->open_directory ($arg{entry}, $arg{baton});
+    for (keys %{$entries}) {
+	my $delta = $entries->{$_}->kind == $SVN::Node::file
+	    ? \&_delta_file : \&_delta_dir;
+	&{$delta} ($info, %arg,
+		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+		   baton => $baton,
+		   path => "$arg{path}/$_",
+		   copath => "$arg{copath}/$_");
+    }
+    $arg{editor}->close_directory ($baton);
+    # check scheduled addition
+    # chekc prop diff
+}
+
+sub checkout_delta {
+    my ($info, %arg) = @_;
+
+    my $kind = $arg{xdroot}->check_path ($arg{path});
+
+    my $baton = $arg{editor}->open_root ();
+
+    if ($kind == $SVN::Node::file) {
+	_delta_file ($info, %arg, baton => $baton);
+    }
+    elsif ($kind == $SVN::Node::dir) {
+	_delta_dir ($info, %arg, baton => $baton);
+    }
+    else {
+	die "unknown node type $arg{path}";
+    }
+
+    $arg{editor}->close_edit ();
+}
 
 use File::Find;
 

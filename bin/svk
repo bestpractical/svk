@@ -34,7 +34,28 @@ svk - a decentralized version control system
 
 =cut
 
-sub init {
+=head1 COMMANDS
+
+=cut
+
+=head2 help
+
+Describe the usage of this program or its subcommands.
+
+usage: help [SUBCOMMANDS..]
+
+=cut
+
+use Pod::Text;
+
+sub help {
+    my $cmd = shift;
+    my $parser = new Pod::Text->new ();
+    $parser->select("COMMANDS/.*\\b$cmd\\b.*");
+    $parser->parse_from_file($0);
+}
+
+sub _init {
     if (-d "$ENV{HOME}/.svk") {
 	$info = LoadFile ("$ENV{HOME}/.svk/config");
     }
@@ -47,12 +68,13 @@ sub init {
 	      };
 }
 
-sub update_info {
+sub _update_info {
     DumpFile ("$ENV{HOME}/.svk/config", $info)
 }
 
 sub find_repos {
     my ($depotpath, $open) = @_;
+    die "not depotspec" unless $depotpath;
     my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|
 	or die "not depot spec";
 
@@ -204,38 +226,25 @@ sub diff {
 	my $copath = File::Spec->rel2abs ($tgt || '');
 	($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    SVN::XD::checkout_crawler ($info,
-			       repos => $repos,
-			       copath => $copath,
-			       path => $path,
-			       rev => $cinfo->{revision},
-#			       cb_unknown =>
-#			       sub {
-#				   print "?  $_[1]\n";
-#			       },
-			       cb_add =>
-			       sub {
-				   return if -d $_[1];
-				   print "Index: $_[0]\n";
-				   print '=' x 66;
-				   print "\n";
-				   open my ($fh), $_[1];
-				   print Text::Diff::diff (\'', $fh);
-			       },
-			       cb_changed =>
-			       sub {
-				   my $content = $_[2]->file_contents($_[0]);
-				   print "Index: $_[0]\n";
-				   print '=' x 66;
-				   print "\n";
-				   local $/;
-				   $content = <$content>;
-				   my $fh = SVN::XD::get_fh
-				       ($_[2], '<', $_[0], $_[1]);
-				   print Text::Diff::diff (\$content, $fh)
-			       },
-			      );
+	my ($txn, $baseroot) = SVN::XD::create_xd_root ($info,
+							path => $path,
+							repos => $repos,
+							copath => $copath);
+	my $editor = SVN::DiffEditor->new
+	    ( cb_getbase => sub { my ($rpath) = @_;
+				  $baseroot->file_contents ("$path/$rpath");
+			      }
+	    );
 
+	undef $@;
+
+	SVN::XD::checkout_delta ($info,
+				 repos => $repos,
+				 copath => $copath,
+				 path => $path,
+				 xdroot => $baseroot,
+				 editor => $editor,
+				);
     }
 }
 
@@ -897,8 +906,8 @@ no strict 'refs';
 #$xd = SVN::XD->new (%$info);
 
 if ($0 eq __FILE__) {
-    if ($cmd && main->can($cmd)) {
-	init();
+    if ($cmd !~ m/_/ && main->can($cmd)) {
+	_init();
 
 	$SIG{INT} = sub {
 	    update_info();
@@ -906,10 +915,10 @@ if ($0 eq __FILE__) {
 	};
 
 	&$cmd(@ARGV);
-	update_info()
+	_update_info()
     }
     else {
-	print "command not recognized\n";
+	print "command not recognized, try $0 help\n";
     }
 }
 

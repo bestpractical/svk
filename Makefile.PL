@@ -13,7 +13,7 @@ require CPANPLUS;CPANPLUS::install$p};eval"use $p $v;1"or eval{
 require CPAN;CPAN::install$p};eval"use $p $v;1"||die"*** Please
 manually install $p $v from cpan.org first...\n"}}}
 
-my $required_svn = '0.34.0';
+my $required_svn = '0.35.0';
 
 use ExtUtils::AutoInstall
     ( -version        => '0.40',
@@ -21,6 +21,7 @@ use ExtUtils::AutoInstall
       [ 'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Text::Diff'            => '0',
+        'IO::String'            => '0',
         'Data::Hierarchy'       => '0.13',
         'SVN::Simple::Edit'     => '0.21',
       ],
