@@ -7,7 +7,7 @@ use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 1;
+    return if $#arg < 1;
     return ($arg[0], map {$self->arg_co_maybe ($_)} @arg[1..$#arg]);
 }
 
@@ -17,31 +17,9 @@ sub lock {
 	for (@_[1..$#_]);
 }
 
-sub do_propdel {
-    my ($self, $pname, $target) = @_;
-
-    if ($target->{copath}) {
-	die "Propdel on checkout path not supported yet";
-	$self->{xd}->do_propset
-	    ( %$target,
-	      propname => $pname,
-	      propvalue => undef,
-	    );
-    }
-    else {
-	$self->get_commit_message ();
-	$self->do_propset_direct ( author => $ENV{USER},
-				   %$target,
-				   propname => $pname,
-				   propvalue => undef,
-				   message => $self->{message},
-				 );
-    }
-}
-
 sub run {
     my ($self, $pname, @targets) = @_;
-    $self->do_propdel ($pname, $_) for @targets;
+    $self->do_propset ($pname, undef, $_) for @targets;
     return;
 }
 

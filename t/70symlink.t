@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # XXX: skip on platform not supporting symlinks
 use Test::More tests => 13;
 use strict;

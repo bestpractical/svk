@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 use strict;
 require 't/tree.pl';
 use Test::More;
@@ -52,12 +52,12 @@ is_output ($svk, 'smerge', ['-C', '//l', '//m'],
 $svk->merge ('-a', '-m', 'simple smerge from source', '//m', '//l');
 $srev = $srepos->fs->youngest_rev;
 $svk->update ($copath);
-is_deeply (SVK::XD::do_proplist ($xd,
-				 repos => $repos,
-				 copath => $copath,
-				 path => '/l',
-				 rev => $repos->fs->youngest_rev,
-				),
+is_deeply ($xd->do_proplist (SVK::Target->new
+			     ( repos => $repos,
+			       copath => $corpath,
+			       path => '/l',
+			       revision => $repos->fs->youngest_rev,
+			     )),
 	   {'svk:merge' => "$suuid:/A:$srev",
 	    'svm:source' => 'file://'.$srepos->path.'!/A',
 	    'svm:uuid' => $suuid }, 'simple smerge from source');
@@ -74,11 +74,11 @@ is_output ($svk, 'smerge', ['-m', 'simple smerge from local', '//l', '//m'],
 	    'Committed revision 8 from revision 4.'], 'merge up');
 $svk->sync ('//m');
 
-is_deeply (SVK::XD::do_proplist ($xd,
-				 repos => $repos,
-				 path => '/m',
-				 rev => $repos->fs->youngest_rev,
-				),
+is_deeply ($xd->do_proplist (SVK::Target->new
+			     ( repos => $repos,
+			       path => '/m',
+			       revision => $repos->fs->youngest_rev,
+			     )),
 	   {'svk:merge' => "$uuid:/l:$rev",
 	    'svm:source' => 'file://'.$srepos->path.'!/A',
 	    'svm:uuid' => $suuid },

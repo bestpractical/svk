@@ -104,6 +104,7 @@ t/25log.t
 t/30annotate.t
 t/31cat.t
 t/32list.t
+t/33prop.t
 t/70symlink.t
 t/tree.pl
 utils/extract-docs

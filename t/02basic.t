@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 use Test::More tests => 12;
 use strict;
 require 't/tree.pl';
@@ -66,11 +66,12 @@ $svk->commit ('-m', 'commit message here', "$copath/A");
 $svk->ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');
 $svk->update ($copath);
 
-ok (eq_hash ($xd->do_proplist ( repos => $repos,
-				copath => $copath,
+ok (eq_hash ($xd->do_proplist ( SVK::Target->new
+			      ( repos => $repos,
+				copath => $corpath,
 				path => '/A',
-				rev => $repos->fs->youngest_rev,
-			      ),
+				revision => $repos->fs->youngest_rev,
+			      )),
 	     { directprop => 'propvalue',
 	       someprop => 'propvalue',
 	       moreprop => 'propvalue'}), 'prop matched');

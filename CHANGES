@@ -39,6 +39,8 @@ svk mirror --upgrade // (and other depots if you have).
 
 * Fix checkout path reporting and anchoring problem.
 
+* Implement propdel on checkout copy.
+
 [Changes for 0.17 - 17 Jul, 2004]
 
 * Optimize checkout_delta with mtime/inode/size signatures.

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 use Test::More tests => 5;
 use strict;
 require 't/tree.pl';
@@ -14,7 +14,7 @@ overwrite_file ("$copath/trunk/test.pl", "foobarbazzz\n");
 $svk->add ("$copath/trunk");
 $svk->commit ('-m', 'init', "$copath");
 
-overwrite_file ("$copath/trunk/test.pl", q|#!/usr/bin/perl
+overwrite_file ("$copath/trunk/test.pl", q|#!/usr/bin/perl -w
 
 sub main {
     print "this is main()\n";

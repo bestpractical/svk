@@ -577,17 +577,9 @@ sub do_delete {
 }
 
 sub do_proplist {
-    my ($self, %arg) = @_;
+    my ($self, $target) = @_;
 
-    my $props = {};
-    my $xdroot = $arg{rev} ? $arg{repos}->fs->revision_root ($arg{rev})
-	: $self->xdroot (%arg);
-
-    $props = $self->get_props ($xdroot, $arg{path},
-			       $arg{rev} ? undef : $arg{copath})
-	if $xdroot;
-
-    return $props;
+    return $self->get_props ($target->root ($self), $target->{path}, $target->{copath});
 }
 
 sub do_propset {
@@ -609,13 +601,14 @@ sub do_propset {
 	if $entry->{'.schedule'} eq 'delete';
     %values = %{$entry->{'.newprop'}}
 	if exists $entry->{'.schedule'};
+    my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
+
     $self->{checkout}->store ($arg{copath},
 			      { '.schedule' => $entry->{'.schedule'} || 'prop',
 				'.newprop' => {%values,
-					    $arg{propname} =>
-					    $arg{propvalue},
-					   }});
-    print " M $arg{copath}\n" unless $arg{quiet};
+					    $arg{propname} => $pvalue
+					      }});
+    print " M  $arg{report}\n" unless $arg{quiet};
 
     $self->fix_permission ($arg{copath}, $arg{propvalue})
 	if $arg{propname} eq 'svn:executable';
@@ -836,7 +829,7 @@ sub _delta_file {
     $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool)
 	if keys %$newprop;
 
-    $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_}, $pool)
+    $arg{editor}->change_file_prop ($baton, $_, ref ($newprop->{$_}) ? undef : $newprop->{$_}, $pool)
 	for sort keys %$newprop;
 
     if (!$arg{base} ||
@@ -894,7 +887,7 @@ sub _delta_dir {
 
     if (($schedule eq 'prop' || $arg{add}) && (!defined $targets)) {
 	my $newprop = $cinfo->{'.newprop'};
-	$arg{editor}->change_dir_prop ($baton, $_, $newprop->{$_}, $pool)
+	$arg{editor}->change_dir_prop ($baton, $_, ref ($newprop->{$_}) ? undef : $newprop->{$_}, $pool)
 	    for sort keys %$newprop;
     }
 
@@ -1193,9 +1186,13 @@ sub get_props {
 	    if $root->check_path ($path) == $SVN::Node::none;
 	$props = $root->node_proplist ($path);
     }
+    $props = {%$props, %{$entry->{'.newprop'}}};
+    for (keys %$props) {
+	delete $props->{$_}
+	    if ref ($props->{$_}) && !defined ${$props->{$_}};
+    }
 
-    return {%$props,
-	    %{$entry->{'.newprop'}}};
+    return $props;
 }
 
 sub DESTROY {

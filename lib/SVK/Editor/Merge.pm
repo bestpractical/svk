@@ -412,53 +412,60 @@ sub close_directory {
     $self->{storage}->close_directory ($self->{storage_baton}{$path}, $pool);
 }
 
+# returns undef for deleting this, a hash for partial delete.
+# returns 1 for merged delete
+# Note that empty hash means don't delete.
 sub _check_delete_conflict {
     my ($self, $path, $rpath, $kind, $pdir, $pool) = @_;
-    if ($kind == $SVN::Node::file) {
-	my $md5 = $self->{base_root}->file_md5_checksum ($rpath, $pool);
-	if (my $local = $self->{cb_localmod}->($path, $md5, $pool)) {
-	    return {};
+    return $self->{cb_localmod}->
+	($path, $self->{base_root}->file_md5_checksum ($rpath, $pool), $pool)
+	    ? {} : undef
+		if $kind == $SVN::Node::file;
+
+    my $dirmodified = $self->{cb_dirdelta}->($path, $self->{base_root}, $rpath);
+    my $entries = $self->{base_root}->dir_entries ($rpath);
+    my ($torm, $modified, $merged);
+    for my $name (sort keys %$entries) {
+	my ($cpath, $crpath) = ("$path/$name", "$rpath/$name");
+	if (my $mod = $dirmodified->{$name}) {
+	    if ($mod eq 'D') {
+		$self->{notify}->node_status ($cpath, 'd');
+		++$merged;
+	    }
+	    else {
+		++$modified;
+		$self->node_conflict ($cpath);
+	    }
 	}
-    }
-    elsif ($kind == $SVN::Node::dir) {
-	# XXX: clean these up
-	my $dirmodified = $self->{cb_dirdelta}->($path, $self->{base_root}, $rpath);
-	my $entries = $self->{base_root}->dir_entries ($rpath);
-	my ($torm, $modified);
-	for (sort keys %$entries) {
-	    if (my $mod = $dirmodified->{$_}) {
-		if ($mod eq 'D') {
-		    $self->{notify}->node_status ("$path/$_", 'd');
-		}
-		else {
+	else { # dir or unmodified file
+	    my $entry = $entries->{$name};
+	    $torm->{$name} = undef, next
+		if $entry->kind == $SVN::Node::file;
+
+	    if ($self->{cb_exist}->($cpath)) {
+		$torm->{$name} = $self->_check_delete_conflict
+		    ($cpath, $crpath, $SVN::Node::dir, $pdir, $pool);
+		if (ref ($torm->{$name})) {
+		    $self->node_conflict ($cpath);
 		    ++$modified;
-		    $self->node_conflict ("$path/$_");
+		}
+		if ($torm->{$name} && $torm->{$name} == 1) {
+		    ++$merged;
 		}
 	    }
 	    else {
-		my $entry = $entries->{$_};
-		if ($entry->kind == $SVN::Node::dir) {
-		    $torm->{$_} = $self->_check_delete_conflict ("$path/$_", "$rpath/$_", $entry->kind, $pdir, $pool);
-		    if ($torm->{$_}) {
-			$self->node_conflict ("$path/$_");
-			$modified++;
-		    }
-		}
-		else {
-		    $torm->{$_} = 1;
-		}
+		$torm->{$name} = 1;
+		++$merged;
 	    }
 	}
-	if ($modified) {
-	    # open path
-	    $self->{notify}->node_status ("$path/$_", 'D')
-		for keys %$torm;
-	    # close path
-	    return $torm;
-	}
-	return $torm if $modified;
     }
-    return;
+    if ($modified || $merged) {
+	# maybe leave the status to _partial delete?
+	$self->{notify}->node_status ("$path/$_", defined $torm->{$_} ? 'd' : 'D')
+	    for grep {!ref($torm->{$_})} keys %$torm;
+    }
+    return $torm if $modified;
+    return $merged ? 1 : undef;
 }
 
 sub _partial_delete {
@@ -466,11 +473,13 @@ sub _partial_delete {
     my $baton = $self->{storage}->open_directory ($path, $pbaton,
 						  $self->{cb_rev}->($path), $pool);
     for (sort keys %$torm) {
+	my $cpath = "$path/$_";
 	if (ref $torm->{$_}) {
-	    $self->_partial_delete ($self, $torm->{$_}, "$path/$_", $baton, $pool);
+	    $self->_partial_delete ($torm->{$_}, $cpath, $baton,
+				    SVN::Pool->new ($pool));
 	}
-	else {
-	    $self->{storage}->delete_entry ("$path/$_", $self->{cb_rev}->("$path/$_"),
+	elsif ($self->{cb_exist}->($cpath)) {
+	    $self->{storage}->delete_entry ($cpath, $self->{cb_rev}->($cpath),
 					    $baton, $pool);
 	}
     }

@@ -7,7 +7,7 @@ use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 2;
+    return if $#arg < 2;
     return (@arg[0,1], map {$self->arg_co_maybe ($_)} @arg[2..$#arg]);
 }
 

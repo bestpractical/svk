@@ -3,7 +3,7 @@ control system.
 
 The latest version could be found at
 
-    svn://svn.clkao.org/svk
+    svn://svn.clkao.org/svk/trunk
 
 You need Module::Install if you are not installing from release tarballs.
 

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 use strict;
 require 't/tree.pl';
 use Test::More;
@@ -12,17 +12,17 @@ my ($copath, $corpath) = get_copath ('smerge');
 
 $svk->mkdir ('-m', 'the trunk', '//trunk');
 $svk->co ('//trunk', $copath);
-overwrite_file ("$copath/test.pl", "#!/usr/bin/perl\nsub { 'this is sub' }\n#common\n");
+overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub' }\n#common\n");
 $svk->add ("$copath/test.pl");
 $svk->commit ('-m', 'test.pl', $copath);
 
 $svk->cp ('-m', 'local branch of trunk', '//trunk', '//local');
 
-overwrite_file ("$copath/test.pl", "#!/usr/bin/perl\nsub { 'this is sub on trunk' }\n#common\n\nsub newsub { undef }\n");
+overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub on trunk' }\n#common\n\nsub newsub { undef }\n");
 $svk->commit ('-m', 'change on trunk', $copath);
 
 $svk->switch ('//local', $copath);
-overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w\nsub { 'this is sub on local' }\n#common\n\nsub newsub { undef }\n");
+overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -w -w\nsub { 'this is sub on local' }\n#common\n\nsub newsub { undef }\n");
 
 $svk->commit ('-m', 'change on local', $copath);
 

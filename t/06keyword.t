@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 use strict;
 use Test::More tests => 9;
 require 't/tree.pl';

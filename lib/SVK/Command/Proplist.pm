@@ -25,17 +25,16 @@ sub run {
 
     for my $target (@arg) {
 	my $rev = $self->{rev};
-	$rev ||= $target->{repos}->fs->youngest_rev
-	    unless $target->{copath};
-
-	my $props = $self->{xd}->do_proplist ( %$target,
-					       rev => $rev,
-					     );
+	if (defined $self->{rev}) {
+	    delete $target->{copath};
+	    $target->{revision} = $rev;
+	}
+	my $props = $self->{xd}->do_proplist ( $target );
 	return unless %$props;
-	my $report = $target->{copath} || $target->{depotpath};
-	print loc("Properties on %1:\n", $report);
-	while (my ($key, $value) = each (%$props)) {
-	    print loc("%1: %2\n", $key, $value);
+	print loc("Properties on %1:\n", $target->{report} || '.');
+	for my $key (sort keys %$props) {
+	    my $value = $props->{$key};
+	    print $self->{verbose} ? "  $key: $value\n" : "  $key\n";
 	}
     }
 
