@@ -19,7 +19,7 @@ sub parse_arg {
 
 sub run {
     my ($self, $chg, $target) = @_;
-    $self->{revspec} = $chg;
+    $self->{revspec} = [$chg];
     $self->SVK::Command::Log::run ($target);
     $self->{revspec} = [$chg-1, $chg];
     $self->SVK::Command::Diff::run ($target);

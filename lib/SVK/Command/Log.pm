@@ -12,7 +12,7 @@ use Date::Format qw(time2str);
 
 sub options {
     ('l|limit=i'	=> 'limit',
-     'r|revision=s'	=> 'revspec',
+     'r|revision=s@'	=> 'revspec',
      'x|cross'		=> 'cross',
      'v|verbose'	=> 'verbose');
 }
@@ -43,21 +43,20 @@ sub run {
     my ($self, $target) = @_;
     # as_depotpath, but use the base revision rather than youngest
     # for the target.
-    $target->as_depotpath ($self->{xd}{checkout}->get($target->copath)->{revision})
-	if defined $target->{copath};
-    my $fs = $target->{repos}->fs;
+
     my ($fromrev, $torev);
     # move to general revspec parser in svk::command
     if ($self->{revspec}) {
-	($fromrev, $torev) = split /:/, $self->{revspec};
+        ($fromrev, $torev) = $self->resolve_revspec($target);
 	$torev ||= $fromrev;
-	for ($fromrev, $torev) {
-	    die loc ("%1 is not a number.\n", $_) unless m/^\d+$/;
-	}
     }
     $fromrev ||= $target->{revision};
     $torev ||= 0;
     $self->{cross} ||= 0;
+
+    $target->as_depotpath($self->find_path_base_rev($target))
+	if defined $target->{copath};
+    my $fs = $target->{repos}->fs;
 
     my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
 

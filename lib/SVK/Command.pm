@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
-		  $SEP IS_WIN32 HAS_SVN_MIRROR catdepot );
+		  $SEP IS_WIN32 HAS_SVN_MIRROR catdepot traverse_history);
 use SVK::I18N;
 use Encode;
 
@@ -882,6 +882,69 @@ svk use the default.
     }
 
     return $path;
+}
+
+sub resolve_revspec {
+    my ($self,$target) = @_;
+    my $fs = $target->{repos}->fs;
+    my $yrev = $fs->youngest_rev;
+    my ($r1,$r2);
+    if (my $revspec = $self->{revspec}) {
+        if ($#{$revspec} > 1) {
+            die loc ("Invliad -r.\n");
+        } else {
+            $revspec = [map {split /:/} @$revspec];
+            ($r1, $r2) = map {
+                $self->resolv_revision($target,$_);
+            } @$revspec;
+        }
+    }
+    return($r1,$r2);
+}
+
+sub resolv_revision {
+    my ($self,$target,$revstr) = @_;
+    my $fs = $target->{repos}->fs;
+    my $yrev = $fs->youngest_rev;
+    my $rev;
+    if($revstr =~ /^HEAD$/) {
+        $rev = $self->find_path_head_rev($target);
+    } elsif ($revstr =~ /^BASE$/) {
+        $rev = $self->find_path_base_rev($target);
+    } elsif ($revstr =~ /\D/) {
+        die loc("%1 is not a number",$revstr)
+    } else {
+        $rev = $revstr;
+    }
+    return $rev
+}
+
+sub find_path_base_rev {
+    my ($self,$target) = @_;
+    die(loc("BASE can only be issued with a check-out path\n"))
+        unless(defined($target->{copath}));
+    my $rev = $self->{xd}{checkout}->get($target->copath)->{revision};
+    return $rev;
+}
+
+sub find_path_head_rev {
+    my ($self,$target) = @_;
+    my $fs = $target->{repos}->fs;
+    my $yrev = $fs->youngest_rev;
+    my $limit = 1;
+    my $rev;
+
+    traverse_history (
+        root        => $fs->revision_root($yrev),
+        path        => $target->path,
+        cross       => 0,
+        callback    => sub {
+            return 0 if !$limit--; # last
+            $rev = $_[1];
+            return 1;
+        },
+    );
+    return $rev;
 }
 
 1;
