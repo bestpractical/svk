@@ -252,7 +252,7 @@ sub abs2rel {
 
 sub catfile {
     return File::Spec::Functions::catfile (
-	+shift, grep {defined and length} map splitdir($_), @_
+	grep {defined and length} +shift, map splitdir($_), @_
     )
 }
 
