@@ -5,7 +5,7 @@ use Cwd;
 
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 4;
+plan tests => 6;
 
 my $initial_cwd = getcwd;
 
@@ -97,3 +97,22 @@ is_output ($svk, "push", ["--from", "//m", "//l"], [
         "New merge ticket: $test_uuid:/A:5",
         "Committed revision 10."]);
 
+$svk->switch ("//m", $corpath_default);
+append_file ("$corpath_default/new-file", "some text\n");
+$svk->commit ('-m', 'modification to mirror', "$corpath_default");
+
+is_output ($svk, "pull", ["//l"], [
+        "Auto-merging (9, 11) /m to /l (base /m:9).",
+        "===> Auto-merging (9, 11) /m to /l (base /m:9).",
+        "U   new-file",
+        "New merge ticket: $test_uuid:/A:6",
+        "Committed revision 12."]);
+
+append_file ("$corpath_default/new-file", "some text\n");
+$svk->commit ('-m', 'modification to mirror', "$corpath_default");
+
+is_output ($svk, "pull", ['--lump', "//l"], [
+        "Auto-merging (11, 13) /m to /l (base /m:11).",
+        "U   new-file",
+        "New merge ticket: $test_uuid:/A:7",
+        "Committed revision 14."]);

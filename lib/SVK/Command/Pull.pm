@@ -24,6 +24,7 @@ sub parse_arg {
         $self->{log}++;
         $self->{to}++;
         $self->{incremental} = !$self->{lump};
+        $self->{message} ||= '' if !$self->{incremental};
         return $self->parse_arg (@arg);
     }
 
