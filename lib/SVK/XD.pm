@@ -870,6 +870,24 @@ sub _prop_changed {
     return SVN::Fs::props_changed ($root1, $path1, $root2, $path2);
 }
 
+sub _node_props {
+    my ($self, %arg) = @_;
+    my $schedule = $arg{cinfo}{'.schedule'} || '';
+    my $props = $arg{kind} ? $schedule eq 'replace' ? {} : $arg{xdroot}->node_proplist ($arg{path}) :
+	$arg{base_kind} ? $arg{base_root}->node_proplist ($arg{base_path}) : {};
+    my $newprops = (!$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none)
+	? $self->auto_prop ($arg{copath}) : $arg{cinfo}{'.newprop'};
+    my $fullprop = _combine_prop ($props, $newprops);
+    if ($arg{add}) {
+	$newprops = $fullprop;
+    }
+    elsif ($arg{base_root} ne $arg{xdroot} && $arg{base}) {
+	$newprops = _prop_delta ($arg{base_root}->node_proplist ($arg{base_path}), $fullprop)
+	    if $arg{kind} && $arg{base_kind} && _prop_changed (@arg{qw/base_root base_path xdroot path/});
+    }
+    return ($newprops, $fullprop)
+}
+
 sub _delta_file {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
@@ -886,20 +904,8 @@ sub _delta_file {
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
-    # This is getting too complicated, must make _delta_dir simpler.
-    my $props = $arg{kind} ? $schedule eq 'replace' ? {} : $arg{xdroot}->node_proplist ($arg{path}) :
-	$arg{base_kind} ? $arg{base_root}->node_proplist ($arg{base_path}) : {};
-    my $newprops = (!$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none)
-	? $self->auto_prop ($arg{copath}) : $cinfo->{'.newprop'};
-    my $fullprop = _combine_prop ($props, $newprops);
-    if ($arg{add}) {
-	$newprops = $fullprop;
-    }
-    elsif ($arg{base_root} ne $arg{xdroot} && $arg{base}) {
-	$newprops = _prop_delta ($arg{base_root}->node_proplist ($arg{base_path}), $fullprop)
-	    if $arg{kind} && $arg{base_kind} && _prop_changed (@arg{qw/base_root base_path xdroot path/});
-    }
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $fullprop);
+    my ($newprops, $fullprops) = $self->_node_props (%arg);
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $fullprops);
     my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
 
@@ -974,12 +980,6 @@ sub _delta_dir {
 	: $arg{editor}->open_directory ($arg{entry}, $arg{baton},
 					$arg{cb_rev}->($arg{entry}), $pool);
 
-    if (($schedule eq 'prop' || $arg{add}) && (!defined $targets)) {
-	my $newprop = $cinfo->{'.newprop'};
-	$arg{editor}->change_dir_prop ($baton, $_, ref ($newprop->{$_}) ? undef : $newprop->{$_}, $pool)
-	    for sort keys %$newprop;
-    }
-
     my $signature;
     if ($self->{signature} && $arg{xdroot} eq $arg{base_root}) {
 	$signature = $self->{signature}->load ($arg{copath});
@@ -1031,10 +1031,8 @@ sub _delta_dir {
 
     # check scheduled addition
     # XXX: does this work with copied directory?
-    my $ignore = ignore ($arg{add} ? () :
-			 split ("\n", $self->get_props
-				($arg{xdroot}, $arg{path},
-				 $arg{copath}, $cinfo)->{'svn:ignore'} || ''));
+    my ($newprops, $fullprops) = $self->_node_props (%arg);
+    my $ignore = ignore (split ("\n", $fullprops->{'svn:ignore'} || ''));
 
     my @direntries;
     unless (defined $targets && !keys %$targets) {
@@ -1043,7 +1041,6 @@ sub _delta_dir {
     }
 
     for my $entry (@direntries) {
-	next if $entry =~ m/$ignore/;
 	my $newtarget;
 	if (defined $targets) {
 	    next unless exists $targets->{$entry};
@@ -1060,6 +1057,7 @@ sub _delta_dir {
 	my $sche = $ccinfo->{'.schedule'} || '';
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	unless ($add) {
+	    next if !defined $targets && $entry =~ m/$ignore/ ;
 	    if ($arg{cb_unknown}) {
 		if ($arg{unknown_verbose}) {
 		    $self->_unknown_verbose (%arg, %newpaths);
@@ -1086,6 +1084,11 @@ sub _delta_dir {
 			  base_root => $fromroot,
 			  base_path => $copyfrom) : (),
 		      );
+    }
+
+    unless (defined $targets) {
+	$arg{editor}->change_dir_prop ($baton, $_, ref ($newprops->{$_}) ? undef : $newprops->{$_}, $pool)
+	    for sort keys %$newprops;
     }
 
     if (defined $targets) {

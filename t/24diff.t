@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -379,4 +379,32 @@ is_output ($svk, 'diff', ['C'],
 	    '+fnord',
 	    '+copied and modified on C']);
 
-# XXX: test with prop changes and also external
+$svk->revert ('-R', '.');
+$svk->resolved ('-R', '.');
+$svk->update;
+
+overwrite_file ("A/newfile", "foobar\nnewline\nfnord\n");
+$svk->add ('A/newfile');
+$svk->ps ('anewprop', 'value', 'A');
+$svk->ps ('anewprop', 'value', 'A/newfile');
+$svk->commit ('-m', 'some props'); # r6
+is_output ($svk, 'diff', ['-r5'],
+	   ['=== A/newfile',
+	    '==================================================================',
+	    '--- A/newfile  (revision 5)',
+	    '+++ A/newfile  (local)',
+	    '@@ -0,0 +1,3 @@',
+	    '+foobar',
+	    '+newline',
+	    '+fnord',
+	    '',
+	    'Property changes on: A/newfile',
+	    '___________________________________________________________________',
+	    'Name: anewprop',
+	    ' +value',
+	    '', '',
+	    'Property changes on: A',
+	    '___________________________________________________________________',
+	    'Name: anewprop',
+	    ' +value'
+	   ]);
