@@ -1018,7 +1018,7 @@ sub _delta_dir {
 	lstat ($newpaths{copath});
 	# XXX: warn about unreadable entry?
 	next unless -r _ or (HAS_SYMLINK and -l _);
-	my $delta = (-d _ and not (HAS_SYMLINK and -l $_))
+	my $delta = (-d _ and not (HAS_SYMLINK and -l _))
 	    ? \&_delta_dir : \&_delta_file;
 	my $copyfrom = $ccinfo->{'.copyfrom'};
 	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
