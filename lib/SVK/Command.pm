@@ -84,9 +84,9 @@ sub invoke {
 	$ret = eval { $cmd->run (@args) };
 	$xd->unlock () if $xd;
     }
+    print $ret if $ret;
     select $ofh if $output;
     die $@ if $@;
-    return $ret;
 }
 
 sub brief_usage {

@@ -8,8 +8,7 @@ my ($copath, $corpath) = get_copath ('delete');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 
-$svk->delete;
-ok ($output =~ m'SYNOPSIS', 'delete - help');
+is_output_like ($svk, 'delete', [], qr'SYNOPSIS', 'delete - help');
 
 chdir ($copath);
 mkdir ('A');
@@ -21,15 +20,13 @@ overwrite_file ("A/deep/baz", "foobar");
 $svk->add ('A');
 $svk->commit ('-m', 'init');
 
-TODO: {
-local $TODO = 'report path given';
 is_output ($svk, 'delete', ['A/foo'],
-	   ['D  A/foo'], 'delete - file');
-}
+	   ['D   A/foo'], 'delete - file');
+
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'delete', ["$corpath/A/foo"],
-	   ["D  $corpath/A/foo"], 'delete - file - abspath');
+	   ["D   $corpath/A/foo"], 'delete - file - abspath');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'delete', ['-m', 'rm directly', '//A/deep'],

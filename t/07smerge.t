@@ -94,19 +94,18 @@ append_file ("$copath/be", "modification on local\n");
 append_file ("$copath/Q/qu", "modified on local\n");
 $svk->rm ("$copath/Q/qz");
 $svk->commit ('-m', 'commit on local', $copath);
-$svk->smerge ('-C', '//m', '//l');
-is ($output, "Auto-merging (8, 11) /m to /l (base /m:8).
- U  Q/qu
-    Q/qz - skipped
-C   be
-    newdir - skipped
-g   newfile
-A   newdir2
-A   newfile2
-New merge ticket: $suuid:/A:5
-Empty merge.
-1 conflict found.
-", 'smerge - added file collision');
+is_output ($svk, 'smerge', ['-C', '//m', '//l'],
+	   ['Auto-merging (8, 11) /m to /l (base /m:8).',
+	    ' U  Q/qu',
+	    '    Q/qz - skipped',
+	    'C   be',
+	    '    newdir - skipped',
+	    'g   newfile',
+	    'A   newdir2',
+	    'A   newfile2',
+	    "New merge ticket: $suuid:/A:5",
+	    'Empty merge.', '1 conflict found.'],
+	   'smerge - added file collision');
 $svk->smerge ('-C', '//m', $copath);
 $svk->smerge ('//m', $copath);
 $svk->status ($copath);

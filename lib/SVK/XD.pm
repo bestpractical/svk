@@ -6,9 +6,8 @@ require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
 require SVK::Editor::Merge;
-use SVK::Editor::Revert;
+use SVK::Editor::Status;
 use SVK::Editor::Delay;
-use SVK::Editor::Delete;
 use SVK::Editor::XD;
 use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor );
@@ -383,13 +382,22 @@ sub do_delete {
 			    absent_as_delete => 1,
 			    delete_verbose => 1,
 			    absent_verbose => 1,
-			    editor => SVK::Editor::Delete->new
-			    ( copath => $arg{copath},
-			      dpath => $arg{path},
-			      cb_delete => sub {
-				  push @deleted, $_[1];
-			      }
-			    ),
+			    editor => SVK::Editor::Status->new
+			    ( notify => SVK::Notify->new
+			      ( cb_flush => sub {
+				    my ($path, $status) = @_;
+				    my $rpath = "$arg{report}$path";
+				    my $st = $status->[0];
+				    if ($st eq 'M') {
+					die loc("%1 changed", $rpath);
+				    }
+				    elsif ($st eq 'D') {
+					push @deleted, "$arg{copath}/$path";
+				    }
+				    elsif (-f $rpath) {
+					die loc("%1 is scheduled, use 'svk revert'", $rpath);
+				    }
+				})),
 			    cb_unknown => sub {
 				die loc("%1 is not under version control", $_[0]);
 			    }
@@ -408,7 +416,9 @@ sub do_delete {
 	 }, @paths) if @paths;
 
     for (@deleted) {
-	print "D  $_\n" unless $arg{quiet};
+	my $rpath = $_;
+	$rpath =~ s|^\Q$arg{copath}\E/|$arg{report}|;
+	print "D   $rpath\n" unless $arg{quiet};
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
 
@@ -469,6 +479,11 @@ sub do_revert {
 		      '.copyfrom' => undef,
 		      '.copyfrom_rev' => undef,
 		      '.newprop' => undef};
+
+    my $unschedule = sub {
+	$self->{checkout}->store ($_[1], $storeundef);
+	print loc("Reverted %1\n", $_[1]);
+    };
     my $revert = sub {
 	# XXX: need to repsect copied resources
 	my $kind = $xdroot->check_path ($_[0]);
@@ -485,16 +500,7 @@ sub do_revert {
 	    slurp_fh ($content, $fh);
 	    close $fh;
 	}
-	$self->{checkout}->store ($_[1], $storeundef);
-	print loc("Reverted %1\n", $_[1]);
-    };
-
-    my $unschedule = sub {
-	my $sche = $self->{checkout}->get ($_[1])->{'.schedule'};
-	$self->{checkout}->store ($_[1], $storeundef);
-#	-d $_[1] ? rmtree ([$_[1]]) : unlink($_[1])
-#	    if $sche eq 'add';
-	print loc("Reverted %1\n", $_[1]);
+	$unschedule->(@_);
     };
 
     my $revert_item = sub {
@@ -509,13 +515,21 @@ sub do_revert {
 				targets => $arg{targets},
 				delete_verbose => 1,
 				absent_verbose => 1,
-				editor => SVK::Editor::Revert->new
-				( copath => $arg{copath},
-				  dpath => $arg{path},
-				  cb_revert => $revert,
-				  cb_unschedule => $unschedule,
-				),
-			      );
+				editor => SVK::Editor::Status->new
+				( notify => SVK::Notify->new
+				  ( cb_flush => sub {
+					my ($path, $status) = @_;
+					my $dpath = $path ? "$arg{path}/$path" : $arg{path};
+					my $copath = $path ? "$arg{copath}/$path" : $arg{copath};
+					if ($status->[0] eq 'M' || $status->[0] eq 'D' || $status->[0] eq '!') {
+					    $revert->($dpath, $copath);
+					}
+					else {
+					    $unschedule->($dpath, $copath);
+					}
+				    },
+				  ),
+				));
     }
     else {
 	if ($arg{targets}) {
@@ -813,8 +827,9 @@ sub checkout_delta {
 	    if ($arg{unknown_verbose}) {
 		$arg{cb_unknown}->('', $arg{copath})
 		    if $arg{targets};
+		my $ignore = ignore ();
 		find (sub {
-#			  return if m/$ignore/;
+			  return if m/$ignore/;
 			  my $dpath = $File::Find::name;
 			  if ($dpath eq $arg{copath}) {
 			      $dpath = '';

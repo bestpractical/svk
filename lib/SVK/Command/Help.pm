@@ -9,7 +9,7 @@ sub parse_arg { shift; @_ ? @_ : ''; }
 
 sub run {
     my $self = shift;
-    unless (@_ && $_[0]) {
+    unless ($_[0]) {
 	my @cmd;
 	my $dir = $INC{'SVK/Command.pm'};
 	$dir =~ s/\.pm$//;

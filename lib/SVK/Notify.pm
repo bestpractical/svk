@@ -8,7 +8,7 @@ SVK::Notify - svk entry status notification
 
 =head1 SYNOPSIS
 
-    $notify = SVK::Notfy->new ( report => $report, anchor => $anchor );
+    $notify = SVK::Notify->new;
     $notify->node_status ('foo/bar', 'M');
     $notify->prop_status_('foo/bar', 'M');
     $notify->flush ('foo/bar');
@@ -19,6 +19,17 @@ SVK::Notify - svk entry status notification
 
 
 =cut
+
+sub flush_print {
+    my ($path, $status) = @_;
+    no warnings 'uninitialized';
+    print sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $path);
+}
+
+sub skip_print {
+    my ($path) = @_;
+    print "    ", loc("%1 - skipped\n", $path);
+}
 
 sub new {
     my ($class, @arg) = @_;
@@ -34,7 +45,8 @@ sub node_status : lvalue {
 
 sub prop_status : lvalue {
     my ($self, $path) = @_;
-    $self->{status}{$path}[1];
+    exists $self->{status}{$path} && $self->{status}{$path}[0] ne 'A' ?
+	$self->{status}{$path}[1] : $self->{tmp};
 }
 
 sub hist_status : lvalue {
@@ -46,24 +58,20 @@ sub flush {
     my ($self, $path, $anchor) = @_;
     my $status;
     if (($status = $self->{status}{$path}) && grep {$_} @{$status}[0..2]) {
-	no warnings 'uninitialized';
-	print sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2],
-		       , $path);
+	$self->{cb_flush}->($path, $status) if $self->{cb_flush};
     }
-    elsif (!$anchor) {
-	print "    ", loc("%1 - skipped\n", $path);
+    elsif (!$status && !$anchor) {
+	$self->{cb_skip}->($path) if $self->{cb_skip};
     }
     delete $self->{status}{$path};
-
 }
 
 sub flush_dir {
     my ($self, $path) = @_;
     for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
-	 sort keys %{$self->{status}}) {
+	 reverse sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }
-    $self->flush ($path, 1);
 }
 
 =head1 AUTHORS

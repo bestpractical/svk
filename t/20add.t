@@ -13,9 +13,9 @@ mkdir ('A/deep');
 overwrite_file ("A/foo", "foobar");
 overwrite_file ("A/bar", "foobar");
 overwrite_file ("A/deep/baz", "foobar");
+overwrite_file ("A/deep/baz~", "foobar");
 
-$svk->add;
-ok ($output =~ m/SYNOPSIS/, 'add - usage');
+is_output_like ($svk, 'add', [], qr'SYNOPSIS', 'add - help');
 
 is_output ($svk, 'add', ['A/foo'],
 	   ['A  A/', 'A  A/foo'], 'add - descendent target only');

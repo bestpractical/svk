@@ -129,7 +129,9 @@ sub set_target_revision {
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
-    $self->{notify} = SVK::Notify->new ();
+    $self->{notify} = SVK::Notify->new
+	( cb_skip => \&SVK::Notify::skip_print,
+	  cb_flush => \&SVK::Notify::flush_print);
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     return '';
@@ -158,6 +160,7 @@ sub open_file {
     if (defined $pdir && $self->{cb_exist}->($path)) {
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
+	$self->{notify}->node_status ($path) = '';
 	return $path;
     }
     $self->{notify}->flush ($path);
@@ -345,6 +348,7 @@ sub add_directory {
 	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
 					 @arg);
     $self->{notify}->node_status ($path) = 'A';
+    $self->{notify}->flush ($path, 1);
     return $path;
 }
 

@@ -1,122 +1,106 @@
 package SVK::Editor::Status;
 use strict;
-require SVN::Delta;
-our $VERSION = '0.05';
+use SVN::Delta;
+use SVK::Notify;
+our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
+
+sub new {
+    my ($class, @arg) = @_;
+    my $self = $class->SUPER::new (@arg);
+    $self->{report} ||= '';
+    $self->{notify} ||= SVK::Notify->new
+	(cb_flush => sub {
+	     my $path = $_[0] ? "$self->{report}$_[0]" : '.';
+	     SVK::Notify::flush_print ($path, $_[1]);
+	 });
+    return $self;
+}
 
 sub open_root {
     my ($self, $baserev) = @_;
-    $self->{info}{$self->{copath}}{status} = ['', '', ''];
-    return $self->{copath};
+    $self->{notify}->node_status ('') = '';
+    return '';
 }
 
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
-    my $opath = $path;
-    $path = "$self->{copath}/$opath";
-    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = [$self->{conflict}{$path} || 'A', '', $arg[0] ? '+' : ''];
+    $self->{notify}->node_status ($path) = 'A'
+	unless $self->{notify}->node_status ($path);
+    $self->{notify}->hist_status ($path) = '+' if $arg[0];
     return $path;
 }
 
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
-    my $opath = $path;
-    $path = "$self->{copath}/$opath";
-    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = [$self->{conflict}{$path} || '', '', ''];
+    $self->{notify}->node_status ($path) = ''
+	unless $self->{notify}->node_status ($path);
     return $path;
 }
 
 sub apply_textdelta {
     my ($self, $path) = @_;
-    $self->{info}{$path}{status}[0] = 'M'
-	if !$self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[2];
+    $self->{notify}->node_status ($path) = 'M'
+	if !$self->{notify}->node_status ($path) || $self->{notify}->hist_status ($path);
     return undef;
 }
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
-    my $stat = $self->{info}{$path}{status};
-    $stat->[1] = 'M' unless $stat->[0] eq 'A';
+    $self->{notify}->prop_status ($path) = 'M';
 }
 
 sub close_file {
     my ($self, $path) = @_;
-    my $rpath = $path;
-    $rpath =~ s|^\Q$self->{copath}\E/|$self->{rpath}|;
-    print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}},
-		   $rpath);
-    delete $self->{conflict}{$path};
+    $self->{notify}->flush ($path);
 }
 
 sub absent_file {
     my ($self, $path) = @_;
-    print "!   $self->{rpath}$path\n";
+    $self->{notify}->node_status ($path) = '!';
+    $self->{notify}->flush ($path);
 }
 
 sub delete_entry {
     my ($self, $path) = @_;
-    print "D   $self->{rpath}$path\n";
+    $self->{notify}->node_status ($path) = 'D';
+    $self->{notify}->flush ($path);
 }
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
-    my $opath = $path;
-    $path = "$self->{copath}/$opath";
-    my $rpath = $opath;
-    $rpath = "$self->{rpath}$opath" if $self->{rpath};
-    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = ['A', '', $arg[0] ? '+' : ''];
-    print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}}, $rpath);
+    $self->{notify}->node_status ($path) = 'A';
+#	unless $self->{notify}->node_status ($path);
+    $self->{notify}->hist_status ($path) = '+' if $arg[0];
+    $self->{notify}->flush ($path, 1);
     return $path;
 }
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, $pool) = @_;
-    my $opath = $path;
-    $path = "$self->{copath}/$opath";
-    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = ['', '', ''];
+    $self->{notify}->node_status ($path) = '';
     return $path;
 }
 
 sub change_dir_prop {
     my ($self, $path, $name, $value) = @_;
-    my $stat = $self->{info}{$path}{status};
-    $stat->[1] = 'M' unless $stat->[0] eq 'A';
+    $self->{notify}->prop_status ($path) = 'M';
 }
 
 sub close_directory {
     my ($self, $path) = @_;
-    my $rpath = $path;
-    $rpath =~ s|^\Q$self->{copath}\E/|$self->{rpath}|;
-    if ($rpath eq $self->{copath}) {
-	$rpath = $self->{rpath};
-	chop $rpath;
-    }
-    for (grep {"$path/" eq substr ($_, 0, length($path)+1)}
-	 sort keys %{$self->{conflict}}) {
-	delete $self->{conflict}{$_};
-	s|^\Q$self->{copath}\E/|$self->{rpath}|;
-
-	print sprintf ("%1s%1s  \%s\n", 'C', '', $_);
-    }
-    my $stat = $self->{info}{$path}{status};
-    print sprintf ("%1s%1s%1s \%s\n", @$stat, $rpath || '.')
-	if ($stat->[0] || $stat->[1]) && $stat->[0] ne 'A';
+    $self->{notify}->flush_dir ($path);
 }
 
 sub absent_directory {
     my ($self, $path) = @_;
-    print "!   $self->{rpath}$path\n";
+    $self->{notify}->node_status ($path) = '!';
+    $self->{notify}->flush ($path);
 }
 
 sub conflict {
     my ($self, $path) = @_;
-    my $opath = $path;
-    $path = "$self->{copath}/$opath";
-    $self->{conflict}{$path} = 'C';
+    $self->{notify}->node_status ($path) = 'C';
 }
 
 1;

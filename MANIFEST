@@ -48,13 +48,11 @@ lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
 lib/SVK/Editor/Combine.pm
-lib/SVK/Editor/CommitStatus.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Delete.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Merge.pm
-lib/SVK/Editor/Revert.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/XD.pm

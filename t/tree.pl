@@ -20,6 +20,10 @@ END {
 
 our $output = '';
 
+for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
+    $ENV{$_} = '' if $ENV{$_};
+}
+
 my $pool = SVN::Pool->new_default;
 
 sub new_repos {
@@ -105,6 +109,12 @@ sub is_output {
     $svk->$cmd (@$arg);
     is_deeply ([split ("\n", $output)], $expected,
 	       $test || join(' ', $cmd, @$arg));
+}
+
+sub is_output_like {
+    my ($svk, $cmd, $arg, $expected, $test) = @_;
+    $svk->$cmd (@$arg);
+    ok ($output =~ m/$expected/, $test || join(' ', $cmd, @$arg));
 }
 
 require SVN::Simple::Edit;

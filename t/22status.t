@@ -11,11 +11,11 @@ chdir ($copath);
 mkdir ('A');
 mkdir ('A/deep');
 overwrite_file ("A/foo", "foobar");
+overwrite_file ("A/foo~", "foobar");
 overwrite_file ("A/bar", "foobar");
 overwrite_file ("A/deep/baz", "foobar");
 
-$svk->status ('--help');
-ok ($output =~ m/SYNOPSIS/, 'add - usage');
+is_output_like ($svk, 'status', ['--help'], qr'SYNOPSIS');
 
 is_output ($svk, 'status', [],
 	   ['?   A'], 'status - unknwon');
@@ -30,7 +30,6 @@ is_output ($svk, 'status', ['../A'],
 chdir('..');
 $svk->add ('A/deep');
 $svk->commit ('-m', 'add a bunch for files');
-
 overwrite_file ("A/foo", "fnord");
 overwrite_file ("A/another", "fnord");
 $svk->add ('A/another');

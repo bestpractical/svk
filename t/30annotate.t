@@ -8,8 +8,7 @@ my ($copath, $corpath) = get_copath ('annotate');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 
-$svk->blame;
-ok ($output =~ m'SYNOPSIS', 'annotate - help');
+is_output_like ($svk, 'blame', ['--help'], qr'SYNOPSIS', 'annotate - help');
 
 chdir ($copath);
 mkdir ('A');

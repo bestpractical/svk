@@ -32,5 +32,5 @@ local $TODO = "take care of svn:executable after commit";
 ok (-x "$copath/A/be");
 };
 
-$svk->update ('-r', 2, $copath);
-ok ($output =~ m|^UU  A/be$|m, 'keyword does not cause merge');
+is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  A/be$|m,
+		'keyword does not cause merge');

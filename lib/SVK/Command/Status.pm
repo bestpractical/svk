@@ -23,10 +23,7 @@ sub run {
 	  xdroot => $xdroot,
 	  nodelay => 1,
 	  delete_verbose => 1,
-	  editor => SVK::Editor::Status->new
-	  ( copath => $target->{copath},
-	    dpath => $target->{path},
-	    rpath => $target->{report}),
+	  editor => SVK::Editor::Status->new (report => $target->{report}),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_unknown =>
 	  sub { $_[1] =~ s|^\Q$target->{copath}\E/|$target->{report}|;

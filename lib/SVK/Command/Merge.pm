@@ -79,7 +79,7 @@ sub run {
 	  %cb,
 	);
     $editor->{external} = $ENV{SVKMERGE}
-	if $ENV{SVKMERGE} && -x $ENV{SVKMERGE} && !$self->{check_only};
+	if !$self->{check_only} && $ENV{SVKMERGE} && -x (split (' ', $ENV{SVKMERGE}))[0];
     SVN::Repos::dir_delta ($fs->revision_root ($baserev),
 			   $base_path, '',
 			   $fs->revision_root ($torev), $src->{path},

@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Editor::CommitStatus;
+use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Util qw(get_buffer_from_editor slurp_fh find_svm_source svn_mirror tmpfile);
 use SVN::Simple::Edit;
@@ -175,10 +175,16 @@ sub run {
     print $fh "\n$target_prompt\n" if $fh;
 
     my $targets = [];
-    my $statuseditor = SVK::Editor::CommitStatus->new
-	( copath => $target->{copath},
-	  dpath => $target->{path},
-	  targets => $targets, fh => $fh);
+    my $statuseditor = SVK::Editor::Status->new
+	( notify => SVK::Notify->new
+	  ( cb_flush => sub {
+		my ($path, $status) = @_;
+		my $copath = $path ? "$target->{copath}/$path" : $target->{copath};
+		push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
+				 $copath];
+		    no warnings 'uninitialized';
+		print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $path) if $fh;
+	    }));
     $self->{xd}->checkout_delta
 	( %$target,
 	  baseroot => $xdroot,
@@ -190,17 +196,17 @@ sub run {
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	);
 
-    my $conflicts = keys %{$statuseditor->{conflict}};
+    return loc("no targets to commit\n") if $#{$targets} < 0;
+
+    my $conflicts = grep {$_->[0] eq 'C'} @$targets;
     if ($conflicts) {
 	if ($fh) {
 	    close $fh;
 	    unlink $file;
 	}
-	print loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
-	return;
+	return loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
     }
 
-    die loc("no targets to commit") if $#{$targets} < 0;
 
     if ($fh) {
 	close $fh;

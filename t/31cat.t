@@ -7,8 +7,7 @@ my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('cat');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
-$svk->cat;
-ok ($output =~ m'SYNOPSIS', 'cat - help');
+is_output_like ($svk, 'cat', [], qr'SYNOPSIS', 'cat - help');
 
 chdir ($copath);
 mkdir ('A');

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 5;
+use Test::More tests => 6;
 use strict;
 require 't/tree.pl';
 
@@ -16,8 +16,6 @@ $svk->add ("$copath/A/foo");
 $svk->add ("$copath/A/bar");
 $svk->ps ('svn:keywords', 'Rev', "$copath/A/foo");
 
-# check output with selecting some io::stringy object?
-#$svk->status ("$copath");
 $svk->commit ('-m', 'commit message here', "$copath");
 
 $svk->copy ('-m', 'branch', '//A', '//B');
@@ -29,8 +27,12 @@ $svk->commit ('-m', 'commit message here', "$copath");
 $svk->update ('-r', 1, $copath);
 overwrite_file ("$copath/A/foo", "some local mods\nfoobar\n");
 
-$svk->update ($copath);
-
+is_output ($svk, 'update', [$copath],
+	   ["Syncing //(/) in $corpath to 3.",
+	    'GU  A/foo',
+	    'A   B',
+	    'A   B/foo',
+	    'A   B/bar'], 'merge via update');
 is_file_content ("$copath/A/foo",
 		 "some local mods\nfoobar\n\nsome more foobar\nzz\n",
 		 'merge via update');
