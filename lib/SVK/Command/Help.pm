@@ -43,19 +43,9 @@ sub run {
     return;
 }
 
-sub _find_topic {
-    my ($self, $topic) = @_;
-
-    return (
-        $self->_find_in_inc(loc("SVK::Help")."::\u\L$topic")
-        || $self->_find_in_inc(loc("SVK::Help")."::\U$topic")
-        || $self->_find_in_inc("SVK::Help::\u\L$topic")
-        || $self->_find_in_inc("SVK::Help::\U$topic")
-    );
-}
-
 sub _find_encoding {
     local $@;
+    # substr( __FILE__, 0 );
     return eval {
         local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
         Locale::Maketext::Lexicon::encoding();
@@ -65,18 +55,31 @@ sub _find_encoding {
     } || 'utf8';
 }
 
-sub _find_in_inc {
-    my ($self, $file) = @_;
-    
-    $file =~ s{::}{/}g;
+my ($inc, @prefix);
+sub _find_topic {
+    my ($self, $topic) = @_;
 
-    # absolute file names
-    return $file if -f $file;
+    if (!$inc) {
+        my $pkg = __PACKAGE__;
+        $pkg =~ s{::}{/};
+        $inc = substr( __FILE__, 0, -length("$pkg.pm") );
 
-    foreach my $dir (@INC) {
-        return "$dir/$file.pod" if -f "$dir/$file.pod";
-        return "$dir/$file.pm"  if -f "$dir/$file.pm";
+        @prefix = (loc("SVK::Help"));
+        $prefix[0] =~ s{::}{/}g;
+        push @prefix, 'SVK/Help' if $prefix[0] ne 'SVK/Help';
     }
+
+    foreach my $dir ($inc, @INC) {
+        foreach my $prefix (@prefix) {
+            foreach my $basename (ucfirst(lc($topic)), uc($topic)) {
+                foreach my $ext ('pod', 'pm') {
+                    my $file = "$dir/$prefix/$basename.$ext";
+                    return $file if -f $file;
+                }
+            }
+        }
+    }
+
     return;
 }
 
