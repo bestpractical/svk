@@ -16,9 +16,8 @@ sub lock { $_[0]->lock_none }
 sub parse_arg {
     my ($self, $cmd, @arg) = @_;
     my @cmd = qw/create view dump update test send list delete/;
-    $self->usage unless $cmd && (1 == grep {$_ eq $cmd} @cmd);
-    $self->{cmd} = $cmd;
-    return @arg;
+    return unless $cmd && (1 == grep {$_ eq $cmd} @cmd);
+    return ($cmd, @arg);
 }
 
 sub create {
@@ -106,8 +105,7 @@ sub list {
 }
 
 sub run {
-    my ($self, @arg) = @_;
-    my $func = $self->{cmd};
+    my ($self, $func, @arg) = @_;
     $self->$func (@arg);
 }
 

@@ -96,13 +96,13 @@ $svk->rm ("$copath/Q/qz");
 $svk->commit ('-m', 'commit on local', $copath);
 $svk->smerge ('-C', '//m', '//l');
 is ($output, "Auto-merging (8, 11) /m to /l (base /m:8).
- U Q/qu
-   Q/qz - skipped
-C  be
-   newdir - skipped
-g  newfile
-A  newdir2
-A  newfile2
+ U  Q/qu
+    Q/qz - skipped
+C   be
+    newdir - skipped
+g   newfile
+A   newdir2
+A   newfile2
 New merge ticket: $suuid:/A:5
 Empty merge.
 1 conflict found.

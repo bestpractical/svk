@@ -57,6 +57,7 @@ lib/SVK/Editor/Merge.pm
 lib/SVK/Editor/Revert.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
+lib/SVK/Editor/XD.pm
 lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
 lib/SVK/I18N/zh_cn.po

@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use SVK;
 our $VERSION = $SVK::VERSION;
 require SVN::Core;
 require SVN::Repos;
@@ -52,7 +53,7 @@ variable to your preferred svk depot path.
 my $cmd = shift;
 {
     my $show_version;
-    local *ARGV = [$cmd];
+    local *ARGV = [$cmd || ''];
     die unless GetOptions ('version' => \$show_version);
 
     if ($show_version) {

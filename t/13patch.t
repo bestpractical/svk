@@ -40,13 +40,13 @@ overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\n");
 $svk->commit ('-m', "modified on trunk", $scopath);
 
 $svk->patch ('view', 'test-1');
-is_output ($svk, 'patch', [qw/test test-1/], ['G  B/fe', 'Empty merge.'],
+is_output ($svk, 'patch', [qw/test test-1/], ['G   B/fe', 'Empty merge.'],
 	   'patch still applicable.');
 
 overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
 $svk->commit ('-m', "modified on trunk", $scopath);
 
 is_output ($svk, 'patch', [qw/test test-1/],
-	   ['C  B/fe', 'Empty merge.', '1 conflict found.',
+	   ['C   B/fe', 'Empty merge.', '1 conflict found.',
 	    'Please do a merge to resolve conflicts and update the patch.'],
 	   'patch not applicable due to conflicts.');

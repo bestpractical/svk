@@ -37,15 +37,21 @@ sub prop_status : lvalue {
     $self->{status}{$path}[1];
 }
 
+sub hist_status : lvalue {
+    my ($self, $path) = @_;
+    $self->{status}{$path}[2];
+}
+
 sub flush {
     my ($self, $path, $anchor) = @_;
     my $status;
-    if (($status = $self->{status}{$path}) && $status->[0] || $status->[1]) {
-	print sprintf ("%1s%1s \%s\n", $status->[0] || '',
-		       $status->[1] || '', $path);
+    if (($status = $self->{status}{$path}) && grep {$_} @{$status}[0..2]) {
+	no warnings 'uninitialized';
+	print sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2],
+		       , $path);
     }
     elsif (!$anchor) {
-	print "   ", loc("%1 - skipped\n", $path);
+	print "    ", loc("%1 - skipped\n", $path);
     }
     delete $self->{status}{$path};
 

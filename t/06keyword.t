@@ -33,4 +33,4 @@ ok (-x "$copath/A/be");
 };
 
 $svk->update ('-r', 2, $copath);
-ok ($output =~ m|^UU A/be$|m, 'keyword does not cause merge');
+ok ($output =~ m|^UU  A/be$|m, 'keyword does not cause merge');

@@ -83,7 +83,7 @@ sub get_commit_message {
 }
 
 # Return the editor according to copath, path, and is_mirror (path)
-# It will be XD::Editor, repos_commit_editor, or svn::mirror merge back editor.
+# It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
 sub get_editor {
     my ($self, $target) = @_;
     my ($callback, $editor, %cb);
@@ -129,9 +129,11 @@ sub get_editor {
     }
 
     my $fs = $target->{repos}->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
+    my $yrev = $fs->youngest_rev;
+    my $root = $fs->revision_root ($yrev);
 
-    $editor ||= SVN::Delta::Editor->new
+    $editor ||= $self->{check_only} ? SVN::Delta::Editor->new :
+	SVN::Delta::Editor->new
 	( SVN::Repos::get_commit_editor
 	  ( $target->{repos}, "file://$target->{repospath}",
 	    $target->{path}, $ENV{USER}, $self->{message},
@@ -141,17 +143,14 @@ sub get_editor {
 		      if $self->{sign};
 		  $callback->(@_) if $callback; }
 	  ));
-    $base_rev ||= $target->{repos}->fs->youngest_rev;
+    $base_rev ||= $yrev;
 
     if ($self->{sign}) {
 	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
 	$self->{signeditor} = $editor = SVK::Editor::Sign->new (_editor => [$editor],
-							      anchor => "$uuid:$dst"
-							     );
+								anchor => "$uuid:$dst"
+							       );
     }
-
-    $editor = SVK::XD::CheckEditor->new ($editor)
-	if $self->{check_only};
 
     %cb = SVK::Editor::Merge::cb_for_root ($root, $target->{path}, $base_rev);
 
