@@ -610,7 +610,8 @@ sub do_delete {
     # need to use undef to avoid the $SEP at the beginning on empty report.
     my $report = length ($arg{report}) ? $arg{report} : undef;
     for (@deleted) {
-	print "D   ".abs2rel($_, $arg{copath} => $report) unless $arg{quiet};
+	print "D   ".abs2rel($_, $arg{copath} => $report)."\n"
+	    unless $arg{quiet};
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
 
