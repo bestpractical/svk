@@ -11,9 +11,8 @@ require SVN::Fs;
 use SVK;
 use SVK::XD;
 use strict;
-no warnings 'once';
 
-my $output = '';
+our $output = '';
 #select IO::Scalar->new (\$output);
 
 my $pool = SVN::Pool->new_default;
@@ -39,7 +38,7 @@ sub build_test {
     my $xd = SVK::XD->new (depotmap => $depotmap,
 			   checkout => Data::Hierarchy->new);
     push @TOCLEAN, $xd;
-    return ($xd, SVK->new (xd => $xd));
+    return ($xd, SVK->new (xd => $xd, output => \$output));
 }
 
 sub get_copath {

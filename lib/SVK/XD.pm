@@ -352,7 +352,10 @@ sub do_add {
 			      );
     }
     else {
-	$self->{checkout}->store ($arg{copath}, { '.schedule' => 'add' });
+	$self->{checkout}->store ($arg{copath}, { '.schedule' => 'add',
+						  '.copyfrom' => $arg{copyfrom},
+						  '.copyfrom_rev' => $arg{copyfrom_rev},
+						});
 	print "A  $arg{copath}\n" unless $arg{quiet};
     }
 }
@@ -468,7 +471,10 @@ sub do_revert {
 	    close $fh;
 	}
 	$self->{checkout}->store ($_[1],
-				  {'.schedule' => undef});
+				  {'.schedule' => undef,
+				   '.copyfrom' => undef,
+				   '.copyfrom_rev' => undef,
+				  });
 	print loc("Reverted %1\n", $_[1]);
     };
 
@@ -476,6 +482,8 @@ sub do_revert {
 	my $sche = $self->{checkout}->get ($_[1])->{'.schedule'};
 	$self->{checkout}->store ($_[1],
 				  {'.schedule' => undef,
+				   '.copyfrom' => undef,
+				   '.copyfrom_rev' => undef,
 				   '.newprop' => undef});
 	-d $_[1] ? rmtree ([$_[1]]) : unlink($_[1])
 	    if $sche eq 'add';
@@ -571,7 +579,10 @@ sub _delta_file {
 	|| $mymd5 ne ($md5 = $arg{xdroot}->file_md5_checksum ($arg{path}));
 
     my $baton = $arg{add} ?
-	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1, $pool) :
+	$arg{editor}->add_file ($arg{entry}, $arg{baton},
+				$cinfo->{'.copyfrom'} ?
+				"file://$arg{repospath}$cinfo->{'.copyfrom'}" : undef,
+				$cinfo->{'.copyfrom_rev'} ||  -1, $pool) :
 	$arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool);
 
     my $newprop = $cinfo->{'.newprop'};
@@ -1095,7 +1106,10 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	$self->{xd}->do_add (copath => $copath, quiet => 1);
+	my ($copyfrom, $copyfrom_rev);
+	($copyfrom, $copyfrom_rev) = $self->{cb_history}->($path) if $self->{cb_history};
+	$self->{xd}->do_add (copath => $copath, quiet => $self->{quiet},
+			     copyfrom => $copyfrom, copyfrom_rev => $copyfrom_rev)
     }
     $self->{checkout}->store ($copath, {revision => $self->{revision}})
 	if $self->{update};
@@ -1108,7 +1122,10 @@ sub add_directory {
     my $copath = $path;
     $self->{get_copath}($copath);
     mkdir ($copath) unless $self->{check_only};
-    $self->{xd}->do_add (copath => $copath, quiet => 1)
+    my ($copyfrom, $copyfrom_rev);
+    ($copyfrom, $copyfrom_rev) = $self->{cb_history}->($path) if $self->{cb_history};
+    $self->{xd}->do_add (copath => $copath, quiet => $self->{quiet},
+			 copyfrom => $copyfrom, copyfrom_rev => $copyfrom_rev)
 	if !$self->{update} && !$self->{check_only};
     return $path;
 }

@@ -88,6 +88,7 @@ sub get_editor {
 	my $xdroot = $self->{xd}->xdroot (%$target);
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
+	      quiet => 1,
 	      oldroot => $xdroot,
 	      newroot => $xdroot,
 	      anchor => $target->{path},
@@ -236,6 +237,8 @@ sub run {
 	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
 		'store_recursively' : 'store';
 	    $self->{xd}{checkout}->$store ($_->[1], { '.schedule' => undef,
+						      '.copyfrom' => undef,
+						      '.copyfrom_rev' => undef,
 						      '.newprop' => undef,
 						      $_->[0] eq 'D' ? ('.deleted' => 1) : (),
 						      revision => $rev,

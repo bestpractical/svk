@@ -2,6 +2,7 @@ package SVK::Command::Copy;
 use strict;
 our $VERSION = '0.13';
 use base qw( SVK::Command::Commit );
+use SVK::Util qw( get_anchor );
 use SVK::I18N;
 
 sub options {
@@ -11,10 +12,14 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return map {$self->arg_depotpath ($_)} @arg;
+    $self->usage if $#arg < 0 || $#arg > 1;
+    return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
 }
 
-sub lock { return $_[0]->lock_none }
+sub lock {
+    my $self = shift;
+    $_[1]->{copath} ? $self->lock_target ($_[1]) : $self->lock_none;
+}
 
 sub do_copy_direct {
     my ($self, %arg) = @_;
@@ -33,13 +38,44 @@ sub run {
     my ($self, $src, $dst) = @_;
     die loc("repos paths mismatch") if $src->{repospath} ne $dst->{repospath};
     $self->{rev} ||= $src->{repos}->fs->youngest_rev;
+    my $fs = $src->{repos}->fs;
+    if ($dst->{copath}) {
+	my $xdroot = $self->{xd}->xdroot (%$dst);
+	# XXX: prevent recursion, etc
+	if (-d $dst->{copath}) {
+	    my ($name) = $src->{depotpath} =~ m|(/[^/]+)/?$|;
+#	    $dst = $self->arg_copath ("$dst->{depotpath}$name");
+	    $dst->{depotpath} .= $name;
+	    $dst->{path} .= $name;
+	    $dst->{copath} .= $name;
+	}
+	my ($anchor, $target, $sanchor, $starget) = get_anchor (1, $dst->{path}, $src->{path});
 
-    $self->get_commit_message ();
-    $self->do_copy_direct ( author => $ENV{USER},
-			    %$src,
-			    dpath => $dst->{path},
-			    %$self,
-			  );
+	my $editor = $self->{xd}->get_editor ( %$dst,
+					       oldroot => $xdroot,
+					       newroot => $xdroot,
+					       anchor => $sanchor,
+					       target => $starget,
+					       cb_history =>
+					       sub {
+						   my ($path) = @_;
+						   $path =~ s/^\Q$starget\E/$src->{path}/;
+						   return ($path, $self->{rev});
+					       }
+					     );
+	SVN::Repos::dir_delta ($fs->revision_root (0), $sanchor, $starget,
+			       $fs->revision_root ($self->{rev}), $src->{path},
+			       $editor, undef,
+			       1, 1, 0, 1);
+    }
+    else {
+	$self->get_commit_message ();
+	$self->do_copy_direct ( author => $ENV{USER},
+				%$src,
+				dpath => $dst->{path},
+				%$self,
+			      );
+    }
     return;
 }
 
@@ -54,6 +90,7 @@ SVK::Command::Copy - Make a versioned copy
 =head1 SYNOPSIS
 
     copy DEPOTPATH1 DEPOTPATH2
+    copy DEPOTPATH1 PATH
 
 =head1 OPTIONS
 
