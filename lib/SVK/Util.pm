@@ -8,6 +8,7 @@ our @EXPORT_OK = qw(
     get_prompt get_buffer_from_editor
 
     find_local_mirror find_svm_source resolve_svm_source traverse_history
+    find_prev_copy
 
     read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
 
@@ -659,6 +660,52 @@ sub traverse_history {
     }
 
     return $rv;
+}
+
+=head3 find_prev_copy ($fs, $rev)
+
+Find the revision of the nearest copy in a repository that is less or
+equal to C<$rev>.  Returns the found revision number, and a hash of
+arrayref that contains copied paths and its source found in that
+revision.
+
+=cut
+
+sub _copies_in_rev {
+    my ($fs, $rev) = @_;
+    my $copies;
+    my $root = $fs->revision_root ($rev);
+    my $changed = $root->paths_changed;
+    for (keys %$changed) {
+	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
+	my ($copyfrom_rev, $copyfrom_path) = $root->copied_from ($_);
+	$copies->{$_} = [$copyfrom_rev, $copyfrom_path]
+	    if defined $copyfrom_path;
+    }
+    return $copies;
+}
+
+sub find_prev_copy {
+    my ($fs, $endrev) = @_;
+    my $pool = SVN::Pool->new_default;
+    my ($rev, $startrev) = ($endrev, $endrev);
+    my $copy;
+    while ($rev > 0) {
+	$pool->clear;
+	if (defined (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev'))) {
+	    $startrev = $rev + 1;
+	    $rev = $cache;
+	    last if $rev == 0;
+	}
+	if ($copy = _copies_in_rev ($fs, $rev)) {
+	    last;
+	}
+	--$rev; --$startrev;
+    }
+    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev), $pool->clear
+	for $startrev..$endrev;
+    undef $copy unless $rev;
+    return ($rev, $copy);
 }
 
 1;

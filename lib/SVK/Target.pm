@@ -3,7 +3,8 @@ use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_anchor catfile abs2rel HAS_SVN_MIRROR IS_WIN32 );
+use SVK::Util qw( get_anchor catfile abs2rel HAS_SVN_MIRROR IS_WIN32
+		  find_prev_copy );
 use SVK::Target::Universal;
 use Clone;
 
@@ -257,9 +258,10 @@ sub nearest_copy {
     my $old_pool = SVN::Pool->new;
     my $new_pool = SVN::Pool->new;
 
-    # normalize;
+    # normalize
     my $histself = $root->node_history ($path)->prev(0);
     my $rev = ($histself->location)[1];
+    my $lastcopy;
     while (1) {
 	# Find history_prev revision, if the path is different, bingo.
 	my $hist = $histself->prev(1, $new_pool) or last; # no more history
@@ -269,7 +271,10 @@ sub nearest_copy {
 
 	# Find nearest copy of the current revision (up to but *not*
 	# including the revision itself). If the copy contains us, bingo.
-	my ($prev, $copy) = _find_prev_copy ($fs, $rev-1);
+	my ($prev, $copy) = find_prev_copy ($fs,
+					    $lastcopy && $lastcopy == $rev
+					    ? $rev-1
+					    : $rev);
 	last unless $prev; # no more copies
 	if (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path)) {
 	    # there were copy, but the descendent might not exist there
@@ -277,14 +282,14 @@ sub nearest_copy {
 	    return ($prev, $fromrev, $frompath);
 	}
 	elsif ($prev < $hprev) {
+	    # Reset the hprev root to this earlier revision to avoid infinite looping
 	    last unless $fs->revision_root ($prev)->check_path ($path);
 	    $root = $fs->revision_root ($prev, $new_pool);
 	    $histself = $root->node_history ($path)->prev(0, $new_pool);
 	}
-	# Continue testing on min (history_prev, prev_copy), provided
-	# it's still a related to the current node.
+	$lastcopy = $prev;
+	# Continue testing on min (history_prev, prev_copy)
 	$rev = min ($prev, $hprev);
-	# Reset the hprev root to this earlier revision to avoid infinite looping
         $old_pool->clear;
 	$spool->clear;
         ($old_pool, $new_pool) = ($new_pool, $old_pool);
@@ -299,44 +304,6 @@ sub _copies_contain_path {
     return unless $match;
     $path =~ s/^\Q$match\E/$copy->{$match}[1]/;
     return ($copy->{$match}[0], $path);
-}
-
-sub _copies_in_rev {
-    my ($fs, $rev) = @_;
-    my $copies;
-    my $root = $fs->revision_root ($rev);
-    my $changed = $root->paths_changed;
-    for (keys %$changed) {
-	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
-	my ($copyfrom_rev, $copyfrom_path) = $root->copied_from ($_);
-	$copies->{$_} = [$copyfrom_rev, $copyfrom_path]
-	    if defined $copyfrom_path;
-    }
-    return $copies;
-}
-
-sub _find_prev_copy {
-    my ($fs, $endrev) = @_;
-    my $pool = SVN::Pool->new_default;
-    my $rev = $endrev;
-    my $startrev = $endrev;
-    while ($rev > 0) {
-	$pool->clear;
-	if (defined (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev'))) {
-	    $startrev = $rev + 1;
-	    $rev = $cache;
-	    return ($cache, _copies_in_rev ($fs, $cache));
-	}
-	if (my $copy = _copies_in_rev ($fs, $rev)) {
-	    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev)
-		for $startrev..$endrev;
-	    return ($rev, $copy);
-	}
-	--$rev;
-    }
-    $fs->change_rev_prop ($_, 'svk:copy_cache_prev', 0)
-	for $rev..$endrev;
-    return undef;
 }
 
 =head2 related_to
