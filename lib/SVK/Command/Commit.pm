@@ -2,6 +2,7 @@ package SVK::Command::Commit;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
+use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
@@ -14,7 +15,6 @@ sub options {
      'C|check-only' => 'check_only',
      'S|sign'	  => 'sign',
      'P|patch=s'  => 'patch',
-     'N|non-recursive'	=> 'nrec',
      'import',	  => 'import',
      'direct',	  => 'direct',
     );
@@ -232,7 +232,7 @@ sub get_committable {
 	    }));
     $self->{xd}->checkout_delta
 	( %$target,
-	  depth => $self->{nrec} ? 0 : undef,
+	  depth => $self->{recursive} ? undef : 0,
 	  xdroot => $root,
 	  nodelay => 1,
 	  delete_verbose => 1,
@@ -284,7 +284,7 @@ sub committed_commit {
 	# update checkout map with new revision
 	for (reverse @$targets) {
 	    my ($action, $path) = @$_;
-	    my $store = $self->{nrec} ? 'store' : 'store_recursively';
+	    my $store = $self->{recursive} ? 'store_recursively' : 'store';
 	    $self->{xd}{checkout}->$store ($path, { $self->_schedule_empty });
             if (($action eq 'D') and $self->{xd}{checkout}->get ($path)->{revision} == $rev ) {
                 # Fully merged, remove the special node
@@ -367,7 +367,7 @@ sub run_delta {
     my %revcache;
     $self->{xd}->checkout_delta
 	( %$target,
-	  depth => $self->{nrec} ? 0 : undef,
+	  depth => $self->{recursive} ? undef : 0,
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},

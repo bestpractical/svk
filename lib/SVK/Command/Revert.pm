@@ -3,13 +3,10 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::Util qw( slurp_fh is_symlink );
 use SVK::I18N;
-
-sub options {
-    ('R|recursive'	=> 'rec');
-}
 
 sub parse_arg {
     my $self = shift;
@@ -30,7 +27,7 @@ sub run {
 	$self->{xd}->checkout_delta
 	    ( %$target,
 	      xdroot => $xdroot,
-	      depth => $self->{rec} ? undef : 0,
+	      depth => $self->{recursive} ? undef : 0,
 	      delete_verbose => 1,
 	      absent_verbose => 1,
 	      nodelay => 1,

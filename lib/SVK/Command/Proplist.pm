@@ -3,12 +3,12 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
 
 sub options {
     ('v|verbose' => 'verbose',
-     'R|recursive' => 'recursive',
      'r|revision=i' => 'rev',
      'revprop' => 'revprop',
     );

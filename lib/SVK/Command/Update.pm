@@ -3,13 +3,13 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('r|revision=i'    => 'rev',
-     'N|non-recursive' => 'nonrecursive',
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
      'q|quiet'         => 'quiet',
@@ -118,7 +118,7 @@ sub do_update {
     $notify->{quiet}++ if $self->{quiet};
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
-	 no_recurse => $self->{nonrecursive}, notify => $notify, nodelay => 1,
+	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget,
 	 xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,

@@ -2,6 +2,7 @@ package SVK::Command::Propset;
 use strict;
 our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit SVK::Command::Proplist );
+use constant opt_recursive => 0;
 use SVK::Util qw ( abs2rel );
 use SVK::XD;
 use SVK::I18N;
@@ -9,7 +10,6 @@ use SVK::I18N;
 sub options {
     ($_[0]->SUPER::options,
      'K|keep-local' => 'keep',
-     'R|recursive' => 'recursive',
      'r|revision=i' => 'rev',
      'revprop' => 'revprop',
     );

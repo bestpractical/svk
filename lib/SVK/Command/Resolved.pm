@@ -3,11 +3,8 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
-
-sub options {
-    ('R|recursive'	=> 'rec');
-}
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -25,7 +22,7 @@ sub run {
 
     for my $target (@arg) {
 	$self->{xd}->do_resolved ( %$target,
-				   recursive => $self->{rec},
+				   recursive => $self->{recursive},
 				 );
     }
     return;

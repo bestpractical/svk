@@ -3,13 +3,13 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( $SEP is_symlink );
 
 sub options {
-    ('N|non-recursive'	=> 'nrec',
-     'q|quiet'		=> 'quiet');
+    ('q|quiet'		=> 'quiet');
 }
 
 sub parse_arg {
@@ -24,7 +24,7 @@ sub lock {
 sub run {
     my ($self, $target) = @_;
 
-    if ($self->{nrec}) {
+    unless ($self->{recursive}) {
 	die loc ("%1 already under version control.\n", $target->{report})
 	    unless $target->{targets};
 	# check for multi-level targets
@@ -36,7 +36,7 @@ sub run {
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),
 	  delete_verbose => 1,
-	  unknown_verbose => !$self->{nrec},
+	  unknown_verbose => $self->{recursive},
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
@@ -46,7 +46,7 @@ sub run {
 
 		  $target->contains_copath ($copath) or return;
 		  die loc ("%1 already added.\n", $report)
-		      if $self->{nrec} && ($status->[0] eq 'R' || $status->[0] eq 'A');
+		      if !$self->{recursive} && ($status->[0] eq 'R' || $status->[0] eq 'A');
 
 		  return unless $status->[0] eq 'D';
 		  lstat ($copath);

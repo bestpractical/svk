@@ -3,6 +3,7 @@ use strict;
 our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
 use Date::Parse qw(str2time);
@@ -12,8 +13,7 @@ sub options {
     ('r|revision=i'  => 'rev',
      'v|verbose'	   => 'verbose',
      'f|full-path'      => 'fullpath',
-     'd|depth=i'      => 'depth',
-     'R|recursive'   => 'recursive');
+     'd|depth=i'      => 'depth');
 }
 
 sub parse_arg {

@@ -182,9 +182,15 @@ additional %opt getopt options.
 
 =cut
 
+use constant opt_recursive => undef;
+
 sub getopt {
     my ($self, $argv, %opt) = @_;
     local *ARGV = $argv;
+    my $recursive = $self->opt_recursive;
+    $self->{recursive}++ if $recursive;
+    $opt{$recursive ? 'N||non-recursive' : 'R|recursive'} = \$self->{recursive}
+	if defined $recursive;
     die loc ("Unknown options.\n")
 	unless GetOptions (%opt, $self->_opt_map ($self->options));
 }
@@ -203,6 +209,11 @@ C<$self>.
 
 Subclasses should override this to add their own options.  Defaults to
 an empty list.
+
+=head3 opt_recursive
+
+Defines if the command needs the recursive flag and its default.  The
+value will be stored in C<recursive>.
 
 =cut
 
