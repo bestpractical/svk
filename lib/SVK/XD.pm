@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config is_symlink splitpath );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config is_symlink splitpath HAS_SYMLINK );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -1218,8 +1218,7 @@ sub _fh_symlink {
     }
     elsif ($mode eq '<') {
 	# XXX: make PerlIO::via::symlink also do the reading
-	my $lnk = 'link '.readlink $fname;
-	open $fh, '<', \$lnk;
+	open $fh, '<', \("link ".readlink($fname));
     }
     else {
 	die "unknown mode $mode for symlink fh";
@@ -1241,7 +1240,7 @@ sub get_fh {
     }
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
-	    if defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname));
+	    if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
 	if (keys %$prop) {
 	    $layer ||= get_keyword_layer ($root, $path, $prop);
 	    $eol ||= get_eol_layer($root, $path, $prop);

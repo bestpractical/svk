@@ -10,7 +10,7 @@ require SVN::Fs;
 use File::Path;
 use SVK;
 use SVK::XD;
-use SVK::Util qw( catdir tmpdir abs_path $SEP $EOL );
+use SVK::Util qw( catdir tmpdir abs_path $SEP $EOL IS_WIN32 );
 use strict;
 use Carp;
 
@@ -279,17 +279,14 @@ sub __ ($) {
     return $path;
 }
 
-sub _x {
-    ($^O eq 'MSWin32') ? 1 : -x $_[0];
-}
-
-sub not_x {
-    ($^O eq 'MSWin32') ? 1 : not -x $_[0];
-}
+sub _x { IS_WIN32 ? 1 : -x $_[0] }
+sub not_x { IS_WIN32 ? 1 : not -x $_[0] }
+sub _l { IS_WIN32 ? 1 : -l $_[0] }
+sub not_l { IS_WIN32 ? 1 : not -l $_[0] }
 
 sub uri {
     my $file = shift;
-    $file =~ s{^|\\}{/}g if ($^O eq 'MSWin32');
+    $file =~ s{^|\\}{/}g if IS_WIN32;
     return "file://$file";
 }
 

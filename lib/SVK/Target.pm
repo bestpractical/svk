@@ -2,7 +2,7 @@ package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
-use SVK::Util qw( get_anchor IS_WIN32 );
+use SVK::Util qw( get_anchor catfile IS_WIN32 );
 use SVK::Target::Universal;
 use Clone;
 
@@ -134,10 +134,7 @@ sub copath {
     my $copath = ref ($self) ? $self->{copath} : shift;
     my $paths = shift;
     return $copath unless defined $paths && length ($paths);
-    return File::Spec->catfile (
-	grep {defined and length}
-	     ($copath, File::Spec->splitdir ($paths))
-    )
+    return catfile($copath, $paths);
 }
 
 =head2 descend
@@ -150,8 +147,8 @@ sub descend {
     my ($self, $entry) = @_;
     $self->{depotpath} .= "/$entry";
     $self->{path} .= "/$entry";
-    $self->{report} = File::Spec->catfile ($self->{report}, $entry);
-    $self->{copath} = File::Spec->catfile ($self->{copath}, $entry);
+    $self->{report} = catfile ($self->{report}, $entry);
+    $self->{copath} = catfile ($self->{copath}, $entry);
 }
 
 =head2 universal

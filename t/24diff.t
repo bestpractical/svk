@@ -47,10 +47,10 @@ is_output ($svk, 'diff', [],
 	    '+morenewline',], 'diff - checkout dir');
 
 is_output ($svk, 'diff', ['A/foo'],
-	  ['=== A/foo',
+	  [__('=== A/foo'),
 	   '==================================================================',
-	   '--- A/foo  (revision 2)',
-	   '+++ A/foo  (local)',
+	   __('--- A/foo  (revision 2)'),
+	   __('+++ A/foo  (local)'),
 	   '@@ -1,3 +1,4 @@',
 	   ' foobar',
 	   ' newline',

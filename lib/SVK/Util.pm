@@ -16,7 +16,7 @@ use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
 use File::Basename qw(dirname);
-use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir tmpdir );
+use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
 use SVN::Ra;
@@ -248,6 +248,12 @@ sub abs2rel {
     }
     $rel =~ s/\Q$SEP/$slash/g if $slash and $SEP ne $slash;
     return $rel;
+}
+
+sub catfile {
+    return File::Spec::Functions::catfile (
+	grep {defined and length} map splitdir($_), @_
+    )
 }
 
 sub devnull () {
