@@ -28,13 +28,20 @@ sub parse_arg {
         # (otherwise it hurts when user types //deep/directory/name)
         $self->{parent} = 1;
 
-        $self->{_checkout_path} = $dst;
         my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
         $path =~ s{^//+}{};
         $path =~ s{//+}{/};
         $path = "//$path" unless $path =~ m!^/!;
-        $path = "$path/" unless $path =~ m!/\z!;
-        $dst = $self->arg_depotpath($path);
+        $path =~ s{/$}{};
+
+        if (length $dst) {
+            $self->{_checkout_path} = $dst;
+        }
+        else {
+            $self->{_checkout_path} = (splitdir($path))[-1];
+        }
+
+        $dst = $self->arg_depotpath("$path/");
     }
 
     return (@src, $dst);
@@ -169,7 +176,7 @@ sub run {
 	$self->finalize_dynamic_editor ($editor);
     }
 
-    if (my $copath = $self->{_checkout_path}) {
+    if (defined( my $copath = $self->{_checkout_path} )) {
         my $checkout = $self->command ('checkout');
 	$checkout->getopt ([]);
         my @arg = $checkout->parse_arg ($dst->{report}, $copath);
