@@ -89,7 +89,6 @@ sub do_add {
 	 }, $arg{copath});
 
     $info->{checkout}->store ($arg{copath}, { schedule => 'add' });
-
 }
 
 sub do_delete {
@@ -122,6 +121,39 @@ sub do_delete {
     -d $arg{copath} ? rmtree ([$arg{copath}]) : unlink($arg{copath});
 }
 
+sub do_revert {
+    my ($info, %arg) = @_;
+
+    my $revert = sub {
+	# revert dir too...
+#	warn "reverting $_[1]...";
+#	return;
+	warn "$_[1] already exists" if -e $_[1];
+	open my ($fh), '>', $_[1];
+	my $content = $arg{repos}->fs->revision_root ($info->{checkout}->get ($_[1])->{revision})->file_contents ($_[0]);
+	local $/;
+	my $buf = <$content>;
+	print $fh $buf;
+	$info->{checkout}->store ($_[1],
+				  {schedule => undef});
+	print "Reverted $_[1]\n";
+    };
+
+    checkout_crawler ($info,
+		      (%arg,
+		       cb_add =>
+		       sub {
+			   $info->{checkout}->store ($_[1],
+						     {schedule => undef});
+			   print "Reverted $_[1]\n";
+		       },
+		       cb_changed => $revert,
+		       cb_delete => $revert,
+		      )
+		     );
+}
+
+
 use File::Find;
 
 sub checkout_crawler {
@@ -132,6 +164,9 @@ sub checkout_crawler {
 
     my %torm;
     for ($info->{checkout}->find ($arg{copath}, {schedule => 'delete'})) {
+	die "auto anchor not supported yet, call with upper level directory"
+	    if $_ eq $arg{copath};
+
 	my (undef,$pdir,undef) = File::Spec->splitpath ($_);
 	chop $pdir;
 
@@ -144,10 +179,16 @@ sub checkout_crawler {
     find(sub {
 	     my $cpath = $File::Find::name;
 
-	     $cpath =~ s|^$arg{copath}/|$arg{path}/|;
-	     # XXX: the case should only happen when copath is dir
 	     # seems gotta do anchor/target in a upper level?
-	     $cpath = '' if $cpath eq $arg{copath};
+	     if (-d $arg{copath}) {
+		 $cpath =~ s|^$arg{copath}/|$arg{path}/|;
+		 $cpath = $arg{path} if $cpath eq $arg{copath};
+	     }
+	     else {
+		 my (undef, $anchor) = File::Spec->splitpath ($arg{copath});
+		 my (undef, $canchor) = File::Spec->splitpath ($arg{path});
+		 $cpath =~ s|^$anchor|$canchor|;
+	     }
 	     if (exists $torm{$File::Find::name}) {
 		 my @items = ($arg{delete_only_parent}) ?
 		     @{$torm{$File::Find::name}} :

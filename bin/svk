@@ -57,7 +57,12 @@ sub find_repos_from_co {
     die "$copath not a checkout path" unless %$cinfo;
     my ($repospath, $path, $repos) = find_repos ($cinfo->{depotpath}, $open);
 
-    $copath =~ s/^$coroot//;
+    if ($copath eq $coroot) {
+	$copath = '';
+    }
+    else {
+	$copath =~ s|^$coroot/|/|;
+    }
 
     return ($repospath, $path.$copath, $cinfo, $repos);
 }
@@ -269,6 +274,22 @@ sub delete {
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
     SVN::XD::do_delete ($info,
+			repos => $repos,
+			copath => $copath,
+			path => $path,
+		       );
+}
+
+=head2 revert
+
+=cut
+
+sub revert {
+    my ($copath) = @_;
+    $copath = File::Spec->rel2abs ($copath);
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    SVN::XD::do_revert ($info,
 			repos => $repos,
 			copath => $copath,
 			path => $path,

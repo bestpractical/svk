@@ -35,9 +35,9 @@ ok($svk::info->{checkout}->get ("$corpath/A/foo")->{revision} == 1);
 svk::update ("$copath");
 ok($svk::info->{checkout}->get ("$corpath")->{revision} == 1);
 
-svk::rm ("$copath/A");
-ok(!-e "$copath/A");
-svk::commit ('-m', 'commit message here', "$copath");
+svk::rm ("$copath/A/bar");
+ok(!-e "$copath/A/bar");
+svk::commit ('-m', 'commit message here', "$copath/A");
 
 use YAML;
 warn Dump ($svk::info);

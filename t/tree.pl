@@ -25,6 +25,7 @@ sub cleanup_test {
     my $info = shift;
     for (values %{$info->{depotmap}}) {
 	die if $_ eq '/';
+	print `svn log -v file://$_`;
 	diag "removing $_";
 	`rm -rf $_`;
     }
