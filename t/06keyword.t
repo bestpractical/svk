@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 24;
+use Test::More tests => 26;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -110,3 +110,28 @@ SKIP: {
 skip 'fix inconsistent eol-style after commit', 1;
 is_file_content_raw ("$copath/le/mixed", "mixed$Native...endings$Native...");
 }
+
+overwrite_file_raw ("$copath/le/mixed2", '');
+$svk->add ("$copath/le");
+$svk->ci (-m => 'some mixed le in repository', $copath );
+$svk->cp (-m => 'tmp', '//le' => '//le2');
+overwrite_file_raw ("$copath/le/mixed2", "mixed$CRLF...endings$CR...");
+$svk->ci (-m => 'some mixed le in repository', $copath );
+$svk->up ($copath);
+$svk->ps ('svn:eol-style', 'native', "$copath/le2/mixed2");
+$svk->ci (-m => 'some mixed le in repository', $copath );
+
+$svk->sm (-m => 'move eol prop around', -f => '//le2');
+
+$svk->up ($copath);
+# XXX: need to do rmcache here to make the file properly modified
+$svk->admin ('rmcache');
+is_output ($svk, 'st', [$copath],
+	   [__"M   $copath/le/mixed2"]);
+
+rmtree [$copath];
+
+$svk->checkout ('//', $copath);
+$svk->admin ('rmcache');
+is_output ($svk, 'st', [$copath],
+	   [__"M   $copath/le/mixed2"]);

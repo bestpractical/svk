@@ -1299,12 +1299,14 @@ sub get_eol_layer {
     if (NATIVE eq LF) {
 	return ':raw' if $mode eq '>' && ($k eq 'native' or $k eq 'LF');
     }
+    # XXX: on write we should actually be notified when it's to be
+    # normalized.
     if ($k eq 'native') {
 	$checkle = $checkle ? '!' : '';
-        return ":raw:eol(LF$checkle-Native!)";
+        return ":raw:eol(LF$checkle-Native)";
     }
     elsif ($k eq 'CRLF' or $k eq 'CR' or $k eq 'LF') {
-	$k .= '!' if $checkle || $mode eq '>';
+	$k .= '!' if $checkle;
         return ":raw:eol($k)";
     }
     else {
