@@ -21,6 +21,7 @@ sub parse_arg {
     return undef if $self->{list};
     return (@arg ? @arg : '') if $self->{detach};
     return (@arg >= 2 ? @arg : ('', @arg)) if $self->{relocate};
+    @arg or return;
 
     my $depotpath = $self->arg_uri_maybe ($arg[0]);
     die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
@@ -77,7 +78,7 @@ sub _do_list {
     my $fmt = "%-20s\t%-s\n";
     printf $fmt, loc('Depot Path'), loc('Path');
     print '=' x 60, "\n";
-    print sort(map sprintf($fmt, $map->{$_}{depotpath}, $_), keys %$map);
+    print sort(map sprintf($fmt, $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
     return;
 }
 
