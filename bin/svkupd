@@ -8,6 +8,7 @@ use SVK::Editor::Network;
 use SVK::Editor::Delay;
 #use PerlIO::gzip;
 use SVK::Target;
+use SVK::Util qw(slurp_fh);
 
 use vars qw($VERSION @ISA);
 $VERSION = '0.01';
@@ -76,7 +77,7 @@ sub read_request {
 }
 
 # allowed commmands
-my %cmd = map {$_ => 1} qw/delta init/;
+my %cmd = map {$_ => 1} qw/delta init fetch/;
 
 sub process_request {
     my ($self, $sock) = @_;
@@ -134,6 +135,19 @@ sub delta {
 			      newpath => $newtarget->{path},
 			      editor => SVK::Editor::Delay->new ($editor));
     $self->{socket}->autoflush (1);
+    return 1;
+}
+
+sub fetch {
+    my ($self, $req, $resource) = @_;
+    my $target = SVK::Target::Universal->new (split (':', $resource, 3));
+    $target = $target->local ($self->{xd}, '')
+	or $self->fatal ("Can't find $target->{uuid}:$target->{path}");
+
+    my $root = $target->root;
+    $self->{socket}->print (pack ('nn', $req, $root->file_length ($target->path)));
+    my $fh = $root->file_contents ($target->path);
+    slurp_fh ($fh, $self->{socket});
     return 1;
 }
 

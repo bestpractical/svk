@@ -8,6 +8,7 @@ use Data::Hierarchy;
 use SVK::Editor::Local;
 use SVK::Editor::Network;
 use SVK::Target;
+use SVK::Util qw(slurp_fh);
 use YAML;
 
 =head2 TODO
@@ -70,6 +71,9 @@ $handler{0} = sub { print_msg (0, @_) };
 $handler{65535} = sub { print_msg (1, @_) };
 
 eval { use Time::HiRes qw(time); };
+
+# state for editor call process
+my ($closed, $hold_close);
 
 sub main {
     my $sock = IO::Socket::INET->new ( PeerAddr => $server,
@@ -140,16 +144,62 @@ sub thaw_fd {
     return $entry;
 }
 
-sub emit_editor_call {
-    my ($dispatch, $sock) = @_;
-    my $call = thaw_fd ($sock);
+sub fixup_text {
+    my ($dispatch, $sock, $entry, $call) = @_;
+    # assert $call->[1] is apply_textdelta
+    my $sca = ${read_msg ($sock)};
+    open my $content, '<', \$sca or die $!;
+    my $path = SVK::Target->copath ($copath, $entry);
+    open my $fh, '>', $path or die $!;
+    slurp_fh ($content, $fh);
+    close $fh;
+    $dispatch->{editor}{cb_base_checksum} =
+	sub { my $path = shift;
+	      die "===> checksum of $path still bad after refetch";
+	  };
+    $dispatch->{editor}{notify}->node_extra ($entry, 'fixed');
     $dispatch->emit ($call);
-    return unless $call->[1] eq 'close_edit';
+    $dispatch->emit ($hold_close->{$call->[2]})
+	if ref ($hold_close->{$call->[2]});
+    delete $hold_close->{$call->[2]};
+    finalize ($dispatch);
+}
+
+sub finalize {
+    my $dispatch = shift;
+    $dispatch->{editor}{notify}->flush_dir ('', 1); # all fixed stuff
+    return unless $closed and !keys %$hold_close;
     my $rev = $dispatch->{editor}{revision};
     open my $fh, '>', "$copath/.svkup" or die $!;
     $target =~ s/:\d+$/:$rev/ or $target .= ":$rev";
     print $fh "$target\n";
     $done = 1;
+}
+
+sub emit_editor_call {
+    my ($dispatch, $sock) = @_;
+    my $call = thaw_fd ($sock);
+    # defer corresponding close_file call
+    if ($call->[1] eq 'close_file' && exists $hold_close->{$call->[2]}) {
+	$hold_close->{$call->[2]} = $call;
+	return;
+    }
+    # install base fixup handler
+    $dispatch->{editor}{cb_base_checksum} =
+	sub { my $path = shift;
+	      my $node_res = $resource;
+	      $node_res =~ s/:(.*):(\d+)$/:$1$path:$2/;
+	      $hold_close->{$call->[2]} = 1;
+	      send_cmd ($sock, "fetch $node_res\n", sub { fixup_text ($dispatch, $sock, $path, $call) });
+	      return undef;
+	  }
+	    if $call->[1] eq 'apply_textdelta';
+
+    $dispatch->emit ($call);
+
+    $closed = 1
+	if $call->[1] eq 'close_edit';
+    finalize ($dispatch);
 }
 
 &main;

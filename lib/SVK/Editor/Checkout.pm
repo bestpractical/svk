@@ -91,7 +91,13 @@ sub get_base {
     open my $base, '<', $basename or die $!;
     if (!$self->{ignore_checksum} && $checksum) {
 	my $md5 = md5_fh ($base);
-	die loc("source checksum mismatch") if $md5 ne $checksum;
+	if ($md5 ne $checksum) {
+	    close $base;
+	    rename $basename, $copath;
+	    return $self->{cb_base_checksum}->($path)
+		if $self->{cb_base_checksum};
+	    die loc("source checksum mismatch")
+	}
 	seek $base, 0, 0;
     }
 
@@ -111,7 +117,8 @@ sub apply_textdelta {
     $self->{get_copath}($copath);
     my $base;
     unless ($self->{added}{$path}) {
-	$self->{base}{$path} = $self->get_base ($path, $copath, $checksum);
+	$self->{base}{$path} = $self->get_base ($path, $copath, $checksum)
+	    or return undef;
 	$base = $self->{base}{$path}[0];
     }
 
@@ -187,11 +194,12 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self) = @_;
-    $self->close_directory('');
+#    $self->close_directory('');
 }
 
 sub abort_edit {
     my ($self) = @_;
+    # XXX: check this
     $self->close_directory('');
 }
 

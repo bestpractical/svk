@@ -76,6 +76,12 @@ sub node_status {
     return $self->{status}{$path}[0];
 }
 
+sub node_extra {
+    my ($self, $path, $s) = @_;
+    $self->{extra}{$path} = $s if defined $s;
+    return $self->{extra}{$path};
+}
+
 my %prop = ( 'U' => 0, 'g' => 1, 'G' => 2, 'M' => 3, 'C' => 4);
 
 sub prop_status {
@@ -99,8 +105,9 @@ sub flush {
     my ($self, $path, $anchor) = @_;
     return if $self->{quiet};
     my $status = $self->{status}{$path};
+    my $extra = $self->{extra}{$path};
     if ($status && grep {$_} @{$status}[0..2]) {
-	$self->{cb_flush}->($path, $status) if $self->{cb_flush};
+	$self->{cb_flush}->($path, $status, $extra) if $self->{cb_flush};
     }
     elsif (!$status && !$anchor) {
 	$self->{cb_skip}->($path) if $self->{cb_skip};

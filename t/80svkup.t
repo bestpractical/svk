@@ -8,7 +8,7 @@ if ($^O eq 'MSWin32') {
     plan skip_all => "win32";
     exit;
 };
-plan tests => 6;
+plan tests => 7;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -44,8 +44,11 @@ run_svkup ($copath);
 run_svkup ($copath);
 
 # recheckout base if it's modified.
-#append_file ("$copath/me", "modified\n");
-#run_svkup ($copath);
+append_file ("$copath/me", "modified\n");
+run_svkup ($copath, "$uuid:/:1");
+
+is_file_content ("$copath/me", "first line in me\n2nd line in me\n");
+
 
 sub run_svkup {
 #    my ($path, $target) = @_;
