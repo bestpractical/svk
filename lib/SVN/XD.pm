@@ -121,6 +121,34 @@ sub do_delete {
     -d $arg{copath} ? rmtree ([$arg{copath}]) : unlink($arg{copath});
 }
 
+sub do_propset {
+    my ($info, %arg) = @_;
+    my %values;
+
+    my ($txn, $xdroot) = create_xd_root ($info, %arg);
+
+    die "$arg{copath} not under version control"
+	if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
+
+    #XXX: support working on multiple paths and recursive
+    my ($data, @where) = $info->{checkout}->get ($arg{copath});
+    if ($where[-1] eq $arg{copath}) {
+	die "$arg{copath} is already schedule for delete"
+	    if $data->{schedule} eq 'delete';
+	%values = %{$data->{newprop}}
+	    if exists $data->{schedule};
+    }
+    $info->{checkout}->store ($arg{copath}, { schedule =>
+					      $data->{schedule} || 'prop',
+					      newprop => {%values,
+							  $arg{propname} =>
+							  $arg{propvalue},
+							 }});
+    print " M $arg{copath}\n";
+
+    SVN::Fs::close_txn ($txn) if $txn;
+}
+
 sub do_revert {
     my ($info, %arg) = @_;
 
@@ -139,14 +167,17 @@ sub do_revert {
 	print "Reverted $_[1]\n";
     };
 
+    my $unschedule = sub {
+	$info->{checkout}->store ($_[1],
+				  {schedule => undef,
+				   newprop => undef});
+	print "Reverted $_[1]\n";
+    };
+
     checkout_crawler ($info,
 		      (%arg,
-		       cb_add =>
-		       sub {
-			   $info->{checkout}->store ($_[1],
-						     {schedule => undef});
-			   print "Reverted $_[1]\n";
-		       },
+		       cb_add => $unschedule,
+		       cb_prop => $unschedule,
 		       cb_changed => $revert,
 		       cb_delete => $revert,
 		      )
@@ -206,6 +237,11 @@ sub checkout_crawler {
 		 if ($schedule{$File::Find::name} eq 'add') {
 		     &{$arg{cb_add}} ($cpath, $File::Find::name)
 			 if $arg{cb_add};
+		     return;
+		 }
+		 if ($schedule{$File::Find::name} eq 'prop') {
+		     &{$arg{cb_prop}} ($cpath, $File::Find::name)
+			 if $arg{cb_prop};
 		     return;
 		 }
 	     }

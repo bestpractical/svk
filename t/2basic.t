@@ -35,6 +35,9 @@ ok($svk::info->{checkout}->get ("$corpath/A/foo")->{revision} == 1);
 svk::update ("$copath");
 ok($svk::info->{checkout}->get ("$corpath")->{revision} == 1);
 
+svk::ps ('someprop', 'propvalue', "$copath/A");
+svk::ps ('moreprop', 'propvalue', "$copath/A");
+
 svk::rm ("$copath/A/bar");
 ok(!-e "$copath/A/bar");
 svk::commit ('-m', 'commit message here', "$copath/A");
