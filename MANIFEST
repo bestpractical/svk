@@ -63,6 +63,7 @@ lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/XD.pm
 lib/SVK/Help/Index.pod
+lib/SVK/Help/Intro.pod
 lib/SVK/Help/zh_cn/Index.pod
 lib/SVK/Help/zh_tw/Index.pod
 lib/SVK/I18N.pm
@@ -160,7 +161,6 @@ t/72sign.t
 t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl
-TODO
 utils/extract-docs
 utils/extract-message-catalog
 utils/svk-ediff.el
