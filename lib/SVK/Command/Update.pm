@@ -30,6 +30,9 @@ sub lock {
 sub run {
     my ($self, @arg) = @_;
 
+    die loc ("-r cannot be used in conjunction with -s or -m.\n")
+	if defined $self->{rev} && ($self->{merge} || $self->{sync});
+
     for my $target (@arg) {
 	my $update_target = SVK::Target->new
 	    ( %$target,
@@ -76,7 +79,7 @@ sub run {
                 $merge_target->copied_from($self->{sync}) => $merge_target
             );
         }
-	$update_target->refresh_revision;
+	$update_target->refresh_revision if $self->{sync} || $self->{merge};
 
 	$self->do_update ($target, $update_target);
     }
