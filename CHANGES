@@ -1,3 +1,23 @@
+[Changes for 0.05 - 06 Dec, 2003]
+
+* svk help and some usage are written.
+
+* Better svk diff support.
+
+* Mergeback now transfers textdelta.
+
+* update, add, delete, revert, and sync now support multiple targets.
+
+* svk depotmap for depot mapping configuration.
+
+* Fix a segfault for empty merges.
+
+* mergeticket handling now mutliple-safe.
+
+* Committing to mirrored path now forbidden by default.
+
+* Require svn 0.35.
+
 [Changes for 0.04 - 06 Dec, 2003]
 
 * Textual merge now uses svn's internal diff library.

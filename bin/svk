@@ -220,7 +220,12 @@ sub checkout {
     }
 
     mkdir ($copath);
-    $info->{checkout}->store_recursively ($copath, {depotpath => $depotpath, revision =>0});
+    $info->{checkout}->store_recursively ($copath,
+					  {depotpath => $depotpath,
+					   schedule => undef,
+					   newprop => undef,
+					   conflict => undef,
+					   revision =>0});
 
     update ($copath);
 }
@@ -269,11 +274,19 @@ sub diff {
 	($repospath, $path, undef, $repos) =
 	    find_repos_from_co (File::Spec->rel2abs ($tgt || ''), 1)
 		if $@;
-
 	undef $@;
 
 	my $fs = $repos->fs;
 	my $baseroot = $fs->revision_root ($fromrev);
+	my $newroot = $fs->revision_root ($torev);
+
+	if ($baseroot->check_path ($path) == $SVN::Node::file) {
+	    SVN::DiffEditor::output_diff ($path, "revision $fromrev", "revision $torev",
+					  $baseroot->file_contents ($path),
+					  $newroot->file_contents ($path));
+	    return;
+	}
+
 	my $editor = SVN::DiffEditor->new
 	    ( cb_basecontent => sub { my ($rpath) = @_;
 				      my $base = $baseroot->file_contents ("$path/$rpath");
@@ -282,9 +295,9 @@ sub diff {
 	      llabel => "revision $fromrev",
 	      rlabel => "revision $torev",
 	    );
-	SVN::Repos::dir_delta ($baseroot,
-			       $path, undef,
-			       $fs->revision_root ($torev), $path,
+
+	SVN::Repos::dir_delta ($baseroot, $path, undef,
+			       $newroot, $path,
 			       $editor, undef,
 			       1, 1, 0, 1);
 
@@ -302,6 +315,17 @@ sub diff {
 						      copath => $copath);
 
 	my $baseroot = $revspec ? $fs->revision_root ($revspec) : $xdroot;
+
+	if ($baseroot->check_path ($path) == $SVN::Node::file) {
+	    SVN::DiffEditor::output_diff ($path,
+					  $revspec ||
+					  'revision '.$info->{checkout}->get ($copath)->{revision},
+					  "local",
+					  $baseroot->file_contents ($path),
+					  SVN::XD::get_fh ($xdroot, '<', $path, $copath));
+	    return;
+	}
+
 	my $editor = SVN::DiffEditor->new
 	    ( cb_basecontent =>
 	      sub { my ($rpath) = @_;
@@ -313,6 +337,7 @@ sub diff {
 	      },
 	      cb_llabel =>
 	      sub { my ($rpath) = @_;
+		    $revspec ||
 		    'revision '.
 			$info->{checkout}->get ("$copath/$rpath")->{revision};
 	      },
@@ -372,6 +397,33 @@ sub status {
 			       },
 			      );
 
+}
+
+=head2 resolved
+
+Mark checkout files or directories as resolved from conflict state.
+
+usage: resolved PATH...
+
+=cut
+
+sub resolved {
+    local @ARGV = @_;
+    my $rec = 0;
+    die unless GetOptions ("R|recursive"	=> \$rec);
+
+    for my $copath (@ARGV) {
+	$copath = File::Spec->rel2abs ($copath || '');
+	my ($repospath, $path, undef, $repos) =
+	    find_repos_from_co ($copath, 1);
+
+	SVN::XD::do_resolved ($info,
+			      repos => $repos,
+			      copath => $copath,
+			      path => $path,
+			      recursive => $rec,
+			     );
+    }
 }
 
 =head2 annotate (blame)
@@ -972,7 +1024,7 @@ sub merge {
 			       ($baton, 'svk:merge',
 				get_new_ticket ($root, $dpath, $uuid,
 						$path, $rev));
-		       } unless $no_ticket;
+		       } unless $no_ticket || $check_only;
     }
 
     # support incremental merging (merge one revision by one)

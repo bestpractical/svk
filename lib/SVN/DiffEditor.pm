@@ -39,20 +39,31 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
+    return unless defined $self->{info}{$path}{new};
+
     my $base = $self->{info}{$path}{added} ?
-	undef : $self->{cb_basecontent} ($path);
-    local $/;
-    # XXX: this slurp is dangerous. waiting for streamy svndiff routine
-    $base = $base ? <$base> : '';
+	\'' : $self->{cb_basecontent} ($path);
     my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
     my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
+
+    output_diff ($path, $llabel, $rlabel, $base, \$self->{info}{$path}{new});
+
+    delete $self->{info}{$path};
+}
+
+sub output_diff {
+    my ($path, $llabel, $rlabel, $ltext, $rtext) = @_;
+
+    # XXX: this slurp is dangerous. waiting for streamy svndiff routine
+    local $/;
+    $ltext = \<$ltext> if ref ($ltext) && ref ($ltext) ne 'SCALAR';
+    $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
+
     print "Index: $path\n";
     print '=' x 66,"\n";
     print "--- $path  ($llabel)\n";
     print "+++ $path  ($rlabel)\n";
-    print Text::Diff::diff (\$base, \$self->{info}{$path}{new});
-    delete $self->{info}{$path};
-
+    print Text::Diff::diff ($ltext, $rtext);
 }
 
 sub add_directory {

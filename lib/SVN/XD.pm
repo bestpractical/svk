@@ -53,7 +53,7 @@ sub translator {
 }
 
 sub xd_storage_cb {
-    my ($info, $anchor, $target, $copath, $xdroot) = @_;
+    my ($info, $anchor, $target, $copath, $xdroot, $check_only) = @_;
     my $t = translator ($target, $copath);
 
     return
@@ -61,7 +61,9 @@ sub xd_storage_cb {
 	  cb_rev => sub { $_ = shift; s|$t|$copath/|;
 			  $info->{checkout}->get ($_)->{revision} },
 	  cb_conflict => sub { $_ = shift; s|$t|$copath/|;
-			       $info->{checkout}->store ($_, {conflict => 1})},
+			       $info->{checkout}->store ($_, {conflict => 1})
+				   unless $check_only;
+			   },
 	  cb_localmod => sub { my ($path, $checksum) = @_;
 			       $_ = $path; s|$t|$copath/|;
 			       my $base = get_fh ($xdroot, '<',
@@ -477,6 +479,28 @@ sub checkout_crawler {
     $txn->abort if $txn;
 }
 
+sub resolved_entry {
+    my ($info, $entry) = @_;
+    my $val = $info->{checkout}->get_single ($entry);
+    return unless $val && $val->{conflict};
+    $info->{checkout}->store_single
+	($entry, {%$val, conflict => undef});
+    print "$entry marked as resolved.\n";
+}
+
+sub do_resolved {
+    my ($info, %arg) = @_;
+
+    if ($arg{recursive}) {
+	for ($info->{checkout}->find ($arg{copath}, {conflict => 1})) {
+	    resolved_entry ($info, $_);
+	}
+    }
+    else {
+	resolved_entry ($info, $arg{copath});
+    }
+}
+
 sub do_merge {
     my ($info, %arg) = @_;
     # XXX: reorganize these shit
@@ -537,7 +561,8 @@ sub do_merge {
 	      info => $info,
 	      check_only => $arg{check_only},
 	    );
-	%cb = xd_storage_cb ($info, $tgt_anchor, $tgt, $arg{copath}, $xdroot),
+	%cb = xd_storage_cb ($info, $tgt_anchor, $tgt,
+			     $arg{copath}, $xdroot, $arg{check_only}),
     }
     else {
 	my $editor = $arg{editor};

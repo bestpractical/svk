@@ -117,7 +117,8 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     # tag for merge of file adding
-    $self->{info}{$path}{status} = (&{$self->{cb_exist}}($path) ? undef : ['A']);
+    $self->{info}{$path}{status} =
+	(!defined $pdir || &{$self->{cb_exist}}($path) ? undef : ['A']);
     $self->{storage_baton}{$path} =
 	$self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg)
 	if $self->{info}{$path}{status};
@@ -127,7 +128,8 @@ sub add_file {
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    $self->{info}{$path}{status} = (&{$self->{cb_exist}}($path) ? [] : undef);
+    $self->{info}{$path}{status} =
+	(defined $pdir && &{$self->{cb_exist}}($path) ? [] : undef);
     $self->{info}{$path}{open} = [$pdir, $rev, $pool]
 	if $self->{info}{$path}{status};
     return $path;
@@ -313,6 +315,8 @@ sub add_directory {
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
+    return undef unless &{$self->{cb_exist}}($path);
+
     $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  &{$self->{cb_rev}}($path), @arg);
