@@ -84,7 +84,10 @@ sub new {
     %$self = @_;
 
     if ($self->{svkpath}) {
-        mkdir($self->{svkpath}) or die loc("Cannot create svk-config-directory at '%1': %2", $self->{svkpath}, $!) unless -d $self->{svkpath};
+        mkdir($self->{svkpath})
+	    or die loc("Cannot create svk-config-directory at '%1': %2\n",
+		       $self->{svkpath}, $!)
+	    unless -d $self->{svkpath};
         $self->{signature} ||= SVK::XD::Signature->new (root => $self->cache_directory)
     }
 
@@ -254,11 +257,11 @@ sub giant_lock {
         }
 
         $self->{updated} = 1;
-        die loc("another svk might be running; remove %1 if not", $self->{giantlock});
+        die loc("Another svk might be running; remove %1 if not.\n", $self->{giantlock});
     }
 
     open my ($lock), '>', $self->{giantlock}
-	or die loc("cannot acquire giant lock");
+	or die loc("Cannot acquire giant loc %1:%2.\n", $self->{giantlock}, $!);
     print $lock $$;
     close $lock;
     $self->{giantlocked} = 1;
