@@ -27,6 +27,7 @@ lib/SVK/Command/Delete.pm
 lib/SVK/Command/Depotmap.pm
 lib/SVK/Command/Describe.pm
 lib/SVK/Command/Diff.pm
+lib/SVK/Command/Help.pm
 lib/SVK/Command/Import.pm
 lib/SVK/Command/Info.pm
 lib/SVK/Command/List.pm

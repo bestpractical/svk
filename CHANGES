@@ -1,3 +1,38 @@
+[Changes for 0.12 - 28 Mar, 2004 - YAPC::Taipei::2004 Release Party]
+
+* Report hostname when doing smerge -l.
+
+* Support external diff with environment variable SVKDIFF.
+
+* Various improvements in svk status and revert.
+
+* Support pgp signatures and verification with gpg.
+
+* Cache copy history lookup.
+
+* Use perlio scalar instead of IO::String for the output of textual
+  merge. This is about 15% faster than IO::String.
+
+* Support delete depotpath directly.
+
+* DelayEditor for Optimizing editor calls before sending to expensive editors.
+
+* Various tree merge improvements in MergeEditor and XD::Editor.
+
+* Command Options in POD. [Jesse Vincent]
+
+* svk move. [Autrijus Tang]
+
+* svk list -R. [viirya]
+
+* zh translation. [Autrijus, Piaip]
+
+* i18n framework. [Autrijus Tang]
+
+* Fix svk cleanup.
+
+* Fix checkout to a path with trailing slash. [#2350]
+
 [Changes for 0.11 - 14 Mar, 2004]
 
 ***WANRING*** 
