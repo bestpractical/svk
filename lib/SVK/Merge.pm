@@ -306,7 +306,7 @@ sub run {
 	      oldpath => [$self->{base}{path}, $self->{base}{targets}[0] || ''],
 	      newpath => $self->{src}{targets}[0]
 	      ? "$self->{src}{path}/$self->{src}{targets}[0]" : $self->{src}{path},
-	      editor => $editor
+	      no_recurse => $self->{no_recurse}, editor => $editor
 	    );
     print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
 

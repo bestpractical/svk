@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 10;
+use Test::More tests => 13;
 use strict;
 require 't/tree.pl';
 use SVK::Command;
@@ -36,6 +36,13 @@ ok ($@ =~ qr'overlapping checkout');
 
 $svk->checkout ('-r5', '//V-3.1', 'V-3.1-r5');
 ok (-e 'V-3.1-r5/A/P/pe');
+
+is_output ($svk, 'checkout', ['-Nr5', '//V-3.1', 'V-3.1-nr'],
+	   ["Syncing //V-3.1(/V-3.1) in $corpath/V-3.1-nr to 5.",
+	    'A   V-3.1',
+	    'A   V-3.1/me'], 'checkout - non-recursive');
+ok (!-e 'V-3.1-nr/A');
+ok (-e 'V-3.1-nr/me');
 
 TODO: {
 local $TODO = 'checkout target is file';

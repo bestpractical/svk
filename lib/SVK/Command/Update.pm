@@ -4,6 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 
 sub options {
     ('r|revision=i'   => 'rev',
@@ -33,13 +34,40 @@ sub run {
 	      copath => undef
 	    );
 
-	$self->{xd}->do_update
-	    ( cotarget => $target,
-	      update_target => $update_target,
-	      recursive => !$self->{nonrecursive},
-	    );
+	$self->do_update ($target, $update_target);
     }
     return;
+}
+
+sub do_update {
+    my ($self, $cotarget, $update_target) = @_;
+    my $xdroot = $cotarget->root ($self->{xd});
+    my ($path, $copath) = @{$cotarget}{qw/path copath/}; # unanchorified
+
+    print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
+	      $update_target->{revision});
+    unless ($xdroot->check_path ($cotarget->{path}) == $SVN::Node::dir) {
+	$cotarget->anchorify;
+	$update_target->anchorify;
+    }
+    else {
+	mkdir ($cotarget->{copath})
+	    unless $self->{check_only};
+    }
+    # XXX: this should really be in SVK::Target
+    $update_target->{report} .= '/'
+	if $update_target->{report} ne '' && substr($update_target->{report}, -1, 1) ne '/';
+
+    my $merge = SVK::Merge->new
+	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
+	 no_recurse => $self->{nonrecursive},
+	 src => $update_target, xd => $self->{xd}, check_only => $self->{check_only});
+    $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+					  oldroot => $xdroot, newroot => $update_target->root,
+					  revision => $update_target->{revision},
+					  anchor => $cotarget->{path},
+					  target => $cotarget->{targets}[0] || '',
+					  update => 1, check_only => $self->{check_only}));
 }
 
 1;

@@ -481,37 +481,6 @@ sub get_editor {
     return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
 }
 
-sub do_update {
-    my ($self, %arg) = @_;
-    my ($cotarget, $update_target) = @arg{qw/cotarget update_target/};
-    my $xdroot = $self->xdroot (%$cotarget);
-    my ($path, $copath) = @{$cotarget}{qw/path copath/}; # unanchorified
-
-    print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
-	      $update_target->{revision});
-    unless ($xdroot->check_path ($cotarget->{path}) == $SVN::Node::dir) {
-	$cotarget->anchorify;
-	$update_target->anchorify;
-    }
-    else {
-	mkdir ($cotarget->{copath})
-	    unless $arg{check_only};
-    }
-    # XXX: this should really be in SVK::Target
-    $update_target->{report} .= '/'
-	if $update_target->{report} ne '' && substr($update_target->{report}, -1, 1) ne '/';
-
-    my $merge = SVK::Merge->new
-	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
-	 src => $update_target, xd => $self, check_only => $arg{check_only});
-    $merge->run ($self->get_editor (copath => $copath, path => $path,
-				    oldroot => $xdroot, newroot => $update_target->root,
-				    revision => $update_target->{revision},
-				    anchor => $cotarget->{path},
-				    target => $cotarget->{targets}[0] || '',
-				    update => 1, check_only => $arg{check_only}));
-}
-
 sub do_add {
     my ($self, %arg) = @_;
 
