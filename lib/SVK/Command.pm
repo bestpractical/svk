@@ -28,6 +28,7 @@ my %alias = qw( co checkout
 		sy sync
 		desc describe
 		st status
+		stat status
 		ver version
 		ls list
 	      );
