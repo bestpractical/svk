@@ -1,7 +1,11 @@
 README
+CHANGES
 MANIFEST
+Makefile.PL
+lib/SVN/MergeEditor.pm
 lib/SVN/XD.pm
 bin/svk
+t/tree.pl
 t/1use.t
 t/2basic.t
 t/4merge.t

@@ -4,11 +4,11 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
+require SVN::MergeEditor;
 use Data::Hierarchy;
 use File::Spec;
 use File::Path;
 use YAML;
-use Algorithm::Merge;
 use File::Temp qw/:mktemp/;
 
 sub new {
@@ -31,10 +31,10 @@ sub create_xd_root {
 
     for (@paths) {
 	my $rev = $info->{checkout}->get ($_)->{revision};
-	if ($_ eq $arg{copath}) {
+	unless ($root) {
 	    $txn = $fs->begin_txn ($rev);
 	    $root = $txn->root();
-	    next;
+	    next if $_ eq $arg{copath};
 	}
 	s|^$arg{copath}/||;
 	$root->make_dir ($arg{path})
@@ -66,7 +66,7 @@ sub xd_storage_cb {
 			       $_ = $path; s|$t|$copath/|;
 			       my $base = get_fh ($xdroot, '<',
 						  "$anchor/$path", $_);
-			       my $md5 = SVN::XD::MergeEditor::md5 ($base);
+			       my $md5 = SVN::MergeEditor::md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
 			       return [$base, $_, $md5];
@@ -104,7 +104,7 @@ sub do_update {
 	  update => 1,
 	);
 
-    my $editor = SVN::XD::MergeEditor->new
+    my $editor = SVN::MergeEditor->new
 	(_debug => 0,
 	 fs => $fs,
 	 anchor => $anchor,
@@ -112,6 +112,7 @@ sub do_update {
 	 base_root => $xdroot,
 	 target => $target,
 	 storage => $storage,
+# SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
 	 xd_storage_cb ($info, $anchor, $target, $arg{copath}, $xdroot),
 	);
 
@@ -351,7 +352,7 @@ sub checkout_crawler {
 	     }
 
 	     my $fh = get_fh ($xdroot, '<', $cpath, $File::Find::name);
-	     if ($arg{cb_changed} && SVN::XD::MergeEditor::md5($fh) ne
+	     if ($arg{cb_changed} && SVN::MergeEditor::md5($fh) ne
 		 $xdroot->file_md5_checksum ($cpath)) {
 		 &{$arg{cb_changed}} ($cpath, $File::Find::name, $xdroot);
 	     }
@@ -461,13 +462,14 @@ sub do_merge {
 	      );
     }
 
-    my $editor = SVN::XD::MergeEditor->new
+    my $editor = SVN::MergeEditor->new
 	( anchor => $anchor,
 	  base_anchor => $base_anchor,
 	  base_root => $fs->revision_root ($arg{fromrev}),
 	  target => $target,
 	  cb_merged => $arg{cb_merged},
 	  storage => $storage,
+# SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
 	  %cb,
 	);
 
@@ -610,7 +612,7 @@ sub do_commit {
 	open $fh, '<', $cpath
 	    if $action eq 'A';
 	$fh ||= get_fh ($xdroot, '<', "$anchor/$tpath", $cpath);
-	my $md5 = SVN::XD::MergeEditor::md5 ($fh);
+	my $md5 = SVN::MergeEditor::md5 ($fh);
 	seek $fh, 0, 0;
 	$edit->modify_file ($tpath, $fh, $md5)
 	    unless $action eq 'P';
@@ -762,7 +764,7 @@ sub apply_textdelta {
 	$base = SVN::XD::get_fh ($self->{oldroot}, '<',
 				 "$self->{anchor}/$path", $copath);
 	if ($checksum) {
-	    my $md5 = SVN::XD::MergeEditor::md5($base);
+	    my $md5 = SVN::MergeEditor::md5($base);
 	    die "source checksum mismatch" if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}
@@ -847,235 +849,11 @@ sub change_dir_prop {
     $self->change_file_prop (@arg);
 }
 
-package SVN::XD::MergeEditor;
-our @ISA = qw(SVN::Delta::Editor);
-use Digest::MD5;
-use File::Temp qw/:mktemp/;
-
-sub md5 {
-    my $fh = shift;
-    my $ctx = Digest::MD5->new;
-    $ctx->addfile($fh);
-    return $ctx->hexdigest;
-}
-
-sub set_target_revision {
-    my ($self, $revision) = @_;
-    $self->{revision} = $revision;
-    $self->{storage}->set_target_revision ($revision);
-}
-
-sub open_root {
-    my ($self, $baserev) = @_;
-    $self->{baserev} = $baserev;
-    $self->{storage_baton}{''} =
-	$self->{storage}->open_root (&{$self->{cb_rev}}(''));
-    return '';
-}
-
-sub add_file {
-    my ($self, $path, $pdir, @arg) = @_;
-    # tag for merge of file adding
-    $self->{info}{$path}{status} = (&{$self->{cb_exist}}($path) ? undef : ['A']);
-    $self->{storage_baton}{$path} =
-	$self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg)
-	if $self->{info}{$path}{status};
-    return $path;
-}
-
-sub open_file {
-    my ($self, $path, $pdir, $rev, @arg) = @_;
-    # modified but rm locally - tag for conflict?
-    $self->{info}{$path}{status} = (&{$self->{cb_exist}}($path) ? [] : undef);
-    $self->{storage_baton}{$path} =
-	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
-				     &{$self->{cb_rev}}($path), @arg)
-	    if $self->{info}{$path}{status};
-    return $path;
-}
-
-sub apply_textdelta {
-    my ($self, $path, $checksum, $pool) = @_;
-    return unless $self->{info}{$path}{status};
-    my ($base, $newname);
-    unless ($self->{info}{$path}{status}[0]) { # open, has base
-	if ($self->{info}{$path}{fh}{local} = 
-	    &{$self->{cb_localmod}}($path, $checksum)) {
-	    # retrieve base
-	    $self->{info}{$path}{fh}{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
-	    my $rpath = $path;
-	    $rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
-	    my $buf = $self->{base_root}->file_contents ($rpath);
-	    local $/;
-	    $self->{info}{$path}{fh}{base}[0]->print(<$buf>);
-	    seek $self->{info}{$path}{fh}{base}[0], 0, 0;
-	    # get new
-	    my ($fh, $file) = mkstemps("/tmp/svk-mergeXXXXX", '.tmp');
-	    $self->{info}{$path}{fh}{new} = [$fh, $file];
-	    return [SVN::TxDelta::apply ($self->{info}{$path}{fh}{base}[0],
-					 $fh, undef, undef, $pool)];
-	}
-    }
-    $self->{info}{$path}{status}[0] = 'U';
-    return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
-					      $checksum, $pool);
-}
-
-sub close_file {
-    my ($self, $path, $checksum, $pool) = @_;
-    my $info = $self->{info}{$path};
-    my $fh = $info->{fh};
-    no warnings 'uninitialized';
-
-    # let close_directory reports about its children
-    if ($info->{fh}{local}) {
-	my ($orig, $new, $local) = map {$fh->{$_}[0]} qw/base new local/;
-	seek $orig, 0, 0;
-	open $new, $fh->{new}[1];
-#	seek $local, 0, 0;
-	{
-	    local $/;
-	    $orig = <$orig>;
-	    $new = <$new>;
-	    $local = <$local>;
-	}
-
-	if ($new eq $local) {
-	    close $fh->{base}[0];
-	    unlink $fh->{base}[1];
-	    close $fh->{new}[0];
-	    unlink $fh->{new}[1];
-
-	    delete $self->{info}{$path};
-	    $self->{storage}->close_file ($self->{storage_baton}{$path},
-					  $checksum, $pool);
-	    return;
-	}
-
-	my @mergearg =
-	    ([split "\n", $orig],
-	     [split "\n", $new],
-	     [split "\n", $local],
-	    );
-	# merge consistencies check
-	my $diff3 = Algorithm::Merge::diff3 (@mergearg);
-
-	for (@$diff3) {
-	    if ($_->[0] eq 'u' && ($_->[1] ne $_->[2] || $_->[2] ne $_->[3])) {
-		my $file = '/tmp/svk-merge-bug.yml';
-		unlink ($file);
-		YAML::DumpFile ($file, { orig => $orig, new => $new,
-					 local => $local ,diff3 => $diff3 });
-		die "merge result inconsistent, please send the file $file to {clkao,jsmith}\@cpan.org";
-	    }
-	}
-
-	# XXX: use traverse so we just output the result instead of
-	# buffering it
-	$info->{status}[0] = 'G';
-	my $merged = eval {Algorithm::Merge::merge (@mergearg,
-	     {CONFLICT => sub {
-		  my ($left, $right) = @_;
-		  $info->{status}[0] = 'C';
-		  q{<!-- ------ START CONFLICT ------ -->},
-		  (@$left),
-		  q{<!-- ---------------------------- -->},
-		  (@$right),
-		  q{<!-- ------  END  CONFLICT ------ -->},
-	      }}) };
-	die $@ if $@;
-
-	close $fh->{base}[0];
-	unlink $fh->{base}[1];
-	close $fh->{new}[0];
-	unlink $fh->{new}[1];
-	my $handle = $self->{storage}->
-	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
-			     $pool);
-
-	$merged = (join("\n", @$merged)."\n");
-	SVN::TxDelta::send_string ($merged, @$handle, $pool)
-		if $handle && $#{$handle} > 0;
-	$checksum = Digest::MD5::md5_hex ($merged);
-	&{$self->{cb_conflict}} ($path)
-	    if $info->{status}[0] eq 'C';
-    }
-
-    if ($info->{status}) {
-	print sprintf ("%1s%1s \%s\n", $info->{status}[0],
-		       $info->{status}[1], $path);
-	$self->{storage}->close_file ($self->{storage_baton}{$path},
-				      $checksum, $pool);
-    }
-    else {
-	print "   $path - skipped\n";
-    }
-    delete $self->{info}{$path};
-}
-
-sub add_directory {
-    my ($self, $path, $pdir, @arg) = @_;
-    $self->{storage_baton}{$path} =
-	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
-					 @arg);
-    return $path;
-}
-
-sub open_directory {
-    my ($self, $path, $pdir, $rev, @arg) = @_;
-    $self->{storage_baton}{$path} =
-	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
-					  &{$self->{cb_rev}}($path), @arg);
-    return $path;
-}
-
-sub close_directory {
-    my ($self, $path, $pool) = @_;
-    no warnings 'uninitialized';
-
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
-	 keys %{$self->{info}}) {
-	print sprintf ("%1s%1s \%s\n", $self->{info}{$_}{status}[0],
-		       $self->{info}{$_}{status}[1], $_);
-	delete $self->{info}{$_};
-    }
-
-    &{$self->{cb_merged}} ($self->{storage}, $self->{storage_baton}{''}, $pool)
-	if $path eq '' && $self->{cb_merged};
-
-    $self->{storage}->close_directory ($self->{storage_baton}{$path}, $pool);
-}
-
-sub delete_entry {
-    my ($self, $path, $revision, $pdir, @arg) = @_;
-    return unless &{$self->{cb_exist}}($path);
-
-    $self->{storage}->delete_entry ($path, $revision,
-				    $self->{storage_baton}{$pdir}, @arg);
-    $self->{info}{$path}{status} = ['D'];
-}
-
-sub change_file_prop {
-    my ($self, $path, @arg) = @_;
-    return unless $self->{info}{$path}{status};
-    $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{info}{$path}{status}[1] = 'U';
-}
-
-sub change_dir_prop {
-    my ($self, $path, @arg) = @_;
-    return unless $self->{info}{$path}{status};
-    return if $arg[0] eq 'svk:merge';
-    $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{info}{$path}{status}[1] = 'U';
-}
-
 sub close_edit {
-    my ($self, @arg) = @_;
-    $self->{storage}->close_edit(@arg);
+    my ($self) = @_;
+    $self->close_directory('');
 }
 
-#!/usr/bin/perl -w
 use strict;
 package PerlIO::via::keyword;
 
@@ -1129,5 +907,20 @@ our \@ISA = qw($class);
 sub via {
     ':via('.ref ($_[0]).')';
 }
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut
 
 1;

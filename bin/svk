@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-$VERSION = '0.01';
+$VERSION = '0.02';
 use strict;
 require SVN::Core;
 require SVN::Repos;
@@ -436,7 +436,13 @@ sub log {
 	($repospath, $path, undef, $repos) = find_repos_from_co ($tgt, 1);
     }
     my $fs = $repos->fs;
-    my ($fromrev, $torev) = ($fs->youngest_rev);
+    my ($fromrev, $torev);
+    ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
+	or $fromrev = $torev = $revspec
+	    if $revspec;
+    $fromrev ||= $fs->youngest_rev;
+    $torev ||= 0;
+
     if ($limit) {
 	my $hist = $fs->revision_root ($fromrev)->node_history ($path);
 	while (($hist = $hist->prev($cross)) && $limit--) {
@@ -873,3 +879,18 @@ if ($0 eq __FILE__) {
 
 #%$info = %$xd;
 1;
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut

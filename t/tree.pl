@@ -9,8 +9,6 @@ require SVN::Repos;
 require SVN::Fs;
 use strict;
 
-require IO::Scalar;
-
 my $output = '';
 #select IO::Scalar->new (\$output);
 

@@ -21,6 +21,7 @@ use ExtUtils::AutoInstall
       [ 'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Algorithm::Merge'      => '0.05',
+        'Text::Diff'            => '0',
         'Data::Hierarchy'       => '0.13',
         'SVN::Simple::Edit'     => '0.21',
       ],
