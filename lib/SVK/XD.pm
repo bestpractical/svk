@@ -615,7 +615,7 @@ sub do_delete {
     my @paths = grep {is_symlink($_) || -e $_} (exists $arg{targets}[0] ?
 			      map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}}
 			      : $arg{copath});
-    my $ignore = ignore ();
+    my $ignore = $self->ignore ();
     find(sub {
 	     return if m/$ignore/;
 	     my $cpath = catdir($File::Find::dir, $_);
@@ -765,9 +765,14 @@ and treat all copied descendents as added too.
 my %ignore_cache;
 
 sub ignore {
+    my $self = shift;
     no warnings;
-    my @ignore = qw/*.o #*# .#* *.lo *.la .*.rej *.rej .*~ *~ .DS_Store
-		    svk-commit*.tmp/;
+    my $ignore = $self->{svnconfig} ?
+	           $self->{svnconfig}{config}->
+		   get ('miscellany', 'global-ignores', '') : '';
+    my @ignore = split / /,
+	($ignore || "*.o *.lo *.la #*# .*.rej *.rej .*~ *~ .#* .DS_Store");
+    push @ignore, 'svk-commit*.tmp';
 
     return join('|', map {$ignore_cache{$_} ||= compile_shellish $_} (@ignore, @_));
 }
@@ -792,7 +797,7 @@ sub _delta_content {
 
 sub _unknown_verbose {
     my ($self, %arg) = @_;
-    my $ignore = ignore;
+    my $ignore = $self->ignore;
     # The caller should have processed the entry already.
     my %seen = ($arg{copath} => 1);
     if ($arg{targets}) {
@@ -1086,7 +1091,7 @@ sub _delta_dir {
 	$signature->flush;
 	undef $signature;
     }
-    my $ignore = ignore (split ("\n", $fullprops->{'svn:ignore'} || ''));
+    my $ignore = $self->ignore (split ("\n", $fullprops->{'svn:ignore'} || ''));
 
     my @direntries;
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
