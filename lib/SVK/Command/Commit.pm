@@ -251,6 +251,7 @@ sub get_committable {
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
+	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	unlink $file;
     }
 

@@ -174,7 +174,7 @@ sub get_buffer_from_editor {
 
     open $fh, $file or die $!;
     local $/;
-    my @ret = defined $sep ? split (/^\Q$sep\E$/m, <$fh>, 2) : (<$fh>);
+    my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
     close $fh;
     unlink $file;
 

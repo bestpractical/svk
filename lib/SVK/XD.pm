@@ -372,7 +372,8 @@ sub condense {
 	    $schedule = $cinfo->{'.schedule'} || '';
 	}
     }
-    return ($report, $anchor, map { abs2rel($_, $anchor) } grep {$_ ne $anchor} @targets);
+    return ($report, $anchor, $#targets == 0 && $targets[0] eq $anchor ? ()
+	    : map { abs2rel($_, $anchor) } @targets);
 }
 
 sub xdroot {
@@ -980,10 +981,20 @@ sub _delta_dir {
 	    $targets->{$file} = undef;
 	}
     }
+    my $thisdir;
+    if ($targets) {
+	if (exists $targets->{''}) {
+	    delete $targets->{''};
+	    $thisdir = 1;
+	}
+    }
+    else {
+	$thisdir = 1;
+    }
     # don't use depth when we are still traversing through targets
     my $descend = defined $targets || !(defined $arg{depth} && $arg{depth} == 0);
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
-	if $arg{cb_conflict} && $cinfo->{'.conflict'};
+	if $thisdir && $arg{cb_conflict} && $cinfo->{'.conflict'};
 
     return if $self->_node_deleted_or_absent (%arg, pool => $pool);
     $arg{base} = 0 if $schedule eq 'replace';
@@ -1116,12 +1127,12 @@ sub _delta_dir {
 
     }
 
-    if (defined $targets) {
-	print loc ("Unknown target: %1.\n", $_) for sort keys %$targets;
-    }
-    else {
+    if ($thisdir) {
 	$arg{editor}->change_dir_prop ($baton, $_, ref ($newprops->{$_}) ? undef : $newprops->{$_}, $pool)
 	    for sort keys %$newprops;
+    }
+    if (defined $targets) {
+	print loc ("Unknown target: %1.\n", $_) for sort keys %$targets;
     }
 
     $arg{editor}->close_directory ($baton, $pool)

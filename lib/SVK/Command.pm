@@ -302,6 +302,18 @@ sub arg_condensed {
     s{[/\Q$SEP\E]$}{}o for @arg; # XXX band-aid
 
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
+
+    if ($self->{recursive}) {
+	# remove redundant targets when doing recurisve
+	# if have '' in targets then it means everything
+	my @newtarget = @targets;
+	for my $anchor (sort {length $a <=> length $b} @targets) {
+	    @newtarget = grep { length $anchor ? $_ eq $anchor || index ($_, "$anchor/") != 0
+				               : 0} @newtarget;
+	}
+	@targets = @newtarget;
+    }
+
     my ($repospath, $path, undef, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
     my $target = SVK::Target->new
 	( repos => $repos,
