@@ -3,11 +3,14 @@ use strict;
 require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt
-		    find_svm_source resolve_svm_source svn_mirror tmpfile find_local_mirror);
+		    find_svm_source resolve_svm_source svn_mirror tmpfile
+		    find_local_mirror abs_path);
 our $VERSION = $SVK::VERSION;
 
 use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
+use File::Spec;
+use Cwd;
 use File::Temp qw(mktemp);
 my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 
@@ -160,6 +163,17 @@ sub tmpfile {
 			      );
 
     return wantarray ? ($tmp, $tmp->filename) : $tmp;
+}
+
+
+# return paths with components in symlink resolved, but keep the final
+# path even if it's symlink
+
+sub abs_path {
+    my $path = shift;
+    return Cwd::abs_path ($path) unless -l $path;
+    my (undef, $dir, $pathname) = File::Spec->splitpath ($path);
+    return File::Spec->catpath (undef, Cwd::abs_path ($dir), $pathname);
 }
 
 1;

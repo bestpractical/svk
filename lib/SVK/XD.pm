@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -276,7 +276,7 @@ C<SVN::Repos> object if caller wants the repository to be opened.
 
 sub find_repos_from_co {
     my ($self, $copath, $open) = @_;
-    $copath = Cwd::abs_path ($copath || '');
+    $copath = abs_path ($copath);
 
     my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
     die loc("path %1 is not a checkout path", $copath) unless %$cinfo;
@@ -306,7 +306,7 @@ sub find_repos_from_co_maybe {
     local $@;
     unless (($repospath, $path, $repos) = eval { $self->find_repos ($target, $open) }) {
 	($repospath, $path, $cinfo, $repos) = $self->find_repos_from_co ($target, $open);
-	$copath = Cwd::abs_path ($target || '');
+	$copath = abs_path ($target);
     }
     return ($repospath, $path, $copath, $cinfo, $repos);
 }
@@ -336,7 +336,7 @@ sub find_depotname {
 
 sub condense {
     my $self = shift;
-    my @targets = map {Cwd::abs_path ($_ || '')} @_;
+    my @targets = map {abs_path($_)} @_;
     my ($anchor, $report);
     $report = $_[0];
     for (@targets) {

@@ -53,11 +53,8 @@ is_output ($svk, 'diff', [$copath],
 	    '@@ -1 +1 @@',
 	    '-link /tmp+link .'], 'modified diff');
 
-TODO: {
-local $TODO = "Cwd doesn't like non-existing path, so this is anchorified";
 $svk->revert ("$copath/A/dir.lnk");
 is_output ($svk, 'status', [$copath], [], 'revert');
-}
 
 unlink ("$copath/A/dir.lnk");
 symlink ('.', "$copath/A/dir.lnk");
