@@ -1,6 +1,6 @@
 package SVK::Merge;
 use strict;
-use SVK::Util qw (find_svm_source svn_mirror);
+use SVK::Util qw (find_svm_source find_local_mirror svn_mirror);
 use SVK::I18N;
 
 sub new {
@@ -104,11 +104,11 @@ sub find_merge_sources {
     my $myuuid = $fs->get_uuid ();
     if ($minfo) {
 	$minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
-			my $m;
-			($verbatim || ($uuid eq $myuuid)) ? ("$uuid:$path" => $rev) :
-			    (svn_mirror && ($m = SVN::Mirror::has_local ($repos, "$uuid:$path"))) ?
-				("$myuuid:$m->{target_path}" => $m->find_local_rev ($rev)) : ()
-			    } split ("\n", $minfo) };
+                        ($uuid, $path, $rev) =
+			    ($myuuid, find_local_mirror ($repos, $uuid, $path, $rev))
+				unless $verbatim || $uuid eq $myuuid;
+                        $rev ? ("$uuid:$path" => $rev) : ()
+		    } split ("\n", $minfo) };
     }
     if ($verbatim) {
 	unless ($noself) {
@@ -196,7 +196,6 @@ sub get_new_ticket {
 
     # bring merge history up to date as from source
     ($uuid, $dst) = find_svm_source ($repos, $dst);
-
     for (sort keys %{ { %$srcinfo, %$dstinfo } }) {
 	next if $_ eq "$uuid:$dst";
 	no warnings 'uninitialized';

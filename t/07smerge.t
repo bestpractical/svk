@@ -39,34 +39,31 @@ $svk->merge ('-a', '-C', '//m', '//l');
 $svk->merge ('-a', '-C', '//l', '//m');
 
 $svk->merge ('-a', '-m', 'simple smerge from source', '//m', '//l');
-
 my ($suuid, $srev) = ($srepos->fs->get_uuid, $srepos->fs->youngest_rev);
 $svk->update ($copath);
-ok (eq_hash (SVK::XD::do_proplist ($xd,
-				   repos => $repos,
-				   copath => $copath,
-				   path => '/l',
-				   rev => $repos->fs->youngest_rev,
-				  ),
-	     {'svk:merge' => "$suuid:/A:$srev",
-	      'svm:source' => 'file://'.$srepos->path.'!/A',
-	      'svm:uuid' => $suuid }), 'simple smerge from source');
-
+is_deeply (SVK::XD::do_proplist ($xd,
+				 repos => $repos,
+				 copath => $copath,
+				 path => '/l',
+				 rev => $repos->fs->youngest_rev,
+				),
+	   {'svk:merge' => "$suuid:/A:$srev",
+	    'svm:source' => 'file://'.$srepos->path.'!/A',
+	    'svm:uuid' => $suuid }, 'simple smerge from source');
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
 
 $svk->smerge ('-m', 'simple smerge from local', '//l', '//m');
-
 $svk->sync ('//m');
 
-ok (eq_hash (SVK::XD::do_proplist ($xd,
-				   repos => $repos,
-				   path => '/m',
-				   rev => $repos->fs->youngest_rev,
-				  ),
-	     {'svk:merge' => "$uuid:/l:$rev",
-	      'svm:source' => 'file://'.$srepos->path.'!/A',
-	      'svm:uuid' => $suuid }),
-    'simple smerge back to source');
+is_deeply (SVK::XD::do_proplist ($xd,
+				 repos => $repos,
+				 path => '/m',
+				 rev => $repos->fs->youngest_rev,
+				),
+	   {'svk:merge' => "$uuid:/l:$rev",
+	    'svm:source' => 'file://'.$srepos->path.'!/A',
+	    'svm:uuid' => $suuid },
+	   'simple smerge back to source');
 
 $svk->smerge ('-C', '//m', '//l');
 $svk->smerge ('-m', 'mergedown', '//m', '//l');
