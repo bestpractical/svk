@@ -3,7 +3,7 @@ use Test::More;
 use strict;
 require 't/tree.pl';
 
--r '/dev/tty' ? plan tests => 2 : plan skip_all => 'no tty';
+jam("n\n") ? plan tests => 2 : plan skip_all => 'no tty or tiocsti';
 
 our ($output, @TOCLEAN);
 
@@ -17,11 +17,12 @@ sub jam {
     local $SIG{TTOU} = "IGNORE"; # "Stopped for tty output"
     my $TIOCSTI = 0x80017472;
     local *TTY;
-    open(TTY, '<', '/dev/tty');
+    open(TTY, '<', '/dev/tty') or return undef;
     for (split(//, $_[0])) {
-        ioctl(TTY, $TIOCSTI, $_) || die "bad TIOCSTI: $!";
+        ioctl(TTY, $TIOCSTI, $_) or return undef;
     }
     close(TTY);
+    return 1;
 }
 
 my $tmp = File::Temp->new;
@@ -42,7 +43,6 @@ $tmp->close;
 chmod 0755, $tmp->filename;
 my $repospath = "/tmp/svk-$$";
 $ENV{EDITOR} = "$tmp $repospath";
-jam("n\n");
 $svk->depotmap;
 ok (!-e $repospath);
 jam("y\n");

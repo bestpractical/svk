@@ -35,62 +35,49 @@ sub _next_is_merge {
 
 sub find_merge_base {
     my ($self, $repos, $src, $dst) = @_;
-    my $srcinfo = $self->find_merge_sources ($repos, $src);
-    my $dstinfo = $self->find_merge_sources ($repos, $dst);
+    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($repos, $_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
-    my @common = grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
-	(sort keys %{ { %$srcinfo, %$dstinfo } });
-    for (@common) {
+    my $fs = $repos->fs;
+    for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
+	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
 	my $rev = $srcinfo->{$_} < $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
 	# XXX: shuold compare revprop svn:date instead, for old dead branch being newly synced back
-	if (!$basepath || $rev > $baserev) {
-	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
-	}
+	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
+	    if !$basepath || $rev > $baserev;
     }
 
+    my $yrev = $fs->youngest_rev;
     if (!$basepath) {
 	die loc("Can't find merge base for %1 and %2\n", $src, $dst)
 	  unless $self->{baseless} or $self->{base};
 
-	my $fs = $repos->fs;
-	my ($from_rev, $to_rev) = ($self->{base}, $fs->youngest_rev);
-
-	if (!$from_rev) {
+	unless ($baserev = $self->{base}) {
 	    # baseless merge
 	    my $pool = SVN::Pool->new_default;
-	    my $hist = $fs->revision_root($to_rev)->node_history($src);
-	    do {
-		$pool->clear;
-		$from_rev = ($hist->location)[1];
-	    } while $hist = $hist->prev(0);
+	    my $hist = $fs->revision_root($yrev)->node_history($src);
+	    $pool->clear, $baserev = ($hist->location)[1]
+		while $hist = $hist->prev(0);
 	}
 
-	return ($src, $from_rev, $to_rev);
-    };
+	return ($src, $baserev, $baserev);
+    }
 
     if ($basepath ne $src && $basepath ne $dst) {
 	my ($fromrev, $torev) = ($srcinfo->{$baseentry}, $dstinfo->{$baseentry});
 	($fromrev, $torev) = ($torev, $fromrev) if $torev < $fromrev;
-	my ($mrev, $merge) = $self->_next_is_merge ($repos, $basepath, $fromrev, $torev);
-	if ($merge) {
+	if (my ($mrev, $merge) =
+	    $self->_next_is_merge ($repos, $basepath, $fromrev, $torev)) {
 	    my $minfo = SVK::Merge::Info->new ($merge);
-	    my $fs = $repos->fs;
-	    my $root = $fs->revision_root ($fs->youngest_rev);
+	    my $root = $fs->revision_root ($yrev);
 	    my ($srcinfo, $dstinfo) = map { SVK::Merge::Info->new ($root->node_prop ($_, 'svk:merge')) }
 		($src, $dst);
-	    my $subset = 1;
-	    for (keys %$minfo) {
-		$subset = 0, last
-		    unless exists $srcinfo->{$_} && $minfo->{$_} <= $srcinfo->{$_} &&
-			exists $dstinfo->{$_} && $minfo->{$_} <= $dstinfo->{$_};
-	    }
 	    $baserev = $mrev
-		if $subset;
+		if $minfo->subset_of ($srcinfo) && $minfo->subset_of ($dstinfo);
 	}
     }
 
-    return ($basepath, $baserev, $dstinfo->{$repos->fs->get_uuid.':'.$src} || $baserev);
+    return ($basepath, $baserev, $dstinfo->{$fs->get_uuid.':'.$src} || $baserev);
 }
 
 sub find_merge_sources {
@@ -227,6 +214,15 @@ sub new {
 		   } split ("\n", $merge) };
     bless $minfo, $class;
     return $minfo;
+}
+
+sub subset_of {
+    my ($self, $other) = @_;
+    my $subset = 1;
+    for (keys %$self) {
+	return unless exists $other->{$_} && $self->{$_} <= $other->{$_};
+    }
+    return 1;
 }
 
 1;
