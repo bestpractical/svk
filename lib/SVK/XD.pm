@@ -908,15 +908,12 @@ sub do_import {
 
     if ($arg{is_checkout}) {
 	my (undef, $path) = $self->find_repos_from_co ($arg{copath}, 0);
-	warn "Import to $arg{path}, from a checkout of $path";
-	warn "to store recursively for $arg{copath}";
 	$self->{checkout}->store_recursively ($arg{copath},
 					      {revision => $yrev,
 					       '.copyfrom' => undef,
 					       '.copyfrom_rev' => undef,
 					       '.schedule' => undef})
 	    if $path eq $arg{path};
-	warn YAML::Dump ($self->{checkout});
     }
     else {
 	$self->{checkout}->store ($arg{copath},
