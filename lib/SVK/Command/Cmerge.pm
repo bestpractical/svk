@@ -108,13 +108,13 @@ SVK::Command::Cmerge - Merge specific changes
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
- -c [--change] arg      : act on comma-separated revisions ARG
+ -m [--message] message	: specify commit message ARG
+ -c [--change] number	: act on comma-separated revisions ARG
  -C [--check-only]      : try operation but make no changes
  -l [--log]             : use logs of merged revisions as commit message
  -r [--revision] N:M    : act on revisions between N and M
  -a [--auto]            : merge from the previous merge point
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] name	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point

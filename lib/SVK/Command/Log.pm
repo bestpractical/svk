@@ -188,8 +188,8 @@ SVK::Command::Log - Show log messages for revisions
 
 =head1 OPTIONS
 
- -r [--revision] path   : act on revision ARG instead of the head revision
- -l [--limit] path      : stop after displaying ARG revisions
+ -r [--revision] number	: act on revision ARG instead of the head revision
+ -l [--limit] number	: stop after displaying ARG revisions
  -x [--cross]           : track revisions copied from elsewhere
  -v [--verbose]         : print extra information
 

@@ -97,9 +97,9 @@ SVK::Command::List - List entries in a directory from depot
 
 =head1 OPTIONS
 
- -r [--revision] path   : act on revision ARG instead of the head revision
+ -r [--revision] number	: act on revision ARG instead of the head revision
  -R [--recursive]       : descend recursively
- -d [--depth] path      : recurse at most ARG levels deep; use with -R
+ -d [--depth] level	: recurse at most ARG levels deep; use with -R
  -f [--full-path]       : show pathname for each entry, instead of a tree
  -v [--verbose]         : print extra information
 

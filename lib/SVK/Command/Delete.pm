@@ -74,7 +74,7 @@ SVK::Command::Delete - Remove versioned item
 
 =head1 OPTIONS
 
- -m [--message] path    : specify commit message ARG
+ -m [--message] message	: specify commit message ARG
  -K [--keep-local]      : do not remove the local file
 
 =head1 AUTHORS

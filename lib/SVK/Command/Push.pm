@@ -54,7 +54,7 @@ SVK::Command::Push - Move changes into another repository
 
 =head1 OPTIONS
 
- -f [--from] path        : push from the specified path
+ -f [--from] path       : push from the specified path
  -l [--lump]            : merge everything into a single commit log
  -C [--check-only]      : try operation but make no changes
  -P [--patch] name      : instead of commit, save this change as a patch
