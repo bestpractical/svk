@@ -177,7 +177,7 @@ SVK::Command::Checkout - Checkout the depotpath
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -l [--list]            : list checkout paths
  -d [--detach]          : mark a path as no longer checked out
- -m [--quiet]           : quiet mode
+ -q [--quiet]           : quiet mode
  --relocate             : relocate the checkout to another path
 
 =head1 AUTHORS
