@@ -7,8 +7,9 @@ use SVK::Util qw(can_run);
 
 BEGIN {
     require 't/tree.pl';
+    eval { require Apache2 };
     eval { require Apache::Test;
-	   $Apache::Test::VERSION >= 1.18}
+	   $Apache::Test::VERSION >= 1.18 }
 	or plan (skip_all => "Apache::Test 1.19 required for testing dav");
 }
 
