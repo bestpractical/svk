@@ -95,7 +95,16 @@ SVK::Command::Help - Show help
 
 =head1 OPTIONS
 
- None
+Optionally svk helps can pipe through a pager, for it is easier to
+read if the output is too long. For using this feature, please
+set environment variable SVKPAGER to some pager program.
+For example:
+
+    # bash, zsh users
+    export SVKPAGER='/usr/bin/less'
+
+    # tcsh users
+    setenv SVKPAGER '/usr/bin/less'
 
 =head1 AUTHORS
 
