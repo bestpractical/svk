@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
+use SVK::Util qw( HAS_SVN_MIRROR find_prev_copy );
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -51,9 +51,11 @@ sub run {
     }
 
     for my $target (@arg) {
+	my $repos = $target->{repos};
+	my $fs = $repos->fs;
 	my $m = SVN::Mirror->new (target_path => $target->{path},
 				  target => $target->{repospath},
-				  repos => $target->{repos},
+				  repos => $repos,
 				  pool => SVN::Pool->new,
 				  config => $self->{svnconfig},
 				  cb_copy_notify => \&copy_notify,
@@ -63,11 +65,17 @@ sub run {
 
         if ($self->{sync_all}) {
             print loc("Starting to synchronize %1\n", $target->{depotpath});
-            eval { $m->run ($self->{torev}); 1 } or warn $@;
+            eval { $m->run ($self->{torev});
+		   find_prev_copy ($fs, $fs->youngest_rev);
+		   1 } or warn $@;
             next;
         }
         else {
             $m->run ($self->{torev});
+	    # build the copy cache after sync.
+	    # we should do this in svn::mirror::committed, with a
+	    # hook provided here.
+	    find_prev_copy ($fs, $fs->youngest_rev);
         }
     }
     return;
