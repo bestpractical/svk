@@ -12,7 +12,13 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
+# ra must be loaded earlier since it uses the default pool
+use SVN::Core;
+use SVN::Ra;
 
+# loading svn::mirror on-the-fly causes output stream not respected,
+# failing #1 in t/23commit. possibly because VCP calls select.
+my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 sub svn_mirror () {
     no warnings 'redefine';
     my $svn_mirror = eval { require SVN::Mirror; 1 };

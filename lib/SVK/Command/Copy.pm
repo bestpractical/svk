@@ -12,13 +12,15 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    $self->usage if $#arg < 0 || $#arg > 1;
-    return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
+    return if $#arg < 0;
+    $arg[1] = '' if $#arg < 1;
+    return ((map {$self->arg_depotpath ($_)} @arg[0..$#arg-1]),
+	    $self->arg_co_maybe ($arg[-1]));
 }
 
 sub lock {
     my $self = shift;
-    $_[1]->{copath} ? $self->lock_target ($_[1]) : $self->lock_none;
+    $_[-1]->{copath} ? $self->lock_target ($_[-1]) : $self->lock_none;
 }
 
 sub do_copy_direct {
@@ -34,42 +36,53 @@ sub do_copy_direct {
     $edit->close_edit();
 }
 
-sub run {
+sub do_copy_co {
     my ($self, $src, $dst) = @_;
-    die loc("repos paths mismatch") unless $src->same_repos ($dst);
-    $src->{revision} = $self->{rev} if defined $self->{rev};
-    my $fs = $src->{repos}->fs;
-    if ($dst->{copath}) {
-	my $xdroot = $dst->root ($self->{xd});
-	# XXX: prevent recursion, etc
-	if (-d $dst->{copath}) {
-	    # XXX: proper descendent
-	    my ($name) = $src->{depotpath} =~ m|(/[^/]+)/?$|;
-#	    $dst = $self->arg_copath ("$dst->{depotpath}$name");
-	    $dst->{depotpath} .= $name;
-	    $dst->{path} .= $name;
-	    $dst->{copath} .= $name;
-	}
-	my $copath = $dst->{copath};
-	$src->anchorify; $dst->anchorify;
-	SVK::Merge->new
-		(%$self, repos => $dst->{repos}, nodelay => 1,
-		 report => $dst->{report},
-		 base => $src->new (path => '/', revision => 0),
-		 src => $src, dst => $dst)->run ($self->get_editor ($dst));
+    my $xdroot = $dst->root ($self->{xd});
+    if (-d $dst->{copath}) {
+	# XXX: proper descendent
+	my ($name) = $src->{depotpath} =~ m|(/[^/]+)/?$|;
+#	$dst = $self->arg_copath ("$dst->{depotpath}$name");
+	$dst->{depotpath} .= $name;
+	$dst->{path} .= $name;
+	$dst->{copath} .= $name;
+    }
+    my $copath = $dst->{copath};
+    $src->anchorify; $dst->anchorify;
+    SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
+		     report => $dst->{report},
+		     base => $src->new (path => '/', revision => 0),
+		     src => $src, dst => $dst)->run ($self->get_editor ($dst));
 
-	$self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
-							    '.newprop' => undef});
-	$self->{xd}{checkout}->store ($copath, {'.schedule' => 'add',
-						scheduleanchor => $copath,
-						'.copyfrom' => $src->path,
-						'.copyfrom_rev' => $src->{revision}});
+    $self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
+							'.newprop' => undef});
+    $self->{xd}{checkout}->store ($copath, {'.schedule' => 'add',
+					    scheduleanchor => $copath,
+					    '.copyfrom' => $src->path,
+					    '.copyfrom_rev' => $src->{revision}});
+}
+
+sub run {
+    my ($self, @src) = @_;
+    my $dst = pop @src;
+    die loc("repos paths mismatch") unless $dst->same_repos (@src);
+    if (defined $self->{rev}) {
+	$_->{revision} = $self->{rev} for @src;
+    }
+    my $fs = $dst->{repos}->fs;
+    if ($dst->{copath}) {
+	# XXX: check if dst is versioned
+	die loc("%1 is not a directory.", $dst->{copath})
+	    if $#src > 0 && !-d $dst->{copath};
+	$self->do_copy_co ($_, $dst->new) for @src;
     }
     else {
+	die loc("Can't copy more than one depotpath to depotpath")
+	    if $#src > 0;
 	return unless $self->check_mirrored_path ($dst);
 	$self->get_commit_message ();
 	$self->do_copy_direct ( author => $ENV{USER},
-				%$src,
+				%{$src[0]},
 				dpath => $dst->{path},
 				%$self,
 			      );

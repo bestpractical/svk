@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 5;
+use Test::More tests => 6;
 use strict;
 our $output;
 require 't/tree.pl';
@@ -9,10 +9,11 @@ $svk->mkdir ('-m', 'init', '//V');
 my $tree = create_basic_tree ($xd, '//V');
 $svk->mkdir ('-m', 'init', '//new');
 my ($copath, $corpath) = get_copath ('copy');
+is_output_like ($svk, 'copy', [], qr'SYNOPSIS', 'copy - help');
+
 $svk->checkout ('//new', $copath);
 # XXX: fix and check the output of copy
-$svk->copy ('//V/me', $copath);
-$svk->copy ('//V/D/de', $copath);
+$svk->copy ('//V/me', '//V/D/de', $copath);
 $svk->copy ('//V/me', "$copath/me-copy");
 $svk->copy ('//V/D/de', "$copath/de-copy");
 $svk->copy ('//V/D', "$copath/D-copy");
