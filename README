@@ -3,7 +3,7 @@ system.
 
 The latest version could be found at
 
-    svn://svn.clkao.org/svk/trunk
+    svn://svn.clkao.org/svk/branches/1.0-releng
 
 You need Module::Install if you are not installing from release tarballs.
 
