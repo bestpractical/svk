@@ -62,6 +62,8 @@ $ENV{USER} ||= (
     (defined &Win32::LoginName) ? Win32::LoginName() : ''
 ) || $ENV{USERNAME} || (getpwuid($<))[0];
 
+$ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
+
 # Make "prove -l" happy; abs_path() returns "undef" if the path 
 # does not exist. This makes perl very unhappy.
 @INC = grep defined, map abs_path($_), @INC;
@@ -87,7 +89,6 @@ sub new_repos {
 	$repospath = $reposbase . '-'. (++$i);
     }
     my $pool = SVN::Pool->new_default;
-    $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
     $repos = SVN::Repos::create("$repospath", undef, undef, undef,
 				{'fs-type' => $ENV{SVNFSTYPE}})
 	or die "failed to create repository at $repospath";
