@@ -276,8 +276,8 @@ sub nearest_copy {
 	# Find nearest copy of the current revision (up to but *not*
 	# including the revision itself). If the copy contains us, bingo.
 	my $copy;
-	($rev, $copy) = find_prev_copy ($fs, $hprev) or last; # no more copies
-
+	($root, $copy) = find_prev_copy ($fs, $hprev, $new_pool) or last; # no more copies
+	$rev = $root->revision_root_revision;
 	if (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path)) {
 	    # there were copy, but the descendent might not exist there
 	    last unless $fs->revision_root ($fromrev)->check_path ($frompath);
@@ -287,7 +287,6 @@ sub nearest_copy {
 	if ($rev < $hprev) {
 	    # Reset the hprev root to this earlier revision to avoid infinite looping
 	    local $@;
-	    $root = $fs->revision_root ($rev, $new_pool);
 	    $hist = eval { $root->node_history ($path)->prev(0, $new_pool) } or last;
 	}
         $old_pool->clear;

@@ -799,10 +799,9 @@ revision.
 
 =cut
 
-sub _copies_in_rev {
-    my ($fs, $rev) = @_;
+sub _copies_in_root {
+    my ($root) = @_;
     my $copies;
-    my $root = $fs->revision_root ($rev);
     my $changed = $root->paths_changed;
     for (keys %$changed) {
 	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
@@ -814,26 +813,30 @@ sub _copies_in_rev {
 }
 
 sub find_prev_copy {
-    my ($fs, $endrev) = @_;
+    my ($fs, $endrev, $ppool) = @_;
     my $pool = SVN::Pool->new_default;
+    # hold this resulting root in the subpool of ppool.
+    my $spool = $ppool ? SVN::Pool::create ($$ppool) : $pool;
     my ($rev, $startrev) = ($endrev, $endrev);
-    my $copy;
+    my ($root, $copy);
     while ($rev > 0) {
 	$pool->clear;
+	SVN::Pool::apr_pool_clear ($spool) if $ppool;
 	if (defined (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev'))) {
 	    $startrev = $rev + 1;
 	    $rev = $cache;
 	    last if $rev == 0;
 	}
-	if ($copy = _copies_in_rev ($fs, $rev)) {
+	$root = $fs->revision_root ($rev, $spool);
+	if ($copy = _copies_in_root ($root)) {
 	    last;
 	}
 	--$rev; --$startrev;
     }
     $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev), $pool->clear
 	for $startrev..$endrev;
-    undef $copy unless $rev;
-    return ($rev, $copy);
+    return unless $rev;
+    return ($root, $copy);
 }
 
 1;
