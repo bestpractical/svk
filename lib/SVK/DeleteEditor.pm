@@ -18,8 +18,9 @@ sub close_file {
 
 sub close_directory {
     my ($self, $path) = @_;
-    die loc("%1 is scheduled, use 'svk revert'", $self->{info}{$path}{dpath})
-	if $self->{info}{$path}{status}[0] eq 'A';
+    # XXX: the whole deleteeditor thing needs to be refactored
+#    die loc("%1 is scheduled, use 'svk revert'", $self->{info}{$path}{dpath})
+#	if $self->{info}{$path}{status}[0] eq 'A';
 }
 
 sub delete_entry {

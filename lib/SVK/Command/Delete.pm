@@ -8,13 +8,17 @@ use SVK::I18N;
 sub parse_arg {
     my ($self, @arg) = @_;
     $self->usage if $#arg < 0;
-    return map {$self->arg_co_maybe ($_)} @arg;
+    my $target;
+    if ($#arg == 0) {
+	$target = $self->arg_co_maybe ($arg[0]);
+	return $target unless $target->{copath};
+    }
+    return $self->arg_condensed (@arg);
 }
 
 sub lock {
-    my $self = shift;
-    $_->{copath} ? $self->lock_target ($_) : $self->lock_none
-	for @_;
+    my ($self, $target) = @_;
+    $target->{copath} ? $self->lock_target ($target) : $self->lock_none;
 }
 
 sub do_delete_direct {
@@ -41,19 +45,17 @@ sub do_delete_direct {
 }
 
 sub run {
-    my ($self, @arg) = @_;
+    my ($self, $target) = @_;
 
-    for (@arg) {
-	if ($_->{copath}) {
-	    $self->{xd}->do_delete ( %$_ );
-	}
-	else {
-	    $self->get_commit_message ();
-	    $self->do_delete_direct ( author => $ENV{USER},
-				      %$_,
-				      message => $self->{message},
-				    );
-	}
+    if ($target->{copath}) {
+	$self->{xd}->do_delete ( %$target );
+    }
+    else {
+	$self->get_commit_message ();
+	$self->do_delete_direct ( author => $ENV{USER},
+				  %$target,
+				  message => $self->{message},
+				);
     }
 
     return;

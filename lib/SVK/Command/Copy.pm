@@ -52,6 +52,7 @@ sub run {
 	my ($anchor, $target, $sanchor, $starget) = get_anchor (1, $dst->{path}, $src->{path});
 
 	my $editor = $self->{xd}->get_editor ( %$dst,
+					       report => $dst->{report},
 					       oldroot => $xdroot,
 					       newroot => $xdroot,
 					       anchor => $sanchor,
@@ -64,6 +65,7 @@ sub run {
 	$self->{xd}{checkout}->store_recursively ($dst->{copath}, {'.schedule' => undef,
 								   '.newprop' => undef});
 	$self->{xd}{checkout}->store ($dst->{copath}, {'.schedule' => 'add',
+						       scheduleanchor => $dst->{copath},
 						       '.copyfrom' => $src->{path},
 						       '.copyfrom_rev' => $self->{rev}});
     }

@@ -166,6 +166,7 @@ sub arg_co_maybe {
 	     repospath => $repospath,
 	     depotpath => $cinfo->{depotpath} || $arg,
 	     copath => $copath,
+	     report => $arg,
 	     path => $path,
 	   };
 }

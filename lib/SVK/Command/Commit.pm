@@ -247,6 +247,7 @@ sub run {
 						      '.copyfrom_rev' => undef,
 						      '.newprop' => undef,
 						      $_->[0] eq 'D' ? ('.deleted' => 1) : (),
+						      scheduleanchor => undef,
 						      revision => $rev,
 						    });
 	}

@@ -324,6 +324,7 @@ sub add_directory {
     $self->{storage_baton}{$path} =
 	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
 					 @arg);
+    $self->{notify}->node_status ($path) = 'A';
     return $path;
 }
 

@@ -111,7 +111,7 @@ sub close_directory {
 
 sub absent_directory {
     my ($self, $path) = @_;
-    print "!  $self->{rpath}$path\n";
+    print "!   $self->{rpath}$path\n";
 }
 
 sub conflict {

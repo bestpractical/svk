@@ -39,7 +39,6 @@ sub prop_status : lvalue {
 
 sub flush {
     my ($self, $path, $anchor) = @_;
-#	s|^\Q$self->{copath}/\E|$self->{rpath}|;
     my $status;
     if (($status = $self->{status}{$path}) && $status->[0] || $status->[1]) {
 	print sprintf ("%1s%1s \%s\n", $status->[0] || '',
@@ -58,6 +57,7 @@ sub flush_dir {
 	 sort keys %{$self->{status}}) {
 	$self->flush ($_, $path eq $_);
     }
+    $self->flush ($path, 1);
 }
 
 =head1 AUTHORS
