@@ -67,10 +67,12 @@ if (!$cmd or $cmd =~ /^-{0,2}[Hh](?:elp)?$/) {
     }
 }
 
-$ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
+$ENV{HOME} ||= (
+    $ENV{HOMEDRIVE} ? catdir(@ENV{qw( HOMEDRIVE HOMEPATH )}) : ''
+) || (getpwuid($<))[7];
 $ENV{USER} ||= (
     (defined &Win32::LoginName) ? Win32::LoginName() : ''
-) || $ENV{USERNAME};
+) || $ENV{USERNAME} || (getpwuid($<))[0];
 
 my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
 {
