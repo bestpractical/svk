@@ -33,12 +33,16 @@ features(
         'Locale::Maketext::Simple'  => '0.12',
     ],
 );
-features(
-    'SVN::Mirror support' => [
-	-default => 1,
-	'SVN::Mirror'    => '0.37',
-    ],
-);
+
+if( eval{ require SVN::Mirror } ) {
+    requires( 'SVN::Mirror' => '0.39' );
+} else {
+    features( 'SVN::Mirror support' => [
+               -default => 1,
+               'SVN::Mirror'    => '0.39',
+           ],
+	    );
+}
 
 features(
     'Patch management' => [
