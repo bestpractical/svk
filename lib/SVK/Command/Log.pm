@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
+use SVK::Util qw( HAS_SVN_MIRROR traverse_history );
 
 sub options {
     ('l|limit=i'	=> 'limit',
@@ -77,18 +77,29 @@ sub _get_logs {
 	$callback->($rev, $root, $changed, $props);
     };
 
-    my $hist = $root->node_history ($path);
-    my $pool = SVN::Pool->new_default;
-    while (($hist = $hist->prev ($cross)) && $limit--) {
-	my $rev = ($hist->location)[1];
-	next if $rev > $fromrev;
-	last if $rev < $torev;
-	$reverse ?  unshift @revs, $rev : $docall->($rev);
-	$pool->clear;
-    }
+    traverse_history (
+        root        => $root,
+        path        => $path,
+        cross       => $cross,
+        callback    => sub {
+            return 0 if !$limit--; # last
+
+            my $rev = $_[1];
+            return 1 if $rev > $fromrev; # next
+            return 0 if $rev < $torev;   # last
+
+            if ($reverse) {
+                unshift @revs, $rev;
+            }
+            else {
+                $docall->($rev);
+            }
+            return 1;
+        },
+    );
 
     if ($reverse) {
-	$docall->($_), $pool->clear for @revs;
+	$docall->($_) for @revs;
     }
 }
 

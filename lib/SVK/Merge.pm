@@ -1,6 +1,6 @@
 package SVK::Merge;
 use strict;
-use SVK::Util qw(HAS_SVN_MIRROR find_svm_source find_local_mirror is_executable);
+use SVK::Util qw(HAS_SVN_MIRROR find_svm_source find_local_mirror is_executable traverse_history);
 use SVK::I18N;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;
@@ -83,20 +83,21 @@ sub _next_is_merge {
     my ($self, $repos, $path, $rev, $checkfrom) = @_;
     return if $rev == $checkfrom;
     my $fs = $repos->fs;
-    my $hist = $fs->revision_root ($checkfrom)->node_history ($path);
-    my $pool = SVN::Pool->new_default;
-    my $newhist = $hist->prev (0);
     my $nextrev;
-    while ($hist = $newhist) {
-	my $thisrev = ($hist->location)[1];
-	$newhist = $hist->prev (0);
-	if ($newhist and ($newhist->location)[1] == $rev) {
-	    $nextrev = $thisrev;
-	    last;
-	}
-	$pool->clear;
-    }
+
+    (traverse_history (
+        root     => $fs->revision_root ($checkfrom),
+        path     => $path,
+        cross    => 0,
+        callback => sub {
+            return 0 if ($_[1] == $rev); # last
+            $nextrev = $_[1];
+            return 1;
+        }
+    ) == 0) or return;
+
     return unless $nextrev;
+
     my ($merge, $pmerge) =
 	map {$fs->revision_root ($_)->node_prop ($path, 'svk:merge') || ''}
 	    ($nextrev, $rev);
@@ -185,20 +186,29 @@ sub copy_ancestors {
 
     my ($found, $hitrev, $source) = (0, 0, '');
     my $myuuid = $fs->get_uuid ();
-    my $hist = $root->node_history ($path);
-    my $spool = SVN::Pool->new_default_sub;
     my ($hpath, $hrev);
 
-    while ($hist = $hist->prev (1)) {
-	($hpath, $hrev) = $hist->location ();
-	if ($hpath ne $path) {
-	    $found = 1;
-	}
-	elsif (defined ($source = $fs->revision_prop ($hrev, "svk:copied_from:$path"))) {
+    defined( traverse_history (
+        root     => $root,
+        path     => $path,
+        cross    => 1,
+        callback => sub {
+            ($hpath, $hrev) = @_;
+
+            if ($hpath ne $path) {
+                $found = 1;
+                return 0; # last
+            }
+
+            $source = $fs->revision_prop ($hrev, "svk:copied_from:$path");
+            return 1 if !defined $source;
+
 	    $hitrev = $hrev;
-	    last unless $source;
+            return 0 if !$source; # last
+
 	    my $uuid;
-	    ($uuid, $hpath, $hrev) = split ':', $source;
+	    ($uuid, $hpath, $hrev) = split /:/, $source;
+
 	    if ($uuid ne $myuuid) {
 		my ($m, $mpath);
 		if (HAS_SVN_MIRROR &&
@@ -208,14 +218,14 @@ sub copy_ancestors {
 		    $hpath =~ s/\Q$mpath\E$//;
 		}
 		else {
-		    return ();
+		    return undef; # last and return ()
 		}
-	    }
+            }
+
 	    $found = 1;
-	}
-	last if $found;
-	$spool->clear;
-    }
+            return 0; # last
+        }
+    ) ) or return ();
 
     $source = '' unless $found;
     if (!$found || $hitrev != $hrev) {

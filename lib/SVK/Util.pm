@@ -7,7 +7,7 @@ our @EXPORT_OK = qw(
 
     get_prompt get_buffer_from_editor
 
-    find_local_mirror find_svm_source resolve_svm_source 
+    find_local_mirror find_svm_source resolve_svm_source traverse_history
 
     read_file write_file slurp_fh md5_fh mimetype mimetype_is_text
 
@@ -627,6 +627,25 @@ sub is_empty_path {
     }
 
     return 1;
+}
+
+sub traverse_history {
+    my %args = @_;
+
+    my $old_pool = SVN::Pool->new;
+    my $new_pool = SVN::Pool->new;
+
+    my $hist = $args{root}->node_history ($args{path}, $old_pool);
+    my $rv;
+
+    while ($hist = $hist->prev(($args{cross} || 0), $new_pool)) {
+        $rv = $args{callback}->($hist->location ($new_pool));
+        last if !$rv;
+        $old_pool->clear;
+        ($old_pool, $new_pool) = ($new_pool, $old_pool);
+    }
+
+    return $rv;
 }
 
 1;

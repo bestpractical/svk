@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( $EOL );
+use SVK::Util qw( $EOL traverse_history );
 use Algorithm::Annotate;
 
 sub options {
@@ -23,26 +23,25 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, $target) = @_;
 
-    my $pool = SVN::Pool->new_default_sub;
     my $fs = $target->{repos}->fs;
-    my $root = $fs->revision_root ($target->{revision});
     my $ann = Algorithm::Annotate->new;
     my @revs;
 
-    my $hist = $root->node_history ($target->{path});
-    my $spool = SVN::Pool->new_default ($pool);
-    $self->{cross} ||= 0;
-    while ($hist = $hist->prev($self->{cross})) {
-	my ($path, $rev) = $hist->location;
-	unshift @revs, [$path, $rev];
-	$spool->clear;
-    }
+    traverse_history (
+        root     => $fs->revision_root ($target->{revision}),
+        path     => $target->{path},
+        cross    => $self->{cross},
+        callback => sub {
+            my ($path, $rev) = @_;
+            unshift @revs, [ $path, $rev ];
+            1;
+        }
+    );
 
     print loc("Annotations for %1 (%2 active revisions):\n", $target->{path}, scalar @revs);
     print '*' x 16;
     print "\n";
     for (@revs) {
-	$spool->clear;
 	local $/;
 	my ($path, $rev) = @$_;
 	my $content = $fs->revision_root ($rev)->file_contents ($path);

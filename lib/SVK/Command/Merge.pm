@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Delay;
 use SVK::Command::Log;
 use SVK::Merge;
-use SVK::Util qw( get_buffer_from_editor find_svm_source resolve_svm_source );
+use SVK::Util qw( get_buffer_from_editor find_svm_source resolve_svm_source traverse_history );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -130,14 +130,19 @@ sub run {
 	    if $self->{no_ticket};
 	print loc ("-m ignored in incremental merge\n") if $self->{message};
 	my @rev;
-	my $hist = $src->root->node_history ($src->{path});
-	my $spool = SVN::Pool->new_default;
-	while ($hist = $hist->prev (0)) {
-	    my $rev = ($hist->location)[1];
-	    last if $rev <= $merge->{fromrev};
-	    unshift @rev, $rev;
-	    $spool->clear;
-	}
+
+        traverse_history (
+            root        => $src->root,
+            path        => $src->{path},
+            cross       => 0,
+            callback    => sub {
+                my $rev = $_[1];
+                return 0 if $rev <= $merge->{fromrev}; # last
+                unshift @rev, $rev;
+                return 1;
+            },
+        );
+
 	for (@rev) {
 	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $_));
 	    print '===> '.$merge->info;
@@ -145,7 +150,6 @@ sub run {
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
 	    $dst->{revision} = $fs->youngest_rev;
-	    $spool->clear;
 	}
     }
     else {

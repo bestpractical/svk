@@ -16,7 +16,7 @@ use File::Spec;
 use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
-use PerlIO::eol 0.04 qw ( LF NATIVE );
+use PerlIO::eol 0.06;
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
@@ -1161,9 +1161,6 @@ sub get_eol_layer {
     my ($root, $path, $prop, $mode) = @_;
     my $k = $prop->{'svn:eol-style'} or return ':raw';
     # short-circuit no-op write layers on lf platforms
-    if (NATIVE eq LF) {
-	return ':raw' if $mode eq '>' && ($k eq 'native' or $k eq 'LF');
-    }
     if ($k eq 'native') {
         return ':raw:eol(LF-Native)';
     }

@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR is_uri get_prompt );
+use SVK::Util qw( HAS_SVN_MIRROR is_uri get_prompt traverse_history );
 
 sub options {
     ('l|list'  => 'list',
@@ -109,29 +109,32 @@ sub recover_headrev {
     my ($self, $target, $m) = @_;
 
     my $fs = $m->{fs};
-    my $hist = $fs->revision_root ($fs->youngest_rev)->
-        node_history ($m->{target_path});
-
-    my $pool = SVN::Pool->new_default ($m->{pool});
     my ($props, $headrev, $rev, $firstrev, $skipped, $uuid, $rrev);
-    while ($hist = $hist->prev (1)) {
-        $rev = ($hist->location)[1];
-        $firstrev ||= $rev;
-        print loc("Analyzing revision %1...\n", $rev),
-              ('-' x 70),"\n",
-              $fs->revision_prop ($rev, 'svn:log'), "\n";
-        if ( $headrev = $fs->revision_prop ($rev, 'svm:headrev') ) {
-            ($uuid, $rrev) = split(/[:\n]/, $headrev);
-            $props = $fs->revision_proplist($rev);
-            get_prompt(loc(
-                "Found merge ticket at revision %1 (remote %2); use it? [y] ",
-                $rev, $rrev
-            )) =~ /^[Nn]/ or last;
-            undef $headrev;
-        }
-        $skipped++;
-	$pool->clear;
-    }
+
+    traverse_history (
+        root        => $fs->revision_root ($fs->youngest_rev),
+        path        => $m->{target_path},
+        cross       => 1,
+        callback    => sub {
+            $rev = $_[1];
+            $firstrev ||= $rev;
+            print loc("Analyzing revision %1...\n", $rev),
+                  ('-' x 70),"\n",
+                  $fs->revision_prop ($rev, 'svn:log'), "\n";
+
+            if ( $headrev = $fs->revision_prop ($rev, 'svm:headrev') ) {
+                ($uuid, $rrev) = split(/[:\n]/, $headrev);
+                $props = $fs->revision_proplist($rev);
+                get_prompt(loc(
+                    "Found merge ticket at revision %1 (remote %2); use it? [y] ",
+                    $rev, $rrev
+                )) =~ /^[Nn]/ or return 0; # last
+                undef $headrev;
+            }
+            $skipped++;
+            return 1;
+        },
+    );
 
     if (!$headrev) {
         die loc("No mirror history found; cannot recover.\n");
