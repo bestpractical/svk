@@ -95,7 +95,6 @@ sub update {
 			startrev => $cinfo->{revision},
 			rev => $rev,
 		       );
-    $info->{checkout}->store_recursively ($copath, {revision => $rev});
 }
 
 =head2 checkout / co
@@ -143,7 +142,6 @@ sub diff {
 			       copath => $copath,
 			       path => $path,
 			       rev => $cinfo->{revision},
-			       root => $root,
 			       cb_unknown =>
 			       sub {
 				   print "?  $_[1]\n";
@@ -176,7 +174,6 @@ sub status {
 			       copath => $copath,
 			       path => $path,
 			       rev => $cinfo->{revision},
-			       root => $repos->fs->revision_root ($cinfo->{revision}),
 			       cb_unknown =>
 			       sub {
 				   print "?  $_[1]\n";
@@ -257,14 +254,10 @@ sub add {
     $copath = File::Spec->rel2abs ($copath);
     my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
 
-    die "no dir yet" if -d $copath;
-
     SVN::XD::do_add ($info,
 		     copath => $copath,
 		     path => $path,
 		    );
-
-    print "A  $copath\n";
 }
 
 =head2 commit / ci
@@ -293,7 +286,6 @@ sub commit {
 			       copath => $copath,
 			       path => $path,
 			       rev => $cinfo->{revision},
-			       root => $repos->fs->revision_root ($cinfo->{revision}),
 			       cb_unknown =>
 			       sub {},
 			       cb_add =>

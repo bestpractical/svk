@@ -17,29 +17,71 @@ sub new {
     return $self;
 }
 
+sub create_xd_root {
+    my ($info, %arg) = @_;
+    my $fs = $arg{repos}->fs;
+    my ($txn, $root);
+
+    my @paths = $info->{checkout}->find ($arg{copath}, {revision => qr'.*'});
+
+    return (undef,
+	    $fs->revision_root ($info->{checkout}->get ($paths[0])->{revision}))
+	unless $#paths;
+
+    for (@paths) {
+	my $rev = $info->{checkout}->get ($_)->{revision};
+	if ($_ eq $arg{copath}) {
+	    $txn = $fs->begin_txn ($rev);
+	    $root = $txn->root();
+	    next;
+	}
+	s|^$arg{copath}/||;
+	SVN::Fs::revision_link ($fs->revision_root ($rev),
+				$root, "$arg{path}/$_");
+    }
+    return ($txn, $root);
+}
 
 sub do_update {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
+    my $xdroot;
+    my $txn;
 
     warn "syncing $arg{depotpath}($arg{path}) to $arg{copath} from $arg{startrev} to $arg{rev}";
     my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
     my (undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
     chop $anchor;
-    SVN::Repos::dir_delta ($fs->revision_root ($arg{startrev}), $anchor, $target,
+
+    ($txn, $xdroot) = create_xd_root ($info, %arg);
+
+    SVN::Repos::dir_delta ($xdroot, $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
 			   SVN::XD::UpdateEditor->new (_debug => 0,
 						       target => $target,
-						       copath => $copath,
+						       copath => $arg{copath},
 						      ),
 #			   SVN::Delta::Editor->new(_debug=>1),
 			   1, 1, 0, 1);
+
+    SVN::Fs::close_txn ($txn) if $txn;
+
+    $info->{checkout}->store_recursively ($arg{copath},
+					  {revision => $arg{rev}});
 }
 
 sub do_add {
     my ($info, %arg) = @_;
 
+    find(sub {
+	     my $cpath = $File::Find::name;
+	     # do dectation also
+	     $info->{checkout}->store ($cpath, { schedule => 'add' });
+	     print "A  $cpath\n";
+	 }, $arg{copath});
+
     $info->{checkout}->store ($arg{copath}, { schedule => 'add' });
+
 }
 
 use File::Find;
@@ -50,28 +92,29 @@ sub checkout_crawler {
     my %schedule = map {$_ => $info->{checkout}->get ($_)->{schedule}}
 	$info->{checkout}->find ($arg{copath}, {schedule => qr'.*'});
 
+    my ($txn, $xdroot) = create_xd_root ($info, %arg);
+
     find(sub {
 	     my $cpath = $File::Find::name;
-	     return if -d $cpath;
 	     $cpath =~ s|^$arg{copath}/|$arg{path}/|;
-
+	     $cpath = '' if $cpath eq $arg{copath};
 	     if (exists $schedule{$File::Find::name}) {
 		 &{$arg{cb_add}} ($cpath, $File::Find::name)
 		     if $arg{cb_add};
 		 return;
 	     }
-	     my $kind = $arg{root}->check_path ($cpath);
+	     my $kind = $xdroot->check_path ($cpath);
 	     if ($kind == $SVN::Node::none) {
 		 &{$arg{cb_unknown}} ($cpath, $File::Find::name)
 		     if $arg{cb_unknown};
 		 return;
 	     }
-
+	     return if -d $File::Find::name;
 	     &{$arg{cb_changed}} ($cpath, $File::Find::name)
 		 if $arg{cb_changed} && md5file($File::Find::name) ne
-		     $arg{root}->file_md5_checksum ($cpath);
+		     $xdroot->file_md5_checksum ($cpath);
 	  }, $arg{copath});
-
+    SVN::Fs::close_txn ($txn) if $txn;
 }
 
 use SVN::Simple::Edit;
@@ -97,19 +140,29 @@ sub do_commit {
     print "targets:\n";
     print "$_->[1]\n" for @{$arg{targets}};
 
+    my $fs = $arg{repos}->fs;
+
     my $edit = SVN::Simple::Edit->new
 	(_editor => [SVN::Repos::get_commit_editor($arg{repos},
 						   "file://$arg{repospath}",
 						   $arg{path},
 						   $arg{author}, $arg{message},
-						   $committed)]);
+						   $committed)],
+	 missing_handler =>
+	 SVN::Simple::Edit::check_missing ($fs->revision_root ($arg{baserev})));
 
     $edit->open_root($arg{baserev});
     for (@{$arg{targets}}) {
 	my ($action, $tpath) = @$_;
-	open my ($fh), '<', $tpath;
-	my $md5 = md5file ($tpath);
+	my $cpath = $tpath;
 	$tpath =~ s|^$arg{copath}/||;
+	if (-d $cpath) {
+	    $edit->add_directory ($tpath);
+	    next;
+	}
+
+	open my ($fh), '<', $cpath;
+	my $md5 = md5file ($cpath);
 	if ($action eq 'A') {
 	    # check dir later
 	    $edit->add_file ($tpath);
@@ -174,7 +227,7 @@ sub apply_textdelta {
 	    my $md5 = md5($base);
 	    if ($checksum ne $md5) {
 		warn "base checksum mismatch for $path, should do merge";
-		warn "$checksum vs $md5\n";
+		warn "$checksum vs $md5($path)\n";
 		close $base;
 		undef $self->{info}{$path}{status};
 		return undef;
@@ -238,9 +291,9 @@ sub close_directory {
 
 sub delete_entry {
     my ($self, $path, $revision) = @_;
-    $path = "$self->{copath}/$path";
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
     # check if everyone under $path is sane for delete";
-    rmtree ([$path]);
+    -d $path ? rmtree ([$path]) : unlink($path);
     $self->{info}{$path}{status} = ['D'];
 }
 
