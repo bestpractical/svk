@@ -741,13 +741,14 @@ Don't generate absent_* calls.
 
 use Regexp::Shellish qw( :all ) ;
 # XXX: checkout_delta is getting too complicated and too many options
+my %ignore_cache;
 
 sub ignore {
     no warnings;
     my @ignore = qw/*.o #*# .#* *.lo *.la .*.rej *.rej .*~ *~ .DS_Store
 		    svk-commit*.tmp/;
 
-    return join('|', map {compile_shellish $_} (@ignore, @_));
+    return join('|', map {$ignore_cache{$_} ||= compile_shellish $_} (@ignore, @_));
 }
 
 sub _delta_content {
