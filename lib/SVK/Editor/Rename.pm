@@ -73,11 +73,9 @@ sub open_root {
     return $ret;
 }
 
-our $AUTOLOAD;
-
 sub AUTOLOAD {
     my ($self, @arg) = @_;
-    my $func = $AUTOLOAD;
+    my $func = our $AUTOLOAD;
     my $class = ref ($self);
     $func =~ s/^.*:://;
     return if $func =~ m/^[A-Z]+$/;

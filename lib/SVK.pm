@@ -2,11 +2,11 @@ package SVK;
 use strict;
 our $VERSION = '0.21';
 use SVK::Command;
-our $AUTOLOAD;
+use constant DEBUG => $ENV{DEBUG};
 
 sub import {
     return unless ref ($_[0]);
-    $AUTOLOAD = 'import';
+    our $AUTOLOAD = 'import';
     goto &AUTOLOAD;
 }
 
@@ -18,18 +18,24 @@ sub new {
 }
 
 sub AUTOLOAD {
-    my $self = shift;
-    my $cmd = $AUTOLOAD;
+    my $cmd = our $AUTOLOAD;
     $cmd =~ s/^SVK:://;
     return if $cmd =~ /^[A-Z]+$/;
-    my ($buf, $output) = ('');
-    open $output, '>', \$buf if $self->{output};
-    eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
-    if ($output) {
-	close $output;
-	print STDERR "[$cmd] $buf" if $ENV{DEBUG};
-	${$self->{output}} = $buf;
-    }
+
+    no strict 'refs';
+    no warnings 'redefine';
+    *$cmd = sub {
+        my $self = shift;
+        my ($buf, $output) = ('');
+        open $output, '>', \$buf if $self->{output};
+        eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
+        if ($output) {
+            close $output;
+            print STDERR "[$cmd] $buf" if DEBUG;
+            ${$self->{output}} = $buf;
+        }
+    };
+    goto &$cmd;
 }
 
 1;

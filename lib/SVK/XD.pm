@@ -1422,15 +1422,21 @@ sub flush {
 package SVK::XD::Root;
 use SVK::I18N;
 
-our $AUTOLOAD;
 sub AUTOLOAD {
-    my $func = $AUTOLOAD;
+    my $func = our $AUTOLOAD;
     $func =~ s/^SVK::XD::Root:://;
     return if $func =~ m/^[A-Z]*$/;
+
     no strict 'refs';
-    my $self = shift;
-#    warn "===> $self $func: ".join(',',@_).' '.join(',', (caller(0))[0..3])."\n";
-    $self->[1]->$func (@_);
+    no warnings 'redefine';
+
+    *$func = sub {
+        my $self = shift;
+        # warn "===> $self $func: ".join(',',@_).' '.join(',', (caller(0))[0..3])."\n";
+        $self->[1]->$func (@_);
+    };
+
+    goto &$func;
 }
 
 sub new {

@@ -33,11 +33,9 @@ sub baton_at {
     return $func =~ m/^(?:add|open|absent)/ ? 1 : 0;
 }
 
-our $AUTOLOAD;
-
 sub AUTOLOAD {
     my ($self, @arg) = @_;
-    my $func = $AUTOLOAD;
+    my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
     return if $func =~ m/^[A-Z]+$/;
     my $baton;

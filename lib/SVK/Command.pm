@@ -10,6 +10,7 @@ use Pod::Simple::SimpleTree ();
 use File::Find ();
 use SVK::Util qw( abs_path $SEP IS_WIN32 );
 use SVK::I18N;
+use constant DEBUG => $ENV{DEBUG};
 
 =head1 NAME
 
@@ -160,7 +161,7 @@ sub invoke {
 	}
 	else {
 	    eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
-	    print STDERR "======>[$@]\n" if $ENV{DEBUG};
+	    print STDERR "======>[$@]\n" if DEBUG;
 	    $xd->unlock if $xd;
 	    die $@ if $@;
 	}

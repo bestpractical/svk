@@ -16,11 +16,9 @@ SVK::Editor::Translate - An editor that translates path names
 
 =cut
 
-our $AUTOLOAD;
-
 sub AUTOLOAD {
     my ($self, @arg) = @_;
-    my $func = $AUTOLOAD;
+    my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
     return if $func =~ m/^[A-Z]+$/;
 
