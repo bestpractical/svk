@@ -18,7 +18,8 @@ sub options {
     ('m|message=s'  => 'message',
      'C|check-only' => 'check_only',
      's|sign'	  => 'sign',
-     'force',	  => 'force'
+     'force',	  => 'force',
+     'direct',	  => 'direct',
     );
 }
 
@@ -99,7 +100,8 @@ sub get_editor {
 
     my ($base_rev, $m, $mpath);
 
-    if (svn_mirror && (($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
+    if (!$self->{direct} && svn_mirror &&
+	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
 	print loc("Merging back to SVN::Mirror source %1.\n", $m->{source});
 	if ($self->{check_only}) {
 	    print loc("Checking against mirrored directory locally.\n");
@@ -325,6 +327,7 @@ SVK::Command::Commit - Commit changes to depot
     -s [--sign]:           sign the commit
     -C [--check-only]:	Needs description
     --force:	Needs description
+    --direct:	Commit directly even if the path is mirrored
 
 =head1 AUTHORS
 
