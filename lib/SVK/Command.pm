@@ -66,17 +66,18 @@ sub get_cmd {
 }
 
 sub invoke {
-    my $pkg = shift;
-    my $xd = shift;
-    my $cmd = shift;
-    local @ARGV = @_;
+    my ($pkg, $xd, $cmd, $output, @arg) = @_;
+    my $ofh;
+    local @ARGV = @arg;
 
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->{xd} = $xd;
     die unless GetOptions ($cmd, _opt_map($cmd, $cmd->options));
     my @args = $cmd->parse_arg(@ARGV);
     $cmd->lock (@args);
+    $ofh = select $output if $output;
     my $ret = eval { $cmd->run (@args) };
+    select $ofh if $output;
     $xd->unlock () if $xd;
     die $@ if $@;
     return $ret;

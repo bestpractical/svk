@@ -61,7 +61,7 @@ unless ($cmd) {
 }
 
 if ($cmd eq 'help') {
-    SVK::Command->invoke (undef, $cmd, @ARGV);
+    SVK::Command->invoke (undef, $cmd, undef, @ARGV);
     exit 0;
 }
 

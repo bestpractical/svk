@@ -22,7 +22,13 @@ sub AUTOLOAD {
     my $cmd = $AUTOLOAD;
     $cmd =~ s/^SVK:://;
     return if $cmd =~ /^[A-Z]+$/;
-    my $msg = SVK::Command->invoke ($self->{xd}, $cmd, @_);
+    my ($buf, $output) = ('');
+    open $output, '>', \$buf if $self->{output};
+    my $msg = SVK::Command->invoke ($self->{xd}, $cmd, $output, @_);
+    if ($output) {
+	close $output;
+	${$self->{output}} = $buf;
+    }
     print $msg if $msg;
 }
 
