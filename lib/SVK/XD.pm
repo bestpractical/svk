@@ -811,7 +811,7 @@ sub _delta_file {
 						type => 'file');
 
     $rev = 0 if $arg{add};
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
+    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, undef, $arg{add});
     my $mymd5 = md5($fh);
     my $md5;
 
@@ -1155,13 +1155,15 @@ sub _fh_symlink {
 }
 
 sub get_fh {
-    my ($root, $mode, $path, $fname, $layer) = @_;
+    my ($root, $mode, $path, $fname, $layer, $raw) = @_;
     # XXX: it seems symlinks are not using the SVN::Node::special node type
     # need to confirm this
     local $@;
-    return _fh_symlink ($mode, $fname)
-	if -l $fname || defined eval {$root->node_prop ($path, 'svn:special')};
-    $layer ||= get_keyword_layer ($root, $path);
+    unless ($raw) {
+	return _fh_symlink ($mode, $fname)
+	    if -l $fname || defined eval {$root->node_prop ($path, 'svn:special')};
+	$layer ||= get_keyword_layer ($root, $path);
+    }
     open my ($fh), $mode, $fname;
     $layer->via ($fh) if $layer;
     return $fh;
