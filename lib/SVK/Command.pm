@@ -147,6 +147,12 @@ sub arg_depotpath {
 	   };
 }
 
+sub arg_depotname {
+    my ($self, $arg) = @_;
+
+    return main::find_depotname ($arg, 1);
+}
+
 sub arg_path {
     my ($self, $arg) = @_;
 
