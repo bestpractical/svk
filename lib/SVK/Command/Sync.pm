@@ -34,11 +34,12 @@ sub run {
 	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);
 
     if ($self->{sync_all}) {
+	local $@;
 	@arg = (defined($arg[0]) ? @arg : sort keys %{$self->{xd}{depotmap}});
         my @newarg;
         foreach my $depot (@arg) {
             $depot =~ s{/}{}g;
-            my $target = $self->arg_depotpath ("/$depot/");
+            my $target = eval { $self->arg_depotpath ("/$depot/") } or next;
 	    push @newarg, (
                 map {$self->arg_depotpath("/$depot$_")}
                     SVN::Mirror::list_mirror ($target->{repos})
