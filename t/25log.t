@@ -21,6 +21,7 @@ $svk->ps ('mmm', 'xxx', 'A/foo');
 $svk->commit ('-m', 'cp and ps');
 is_output_like ($svk, 'log', [],
 		qr|r2.*cp and ps.*r1.*init|s);
+$svk->pd ('--revprop', '-r' => 2 , 'svn:author');
 
 is_output_like ($svk, 'log', ['-v'],
 		qr|
@@ -36,6 +37,6 @@ $svk->mirror ('/test/A', uri("$repospath/A"));
 $svk->sync ('/test/A');
 
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],
-		qr'r3 \(orig r2\)');
+		qr/\Qr3 (orig r2):  (no author)\E/);
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/A/'],
-		qr'r3 \(orig r2\)');
+		qr/\Qr3 (orig r2):  (no author)\E/);

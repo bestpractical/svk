@@ -121,6 +121,7 @@ sub _show_log {
 	$date = time2str("%Y-%m-%d %T %z", str2time ($date));
     }
     $indent = (' ' x $indent);
+    $author = loc('(no author)') if !defined($author) or !length($author);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
     if ($paths) {
 	$output->print ($indent.loc("Changed paths:\n"));
