@@ -13,7 +13,7 @@ use SVN::DiffEditor;
 use version;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps pl cp/;
+use subs qw/co up st blame ci del rm ps pl cp sy sm/;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
@@ -947,6 +947,16 @@ sub merge {
 		      );
 }
 
+=head2 smerge (sm)
+
+Alias to merge -a.
+
+=cut
+
+sub smerge {
+    merge ('-a', @_);
+}
+
 =head2 mirror
 
 Initialize a mirrored depotpath.
@@ -966,7 +976,7 @@ sub mirror {
     $m->init;
 }
 
-=head2 sync
+=head2 sync (sy)
 
 Syncrhonize a mirrored depotpath.
 
@@ -1006,6 +1016,8 @@ sub sync {
 *ps = *propset;
 *pl = *proplist;
 *cp = *copy;
+*sm = *smerge;
+*sy = *sync;
 
 my $defaultdepot;
 
