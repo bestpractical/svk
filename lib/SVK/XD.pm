@@ -828,10 +828,8 @@ sub _delta_file {
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
     my ($fh, $mymd5);
-    if (!-d $arg{copath}) {
-	$fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l $arg{copath});
-	$mymd5 = md5($fh);
-    }
+    $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l $arg{copath});
+    $mymd5 = md5($fh);
 
     my ($baton, $md5);
     return $modified unless $schedule || $arg{add} ||
@@ -852,7 +850,7 @@ sub _delta_file {
     $arg{editor}->change_file_prop ($baton, $_, ref ($newprop->{$_}) ? undef : $newprop->{$_}, $pool)
 	for sort keys %$newprop;
 
-    if (!-d $arg{copath} and !$arg{base} ||
+    if (!$arg{base} ||
 	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
 	seek $fh, 0, 0;
 	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool);
