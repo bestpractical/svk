@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 6;
+use Test::More tests => 9;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -24,6 +24,9 @@ overwrite_file ("A/foo", "#!/usr/bin/perl -w\nfoobar\nat checkout\nbarbaz\nfnord
 
 is_annotate (['A/foo'], [2,1,undef,2,3,3], 'annotate - checkout');
 is_annotate (['//A/foo'], [2,1,2,3,3], 'annotate - depotpath');
+is_annotate ([-r => 2, 'A/foo'], [2,1,2], 'annotate - -rN checkout');
+is_annotate (['//A/foo@2'], [2,1,2], 'annotate - depotpath@rev');
+is_annotate (['A/foo@2'], [2,1,undef,2,undef,undef], 'annotate - checkout@rev');
 
 $svk->cp ('-m', 'copy', '//A/foo', '//A/bar');
 $svk->update ;

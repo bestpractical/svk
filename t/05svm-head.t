@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 2;
+plan_svm tests => 4;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -29,3 +29,11 @@ is_output ($svk, 'sync', ['--skipto', 'HEAD', '//test-A'],
 	   ["Syncing $uri/A",
 	    'Retrieving log information from 2 to 2',
 	    'Committed revision 6 from revision 2.']);
+
+$svk->mirror ('//test-Z', "$uri/Z");
+
+is_output ($svk, 'sync', ['--skipto', 'HEAD', '-a'],
+	   [qr'^argument skipto not allowed when multiple target specified at ']);
+is_output ($svk, 'sync', ['--skipto', 'HEAD', '//test-A', '//test-Z'],
+	   [qr'^argument skipto not allowed when multiple target specified at ']);
+

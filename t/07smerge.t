@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan_svm tests => 27 ;
+plan_svm tests => 29;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -264,3 +264,29 @@ is_output ($svk, 'smerge', ['-C', '/client2/m-all/A-cp', '/client2/m-all/A'],
 	    "Checking locally against mirror source $uri.",
 	    'g   Q/qu',
 	    "New merge ticket: $suuid:/A-cp:12"]);
+
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+@_ = ("hate\n", <_>);
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+TMP
+
+is_output ($svk, 'smerge', ['/client2/m-all/A-cp', '/client2/m-all/A'],
+	   ['Auto-merging (0, 13) /m-all/A-cp to /m-all/A (base /m-all/A:12).',
+	    'Waiting for editor...',
+	    "Merging back to mirror source $uri.",
+	    'g   Q/qu',
+	    "New merge ticket: $suuid:/A-cp:12",
+	    "Merge back committed as revision 14.",
+	    "Syncing $uri",
+	    'Retrieving log information from 14 to 14',
+	    'Committed revision 15 from revision 14.']);
+
+is_output_like ($svk, 'log', [-r15 => '/client2/m-all/A'],
+		qr'hate');

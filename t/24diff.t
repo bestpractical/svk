@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 19;
+use Test::More tests => 23;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -19,6 +19,10 @@ $svk->commit ('-m', 'init');
 overwrite_file ("A/binary", "foobar\nfnord\n");
 $svk->add ('A/binary');
 $svk->propset ('svn:mime-type', 'image/png', 'A/binary');
+is_output ($svk, 'diff', ['//asdf-non'],
+	   ['path //asdf-non does not exist.']);
+is_output ($svk, 'diff', ['//asdf-non', 'A/binary'],
+	   ['path //asdf-non does not exist.']);
 is_output ($svk, 'diff', [],
            ['=== A/binary',
             '==================================================================',
@@ -93,6 +97,7 @@ my $r12output = ['=== A/foo',
 		 '@@ -1 +0,0 @@',
 		 '-foobar'];
 is_sorted_output ($svk, 'diff', ['-r1:2'], $r12output, 'diff - rN:M copath');
+is_sorted_output ($svk, 'diff', ['-r1', '-r2'], $r12output, 'diff - rN:M copath');
 is_sorted_output ($svk, 'diff', ['-r1:2', '//'], $r12output, 'diff - rN:M depotdir');
 is_output ($svk, 'diff', ['-r1:2', '//A/foo'],
 	   ['=== foo',
@@ -179,6 +184,16 @@ is_output ($svk, 'diff', ['-r1'],
             '___________________________________________________________________',
             'Name: svn:mime-type',
             ' +image/png',], 'diff - rN copath (changed)');
+is_sorted_output ($svk, 'diff', ['-sr1:2', '//A', $corpath],
+	   ['A   A',
+	    'A   A/foo',
+	    'A   A/bar',
+	    'A   A/binary',
+	    'A   A/baz',
+	    'D   bar',
+	    'D   foo',
+	    'D   nor']);
+
 is_sorted_output ($svk, 'diff', ['-sr1:2'],
 	   ['M   A/foo',
 	    'M   A/bar',

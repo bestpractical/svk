@@ -1,11 +1,12 @@
 package SVK::Command::List;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Util qw( to_native get_encoder );
 use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
 
@@ -42,6 +43,7 @@ sub _do_list {
     # XXX: SVK::Target should take care of this.
     $target->{depotpath} =~ s|/$||;
     my $entries = $root->dir_entries ($target->{path});
+    my $enc = get_encoder;
     for (sort keys %$entries) {
 	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
 
@@ -63,11 +65,15 @@ sub _do_list {
         }
 
         if ($self->{'fullpath'}) {
-            print $target->{depotpath}.'/';
+	    my $dpath = $target->{depotpath};
+	    to_native ($dpath, 'path', $enc);
+            print $dpath.'/';
         } else {
             print " " x ($level);
         }
-        print $_.($isdir ? '/' : '')."\n";
+	my $path = $_;
+	to_native ($path, 'path', $enc);
+        print $path.($isdir ? '/' : '')."\n";
 
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {

@@ -1,12 +1,12 @@
 package SVK::Command::Add;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( $SEP is_symlink );
+use SVK::Util qw( $SEP is_symlink to_native);
 
 sub options {
     ('q|quiet'		=> 'quiet');
@@ -55,20 +55,21 @@ sub run {
 
 		  return unless $status->[0] eq 'D';
 		  lstat ($copath);
-		  $self->do_add ('R', $copath, $report, !-d _)
+		  $self->_do_add ('R', $copath, $report, !-d _)
 		      if -e _;
 	      })),
 	  cb_unknown => sub {
 	      lstat ($_[1]);
-	      $self->do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
-			     (!-d _ or is_symlink));
+	      to_native ($_[0]);
+	      $self->_do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
+			     !-d _);
 	  },
 	);
 }
 
 my %sch = (A => 'add', 'R' => 'replace');
 
-sub do_add {
+sub _do_add {
     my ($self, $st, $copath, $report, $autoprop) = @_;
     $self->{xd}{checkout}->store ($copath,
 				  { '.schedule' => $sch{$st},

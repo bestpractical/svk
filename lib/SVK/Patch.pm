@@ -2,7 +2,7 @@ package SVK::Patch;
 use strict;
 use SVK::I18N;
 use SVK::Util qw( read_file write_file );
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 =head1 NAME
 
@@ -204,12 +204,12 @@ sub view {
     my $anchor = $self->{_target}->path;
     $self->editor->drive
 	( SVK::Editor::Diff->new
-	  ( cb_basecontent => sub { my ($path) = @_;
-				    my $base = $baseroot->file_contents ("$anchor/$path");
+	  ( cb_basecontent => sub { my ($path, $pool) = @_;
+				    my $base = $baseroot->file_contents ("$anchor/$path", $pool);
 				    return $base;
 				},
-	    cb_baseprop => sub { my ($path, $pname) = @_;
-				 return $baseroot->node_prop ("$anchor/$path", $pname);
+	    cb_baseprop => sub { my ($path, $pname, $pool) = @_;
+				 return $baseroot->node_prop ("$anchor/$path", $pname, $pool);
 			     },
 	    oldtarget => $self->{_target}, oldroot => $baseroot,
 	    llabel => "revision $self->{target}{rev}",
@@ -264,7 +264,7 @@ sub update {
     my $conflict;
 
     if ($conflict = $self->apply_to ($target, $patch, patch => 1,
-				     SVK::Editor::Merge::cb_for_root
+				     SVK::Editor::Merge->cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
 
 	print loc("Conflicts.\n");
@@ -293,7 +293,7 @@ sub regen {
     my $patch = SVK::Editor::Patch->new;
     # XXX: handle empty
     unless ($conflict = $merge->run ($patch,
-				     SVK::Editor::Merge::cb_for_root
+				     SVK::Editor::Merge->cb_for_root
 				     ($target->root, $target->path, $target->{revision}))) {
 	$self->{log} = $merge->log (1);
 	++$self->{level};

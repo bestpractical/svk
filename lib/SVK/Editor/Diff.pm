@@ -1,11 +1,12 @@
 package SVK::Editor::Diff;
 use strict;
-use SVN::Delta;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;
-use SVK::Util qw( slurp_fh tmpfile mimetype_is_text catfile );
+use autouse 'SVK::Util' => qw( slurp_fh tmpfile mimetype_is_text catfile );
 
 =head1 NAME
 
@@ -36,28 +37,30 @@ sub open_root {
 }
 
 sub add_file {
-    my ($self, $path, $pdir, @arg) = @_;
+    my ($self, $path, $pdir, undef, undef, $pool) = @_;
     $self->{info}{$path}{added} = 1;
+    $self->{info}{$path}{fpool} = $pool;
     return $path;
 }
 
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
+    $self->{info}{$path}{fpool} = $pool;
     return $path;
 }
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
-    my $info = $self->{info}{$path} ||= {};
+    my $info = $self->{info}{$path};
     $info->{new} = '';
-    $info->{base} = $self->{cb_basecontent} ($path)
+    $info->{base} = $self->{cb_basecontent} ($path, $info->{fpool})
 	unless $info->{added};
 
     unless ($self->{external}) {
 	my $newtype = $info->{prop} && $info->{prop}{'svn:mime-type'};
 	my $is_text = !$newtype || mimetype_is_text ($newtype);
 	if ($is_text && !$info->{added}) {
-	    my $basetype = $self->{cb_baseprop}->($path, 'svn:mime-type');
+	    my $basetype = $self->{cb_baseprop}->($path, 'svn:mime-type', $pool);
 	    $is_text = !$basetype || mimetype_is_text ($basetype);
 	}
 	unless ($is_text) {
@@ -93,7 +96,7 @@ sub close_file {
 	no warnings 'uninitialized';
 	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
 	my $base = $self->{info}{$path}{added} ?
-	    \'' : $self->{cb_basecontent} ($path);
+	    \'' : $self->{cb_basecontent} ($path, $self->{info}{$path}{fpool});
 	my @label = map { $self->{$_} || $self->{"cb_$_"}->($path) } qw/llabel rlabel/;
 	my $showpath = ($self->{lpath} ne $self->{rpath});
 	my @showpath = map { $showpath ? $self->{$_} : undef } qw/lpath rpath/;
@@ -166,7 +169,7 @@ sub output_prop_diff {
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    $self->_print(loc("Name: %1\n", $_));
 	    my $baseprop;
-	    $baseprop = $self->{cb_baseprop}->($path, $_)
+	    $baseprop = $self->{cb_baseprop}->($path, $_, $pool)
 		unless $self->{info}{$path}{added};
             my @args =
                 map \$_,
@@ -203,7 +206,8 @@ sub close_directory {
 }
 
 sub delete_entry {
-    my ($self, $path, $revision, $pdir, @arg) = @_;
+    my ($self, $path, $revision, $pdir, $pool) = @_;
+    my $spool = SVN::Pool->new_default;
     # generate delta between empty root and oldroot of $path, then reverse in output
     SVK::XD->depot_delta
 	( oldroot => $self->{oldtarget}{repos}->fs->revision_root (0),

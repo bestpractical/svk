@@ -1,9 +1,12 @@
 package SVK::Editor::XD;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+use SVN::Delta;
 use base qw(SVK::Editor::Checkout);
 use SVK::I18N;
-use SVK::Util qw( get_anchor md5_fh );
+use autouse 'File::Path' => qw(rmtree);
+use autouse 'SVK::Util'  => qw( get_anchor md5_fh );
 
 =head1 NAME
 
@@ -107,6 +110,14 @@ sub close_file {
     my $copath = $path;
     $self->{get_copath}($copath);
     if ($self->{update}) {
+	my (undef, $file) = get_anchor (1, $copath);
+	# populate signature cache for added files only, because
+	# modified file might be edited from merge editor, and thus
+	# actually unclean.  There should be notification from merge
+	# editor in the future, or to update the cache in cb_localmod
+	# for modified entries.
+	$self->{cursignature}[-1]->changed ($file)
+	    if $self->{added}{$path};
 	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
@@ -128,6 +139,8 @@ sub add_directory {
     $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
+    push @{$self->{cursignature}}, $self->{signature}->load ($copath)
+	if $self->{update};
     return $path;
 }
 
@@ -150,10 +163,16 @@ sub close_directory {
     return if $self->{target} && $path eq '';
     my $copath = $path;
     $self->{get_copath}($copath);
-    $self->{xd}{checkout}->store_recursively ($copath,
-					      {revision => $self->{revision},
-					       '.deleted' => undef})
-	if $self->{update};
+    if ($self->{update}) {
+	$self->{xd}{checkout}->store_recursively ($copath,
+						  {revision => $self->{revision},
+						   '.deleted' => undef});
+	if (@{$self->{cursignature}}) {
+	    $self->{cursignature}[-1]->flush;
+	    pop @{$self->{cursignature}};
+	}
+    }
+
     delete $self->{added}{$path};
 }
 
@@ -188,7 +207,6 @@ sub close_edit {
 
 sub abort_edit {
     my ($self) = @_;
-    $self->close_directory('');
 }
 
 =head1 AUTHORS

@@ -1,6 +1,8 @@
 package SVK::Editor::Delay;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub _open_pbaton {

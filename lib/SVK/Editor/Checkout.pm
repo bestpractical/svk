@@ -52,7 +52,11 @@ sub set_target_revision {
 
 sub open_root {
     my ($self, $base_revision) = @_;
-    return '';
+    require Data::Hierarchy;
+    require SVK::XD;
+    $self->{signature} ||= SVK::XD::Signature->new (root => $self->{xd}->cache_directory)
+	if $self->{update};
+    return $self->open_directory ('');
 }
 
 sub add_file {
@@ -158,6 +162,12 @@ sub add_directory {
 sub open_directory {
     my ($self, $path) = @_;
     # XXX: test if directory exists
+    if ($self->{update}) {
+	my $copath = $path;
+	$self->{get_copath}->($copath);
+	push @{$self->{cursignature}}, $self->{signature}->load ($copath);
+	$self->{cursignature}[-1]{keepold} = 1;
+    }
     return $path;
 }
 

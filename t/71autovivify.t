@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 4;
+plan_svm tests => 10;
 
 our ($answer, $output);
 my ($xd, $svk) = build_test();
@@ -11,8 +11,8 @@ my $tree = create_basic_tree ($xd, '//V');
 my ($copath, $corpath) = get_copath ('autovivify');
 mkdir $corpath;
 
-$answer = '//new/A';
 chdir($corpath);
+$answer = '//new/A';
 is_output($svk, 'copy', [-m => 'copy to current dir', '//V/A'], [
             'Committed revision 4.',
             "Syncing //new/A(/new/A) in ".__("$corpath/A to 4."),
@@ -33,7 +33,7 @@ my $suuid = $srepos->fs->get_uuid;
 my $uri = uri($srepospath);
 
 $answer = ['', 'C', ''];
-is_output($svk, 'checkout', ["$uri/C" => "$corpath/C"], [
+is_output($svk, 'checkout', ["$uri/C"], [
             "New URI encountered: $uri/C/",
             "Committed revision 5.",
             "Synchronizing the mirror for the first time:",
@@ -44,10 +44,41 @@ is_output($svk, 'checkout', ["$uri/C" => "$corpath/C"], [
             "Syncing $uri/C",
             "Retrieving log information from 1 to 2",
             "Committed revision 6 from revision 1.",
-	    "Syncing //mirror/C/(/mirror/C) in ".__("$corpath/C to 6."),
-            __("A   $corpath/C/R"),
+	    "Syncing //mirror/C(/mirror/C) in ".__("$corpath/C to 6."),
+            __("A   C/R"),
+            ]);
+rmtree ['C'];
+# unused
+$answer = ['', '', ''];
+is_output($svk, 'checkout', ["$uri/C"],
+	  ["Syncing //mirror/C(/mirror/C) in ".__("$corpath/C to 6."),
+	   __("A   C/R")]);
+is_output($svk, 'update', ["$corpath/C"], [
+            "Syncing //mirror/C(/mirror/C) in ".__("$corpath/C to 6.")
             ]);
 
-is_output($svk, 'update', ["$corpath/C"], [
-            "Syncing //mirror/C/(/mirror/C) in ".__("$corpath/C to 6.")
+rmtree ['C'];
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
+            "Committed revision 7.",
+	    "Syncing //C(/C) in ".__("$corpath/C to 7."),
+            __("A   C/R"),
             ]);
+is_ancestor ($svk, "C", '/mirror/C', 6);
+
+$answer = 'C-hate';
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"], [
+            "Committed revision 8.",
+	    "Syncing //C-hate(/C-hate) in ".__("$corpath/C-hate to 8."),
+            __("A   C-hate/R"),
+            ]);
+is_ancestor ($svk, "C-hate", '/mirror/C', 6);
+
+rmtree ['C'];
+$answer = ['', 'C-bizzare'];
+is_output($svk, 'cp', [-m => 'local branch for C', "$uri/C"],
+	  [ 'Path //C already exists.',
+            "Committed revision 9.",
+	    "Syncing //C-bizzare(/C-bizzare) in ".__("$corpath/C-bizzare to 9."),
+            __("A   C-bizzare/R"),
+            ]);
+

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 39;
+use Test::More tests => 44;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -38,6 +38,8 @@ ok (-e 'V-3.1/A/Q/qu');
 is_output_like ($svk, 'checkout', ['//'], qr"don't know where to checkout");
 
 is_output_like ($svk, 'checkout', ['//V-3.1'], qr'already exists');
+overwrite_file ('some-file', 'blah blah blah');
+is_output_like ($svk, 'checkout', ['//V-3.1', 'some-file'], qr'already exists');
 is_output_like ($svk, 'checkout', ['//V-3.1', 'V-3.1/l2'], qr'Overlapping checkout');
 
 $svk->checkout ('-r5', '//V-3.1', 'V-3.1-r5');
@@ -60,6 +62,12 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu', 'boo'],
 	    'A   boo']);
 ok (-e 'boo');
 
+is_output ($svk, 'checkout', ['//V-3.1/A/Q', '0'],
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/0 to 6.",
+	    __"A   0/qu",
+	    __"A   0/qz",
+	    __" U  0"]);
+$svk->co (-d => '0');
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
 	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/just-q to 6.",
 	    __('A   ../checkout/just-q/qu'),
@@ -134,6 +142,26 @@ is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/co-root-
             __("Overlapping checkout path is not supported ($corpath/co-root-a); use 'svk checkout --detach' to remove it first.")
             ]);
 
+chdir ('co-root-a') or die $!;
+is_output ($svk, 'checkout', ['--relocate', "//V-3.1"],
+	   ["Do you mean svk switch //V-3.1?"],
+	  );
+chdir ('..');
+
+rmtree ['co-root-a'];
+is_output ($svk, 'update', ['co-root-a'],
+	   ["Syncing //V/A(/V/A) in ".__"$corpath/co-root-a to 6.",
+	    "Checkout directory gone. Use 'checkout //V/A co-root-a' instead."]);
+
+SKIP: {
+skip 'no working chmod', 1 if $^O eq 'MSWin32';
+chmod (0555, '.');
+is_output ($svk, 'checkout', ['//V/A', 'co-root-a'],
+	   ["Syncing //V/A(/V/A) in ".__"$corpath/co-root-a to 6.",
+	    "Can't create directory co-root-a for checkout: Permission denied."]);
+
+chmod (0755, '.');
+}
 is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/foo")], [
             "Checkout '//V-3.1-non' ".__("relocated to '$corpath/foo'.")
             ]);

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 41;
+plan tests => 45;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -103,6 +103,12 @@ overwrite_file ("A/forimport/foo", "fnord");
 overwrite_file ("A/forimport/bar", "fnord");
 overwrite_file ("A/forimport/baz", "fnord");
 overwrite_file ("A/forimport/ss..", "fnord");
+
+# XXX - This doesn't output anything!?!
+is_output ($svk, 'commit', ['-C', '--import', '-m', 'commit --import',
+			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',
+			    'A/barnew', 'A/forimport/ss..'],
+	   []);
 
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
 			    'A/forimport', 'A/forimport/foo', 'A/forimport/bar', 'A/forimport/baz',
@@ -228,3 +234,14 @@ append_file ("A/bar", "foobar2");
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    'Aborted.'], 'buffer unmodified');
+
+overwrite_file ('svk-commit', 'my log message');
+
+is_output ($svk, 'commit', [-F => 'svk-commit', -m => 'hate'],
+	   ["Can't use -F with -m."]);
+
+is_output ($svk, 'commit', [-F => 'svk-commit'],
+	   ['Committed revision 19.'], 'commit with -F');
+
+is_output_like ($svk, 'log', [-r => 19],
+		qr/my log message/);

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 my $required_svn = '1.0.7';
-my $required_svm = '0.55';
+my $required_svm = '0.57';
 
 use strict;
 use inc::Module::Install;
@@ -9,14 +9,14 @@ name		('SVK');
 author		('Chia-liang Kao <clkao@clkao.org>');
 abstract	('A decentralized version control system');
 license		('perl');
-version_from	('lib/SVK.pm');
+version_from	('lib/SVK/Version.pm');
 install_script	('bin/svk');
 clean_files	('t/checkout', 't/apache_svn');
 requires(
 #        'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Algorithm::Diff'       => '0',
-        'YAML'                  => '0',
+        'YAML'                  => '0.36',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
@@ -26,11 +26,12 @@ requires(
         'PerlIO::via::dynamic'  => '0.11',
         'PerlIO::via::symlink'  => '0.02',
         'IO::Digest'		=> '0',
-        'SVN::Simple::Edit'     => '0.26',
+        'SVN::Simple::Edit'     => '0.27',
         'Date::Parse'           => '0',
         'File::Type'            => '0',
         'URI'                   => '0',
         'PerlIO::eol'           => '0.13',
+	'Class::Autouse'	=> '1.15',
 );
 features(
     'Localized messages' => [

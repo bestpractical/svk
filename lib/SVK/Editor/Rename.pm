@@ -1,8 +1,7 @@
 package SVK::Editor::Rename;
 use strict;
-our $VERSION = $SVK::VERSION;
-our @ISA = qw(SVK::Editor::Patch);
-use SVK::Editor::Patch;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+use base qw(SVK::Editor::Patch);
 use SVK::I18N;
 
 =head1 NAME

@@ -1,6 +1,6 @@
 package SVK::Command::Annotate;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
@@ -85,7 +85,7 @@ SVK::Command::Annotate - Display per-line revision and author info
 
  annotate [PATH][@REV]
  annotate [-r REV] [PATH]
- annotate DEPOTPATH[@rev]
+ annotate DEPOTPATH[@REV]
  annotate [-r REV] DEPOTPATH
 
 =head1 OPTIONS

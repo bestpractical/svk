@@ -1,8 +1,7 @@
 package SVK::Editor::Status;
 use strict;
 use SVN::Delta;
-use SVK::Notify;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub new {
@@ -46,6 +45,7 @@ sub open_file {
 
 sub apply_textdelta {
     my ($self, $path) = @_;
+    return undef if $self->{notify}->node_status ($path) eq 'R';
     $self->{notify}->node_status ($path, 'M')
 	if !$self->{notify}->node_status ($path) || $self->{notify}->hist_status ($path);
     return undef;

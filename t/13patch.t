@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 29;
+plan_svm tests => 30;
 
 use File::Copy qw( copy );
 our $output;
@@ -39,6 +39,11 @@ is_output ($svk2, 'smerge', ['-lm', '', '-P', 'test-1', '//local', '//trunk'],
 	    "Patching locally against mirror source $uri/trunk.",
 	    'U   B/fe',
 	    'Patch test-1 created.']);
+is_output ($svk2, 'smerge', ['-lm', '', '-P', 'test-1', '//local', '//trunk'],
+	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
+	    "Patching locally against mirror source $uri/trunk.",
+	    qr'^file .*test-1\.patch already exists\.$',
+          "use 'svk patch regen test-1' instead."]);
 
 my $log1 = ['Log:',
 	    qr'.*',

@@ -1,6 +1,6 @@
 package SVK::Command::Import;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;
@@ -26,8 +26,8 @@ sub parse_arg {
         @arg[0,1] = @arg[1,0];
     }
     elsif (!eval { $self->{xd}->find_repos($arg[0]); 1 }) {
-        # The user entered a path 
-        @arg = $arg[0], $self->prompt_depotpath('import');
+        # The user entered a path
+	$arg[0] = ($self->prompt_depotpath('import', undef, 1));
     }
 
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));
@@ -47,8 +47,8 @@ sub lock {
     $self->lock_target ($source);
 }
 
-sub mkpdir {
-    my ($self, $target, $root, $yrev) = @_;
+sub _mkpdir {
+    my ($self, $target) = @_;
 
     $self->command (
         mkdir => { message => "Directory for svk import.", parent => 1 },
@@ -59,19 +59,17 @@ sub mkpdir {
 
 sub run {
     my ($self, $target, $copath) = @_;
-    return unless $self->check_mirrored_path ($target) || $self->{from_checkout};
-
-    my $fs = $target->{repos}->fs;
-    my $yrev = $fs->youngest_rev;
-    my $root = $fs->revision_root ($yrev);
+    lstat ($copath);
+    die loc ("Path %1 does not exist.\n", $copath) unless -e $copath;
+    my $root = $target->root;
     my $kind = $root->check_path ($target->{path});
 
     die loc("import destination cannot be a file") if $kind == $SVN::Node::file;
 
     if ($kind == $SVN::Node::none) {
-	$self->mkpdir ($target, $root, $yrev);
-	$yrev = $fs->youngest_rev;
-	$root = $fs->revision_root ($yrev);
+	$self->_mkpdir ($target);
+	$target->refresh_revision;
+	$root = $target->root;
     }
 
     unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
@@ -85,7 +83,7 @@ sub run {
 
     $self->get_commit_message () unless $self->{check_only};
     my $committed =
-	sub { $yrev = $_[0];
+	sub { my $yrev = $_[0];
 	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
 			$copath, $target->{depotpath}, $yrev);
 

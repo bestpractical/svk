@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 47;
+use Test::More tests => 51;
 use strict;
 use File::Temp;
 require 't/tree.pl';
@@ -14,6 +14,7 @@ overwrite_file ("$copath/A/foo", "foobar");
 overwrite_file ("$copath/A/bar", "foobarbazz");
 is_output_like ($svk, 'ps', [], qr'SYNOPSIS', 'ps - help');
 is_output_like ($svk, 'pe', [], qr'SYNOPSIS', 'ps - help');
+is_output_like ($svk, 'pe', ['foo','bar','baz'], qr'SYNOPSIS', 'ps - help');
 is_output_like ($svk, 'propdel', [], qr'SYNOPSIS', 'propdel - help');
 is_output_like ($svk, 'pg', [], qr'SYNOPSIS', 'pg - help');
 
@@ -28,6 +29,18 @@ $svk->commit ('-m', 'commit', $copath);
 is_output ($svk, 'pl', ["$copath/A"],
 	   []);
 
+is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A/unknown"],
+	   [__("$copath/A/unknown is not under version control.")]);
+
+overwrite_file ("$copath/A/unknown", 'foo');
+is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A/unknown"],
+	   [__("$copath/A/unknown is not under version control.")]);
+
+$svk->rm ("$copath/A/foo");
+is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A/foo"],
+	   [__("$copath/A/foo is already scheduled for delete.")]);
+
+$svk->revert (-R => $copath);
 is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A"],
 	   [__(" M  $copath/A")]);
 

@@ -1,6 +1,6 @@
 package SVK::Command::Push;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Smerge );
 use SVK::XD;
@@ -9,6 +9,7 @@ sub options {
     ('f|from=s'         => 'from_path',
      'l|lump'           => 'lump',
      'C|check-only'     => 'check_only',
+     'summary'		=> 'summary',
      'S|sign'	        => 'sign',
      'P|patch=s'        => 'patch',
      'verbatim'		=> 'verbatim',

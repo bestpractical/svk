@@ -1,6 +1,6 @@
 package SVK::Command::Proplist;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use constant opt_recursive => 0;
@@ -29,7 +29,7 @@ sub run {
 
     for my $target (@arg) {
         if ($self->{revprop}) {
-            $self->show_props
+            $self->_show_props
 		( $target,
 		  $target->{repos}->fs->revision_proplist($self->{rev}),
 		  $self->{rev}
@@ -38,13 +38,13 @@ sub run {
         }
 
 	$target->as_depotpath ($self->{rev}) if defined $self->{rev};
-        $self->show_props ($target, $self->{xd}->do_proplist ( $target ));
+        $self->_show_props ($target, $self->{xd}->do_proplist ( $target ));
     }
 
     return;
 }
 
-sub show_props {
+sub _show_props {
     my ($self, $target, $props, $rev) = @_;
 
     %$props or return;
@@ -70,11 +70,8 @@ sub _arg_revprop {
 sub _proplist {
     my ($self, $target) = @_;
 
-    if ($self->{revprop}) {
-        return $target->{repos}->fs->revision_proplist(
-            (defined($self->{rev}) ? $self->{rev} : $target->{revision})
-        )
-    }
+    return $target->{repos}->fs->revision_proplist($self->{rev})
+	if $self->{revprop};
 
     if (defined $self->{rev}) {
         $target->as_depotpath ($self->{rev});

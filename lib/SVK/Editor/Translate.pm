@@ -1,8 +1,10 @@
 package SVK::Editor::Translate;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
-use SVK::Editor::Patch;
+
 
 =head1 NAME
 

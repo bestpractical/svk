@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 22;
+plan_svm tests => 28;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -17,7 +17,18 @@ my $suuid = $srepos->fs->get_uuid;
 $svk->copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for (1..20);
 
 my $uri = uri($srepospath);
-$svk->mirror ('//m', $uri.($spath eq '/' ? '' : $spath));
+is_output ($svk, 'mirror', ['//m', $uri.($spath eq '/' ? '' : $spath)],
+	   ['Committed revision 1.']);
+
+is_output ($svk, 'mirror', [$uri.($spath eq '/' ? '' : $spath), '//m'],
+	   ['/m already exists.']);
+
+is_output_like ($svk, 'mirror', [], qr'SYNOPSIS', 'add - help');
+
+is_output ($svk, 'mirror', ['--upgrade'],
+	   ['nothing to upgrade']);
+is_output ($svk, 'mirror', ['--upgrade', '//m'],
+	   ['nothing to upgrade']);
 
 TODO: {
 local $TODO = 'better message';
@@ -207,3 +218,5 @@ is_output ($svk, 'mirror', ['--recover', '//m'],
             'commit to deep mirrored path',
             'No need to revert; it is already the head revision.',
            ]);
+$svk->mv (-m => 'move on mirror', '//m/Q' => '//m/Q-moved');
+is_ancestor ($svk, '//m/Q-moved', '/m/Q', 24);

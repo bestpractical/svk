@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 49;
+plan_svm tests => 50;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -152,6 +152,7 @@ $svk->copy ("$copath/me", "$copath/me-cocopied");
 is_output ($svk, 'status', [$copath],
 	   [__("A + $copath/me-cocopied")]
 	  );
+is_output ($svk, 'cp', ["$copath/me", "$copath/me-cocopied"], [__("Path $copath/me-cocopied already exists.")]);
 
 $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
@@ -161,8 +162,7 @@ is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
-	   [qr'Transaction is out of date',
-	    'Please update checkout first.']);
+	   ["Parent directory //V/newdir-with-p doesn't exist, use -p."]);
 is_output ($svk, 'cp', ['-p', '-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
 	   ['Committed revision 18.']);
 

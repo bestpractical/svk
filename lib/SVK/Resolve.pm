@@ -170,15 +170,41 @@ sub skip {
     delete $self->{has_conflict};
 }
 
+sub filter_conflict {
+    my ($self, $want) = @_;
+
+    open my $ifh, '<', $self->{conflict} or die $!;
+    open my $ofh, '>', $self->{merged} or die $!;
+
+    my $state = '';
+    my $newline = "[\r\n|\n\r?]";
+    my $in  = qr/^[>=]{4} (YOUR|ORIGINAL|THEIR) VERSION $self->{path} $self->{marker}$newline$/;
+    my $out = qr/<<<< $self->{marker}$newline/;
+
+    while (<$ifh>) {
+        if ($_ =~ $in) {
+            $state = $1;
+            next;
+        }
+        elsif (s/$out//) {
+            $state = '';
+            next unless $want eq 'THEIR';
+        }
+
+        next if $state and $state ne $want;
+        print $ofh $_;
+    }
+}
+
 sub theirs {
     my $self = shift;
-    File::Copy::copy ($self->{theirs} => $self->{merged});
+    $self->filter_conflict('THEIR');
     delete $self->{has_conflict};
 }
 
 sub yours {
     my $self = shift;
-    File::Copy::copy ($self->{yours} => $self->{merged});
+    $self->filter_conflict('YOUR');
     delete $self->{has_conflict};
 }
 

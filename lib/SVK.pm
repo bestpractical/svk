@@ -1,7 +1,11 @@
 package SVK;
 use strict;
-our $VERSION = '0.28';
-use SVK::Command;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+# Load classes on demand.
+use Class::Autouse qw(:superloader);
+
+use SVN::Core;
 
 sub import {
     return unless ref ($_[0]);

@@ -7,6 +7,8 @@ our @EXPORT_OK = qw(
 
     get_prompt get_buffer_from_editor
 
+    get_encoding get_encoder from_native to_native
+
     find_local_mirror find_svm_source resolve_svm_source traverse_history
     find_prev_copy
 
@@ -17,7 +19,19 @@ our @EXPORT_OK = qw(
 
     is_symlink is_executable is_uri can_run
 );
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+
+use Config ();
+use SVK::I18N;
+use SVN::Core;
+use SVN::Ra;
+use autouse 'Encode'            => qw(resolve_alias decode encode);
+use autouse 'File::Glob' 	=> qw(bsd_glob);
+use autouse 'File::Basename' 	=> qw(dirname);
+use autouse 'File::Spec::Functions' => 
+                               qw(catdir catpath splitpath splitdir tmpdir);
+
 
 =head1 NAME
 
@@ -35,16 +49,6 @@ IO handling, tailored to SVK's specific needs.
 No symbols are exported by default; the user module needs to specify the
 list of functions to import.
 
-=cut
-
-use Config ();
-use SVK::I18N;
-use File::Glob qw(bsd_glob);
-use File::Basename qw(dirname);
-use File::Spec::Functions qw(catdir catpath splitpath splitdir tmpdir );
-# ra must be loaded earlier since it uses the default pool
-use SVN::Core;
-use SVN::Ra;
 
 =head1 CONSTANTS
 
@@ -110,20 +114,65 @@ the regular expression pattern.  Returns the chomped answer line.
 
 =cut
 
-sub get_prompt {
+sub get_prompt { {
     my ($prompt, $pattern) = @_;
 
     local $| = 1;
-    {
-	print "$prompt";
-	my $answer = <STDIN>;
-	chomp $answer;
-	if (defined $pattern) {
-	    $answer =~ $pattern or redo;
-	}
-	return $answer;
+    print $prompt;
+
+    local *IN;
+    local *SAVED = *STDIN;
+    local *STDIN = *STDIN;
+
+    my $formfeed = "";
+    if (!-t STDIN and -r '/dev/tty' and open IN, '<', '/dev/tty') {
+        *STDIN = *IN;
+        $formfeed = "\r";
     }
-}
+
+    require Term::ReadKey;
+    Term::ReadKey::ReadMode(IS_WIN32 ? 'normal' : 'raw');
+    my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
+
+    my $answer = '';
+    while (defined(my $key = Term::ReadKey::ReadKey(0))) {
+        if ($key =~ /[\012\015]/) {
+            $out->("\n") if $key eq $formfeed;
+	    $out->($key); last;
+        }
+        elsif ($key eq "\cC") {
+            Term::ReadKey::ReadMode('restore');
+            *STDIN = *SAVED;
+            Term::ReadKey::ReadMode('restore');
+            my $msg = loc("Interrupted.\n");
+            $msg =~ s{\n\z}{$formfeed\n};
+            die $msg;
+        }
+        elsif ($key eq "\cH") {
+            next unless length $answer;
+            $out->("$key $key");
+            chop $answer; next;
+        }
+        elsif ($key eq "\cW") {
+            my $len = (length $answer) or next;
+            $out->("\cH" x $len, " " x $len, "\cH" x $len);
+            $answer = ''; next;
+        }
+        elsif (ord $key < 32) {
+            # control character -- ignore it!
+            next;
+        }
+        $out->($key);
+        $answer .= $key;
+    }
+
+    if (defined $pattern) {
+        $answer =~ $pattern or redo;
+    }
+
+    Term::ReadKey::ReadMode('restore');
+    return $answer;
+} }
 
 =head3 get_buffer_from_editor ($what, $sep, $content, $filename, $anchor, $targets_ref)
 
@@ -194,6 +243,60 @@ sub get_buffer_from_editor {
 	@$targets_ref = map abs2rel($_->[1], $anchor, undef, '/'), @new_targets;
     }
     return ($ret[0], \@new_targets);
+}
+
+=head3 get_encoding
+
+Get the current encoding from locale
+
+=cut
+
+sub get_encoding {
+    return 'utf8' if $^O eq 'darwin';
+    local $@;
+    return resolve_alias (eval {
+	require Locale::Maketext::Lexicon;
+        local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
+        Locale::Maketext::Lexicon::encoding();
+    } || eval {
+        require 'open.pm';
+        return open::_get_locale_encoding();
+    }) or 'utf8';
+}
+
+=head3 get_encoder ([$encoding])
+
+=cut
+
+sub get_encoder {
+    my $enc = shift || get_encoding;
+    return Encode::find_encoding ($enc);
+}
+
+=head3 from_native ($octets, $what, [$encoding])
+
+=cut
+
+sub from_native {
+    my $enc = ref $_[2] ? $_[2] : get_encoder ($_[2]);
+    my $buf = eval { $enc->decode ($_[0], 1) };
+    die loc ("Can't decode %1 as %2.\n", $_[1], $enc->name) if $@;
+    $_[0] = $buf;
+    Encode::_utf8_off ($_[0]);
+    return;
+}
+
+=head3 to_native ($octets, $what, [$encoding])
+
+=cut
+
+sub to_native {
+    my $enc = ref $_[2] ? $_[2] : get_encoder ($_[2]);
+    Encode::_utf8_on ($_[0]);
+    my $buf = eval { $enc->encode ($_[0], 1) };
+    die loc ("Can't encode %1 as %2.\n", $_[1], $enc->name) if $@;
+    $_[0] = $buf;
+    return;
 }
 
 =head2 Mirror Handling
@@ -332,7 +435,6 @@ Calculate MD5 checksum for data in the input filehandle.
 sub md5_fh {
     my $fh = shift;
 
-    require Digest::MD5;
     my $ctx = Digest::MD5->new;
     $ctx->addfile($fh);
 
@@ -354,7 +456,6 @@ sub mimetype {
     binmode($fh);
     read $fh, my $data, 16*1024 or return undef;
 
-    require File::Type;
     my $type = File::Type->checktype_contents($data);
 
     # On fallback, use the same logic as File::MimeInfo to detect text

@@ -37,7 +37,7 @@ is_output_like ($svk, 'cleanup', [], qr'Cleaned up stalled lock');
 is ($xd->{checkout}->get ($corpath)->{lock}, undef,  'unlocked');
 $xd->giant_lock;
 eval { $xd->giant_lock };
-ok ($@ =~ qr'another svk', 'command not allowed when giant locked');
+ok ($@ =~ qr'Another svk', 'command not allowed when giant locked');
 
 $xd->{checkout}->store ($corpath, {lock => $$+1});
 $xd->store;

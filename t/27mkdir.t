@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-use Test::More tests => 11;
+use Test::More tests => 14;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -29,6 +29,16 @@ is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deep'],
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deeper/file'],
 	   ['Committed revision 3.']);
+
+is_output ($svk, 'mkdir', ["$copath/c-newfile"],
+      [__"A   $copath/c-newfile"]);
+
+is_output ($svk, 'mkdir', ["$copath/c-newdir/deeper"],
+      ["$copath/c-newdir/deeper is not a depot path."]);
+
+is_output ($svk, 'mkdir', ['-p', "$copath/c-newdir/deeper"],
+      [__"A   $copath/c-newdir",
+       __"A   $copath/c-newdir/deeper"]);
 
 SKIP: {
 skip 'SVN::Mirror not installed', 4

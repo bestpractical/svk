@@ -10,6 +10,7 @@ use SVK::Util qw(can_run);
 
 BEGIN {
     require 't/tree.pl';
+    plan (skip_all => "Test does not run under root") if $> == 0;
     eval { require Apache2 };
     eval { require Apache::Test;
 	   $Apache::Test::VERSION >= 1.18 }
@@ -42,7 +43,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn";
 }
 
-plan_svm tests => 3;
+plan_svm tests => 7;
 
 $cfg->postamble (Location => "/svn",
 		 qq{DAV svn\n    SVNPath $srepospath\n});
@@ -70,8 +71,10 @@ $svk->checkout ('//local', $copath);
 append_file ("$copath/Q/qu", "some changes\n");
 append_file ("$copath/be", "changes\n");
 
-$svk->commit (-m => 'foo', $copath);
-
+is_output ($svk, 'commit', [-m => "L\x{e9}on is a nice guy.", $copath],
+	   ["Can't decode commit message as utf8.", "try --encoding."]);
+is_output ($svk, 'commit', [-m => "L\x{e9}on is a nice guy.", '--encoding', 'iso-8859-1', $copath],
+	   ["Committed revision 5."]);
 $svk->smerge (-Cm => 'foo', -f => '//local/');
 
 my $uuid = $repos->fs->get_uuid;
@@ -86,6 +89,11 @@ is_output ($svk, 'smerge', [-m => 'foo', -f => '//local/'],
 	    "Syncing $uri/A",
 	    'Retrieving log information from 3 to 3',
 	    'Committed revision 6 from revision 3.']);
-
+$svk->switch ('//remote', $copath);
+append_file ("$copath/Q/qu", "More changes in iso-8859-1\n");
+is_output ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", $copath],
+	   ["Commit into mirrored path: merging back directly.",
+	    "Can't decode commit message as utf8.", "try --encoding."]);
+is_output_like ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", '--encoding', 'iso-8859-1', $copath],
+		qr'Committed revision');
 $server->stop;
-

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 10;
+use Test::More tests => 17;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -64,3 +64,43 @@ is_output ($svk, 'status', [$copath],
 	    __"D   $copath/A/neu"], 'file replacing dir');
 }
 $svk->commit ('-m', 'commit the replace', $copath);
+
+mkdir ("$copath/T1");
+overwrite_file ("$copath/T1/T1", "foobar\n");
+mkdir ("$copath/T2");
+overwrite_file ("$copath/T2/T2", "foobar\n");
+$svk->add ("$copath/T1");
+$svk->add ("$copath/T2");
+
+
+
+$svk->commit ('-m', 'commit', $copath);
+
+$svk->rm ("$copath/T1/T1");
+
+is_output ($svk, 'cp', ["$copath/T2/T2", "$copath/T1/T1"],
+           [__"A   $copath/T1/T1"], 'replace with history');
+is_output ($svk, 'st', [$copath],
+	   [__"R + $copath/T1/T1"]);
+
+$svk->commit ('-m', 'commit', $copath);
+
+is_ancestor ($svk, '//V/T1/T1',
+	     '/V/T2/T2', 7);
+
+$svk->rm ("$copath/T1");
+is_output ($svk, 'cp', ["$copath/T2", "$copath/T1"],
+           [__"A   $copath/T1",
+            __"A   $copath/T1/T2"]);
+
+is_output ($svk, 'st', [$copath],
+	   [__"R + $copath/T1"]);
+
+append_file ("$copath/T1/T2", "hate\n");
+is_output ($svk, 'st', [$copath],
+	   [__"R + $copath/T1",
+	    __"M   $copath/T1/T2"]);
+$svk->commit ('-m', 'commit', $copath);
+
+is_ancestor ($svk, '//V/T1',
+	     '/V/T2', 7);

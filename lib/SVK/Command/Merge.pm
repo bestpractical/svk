@@ -1,6 +1,6 @@
 package SVK::Command::Merge;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;
@@ -14,6 +14,7 @@ sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
      'l|log'		=> 'log',
+     'summary'		=> 'summary',
      'remoterev'	=> 'remoterev',
      'track-rename'	=> 'track_rename',
      'host=s'   	=> 'host',
@@ -77,9 +78,13 @@ sub lock {
 sub get_commit_message {
     my ($self, $log) = @_;
     return if $self->{check_only} || $self->{incremental};
-    $self->{message} = defined $self->{message} ?
-	join ("\n", grep {length $_} ($self->{message}, $log))
-	    : $self->SUPER::get_commit_message ($log);
+    if (defined $self->{message}) {
+	$self->{message} = join ("\n", grep {length $_} ($self->{message}, $log));
+	$self->decode_commit_message;
+    }
+    else {
+	$self->SUPER::get_commit_message ($log);
+    }
 }
 
 sub run {
@@ -108,6 +113,9 @@ sub run {
 	$src->anchorify; $dst->anchorify;
     }
 
+    # for svk::merge constructor
+    $self->{dst} = $dst;
+    $self->{report} = defined $dst->{copath} ? $dst->{report} : undef;
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
@@ -116,8 +124,9 @@ sub run {
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
-				   src => $src, dst => $dst);
+				   src => $src);
 	print $merge->info;
+	print $merge->log(1) if $self->{summary};
     }
     else {
 	die loc("Incremental merge not supported\n") if $self->{incremental};
@@ -126,7 +135,7 @@ sub run {
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
-	     dst => $dst, base => $src->new (revision => $baserev), target => '',
+	     base => $src->new (revision => $baserev), target => '',
 	     fromrev => $baserev);
     }
 
@@ -137,9 +146,6 @@ sub run {
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
 	unless $dst->{copath};
-
-    $merge->{notify} = SVK::Notify->new_with_report
-	($dst->{report}, '', 1) if $dst->{copath};
 
     if ($self->{incremental} && !$self->{check_only}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")
@@ -202,7 +208,7 @@ SVK::Command::Merge - Apply differences between two sources
 =head1 OPTIONS
 
  -r [--revision] N:M    : act on revisions between N and M
- -m [--message] arg     : specify commit message ARG
+ -c [--change] N        : act on change N (between revisions N-1 and N)
  -C [--check-only]      : try operation but make no changes
  -I [--incremental]     : apply each change individually
  -a [--auto]            : merge from the previous merge point

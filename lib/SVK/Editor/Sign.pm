@@ -1,7 +1,9 @@
 package SVK::Editor::Sign;
+
+require SVN::Delta;
 our @ISA = qw (SVN::Delta::Editor);
 use SVK::I18N;
-use SVK::Util qw (tmpfile);
+use autouse 'SVK::Util' => qw (tmpfile);
 
 sub add_file {
     my ($self, $path, @arg) = @_;

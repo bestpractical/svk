@@ -1,10 +1,11 @@
 package SVK::Command::Help;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use Pod::Simple::Text ();
+use SVK::Util qw( get_encoder );
+use autouse 'File::Find' => qw(find);
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
 
@@ -19,7 +20,7 @@ sub run {
             my $dir = $INC{'SVK/Command.pm'};
             $dir =~ s/\.pm$//;
             print loc("Available commands:\n");
-            File::Find::find (
+            find (
                 sub { push @cmd, $File::Find::name if m/\.pm$/ }, $dir,
             );
             $self->brief_usage ($_) for sort @cmd;
@@ -36,28 +37,13 @@ sub run {
 
             $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
-            require Encode;
-            my $encoder = Encode::find_encoding($self->_find_encoding)
-                       || Encode::find_encoding('utf8');
-            print $encoder->encode($buf);
+            print get_encoder->encode($buf);
         }
         else {
             die loc("Cannot find help topic '%1'.\n", $topic);
         }
     }
     return;
-}
-
-sub _find_encoding {
-    local $@;
-    # substr( __FILE__, 0 );
-    return eval {
-        local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
-        Locale::Maketext::Lexicon::encoding();
-    } || eval {
-        require 'open.pm';
-        return open::_get_locale_encoding();
-    } || 'utf8';
 }
 
 my ($inc, @prefix);

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 40;
+use Test::More tests => 47;
 BEGIN { require 't/tree.pl' };
 
 use SVK::Util qw( HAS_SYMLINK is_symlink);
@@ -47,6 +47,10 @@ is_output ($svk, 'add', ["$copath/A"],
 _symlink ('/non-exists', "$copath/A/non.lnk");
 is_output ($svk, 'add', ["$copath/A/non.lnk"],
 	   [__("A   $copath/A/non.lnk")], 'dangling symlink');
+is_output ($svk, 'rm', ["$copath/A/non.lnk"],
+	   [__("$copath/A/non.lnk is scheduled, use 'svk revert'.")]);
+is_output ($svk, 'rm', ["$copath/A/bar.lnk"],
+	   [__("$copath/A/bar.lnk is scheduled, use 'svk revert'.")]);
 is_output ($svk, 'status', ["$copath/A"],
 	   [__"A   $copath/A",
 	    __"A   $copath/A/bar",
@@ -173,6 +177,25 @@ is_output ($svk, 'status', [$copath],
 $svk->commit (-m => 'change a symlink to normal file', $copath);
 @allsymlinks = grep {!m/dir.lnk/} @allsymlinks;
 is_output ($svk, 'status', [$copath], [], 'committed');
+
+$svk->rm ("$copath/A/dir.lnk");
+_symlink ('non', "$copath/A/dir.lnk");
+is_output ($svk, 'add', ["$copath/A/dir.lnk"],
+	   [__("R   $copath/A/dir.lnk")], 'replace with symlink to nonexist');
+_fix_symlinks();
+is_output ($svk, 'commit', [-m => 'replace to symlink to nonexist', $copath],
+	   ['Committed revision 10.']);
+
+_symlink ('A', "$copath/entry.lnk");
+$svk->add ("$copath/entry.lnk");
+is_output ($svk, 'status', [$copath],
+	   [__("A   $copath/entry.lnk")]);
+_fix_symlinks();
+is_output ($svk, 'revert', ["$copath/entry.lnk"],
+	   [__"Reverted $copath/entry.lnk"]);
+is_output ($svk, 'status', [$copath],
+	   [__("?   $copath/entry.lnk")]);
+unlink ("$copath/entry.lnk");
 
 # it's currently only a propchange to merge, should it be a full replace?
 # $svk->smerge ('-Ct', '//B');

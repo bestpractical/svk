@@ -1,11 +1,11 @@
 package SVK::Command::Log;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR traverse_history );
+use SVK::Util qw( HAS_SVN_MIRROR traverse_history get_encoding );
 use List::Util qw(max min);
 use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
@@ -113,7 +113,8 @@ sub _get_logs {
     );
 
     if ($reverse) {
-	$docall->($_) for @revs;
+	my $pool = SVN::Pool->new_default;
+	$docall->($_), $pool->clear for @revs;
     }
 }
 
@@ -137,6 +138,7 @@ sub _show_log {
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
     if ($paths) {
 	$output->print ($indent.loc("Changed paths:\n"));
+	my $enc = get_encoding;
 	for (sort keys %$paths) {
 	    my $entry = $paths->{$_};
 	    my ($action, $propaction) = ($chg->[$entry->change_kind], ' ');
@@ -144,9 +146,11 @@ sub _show_log {
 	    $propaction = 'M' if $action eq 'M' && $entry->prop_mod;
 	    $action = ' ' if $action eq 'M' && !$entry->text_mod;
 	    $action = 'M' if $action eq 'A' && $copyfrom_path && $entry->text_mod;
+	    Encode::from_to ($_, 'utf8', $enc);
+	    Encode::from_to ($copyfrom_path, 'utf8', $enc) if defined $copyfrom_path;
 	    $output->print ($indent.
 		"  $action$propaction $_".
-		    ($copyfrom_path ?
+		    (defined $copyfrom_path ?
 		     ' ' . loc("(from %1:%2)", $copyfrom_path, $copyfrom_rev) : ''
 		    )."\n");
 	}
@@ -154,12 +158,15 @@ sub _show_log {
     $message = ($indent ? '' : "\n")."$message\n$sep";
 #    $message =~ s/\n\n+/\n/mg;
     $message =~ s/^/$indent/mg if $indent and !$verbatim;
+    require Encode;
+    Encode::from_to ($message, 'UTF-8', get_encoding);
     $output->print ($message);
 }
 
 sub do_log {
     my (%arg) = @_;
     $arg{cross} ||= 0, $arg{limit} ||= -1;
+    my $pool = SVN::Pool->new_default;
     my $fs = $arg{repos}->fs;
     my $rev = $arg{fromrev} > $arg{torev} ? $arg{fromrev} : $arg{torev};
     _get_logs ($fs->revision_root ($rev),

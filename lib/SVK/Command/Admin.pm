@@ -1,7 +1,7 @@
 package SVK::Command::Admin;
 use strict;
 use SVK::I18N;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 

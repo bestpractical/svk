@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 14;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -11,7 +11,7 @@ my ($copath, $corpath) = get_copath ('move');
 
 $svk->checkout ('//V', $copath);
 
-is_output ($svk, 'move', ["$copath/A/Q", "$copath/A/be", $copath],
+is_sorted_output ($svk, 'move', ["$copath/A/Q", "$copath/A/be", $copath],
 	   [__"D   $copath/A/Q",
 	    __"D   $copath/A/Q/qu",
 	    __"D   $copath/A/Q/qz",
@@ -31,7 +31,7 @@ is_output ($svk, 'status', [$copath],
 
 $svk->commit ('-m', 'move in checkout committed', $copath);
 is_output ($svk, 'status', [$copath], []);
-is_output ($svk, 'mv', ["$copath/Q/", "$copath/Q-new/"],
+is_sorted_output ($svk, 'mv', ["$copath/Q/", "$copath/Q-new/"],
 	   [__"D   $copath/Q",
 	    __"D   $copath/Q/qu",
 	    __"D   $copath/Q/qz",
@@ -72,3 +72,9 @@ is_output ($svk, 'add', ['new_dir'],
 	    __('A   new_dir/new_add')]);
 is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'],
 	   [__"$corpath/B/new_dir is modified."]);
+
+$svk->commit ('-m', 'commit everything');
+overwrite_file ('new_dir/unknown_file', "unknown file\n");
+is_output ($svk, 'mv', ['new_dir', 'new_dir_mv'], 
+		[__"$corpath/B/new_dir/unknown_file is missing."]);
+

@@ -1,9 +1,12 @@
 package SVK::Editor::Combine;
 use strict;
-use SVN::Simple::Edit;
 
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
+
+use autouse 'SVK::Util' => qw( tmpfile );
 
 =head1 NAME
 
@@ -21,8 +24,6 @@ SVK::Editor::Combine - An editor combining several editor calls to one
  $editor->replay ($other_editor);
 
 =cut
-
-use SVK::Util qw( tmpfile );
 
 sub replay {
     my ($self, $editor, $base_rev) = @_;

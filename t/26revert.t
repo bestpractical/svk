@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 11;
+use Test::More tests => 14;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -24,14 +24,25 @@ is_output ($svk, 'revert', ['-R', 'A/deep'],
 	    __("Reverted A/deep/baz"),
 	   ], 'partial revert after add');
 
+overwrite_file_raw ("A/mixed-line-endings", "foo\015\012..bar\012..baz\015..quux\015\012..xyzzy");
 $svk->add('A');
+is_output ($svk, 'ps', ['svn:eol-style', 'LF', "A/mixed-line-endings"],
+	   [__"File A/mixed-line-endings has inconsistent newlines."]);
+overwrite_file_raw ("A/mixed-line-endings", "");
+is_output ($svk, 'ps', ['svn:eol-style', 'LF', "A/mixed-line-endings"],
+	   [__" M  A/mixed-line-endings"]);
+overwrite_file_raw ("A/mixed-line-endings", "foo\015\012..bar\012..baz\015..quux\015\012..xyzzy");
+
 is_output ($svk, 'revert', ['-R'],
 	   [__("Reverted A"),
 	    __("Reverted A/deep"),
 	    __("Reverted A/deep/bar"),
 	    __("Reverted A/deep/baz"),
 	    __("Reverted A/foo"),
+	    __("Reverted A/mixed-line-endings"),
            ], 'revert everything');
+
+is_output ($svk, 'st', [], ['?   A']);
 
 TODO: {
 # this creates dangling sticky .schedule for descendents

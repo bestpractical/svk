@@ -1,6 +1,6 @@
 package SVK::Command::Update;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use constant opt_recursive => 1;
@@ -107,8 +107,13 @@ sub do_update {
     my $base = $cotarget;
     $base = $base->new (path => '/')
 	if $xdroot->check_path ($base->path) == $SVN::Node::none;
-    mkdir ($cotarget->{copath}) or die $!
-	unless -e $cotarget->{copath};
+    unless (-e $cotarget->{copath}) {
+	die loc ("Checkout directory gone. Use 'checkout %1 %2' instead.\n",
+		 $update_target->{depotpath}, $cotarget->{report})
+	    unless $base->{path} eq '/';
+	mkdir ($cotarget->{copath}) or
+	    die loc ("Can't create directory %1 for checkout: %2.\n", $cotarget->{report}, $!);
+    }
 
     my $notify = SVK::Notify->new_with_report
 	($report, $cotarget->{targets}[0], 1);

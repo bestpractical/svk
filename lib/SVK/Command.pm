@@ -1,15 +1,12 @@
 package SVK::Command;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
-# XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
-use SVN::Simple::Edit;
-use SVK::Target;
-use Pod::Simple::Text ();
-use Pod::Simple::SimpleTree ();
-use File::Find ();
-use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob $SEP IS_WIN32 HAS_SVN_MIRROR );
+
+use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
+		  $SEP IS_WIN32 HAS_SVN_MIRROR );
 use SVK::I18N;
+use Encode;
 
 =head1 NAME
 
@@ -75,6 +72,12 @@ my %alias = qw( ann		annotate
 		ver		version
 	    );
 
+my %cmd2alias = map { $_ => [] } values %alias;
+while( my($alias, $cmd) = each %alias ) {
+    push @{$cmd2alias{$cmd}}, $alias;
+}
+
+
 =head3 new ($xd)
 
 Base constructor for all commands.
@@ -119,6 +122,17 @@ sub _cmd_map {
     return $cmd;
 }
 
+# rebless to subcommand class if it exists
+sub _subcommand {
+    my ($self) = @_;
+    no strict 'refs';
+    for (grep {$self->{$_}} values %{{$self->options}}) {
+	if (exists ${ref($self).'::'}{$_.'::'}) {
+	    return bless ($self, (ref($self)."::$_"));
+	}
+    }
+}
+
 =head3 invoke ($xd, $cmd, $output_fh, @args)
 
 Takes a L<SVK::XD> object, the command name, the output scalar reference,
@@ -146,6 +160,7 @@ sub invoke {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
 	$cmd->getopt (\@args, 'h|help|?' => \$help);
+	$cmd->_subcommand;
 
 	# Fake shell globbing on Win32 if we are called from main
 	if (IS_WIN32 and caller(1) eq 'main') {
@@ -402,10 +417,36 @@ sub arg_uri_maybe {
         last;
     }
 
+    my $prompt = loc("
+Before svk start mirroring a remote repository, we would like to
+explain two terms to you: 'depot path' and 'mirrored path'. A depot
+path is like any path in a file system, only that the path is
+stored in svk's internal virtual file system.  To avoid confusion,
+svk's default depot path begins with //, for example //depot or
+//mirror/project.  Now a mirrored path is a depot path with special
+properties, which serves as the 'mirror' of a remote repository and
+is by convention stored under //mirror/.
+
+Now, you have to assign a name to identify the mirrored repository.
+For example, if you name it 'your_project' (without the quotes),
+svk will create a mirrored path called //mirror/your_project.
+Of course, you can assign a 'full path' for it, for example,
+//mymirror/myproject, although this is not really necessary.  If you
+just don't care, simply press enter and use svk's default, which is
+usually good enough.
+
+");
+
+    my $default = $base_uri->path;
+    $default =~ s{^/+|/+$}{}g;
+    $default =~ s{(?:/(?=trunk$)|/(?:tags|branche?s)/(?=[^/]+$))}{-};
+    $default =~ s{.*/}{};
+
     my $path = get_prompt(
-        loc("Name a depot path for this mirror (under //mirror/ if no leading '/'): "),
-        qr{^(?:/(?:$depots)/)?[^/]},
+        $prompt . loc("Depot path: [//mirror/%1] ", $default),
+        qr{^(?:$|(?:/(?:$depots)/)?[^/])},
     );
+    $path = $default unless length $path;
     $path = "//mirror/$path" unless $path =~ m!^/!;
 
     my $target = $self->arg_depotpath($path);
@@ -434,7 +475,7 @@ sub arg_uri_maybe {
         }
     )->run ($target);
 
-    my $depotpath = "$target->{depotpath}/$rel_uri";
+    my $depotpath = length ($rel_uri) ? "$target->{depotpath}/$rel_uri" : $target->{depotpath};
     return $self->arg_depotpath($depotpath);
 }
 
@@ -453,6 +494,7 @@ sub arg_co_maybe {
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
+    from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -473,6 +515,7 @@ Argument is a checkout path.
 sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
+    from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -495,7 +538,7 @@ sub arg_depotpath {
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
-
+    from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -615,16 +658,13 @@ sub brief_usage {
     my ($self, $file) = @_;
     my $fname = ref($self);
     $fname =~ s|::|/|g;
-    my $parser = Pod::Simple::SimpleTree->new;
-    my @rows = @{$parser->parse_file($file || $INC{"$fname.pm"})->root};
-    while (my $row = shift @rows) {
-        if ( ref($row) eq 'ARRAY' && $row->[0] eq 'head1' && $row->[2] eq 'NAME')  {
-            my $buf = $rows[0][2];
-            $buf =~ s/SVK::Command::(\w+ - .+)/loc(lcfirst($1))/eg;
-            print "   $buf\n";
-            last;
-        }
+    open my ($podfh), '<', ($file || $INC{"$fname.pm"}) or return;
+    local $/=undef;
+    my $buf = <$podfh>;
+    if($buf =~ /^=head1\s+NAME\s*SVK::Command::(\w+ - .+)$/m) {
+	print "   ",loc(lcfirst($1)),"\n";
     }
+    close $podfh;
 }
 
 =head3 usage ($want_detail)
@@ -639,6 +679,9 @@ sub usage {
     # XXX: the order from selected is not preserved.
     my $fname = ref($self);
     $fname =~ s|::|/|g;
+
+    my($cmd) = $fname =~ m{\W(\w+)$};
+
     my $parser = Pod::Simple::Text->new;
     my $buf;
     $parser->output_string(\$buf);
@@ -647,6 +690,14 @@ sub usage {
     $buf =~ s/SVK::Command::(\w+)/\l$1/g;
     $buf =~ s/^AUTHORS.*//sm;
     $buf =~ s/^DESCRIPTION.*//sm unless $want_detail;
+
+    my $aliases = $cmd2alias{lc $cmd} || [];
+    if( @$aliases ) {
+        $buf .= "ALIASES\n\n";
+        $buf .= "     ";
+        $buf .= join ', ', sort { $a cmp $b } @$aliases;
+    }
+
     foreach my $line (split(/\n\n+/, $buf, -1)) {
 	if (my @lines = $line =~ /^( {4}\s+.+\s*)$/mg) {
             foreach my $chunk (@lines) {
@@ -728,7 +779,7 @@ sub command {
     my ($self, $command, $args, $is_rebless) = @_;
 
     $command = ucfirst(lc($command));
-    require "SVK/Command/$command.pm";
+    require "SVK/Command/$command.pm" unless $command =~ m/::/;
 
     my $cmd = (
         $is_rebless ? bless($self, "SVK::Command::$command")
@@ -782,17 +833,45 @@ sub find_checkout_anchor {
 }
 
 sub prompt_depotpath {
-    my ($self, $action) = @_;
+    my ($self, $action, $default, $allow_exist) = @_;
+    my $path;
+    my $prompt = '';
+    if (defined $default and $default =~ m{(^/[^/]*/)}) {
+        $prompt = loc("
+Next, svk will create another depot path, and you have to name it too.
+It is usally something like %1your_project/. svk will copy what's in
+the mirrored path into the new path.  This depot path is where your
+own private branch goes.  You can commit files to it or check out files
+from it without affecting the remote repository.  Which means you can
+work with version control even when you're offline (yes, this is one
+of svk's main features).
 
-    my $path = get_prompt(loc(
-        "Enter a depot path to %1 into (under // if no leading '/'): ",
-        loc($action),
-    ));
+Please enter a name for your private branch, and it will be placed
+under %1.  If, again, you just don't care, simply press enter and let
+svk use the default.
 
-    $path =~ s{^//+}{};
-    $path =~ s{//+}{/};
-    $path = "//$path" unless $path =~ m!^/!;
-    $path =~ s{/$}{};
+", $1);
+	$prompt .= loc("Enter a depot path to %1 into: [%2] ",
+		       loc($action), $default
+		      );
+    }
+    else {
+	$prompt = loc ("Enter a depot path to %1 into (under // if no leading '/'): ",
+		       loc($action));
+    }
+    while (1) {
+	$path = get_prompt($prompt);
+	$path = $default if defined $default && !length $path;
+
+	$path =~ s{^//+}{};
+	$path =~ s{//+}{/};
+	$path = "//$path" unless $path =~ m!^/!;
+	$path =~ s{/$}{};
+
+	my $target = $self->arg_depotpath ($path);
+	last if $allow_exist or $target->root->check_path ($target->path) == $SVN::Node::none;
+	print loc ("Path %1 already exists.\n", $path);
+    }
 
     return $path;
 }

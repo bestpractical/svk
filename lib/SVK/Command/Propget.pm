@@ -1,6 +1,6 @@
 package SVK::Command::Propget;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Proplist );
 use constant opt_recursive => 0;

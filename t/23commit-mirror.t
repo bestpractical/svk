@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 5;
+plan_svm tests => 7;
 
 my ($xd, $svk) = build_test('test');
 
@@ -23,9 +23,18 @@ is_output ($svk, 'commit', ['-m', 'modify A', $copath],
 is_output ($svk, 'status', [$copath],
 	   [__"M   $copath/remote/A/be"]);
 
+is_output ($svk, 'commit', ['-P', 'mirror-test', '-m', 'modify A', "$copath/remote"],
+	   ["Patching locally against mirror source $uri.",
+		 'Patch mirror-test created.']);
+
 is_output ($svk, 'commit', ['-m', 'modify A', "$copath/remote"],
 	   [map qr'.*',(1..5),
 	    'Committed revision 6 from revision 3.']);
+
+append_file ("$copath/remote/A/direct-file", "modified on A\n");
+$svk->add ("$copath/remote/A/direct-file");
+is_output ($svk, 'commit', ['--direct', '-m', 'modify A directly', "$copath/remote"],
+	   ['Committed revision 7.']);
 
 is_output ($svk, 'commit', ['-m', 'empty', $copath],
 	   ['No targets to commit.']);
@@ -34,4 +43,4 @@ is_output ($svk, 'commit', ['-m', 'empty', $copath],
 append_file ("$copath/local/A/be", "modified on A\n");
 is_output ($svk, 'commit', ['-m', 'modify A', $copath],
 	   [__("$copath/remote is a mirrored path, please commit separately."),
-	    'Committed revision 7.']);
+	    'Committed revision 8.']);

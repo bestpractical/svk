@@ -1,9 +1,9 @@
 package SVK::Command::Verify;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+use SVK::I18N;
 
 use base qw( SVK::Command );
-use SVK::XD;
 
 sub options {
     ();
@@ -46,7 +46,8 @@ sub run {
 
 # XXX: Don't need this editor once root->paths_changed is available.
 package SVK::VerifyEditor;
-use SVK::Util qw(resolve_svm_source);
+use autouse 'SVK::Util' => qw(resolve_svm_source);
+require SVN::Delta;
 our @ISA = ('SVN::Delta::Editor');
 
 sub add_file {

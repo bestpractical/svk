@@ -8,10 +8,12 @@ BEGIN { require 't/tree.pl' };
         unless (`gpg --version` || '') =~ /GnuPG/;
     plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
 }
-plan_svm tests => 8;
+plan_svm tests => 9;
 our $output;
 
-$ENV{SVKPGP} = my $gpg = 'gpg --no-default-keyring --keyring t/svk.gpg --secret-keyring t/svk-sec.gpg --default-key svk';
+mkpath ["t/checkout/sign-gnupg"], 0, 0700 unless -d "t/checkout/sign-gnupg";
+
+$ENV{SVKPGP} = my $gpg = 'gpg --homedir t/checkout/sign-gnupg --no-default-keyring --keyring t/svk.gpg --secret-keyring t/svk-sec.gpg --default-key svk';
 
 ok (`$gpg --list-keys` =~ '1024D/A50DE110');
 
@@ -76,5 +78,10 @@ is_output ($svk, 'verify', [5],
 	  ['Signature verified.']);
 is_output ($svk, 'verify', [4],
 	  ['No signature found for change 4 at //.']);
+
+$svk->propset ('--revprop', '-r3', 'svk:signature', 'bad signature', '/test/');
+is_output ($svk, 'verify', [3, '/test/'],
+	  ["Can\'t verify signature",
+       "Signature verification failed."]);
 
 1;

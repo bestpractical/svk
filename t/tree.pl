@@ -21,7 +21,9 @@ use Test::More;
 our $answer = 's'; # skip
 BEGIN {
     no warnings 'redefine';
-    *SVK::Util::get_prompt = sub {
+    # override get_prompt in XD so devel::cover is happy for
+    # already-exported symbols being overridden
+    *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
         ref($answer) ? shift(@$answer) : $answer
     } unless $ENV{DEBUG_INTERACTIVE};
 
@@ -129,6 +131,7 @@ sub cleanup_test {
     use YAML;
     print Dump($xd);
     for my $depot (sort keys %{$xd->{depotmap}}) {
+	my $pool = SVN::Pool->new_default;
 	my (undef, undef, $repos) = $xd->find_repos ("/$depot/", 1);
 	print "===> depot $depot (".$repos->fs->get_uuid."):\n";
 	$svk->log ('-v', "/$depot/");

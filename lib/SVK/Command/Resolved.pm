@@ -1,6 +1,6 @@
 package SVK::Command::Resolved;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use constant opt_recursive => 0;

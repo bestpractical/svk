@@ -1,6 +1,6 @@
 package SVK::Command::Propset;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit SVK::Command::Proplist );
 use constant opt_recursive => 0;
 use SVK::Util qw ( abs2rel );
@@ -72,6 +72,24 @@ sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
     if ($target->{copath}) {
+	# verify the content is not with mixed line endings.
+	if ($pname eq 'svn:eol-style') {
+	    my $xdroot = $target->root ($self->{xd});
+	    my $fh = SVK::XD::get_fh ($xdroot, '<', $target->{path}, $target->{copath},
+				      { 'svn:eol-style' => $pvalue }, '',
+				      undef, 1);
+	    eval {
+		local $/ = \16384;
+		while (<$fh>) { };
+	    };
+	    if ($@ =~ m/Mixed/) {
+		die loc ("File %1 has inconsistent newlines.\n", $target->{report});
+	    }
+	    elsif ($@) {
+		die $@;
+	    }
+	}
+
 	$self->{xd}->do_propset
 	    ( %$target,
 	      propname => $pname,
@@ -80,6 +98,8 @@ sub do_propset {
     }
     else {
 	# XXX: forbid special props on mirror anchor
+	die loc ("Can't set svn:eol-style on depotpath.\n")
+	    if $pname eq 'svn:eol-style';
 	$self->get_commit_message () unless $self->{revprop};
 	$self->do_propset_direct ( $target, $pname => $pvalue );
     }

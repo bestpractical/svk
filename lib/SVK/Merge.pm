@@ -148,6 +148,7 @@ sub find_merge_base {
 
     my $base = $src->new (path => $basepath, revision => $baserev, targets => undef);
     $base->anchorify if exists $src->{targets}[0];
+    $base->{path} = '/' if $base->{revision} == 0;
     return ($base, $dstinfo->{$fs->get_uuid.':'.$src->path} ||
 	    ($basepath eq $src->path ? $baserev : 0));
 }
@@ -234,6 +235,7 @@ sub _collect_renamed {
     my $path = $$pathref;
     for (keys %$paths) {
 	my $entry = $paths->{$_};
+	require SVK::Command;
 	my $action = $SVK::Command::Log::chg->[$entry->change_kind];
 	$entries->{$_} = [$action , $action eq 'D' ? (-1) : $root->copied_from ($_)];
 	# anchor is copied
@@ -291,19 +293,22 @@ sub run {
     # XXX: for merge editor; this should really be in SVK::Target
     my ($report, $target) = ($self->{report}, $src->{targets}[0] || '');
     my $dsttarget = $self->{dst}{targets}[0];
+    my $is_copath = defined($self->{dst}{copath});
+    my $notify_target = defined $self->{target} ? $self->{target} : $target;
+    my $notify = $self->{notify} || SVK::Notify->new_with_report
+	($report, $notify_target, $is_copath);
     if ($target && $dsttarget && $target ne $dsttarget) {
 	my $translate = sub { $_[0] =~ s/^\Q$target\E/$dsttarget/ };
 	$storage = SVK::Editor::Translate->new (_editor => [$storage],
 						translate => $translate);
 	SVK::Editor::Merge::cb_translate (\%cb, $translate);
+	# if there's notify_target, the translation is done by svk::notify
+	$notify->notify_translate ($translate) unless length $notify_target;
     }
     $storage = SVK::Editor::Delay->new ($storage)
 	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
-    my $is_copath = defined($self->{dst}{copath});
-    my $notify = $self->{notify} || SVK::Notify->new_with_report
-	($report, (defined $self->{target} ? $self->{target} : $target), $is_copath);
     if ($storage->can ('rename_check')) {
 	my $flush = $notify->{cb_flush};
 	$notify->{cb_flush} = sub {

@@ -1,6 +1,6 @@
 package SVK::Command::Smerge;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Merge );
 use SVK::XD;
