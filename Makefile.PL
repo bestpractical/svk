@@ -32,6 +32,7 @@ requires(
         'URI'                   => '0',
         'PerlIO::eol'           => '0.13',
 	'Class::Autouse'	=> '1.15',
+        'IO::Pager'             => '0',
 );
 features(
     'Localized messages' => [

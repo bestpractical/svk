@@ -14,6 +14,13 @@ sub parse_arg { shift; @_ ? @_ : 'index'; }
 
 sub run {
     my $self = shift;
+
+    if(defined($ENV{SVKPAGER})){
+        $ENV{PAGER}=$ENV{SVKPAGER};
+        use IO::Pager;
+        IO::Pager->new(*STDOUT);
+    }
+
     foreach my $topic (@_) {
         if ($topic eq 'commands') {
             my @cmd;
