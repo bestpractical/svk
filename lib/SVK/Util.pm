@@ -138,7 +138,7 @@ sub tmpfile {
     return mktemp ($temp) if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
 				DIR => $ENV{TMPDIR} || '/tmp',
-				SUFFIX => 'tmp',
+				SUFFIX => '.tmp',
 				%args
 			      );
 

@@ -134,13 +134,17 @@ sub create_basic_tree {
     $edit->add_directory ('/A/Q');
     $edit->modify_file ($edit->add_file ('/A/Q/qu'),
 			"first line in qu\n2nd line in qu\n");
+    $edit->modify_file ($edit->add_file ('/A/Q/qz'),
+			"first line in qz\n2nd line in qz\n");
     $edit->add_directory ('/C/R');
     $edit->close_edit ();
     my $tree = { child => { me => {},
 			    A => { child => { be => {},
 					      P => { child => {pe => {},
 							      }},
-					      Q => { child => {}},
+					      Q => { child => {qu => {},
+							       ez => {},
+							      }},
 					    }},
 			    B => {},
 			    C => { child => { R => { child => {}}}}

@@ -1074,7 +1074,6 @@ sub close_edit {
 
 sub abort_edit {
     my $self = shift;
-    print loc("Empty merge.\n");
     $self->{_editor}->abort_edit (@_);
 }
 
@@ -1125,8 +1124,6 @@ sub apply_textdelta {
 				 "$self->{anchor}/$path", $copath);
 	if ($checksum) {
 	    my $md5 = md5($base);
-	    use Carp;
-	    confess "bzz";
 	    die loc("source checksum mismatch") if $md5 ne $checksum;
 	    seek $base, 0, 0;
 	}

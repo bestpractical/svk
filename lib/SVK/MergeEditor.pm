@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.14';
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
+use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
 
 =head1 NAME
@@ -114,15 +115,19 @@ sub open_root {
 
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
-    # tag for merge of file adding
-    unless (!defined $pdir || $self->{cb_exist}->($path)) {
+    return unless defined $pdir;
+    if ($self->{cb_exist}->($path)) {
+	$self->{info}{$path}{addmerge} = 1;
+	$self->{info}{$path}{open} = [$pdir, -1];
+	$self->{info}{$path}{fpool} = pop @arg;
+	return $path;
+    }
+    else {
 	$self->{notify}->node_status ($path) = 'A';
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg);
 	return $path;
     }
-    $self->{notify}->flush ($path);
-    return undef;
 }
 
 sub open_file {
@@ -192,22 +197,21 @@ sub apply_textdelta {
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
     $pool->default if $pool && $pool->can ('default');
-    my ($base, $newname);
-    if ($info->{fpool}) { # open, has base
-	$pool = $self->{info}{$path}{fpool};
-	$fh->{local} = $self->{cb_localmod}->($path, $checksum, $pool) or
-	    $self->{notify}->node_status ($path) = 'U';
+    my ($base);
+    if (($pool = $info->{fpool}) &&
+	($fh->{local} = $self->{cb_localmod}->($path, $checksum || '', $pool))) {
 	# retrieve base
-	$fh->{base} = [tmpfile('merge')];
-	my $rpath = $path;
-	$rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
-	my $buf = $self->{base_root}->file_contents ($rpath, $pool);
-	slurp_fh ($buf, $fh->{base}[0]);
-	seek $fh->{base}[0], 0, 0;
+	unless ($info->{addmerge}) {
+	    $fh->{base} = [tmpfile('merge')];
+	    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
+	    slurp_fh ($self->{base_root}->file_contents ($path, $pool),
+		      $fh->{base}[0]);
+	    $base = $fh->{base}[0];
+	    seek $base, 0, 0;
+	}
 	# get new
 	$fh->{new} = [tmpfile('merge')];
-	return [SVN::TxDelta::apply ($fh->{base}[0],
-				     $fh->{new}[0], undef, undef, $pool)];
+	return [SVN::TxDelta::apply ($base, $fh->{new}[0], undef, undef, $pool)];
     }
     $self->{notify}->node_status ($path) ||= 'U';
     $self->ensure_open ($path);
@@ -227,36 +231,15 @@ sub close_file {
     if ($info->{fh}{new}) {
 	$self->prepare_fh ($fh);
 
-	if (File::Compare::compare ($fh->{new}[1], $fh->{base}[1]) == 0 ||
-	    ($fh->{local}[0] && File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0)) {
+	if ($checksum eq $fh->{local}[2] ||
+	    File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0) {
 	    $self->{notify}->node_status ($path) = 'g';
 	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
 	}
 
 	$self->ensure_open ($path);
-	unless ($fh->{local}[0]) {
-	    my $handle = $self->{storage}->
-		apply_textdelta ($self->{storage_baton}{$path}, $fh->{base}[2],
-				 $pool);
-
-	    if ($handle && $#{$handle} >= 0) {
-		open my ($new), $fh->{new}[1];
-		if ($self->{send_fulltext}) {
-		    SVN::TxDelta::send_stream ($new, @$handle, $pool);
-		}
-		else {
-		    my $txstream = SVN::TxDelta::new
-			($fh->{base}[0], $new, $pool);
-
-		    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool)
-		}
-	    }
-
-	    $self->ensure_close ($path, $checksum, $pool);
-	    return;
-	}
-
+	$fh->{base}[1] = '/dev/null' if $info->{addmerge};
 	my $diff = SVN::Core::diff_file_diff3
 	    (map {$fh->{$_}[1]} qw/base local new/);
 	open my $mfh, '+>', \ (my $merged);
@@ -311,6 +294,7 @@ sub close_file {
 
 	close $mfh;
 	unlink $mfn if $mfn;
+	undef $fh->{base}[1] if $info->{addmerge};
 	$self->cleanup_fh ($fh);
 
 	if ($conflict) {
@@ -318,7 +302,7 @@ sub close_file {
 	    ++$self->{conflicts};
 	}
     }
-    elsif ($info->{fpool} && $self->{notify}->node_status ($path) ne 'A') {
+    elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
 	# open but prop edit only, load local checksum
 	if (my $local = $self->{cb_localmod}->($path, $checksum, $pool)) {
 	    $checksum = $local->[2];
@@ -407,6 +391,7 @@ sub close_edit {
 	$self->{storage}->close_edit(@arg);
     }
     else {
+	print loc("Empty merge.\n");
 	$self->{storage}->abort_edit(@arg);
     }
 }

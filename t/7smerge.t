@@ -1,10 +1,11 @@
 #!/usr/bin/perl
 use strict;
 require 't/tree.pl';
-require Test::More;
+use Test::More;
+our $output;
 eval "require SVN::Mirror"
 or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('tests', 3);
+Test::More->import ('tests', 4);
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -73,16 +74,39 @@ $svk->smerge ('-m', 'mergedown', '//m', '//l');
 $svk->update ($scopath);
 append_file ("$scopath/A/be", "more modification on trunk\n");
 mkdir "$scopath/A/newdir";
-$svk->add ("$scopath/A/newdir");
+mkdir "$scopath/A/newdir2";
+overwrite_file ("$scopath/A/newdir/deepnewfile", "new file added on source\n");
+overwrite_file ("$scopath/A/newfile", "new file added on source\n");
+overwrite_file ("$scopath/A/newfile2", "new file added on source\n");
+$svk->add (map {"$scopath/A/$_"} qw/newdir newdir2 newfile newfile2/);
+append_file ("$scopath/A/Q/qz", "file appened on source\n");
+$svk->propset ("bzz", "newprop", "$scopath/A/Q/qz");
 $svk->propset ("bzz", "newprop", "$scopath/A/Q/qu");
 $svk->commit ('-m', 'commit on trunk', $scopath);
 $svk->sync ('//m');
 
 $svk->update ($copath);
+overwrite_file ("$copath/newfile", "new file added on source\n");
+overwrite_file ("$copath/newfile2", "new file added on source\nalso on local");
+mkdir ("$copath/newdir");
+$svk->add ("$copath/newfile", "$copath/newdir");
 append_file ("$copath/be", "modification on local\n");
 append_file ("$copath/Q/qu", "modified on local\n");
+$svk->rm ("$copath/Q/qz");
 $svk->commit ('-m', 'commit on local', $copath);
 $svk->smerge ('-C', '//m', '//l');
+is ($output, "Auto-merging (8, 11) /m to /l (base /m).
+ U Q/qu
+   Q/qz - skipped
+C  be
+   newdir - skipped
+g  newfile
+A  newdir2
+A  newfile2
+New merge ticket: $suuid:/A:5
+Empty merge.
+1 conflict found.
+", 'smerge - added file collision');
 $svk->smerge ('-C', '//m', $copath);
 $svk->smerge ('//m', $copath);
 $svk->status ($copath);
@@ -90,6 +114,7 @@ $svk->revert ("$copath/be");
 $svk->resolved ("$copath/be");
 $svk->status ($copath);
 $svk->commit ('-m', 'merge down committed from checkout', $copath);
+$svk->proplist ('-v', $copath);
 rmdir "$copath/newdir";
 $svk->revert ('-R', $copath);
 ok (-e "$copath/newdir", 'smerge to checkout - add directory');

@@ -45,8 +45,10 @@ $svk->update ($copath);
 ok ($output =~ m/1 conflict found\./, 'conflict');
 
 $svk->revert ("$copath/A/foo");
+$svk->resolved ("$copath/A/foo");
 
 overwrite_file ("$copath/A/foo", "late modification...\nfoobar\n\nsome more foobar\nzz\n");
+$svk->status ($copath);
 $svk->commit ('-m', 'commit message here', "$copath");
 $svk->update ($copath);
 $svk->merge ("-r", "3:2", '//', $copath);
@@ -54,9 +56,9 @@ $svk->merge ("-r", "3:2", '//', $copath);
 is_file_content ("$copath/A/foo", "late modification...\nfoobar\n",
 		 'basic merge for revert');
 
-$svk->merge (qw/-C -r 2:3/, '//A', '//B');
-$svk->merge (qw/-r 2:3/, '-m', 'merge from //A to //B', '//A', '//B');
+$svk->merge (qw/-C -r 4:3/, '//A', '//B');
+$svk->merge (qw/-r 4:3/, '-m', 'merge from //A to //B', '//A', '//B');
 $svk->update ($copath);
 
-is_file_content ("$copath/B/foo", "foobar\n\nsome more foobar\nzz\n",
+is_file_content ("$copath/B/foo", "foobar\n",
 		 'merge via update');
