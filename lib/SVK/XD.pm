@@ -19,7 +19,6 @@ use YAML qw(LoadFile DumpFile);
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
-use Encode::Newlines;
 
 =head1 NAME
 
@@ -1145,17 +1144,11 @@ sub do_resolved {
 
 sub get_eol_layer {
     my ($root, $path, $prop) = @_;
-    my $k = $prop->{'svn:eol-style'} or return ':raw';
-
-    if ($k eq 'native') {
-        return ':raw:encoding(LF-Native)';
-    }
-    elsif ($k eq 'CRLF' or $k eq 'CR' or $k eq 'LF') {
-        return ":raw:encoding($k)";
-    }
-    else {
-        return ':raw'; # unsupported
-    }
+    my $k = $prop->{'svn:eol-style'};
+    return ':raw' unless $k;
+    return ':crlf' if $k eq 'CRLF';
+    return ' ' if $k eq 'native';
+    return ':raw'; # unsupported or lf
 }
 
 sub get_keyword_layer {
