@@ -12,6 +12,8 @@ sub parse_arg {
     return ($depotpath, $self->arg_copath ($arg[1] || ''));
 }
 
+sub lock { $_[0]->lock_target ($_[2]) }
+
 sub run {
     my ($self, $target, $depotpath) = @_;
 

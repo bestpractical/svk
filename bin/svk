@@ -2,11 +2,9 @@
 use strict;
 our $VERSION = '0.09';
 require SVN::Core;
-require SVN::Client;
 require SVN::Repos;
 require SVN::Fs;
 use SVK::XD;
-use YAML qw(LoadFile DumpFile);
 use Getopt::Long qw(:config no_ignore_case);
 use Cwd;
 use File::Spec;
@@ -14,34 +12,6 @@ use Data::Hierarchy;
 use SVK::Command;
 
 use vars qw/$xd $info/;
-
-sub _init {
-    my $svkpath = "$ENV{HOME}/.svk";
-
-    die "Another svk might be running. remove $svkpath/lock if not"
-	if -e "$svkpath/lock";
-
-    if (-e "$svkpath/config") {
-	$info = LoadFile ("$svkpath/config");
-    }
-    else {
-	mkdir ($svkpath);
-    }
-
-    open my ($lock), ">$svkpath/lock";
-    print $lock $$;
-    close $lock;
-
-    $info ||= { depotmap => {'' => "$svkpath/local" },
-	        checkout => Data::Hierarchy->new(),
-	      };
-}
-
-sub _update_info {
-    my $svkpath = "$ENV{HOME}/.svk";
-    DumpFile ("$svkpath/config", $info);
-    unlink ("$svkpath/lock");
-}
 
 my %REPOS;
 my $REPOSPOOL = SVN::Pool->new;
@@ -120,7 +90,7 @@ sub condense {
 	    $anchor = $_;
 	    $report = $_[0]
 	}
-	my $schedule = $info->{checkout}->get_single ($anchor)->{schedule} || '';
+	my $schedule = $info->{checkout}->get ($anchor)->{'.schedule'} || '';
 	if ($anchor ne $_ || -f $anchor ||
 	    $schedule eq 'add' || $schedule eq 'delete') {
 	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1)) {
@@ -145,7 +115,7 @@ if ($show_version) {
     exit 0;
 }
 
-#$xd = SVK::XD->new (%$info);
+my $updated;
 
 if ($0 eq __FILE__) {
     unless ($cmd) {
@@ -158,22 +128,29 @@ if ($0 eq __FILE__) {
 	exit 0;
     }
 
-    _init();
+    my $svkpath = "$ENV{HOME}/.svk";
+    $info = SVK::XD->new (giantlock => "$svkpath/lock",
+			  statefile => "$svkpath/config",
+			 );
+
+    $info->load();
     $SIG{INT} = sub {
-	_update_info();
+	$info->unlock ();
+	$info->store ();
 	die "interrupted\n";
     };
 
     my $msg = SVK::Command->invoke ($info, $cmd, @ARGV);
     print $msg if $msg;
-    _update_info();
+    $info->store ();
+    $updated = 1;
 }
 
 END {
-    my $svkpath = "$ENV{HOME}/.svk";
-    return unless -e "$svkpath/lock";
-    warn "cleaning up after exception";
-    unlink ("$svkpath/lock");
+    return unless $info;
+    return if $updated;
+    $info->unlock ();
+    $info->store ();
 }
 
 our $AUTOLOAD;

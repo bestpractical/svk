@@ -1,3 +1,12 @@
+[Changes for 0.11 - ]
+
+* WANRING * Checkout path schedules incompatible with previous version.
+            Do commit or revert your checkout paths before upgrading.
+
+* Fine-grained copath locking.
+
+* Misc performance enhancements.
+
 [Changes for 0.10 - 05 Mar, 2004]
 
 * Change distname.

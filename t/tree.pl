@@ -41,8 +41,8 @@ sub build_test {
     my (@depot) = @_;
 
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
-    return {depotmap => $depotmap,
-	    checkout => Data::Hierarchy->new};
+    return SVK::XD->new (depotmap => $depotmap,
+			 checkout => Data::Hierarchy->new);
 }
 
 sub get_copath {

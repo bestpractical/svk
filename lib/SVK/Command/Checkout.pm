@@ -18,6 +18,8 @@ sub parse_arg {
 
 }
 
+sub lock { $_[0]->lock_none }
+
 sub run {
     my ($self, $target, $copath) = @_;
 
@@ -31,11 +33,11 @@ sub run {
     mkdir ($copath);
     $self->{info}->{checkout}->store_recursively ( $copath,
 						   { depotpath => $target->{depotpath},
-						     schedule => undef,
-						     newprop => undef,
-						     deleted => undef,
-						     conflict => undef,
 						     revision => 0,
+						     '.schedule' => undef,
+						     '.newprop' => undef,
+						     '.deleted' => undef,
+						     '.conflict' => undef,
 						   });
 
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};

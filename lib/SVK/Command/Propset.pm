@@ -11,6 +11,8 @@ sub parse_arg {
     return (@arg[0,1], $self->arg_co_maybe ($arg[2]));
 }
 
+sub lock { return $_[0]->lock_none }
+
 sub run {
     my ($self, $pname, $pvalue, $target) = @_;
 

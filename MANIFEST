@@ -17,6 +17,7 @@ lib/SVK/Command.pm
 lib/SVK/Command/Add.pm
 lib/SVK/Command/Cat.pm
 lib/SVK/Command/Checkout.pm
+lib/SVK/Command/Cleanup.pm
 lib/SVK/Command/Cmerge.pm
 lib/SVK/Command/Commit.pm
 lib/SVK/Command/Copy.pm

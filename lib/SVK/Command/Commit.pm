@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::CommitStatusEditor;
 use SVK::Util qw(get_buffer_from_editor slurp_fh);
 use File::Temp;
+require SVN::Client;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
@@ -30,6 +31,11 @@ sub parse_arg {
     @arg = ('') if $#arg < 0;
 
     return $self->arg_condensed (@arg);
+}
+
+sub lock {
+    my ($self, $arg) = @_;
+    $arg->{copath} ? $self->lock_target ($arg) : $self->lock_none;
 }
 
 sub target_prompt { $target_prompt }
@@ -210,9 +216,9 @@ sub run {
 	for (reverse @$targets) {
 	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
 		'store_recursively' : 'store';
-	    $self->{info}->{checkout}->$store ($_->[1], { schedule => undef,
-							  newprop => undef,
-							  $_->[0] eq 'D' ? (deleted => 1) : (),
+	    $self->{info}->{checkout}->$store ($_->[1], { '.schedule' => undef,
+							  '.newprop' => undef,
+							  $_->[0] eq 'D' ? ('.deleted' => 1) : (),
 							  revision => $rev,
 							});
 	}

@@ -14,6 +14,8 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
+sub lock { $_[0]->lock_none }
+
 sub run {
     my ($self, $target) = @_;
     my ($txn, $xdroot) = SVK::XD::create_xd_root ($self->{info}, %$target);

@@ -41,7 +41,7 @@ overwrite_file ("$copath/A/foo",
 		"some local mods\nfoobar\n\nsome more foobarzz\nyy\n");
 
 svk::update ($copath);
-ok ($svk::info->{checkout}->get ("$corpath/A/foo")->{conflict}, 'conflict');
+ok ($svk::info->{checkout}->get ("$corpath/A/foo")->{'.conflict'}, 'conflict');
 
 svk::revert ("$copath/A/foo");
 

@@ -17,7 +17,7 @@ requires(
         'YAML'                  => '0',
         'IO::String'            => '0',
         'Regexp::Shellish'      => '0',
-        'Data::Hierarchy'       => '0.13',
+        'Data::Hierarchy'       => '0.15',
         'PerlIO::via::dynamic'  => '0.02',
         'SVN::Simple::Edit'     => '0.21',
 );

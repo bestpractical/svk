@@ -2,8 +2,8 @@ package SVK::Command;
 use strict;
 our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case);
-use Pod::Text;
-use File::Find;
+use Pod::Text ();
+use File::Find ();
 use Cwd;
 
 my %alias = qw( co checkout
@@ -62,9 +62,9 @@ sub help {
 	my $dir = $INC{'SVK/Command.pm'};
 	$dir =~ s/\.pm$//;
 	print "Available commands:\n";
-	find (sub {
-		  push @cmd, lc($_) if s/\.pm$//;
-	      }, $dir);
+	File::Find::find (sub {
+			      push @cmd, lc($_) if s/\.pm$//;
+			  }, $dir);
 	print "  $_\n" for sort @cmd;
 	return;
     }
@@ -81,7 +81,11 @@ sub invoke {
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->{info} = $info;
     die unless GetOptions ($cmd, _opt_map($cmd, $cmd->options));
-    $cmd->run ($cmd->parse_arg(@ARGV));
+    my @args = $cmd->parse_arg(@ARGV);
+    $cmd->lock (@args);
+    my $ret = $cmd->run (@args);
+    $info->unlock ();
+    return $ret;
 }
 
 sub usage {
@@ -93,6 +97,19 @@ sub usage {
     $parser->select ( $detail ? 'NAME|SYNOPSIS|OPTIONS|DESCRIPTION' : 'SYNOPSIS|OPTIONS');
     $parser->parse_from_file ($INC{"$fname.pm"});
     exit 0;
+}
+
+sub lock_target {
+    my ($self, $target) = @_;
+    $self->{info}->lock ($target->{copath});
+}
+
+sub lock_none {
+    my ($self) = @_;
+    $self->{info}->giant_unlock ();
+}
+
+sub lock {
 }
 
 sub arg_condensed {

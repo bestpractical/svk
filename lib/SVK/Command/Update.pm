@@ -15,6 +15,11 @@ sub parse_arg {
     return map {$self->arg_copath ($_)} @arg;
 }
 
+sub lock {
+    my ($self, @arg) = @_;
+    $self->lock_target ($_) for @arg;
+}
+
 sub run {
     my ($self, @arg) = @_;
 

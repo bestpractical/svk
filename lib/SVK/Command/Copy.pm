@@ -18,6 +18,8 @@ sub parse_arg {
     return map {$self->arg_depotpath ($_)} @arg;
 }
 
+sub lock { return $_[0]->lock_none }
+
 sub run {
     my ($self, $src, $dst) = @_;
     die "different repos?" if $src->{repospath} ne $dst->{repospath};
