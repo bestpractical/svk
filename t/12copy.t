@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 51;
+plan_svm tests => 52;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -199,6 +199,8 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 mkdir "$copath/foo";
 is_output ($svk, 'cp', ['//foo-remote', "$copath/foo"],
 	   [__"$copath/foo is not a versioned directory."]);
+is_output ($svk, 'cp', ['//foo-remote/A/be', "$copath/me"],
+	   [__"Path $copath/me already exists."]);
 $svk->st ($copath);
 
 sub is_copied_from {

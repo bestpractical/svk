@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 44;
+use Test::More tests => 46;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -11,6 +11,7 @@ my $tree2 = create_basic_tree ($xd, '//V-3.1');
 my ($copath, $corpath) = get_copath ('checkout');
 mkdir ($copath);
 is_output_like ($svk, 'checkout', [], qr'SYNOPSIS', 'checkout - help');
+is_output_like ($svk, 'checkout', ['A', 'B', 'C'], qr'SYNOPSIS', 'checkout - help');
 
 my $cofile = __"$copath/co-root/V-3.1/A/Q/qz";
 is_output_like ($svk, 'checkout', ['//', "$copath/co-root"],
@@ -110,6 +111,13 @@ is_output ($svk, 'checkout', ['--list'], [
             "//V/A               \t".__("$corpath/co-root-a"),
 	    "//V/A               \t".__("$corpath/co-root-deep/there"),
             ]);
+
+is_output ($svk, 'checkout', ['//V-3.1/A/Q', "."],
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/Q to 6.",
+	    __('A   Q/qu'),
+	    __('A   Q/qz'),
+	    __(' U  Q'),
+	   ], 'checkout report');
 
 is_output ($svk, 'checkout', ['--detach', '//V-3.1'], [
             __("Checkout path '$corpath/V-3.1' detached."),
