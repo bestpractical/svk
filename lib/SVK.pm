@@ -2,7 +2,6 @@ package SVK;
 use strict;
 our $VERSION = '0.21';
 use SVK::Command;
-use constant DEBUG => $ENV{DEBUG};
 
 sub import {
     return unless ref ($_[0]);
@@ -31,7 +30,6 @@ sub AUTOLOAD {
         eval { SVK::Command->invoke ($self->{xd}, $cmd, $output, @_) };
         if ($output) {
             close $output;
-            print STDERR "[$cmd] $buf" if DEBUG;
             ${$self->{output}} = $buf;
         }
     };

@@ -41,6 +41,16 @@ $ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';
 # does not exist. This makes perl very unhappy.
 @INC = grep defined, map abs_path($_), @INC;
 
+if ($ENV{DEBUG}) {
+    {
+        package Tie::StdScalar::Tee;
+        require Tie::Scalar;
+        our @ISA = 'Tie::StdScalar';
+        sub STORE { print STDOUT $_[1] ; ${$_[0]} = $_[1]; }
+    }
+    tie $output => 'Tie::StdScalar::Tee';
+}
+
 my $pool = SVN::Pool->new_default;
 
 sub new_repos {
