@@ -15,7 +15,7 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     return (@arg ? @arg : undef) if $self->{sync_all};
-    @arg = ('//') if !@arg;
+
     return map {$self->arg_uri_maybe ($_)} @arg;
 }
 
