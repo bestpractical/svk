@@ -188,9 +188,12 @@ sub annotate {
 	unshift @revs, $rev;
     }
 
+    my $pool = SVN::Pool->new_default;
     for (@revs) {
+	$pool->clear;
+	local $/;
 	my $content = $fs->revision_root($_)->file_contents($path);
-	$content = [<$content>];
+	$content = [split "[\n\r]", <$content>];
 	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $_,
 			    $fs->revision_prop ($_, 'svn:author'),
 			    substr($fs->revision_prop ($_, 'svn:date'),0,10)),
@@ -199,7 +202,7 @@ sub annotate {
 
     open my ($fh), $copath;
 
-    $ann->add ( "\t(working copy): \t\t", [<$fh>]);
+    $ann->add ( "\t(working copy): \t\t", [map {chomp;$_}<$fh>]);
 
     seek $fh, 0, 0;
 
