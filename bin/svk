@@ -42,7 +42,7 @@ svk - a decentralized version control system
 
 Describe the usage of this program or its subcommands.
 
-usage: help [SUBCOMMANDS..]
+  usage: help [SUBCOMMANDS..]
 
 =cut
 
@@ -103,9 +103,28 @@ sub find_repos_from_co {
 }
 
 
-=head2 update / up
+=head2 update (up)
 
-    svk update
+Bring changes from the repository into checkout copies.
+
+  usage: update [PATH...]
+
+Synchronize checkout copies to revision given by -r or to HEAD
+revision by deafult.
+
+For each updated item a line will start with a character reporting the
+action taken. These characters have the following meaning:
+
+  A  Added
+  D  Deleted
+  U  Updated
+  C  Conflict
+  G  Merged
+  g  Merged without actual change
+
+A character in the first column signifies an update to the actual
+file, while updates to the file's props are shown in the second
+column.
 
 =cut
 
@@ -132,9 +151,14 @@ sub update {
 		       );
 }
 
-=head2 checkout / co
+=head2 checkout (co)
 
-    svk checkout
+Check out a copy from depot.
+
+  usage: checkout DEPOTPATH [PATH]
+
+Note: If PATH is omitted, the basename of the DEPOTPATH will be used
+as the destination.
 
 =cut
 
@@ -248,7 +272,7 @@ sub diff {
     }
 }
 
-=head2 status / st
+=head2 status (st)
 
     svk status
 
@@ -289,7 +313,7 @@ sub status {
 
 }
 
-=head2 annotate / blame
+=head2 annotate (blame)
 
     svk annotate
 
@@ -388,7 +412,7 @@ sub delete {
 		       );
 }
 
-=head2 proplist / pl
+=head2 proplist (pl)
 
 =cut
 
@@ -417,7 +441,7 @@ sub proplist {
     }
 }
 
-=head2 propset / ps
+=head2 propset (ps)
 
 =cut
 
@@ -458,7 +482,16 @@ sub revert {
 
 =head2 log
 
-    svk log
+Show the log messages for revisions.
+
+  usage: 1. log DEPOTPATH
+         2. log PATH
+
+  options:
+    -r [--revision]:      revision spec from:to
+    -l [--limit]:         limit the number of revisions displayed
+    -x [--cross]:         cross copied node
+    -v [--verbose]:       print changed path in changes
 
 =cut
 
@@ -508,9 +541,11 @@ sub log {
 
 }
 
-=head2 commit / ci
+=head2 commit (ci)
 
-    svk commit
+Commit changes to depot.
+
+  usage: commit [PATH...]
 
 =cut
 
@@ -611,7 +646,7 @@ sub commit {
 		       );
 }
 
-=head2 copy / cp
+=head2 copy (cp)
 
     svk copy
 
@@ -646,7 +681,16 @@ sub copy {
 
 =head2 merge
 
-    svk merge
+Apply the differences between two sources to a checkout copy or a
+depotpath. Use -a to automatically calculate the revisions to merge 
+
+  usage: 1. merge -r N:M DEPOTPATH [PATH]
+         2. merge -r N:M DEPOTPATH1 DEPOTPATH2
+
+  options:
+    -m message:        commit message
+    -C [--check-only]: don't perform actual writes
+    -a [--auto]:       automatically find merge points
 
 =cut
 
@@ -845,7 +889,9 @@ sub merge {
 
 =head2 mirror
 
-    svk mirror
+Initialize a mirrored depotpath.
+
+  usage: sync DEPOTPATH SOURCEURL
 
 =cut
 
@@ -862,7 +908,9 @@ sub mirror {
 
 =head2 sync
 
-    svk sync
+Syncrhonize a mirrored depotpath.
+
+  usage: sync DEPOTPATH
 
 =cut
 
