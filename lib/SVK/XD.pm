@@ -410,7 +410,7 @@ sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
     return
-	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_},
+	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -l $_ || -e $_},
 	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
 			  $self->{checkout}->get ($_)->{revision} },
 	  cb_conflict => sub { $_ = shift; $arg{get_copath} ($_);
@@ -555,7 +555,7 @@ sub do_delete {
 			  );
 
     # actually remove it from checkout path
-    my @paths = grep {-e $_} ($arg{targets} ?
+    my @paths = grep {-l $_ || -e $_} ($arg{targets} ?
 			      map { "$arg{copath}/$_" } @{$arg{targets}}
 			      : $arg{copath});
     find(sub {

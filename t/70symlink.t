@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # XXX: skip on platform not supporting symlinks
-use Test::More tests => 13;
+use Test::More tests => 18;
 use strict;
 use File::Path;
 require 't/tree.pl';
@@ -92,5 +92,18 @@ $svk->revert ('-R', "$copath/B");
 ok (-l "$copath/B/new-non.lnk", 'import sets auto prop too');
 
 is_output ($svk, 'status', [$copath], [], 'import');
+
+$svk->rm ("$copath/B/new-non.lnk");
+is_output ($svk, 'status', [$copath],
+	   ['D   t/checkout/symlink/B/new-non.lnk'], 'delete');
+overwrite_file ("$copath/B/new-non.lnk", "foobar\n");
+is_output ($svk, 'add', ["$copath/B/new-non.lnk"],
+	   ['R   t/checkout/symlink/B/new-non.lnk'], 'replace symlink with normal file');
+is_output ($svk, 'commit', ['-m', 'change to non-link', $copath],
+	   ['Committed revision 6.']);
+$svk->update ('-r5', $copath);
+ok (-l "$copath/B/new-non.lnk", 'update from file to symlink');
+$svk->update ($copath);
+ok (-e "$copath/B/new-non.lnk", 'update from symlink to file');
 
 # XXX: test for conflicts resolving etc; XD should stop translating when conflicted

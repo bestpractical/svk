@@ -42,9 +42,13 @@ sub run {
 sub do_update {
     my ($self, $cotarget, $update_target) = @_;
     my $xdroot = $cotarget->root ($self->{xd});
+    my $newroot = $update_target->root;
     # unanchorified
     my ($path, $copath) = @{$cotarget}{qw/path copath/};
     my $report = $update_target->{report};
+
+    die loc("path %1 does not exist.\n", $update_target->{path})
+	if $newroot->check_path ($update_target->{path}) == $SVN::Node::none;
 
     print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
 	      $update_target->{revision});
@@ -62,7 +66,7 @@ sub do_update {
 	 no_recurse => $self->{nonrecursive}, report => $report,
 	 src => $update_target, xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
-					  oldroot => $xdroot, newroot => $update_target->root,
+					  oldroot => $xdroot, newroot => $newroot,
 					  revision => $update_target->{revision},
 					  anchor => $cotarget->{path},
 					  target => $cotarget->{targets}[0] || '',

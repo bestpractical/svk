@@ -86,7 +86,7 @@ sub add_file {
     my ($self, $path) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    die loc("path %1 already exists", $path) if -e $copath;
+    die loc("path %1 already exists", $path) if -l $copath || -e $copath;
     return $path;
 }
 
@@ -94,7 +94,7 @@ sub open_file {
     my ($self, $path) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    die loc("path %1 does not exist", $path) unless -e $copath;
+    die loc("path %1 does not exist", $path) unless -l $copath || -e $copath;
     return $path;
 }
 
@@ -105,7 +105,7 @@ sub apply_textdelta {
     my $copath = $path;
     $self->{get_copath}($copath);
     my $dpath = $self->{anchor} eq '/' ? "/$path" : "$self->{anchor}/$path";
-    if (-e $copath) {
+    if (-l $copath || -e $copath) {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $copath);

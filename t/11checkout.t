@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 15;
+use Test::More tests => 16;
 use strict;
 require 't/tree.pl';
 use SVK::Command;
@@ -64,3 +64,6 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q/', "../checkout/just-q-slash"],
 	    'A   ../checkout/just-q-slash/qu',
 	    'A   ../checkout/just-q-slash/qz',
 	   ], 'checkout report');
+
+$svk->checkout ('//V-3.1-non');
+ok ($@ =~ qr'not exist');
