@@ -14,6 +14,8 @@ push @TOCLEAN, [$xd, $svk];
 
 use File::Temp;
 sub jam {
+    return undef unless exists $SIG{TTOU};
+
     local $SIG{TTOU} = "IGNORE"; # "Stopped for tty output"
     my $TIOCSTI = 0x80017472;
     local *TTY;
