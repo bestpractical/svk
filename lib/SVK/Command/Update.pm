@@ -62,10 +62,7 @@ sub run {
                 $sync_target->{repos},
                 $sync_target->{path}
             );
-            if ($m->{source}) {
-                $m->init;
-                $m->run;
-            }
+            $m->run if $m->{source};
         }
 
         if ($self->{merge}) {
