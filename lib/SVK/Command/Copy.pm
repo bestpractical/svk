@@ -212,10 +212,10 @@ SVK::Command::Copy - Make a versioned copy
 
 =head1 OPTIONS
 
- -r [--revision] arg    : act on revision ARG instead of the head revision
- -m [--message] arg     : specify commit message ARG
+ -r [--revision] path   : act on revision ARG instead of the head revision
+ -m [--message] path    : specify commit message ARG
  -p [--parent]          : create intermediate directories as required
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] path      : instead of commit, save this change as a patch
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
 

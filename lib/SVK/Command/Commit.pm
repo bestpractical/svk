@@ -431,6 +431,7 @@ SVK::Command::Commit - Commit changes to depot
  -C [--check-only]      : try operation but make no changes
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ -N [--non-recursive]   : operate on single directory only
  --encoding ENC         : treat value as being in charset encoding ENC
  --import               : import mode; automatically add and delete nodes
  --direct               : commit directly even if the path is mirrored

@@ -34,16 +34,16 @@ SVK::Command::Smerge - Automatically merge all changes between branches
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
+ -m [--message] path    : specify commit message ARG
  -C [--check-only]      : try operation but make no changes
  -I [--incremental]     : apply each change individually
  -l [--log]             : use logs of merged revisions as commit message
  -B [--baseless]        : use the earliest revision as the merge point
- -b [--base] arg        : use revision ARG as the merge point
+ -b [--base] number     : use revision ARG as the merge point
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] name      : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point

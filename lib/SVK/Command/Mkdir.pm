@@ -75,10 +75,10 @@ SVK::Command::Mkdir - Create a versioned directory
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
+ -m [--message] path    : specify commit message ARG
  -p [--parent]          : create intermediate directories as required
  -C [--check-only]      : try operation but make no changes
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] path      : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
 
 =head1 AUTHORS
