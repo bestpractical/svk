@@ -505,6 +505,7 @@ sub change_file_prop {
     $self->ensure_open ($path);
     $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
     $self->{notify}->prop_status ($path, 'U');
+    ++$self->{changes};
 }
 
 sub change_dir_prop {
