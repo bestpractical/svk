@@ -1,3 +1,48 @@
+[Changes for 0.30 - 2 Mar, 2005]
+
+* Support native encodings for pathnames and log messages handling.
+
+* Interactively resolve deleted files that are modified. [ruz]
+
+* Make use of Class::Autouse to reduce start-up time. [Schwern]
+
+* Support mkdir copath. [hcchien]
+
+* svk help <command> should list the aliases of that command. #6082
+  [Schwern]
+
+* More history-tracing performance optimization.
+
+* Speed up svk help commands by not using pod::simple to extract the
+  brief description.  [kcwu]
+
+* Fix signature cache caused by merge via update.
+
+* Unbreak win32's ReadKey in get_prompt. [Autrijus]
+
+* In merge editor's prop merger, use a proper pool to retrieve
+  the base_prop and local_prop to avoid leaks.
+
+* Clean pools when getting log in reverse order, like merge logs, to
+  prevent leaks.
+
+* Fix pool usage in editor::diff to avoid leaks.
+
+* Fix a newline introduce when saying "accept yours" in resolver.
+
+* Fix SVK::Notify report for when report anchor is "0".
+
+* Do not allow existing depotpath to be entered in when autovivifying,
+  which would led to undesired copies.
+
+* When listing mirror, skip unloadable or invliad entries gracefully.
+
+* When doing svk ps svn:eol-style, check if the file mixed newlines.
+
+* Draft intro.pod. [lukhnos]
+
+* Many more tests, with contribution from matthewd.
+
 [Changes for 0.29 - 1 Feb, 2005]
 
 * New copy_ancestors implementation for speeding up merge base lookup
