@@ -489,8 +489,7 @@ sub delete_entry {
     no warnings 'uninitialized';
     return unless defined $pdir && $self->{cb_exist}->($path);
 
-    my $rpath = $path;
-    $rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
+    my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
     my $torm = $self->_check_delete_conflict ($path, $rpath,
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
 

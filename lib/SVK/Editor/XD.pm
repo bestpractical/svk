@@ -104,11 +104,11 @@ sub apply_textdelta {
     return if $self->{check_only};
     my $copath = $path;
     $self->{get_copath}($copath);
+    my $dpath = $self->{anchor} eq '/' ? "/$path" : "$self->{anchor}/$path";
     if (-e $copath) {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = "$dir.svk.$file.base";
-	$base = SVK::XD::get_fh ($self->{oldroot}, '<',
-				 "$self->{anchor}/$path", $copath);
+	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $copath);
 	if ($checksum) {
 	    my $md5 = md5($base);
 	    die loc("source checksum mismatch") if $md5 ne $checksum;
@@ -118,8 +118,7 @@ sub apply_textdelta {
 	$self->{base}{$path} = [$base, $basename,
 				-l $basename ? () : [stat($base)]];
     }
-    my $fh = SVK::XD::get_fh ($self->{newroot}, '>',
-			      "$self->{anchor}/$path", $copath)
+    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath)
 	or warn "can't open $path";
 
     # The fh is refed by the current default pool, not the pool here

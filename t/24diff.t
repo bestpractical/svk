@@ -163,9 +163,6 @@ $svk->update ('-r2', 'A/bar');
 append_file ("A/foo", "mixed\n");
 append_file ("A/bar", "mixed\n");
 
-TODO: {
-local $TODO = 'buggy';
-
 is_output ($svk, 'diff', [],
 	   ['=== A/bar',
 	    '==================================================================',
@@ -179,10 +176,9 @@ is_output ($svk, 'diff', [],
 	    '==================================================================',
 	    '--- A/foo  (revision 1)',
 	    '+++ A/foo  (local)',
-	    '@@ -1,3 +1,3 @@',
+	    '@@ -1,2 +1,3 @@',
 	    ' foobar',
 	    ' fnord',
 	    '+mixed']);
-}
 
 # XXX: test with delete_entry and prop changes and also external

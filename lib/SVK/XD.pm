@@ -382,15 +382,12 @@ sub create_xd_root {
 	    next if $_ eq $arg{copath};
 	}
 	s|^\Q$arg{copath}\E/||;
-	$root->make_dir ($arg{path})
-	    if $root->check_path ($arg{path}) == $SVN::Node::none;
-	if ($cinfo->{'.deleted'}) {
-	    $root->delete ("$arg{path}/$_");
-	}
-	else {
-	    SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
-				    $root, "$arg{path}/$_");
-	}
+	my $path = "$arg{path}/$_";
+	$root->delete ($path)
+	    if $root->check_path ($path) != $SVN::Node::none;
+	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
+				$root, $path)
+		unless $cinfo->{'.deleted'};
     }
     return ($txn, $root);
 }
@@ -423,8 +420,9 @@ sub xd_storage_cb {
 			       my $copath = $path;
 			       # XXX: make use of the signature here too
 			       $arg{get_copath} ($copath);
+			       $path = $arg{anchor} eq '/' ? "/$path" : "$arg{anchor}/$path";
 			       my $base = get_fh ($arg{oldroot}, '<',
-						  "$arg{anchor}/$path", $copath);
+						  $path, $copath);
 			       my $md5 = md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
@@ -915,7 +913,7 @@ sub _delta_dir {
 			baton => $baton,
 			root => 0,
 			cinfo => undef,
-			base_path => "$arg{base_path}/$entry",
+			base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
 			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			copath => "$arg{copath}/$entry") and ($signature && $signature->invalidate ($entry));
     }

@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 11;
+plan tests => 15;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -36,6 +36,21 @@ $svk->commit ('-m', 'commit on local branch', $copath);
 $svk->sync ('//m');
 
 my ($suuid, $srev) = ($srepos->fs->get_uuid, $srepos->fs->youngest_rev);
+
+TODO: {
+local $TODO = 'better target checks';
+
+is_output ($svk, 'smerge', ['-C', '//m/be', '//l/be'],
+	   ["Can't merge file yet."]);
+
+is_output ($svk, 'smerge', ['-C', '//m/be', '//l/'],
+	   ["Can't merge different types of nodes"]);
+
+}
+
+$svk->smerge ('-C', '//m/Q', '//l/');
+ok ($@ =~ m/find merge base/);
+
 is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 	   ['Auto-merging (3, 6) /m to /l (base /m:3).',
 	    'U   be',
@@ -43,6 +58,13 @@ is_output ($svk, 'smerge', ['-C', '//m', '//l'],
 
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
 is_output ($svk, 'smerge', ['-C', '//l', '//m'],
+	   ['Auto-merging (3, 5) /l to /m (base /m:3).',
+	    "Merging back to SVN::Mirror source file://$srepospath/A.",
+	    'Checking against mirrored directory locally.',
+	    'U   Q/qu',
+	    "New merge ticket: $uuid:/l:5"], 'check merge up');
+
+is_output ($svk, 'smerge', ['-C', '//l', '//m/'],
 	   ['Auto-merging (3, 5) /l to /m (base /m:3).',
 	    "Merging back to SVN::Mirror source file://$srepospath/A.",
 	    'Checking against mirrored directory locally.',
