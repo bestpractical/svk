@@ -49,7 +49,7 @@ sub path_is_mirrored {
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
 
-    my $rev = ($root->node_history ($path)->prev (0)->location)[1];
+    my $rev = $root->node_created_rev ($path);
 
     return (grep {m/^svm:headrev:/} keys %{$fs->revision_proplist ($rev)});
 }
@@ -248,11 +248,11 @@ sub run {
 						      revision => $rev,
 						    });
 	}
+	my $oldroot = $fs->revision_root ($rev-1);
 	for (@datapoint) {
 	    $self->{xd}{checkout}->store ($_, {revision => $rev})
 		if $self->{xd}{checkout}->get ($_)->{revision} ==
-		    ($fs->revision_root ($rev-1)->
-		     node_history ($target->{path})->prev (0)->location)[1];
+		    $oldroot->node_created_rev ($target->{path});
 	}
 	my $root = $fs->revision_root ($rev);
 	for (@$targets) {
