@@ -53,9 +53,9 @@ my $cmd = shift;
 {
     my $show_version;
     local *ARGV = [$cmd || ''];
-    die unless GetOptions ('version' => \$show_version);
+    die unless GetOptions ('v|version' => \$show_version);
 
-    if ($show_version) {
+    if ($show_version || ($cmd && $cmd eq 'version')) {
 	print loc("This is svk, version %1.\n", $VERSION);
 	exit 0;
     }
