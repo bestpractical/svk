@@ -1,6 +1,6 @@
 package SVN::MergeEditor;
 use strict;
-our $VERSION = '0.03';
+our $VERSION = '0.05';
 our @ISA = qw(SVN::Delta::Editor);
 
 =head1 NAME

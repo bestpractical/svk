@@ -1,8 +1,8 @@
-[Changes for 0.05 - 06 Dec, 2003]
+[Changes for 0.05 - 20 Dec, 2003]
 
 * svk help and some usage are written.
 
-* Better svk diff support.
+* Better svk diff support: file target, dpath1 vs dpath2.
 
 * Mergeback now transfers textdelta.
 
@@ -12,9 +12,23 @@
 
 * Fix a segfault for empty merges.
 
-* mergeticket handling now mutliple-safe.
+* Merge-ticket handling now mutliple-safe.
 
 * Committing to mirrored path now forbidden by default.
+
+* Make sm respect -C for XD destination.
+
+* New commands: svk resolved, describe, propedit.
+
+* smerge -l now brings the logs for candidate revisions to editor buffer.
+
+* svk process now locks for state file.
+
+* New default local repository location ~/.svk/local.
+
+* Support svn:ignore property.
+
+* Use checkout_delta for svk status.
 
 * Require svn 0.35.
 

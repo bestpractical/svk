@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
-$VERSION = '0.04';
 use strict;
+our $VERSION = '0.05';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
@@ -14,7 +14,7 @@ use SVN::DiffEditor;
 use SVN::StatusEditor;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps pl cp sy sm desc/;
+use subs qw/co up st blame ci del rm ps pe pl cp sy sm desc/;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
@@ -588,6 +588,35 @@ sub proplist {
     }
 }
 
+=head2 propedit (pe)
+
+=cut
+
+sub propedit {
+    my ($pname, $copath) = @_;
+    $copath = File::Spec->rel2abs ($copath || '');
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+
+    my $pvalue = SVN::XD::do_proplist ($info,
+				       repos => $repos,
+				       copath => $copath,
+				       path => $path,
+				      )->{$pname};
+
+
+    $pvalue = get_buffer_from_editor ("property $pname", undef, $pvalue,
+				      '/tmp/svk-propXXXXX');
+
+    SVN::XD::do_propset ($info,
+			 propname => $pname,
+			 propvalue => $pvalue,
+			 repos => $repos,
+			 copath => $copath,
+			 path => $path,
+			);
+
+}
+
 =head2 propset (ps)
 
 =cut
@@ -770,7 +799,7 @@ sub get_buffer_from_editor {
 
     open $fh, $file;
     local $/;
-    my @ret = split ("\n$sep\n", <$fh>, 2);
+    my @ret = defined $sep ? split ("\n$sep\n", <$fh>, 2) : (<$fh>);
     close $fh;
     unlink $file;
     return wantarray ? @ret : $ret[0];
@@ -1205,6 +1234,7 @@ sub sync {
 *ci = *commit;
 *del = *rm = *delete;
 *ps = *propset;
+*pe = *propedit;
 *pl = *proplist;
 *cp = *copy;
 *sm = *smerge;

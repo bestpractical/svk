@@ -1,5 +1,6 @@
 package SVN::XD;
 use strict;
+our $VERSION = '0.05';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
@@ -280,11 +281,10 @@ use Regexp::Shellish qw( :all ) ;
 
 sub ignore {
     no warnings;
-    my @ignore = qw/*.o #*# .#* *.lo *.la .*.rej *.rej .*~ *~ ..DS_Store
+    my @ignore = qw/*.o #*# .#* *.lo *.la .*.rej *.rej .*~ *~ .DS_Store
 		    svk-commit*.tmp/;
-    my $re = join('|', map {compile_shellish $_} @ignore, @_);
 
-    return $re;
+    return join('|', map {compile_shellish $_} (@ignore, @_));
 }
 
 sub _delta_content {
@@ -300,7 +300,6 @@ sub _delta_file {
     my ($info, %arg) = @_;
 
     unless (-e $arg{copath}) {
-	warn "$arg{path} removed";
 	my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 	if ($schedule eq 'delete') {
 	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
@@ -368,7 +367,7 @@ sub _delta_dir {
 	(split ("\n", get_props ($info, $arg{xdroot}, $arg{path},
 				 $arg{copath})->{'svn:ignore'} || ''));
     for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
-	next if m/$ignore/o;
+	next if m/$ignore/;
 	my $sche = $info->{checkout}->get_single ("$arg{copath}/$_")->{schedule};
 	unless ($sche) {
 	    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_")

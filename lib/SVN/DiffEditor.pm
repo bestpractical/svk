@@ -1,6 +1,6 @@
 package SVN::DiffEditor;
 use strict;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 our @ISA = qw(SVN::Delta::Editor);
 
 use IO::String;
