@@ -79,7 +79,7 @@ sub close_edit {
 	$self->{fail} = 1;
 	return;
     }
-    # verfiy the content
+    # verify the content
     my ($anchor) = $sig =~ m/^ANCHOR: (.*)$/m;
     my ($path) = resolve_svm_source ($self->{repos}, split (':', $anchor));
     while ($sig =~ m/^MD5\s(.*?)\s(.*?)$/gm) {
@@ -102,7 +102,7 @@ sub close_edit {
 
 =head1 NAME
 
-SVK::Command::Verfiy - Verify change signatures
+SVK::Command::Verify - Verify change signatures
 
 =head1 SYNOPSIS
 

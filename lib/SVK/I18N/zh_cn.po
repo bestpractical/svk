@@ -817,7 +817,7 @@ msgid "update [PATH...]"
 msgstr "update [路径...]"
 
 #: lib/SVK/Command.pod:103
-msgid "verfiy - Verify change signatures"
+msgid "verify - Verify change signatures"
 msgstr "verify - 检验变动的签章"
 
 #: lib/SVK/Command.pod:104

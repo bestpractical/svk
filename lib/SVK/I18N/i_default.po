@@ -814,7 +814,7 @@ msgid "update [PATH...]"
 msgstr ""
 
 #: lib/SVK/Command.pod:103
-msgid "verfiy - Verify change signatures"
+msgid "verify - Verify change signatures"
 msgstr ""
 
 #: lib/SVK/Command.pod:104
