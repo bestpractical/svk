@@ -382,8 +382,22 @@ sub run {
 	  allow_conflicts => $is_copath,
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},
-	  ticket => $self->{ticket} ?
-	      sub { $self->get_new_ticket ($self->merge_info ($src)->add_target ($src)) } : undef,
+	  # XXX: make the prop resolver more pluggable
+	  $self->{ticket} ?
+	  ( prop_resolver => { 'svk:merge' =>
+			  sub { my ($path, $prop) = @_;
+				return (undef, undef, 1)
+				    if $path eq $target;
+				return ('G', SVK::Merge::Info->new
+					($prop->{new})->union
+					(SVK::Merge::Info->new ($prop->{local}))->as_string);
+			    }
+			},
+	    ticket => 
+	    sub { $self->get_new_ticket ($self->merge_info ($src)->add_target ($src)) }
+	  ) :
+	  ( prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} # skip
+			     }),
 	  %cb,
 	);
     SVK::XD->depot_delta

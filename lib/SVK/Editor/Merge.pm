@@ -590,12 +590,40 @@ sub _prop_eq {
     return defined $prop1 ? ($prop1 eq $prop2) : 1;
 }
 
+sub _merge_prop_content {
+    my ($self, $path, $propname, $prop, $pool) = @_;
+
+    if (my $resolver = $self->{prop_resolver}{$propname}) {
+	return $resolver->($path, $prop, $pool);
+    }
+
+    if (_prop_eq (@{$prop}{qw/base local/})) {
+	return ('U', $prop->{new});
+    }
+    elsif (_prop_eq (@{$prop}{qw/new local/})) {
+	return ('g', $prop->{local});
+    }
+
+    my $fh = { map {
+	my $tgt = defined $prop->{$_} ? \$prop->{$_} : devnull;
+	open my $f, '<', $tgt;
+	($_ => [$f, ref ($tgt) ? undef : $tgt]);
+    } qw/base new local/ };
+    $self->prepare_fh ($fh);
+
+    my ($conflict, $mfh) = $self->_merge_text_change ($fh, loc ("Property %1 of %2", $propname, $path), $pool);
+    if (!$conflict) {
+	local $/;
+	$mfh = <$mfh>;
+    }
+    return ($conflict ? 'C' : 'G', $mfh);
+}
+
 sub _merge_prop_change {
     my $self = shift;
     my $path = shift;
     my $pool;
     return unless defined $path;
-    return if $_[0] eq 'svk:merge';
     return if $_[0] =~ m/^svm:/;
     # special case the the root node that was actually been added
     if ($self->{added}{$path} or
@@ -612,33 +640,22 @@ sub _merge_prop_change {
 	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0]) };
 	$prop->{local} = $self->{cb_exist}->($path) ? $self->{cb_localprop}->($path, $_[0]) : undef;
     }
-    if (_prop_eq (@{$prop}{qw/base local/})) {
-	$self->{notify}->prop_status ($path, 'U');
-    }
-    elsif (_prop_eq ($prop->{local}, $_[1])) {
-	$self->{notify}->prop_status ($path, 'g');
+    # XXX: only known props should be auto-merged with default resolver
+    $pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
+    my ($status, $merged, $skipped) =
+	$self->_merge_prop_content ($path, $_[0], $prop, $pool);
+
+    return if $skipped;
+
+    if ($status eq 'C') {
+	$self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
+	++$self->{conflicts};
     }
     else {
-	# XXX: only known props should be auto-merged with default resolver
-	$pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
-	my $fh = { map {
-	    my $tgt = defined $prop->{$_} ? \$prop->{$_} : devnull;
-	    open my $f, '<', $tgt;
-	    ($_ => [$f, ref ($tgt) ? undef : $tgt]);
-	} qw/base new local/ };
-	$self->prepare_fh ($fh);
-	my ($conflict, $mfh) = $self->_merge_text_change ($fh, loc ("Property %1 of %2", $_[0], $path), $pool);
-
-	if (!$conflict) {
-	    local $/;
-	    $_[1] = <$mfh>;
-	}
-	if ($conflict) {
-	    $self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
-	    ++$self->{conflicts};
-	}
-	$self->{notify}->prop_status ($path, $conflict ? 'C' : 'G');
+	$_[1] = $merged;
     }
+    $self->{notify}->prop_status ($path, $status);
+    ++$self->{changes};
     return 1;
 }
 
@@ -653,7 +670,6 @@ sub change_dir_prop {
     my ($self, $path, @arg) = @_;
     $self->_merge_prop_change ($path, @arg) or return;
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
-    ++$self->{changes};
 }
 
 sub close_edit {
