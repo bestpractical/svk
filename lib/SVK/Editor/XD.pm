@@ -85,7 +85,9 @@ sub set_target_revision {
 sub open_root {
     my ($self, $base_revision) = @_;
     $self->{baserev} = $base_revision;
-    return '';
+    $self->{signature} ||= SVK::XD::Signature->new (root => $self->{xd}->cache_directory)
+	if $self->{update};
+    return $self->open_directory ('');
 }
 
 sub add_file {
@@ -155,6 +157,8 @@ sub close_file {
 	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' });
     }
     if ($self->{update}) {
+	my (undef, $file) = get_anchor (1, $copath);
+	$self->{cursignature}[-1]->changed ($file);
 	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
@@ -172,12 +176,20 @@ sub add_directory {
     $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
+    push @{$self->{cursignature}}, $self->{signature}->load ($copath)
+	if $self->{update};
     return $path;
 }
 
 sub open_directory {
     my ($self, $path) = @_;
     # XXX: test if directory exists
+    if ($self->{update}) {
+	my $copath = $path;
+	$self->{get_copath}->($copath);
+	push @{$self->{cursignature}}, $self->{signature}->load ($copath);
+	$self->{cursignature}[-1]{keepold} = 1;
+    }
     return $path;
 }
 
@@ -204,10 +216,16 @@ sub close_directory {
     return if $self->{target} && !$path;
     my $copath = $path;
     $self->{get_copath}($copath);
-    $self->{xd}{checkout}->store_recursively ($copath,
-					      {revision => $self->{revision},
-					       '.deleted' => undef})
-	if $self->{update};
+    if ($self->{update}) {
+	$self->{xd}{checkout}->store_recursively ($copath,
+						  {revision => $self->{revision},
+						   '.deleted' => undef});
+	if (@{$self->{cursignature}}) {
+	    $self->{cursignature}[-1]->flush;
+	    pop @{$self->{cursignature}};
+	}
+    }
+
     delete $self->{added}{$path};
 }
 
@@ -238,12 +256,10 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self) = @_;
-    $self->close_directory('');
 }
 
 sub abort_edit {
     my ($self) = @_;
-    $self->close_directory('');
 }
 
 =head1 AUTHORS
