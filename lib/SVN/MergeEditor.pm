@@ -142,7 +142,7 @@ sub ensure_open {
     $self->{storage_baton}{$path} ||=
 	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
 				     &{$self->{cb_rev}}($path), $pool);
-
+    delete $self->{info}{$path}{open};
 }
 
 sub cleanup_fh {
@@ -177,20 +177,23 @@ sub prepare_fh {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
+    $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh} = {};
     return unless $info->{status};
     my ($base, $newname);
     unless ($info->{status}[0]) { # open, has base
-	$fh->{local} = &{$self->{cb_localmod}}($path, $checksum) or
+	$fh->{local} = &{$self->{cb_localmod}}($path, $checksum, $pool) or
 	    $info->{status}[0] = 'U';
 	# retrieve base
 	$fh->{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
 	my $rpath = $path;
 	$rpath = "$self->{base_anchor}/$rpath" if $self->{base_anchor};
-	my $buf = $self->{base_root}->file_contents ($rpath);
-	local $/;
-	$fh->{base}[0]->print(<$buf>);
+	my $buf = $self->{base_root}->file_contents ($rpath, $pool);
+	local $/ = \16384;
+	while (<$buf>) {
+	    print {$fh->{base}[0]} $_;
+	}
 	seek $fh->{base}[0], 0, 0;
 	# get new
 	$fh->{new} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
@@ -205,6 +208,7 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
+    $pool->default if $pool && $pool->can ('default');
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
     no warnings 'uninitialized';

@@ -316,7 +316,7 @@ sub _delta_content {
 
 sub _delta_file {
     my ($info, %arg) = @_;
-
+    my $pool = SVN::Pool->new_default (undef);
     unless (-e $arg{copath}) {
 	my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
 	if ($schedule eq 'delete' || $arg{absent_as_delete}) {
@@ -653,11 +653,12 @@ sub do_merge {
 				     $editor->{conflicts}++;
 				 },
 		cb_localmod =>
-		sub { my ($path, $checksum) = @_;
+		sub { my ($path, $checksum, $pool) = @_;
 		      $path = "$tgt_anchor/$path";
-		      my $md5 = $root->file_md5_checksum ($path);
+		      my $md5 = $root->file_md5_checksum ($path, $pool);
 		      return if $md5 eq $checksum;
-		      return [$root->file_contents ($path), undef, $md5];
+		      return [$root->file_contents ($path, $pool),
+			      undef, $md5];
 		  },
 	      );
     }
@@ -695,11 +696,13 @@ sub do_import {
 
     if ($kind == $SVN::Node::none) {
 	my $edit = SVN::Simple::Edit->new
-	    (SVN::Repos::get_commit_editor($arg{repos},
-					   "file://$arg{repospath}",
-					   '/', $ENV{USER},
-					   "directory for svk import",
-					   sub {print "Import path $arg{path} initialized.\n"}));
+	    (_editor => [SVN::Repos::get_commit_editor($arg{repos},
+					    "file://$arg{repospath}",
+					    '/', $ENV{USER},
+					    "directory for svk import",
+					    sub {print "Import path $arg{path} initialized.\n"})],
+	     missing_handler => &SVN::Simple::Edit::check_missing ($root));
+
 	$edit->open_root ($yrev);
 	$edit->add_directory ($arg{path});
 	$edit->close_edit;
@@ -904,6 +907,7 @@ sub do_commit {
 
 sub get_keyword_layer {
     my ($root, $path) = @_;
+    my $pool = SVN::Pool->new_default;
     return '' if $root->check_path ($path) == $SVN::Node::none;
     my $k = eval { $root->node_prop ($path, 'svn:keywords') };
     use Carp;
@@ -1096,6 +1100,7 @@ sub close_file {
     if ($self->{base}{$path}) {
 	close $self->{base}{$path}[0];
 	unlink $self->{base}{$path}[1];
+	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
 	SVN::XD::do_add ($self->{info}, copath => $copath, quiet => 1);

@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use Test::More qw(no_plan);
 use strict;
-use SVN::XD;
 require 't/tree.pl';
 package svk;
 require 'bin/svk';
@@ -64,5 +63,3 @@ svk::update ($copath);
 
 is_file_content ("$copath/B/foo", "foobar\n\nsome more foobar\nzz\n",
 		 'merge via update');
-
-cleanup_test($svk::info)

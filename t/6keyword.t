@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 use strict;
-use SVN::XD;
 use Test::More qw(no_plan);
 require 't/tree.pl';
 package main;

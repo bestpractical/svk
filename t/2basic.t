@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use Test::More qw(no_plan);
 use strict;
-use SVN::XD;
 require 't/tree.pl';
 package svk;
 require 'bin/svk';
@@ -40,5 +39,3 @@ svk::pl ("$copath/A/baz");
 svk::commit ('-m', 'commit message here', "$copath/A");
 svk::pl ("$copath/A/baz");
 svk::pl ("$copath/A");
-
-cleanup_test($svk::info)

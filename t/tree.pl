@@ -1,7 +1,11 @@
 #!/usr/bin/perl
+
+END {
+    main::cleanup_test($svk::info)
+}
+
 package svk;
 require 'bin/svk';
-
 package main;
 require Data::Hierarchy;
 require SVN::Core;

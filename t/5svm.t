@@ -1,11 +1,10 @@
 #!/usr/bin/perl
 use strict;
-use SVN::XD;
 require Test::More;
+require 't/tree.pl';
 eval "require SVN::Mirror"
 or Test::More->import (skip_all => "SVN::Mirror not installed");
 Test::More->import ('no_plan');
-require 't/tree.pl';
 package main;
 
 # build another tree to be mirrored ourself
@@ -42,5 +41,3 @@ $pool = SVN::Pool->new_default; # for some reasons
 
 svk::merge (qw/-r 5:6/, '//m', $copath);
 svk::status ($copath);
-
-cleanup_test($svk::info)
