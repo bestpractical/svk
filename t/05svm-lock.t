@@ -11,6 +11,7 @@ my ($copath, $corpath) = get_copath ('svm-lock');
 $svk->mkdir ('-m', 'remote trunk', '/svm-lock/trunk');
 waste_rev ($svk, '/svm-lock/trunk/hate') for (1..10);
 
+my (undef, undef, $repos) = $xd->find_repos ('//remote', 1);
 my ($drepospath, $dpath, $drepos) = $xd->find_repos ('/svm-lock/trunk', 1);
 my $uri = uri($drepospath);
 $svk->mirror ('//remote', $uri.($dpath eq '/' ? '' : $dpath));
@@ -22,6 +23,9 @@ my $pid;
 if (($pid =fork) == 0) {
     $svk->sync ('-a');
     exit;
+}
+while ($repos->fs->youngest_rev < 23 ) {
+    sleep 1;
 }
 waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
 sleep 2;
