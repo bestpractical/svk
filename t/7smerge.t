@@ -95,7 +95,7 @@ append_file ("$copath/Q/qu", "modified on local\n");
 $svk->rm ("$copath/Q/qz");
 $svk->commit ('-m', 'commit on local', $copath);
 $svk->smerge ('-C', '//m', '//l');
-is ($output, "Auto-merging (8, 11) /m to /l (base /m).
+is ($output, "Auto-merging (8, 11) /m to /l (base /m:8).
  U Q/qu
    Q/qz - skipped
 C  be

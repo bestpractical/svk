@@ -135,10 +135,11 @@ sub resolve_svm_source {
 
 sub tmpfile {
     my ($temp, %args) = @_;
+    my $dir = $ENV{TMPDIR} || '/tmp';
     $temp = "svk-${temp}XXXXX";
-    return mktemp ($temp) if exists $args{OPEN} && $args{OPEN} == 0;
+    return mktemp ("$dir/$temp") if exists $args{OPEN} && $args{OPEN} == 0;
     my $tmp = File::Temp->new ( TEMPLATE => $temp,
-				DIR => $ENV{TMPDIR} || '/tmp',
+				DIR => $dir,
 				SUFFIX => '.tmp',
 				%args
 			      );

@@ -46,8 +46,8 @@ sub run {
 	$self->{merge} = SVK::Merge->new (%$self);
 	($base_path, $baserev, $fromrev, $torev) =
 	    ($self->{merge}->find_merge_base ($repos, $src->{path}, $dst->{path}), $repos->fs->youngest_rev);
-	print loc("Auto-merging (%1, %2) %3 to %4 (base %5).\n",
-		  $fromrev, $torev, $src->{path}, $dst->{path}, $base_path);
+	print loc("Auto-merging (%1, %2) %3 to %4 (base %5:%6).\n",
+		  $fromrev, $torev, $src->{path}, $dst->{path}, $base_path, $baserev);
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
 			   $editor->change_dir_prop
 			       ($baton, 'svk:merge',

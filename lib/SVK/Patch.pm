@@ -175,6 +175,7 @@ sub view {
 
 sub applicable {
     my ($self, $repos) = @_;
+    # XXX: support testing with other path
     my ($anchor, $mrev) = $self->local_mirror ($repos)
 	or die "Target not local nor mirrored, unable to test patch.\n";
 

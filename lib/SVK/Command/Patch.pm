@@ -39,7 +39,7 @@ sub create {
     $patch->from ($dst->{repos}, $src->{path});
     $patch->applyto ($dst->{repos}, $dst->{path});
 
-    return $self->_do_update ($name, $patch, $dst->{repos});
+    $self->_do_update ($name, $patch, $dst->{repos});
 }
 
 sub view {
