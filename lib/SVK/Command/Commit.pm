@@ -250,9 +250,10 @@ sub run {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
 	    my $dpath = $copath;
-	    $dpath =~ s|^\Q$target->{copath}\E/|$target->{path}|;
-	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath);
-	    my $eol = SVK::XD::get_eol_layer ($root, $dpath);
+	    $dpath =~ s|^\Q$target->{copath}\E|$target->{path}|;
+	    my $prop = $root->node_proplist ($dpath);
+	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
+	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop);
 	    next unless $layer || ($eol ne ':raw' && $eol ne '');
 
 	    my $fh = SVK::XD::get_fh ($xdroot, '<', $dpath, $copath, 0, $layer, $eol);

@@ -30,44 +30,40 @@ sub do_copy_direct {
     # XXX: check parent, check isfile, check everything...
     $edit->open_root();
     $edit->copy_directory ($arg{dpath}, "file://$arg{repospath}$arg{path}",
-			   $arg{rev});
+			   $arg{revision});
     $edit->close_edit();
 }
 
 sub run {
     my ($self, $src, $dst) = @_;
-    die loc("repos paths mismatch") if $src->{repospath} ne $dst->{repospath};
-    $self->{rev} ||= $src->{repos}->fs->youngest_rev;
+    die loc("repos paths mismatch") unless $src->same_repos ($dst);
+    $src->{revision} = $self->{rev} if defined $self->{rev};
     my $fs = $src->{repos}->fs;
     if ($dst->{copath}) {
 	my $xdroot = $dst->root ($self->{xd});
 	# XXX: prevent recursion, etc
 	if (-d $dst->{copath}) {
+	    # XXX: proper descendent
 	    my ($name) = $src->{depotpath} =~ m|(/[^/]+)/?$|;
 #	    $dst = $self->arg_copath ("$dst->{depotpath}$name");
 	    $dst->{depotpath} .= $name;
 	    $dst->{path} .= $name;
 	    $dst->{copath} .= $name;
 	}
-	my ($anchor, $target, $sanchor, $starget) = get_anchor (1, $dst->{path}, $src->{path});
+	my $copath = $dst->{copath};
+	$src->anchorify; $dst->anchorify;
+	SVK::Merge->new
+		(%$self, repos => $dst->{repos}, nodelay => 1,
+		 report => $dst->{report},
+		 base => $src->new (path => '/', revision => 0),
+		 src => $src, dst => $dst)->run ($self->get_editor ($dst));
 
-	my $editor = $self->{xd}->get_editor ( %$dst,
-					       report => $dst->{report},
-					       oldroot => $xdroot,
-					       newroot => $xdroot,
-					       anchor => $sanchor,
-					       target => $starget,
-					     );
-	SVN::Repos::dir_delta ($fs->revision_root (0), $sanchor, $starget,
-			       $fs->revision_root ($self->{rev}), $src->{path},
-			       $editor, undef,
-			       1, 1, 0, 1);
-	$self->{xd}{checkout}->store_recursively ($dst->{copath}, {'.schedule' => undef,
-								   '.newprop' => undef});
-	$self->{xd}{checkout}->store ($dst->{copath}, {'.schedule' => 'add',
-						       scheduleanchor => $dst->{copath},
-						       '.copyfrom' => $src->{path},
-						       '.copyfrom_rev' => $self->{rev}});
+	$self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
+							    '.newprop' => undef});
+	$self->{xd}{checkout}->store ($copath, {'.schedule' => 'add',
+						scheduleanchor => $copath,
+						'.copyfrom' => $src->path,
+						'.copyfrom_rev' => $src->{revision}});
     }
     else {
 	return unless $self->check_mirrored_path ($dst);

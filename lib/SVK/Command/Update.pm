@@ -51,14 +51,16 @@ sub do_update {
 
     print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
 	      $update_target->{revision});
-    unless ($xdroot->check_path ($cotarget->{path}) == $SVN::Node::dir) {
+    $cotarget = $cotarget->new (path => '/')
+	if $xdroot->check_path ($cotarget->path) == $SVN::Node::none;
+    if ($newroot->check_path ($update_target->path) == $SVN::Node::file ) {
 	$cotarget->anchorify;
 	$update_target->anchorify;
+	# can't use $cotarget->{path} directly since the (rev0, /) hack
+	($path, $copath) = @{$cotarget}{qw/path copath/};
     }
-    else {
-	mkdir ($cotarget->{copath}) or die $!
-	    unless $self->{check_only} || -e $cotarget->{copath};
-    }
+    mkdir ($cotarget->{copath}) or die $!
+	unless $self->{check_only} || -e $cotarget->{copath};
 
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,

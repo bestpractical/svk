@@ -39,8 +39,8 @@ ok (-e 'V-3.1-r5/A/P/pe');
 
 is_output ($svk, 'checkout', ['-Nr5', '//V-3.1', 'V-3.1-nr'],
 	   ["Syncing //V-3.1(/V-3.1) in $corpath/V-3.1-nr to 5.",
-	    'A   V-3.1-nr/',
 	    'A   V-3.1-nr/me'], 'checkout - non-recursive');
+
 ok (!-e 'V-3.1-nr/A');
 ok (-e 'V-3.1-nr/me');
 
@@ -53,14 +53,12 @@ ok (-e 'Q/qu');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
 	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in $corpath/just-q to 6.",
-	    'A   ../checkout/just-q/',
 	    'A   ../checkout/just-q/qu',
 	    'A   ../checkout/just-q/qz',
 	   ], 'checkout report');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q/', "../checkout/just-q-slash"],
 	   ["Syncing //V-3.1/A/Q/(/V-3.1/A/Q) in $corpath/just-q-slash to 6.",
-	    'A   ../checkout/just-q-slash/',
 	    'A   ../checkout/just-q-slash/qu',
 	    'A   ../checkout/just-q-slash/qz',
 	   ], 'checkout report');

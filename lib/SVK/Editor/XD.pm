@@ -85,6 +85,7 @@ sub open_root {
 sub add_file {
     my ($self, $path) = @_;
     my $copath = $path;
+    ++$self->{added}{$path};
     $self->{get_copath}($copath);
     die loc("path %1 already exists", $path) if -l $copath || -e $copath;
     return $path;
@@ -118,7 +119,9 @@ sub apply_textdelta {
 	$self->{base}{$path} = [$base, $basename,
 				-l $basename ? () : [stat($base)]];
     }
-    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath)
+    delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
+    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath, 0, undef, undef,
+			      $self->{added}{$path} ? $self->{props}{$path} : undef)
 	or warn "can't open $path";
 
     # The fh is refed by the current default pool, not the pool here
@@ -200,6 +203,8 @@ sub close_directory {
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
+    $self->{props}{$path}{$name} = $value
+	if $self->{added}{$path};
     return if $self->{check_only};
     my $copath = $path;
     $self->{get_copath}($copath);

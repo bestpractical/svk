@@ -367,13 +367,13 @@ sub xdroot {
 
 sub create_xd_root {
     my ($self, %arg) = @_;
-    my $fs = $arg{repos}->fs;
+    my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
     my ($txn, $root);
 
-    my @paths = $self->{checkout}->find ($arg{copath}, {revision => qr'.*'});
+    my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});
 
     return (undef, $fs->revision_root
-	    ($self->{checkout}->get ($paths[0] || $arg{copath})->{revision}))
+	    ($self->{checkout}->get ($paths[0] || $copath)->{revision}))
 	if $#paths <= 0;
 
     for (@paths) {
@@ -381,9 +381,9 @@ sub create_xd_root {
 	unless ($root) {
 	    $txn = $fs->begin_txn ($cinfo->{revision});
 	    $root = $txn->root();
-	    next if $_ eq $arg{copath};
+	    next if $_ eq $copath;
 	}
-	s|^\Q$arg{copath}\E/||;
+	s|^\Q$copath\E/||;
 	my $path = "$arg{path}/$_";
 	$root->delete ($path)
 	    if $root->check_path ($path) != $SVN::Node::none;
@@ -401,9 +401,9 @@ sub create_xd_root {
 =cut
 
 sub xd_storage_cb {
-    my ($self, $translate, %arg) = @_;
+    my ($self, %arg) = @_;
     # translate to abs path before any check
-    my %cb =
+    return
 	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_ || -l $_ },
 	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
 			  $self->{checkout}->get ($_)->{revision} },
@@ -453,9 +453,6 @@ sub xd_storage_cb {
 			       return $modified;
 			   },
 	);
-    SVK::Editor::Merge::cb_translate (\%cb, $translate)
-	    if $translate;
-    return %cb;
 }
 
 =item get_editor
@@ -468,27 +465,15 @@ L<SVK::Editor::Merge> when called in array context.
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my ($copath, $anchor, $target) = @arg{qw/copath anchor target/};
+    my ($copath, $anchor) = @arg{qw/copath path/};
     $anchor = '' if $anchor eq '/';
-    my ($cotarget, $translate);
-    if ($target) {
-	($copath, $cotarget) = get_anchor (1, $copath);
-	$translate = sub { $_[0] =~ s/^\Q$target\E/$cotarget/ };
-    }
     $arg{get_copath} =
 	sub { $_[0] = File::Spec->catfile
-		  ($copath,  $_[0] ? File::Spec->splitdir ($_[0]) : ());
-	  };
-    $arg{get_path} =
-	sub { $_[0] =~ s/^\Q$cotarget\E/$target/ if $target && $target ne $cotarget;
-	      $_[0] = "$anchor/$_[0]";
-	  };
+		  ($copath,  $_[0] ? File::Spec->splitdir ($_[0]) : ()) };
+    $arg{get_path} = sub { $_[0] = "$anchor/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
-    $storage = SVK::Editor::Translate->new (_editor => [$storage], translate => $translate)
-	if $target && $target ne $cotarget;
-
-    return wantarray ? ($storage, $self->xd_storage_cb ($translate, %arg)) : $storage;
+    return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
 }
 
 =item auto_prop
@@ -1094,10 +1079,8 @@ sub do_resolved {
 }
 
 sub get_eol_layer {
-    my ($root, $path) = @_;
-    my $pool = SVN::Pool->new_default;
-    local $@;
-    my $k = eval { $root->node_prop ($path, 'svn:eol-style') };
+    my ($root, $path, $prop) = @_;
+    my $k = $prop->{'svn:eol-style'};
     return ':raw' unless $k;
     return ':crlf' if $k eq 'CRLF';
     return '' if $k eq 'native';
@@ -1105,10 +1088,9 @@ sub get_eol_layer {
 }
 
 sub get_keyword_layer {
-    my ($root, $path) = @_;
+    my ($root, $path, $prop) = @_;
     my $pool = SVN::Pool->new_default;
-    local $@;
-    my $k = eval { $root->node_prop ($path, 'svn:keywords') };
+    my $k = $prop->{'svn:keywords'};
     return unless $k;
 
     # XXX: should these respect svm related stuff
@@ -1205,14 +1187,15 @@ Returns a file handle with keyword translation and line-ending layers attached.
 =cut
 
 sub get_fh {
-    my ($root, $mode, $path, $fname, $raw, $layer, $eol) = @_;
-    local $@;
+    my ($root, $mode, $path, $fname, $raw, $layer, $eol, $prop) = @_;
     # XXX: might be worth to use node_proplist to save 2 entries to C
+    $prop = $root->node_proplist ($path)
+	unless $prop || $root->check_path ($path) == $SVN::Node::none;
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
-	    if -l $fname || defined eval {$root->node_prop ($path, 'svn:special')};
-	$layer ||= get_keyword_layer ($root, $path);
-	$eol ||= get_eol_layer($root, $path);
+	    if defined $prop->{'svn:special'} || -l $fname;
+	$layer ||= get_keyword_layer ($root, $path, $prop);
+	$eol ||= get_eol_layer($root, $path, $prop);
     }
     $eol ||= ':raw';
     open my ($fh), $mode.$eol, $fname;

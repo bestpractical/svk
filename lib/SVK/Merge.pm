@@ -349,8 +349,6 @@ sub run {
     my ($report, $target) = ($self->{report}, $src->{targets}[0] || '');
     my $dsttarget = $self->{dst}{targets}[0];
     if ($target && $dsttarget && $target ne $dsttarget) {
-	# XXX: should enable xd editor translator here
-	# but it is actually copath's target
 	my $translate = sub { $_[0] =~ s/^\Q$target\E/$dsttarget/ };
 	$storage = SVK::Editor::Translate->new (_editor => [$storage],
 						translate => $translate);
