@@ -97,9 +97,6 @@ $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/native");
 $svk->commit ('-m', 'test line ending', $copath);
 is_file_content_raw ("$copath/le/native", "native$CRLF");
 
-TODO: {
-    local $TODO = 'Sane eol handling';
-
 $SIG{__DIE__} = sub {
     $_[0] =~ /Mixed newlines/ or return;
     ok(1, 'mixed line endings should raise exceptions');
@@ -109,5 +106,3 @@ $SIG{__DIE__} = sub {
 $svk->ps ('svn:eol-style', 'native', "$copath/le/mixed");
 $svk->commit ('-m', 'test line ending', $copath);
 ok(0, 'mixed line endings should raise exceptions');
-
-}

@@ -16,7 +16,7 @@ use File::Spec;
 use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
-use PerlIO::eol 0.07 qw( NATIVE LF );
+use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Regexp::Shellish qw( compile_shellish ) ;
@@ -1165,10 +1165,10 @@ sub get_eol_layer {
 	return ':raw' if $mode eq '>' && ($k eq 'native' or $k eq 'LF');
     }
     if ($k eq 'native') {
-        return ':raw:eol(LF-Native)';
+        return ':raw:eol(LF!-Native!)';
     }
     elsif ($k eq 'CRLF' or $k eq 'CR' or $k eq 'LF') {
-        return ":raw:eol($k)";
+        return ":raw:eol($k!)";
     }
     else {
         return ':raw'; # unsupported
