@@ -5,7 +5,6 @@ our $VERSION = '0.11';
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::CommitStatusEditor;
 
 sub options {
     ('l|limit=i'	=> 'limit',

@@ -5,7 +5,6 @@ our $VERSION = '0.11';
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::CommitStatusEditor;
 use SVK::Command::Log;
 use SVK::Util qw (get_buffer_from_editor);
 

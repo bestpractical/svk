@@ -1,10 +1,9 @@
 package SVK::Command::Import;
 use strict;
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;
-use SVK::CommitStatusEditor;
 use SVK::Util qw (get_buffer_from_editor);
 
 sub parse_arg {

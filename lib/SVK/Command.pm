@@ -57,8 +57,10 @@ sub get_cmd {
     my ($pkg, $cmd) = @_;
     $pkg = join('::', $pkg, _cmd_map ($cmd));
     unless (eval "require $pkg; 1" && UNIVERSAL::can($pkg, 'run')) {
-	warn $@ if $@;
-	return "Command not recognized, try $0 help.\n";
+	$pkg =~ s|::|/|g;
+	warn $@ if $@ && exists $INC{"$pkg.pm"};
+	print "Command not recognized, try $0 help.\n";
+	exit 0;
     }
     $pkg->new;
 }
