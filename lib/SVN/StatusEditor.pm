@@ -1,5 +1,6 @@
-package SVN::StatusEditor;;
+package SVN::StatusEditor;
 use strict;
+require SVN::Delta;
 our $VERSION = '0.05';
 our @ISA = qw(SVN::Delta::Editor);
 
@@ -9,19 +10,25 @@ sub set_target_revision {
 
 sub open_root {
     my ($self, $baserev) = @_;
-    return '';
+    $self->{info}{$self->{copath}}{status} = ['', ''];
+    return $self->{copath};
 }
 
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
-    $path = "$self->{copath}/$path";
-    $self->{info}{$path}{status} = ['A'];
+    my $opath = $path;
+    $path = "$self->{copath}/$opath";
+    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
+    $self->{info}{$path}{status} = ['A', ''];
     return $path;
 }
 
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
-    $path = "$self->{copath}/$path";
+    my $opath = $path;
+    $path = "$self->{copath}/$opath";
+    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
+    $self->{info}{$path}{status} = ['', ''];
     return $path;
 }
 
@@ -34,8 +41,49 @@ sub apply_textdelta {
 sub close_file {
     my ($self, $path) = @_;
     print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0],
-		   $self->{info}{$path}{status}[1] || '',
+		   $self->{info}{$path}{status}[1],
 		   $path);
+}
+
+sub absent_file {
+    my ($self, $path) = @_;
+    print "!  $self->{copath}/$path\n";
+}
+
+sub delete_entry {
+    my ($self, $path) = @_;
+    print "D  $self->{copath}/$path\n";
+}
+
+sub add_directory {
+    my ($self, $path, $pdir, @arg) = @_;
+    my $opath = $path;
+    $path = "$self->{copath}/$opath";
+    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
+    $self->{info}{$path}{status} = ['A', ''];
+    return $path;
+}
+
+sub open_directory {
+    my ($self, $path, $pdir, $rev, $pool) = @_;
+    my $opath = $path;
+    $path = "$self->{copath}/$opath";
+    $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
+    $self->{info}{$path}{status} = ['', ''];
+    return $path;
+}
+
+sub close_directory {
+    my ($self, $path) = @_;
+    print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0] || '',
+		   $self->{info}{$path}{status}[1] || '',
+		   $path)
+	if $self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[1];
+}
+
+sub absent_directory {
+    my ($self, $path) = @_;
+    print "!  $self->{copath}/$path\n";
 }
 
 1;

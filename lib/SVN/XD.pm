@@ -6,6 +6,7 @@ require SVN::Repos;
 require SVN::Fs;
 require SVN::Delta;
 require SVN::MergeEditor;
+use SVN::RevertEditor;
 use Data::Hierarchy;
 use File::Spec;
 use File::Path;
@@ -239,13 +240,20 @@ sub do_propset {
 sub do_revert {
     my ($info, %arg) = @_;
 
+    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info, %arg);
+
     my $revert = sub {
-	# revert dir too...
-	open my ($fh), '>', $_[1];
-	my $content = $arg{repos}->fs->revision_root ($info->{checkout}->get ($_[1])->{revision})->file_contents ($_[0]);
-	local $/;
-	my $buf = <$content>;
-	print $fh $buf;
+	unless (-e $_[1] || $xdroot->check_path ($_[0]) == $SVN::Node::file) {
+	    mkdir $_[1];
+	}
+	else {
+	    # XXX: use keyword layer here
+	    open my ($fh), '>', $_[1];
+	    my $content = $xdroot->file_contents ($_[0]);
+	    local $/;
+	    my $buf = <$content>;
+	    print $fh $buf;
+	}
 	$info->{checkout}->store ($_[1],
 				  {schedule => undef});
 	print "Reverted $_[1]\n";
@@ -259,13 +267,19 @@ sub do_revert {
     };
 
     if ($arg{recursive}) {
-	checkout_crawler ($info,
-			  ( %arg,
-			    cb_add => $unschedule,
-			    cb_prop => $unschedule,
-			    cb_changed => $revert,
-			    cb_delete => $revert,
-			  ));
+	SVN::XD::checkout_delta ($info,
+				 %arg,
+				 baseroot => $xdroot,
+				 xdroot => $xdroot,
+				 delete_verbose => 1,
+				 absent_verbose => 1,
+				 editor => SVN::RevertEditor->new
+				 (copath => $arg{copath},
+				  dpath => $arg{path},
+				  cb_revert => $revert,
+				  cb_unschedule => $unschedule,
+				 ),
+			    );
     }
     else {
 	if (exists $info->{checkout}->get ($arg{copath})->{schedule}) {
@@ -275,6 +289,9 @@ sub do_revert {
 	    &$revert ($arg{path}, $arg{copath});
 	}
     }
+
+    $txn->abort if $txn;
+
 }
 
 use Regexp::Shellish qw( :all ) ;
@@ -330,7 +347,7 @@ sub _delta_dir {
     unless (-d $arg{copath}) {
 	if ($schedule ne 'delete') {
 	    $arg{editor}->absent_directory ($arg{entry}, $arg{baton});
-	    return;
+	    return unless $arg{absent_verbose};
 	}
     }
 
@@ -338,16 +355,23 @@ sub _delta_dir {
     if ($schedule eq 'delete') {
 	$arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
 	if ($arg{delete_verbose}) {
-	    # pull the deleted lists
+	    for ($info->{checkout}->find
+		 ($arg{copath}, {schedule => 'delete'})) {
+		s|^$arg{copath}/?||;
+		$arg{editor}->delete_entry ("$arg{entry}/$_", 0, $arg{baton})
+		    if $_;
+	    }
 	}
 	return;
     }
     elsif ($arg{add}) {
-	$arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1);
+	$baton =
+	    $arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1);
     }
     else {
 	$entries = $arg{xdroot}->dir_entries ($arg{path});
-	$arg{editor}->open_directory ($arg{entry}, $arg{baton});
+	$baton = $arg{editor}->open_directory ($arg{entry}, $arg{baton})
+	    unless $arg{root};
     }
 
     for (keys %{$entries}) {
@@ -356,12 +380,14 @@ sub _delta_dir {
 	&{$delta} ($info, %arg,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   baton => $baton,
+		   root => 0,
 		   path => "$arg{path}/$_",
 		   copath => "$arg{copath}/$_");
     }
     # check scheduled addition
-    opendir my ($dir), $arg{copath}
-	or die "can't opendir $arg{copath}: $!";
+    opendir my ($dir), $arg{copath};
+
+    if ($dir) {
 
     my $ignore = ignore
 	(split ("\n", get_props ($info, $arg{xdroot}, $arg{path},
@@ -379,14 +405,18 @@ sub _delta_dir {
 		   add => 1,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   baton => $baton,
+		   root => 0,
 		   path => "$arg{path}/$_",
 		   copath => "$arg{copath}/$_");
     }
 
     closedir $dir;
+
+    }
+
     # chekc prop diff
     $arg{editor}->close_directory ($baton)
-	unless $schedule eq 'delete';
+	unless $arg{root} || $schedule eq 'delete';
 }
 
 sub checkout_delta {
@@ -400,11 +430,13 @@ sub checkout_delta {
 	_delta_file ($info, %arg, baton => $baton);
     }
     elsif ($kind == $SVN::Node::dir) {
-	_delta_dir ($info, %arg, baton => $baton);
+	_delta_dir ($info, %arg, baton => $baton, root => 1);
     }
     else {
 	die "unknown node type $arg{path}";
     }
+
+    $arg{editor}->close_directory ($baton);
 
     $arg{editor}->close_edit ();
 }

@@ -435,8 +435,9 @@ sub status {
 			     path => $path,
 			     baseroot => $xdroot,
 			     xdroot => $xdroot,
+			     delete_verbose => 1,
 			     editor => SVN::StatusEditor->new
-			     (copath => $copath),
+			     (copath => $copath, dpath => $path),
 			     cb_unknown => sub {print "?  $_[1]\n"}
 			    );
 
