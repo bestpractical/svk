@@ -54,11 +54,8 @@ sub parse_arg {
     }
 
     if ($self->{from}) {
-        # When using "from", $target1 must be a depotpath.
-        if ($target1->{copath}) {
-            $target1 = $self->arg_depotpath ($target1->{depotpath});
-        }
-        return ($target1, $target2);
+        # When using "from", $target1 must always be a depotpath.
+        return ($target1->as_depotpath, $target2);
     }
     else {
         return ($target2, $target1);

@@ -40,7 +40,7 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target) = @_;
-    $target->depotpath;
+    $target->as_depotpath;
     my $fs = $target->{repos}->fs;
     my ($fromrev, $torev);
     ($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/

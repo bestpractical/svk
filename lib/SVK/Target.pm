@@ -108,10 +108,11 @@ sub normalize {
 	unless $self->{revision} == $root->node_created_rev ($self->path);
 }
 
-sub depotpath {
+sub as_depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
     $self->{revision} = $revision if defined $revision;
+    return $self;
 }
 
 =head2 path
@@ -203,7 +204,7 @@ sub copied_from {
     );
 
     # make a depot path
-    $target->depotpath;
+    $target->as_depotpath;
 
     return $target;
 }

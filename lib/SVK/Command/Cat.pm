@@ -21,7 +21,7 @@ sub run {
     my $pool = SVN::Pool->new_default;
     for my $target (@arg) {
 	$pool->clear;
-	$target->depotpath ($self->{rev});
+	$target->as_depotpath ($self->{rev});
 	my $root = $target->root ($self->{xd});
 	my $stream = $root->file_contents ($target->{path});
 	# XXX: the keyword layer interface should also have reverse

@@ -37,7 +37,7 @@ sub do_copy_direct {
 
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
-    $src->depotpath;
+    $src->as_depotpath;
     my $xdroot = $dst->root ($self->{xd});
     if (-d $dst->{copath}) {
 	$dst->descend ($src->{path} =~ m|/([^/]+)/?$|);

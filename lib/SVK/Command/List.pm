@@ -33,7 +33,7 @@ sub run {
 sub _do_list {
     my ($self, $level, $target) = @_;
     my $pool = SVN::Pool->new_default;
-    $target->depotpath ($self->{rev});
+    $target->as_depotpath ($self->{rev});
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
        print loc("Path %1 is not a versioned directory\n", $target->{path})

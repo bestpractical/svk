@@ -44,10 +44,10 @@ sub run {
 	}
     }
     else {
-	$target->depotpath if $r1 && $r2;
+	$target->as_depotpath if $r1 && $r2;
 	if ($target->{copath}) {
 	    $target2 = $target->new;
-	    $target->depotpath;
+	    $target->as_depotpath;
 	    $report = $target->{report};
 	}
 	else {

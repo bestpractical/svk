@@ -382,7 +382,7 @@ sub arg_depotroot {
     local $@;
     $arg = eval { $self->arg_co_maybe ($arg || '')->new (path => '/') }
            || $self->arg_depotpath ("//");
-    $arg->depotpath;
+    $arg->as_depotpath;
 
     return $arg;
 }
