@@ -594,14 +594,8 @@ sub annotate {
     local @ARGV = @_;
     my $cross = 0;
     die unless GetOptions ("x|cross"  => \$cross);
-    my ($copath) = @ARGV;
-    my ($repospath, $path, $repos) = eval { find_repos ($copath, 1) };
-    if ($repospath) {
-	undef $copath;
-    }
-    else {
-	($repospath, $path, undef, $repos) = find_repos_from_co ($copath, 1);
-    }
+    my ($target) = @ARGV;
+    my ($repospath, $path, $copath, undef, $repos) = find_repos_from_co_maybe ($target, 1);
 
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
@@ -609,7 +603,9 @@ sub annotate {
     my @revs;
     my $hist = $root->node_history ($path);
 
+    my $pool = SVN::Pool->new_default_sub;
     while ($hist = $hist->prev($cross)) {
+	$pool->clear;
 	my ($path, $rev) = $hist->location;
 	unshift @revs, $rev;
     }
@@ -617,7 +613,6 @@ sub annotate {
     print "Annotations for $path (".($#revs+1)." active revisions)\n";
     print '*' x 16;
     print "\n";
-    my $pool = SVN::Pool->new_default;
     for (@revs) {
 	$pool->clear;
 	local $/;
@@ -913,10 +908,8 @@ sub log {
 			   "v|verbose"		=> \$verbose);
 
     my ($tgt) = @ARGV;
-    my ($repospath, $path, $repos);
-    unless (($repospath, $path, $repos) = eval { find_repos ($tgt, 1) }) {
-	($repospath, $path, undef, $repos) = find_repos_from_co ($tgt, 1);
-    }
+    my ($repospath, $path, $copath, undef, $repos) = find_repos_from_co_maybe ($tgt, 1);
+
     my $fs = $repos->fs;
     my ($fromrev, $torev);
     ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
@@ -926,8 +919,10 @@ sub log {
     $torev ||= 0;
 
     if ($limit) {
+	my $pool = SVN::Pool->new_default;
 	my $hist = $fs->revision_root ($fromrev)->node_history ($path);
 	while (($hist = $hist->prev($cross)) && $limit--) {
+	    $pool->clear;
 	    $torev = ($hist->location)[1];
 	}
     }
@@ -1189,27 +1184,6 @@ depotpath. Use -a to automatically calculate the revisions to merge
 
 =cut
 
-sub find_branch_point {
-    my ($repos, $src, $dst, $safe) = @_;
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-
-    my $hist = $root->node_history ($dst);
-    my ($path, $rev, $crev);
-    while ($hist = $hist->prev (1)) {
-	($path, $rev) = $hist->location ();
-	last if $path eq $src;
-	$crev = $rev if $path eq $dst;
-    }
-    return ($rev, $crev)
-	if $path eq $src;
-
-    die "can't find branch point for $src and $dst"
-	if $safe;
-
-    return reverse (find_branch_point ($repos, $dst, $src, 1));
-}
-
 # when is the last merge from src to dst?
 sub find_merge_history {
     my ($repos, $src, $dst) = @_;
@@ -1241,37 +1215,6 @@ sub find_merge_history {
     }
 }
 
-sub find_merge_info {
-    my ($repos, $src, $dst) = @_;
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-
-    # XXX: the old code is kept for regression test. use find_merge_base
-    # directly once we're confident.
-    my ($mpsrc, $mpdst) = (find_merge_history ($repos, $src, $dst),
-			   find_merge_history ($repos, $dst, $src));
-
-    my ($bpsrc, $bpdst) = eval { find_branch_point ($repos, $src, $dst) };
-
-    return (find_merge_base ($repos, $src, $dst), $fs->youngest_rev)
-	if $@;
-
-    unless ($mpsrc || $mpdst) {
-	return ($src, $bpsrc, $fs->youngest_rev);
-    }
-
-    $mpsrc ||= $bpsrc;
-    $mpdst ||= $bpdst;
-
-    my ($path, $rev, $torev) = ($mpsrc > $mpdst ? $src : $dst,
-				$mpsrc > $mpdst ? $mpsrc : $mpdst,
-				$fs->youngest_rev);
-    my ($basepath, $baserev) = find_merge_base ($repos, $src, $dst);
-    die "sm base regression, was $path:$rev, now $basepath:$baserev"
-	unless $path eq $basepath && $rev == $baserev;
-    return ($path, $rev, $torev);
-}
-
 sub find_merge_base {
     my ($repos, $src, $dst) = @_;
     my $srcinfo = find_merge_sources ($repos, $src);
@@ -1292,6 +1235,8 @@ sub find_merge_base {
 
 sub find_merge_sources {
     my ($repos, $path, $verbatim, $noself) = @_;
+    my $pool = SVN::Pool->new_default;
+
     my $fs = $repos->fs;
     my $root = $fs->revision_root ($fs->youngest_rev);
     my $minfo = $root->node_prop ($path, 'svk:merge');
@@ -1315,18 +1260,20 @@ sub find_merge_sources {
 	    unless $noself;
     }
 
-
     # XXX: follow the copy history provided by svm too
+    my $spool = SVN::Pool->new_default ($pool);
     my $hist = $root->node_history ($path);
     while ($hist = $hist->prev (1)) {
+	$spool->clear;
 	my ($hpath, $rev) = $hist->location ();
 	if ($hpath ne $path) {
-	    my $source = join(':', $fs->get_uuid (), $hpath);
+	    my $source = join(':', $myuuid, $hpath);
 	    $minfo->{$source} = $rev
 		unless $minfo->{$source} && $minfo->{$source} > $rev;
 	    last;
 	}
     }
+
     return $minfo;
 }
 
@@ -1430,7 +1377,7 @@ sub merge {
 
     if ($auto) {
 	($base_path, $fromrev, $torev) =
-	    find_merge_info ($repos, $path, $dpath);
+	    (find_merge_base ($repos, $path, $dpath), $repos->fs->youngest_rev);
 	print "auto merge ($fromrev, $torev) $path -> $dpath (base $base_path)\n";
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
 			   $editor->change_dir_prop
@@ -1656,7 +1603,7 @@ sub cmerge {
 
 Initialize a mirrored depotpath.
 
-  usage: sync DEPOTPATH SOURCEURL
+  usage: mirror DEPOTPATH SOURCEURL
 
 =cut
 
