@@ -1,3 +1,60 @@
+[Changes for 0.22 - 4 Oct, 2004]
+
+* Interactive merge support is now default. [Autrijus]
+
+* svk patch apply.
+
+* Modular external merge tool support, with the following supported:
+  AraxisMerge, Emacs, FileMerge, GtkDiff, Guiffy, KDiff3, Meld,
+  P4WinMerge, TkDiff, TortoiseMerge, XXDiff. [Autrijus]
+
+* Patch format changed, it's now unidiff with FreezeThaw-serialized
+  svk::patch. [Autrijus]
+
+* merge and smerge now supports -f and -t options to deduce copy
+  source as target. [Eric Lindvall]
+
+* sync and update now supports -s and -m to sync and/or merge from
+  branch source. [Autrijus]
+
+* revert now also marks nodes as resolved.
+
+* mirror, checkout and switch now all support --list, --detach and
+  --relocate. [Autrijus]
+
+* New aliases: cm => cmerge, depot => depotmap, sw => switch.
+
+* Implement "svk depot --add", "svk depot --delete". [Autrijus]
+
+* Prop{get,set,edit,del} on revprops. [Autrijus]
+
+* Fix smerge -l that trims logs before another smerge in the other
+  direction.
+
+* Use svn's internal streamy diff library instead of
+  Text::Diff. [Autrijus]
+
+* svk import --to-checkout can import a directory and turn it to a
+  checkout path in-place . [Autrijus]
+
+* -s (--sign) is renamed to -S.
+
+* rename import --force to --from-checkout.
+
+* $Revision$ now means $Rev$, not $FileRev$, to agree with Subversion.
+
+* "svk mirror --list" and "svk sync --all" now operates on all depots,
+  if no arguments is given, instead of on //. [Autrijus]
+
+* svk admin to wrap svnadmin. [Autrijus]
+
+* svk cleanup --all. [Autrijus]
+
+* "svk diff PATH1 PATH2 PATH3 ..." works as svn does. [Autrijus]
+
+* We now use the self-contained File::Type instead of
+  File::MimeInfo. [Autrijus]
+
 [Changes for 0.21 - 20 Sep, 2004]
 
 * svk now runs natively on win32. [Autrijus]
