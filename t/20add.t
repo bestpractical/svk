@@ -21,12 +21,10 @@ overwrite_file ("A/deep/baz~", "foobar");
 overwrite_file ("test.txt", "test..\n");
 is_output ($svk, 'add', ['test.txt'],
 	   ['A   test.txt']);
-
 is_output_like ($svk, 'add', ['Z/bzz'],
 		qr'not a checkout path');
 is_output ($svk, 'add', ['asdf'],
-	   ["Can't find asdf."]);
-
+	   ["Unknown target: asdf."]);
 is_output ($svk, 'add', ['A/foo'],
 	   ['A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');

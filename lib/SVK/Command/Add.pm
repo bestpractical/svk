@@ -22,9 +22,6 @@ sub lock {
 
 sub run {
     my ($self, $target) = @_;
-
-    return loc ("Can't find %1.\n", $target->{report})
-	unless -l $target->{copath} || -e _;
     $self->{xd}->do_add ( %$target,
 			  recursive => !$self->{nrec},
 			  quiet => $self->{quiet},

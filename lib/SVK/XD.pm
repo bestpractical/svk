@@ -348,7 +348,7 @@ sub condense {
 	}
 	my $cinfo = $self->{checkout}->get ($anchor);
 	my $schedule = $cinfo->{'.schedule'} || '';
-	if ($anchor ne $copath || -f $anchor || $cinfo->{scheduleanchor} ||
+	if ($anchor ne $copath || !-d $anchor || $cinfo->{scheduleanchor} ||
 	    $schedule eq 'add' || $schedule eq 'delete') {
 	    while ($anchor.'/' ne substr ($copath, 0, length($anchor)+1) ||
 		   $self->{checkout}->get ($anchor)->{scheduleanchor}) {
@@ -968,6 +968,7 @@ sub _delta_dir {
 			path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			copath => $copath)
 	    and ($signature && $signature->invalidate ($entry));
+	delete $targets->{$entry} if defined $targets;
     }
 
     if ($signature) {
@@ -985,20 +986,20 @@ sub _delta_dir {
     my @direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
     closedir $dir;
 
-    for (@direntries) {
-	next if m/$ignore/;
-	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $_),
-			 entry => defined $arg{entry} ? "$arg{entry}/$_" : $_,
-			 path => $arg{path} eq '/' ? "/$_" : "$arg{path}/$_",
-			 targets => $targets ? $targets->{$_} : undef);
+    for my $entry (@direntries) {
+	next if $entry =~ m/$ignore/;
+	next if	defined $targets && !exists $targets->{$entry};
+	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $entry),
+			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
+			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
+			 targets => $targets ? $targets->{$entry} : undef);
 	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
 	my $sche = $ccinfo->{'.schedule'} || '';
 	my $add = ($sche || $arg{auto_add}) ||
 	    ($arg{xdroot} ne $arg{base_root} &&
 	     $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none);
 	unless ($add) {
-	    if ($arg{cb_unknown} &&
-		(!defined $targets || exists $targets->{$_})) {
+	    if ($arg{cb_unknown}) {
 		if ($arg{unknown_verbose}) {
 		    $self->_unknown_verbose (%arg, %newpaths);
 		}
@@ -1006,7 +1007,7 @@ sub _delta_dir {
 		    $arg{cb_unknown}->($newpaths{path}, $newpaths{copath})
 			if $arg{cb_unknown};
 		}
-
+		delete $targets->{$entry} if defined $targets;
 	    }
 	    next;
 	}
@@ -1025,9 +1026,13 @@ sub _delta_dir {
 			root => 0,
 			path => $ccinfo->{'.copyfrom'} || $newpaths{path},
 			# XXX: what shold base_path be when there's copyfrom?
-			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$_",
-			cinfo => $ccinfo )
-	    if !defined $targets || exists $targets->{$_};
+			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$entry",
+			cinfo => $ccinfo );
+	delete $targets->{$entry} if defined $targets;
+    }
+
+    if (defined $targets) {
+	print loc ("Unknown target: %1.\n", $_) for keys %$targets;
     }
 
     # chekc prop diff

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 14;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -7,6 +7,7 @@ my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('commit');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
+is_output_like ($svk, 'commit', [], qr'not a checkout path');
 chdir ($copath);
 mkdir ('A');
 mkdir ('A/deep');
@@ -74,3 +75,7 @@ is_output ($svk, 'commit', ['--import', '-m', 'commit --import'],
 	   ['Committed revision 8.']);
 
 is_output ($svk, 'status', [], []);
+unlink ('A/forimport/foo');
+
+is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/forimport/foo'],
+	   ['Committed revision 9.']);
