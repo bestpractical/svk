@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 16;
+use Test::More tests => 17;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test();
@@ -55,13 +55,16 @@ mkdir ("$copath/le");
 overwrite_file ("$copath/le/dos", "dos\n");
 overwrite_file ("$copath/le/lf", "unix\n");
 overwrite_file ("$copath/le/native", "native\n");
+overwrite_file ("$copath/le/na", "na\n");
 $svk->add ("$copath/le");
 $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
 $svk->ps ('svn:eol-style', 'native', "$copath/le/native");
 $svk->ps ('svn:eol-style', 'LF', "$copath/le/unix");
+$svk->ps ('svn:eol-style', 'NA', "$copath/le/na");
 $svk->commit ('-m', 'test line ending', $copath);
 is_file_content ("$copath/le/dos", "dos\r\n");
 is_file_content ("$copath/le/lf", "unix\n");
+is_file_content ("$copath/le/na", "na\n");
 if ($^O eq 'MSWin32') {
     is_file_content ("$copath/le/native", "native\r\n");
 }

@@ -77,7 +77,7 @@ $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 # has some output
 ok ($output =~ /under mirrored path/);
 is_output_like ($svk, 'mirror', ['--list'],
-		qr"/m.*file://$srepospath/A\n/m-99.*file://$srepospath/A-99");
+		qr"/m.*file://$srepospath/A\n//m-99.*file://$srepospath/A-99");
 
 is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');

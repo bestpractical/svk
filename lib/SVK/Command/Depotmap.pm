@@ -28,7 +28,7 @@ sub _do_list {
     printf $fmt, 'Depot', 'Path';
     print '=' x 60;
     printf $fmt, "/$_/", $map->{$_} for keys %$map;
-    print '=' x 60;
+    return;
 }
 
 sub _do_edit {
