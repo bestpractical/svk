@@ -10,7 +10,7 @@ SVK::Notify - svk entry status notification
 
     $notify = SVK::Notify->new;
     $notify->node_status ('foo/bar', 'M');
-    $notify->prop_status_('foo/bar', 'M');
+    $notify->prop_status ('foo/bar', 'M');
     $notify->flush ('foo/bar');
     $notify->flush_dir ('foo');
 

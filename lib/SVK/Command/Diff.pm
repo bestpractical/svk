@@ -114,11 +114,13 @@ sub run {
 	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
 	}
 	$editor->{report} = $report;
-	SVN::Repos::dir_delta ($oldroot->isa ('SVK::XD::Root') ? $oldroot->[1] : $oldroot,
-			       $target->{path}, $tgt,
-			       $newroot, $target2->{path},
-			       $editor, undef,
-			       1, 1, 0, 1);
+	$self->{xd}->depot_delta
+	    ( oldroot => $oldroot,
+	      oldpath => [$target->{path}, $tgt],
+	      newroot => $newroot,
+	      newpath => $target2->{path},
+	      editor => $editor,
+	    );
     }
 
     return;

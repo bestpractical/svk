@@ -218,3 +218,161 @@ sub arg_path {
 }
 
 1;
+
+__DATA__
+
+=head1 NAME
+
+SVK::Command - Base class for SVK commands
+
+=head1 SYNOPSIS
+
+  use SVK::Command;
+  # invoking commands
+  SVK::Command->invoke ($xd, $cmd, $output, @arg);
+
+=head1 DESCRIPTION
+
+=head2 Invoking commands
+
+Use C<SVK::Command-E<gt>invoke>. The arguments in order are the
+L<SVK::XD> object, the command name, the output scalar ref, and the
+arguments for the command. The command name is translated with the
+C<%alias> map.
+
+=head2 Implementing svk commands
+
+C<SVK::Command-E<gt>invoke> loads the corresponding class
+C<SVK::Command::I<$name>>, so that's the class you want to implement
+the following methods in:
+
+=head3 options
+
+Returns a hash where the keys are L<Getopt::Long> specs and the values
+are a string that will be the keys storing the parsed option in
+C<$self>.
+
+=head3 parse_arg
+
+Given the array of command arguments, use C<arg_*> methods to return a
+more meaningful array of arguments.
+
+=head3 lock
+
+Use the C<lock_*> methods to lock the L<SVK::XD> object. The arguments
+will be what is returned from C<parse_arg>.
+
+=head3 run
+
+Actually process the command. The arguments will be what is returned
+from C<parse_arg>.
+
+Returned undef on success. Return a string message to notify the
+caller errors.
+
+=head1 METHODS
+
+=head2 Methods for C<parse_arg>
+
+=over
+
+=item arg_depotname
+
+Argument is a name of depot. such as '' or 'test' that is being used
+normally between two slashes.
+
+=item arg_path
+
+Argument is a plain path in the filesystem.
+
+=item arg_copath
+
+Argument is a checkout path.
+
+=item arg_depotpath
+
+Argument is a depotpath, including the slashes and depot name.
+
+=item arg_co_maybe
+
+Argument might be a checkout path or a depotpath.
+
+=item arg_condensed
+
+Argument is a number of checkout paths.
+
+=back
+
+All the methods except C<arg_depotname> returns a hash with the
+following keys:
+
+=over
+
+=item cinfo
+
+=item copath
+
+=item depotpath
+
+=item path
+
+=item repos
+
+=item repospath
+
+=item report
+
+=item targets
+
+=back
+
+The hashes are handy to pass to many other functions.
+
+=head2 Methods for C<lock>
+
+=over
+
+=item lock_none
+
+=item lock_target
+
+=back
+
+=head2 Others
+
+=over
+
+=item brief_usage
+
+Display an one-line brief usage of the command. Optionally a file
+could be given to extract the usage from the pod.
+
+=item usage
+
+Display usage. An optional argument is to display detail or not.
+
+=back
+
+=head1 TODO
+
+The returned hash of C<arg_*> should really be an object of
+C<SVK::Target> or something like that.
+
+=head1 SEE ALSO
+
+L<SVK>, L<SVK::XD>, C<SVK::Command::*>
+
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2004 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut

@@ -8,11 +8,11 @@ use SVK::Util qw( slurp_fh md5 get_anchor tmpfile );
 
 =head1 NAME
 
-SVK::Editor::Merge - An editor wrapper that merges for the storage editor
+SVK::Editor::Merge - An editor that does merges for the storage editor
 
 =head1 SYNOPSIS
 
-$editor = SVK::Editor::Merge->new
+  $editor = SVK::Editor::Merge->new
     ( anchor => $anchor,
       base_anchor => $base_anchor,
       base_root => $fs->revision_root ($arg{fromrev}),
@@ -85,6 +85,13 @@ Called when a conflict is detected.
 Called when the merger needs to retrieve the local modification of a
 file. Return an arrayref of filename, filehandle, and md5. Return
 undef if there is no local modification.
+
+=item cb_dirdelta
+
+When C<delete_entry> needs to check if everything to be deleted does
+not cause conflict on the directory, it calls the callback with path,
+base_root, and base_path. The returned value should be a hash with
+changed paths being the keys and change types being the values.
 
 =item cb_merged
 

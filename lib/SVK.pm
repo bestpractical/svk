@@ -33,6 +33,8 @@ sub AUTOLOAD {
 
 1;
 
+__DATA__
+
 =head1 NAME
 
 SVK - A Distributed Version Control System
