@@ -823,9 +823,9 @@ sub _delta_file {
 	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton});
     }
 
-    lstat ($arg{copath});
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
+    lstat ($arg{copath});
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l _);
     my $mymd5 = md5($fh);
     my $md5;
@@ -1090,7 +1090,6 @@ sub get_eol_layer {
 
 sub get_keyword_layer {
     my ($root, $path, $prop) = @_;
-    my $pool = SVN::Pool->new_default;
     my $k = $prop->{'svn:keywords'};
     return unless $k;
 

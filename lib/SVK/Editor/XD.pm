@@ -121,7 +121,7 @@ sub apply_textdelta {
     }
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath, 0, undef, undef,
-			      $self->{added}{$path} ? $self->{props}{$path} : undef)
+			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
 	or warn "can't open $path";
 
     # The fh is refed by the current default pool, not the pool here
@@ -150,6 +150,7 @@ sub close_file {
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
+    delete $self->{props}{$path};
 }
 
 sub add_directory {

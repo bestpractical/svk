@@ -183,7 +183,7 @@ sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
     ++$self->{changes};
-    if ($self->{cb_exist}->($path)) {
+    if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
 	$self->{info}{$path}{fpool} = pop @arg;
@@ -230,9 +230,11 @@ sub ensure_close {
     $self->{notify}->flush ($path, 1);
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
-    $self->{storage}->close_file ($self->{storage_baton}{$path},
-				  $checksum, $pool)
-        if $self->{storage_baton}{$path};
+
+    if (my $baton = $self->{storage_baton}{$path}) {
+	$self->{storage}->close_file ($baton, $checksum, $pool);
+	delete $self->{storage_baton}{$path};
+    }
 
     delete $self->{info}{$path};
 }
@@ -398,10 +400,11 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
-    if ($self->{cb_exist}->($path)) {
+    if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
 	$self->{notify}->flush ($path) ;
 	return undef;
     }
+    $self->{added}{$path} = 1;
     $self->{storage_baton}{$path} =
 	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
 					 @arg);
@@ -431,12 +434,16 @@ sub close_directory {
     return unless defined $path;
     no warnings 'uninitialized';
 
+    delete $self->{added}{$path};
     $self->{notify}->flush_dir ($path);
 
-    $self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, $pool)
+    my $baton = $self->{storage_baton}{$path};
+    $self->{cb_merged}->($self->{storage}, $baton, $pool)
 	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
 
-    $self->{storage}->close_directory ($self->{storage_baton}{$path}, $pool);
+    $self->{storage}->close_directory ($baton, $pool);
+    delete $self->{storage_baton}{$path}
+	unless $path eq '';
 }
 
 # returns undef for deleting this, a hash for partial delete.
