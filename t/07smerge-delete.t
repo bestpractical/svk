@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 7;
+use Test::More tests => 10;
 use strict;
 use File::Path;
 use Cwd;
@@ -45,7 +45,9 @@ is_output ($svk, 'up', [],
 	   ], 'delete entry but modified on checkout');
 chdir ($oldwd);
 ok (-e "$copath/A/foo", 'local file not deleted');
+ok (!-e "$copath/A/bar", 'delete merged');
 ok (!-e "$copath/B/foo", 'unmodified dir deleted');
+$svk->resolved ('-R', "$copath/A");
 rmtree (["$copath/A"]);
 $svk->switch ('//local', $copath);
 append_file ("$copath/A/foo", "modified\n");
@@ -64,12 +66,14 @@ is_output ($svk, 'smerge', ['//trunk', $copath],
 ok (-e "$copath/A/foo", 'local file not deleted');
 ok (!-e "$copath/B/foo", 'unmodified dir deleted');
 $svk->revert ('-R', $copath);
+$svk->resolved ('-R', $copath);
 
 append_file ("$copath/A/foo", "modified\n");
 overwrite_file ("$copath/A/unused", "foobar\n");
 $svk->add ("$copath/A/unused");
 $svk->rm ("$copath/A/bar");
 $svk->commit ('-m', 'local modification', $copath);
+
 is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
 	    'C   A',
@@ -81,4 +85,24 @@ is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	    "New merge ticket: $uuid:/trunk:5",
 	    'Empty merge.',
 	    '2 conflicts found.']);
+
+is_output ($svk, 'smerge', ['//trunk', $copath],
+	   ['Auto-merging (2, 5) /trunk to /local (base /trunk:2).',
+	    'C   A',
+	    'd   A/bar',
+	    'D   A/deep',
+	    'C   A/foo',
+	    'D   A/normal',
+	    'D   B',
+	    "New merge ticket: $uuid:/trunk:5",
+	    '2 conflicts found.']);
+
+is_output ($svk, 'status', [$copath],
+	   ["D   $copath/A/deep",
+	    "D   $copath/A/deep/foo",
+	    "C   $copath/A/foo",
+	    "D   $copath/A/normal",
+	    "C   $copath/A",
+	    "D   $copath/B",
+	    " M  $copath/"], 'merge partial deletes to checkout');
 

@@ -451,6 +451,7 @@ sub xd_storage_cb {
 				     nodelay => 1,
 				     depth => 1,
 				     editor => $editor,
+				     absent_as_delete => 1,
 				     cb_unknown =>
 				     sub { # XXX: unkonwn as added?
 				     },
@@ -871,6 +872,9 @@ sub _delta_dir {
 	    $targets->{$a} = undef;
 	}
     }
+    $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
+	if $arg{cb_conflict} && $cinfo->{'.conflict'};
+
     return if $self->_node_deleted_or_absent (%arg, pool => $pool, rev => $rev,
 					      type => 'directory');
     $rev = 0 if $arg{add};

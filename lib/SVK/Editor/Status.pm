@@ -84,7 +84,8 @@ sub add_directory {
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, $pool) = @_;
-    $self->{notify}->node_status ($path, '');
+    $self->{notify}->node_status ($path, '')
+	unless $self->{notify}->node_status ($path);
     return $path;
 }
 

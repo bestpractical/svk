@@ -35,7 +35,7 @@ sub flush_print_report {
     my $report = shift;
     return \&flush_print unless defined $report;
     sub {
-	my $path = $_[0] ? "$report$_[0]" : '.';
+	my $path = $_[0] ? "$report$_[0]" : $report || '.';
 	flush_print ($path, $_[1]);
     };
 }

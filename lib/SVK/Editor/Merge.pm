@@ -217,6 +217,13 @@ sub ensure_close {
     delete $self->{info}{$path};
 }
 
+sub node_conflict {
+    my ($self, $path) = @_;
+    $self->{cb_conflict}->($path) if $self->{cb_conflict};
+    ++$self->{conflicts};
+    $self->{notify}->node_status ($path, 'C');
+}
+
 sub cleanup_fh {
     my ($self, $fh) = @_;
     for (qw/base new local/) {
@@ -349,10 +356,7 @@ sub close_file {
 	undef $fh->{base}[1] if $info->{addmerge};
 	$self->cleanup_fh ($fh);
 
-	if ($conflict) {
-	    $self->{cb_conflict}->($path) if $self->{cb_conflict};
-	    ++$self->{conflicts};
-	}
+	$self->node_conflict ($path) if $conflict;
     }
     elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
 	# open but prop edit only, load local checksum
@@ -413,8 +417,6 @@ sub _check_delete_conflict {
     if ($kind == $SVN::Node::file) {
 	my $md5 = $self->{base_root}->file_md5_checksum ($rpath, $pool);
 	if (my $local = $self->{cb_localmod}->($path, $md5, $pool)) {
-	    $self->{notify}->node_status ($path, 'C');
-	    ++$self->{conflicts};
 	    return {};
 	}
     }
@@ -430,15 +432,17 @@ sub _check_delete_conflict {
 		}
 		else {
 		    ++$modified;
-		    ++$self->{conflicts};
-		    $self->{notify}->node_status ("$path/$_", 'C');
+		    $self->node_conflict ("$path/$_");
 		}
 	    }
 	    else {
 		my $entry = $entries->{$_};
 		if ($entry->kind == $SVN::Node::dir) {
 		    $torm->{$_} = $self->_check_delete_conflict ("$path/$_", "$rpath/$_", $entry->kind, $pdir, $pool);
-		    $modified++ if $torm->{$_};
+		    if ($torm->{$_}) {
+			$self->node_conflict ("$path/$_");
+			$modified++;
+		    }
 		}
 		else {
 		    $torm->{$_} = 1;
@@ -446,13 +450,31 @@ sub _check_delete_conflict {
 	    }
 	}
 	if ($modified) {
+	    # open path
 	    $self->{notify}->node_status ("$path/$_", 'D')
 		for keys %$torm;
+	    # close path
 	    return $torm;
 	}
 	return $torm if $modified;
     }
     return;
+}
+
+sub _partial_delete {
+    my ($self, $torm, $path, $pbaton, $pool) = @_;
+    my $baton = $self->{storage}->open_directory ($path, $pbaton,
+						  $self->{cb_rev}->($path), $pool);
+    for (sort keys %$torm) {
+	if (ref $torm->{$_}) {
+	    $self->_partial_delete ($self, $torm->{$_}, "$path/$_", $baton, $pool);
+	}
+	else {
+	    $self->{storage}->delete_entry ("$path/$_", $self->{cb_rev}->("$path/$_"),
+					    $baton, $pool);
+	}
+    }
+    $self->{storage}->close_directory ($baton, $pool);
 }
 
 sub delete_entry {
@@ -466,8 +488,8 @@ sub delete_entry {
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
 
     if ($torm) {
-	$self->{notify}->node_status ($path, 'C');
-	++$self->{conflicts};
+	$self->node_conflict ($path);
+	$self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, @arg);
     }
     else {
 	$self->{storage}->delete_entry ($path, $self->{cb_rev}->($path),
