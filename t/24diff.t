@@ -92,8 +92,8 @@ my $r12output = ['=== A/foo',
 		 '+++ A/nor  (revision 2)',
 		 '@@ -1 +0,0 @@',
 		 '-foobar'];
-is_output ($svk, 'diff', ['-r1:2'], $r12output, 'diff - rN:M copath');
-is_output ($svk, 'diff', ['-r1:2', '//'], $r12output, 'diff - rN:M depotdir');
+is_sorted_output ($svk, 'diff', ['-r1:2'], $r12output, 'diff - rN:M copath');
+is_sorted_output ($svk, 'diff', ['-r1:2', '//'], $r12output, 'diff - rN:M depotdir');
 is_output ($svk, 'diff', ['-r1:2', '//A/foo'],
 	   ['=== foo',
 	    '==================================================================',
@@ -179,7 +179,7 @@ is_output ($svk, 'diff', ['-r1'],
             '___________________________________________________________________',
             'Name: svn:mime-type',
             ' +image/png',], 'diff - rN copath (changed)');
-is_output ($svk, 'diff', ['-sr1:2'],
+is_sorted_output ($svk, 'diff', ['-sr1:2'],
 	   ['M   A/foo',
 	    'M   A/bar',
 	    'A   A/binary',
@@ -271,7 +271,7 @@ unlink ('A/coonly');
 $svk->update ;
 $svk->rm ('A');
 
-is_output ($svk, 'diff', [],
+is_sorted_output ($svk, 'diff', [],
 	   ['=== A/foo',
 	    '==================================================================',
 	    '--- A/foo  (revision 3)',

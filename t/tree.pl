@@ -139,6 +139,15 @@ sub is_output {
     goto &$cmp;
 }
 
+sub is_sorted_output {
+    my ($svk, $cmd, $arg, $expected, $test) = @_;
+    $svk->$cmd (@$arg);
+    my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
+	? \&is_deeply_like : \&is_deeply;
+    @_ = ([sort split (/\r?\n/, $output)], [sort @$expected], $test || join(' ', $cmd, @$arg));
+    goto &$cmp;
+}
+
 sub is_deeply_like {
     my ($got, $expected, $test) = @_;
     for (0..$#{$expected}) {
