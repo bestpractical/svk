@@ -782,6 +782,21 @@ sub find_checkout_anchor {
     }
 }
 
+sub prompt_depotpath {
+    my ($self, $action) = @_;
+
+    my $path = get_prompt(loc(
+        "Enter a depot path to %1 into (under // if no leading '/'): ",
+        loc($action),
+    ));
+
+    $path =~ s{^//+}{};
+    $path =~ s{//+}{/};
+    $path = "//$path" unless $path =~ m!^/!;
+    $path =~ s{/$}{};
+
+    return $path;
+}
 
 1;
 
