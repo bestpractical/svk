@@ -1141,10 +1141,10 @@ sub checkout_delta {
     die "checkout_delta called with non-dir node"
 	unless $kind == $SVN::Node::dir;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
-    $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
-	unless $arg{nodelay};
     $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
 	if $arg{debug};
+    $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
+	unless $arg{nodelay};
     $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Target->copath ($copath, $_[0])) };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }

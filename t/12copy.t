@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 47;
+plan tests => 49;
 
 our ($output, $answer);
 BEGIN { require 't/tree.pl' };
@@ -68,7 +68,6 @@ $svk->update ($copath);
 
 is_output ($svk, 'copy', ["//V/D/de", "$copath/de-revive"],
 	   ['Path /V/D/de does not exist.']);
-
 is_output ($svk, 'copy', ['-r7', "//V/D/de", "$copath/de-revive"],
 	   [__('A   t/checkout/copy/de-revive')]);
 is_output ($svk, 'status', [$copath],
@@ -176,6 +175,20 @@ $answer = 'somepath';
 is_output ($svk, 'cp', ['-m', '', '//V/me'],
 	   ['Committed revision 19.']);
 is_copied_from ("//somepath", '/V/me', 3);
+
+$svk->copy ("$copath/A", "$copath/B/A-cp-in-B");
+is_output ($svk, 'status', [$copath],
+	   [__("A + $copath/B/A-cp-in-B")]
+	  );
+$svk->update ($copath);
+
+is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath],
+	   ['Commit into mirrored path: merging back directly.',
+	    "Merging back to mirror source $uri.",
+	    'Merge back committed as revision 6.',
+	    "Syncing $uri",
+	    'Retrieving log information from 6 to 6',
+	    'Committed revision 20 from revision 6.']);
 
 sub is_copied_from {
     my ($path, @expected) = @_;
