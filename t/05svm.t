@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 27;
+plan_svm tests => 28;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -218,3 +218,5 @@ is_output ($svk, 'mirror', ['--recover', '//m'],
             'commit to deep mirrored path',
             'No need to revert; it is already the head revision.',
            ]);
+$svk->mv (-m => 'move on mirror', '//m/Q' => '//m/Q-moved');
+is_ancestor ($svk, '//m/Q-moved', '/m/Q', 24);

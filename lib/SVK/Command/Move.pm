@@ -10,7 +10,8 @@ sub handle_direct_item {
     $self->SUPER::handle_direct_item (@_);
     my ($editor, $anchor, $m, $src, $dst) = @_;
     $editor->delete_entry (abs2rel ($src->path, $anchor => undef, '/'),
-			   $m ? $m->find_remote_rev ($src->{revision}) : $src->{revision}, 0);
+			   $m ? scalar $m->find_remote_rev ($src->{revision})
+			      : $src->{revision}, 0);
     $self->adjust_anchor ($editor);
 }
 
