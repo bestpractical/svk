@@ -8,6 +8,7 @@ use SVN::XD;
 use YAML qw(LoadFile DumpFile);
 use Getopt::Long;
 use File::Spec;
+use File::Path ();
 use Data::Hierarchy;
 use SVN::DiffEditor;
 
@@ -96,6 +97,7 @@ sub depotmap {
 	    last if $ans;
 	}
 	next if $ans eq 'n';
+	File::Path::mkpath([$path], 0, 0711);
 	SVN::Repos::create($path, undef, undef, undef,
 			   {'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
@@ -103,20 +105,31 @@ sub depotmap {
 }
 
 sub _init {
-    if (-e "$ENV{HOME}/.svk/config") {
-	$info = LoadFile ("$ENV{HOME}/.svk/config");
+    my $svkpath = "$ENV{HOME}/.svk";
+
+    die "Another svk might be running. remove $svkpath/lock if not"
+	if -e "$svkpath/lock";
+
+    if (-e "$svkpath/config") {
+	$info = LoadFile ("$svkpath/config");
     }
     else {
-	mkdir "$ENV{HOME}/.svk";
+	mkdir ($svkpath);
     }
 
-    $info ||= { depotmap => {'' => "$ENV{HOME}/.svk/local" },
+    open my ($lock), ">$svkpath/lock";
+    print $lock $$;
+    close $lock;
+
+    $info ||= { depotmap => {'' => "$svkpath/local" },
 	        checkout => Data::Hierarchy->new(),
 	      };
 }
 
 sub _update_info {
-    DumpFile ("$ENV{HOME}/.svk/config", $info)
+    my $svkpath = "$ENV{HOME}/.svk";
+    DumpFile ("$svkpath/config", $info);
+    unlink ("$svkpath/lock");
 }
 
 sub find_repos {
@@ -274,25 +287,39 @@ sub diff {
     die unless GetOptions ("v|verbose"	=> \$verbose,
 			   "r|revision=s" => \$revspec);
 
-    my ($tgt) = @ARGV;
+    my ($tgt, $tgt2) = @ARGV;
 
     my ($repospath, $path, $cinfo, $repos);
 
-    if ($revspec && (my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/)) {
+    if (($revspec && (my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/))
+	|| $tgt2) {
+	my ($repospath2, $path2);
 	($repospath, $path, $repos) = eval { find_repos ($tgt, 1) };
-	($repospath, $path, undef, $repos) =
-	    find_repos_from_co (File::Spec->rel2abs ($tgt || ''), 1)
-		if $@;
-	undef $@;
-
+	if ($@) {
+	    ($repospath, $path, undef, $repos) =
+		find_repos_from_co (File::Spec->rel2abs ($tgt || ''), 1);
+	    undef $@;
+	    die "Invalid arguments" if $tgt2;
+	}
+	elsif ($tgt2) {
+	    ($repospath2, $path2) = find_repos ($tgt2, 0);
+	    die "different repository"
+		if $repospath ne $repospath2;
+	}
 	my $fs = $repos->fs;
+
+	$path2 ||= $path;
+	$fromrev ||= $revspec || $fs->youngest_rev;
+	$torev ||= $revspec || $fs->youngest_rev;
 	my $baseroot = $fs->revision_root ($fromrev);
 	my $newroot = $fs->revision_root ($torev);
 
 	if ($baseroot->check_path ($path) == $SVN::Node::file) {
-	    SVN::DiffEditor::output_diff ($path, "revision $fromrev", "revision $torev",
+	    SVN::DiffEditor::output_diff ($path, "revision $fromrev",
+					  "revision $torev",
+					  $path, $path2,
 					  $baseroot->file_contents ($path),
-					  $newroot->file_contents ($path));
+					  $newroot->file_contents ($path2));
 	    return;
 	}
 
@@ -303,10 +330,12 @@ sub diff {
 				  },
 	      llabel => "revision $fromrev",
 	      rlabel => "revision $torev",
+	      lpath  => $path,
+	      rpath  => $path2,
 	    );
 
 	SVN::Repos::dir_delta ($baseroot, $path, undef,
-			       $newroot, $path,
+			       $newroot, $path2,
 			       $editor, undef,
 			       1, 1, 0, 1);
 
@@ -327,9 +356,11 @@ sub diff {
 
 	if ($baseroot->check_path ($path) == $SVN::Node::file) {
 	    SVN::DiffEditor::output_diff ($path,
-					  $revspec ||
-					  'revision '.$info->{checkout}->get ($copath)->{revision},
+					  'revision '.
+					  ($revspec || $info->{checkout}->get
+					   ($copath)->{revision}),
 					  "local",
+					  $path, $path,
 					  $baseroot->file_contents ($path),
 					  SVN::XD::get_fh ($xdroot, '<', $path, $copath));
 	    return;
@@ -809,7 +840,10 @@ sub commit {
 
 =head2 copy (cp)
 
-    svk copy
+  usage: copy DEPOTPATH1 DEPOTPATH2
+
+  options:
+    -m message:        commit message
 
 =cut
 
@@ -1026,7 +1060,7 @@ sub merge {
 		       } unless $no_ticket || $check_only;
     }
 
-    unless (defined $message || $check_only) {
+    unless (!$dest_repos || defined $message || $check_only) {
 	$message = get_buffer_from_editor
 	    ('log message', $target_prompt,
 	     ($log ?

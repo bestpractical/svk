@@ -46,23 +46,26 @@ sub close_file {
     my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
     my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
 
-    output_diff ($path, $llabel, $rlabel, $base, \$self->{info}{$path}{new});
+    output_diff ($path, $llabel, $rlabel,
+		 $self->{lpath} || '', $self->{rpath} || '',
+		 $base, \$self->{info}{$path}{new});
 
     delete $self->{info}{$path};
 }
 
 sub output_diff {
-    my ($path, $llabel, $rlabel, $ltext, $rtext) = @_;
+    my ($path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
 
     # XXX: this slurp is dangerous. waiting for streamy svndiff routine
     local $/;
     $ltext = \<$ltext> if ref ($ltext) && ref ($ltext) ne 'SCALAR';
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
+    my $showpath = ($lpath ne $rpath);
     print "Index: $path\n";
     print '=' x 66,"\n";
-    print "--- $path  ($llabel)\n";
-    print "+++ $path  ($rlabel)\n";
+    print "--- $path ".($showpath ? "  ($lpath)  " : '')." ($llabel)\n";
+    print "+++ $path ".($showpath ? "  ($rpath)  " : '')." ($rlabel)\n";
     print Text::Diff::diff ($ltext, $rtext);
 }
 
