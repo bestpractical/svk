@@ -4,6 +4,24 @@ use SVN::Delta;
 our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
+=head1 NAME
+
+SVK::Editor::Diff - An editor outputs textual diff
+
+=head1 SYNOPSIS
+
+ $editor = SVK::Editor::Diff->new
+    ( cb_basecontent => sub { ... },
+      cb_baseprop    => sub { ... },
+      cb_llabel      => sub { ... },
+      # or llabel => 'revision <left>',
+      cb_rlabel      => sub { ... },
+      # or rlabel => 'revision <left>',
+      oldtarget => $target, oldroot => $root,
+    );
+
+=cut
+
 use SVK::I18N;
 use SVK::Util qw( slurp_fh tmpfile mimetype_is_text catfile );
 
@@ -186,7 +204,7 @@ sub close_directory {
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     # generate delta between empty root and oldroot of $path, then reverse in output
-    $self->{xd}->depot_delta
+    SVK::XD->depot_delta
 	( oldroot => $self->{oldtarget}{repos}->fs->revision_root (0),
 	  oldpath => [$self->{oldtarget}{path}, $path],
 	  newroot => $self->{oldroot},

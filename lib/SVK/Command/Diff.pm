@@ -94,7 +94,6 @@ sub run {
 	  ( lpath  => $target->{path},
 	    rpath  => $target2->{path} ) : (),
 	  # XXX: for delete_entry, clean up these
-	  xd => $self->{xd}, newtarget => $target2,
 	  oldtarget => $target, oldroot => $oldroot,
 	);
 
