@@ -61,7 +61,9 @@ sub normalize {
     my ($self) = @_;
     my $fs = $self->{repos}->fs;
     my $root = $fs->revision_root ($self->{revision});
-    $self->{revision} = ($root->node_history ($self->{path})->prev(0)->location)[1];
+    $self->{revision} = ($root->node_history ($self->{path})->prev(0)->location)[1]
+	unless $self->{revision} == $root->node_created_rev ($self->{path});
+
 }
 
 =head1 AUTHORS

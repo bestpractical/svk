@@ -117,7 +117,9 @@ sub find_svm_source {
 
     if ($m) {
 	# XXX: we should normalize $rev before calling find_svm_source
-	$rev = $m->find_remote_rev (($root->node_history($path)->prev(0)->location)[1]);
+	$rev = ($root->node_history($path)->prev(0)->location)[1]
+	    unless $rev == $root->node_created_rev ($path);
+	$rev = $m->find_remote_rev ($rev);
 	$path =~ s/\Q$mpath\E$//;
 	$uuid = $root->node_prop ($path, 'svm:uuid');
 	$path = $m->{source}.$mpath;
