@@ -18,7 +18,7 @@ sub parse_arg {
 
 }
 
-sub lock { $_[0]->lock_none }
+sub lock { $_[0]->{xd}->lock ($_[2]) }
 
 sub run {
     my ($self, $target, $copath) = @_;
