@@ -14,7 +14,7 @@ SVK::Editor::XD - An editor for modifying checkout copies
 =head1 SYNOPSIS
 
 $editor = SVK::Editor::XD->new
-    ( anchor => $anchor,
+    ( path => $path,
       target => $target,
       oldroot => $fs->revision_root ($fromrev),
       newroot => $fs->revision_root ($torev),
@@ -37,13 +37,13 @@ which is used for bringing changes from depot to checkout copies.
 
 =over
 
-=item anchor
+=item path
 
 The anchor of the editor calls.
 
 =item target
 
-The target path of the editor calls.
+The target path of the editor calls.  Used only for path reporting translation.
 
 =item xd
 

@@ -475,10 +475,10 @@ L<SVK::Editor::Merge> when called in array context.
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my ($copath, $anchor) = @arg{qw/copath path/};
-    $anchor = '' if $anchor eq '/';
+    my ($copath, $path) = @arg{qw/copath path/};
+    $path = '' if $path eq '/';
     $arg{get_copath} = sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) };
-    $arg{get_path} = sub { $_[0] = "$anchor/$_[0]" };
+    $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
     return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
@@ -580,6 +580,13 @@ sub do_delete {
     my @deleted;
 
     # check for if the file/dir is modified.
+    unless ($arg{targets}) {
+	my $target;
+	($arg{path}, $target, $arg{copath}, undef, $arg{report}) =
+	    get_anchor (1, @arg{qw/path copath report/});
+	$arg{targets} = [$target];
+    }
+
     $self->checkout_delta ( %arg,
 			    xdroot => $xdroot,
 			    absent_as_delete => 1,
@@ -1002,9 +1009,11 @@ sub _delta_dir {
 				($arg{xdroot}, $arg{path},
 				 $arg{copath}, $cinfo)->{'svn:ignore'} || ''));
 
-    opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
-    my @direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
-    closedir $dir;
+    my @direntries;
+    unless (defined $targets && !keys %$targets) {
+	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
+	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
+    }
 
     for my $entry (@direntries) {
 	next if $entry =~ m/$ignore/;
@@ -1058,9 +1067,8 @@ sub _delta_dir {
 	print loc ("Unknown target: %1.\n", $_) for keys %$targets;
     }
 
-    # chekc prop diff
     $arg{editor}->close_directory ($baton, $pool)
-	unless $arg{root} || $schedule eq 'delete';
+	unless $arg{root};
     return 0;
 }
 
@@ -1073,6 +1081,8 @@ sub checkout_delta {
     $arg{base_root} ||= $arg{xdroot};
     $arg{base_path} ||= $arg{path};
     my $kind = $arg{kind} = $arg{base_root}->check_path ($arg{base_path});
+    die "calling checkout_delta with file"
+	if $kind == $SVN::Node::file;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
@@ -1088,13 +1098,11 @@ sub checkout_delta {
 	$arg{editor}->abort_edit;
 	die loc("Interrupted.\n");
     };
-    if ($kind == $SVN::Node::file) {
-	$self->_delta_file (%arg, baton => $baton, base => 1);
-    }
-    elsif ($kind == $SVN::Node::dir) {
+    if ($kind == $SVN::Node::dir) {
 	$self->_delta_dir (%arg, baton => $baton, root => 1, base => 1);
     }
     else {
+	# this can be removed once condense eliminates unknowns
 	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
 	my $sche =
 	    $self->{checkout}->get ($arg{copath})->{'.schedule'} || '';

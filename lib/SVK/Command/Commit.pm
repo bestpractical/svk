@@ -82,10 +82,10 @@ sub get_editor {
 	my $xdroot = $target->root ($self->{xd});
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
+	      targets => undef,
 	      quiet => 1,
 	      oldroot => $xdroot,
 	      newroot => $xdroot,
-	      anchor => $target->{path},
 	      target => '',
 	      check_only => $self->{check_only});
 	return ($editor, %cb);
