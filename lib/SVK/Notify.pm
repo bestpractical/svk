@@ -38,20 +38,23 @@ sub new {
     return $self;
 }
 
-sub node_status : lvalue {
-    my ($self, $path) = @_;
-    $self->{status}{$path}[0];
+sub node_status {
+    my ($self, $path, $s) = @_;
+    $self->{status}{$path}[0] = $s if defined $s;
+    return $self->{status}{$path}[0];
 }
 
-sub prop_status : lvalue {
-    my ($self, $path) = @_;
-    exists $self->{status}{$path} && $self->{status}{$path}[0] ne 'A' ?
-	$self->{status}{$path}[1] : $self->{tmp};
+sub prop_status {
+    my ($self, $path, $s) = @_;
+    $self->{status}{$path}[1] = $s if defined $s
+	&& exists $self->{status}{$path}[0] && $self->{status}{$path}[0] ne 'A';
+    return $self->{status}{$path}[1];
 }
 
-sub hist_status : lvalue {
-    my ($self, $path) = @_;
-    $self->{status}{$path}[2];
+sub hist_status {
+    my ($self, $path, $s) = @_;
+    $self->{status}{$path}[2] = $s if defined $s;
+    return $self->{status}{$path}[2];
 }
 
 sub flush {

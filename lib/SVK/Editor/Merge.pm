@@ -170,7 +170,7 @@ sub add_file {
 	return $path;
     }
     else {
-	$self->{notify}->node_status ($path) = 'A';
+	$self->{notify}->node_status ($path, 'A');
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg);
 	return $path;
@@ -183,7 +183,7 @@ sub open_file {
     if (defined $pdir && $self->{cb_exist}->($path)) {
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
-	$self->{notify}->node_status ($path) = '';
+	$self->{notify}->node_status ($path, '');
 	return $path;
     }
     $self->{notify}->flush ($path);
@@ -261,7 +261,9 @@ sub apply_textdelta {
 	$fh->{new} = [tmpfile('new-')];
 	return [SVN::TxDelta::apply ($base, $fh->{new}[0], undef, undef, $pool)];
     }
-    $self->{notify}->node_status ($path) ||= 'U';
+    $self->{notify}->node_status ($path, 'U')
+	unless $self->{notify}->node_status ($path);
+
     $self->ensure_open ($path);
     return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
 					      $checksum, $pool);
@@ -281,7 +283,7 @@ sub close_file {
 
 	if ($checksum eq $fh->{local}[2] ||
 	    File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0) {
-	    $self->{notify}->node_status ($path) = 'g';
+	    $self->{notify}->node_status ($path, 'g');
 	    $self->ensure_close ($path, $checksum, $pool);
 	    return;
 	}
@@ -304,7 +306,7 @@ sub close_file {
 
 	my $conflict = SVN::Core::diff_contains_conflicts ($diff);
 	my $mfn;
-        $self->{notify}->node_status ($path) = $conflict ? 'C' : 'G';
+        $self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
 	if ($conflict && $self->{external}) {
 	    $mfn = tmpfile ('merged-', OPEN => 0);
 	    system (split (' ', $self->{external}),
@@ -371,7 +373,7 @@ sub add_directory {
     $self->{storage_baton}{$path} =
 	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
 					 @arg);
-    $self->{notify}->node_status ($path) = 'A';
+    $self->{notify}->node_status ($path, 'A');
     $self->{notify}->flush ($path, 1);
     return $path;
 }
@@ -408,7 +410,7 @@ sub _check_delete_conflict {
     if ($kind == $SVN::Node::file) {
 	my $md5 = $self->{base_root}->file_md5_checksum ($rpath, $pool);
 	if (my $local = $self->{cb_localmod}->($path, $md5, $pool)) {
-	    $self->{notify}->node_status ($path) = 'C';
+	    $self->{notify}->node_status ($path, 'C');
 	    ++$self->{conflicts};
 	    return {};
 	}
@@ -421,12 +423,12 @@ sub _check_delete_conflict {
 	for (sort keys %$entries) {
 	    if (my $mod = $dirmodified->{$_}) {
 		if ($mod eq 'D') {
-		    $self->{notify}->node_status ("$path/$_") = 'd';
+		    $self->{notify}->node_status ("$path/$_", 'd');
 		}
 		else {
 		    ++$modified;
 		    ++$self->{conflicts};
-		    $self->{notify}->node_status ("$path/$_") = 'C';
+		    $self->{notify}->node_status ("$path/$_", 'C');
 		}
 	    }
 	    else {
@@ -441,7 +443,7 @@ sub _check_delete_conflict {
 	    }
 	}
 	if ($modified) {
-	    $self->{notify}->node_status ("$path/$_") = 'D'
+	    $self->{notify}->node_status ("$path/$_", 'D')
 		for keys %$torm;
 	    return $torm;
 	}
@@ -461,13 +463,13 @@ sub delete_entry {
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
 
     if ($torm) {
-	$self->{notify}->node_status ($path) = 'C';
+	$self->{notify}->node_status ($path, 'C');
 	++$self->{conflicts};
     }
     else {
 	$self->{storage}->delete_entry ($path, $self->{cb_rev}->($path),
 					$self->{storage_baton}{$pdir}, @arg);
-	$self->{notify}->node_status ($path) = 'D';
+	$self->{notify}->node_status ($path, 'D');
     }
 }
 
@@ -476,7 +478,7 @@ sub change_file_prop {
     return unless $path;
     $self->ensure_open ($path);
     $self->{storage}->change_file_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{notify}->prop_status ($path) = 'U';
+    $self->{notify}->prop_status ($path, 'U');
 }
 
 sub change_dir_prop {
@@ -489,7 +491,7 @@ sub change_dir_prop {
     # be dealt.
     return if $arg[0] eq 'svk:merge';
     $self->{storage}->change_dir_prop ($self->{storage_baton}{$path}, @arg);
-    $self->{notify}->prop_status ($path) = 'U';
+    $self->{notify}->prop_status ($path, 'U');
 }
 
 sub close_edit {
