@@ -26,7 +26,7 @@ sub create_xd_root {
     my @paths = $info->{checkout}->find ($arg{copath}, {revision => qr'.*'});
 
     return (undef, $fs->revision_root
-	    ($info->{checkout}->get ($arg{copath})->{revision}))
+	    ($info->{checkout}->get ($paths[0] || $arg{copath})->{revision}))
 	if $#paths <= 0;
 
     for (@paths) {
@@ -56,6 +56,7 @@ sub xd_storage_cb {
     my ($info, $anchor, $target, $copath, $xdroot, $check_only) = @_;
     my $t = translator ($target, $copath);
 
+    # translate to abs path before any check
     return
 	( cb_exist => sub { $_ = shift; s|$t|$copath/|; -e $_},
 	  cb_rev => sub { $_ = shift; s|$t|$copath/|;
@@ -183,29 +184,21 @@ sub do_proplist {
 
     my ($txn, $xdroot);
     my $props = {};
-    my $entry = $info->{checkout}->get_single ($arg{copath});
-    $entry->{schedule} ||= '';
-    $entry->{newprop} ||= {};
 
     if ($arg{rev}) {
 	$xdroot = $arg{repos}->fs->revision_root ($arg{rev});
     }
-    elsif ($entry->{schedule} eq 'add') {
-    }
     else {
 	($txn, $xdroot) = create_xd_root ($info, %arg);
-
-	die "$arg{copath} ($arg{path})not under version control"
-	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
     }
+
+    $props = get_props ($info, $xdroot, $arg{path},
+			$arg{rev} ? undef : $arg{copath})
+	if $xdroot;
 
     $txn->abort if $txn;
 
-    $props = $xdroot->node_proplist ($arg{path}) if $xdroot;
-
-    return {%$props,
-	    %{$entry->{newprop}}};
-
+    return $props;
 }
 
 sub do_propset {
@@ -283,6 +276,17 @@ sub do_revert {
     }
 }
 
+use Regexp::Shellish qw( :all ) ;
+
+sub ignore {
+    no warnings;
+    my @ignore = qw/*.o #*# .#* *.lo *.la .*.rej *.rej .*~ *~ ..DS_Store
+		    svk-commit*.tmp/;
+    my $re = join('|', map {compile_shellish $_} @ignore, @_);
+
+    return $re;
+}
+
 sub _delta_content {
     my ($info, %arg) = @_;
 
@@ -322,6 +326,7 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($info, %arg) = @_;
+    my $pool = SVN::Pool->new_default (undef);
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
     unless (-d $arg{copath}) {
 	if ($schedule ne 'delete') {
@@ -358,10 +363,18 @@ sub _delta_dir {
     # check scheduled addition
     opendir my ($dir), $arg{copath}
 	or die "can't opendir $arg{copath}: $!";
+
+    my $ignore = ignore
+	(split ("\n", get_props ($info, $arg{xdroot}, $arg{path},
+				 $arg{copath})->{'svn:ignore'} || ''));
     for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
+	next if m/$ignore/o;
 	my $sche = $info->{checkout}->get_single ("$arg{copath}/$_")->{schedule};
-	warn "? $arg{copath}/$_" unless $sche;
-	return unless $sche;
+	unless ($sche) {
+	    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_")
+		if $arg{cb_unknown};
+	    next;
+	}
 	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
 	&{$delta} ($info, %arg,
 		   add => 1,
@@ -814,6 +827,28 @@ sub get_fh {
     my $via = get_keyword_layer ($root, $path);
     open my ($fh), "$mode$via", $fname;
     return $fh;
+}
+
+sub get_props {
+    my ($info, $root, $path, $copath) = @_;
+
+    my ($props, $entry) = ({});
+
+    $entry = $info->{checkout}->get_single ($copath) if $copath;
+    $entry->{newprop} ||= {};
+    $entry->{schedule} ||= '';
+
+    unless ($entry->{schedule} eq 'add') {
+
+	die "$path not found"
+	    if $root->check_path ($path) == $SVN::Node::none;
+	$props = $root->node_proplist ($path);
+    }
+
+    return {%$props,
+	    %{$entry->{newprop}}};
+
+
 }
 
 sub md5file {

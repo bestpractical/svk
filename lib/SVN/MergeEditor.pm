@@ -110,7 +110,7 @@ sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
     $self->{storage_baton}{''} =
-	$self->{storage}->open_root (&{$self->{cb_rev}}(''));
+	$self->{storage}->open_root (&{$self->{cb_rev}}($self->{target}||''));
     return '';
 }
 

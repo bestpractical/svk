@@ -11,6 +11,7 @@ use File::Spec;
 use File::Path ();
 use Data::Hierarchy;
 use SVN::DiffEditor;
+use SVN::StatusEditor;
 
 use vars qw/$xd $info/;
 use subs qw/co up st blame ci del rm ps pl cp sy sm desc/;
@@ -409,34 +410,23 @@ sub status {
     $copath = File::Spec->rel2abs ($copath || '');
     my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
 
-    SVN::XD::checkout_crawler ($info,
-			       repos => $repos,
-			       copath => $copath,
-			       path => $path,
-			       rev => $cinfo->{revision},
-			       cb_unknown =>
-			       sub {
-				   return if $_[1] =~ m/~$/;
-				   print "?  $_[1]\n";
-			       },
-			       cb_add =>
-			       sub {
-				   print "A  $_[1]\n";
-			       },
-			       cb_delete =>
-			       sub {
-				   print "D  $_[1]\n";
-			       },
-			       cb_prop =>
-			       sub {
-				   print " M $_[1]\n";
-			       },
-			       cb_changed =>
-			       sub {
-				   print "M  $_[1]\n";
-			       },
-			      );
+    my ($txn, $xdroot) = SVN::XD::create_xd_root ($info,
+						  path => $path,
+						  repos => $repos,
+						  copath => $copath);
 
+    SVN::XD::checkout_delta ($info,
+			     repos => $repos,
+			     copath => $copath,
+			     path => $path,
+			     baseroot => $xdroot,
+			     xdroot => $xdroot,
+			     editor => SVN::StatusEditor->new
+			     (copath => $copath),
+			     cb_unknown => sub {print "?  $_[1]\n"}
+			    );
+
+    $txn->abort if $txn;
 }
 
 =head2 resolved

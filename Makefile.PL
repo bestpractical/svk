@@ -22,6 +22,7 @@ use ExtUtils::AutoInstall
         'Algorithm::Annotate'   => '0',
         'Text::Diff'            => '0',
         'IO::String'            => '0',
+        'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.13',
         'SVN::Simple::Edit'     => '0.21',
       ],
