@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 9;
+plan_svm tests => 11;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -40,6 +40,11 @@ is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/A/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
+is_output_like ($svk, 'log', ['-v', '-r2@', '/test/A/'],
+		qr/\Qr3 (orig r2):  (no author)\E/);
+
+is_output ($svk, 'log', ['-v', '-r5@', '/test/A/'],
+	   ["Can't find local revision for 5 on /A."]);
 
 is_output ($svk, 'log', [-r => 16384, -l1 =>'/test/A'],
 	   ['Revision too large, show log from 3.',

@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
+use SVK::Command::Sync;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder );
@@ -129,6 +130,7 @@ sub get_editor {
 	}
 	else {
 	    print loc("Merging back to mirror source %1.\n", $m->{source});
+	    $m->{lock_message} = SVK::Command::Sync::lock_message ();
 	    $m->{config} = $self->{svnconfig};
 	    $m->{revprop} = ['svk:signature'];
 	    ($base_rev, $editor) = $m->get_merge_back_editor
@@ -192,7 +194,9 @@ sub get_editor {
     }
 
     unless ($self->{check_only}) {
-	for ($SVN::Error::FS_TXN_OUT_OF_DATE, $SVN::Error::FS_ALREADY_EXISTS) {
+	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
+	     $SVN::Error::FS_ALREADY_EXISTS,
+	     $SVN::Error::FS_NOT_DIRECTORY) {
 	    # XXX: there's no copath info here
 	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");

@@ -323,6 +323,9 @@ sub run {
 	  target => $target,
 	  storage => $storage,
 	  notify => $notify,
+	  # if storage editor is E::XD, applytext_delta returns undef
+	  # for failed operations, and merge editor should mark them as skipped
+	  storage_has_unwritable => $is_copath && !$self->{check_only},
 	  allow_conflicts => $is_copath,
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},

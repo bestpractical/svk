@@ -88,11 +88,12 @@ sub open_root {
     $self->{baserev} = $base_revision;
     $self->{signature} ||= SVK::XD::Signature->new (root => $self->{xd}->cache_directory)
 	if $self->{update};
-    return $self->open_directory ('');
+    return $self->open_directory ('', '');
 }
 
 sub add_file {
     my ($self, $path, $pdir) = @_;
+    return unless defined $pdir;
     my $copath = $path;
     $self->{added}{$path} = 1;
     $self->{get_copath}($copath);
@@ -102,7 +103,8 @@ sub add_file {
 }
 
 sub open_file {
-    my ($self, $path) = @_;
+    my ($self, $path, $pdir) = @_;
+    return unless defined $pdir;
     my $copath = $path;
     $self->{get_copath}($copath);
     die loc("path %1 does not exist", $path) unless -l $copath || -e _;
@@ -111,19 +113,18 @@ sub open_file {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
-    my $base;
+    return unless defined $path;
     return if $self->{check_only};
-    my ($copath, $dpath) = ($path, $path);
+    my ($copath, $dpath, $base) = ($path, $path);
     $self->{get_copath}($copath);
     $self->{get_path}($dpath);
     unless ($self->{added}{$path}) {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = catpath (undef, $dir, ".svk.$file.base");
 
-	rename ($copath, $basename)
-	  or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
+	rename ($copath, $basename) or return undef;
 
-	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
+	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename) or return undef;
 	if (!$self->{ignore_checksum} && $checksum) {
 	    my $md5 = md5_fh ($base);
 	    die loc("source checksum mismatch") if $md5 ne $checksum;
@@ -137,8 +138,7 @@ sub apply_textdelta {
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
-	or warn "can't open $path";
-
+	or return undef;
     # The fh is refed by the current default pool, not the pool here
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
 				 $fh, undef, undef, $pool)];
@@ -146,6 +146,7 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path) = @_;
+    return unless defined $path;
     my $copath = $path;
     $self->{get_copath}($copath);
     if ((my $base = $self->{base}{$path})) {
@@ -176,10 +177,17 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path, $pdir) = @_;
+    return undef unless defined $pdir;
     my $copath = $path;
     $self->{get_copath}($copath);
     die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
-    mkdir ($copath) or die $! unless $self->{check_only};
+    unless ($self->{check_only}) {
+	unless (mkdir ($copath)) {
+	    # XXX: note this entry and make the resulting checkout map
+	    # retain the entry for this path
+	    return undef;
+	}
+    }
     $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
@@ -189,7 +197,8 @@ sub add_directory {
 }
 
 sub open_directory {
-    my ($self, $path) = @_;
+    my ($self, $path, $pdir) = @_;
+    return undef unless defined $pdir;
     # XXX: test if directory exists
     if ($self->{update}) {
 	my $copath = $path;
@@ -201,7 +210,8 @@ sub open_directory {
 }
 
 sub delete_entry {
-    my ($self, $path, $revision) = @_;
+    my ($self, $path, $revision, $pdir) = @_;
+    return unless defined $pdir;
     my $copath = $path;
     $self->{get_copath}($copath);
     $self->{get_path}($path);
@@ -220,10 +230,12 @@ sub delete_entry {
 
 sub close_directory {
     my ($self, $path) = @_;
-    return if $self->{target} && !$path;
+    return unless defined $path;
+    return if $self->{target} && !length ($path);
     my $copath = $path;
     $self->{get_copath}($copath);
     if ($self->{update}) {
+	# XXX: handle unwritable entries and back them up after the store
 	$self->{xd}{checkout}->store_recursively ($copath,
 						  {revision => $self->{revision},
 						   '.deleted' => undef});
@@ -238,6 +250,7 @@ sub close_directory {
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
+    return unless defined $path;
     $self->{props}{$path}{$name} = $value
 	if $self->{added}{$path};
     return if $self->{check_only};

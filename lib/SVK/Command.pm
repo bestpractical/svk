@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
-		  $SEP IS_WIN32 HAS_SVN_MIRROR catdepot traverse_history);
+		  find_svm_source $SEP IS_WIN32 HAS_SVN_MIRROR catdepot traverse_history);
 use SVK::I18N;
 use Encode;
 
@@ -152,7 +152,9 @@ sub invoke {
     my $error;
     local $SVN::Error::handler = sub {
 	$error = $_[0];
-	SVN::Error::croak_on_error (@_);
+	my $error_message = $error->expanded_message();
+	$error->clear();
+	die $error_message."\n";
     };
 
     local $@;
@@ -937,6 +939,12 @@ sub resolve_revision {
     } elsif ($revstr =~ /\{(\d\d\d\d-\d\d-\d\d)\}/) { 
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
+    } elsif (HAS_SVN_MIRROR && (my ($rrev) = $revstr =~ m'^(\d+)@$')) {
+	if (my ($m) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path})) {
+	    $rev = $m->find_local_rev ($rrev);
+	}
+	die loc ("Can't find local revision for %1 on %2.\n", $rrev, $target->path)
+	    unless defined $rev;
     } elsif ($revstr =~ /\D/) {
         die loc("%1 is not a number.\n",$revstr)
     } else {

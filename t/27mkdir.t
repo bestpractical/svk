@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-use Test::More tests => 14;
+use Test::More tests => 17;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -21,7 +21,7 @@ is_output ($svk, 'mkdir', ['-m', 'msg', '//newdir'],
 	   ['Committed revision 1.']);
 
 is_output ($svk, 'mkdir', ['-m', 'msg', '//i-newdir/deep'],
-	   [qr'Transaction is out of date',
+	   [qr'.*',
 	    'Please update checkout first.']);
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deep'],
@@ -39,6 +39,15 @@ is_output ($svk, 'mkdir', ["$copath/c-newdir/deeper"],
 is_output ($svk, 'mkdir', ['-p', "$copath/c-newdir/deeper"],
       [__"A   $copath/c-newdir",
        __"A   $copath/c-newdir/deeper"]);
+
+is_output ($svk, 'mkdir', ['-p', "$copath/foo", "$copath/bar"],
+     [__"A   $copath/bar",
+      __"A   $copath/foo"]);
+
+is_output ($svk, 'mkdir', ['-p', "$copath/d-newdir/foo", "$copath/e-newdir"],
+     [__"A   $copath/d-newdir",
+      __"A   $copath/d-newdir/foo",
+      __"A   $copath/e-newdir"]);
 
 SKIP: {
 skip 'SVN::Mirror not installed', 4
@@ -58,7 +67,7 @@ is_output ($svk, 'mkdir', ['-m', 'msg', '//m/dir-on-source'],
 
 is_output ($svk, 'mkdir', ['-m', 'msg', '//m/source/deep'],
 	   ["Merging back to mirror source $uri.",
-	    qr'Transaction is out of date',
+	    qr'.*',
 	    'Please sync mirrored path /m first.']);
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//m/source/deep'],
@@ -72,5 +81,12 @@ is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//m/source/deep'],
 	   ["Merging back to mirror source $uri.",
 	    qr'Item already exists',
 	    'Please sync mirrored path /m first.']);
+}
 
+TODO: {
+local $TODO = "mkdir the multi directories, it should be broken if any one of the directory is broken";
+is_output ($svk, 'mkdir', ["$copath/f-newdir/foo $copath/g-newdir"],
+     [__"A   $copath/f-newdir",
+      __"A   $copath/f-newdir/foo",
+      __"A   $copath/g-newdir"]);
 }

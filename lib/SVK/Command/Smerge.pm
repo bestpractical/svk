@@ -39,7 +39,7 @@ SVK::Command::Smerge - Automatically merge all changes between branches
  -I [--incremental]     : apply each change individually
  -l [--log]             : use logs of merged revisions as commit message
  -B [--baseless]        : use the earliest revision as the merge point
- -b [--base] REV	: use revision REV as the merge point
+ -b [--base] REV	: use revision REV of SOURCE as the merge base
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
