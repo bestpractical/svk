@@ -13,7 +13,7 @@ our $output;
 
 mkpath ["t/checkout/sign-gnupg"], 0, 0700 unless -d "t/checkout/sign-gnupg";
 
-$ENV{SVKPGP} = my $gpg = 'gpg --homedir t/checkout/sign-gnupg --no-default-keyring --keyring t/svk.gpg --secret-keyring t/svk-sec.gpg --default-key svk';
+$ENV{SVKPGP} = my $gpg = __('gpg --homedir t/checkout/sign-gnupg --no-default-keyring --keyring t/svk.gpg --secret-keyring t/svk-sec.gpg --default-key svk');
 
 ok (`$gpg --list-keys` =~ '1024D/A50DE110');
 
