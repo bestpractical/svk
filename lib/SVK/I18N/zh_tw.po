@@ -191,7 +191,7 @@ msgid "% svk info ~/dev/svk"
 msgstr "% svk info ~/dev/svk"
 
 #. ($conflicts)
-#: lib/SVK/Command/Commit.pm:258
+#: lib/SVK/Command/Commit.pm:261
 msgid "%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n"
 msgstr "偵測到 %1 項衝突。請在解決後執行「svk resolved」。\n"
 
@@ -248,7 +248,7 @@ msgid "%1 already under version control.\n"
 msgstr "%1 已納入版本控制。\n"
 
 #. ($dst->{report})
-#: lib/SVK/Command/Merge.pm.orig:91 lib/SVK/Command/Merge.pm:91
+#: lib/SVK/Command/Merge.pm:91
 msgid ""
 "%1 can not be used as merge target, because it contains mirrored path:\n"
 msgstr "%1 不能作為合併的目標，因為它包含了下列映射路徑：\n"
@@ -259,7 +259,7 @@ msgid "%1 changed"
 msgstr "%1 已更動"
 
 #. (abs2rel ($_[1], $target->{copath} => $target->{report})
-#: lib/SVK/Command/Commit.pm:383
+#: lib/SVK/Command/Commit.pm:386
 msgid "%1 is a mirrored path, please commit separately.\n"
 msgstr "%1 不是一個映射路徑，請另行送交更動。\n"
 
@@ -358,7 +358,7 @@ msgid "(always enabled for 'pull PATH' for now)"
 msgstr "（目前此選項在「pull 路徑」時自動生效）"
 
 #. ($copyfrom_path, $copyfrom_rev)
-#: lib/SVK/Command/Log.pm:134
+#: lib/SVK/Command/Log.pm:137
 msgid "(from %1:%2)"
 msgstr "(來自 %1:%2)"
 
@@ -408,7 +408,7 @@ msgstr "--relocate: 將映射路徑指向另一個網址"
 msgid "--remoterev: use remote revision numbers in merge log"
 msgstr "--remoterev: 在合併紀錄裡，使用遠端的更動編號"
 
-#: lib/SVK/Command/Update.pm.orig:33 lib/SVK/Command/Update.pm:33
+#: lib/SVK/Command/Update.pm:33
 msgid "--revision cannot be used in conjunction with --sync or --merge.\n"
 msgstr "--revision 不能與 --sync 或 --merge 合併使用。\n"
 
@@ -449,110 +449,110 @@ msgid "-N [--non-recursive]: do not descend recursively"
 msgstr "-N [--non-recursive]: 不要遞迴處理子目錄"
 
 #: lib/SVK/Command.pod:70
+msgid "-P [--patch] arg: instead of commit, save this change as a patch"
+msgstr "-P [--patch] arg: 將更動儲存為補綴，但不送交更動"
+
+#: lib/SVK/Command.pod:71
 msgid "-R [--recursive]: descend recursively"
 msgstr "-R [--recursive]: 遞迴處理子目錄"
 
-#: lib/SVK/Command.pod:71
+#: lib/SVK/Command.pod:72
 msgid "-S [--sign]: sign this change"
 msgstr "-S [--sign]: 簽署送交更動"
 
-#: lib/SVK/Command.pod:72
+#: lib/SVK/Command.pod:73
 msgid "-a [--all]: pull into all checkout paths"
 msgstr "-a [--all]: 拉取所有的取出路徑"
 
-#: lib/SVK/Command.pod:73
+#: lib/SVK/Command.pod:74
 msgid "-a [--all]: remove all stalled locks"
 msgstr "-a [--all]: 移除所有卡住的鎖定"
 
-#: lib/SVK/Command.pod:74
+#: lib/SVK/Command.pod:75
 msgid "-a [--all]: synchronize all mirrored paths"
 msgstr "-a [--all]: 同步化所有的映射路徑"
 
-#: lib/SVK/Command.pod:75
+#: lib/SVK/Command.pod:76
 msgid "-a [--auto]: merge from the previous merge point"
 msgstr "-a [--auto]: 使用上次的合併點"
 
-#: lib/SVK/Command.pod:76
+#: lib/SVK/Command.pod:77
 msgid "-b [--base] arg: use revision ARG as the merge point"
 msgstr "-b [--base] arg: 使用指定的更動當作合併點"
 
-#: lib/SVK/Command.pod:77
+#: lib/SVK/Command.pod:78
 msgid "-c [--change] arg: act on comma-separated revisions ARG"
 msgstr "-c [--change] arg: 指定一系列要處理的更動，編號之間用逗號隔開"
 
-#: lib/SVK/Command.pod:78
+#: lib/SVK/Command.pod:79
 msgid "-d [--depth] arg: recurse at most ARG levels deep; use with -R"
 msgstr "-d [--depth] arg: 指定遞迴層數的上限；僅在指定 -R 時適用"
 
-#: lib/SVK/Command.pod:79
+#: lib/SVK/Command.pod:80
 msgid "-d [--detach]: mark a depotpath as no longer mirrored"
 msgstr "-d [--detach]: 解除檔案庫路徑的映射狀態"
 
-#: lib/SVK/Command.pod:80
+#: lib/SVK/Command.pod:81
 msgid "-d [--detach]: mark a path as no longer checked out"
 msgstr "-d [--detach]: 解除路徑的取出狀態"
 
-#: lib/SVK/Command.pod:81
+#: lib/SVK/Command.pod:82
 msgid "-d [--detach]: remove a depot from the mapping"
 msgstr "-d [--detach]: 將檔案庫從對映表中移除"
 
-#: lib/SVK/Command.pod:82
+#: lib/SVK/Command.pod:83
 msgid "-f [--from-checkout]: import from a checkout path"
 msgstr "-f [--from-checkout]: 使用取出路徑作為匯入來源"
 
-#: lib/SVK/Command.pod:83
+#: lib/SVK/Command.pod:84
 msgid "-f [--from] arg: push from the specified path"
 msgstr "-f [--from] arg: 從指定的路徑推送更動"
 
-#: lib/SVK/Command.pod:84
+#: lib/SVK/Command.pod:85
 msgid "-f [--from]: merge from the specified path"
 msgstr "-f [--from]: 從指定的路徑合併到它的複製來源"
 
-#: lib/SVK/Command.pod:85
+#: lib/SVK/Command.pod:86
 msgid "-f [--full-path]: show pathname for each entry, instead of a tree"
 msgstr "-f [--full-path]: 顯示每個項目的完整路徑，而不是樹狀結構"
 
-#: lib/SVK/Command.pod:86
+#: lib/SVK/Command.pod:87
 msgid "-i [--init]: initialize a default depot"
 msgstr "-i [--init]: 初始化預設的檔案庫"
 
-#: lib/SVK/Command.pod:87
+#: lib/SVK/Command.pod:88
 msgid "-l [--limit] arg: stop after displaying ARG revisions"
 msgstr "-l [--limit] arg: 指定顯示更動數的上限"
 
-#: lib/SVK/Command.pod:88
+#: lib/SVK/Command.pod:89
 msgid "-l [--list]: list checkout paths"
 msgstr "-l [--list]: 列出所有的取出路徑"
 
-#: lib/SVK/Command.pod:89
+#: lib/SVK/Command.pod:90
 msgid "-l [--list]: list current depot mappings"
 msgstr "-l [--list]: 列出現有的檔案庫對映"
 
-#: lib/SVK/Command.pod:90
+#: lib/SVK/Command.pod:91
 msgid "-l [--list]: list mirrored paths"
 msgstr "-l [--list]: 列出所有的映射路徑"
 
-#: lib/SVK/Command.pod:91
+#: lib/SVK/Command.pod:92
 msgid "-l [--log]: use logs of merged revisions as commit message"
 msgstr "-l [--log]: 採用各更動的紀錄做為合併紀錄"
 
-#: lib/SVK/Command.pod:92
+#: lib/SVK/Command.pod:93
 msgid "-l [--lump]: merge everything into a single commit log"
 msgstr "-l [--lump]: 將所有更動合併為一項送交紀錄"
 
-#: lib/SVK/Command.pod:93
+#: lib/SVK/Command.pod:94
 msgid "-m [--merge]: smerge from copied sources before update"
 msgstr "-m [--merge]: 在更新之前，先從複製來源執行 smerge"
 
-#: lib/SVK/Command.pod:94
+#: lib/SVK/Command.pod:95
 msgid "-m [--message] arg: specify commit message ARG"
 msgstr "-m [--message] arg: 指定送交更動的描述"
 
-#: lib/SVK/Command.pod:95
-msgid "-q [--quiet]: quiet mode"
-msgstr "-q [--quiet]: 極簡輸出"
-
-#: lib/SVK/Command/Merge.pm.orig:139 lib/SVK/Command/Merge.pm:145
+#: lib/SVK/Command/Merge.pm:145
 msgid "-m ignored in incremental merge\n"
 msgstr "漸進式合併；已忽略 -m 選項\n"
 
@@ -565,46 +565,50 @@ msgid "-q [--quiet]: do not display changed nodes"
 msgstr "-q [--quiet]: 不要顯示更動的項目"
 
 #: lib/SVK/Command.pod:98
+msgid "-q [--quiet]: quiet mode"
+msgstr "-q [--quiet]: 極簡輸出"
+
+#: lib/SVK/Command.pod:99
 msgid "-r [--revision] N:M: act on revisions between N and M"
 msgstr "-r [--revision] N:M: 指定要處理的更動編號範圍"
 
-#: lib/SVK/Command.pod:99
+#: lib/SVK/Command.pod:100
 msgid "-r [--revision] arg: act on revision ARG instead of the head revision"
 msgstr "-r [--revision] arg: 指定要處理的更動編號；預設為最新版本"
 
-#: lib/SVK/Command.pod:100
+#: lib/SVK/Command.pod:101
 msgid "-s [--skipto] arg: start synchronization at revision ARG"
 msgstr "-s [--skipto] arg: 指定開始同步的更動編號"
 
-#: lib/SVK/Command.pod:101
+#: lib/SVK/Command.pod:102
 msgid "-s [--summarize]: show summary only"
 msgstr "-s [--summarize]: 僅顯示摘要資訊"
 
-#: lib/SVK/Command.pod:102
+#: lib/SVK/Command.pod:103
 msgid "-s [--sync]: synchronize mirrored sources before update"
 msgstr "-s [--sync]: 在更新前，先同步化來源映射路徑"
 
-#: lib/SVK/Command.pod:103
+#: lib/SVK/Command.pod:104
 msgid "-t [--to-checkout]: turn the source into a checkout path"
 msgstr "-t [--to-checkout]: 將匯入來源設為取出路徑"
 
-#: lib/SVK/Command.pod:104
+#: lib/SVK/Command.pod:105
 msgid "-t [--to]: merge to the specified path"
 msgstr "-t [--to]: 從指定路徑的複製來源，合併到指定的路徑"
 
-#: lib/SVK/Command.pod:105
+#: lib/SVK/Command.pod:106
 msgid "-t [--torev] arg: stop synchronization at revision ARG"
 msgstr "-t [--torev] arg: 指定結束同步的更動編號"
 
-#: lib/SVK/Command.pod:106
+#: lib/SVK/Command.pod:107
 msgid "-v [--verbose]: print extra information"
 msgstr "-v [--verbose]: 印出額外的資訊"
 
-#: lib/SVK/Command.pod:107
+#: lib/SVK/Command.pod:108
 msgid "-x [--cross]: track revisions copied from elsewhere"
 msgstr "-x [--cross]: 追蹤從別處複製來的版本"
 
-#: lib/SVK/Command.pod:108
+#: lib/SVK/Command.pod:109
 msgid "/depotname/path/inside/repos"
 msgstr "/檔案庫名稱/內部的/路徑"
 
@@ -618,7 +622,7 @@ msgstr "=== Please enter your commit message above this line ==="
 msgid "=== Targets to commit (you may delete items from it) ==="
 msgstr "=== Targets to commit (you may delete items from it) ==="
 
-#: lib/SVK/Command.pod:109
+#: lib/SVK/Command.pod:110
 msgid "A  Added"
 msgstr "A  新增"
 
@@ -631,7 +635,7 @@ msgstr "取消。\n"
 msgid "Aborted: %1\n"
 msgstr "已中止：%1\n"
 
-#: lib/SVK/Command.pod:110
+#: lib/SVK/Command.pod:111
 msgid "Accept:"
 msgstr "接受："
 
@@ -654,7 +658,7 @@ msgstr "自動合併 (%1, %2) %3 到 %4 (源頭為 %5:%6)\n"
 msgid "Available commands:\n"
 msgstr "可用的命令：\n"
 
-#: lib/SVK/Command.pod:111
+#: lib/SVK/Command.pod:112
 msgid "C  Conflict"
 msgstr "C  衝突"
 
@@ -676,7 +680,7 @@ msgstr "無法找到 %1 和 %2 的合併源頭\n"
 msgid "Can't load statefile, old statefile saved as %1\n"
 msgstr "無法載入狀態檔；舊版狀態檔已存為 %1\n"
 
-#: lib/SVK/Command/Merge.pm.orig:35 lib/SVK/Command/Merge.pm:35
+#: lib/SVK/Command/Merge.pm:35
 msgid "Can't merge across depots.\n"
 msgstr "無法跨檔案庫進行合併。\n"
 
@@ -704,7 +708,7 @@ msgid "Cannot find separator; aborted.\n"
 msgstr "找不到分隔線，放棄編輯。\n"
 
 #. ($arg[0])
-#: lib/SVK/Command/Merge.pm.orig:64 lib/SVK/Command/Merge.pm:64
+#: lib/SVK/Command/Merge.pm:64
 msgid "Cannot find the path which '%1' copied from.\n"
 msgstr "找不到 %1 的複製源頭。\n"
 
@@ -723,12 +727,12 @@ msgstr "無法啟動外部合併工具來編輯 %1。\n"
 msgid "Cannot rename %1 to %2; please move it manually.\n"
 msgstr "無法將 %1 改名為 %2；請自行移動此路徑。\n"
 
-#: lib/SVK/Command/Merge.pm.orig:40 lib/SVK/Command/Merge.pm:40
+#: lib/SVK/Command/Merge.pm:40
 msgid ""
 "Cannot specify 'to' or 'from' when specifying a source and destination.\n"
 msgstr "來源和目標都已指定時，不能同時指定「to」及「from」。\n"
 
-#: lib/SVK/Command/Merge.pm.orig:44 lib/SVK/Command/Merge.pm:44
+#: lib/SVK/Command/Merge.pm:44
 msgid "Cannot specify both 'to' and 'from'.\n"
 msgstr "不能同時指定「to」及「from」。\n"
 
@@ -737,7 +741,7 @@ msgstr "不能同時指定「to」及「from」。\n"
 msgid "Change spec %1 not recognized.\n"
 msgstr "無法辨識的更動語法 %1。\n"
 
-#: lib/SVK/Command/Log.pm:122
+#: lib/SVK/Command/Log.pm:125
 msgid "Changed paths:\n"
 msgstr "已修改路徑：\n"
 
@@ -756,7 +760,7 @@ msgstr "取出路徑「%1」已改為指向「%2」。\n"
 msgid "Checkout Path: %1\n"
 msgstr "取出路徑：%1\n"
 
-#: lib/SVK/Command.pod:112
+#: lib/SVK/Command.pod:113
 msgid "Checkout Path: /Users/gugod/dev/svk"
 msgstr "取出路徑：/Users/gugod/dev/svk"
 
@@ -784,7 +788,7 @@ msgstr "己清除所有卡住的鎖定。\n"
 msgid "Cleaned up stalled lock on %1.\n"
 msgstr "己清除 %1 上卡住的鎖定。\n"
 
-#: lib/SVK/Command/Commit.pm:347
+#: lib/SVK/Command/Commit.pm:350
 msgid "Commit into mirrored path: merging back directly.\n"
 msgstr "送交進映射路徑：正在直接合併回去。\n"
 
@@ -812,7 +816,7 @@ msgstr "發現衝突。\n"
 msgid "Copied From: %1, Rev. %2\n"
 msgstr "複製來源：%1，更動編號 %2\n"
 
-#: lib/SVK/Command.pod:113
+#: lib/SVK/Command.pod:114
 msgid "Copied From: /svk/trunk, Rev. 434"
 msgstr "複製來源：/svk/trunk，更動編號 434"
 
@@ -821,19 +825,19 @@ msgstr "複製來源：/svk/trunk，更動編號 434"
 msgid "Copying more than one source requires %1 to be directory.\n"
 msgstr "複製超過一項來源時，%1 必須是目錄。\n"
 
-#. ($cmd, $!)
-#. ($self->{external}, $?)
 #. ('svnadmin', $?)
+#. ($self->{external}, $?)
+#. ($cmd, $!)
 #: lib/SVK/Command/Admin.pm:43 lib/SVK/Editor/Diff.pm:108
 #: lib/SVK/Resolve/Emacs.pm:66
 msgid "Could not run %1: %2"
 msgstr "無法執行 %1：%2"
 
-#: lib/SVK/Command.pod:114
+#: lib/SVK/Command.pod:115
 msgid "D  Deleted"
 msgstr "D  刪除"
 
-#: lib/SVK/Command.pod:115
+#: lib/SVK/Command.pod:116
 msgid "DESCRIPTION"
 msgstr "說明"
 
@@ -871,15 +875,15 @@ msgstr "檔案庫路徑"
 msgid "Depot Path: %1\n"
 msgstr "檔案庫路徑：%1\n"
 
-#: lib/SVK/Command.pod:116
+#: lib/SVK/Command.pod:117
 msgid "Depot Path: //svk/local"
 msgstr "檔案庫路徑：//svk/local"
 
-#: lib/SVK/Command.pod:117
+#: lib/SVK/Command.pod:118
 msgid "Depot Path: //svk/trunk"
 msgstr "檔案庫路徑：//svk/trunk"
 
-#: lib/SVK/Command.pod:118
+#: lib/SVK/Command.pod:119
 msgid "Diff:"
 msgstr "差異："
 
@@ -892,11 +896,11 @@ msgstr "不同的檔案庫。\n"
 msgid "Directory %1 imported to depotpath %2 as revision %3.\n"
 msgstr "目錄 %1 已匯入檔案庫路徑 %2，更動編號為 %3。\n"
 
-#: lib/SVK/Command.pod:119
+#: lib/SVK/Command.pod:120
 msgid "EDITOR: Editor to use for 'e'."
 msgstr "EDITOR: 要在 'e' 時採用的編輯器。"
 
-#: lib/SVK/Command.pod:120
+#: lib/SVK/Command.pod:121
 msgid "Edit:"
 msgstr "編輯："
 
@@ -912,7 +916,7 @@ msgstr "合併後無任何更動。\n"
 msgid "Enter a depot path to copy into (under // if no leading '/'): "
 msgstr "要複製到的檔案庫路徑名稱（若不以「/」開頭，則置於 // 之下）："
 
-#: lib/SVK/Command.pod:121
+#: lib/SVK/Command.pod:122
 msgid "Environment variables:"
 msgstr "環境變數："
 
@@ -925,7 +929,7 @@ msgstr "需要指定檔名。\n"
 msgid "Found merge ticket at revision %1 (remote %2); use it? (y/n) "
 msgstr "在更動編號 %1 發現了合併歷史紀錄（遠端為 %2）；要採用嗎？(y/n) "
 
-#: lib/SVK/Command.pod:122
+#: lib/SVK/Command.pod:123
 msgid "G  Merged"
 msgstr "G  合併"
 
@@ -949,11 +953,11 @@ msgstr "匯入路徑 (%1) 與取出路徑 (%2) 不同\n"
 msgid "Import source (%1) is a checkout path; use --from-checkout.\n"
 msgstr "匯入來源 (%1) 是取出路徑；請使用 --from-checkout 選項。\n"
 
-#: lib/SVK/Command/Merge.pm.orig:166 lib/SVK/Command/Merge.pm:179
+#: lib/SVK/Command/Merge.pm:179
 msgid "Incremental merge not guaranteed even if check is successful\n"
 msgstr "即使檢查成功，也不保證漸進式合併能順利完成\n"
 
-#: lib/SVK/Command/Merge.pm.orig:121 lib/SVK/Command/Merge.pm:121
+#: lib/SVK/Command/Merge.pm:121
 msgid "Incremental merge not supported\n"
 msgstr "不支援漸進式合併\n"
 
@@ -971,15 +975,15 @@ msgstr "啟動合併工具「%1」來編輯 %2。\n"
 msgid "Last Changed Rev.: %1\n"
 msgstr "前次改變的更動編號：%1\n"
 
-#: lib/SVK/Command.pod:123
+#: lib/SVK/Command.pod:124
 msgid "Last Changed Rev.: 445"
 msgstr "前次改變的更動編號：445"
 
-#: lib/SVK/Command.pod:124
+#: lib/SVK/Command.pod:125
 msgid "Last Changed Rev.: 447"
 msgstr "前次改變的更動編號：447"
 
-#: lib/SVK/Command.pod:125
+#: lib/SVK/Command.pod:126
 msgid "Merge From: /svk/trunk, Rev. 445"
 msgstr "合併來源：/svk/trunk，更動編號 445"
 
@@ -1030,11 +1034,11 @@ msgstr "成功修復路徑的映射狀態。\n"
 msgid "Mirrored From: %1, Rev. %2\n"
 msgstr "映射來源：%1，更動編號 %2\n"
 
-#: lib/SVK/Command.pod:126
+#: lib/SVK/Command.pod:127
 msgid "Mirrored From: svn://svn.clkao.org/svk, Rev. 1744"
 msgstr "映射來源：svn://svn.clkao.org/svk，更動編號 1744"
 
-#: lib/SVK/Command.pod:127
+#: lib/SVK/Command.pod:128
 msgid "Misc:"
 msgstr "其他："
 
@@ -1042,7 +1046,7 @@ msgstr "其他："
 msgid "Multiple merge tools found, choose one:\n"
 msgstr "找到幾項合併工具，請選擇一種：\n"
 
-#: lib/SVK/Command.pod:128
+#: lib/SVK/Command.pod:129
 msgid "NAME"
 msgstr "名稱"
 
@@ -1085,23 +1089,23 @@ msgstr "找不到映射紀錄；無法回復。\n"
 msgid "No need to revert; it is already the head revision.\n"
 msgstr "這已經是最新的版本；毋須回復。\n"
 
-#: lib/SVK/Command/Merge.pm.orig:110 lib/SVK/Command/Merge.pm:110
+#: lib/SVK/Command/Merge.pm:110
 msgid "No need to track rename for smerge\n"
 msgstr "smerge 時不需要追蹤改名\n"
 
-#: lib/SVK/Command/Commit.pm:257
+#: lib/SVK/Command/Commit.pm:260
 msgid "No targets to commit.\n"
 msgstr "沒有送交更動的目標。\n"
 
-#: lib/SVK/Command.pod:129
+#: lib/SVK/Command.pod:130
 msgid "None"
 msgstr "無"
 
-#: lib/SVK/Command/Merge.pm.orig:137 lib/SVK/Command/Merge.pm:143
+#: lib/SVK/Command/Merge.pm:143
 msgid "Not possible to do incremental merge without a merge ticket.\n"
 msgstr "沒有合併的歷史紀錄，無法執行漸進式合併。\n"
 
-#: lib/SVK/Command.pod:130
+#: lib/SVK/Command.pod:131
 msgid "OPTIONS"
 msgstr "選項"
 
@@ -1204,7 +1208,7 @@ msgstr "更動編號的格式必需為 N:M。\n"
 msgid "Revision: %1\n"
 msgstr "更動編號：%1\n"
 
-#: lib/SVK/Command.pod:131
+#: lib/SVK/Command.pod:132
 msgid "Revision: 447"
 msgstr "更動編號：447"
 
@@ -1212,15 +1216,15 @@ msgstr "更動編號：447"
 msgid "SVK::Help"
 msgstr "SVK::Help::zh_tw"
 
-#: lib/SVK/Command.pod:132
+#: lib/SVK/Command.pod:133
 msgid "SVKMERGE: External merge tool to always use for 'm'."
 msgstr "SVKMERGE: 要在 'm' 時採用的外部合併工具。"
 
-#: lib/SVK/Command.pod:133
+#: lib/SVK/Command.pod:134
 msgid "SVKRESOLVE: The resolve action to take, instead of asking."
 msgstr "SVKRESOLVE: 在解決衝突時，要自動採取的動作。"
 
-#: lib/SVK/Command.pod:134
+#: lib/SVK/Command.pod:135
 msgid "SYNOPSIS"
 msgstr "用法"
 
@@ -1243,7 +1247,7 @@ msgid "Synchronizing the mirror for the first time:\n"
 msgstr "初次同步化映射路徑：\n"
 
 #. (@{$cotarget}{qw( depotpath path copath)
-#: lib/SVK/Command/Update.pm.orig:100 lib/SVK/Command/Update.pm:93
+#: lib/SVK/Command/Update.pm:93
 msgid "Syncing %1(%2) in %3 to %4.\n"
 msgstr "同步化 %1(%2) 於 %3 到第 %4 版。\n"
 
@@ -1268,7 +1272,7 @@ msgstr "目標不是本地或映射路徑，無法檢視補綴。\n"
 msgid "This is svk, version %1.\n"
 msgstr "這是 svk，第 %1 版。\n"
 
-#: lib/SVK/Command.pod:135
+#: lib/SVK/Command.pod:136
 msgid "U  Updated"
 msgstr "U  更新"
 
@@ -1286,11 +1290,11 @@ msgstr "未知的目標：%1。\n"
 msgid "Unversioned properties on revision %1:\n"
 msgstr "更動編號 %1 上未納入版本控制的屬性：\n"
 
-#: lib/SVK/Command.pod:136
+#: lib/SVK/Command.pod:137
 msgid "Update your local branch and checkout path from the remote"
 msgstr "從遠端檔案庫拉取更動，更新本地端的分支版本及取出路徑。"
 
-#: lib/SVK/Command.pod:137
+#: lib/SVK/Command.pod:138
 msgid "Update your local branch from the remote master repository."
 msgstr "從遠端檔案庫拉取更動，更新本地端的分支版本。"
 
@@ -1302,79 +1306,79 @@ msgstr "呼叫編輯器…\n"
 msgid "a)ll, h)ead, -count, revision? [a] "
 msgstr "a)全部，h)最新，-個數，更動編號？[a] "
 
-#: lib/SVK/Command.pod:138
+#: lib/SVK/Command.pod:139
 msgid "a: Accept the merged/edited file."
 msgstr "a: 接受合併/編輯過的檔案。"
 
-#: lib/SVK/Command.pod:139
+#: lib/SVK/Command.pod:140
 msgid "add - Put files and directories under version control"
 msgstr "add - 將檔案及目錄納入版本控制"
 
-#: lib/SVK/Command.pod:140
+#: lib/SVK/Command.pod:141
 msgid "add [PATH...]"
 msgstr "add [路徑...]"
 
-#: lib/SVK/Command.pod:141
+#: lib/SVK/Command.pod:142
 msgid "admin - Administration tools"
 msgstr "admin - 管理工具"
 
-#: lib/SVK/Command.pod:142
+#: lib/SVK/Command.pod:143
 msgid "admin deltify [DEPOTNAME]"
 msgstr "admin deltify [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:143
+#: lib/SVK/Command.pod:144
 msgid "admin dump [DEPOTNAME]"
 msgstr "admin dump [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:144
+#: lib/SVK/Command.pod:145
 msgid "admin help [COMMAND]"
 msgstr "admin help [命令]"
 
-#: lib/SVK/Command.pod:145
+#: lib/SVK/Command.pod:146
 msgid "admin hotcopy /path/to/repository [DEPOTNAME]"
 msgstr "admin hotcopy /磁碟上的/檔案庫/路徑 [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:146
+#: lib/SVK/Command.pod:147
 msgid "admin list-dblogs [DEPOTNAME]"
 msgstr "admin list-dblogs [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:147
+#: lib/SVK/Command.pod:148
 msgid "admin list-unused-dblogs [DEPOTNAME]"
 msgstr "admin list-unused-dblogs [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:148
+#: lib/SVK/Command.pod:149
 msgid "admin load [DEPOTNAME]"
 msgstr "admin load [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:149
+#: lib/SVK/Command.pod:150
 msgid "admin lstxns [DEPOTNAME]"
 msgstr "admin lstxns [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:150
+#: lib/SVK/Command.pod:151
 msgid "admin recover [DEPOTNAME]"
 msgstr "admin recover [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:151
+#: lib/SVK/Command.pod:152
 msgid "admin rmcache"
 msgstr "admin rmcache"
 
-#: lib/SVK/Command.pod:152
+#: lib/SVK/Command.pod:153
 msgid "admin rmtxns [DEPOTNAME]"
 msgstr "admin rmtxns [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:153
+#: lib/SVK/Command.pod:154
 msgid "admin setlog -r REVISION FILE [DEPOTNAME]"
 msgstr "admin setlog -r 更動編號 檔案 [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:154
+#: lib/SVK/Command.pod:155
 msgid "admin verify [DEPOTNAME]"
 msgstr "admin verify [檔案庫名稱]"
 
-#: lib/SVK/Command.pod:155
+#: lib/SVK/Command.pod:156
 msgid "annotate - Display per-line revision and author info"
 msgstr "annotate - 顯示檔案裡每一列的更動編號與作者資訊"
 
-#: lib/SVK/Command.pod:156
+#: lib/SVK/Command.pod:157
 msgid "annotate FILE"
 msgstr "annotate 檔案"
 
@@ -1401,83 +1405,82 @@ msgid "cannot find a path for temporary branch"
 msgstr "找不到可用於暫存分支的路徑"
 
 #: lib/SVK/Command.pm:336 lib/SVK/Command/Mirror.pm:38
-#: lib/SVK/Command/Sync.pm:31 lib/SVK/Command/Update.pm.orig:63
-#: lib/SVK/Command/Update.pm:56
+#: lib/SVK/Command/Sync.pm:31 lib/SVK/Command/Update.pm:56
 msgid "cannot load SVN::Mirror"
 msgstr "無法載入 SVN::Mirror"
 
 #. ($file, $!)
-#. ("$sigfile.sig", $!)
 #. ($dir, $!)
+#. ("$sigfile.sig", $!)
 #: lib/SVK/Command/Admin.pm:32 lib/SVK/Editor/Sign.pm:53 lib/SVK/Patch.pm:80
 msgid "cannot open %1: %2"
 msgstr "無法開啟 %1：%2"
 
-#: lib/SVK/Command.pod:157
+#: lib/SVK/Command.pod:158
 msgid "cat - Output the file from depot"
 msgstr "cat - 由檔案庫輸出檔案"
 
-#: lib/SVK/Command.pod:158
+#: lib/SVK/Command.pod:159
 msgid "cat [DEPOTPATH | PATH...]"
 msgstr "cat [檔案庫路徑 | 路徑...]"
 
-#: lib/SVK/Command.pod:159
+#: lib/SVK/Command.pod:160
 msgid "checkout - Checkout the depotpath"
 msgstr "checkout - 取出檔案庫指定路徑的內容"
 
-#: lib/SVK/Command.pod:160
+#: lib/SVK/Command.pod:161
 msgid "checkout --detach [DEPOTPATH | PATH]"
 msgstr "checkout --detach [檔案庫路徑 | 路徑]"
 
-#: lib/SVK/Command.pod:161
+#: lib/SVK/Command.pod:162
 msgid "checkout --list"
 msgstr "checkout --list"
 
-#: lib/SVK/Command.pod:162
+#: lib/SVK/Command.pod:163
 msgid "checkout --relocate [DEPOTPATH | PATH] PATH"
 msgstr "checkout --relocate [檔案庫路徑 | 路徑] 路徑"
 
-#: lib/SVK/Command.pod:163
+#: lib/SVK/Command.pod:164
 msgid "checkout DEPOTPATH [PATH]"
 msgstr "checkout 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:164
+#: lib/SVK/Command.pod:165
 msgid "cleanup - Remove stalled locks"
 msgstr "cleanup - 移除卡住的鎖定"
 
-#: lib/SVK/Command.pod:165
+#: lib/SVK/Command.pod:166
 msgid "cleanup [PATH...]"
 msgstr "cleanup [路徑...]"
 
-#: lib/SVK/Command.pod:166
+#: lib/SVK/Command.pod:167
 msgid "cmerge - Merge specific changes"
 msgstr "cmerge - 合併指定的更動"
 
-#: lib/SVK/Command.pod:167
+#: lib/SVK/Command.pod:168
 msgid "cmerge -c CHGSPEC DEPOTPATH [PATH]"
 msgstr "cmerge -c 合併方式 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:168
+#: lib/SVK/Command.pod:169
 msgid "cmerge -c CHGSPEC DEPOTPATH1 DEPOTPATH2"
 msgstr "cmerge -c 合併方式 檔案庫路徑1 檔案庫路徑2"
 
-#: lib/SVK/Command.pod:169
+#: lib/SVK/Command.pod:170
 msgid "commit - Commit changes to depot"
 msgstr "commit - 送交更動至檔案庫"
 
-#: lib/SVK/Command.pod:170
+#: lib/SVK/Command.pod:171
 msgid "commit [PATH...]"
 msgstr "commit [路徑...]"
 
-#: lib/SVK/Command.pod:171
+#: lib/SVK/Command.pod:172
 msgid "copy - Make a versioned copy"
 msgstr "copy - 複製一份版本"
 
-#: lib/SVK/Command.pod:172
+#: lib/SVK/Command.pod:173
 msgid "copy DEPOTPATH PATH"
 msgstr "copy 檔案庫路徑 路徑"
 
-#: lib/SVK/Command.pod:173
+#: lib/SVK/Command.pod:174
 msgid "copy DEPOTPATH1 DEPOTPATH2"
 msgstr "copy 檔案庫路徑1 檔案庫路徑2"
 
@@ -1496,19 +1499,19 @@ msgstr "無法呼叫 gpg：%1"
 msgid "could not write to %1"
 msgstr "無法寫入 %1"
 
-#: lib/SVK/Command.pod:174
+#: lib/SVK/Command.pod:175
 msgid "d: Diff your file against merged file."
 msgstr "d: 檢視已方與合併後的差異。"
 
-#: lib/SVK/Command.pod:175
+#: lib/SVK/Command.pod:176
 msgid "delete - Remove versioned item"
 msgstr "delete - 移除納入版本控制的項目"
 
-#: lib/SVK/Command.pod:176
+#: lib/SVK/Command.pod:177
 msgid "delete [DEPOTPATH...]"
 msgstr "delete [路徑...]"
 
-#: lib/SVK/Command.pod:177
+#: lib/SVK/Command.pod:178
 msgid "delete [PATH...]"
 msgstr "delete [路徑...]"
 
@@ -1516,59 +1519,59 @@ msgstr "delete [路徑...]"
 msgid "depot map"
 msgstr "檔案庫對映表"
 
-#: lib/SVK/Command.pod:178
+#: lib/SVK/Command.pod:179
 msgid "depotmap - Create or edit the depot mapping configuration"
 msgstr "depotmap - 建立或編輯檔案庫對映表"
 
-#: lib/SVK/Command.pod:179
+#: lib/SVK/Command.pod:180
 msgid "depotmap --detach [DEPOTNAME | PATH]"
 msgstr "depotmap --detach [檔案庫名稱 | 路徑]"
 
-#: lib/SVK/Command.pod:180
+#: lib/SVK/Command.pod:181
 msgid "depotmap --list"
 msgstr "depotmap --list"
 
-#: lib/SVK/Command.pod:181
+#: lib/SVK/Command.pod:182
 msgid "depotmap --relocate [DEPOTNAME | PATH] PATH"
 msgstr "depotmap --relocate [檔案庫名稱 | 路徑] 路徑"
 
-#: lib/SVK/Command.pod:182
+#: lib/SVK/Command.pod:183
 msgid "depotmap DEPOTNAME /path/to/repository"
 msgstr "depotmap 檔案庫名稱 /磁碟上的/檔案庫/路徑"
 
-#: lib/SVK/Command.pod:183
+#: lib/SVK/Command.pod:184
 msgid "depotmap [OPTIONS]"
 msgstr "depotmap [選項]"
 
-#: lib/SVK/Command.pod:184
+#: lib/SVK/Command.pod:185
 msgid "depotname: '/path/to/repos'"
 msgstr "檔案庫名稱: '/磁碟上的/檔案庫/路徑'"
 
-#: lib/SVK/Command.pod:185
+#: lib/SVK/Command.pod:186
 msgid "describe - Describe a change"
 msgstr "describe - 描述更動內容"
 
-#: lib/SVK/Command.pod:186
+#: lib/SVK/Command.pod:187
 msgid "describe REV [DEPOTPATH | PATH]"
 msgstr "describe 更動編號 [檔案庫路徑 | 路徑]"
 
-#: lib/SVK/Command.pod:187
+#: lib/SVK/Command.pod:188
 msgid "diff - Display diff between revisions or checkout copies"
 msgstr "diff - 顯示兩次更動之間或與工作複本的差異處"
 
-#: lib/SVK/Command.pod:188
+#: lib/SVK/Command.pod:189
 msgid "diff -r N[:M] DEPOTPATH"
 msgstr "diff -r N[:M] 檔案庫路徑"
 
-#: lib/SVK/Command.pod:189
+#: lib/SVK/Command.pod:190
 msgid "diff DEPOTPATH PATH"
 msgstr "diff 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:190
+#: lib/SVK/Command.pod:191
 msgid "diff DEPOTPATH1 DEPOTPATH2"
 msgstr "diff 檔案庫路徑1 檔案庫路徑2"
 
-#: lib/SVK/Command.pod:191
+#: lib/SVK/Command.pod:192
 msgid "diff [-r REV] [PATH...]"
 msgstr "diff [-r 更動編號] [路徑...]"
 
@@ -1576,7 +1579,7 @@ msgstr "diff [-r 更動編號] [路徑...]"
 msgid "different depot"
 msgstr "不同的檔案庫"
 
-#: lib/SVK/Command.pod:192
+#: lib/SVK/Command.pod:193
 msgid "dm: See merged changes."
 msgstr "dm: 檢視源頭與合併後的差異。"
 
@@ -1585,15 +1588,15 @@ msgstr "dm: 檢視源頭與合併後的差異。"
 msgid "don't know where to checkout %1\n"
 msgstr "不知道要將 %1 取出到哪裡\n"
 
-#: lib/SVK/Command.pod:193
+#: lib/SVK/Command.pod:194
 msgid "dt: See their changes alone."
 msgstr "dt: 檢視對方的更動。"
 
-#: lib/SVK/Command.pod:194
+#: lib/SVK/Command.pod:195
 msgid "dy: See your changes alone."
 msgstr "dy: 檢視已方的更動。"
 
-#: lib/SVK/Command.pod:195
+#: lib/SVK/Command.pod:196
 msgid "e: Edit merged file with an editor."
 msgstr "e: 用編輯器來編輯合併的檔案。"
 
@@ -1602,31 +1605,31 @@ msgstr "e: 用編輯器來編輯合併的檔案。"
 msgid "file %1 already exists.\n"
 msgstr "檔案 %1 已存在。\n"
 
-#: lib/SVK/Command.pod:196
+#: lib/SVK/Command.pod:197
 msgid "g  Merged without actual change"
 msgstr "g  合併但毋須更新"
 
-#: lib/SVK/Command.pod:197
+#: lib/SVK/Command.pod:198
 msgid "h: Print this help message."
 msgstr "h: 顯示這份說明訊息。"
 
-#: lib/SVK/Command.pod:198
+#: lib/SVK/Command.pod:199
 msgid "help - Show help"
 msgstr "help - 顯示說明"
 
-#: lib/SVK/Command.pod:199
+#: lib/SVK/Command.pod:200
 msgid "help COMMAND"
 msgstr "help 命令"
 
-#: lib/SVK/Command.pod:200
+#: lib/SVK/Command.pod:201
 msgid "import - Import directory into depot"
 msgstr "import - 把已有目錄匯入檔案庫"
 
-#: lib/SVK/Command.pod:201
+#: lib/SVK/Command.pod:202
 msgid "import DEPOTPATH [PATH]"
 msgstr "import 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:202
+#: lib/SVK/Command.pod:203
 msgid "import [PATH] DEPOTPATH"
 msgstr "import [路徑] 檔案庫路徑"
 
@@ -1634,11 +1637,11 @@ msgstr "import [路徑] 檔案庫路徑"
 msgid "import destination cannot be a file"
 msgstr "不能用檔案作為匯入的目的地"
 
-#: lib/SVK/Command.pod:203
+#: lib/SVK/Command.pod:204
 msgid "info - Display information about a file or directory"
 msgstr "info - 顯示檔案或目錄的資訊"
 
-#: lib/SVK/Command.pod:204
+#: lib/SVK/Command.pod:205
 msgid "info [PATH | DEPOTPATH]"
 msgstr "info [路徑 | 檔案庫路徑]"
 
@@ -1646,115 +1649,115 @@ msgstr "info [路徑 | 檔案庫路徑]"
 msgid "invalid arguments"
 msgstr "錯誤的參數"
 
-#: lib/SVK/Command.pod:205
+#: lib/SVK/Command.pod:206
 msgid "involved, do not prefix path names before values"
 msgstr " "
 
-#: lib/SVK/Command.pod:206
+#: lib/SVK/Command.pod:207
 msgid "list - List entries in a directory from depot"
 msgstr "list - 列出檔案庫目錄內的項目"
 
-#: lib/SVK/Command.pod:207
+#: lib/SVK/Command.pod:208
 msgid "list [DEPOTPATH | PATH...]"
 msgstr "list [檔案庫路徑 | 路徑...]"
 
-#: lib/SVK/Command.pod:208
+#: lib/SVK/Command.pod:209
 msgid "log - Show log messages for revisions"
 msgstr "log - 顯示各項更動的記錄訊息"
 
-#: lib/SVK/Command.pod:209
+#: lib/SVK/Command.pod:210
 msgid "log DEPOTPATH"
 msgstr "log 檔案庫路徑"
 
-#: lib/SVK/Command.pod:210
+#: lib/SVK/Command.pod:211
 msgid "log PATH"
 msgstr "log 路徑"
 
-#: lib/SVK/Command/Commit.pm:269 lib/SVK/Command/Commit.pm:78
+#: lib/SVK/Command/Commit.pm:272 lib/SVK/Command/Commit.pm:78
 msgid "log message"
 msgstr "紀錄訊息"
 
-#: lib/SVK/Command.pod:211
+#: lib/SVK/Command.pod:212
 msgid "m: Run an external merge tool to edit merged file."
 msgstr "m: 執行外部合併工具，來編輯合併的檔案。"
 
-#: lib/SVK/Command.pod:212
+#: lib/SVK/Command.pod:213
 msgid "master repository."
 msgstr " "
 
-#: lib/SVK/Command.pod:213
+#: lib/SVK/Command.pod:214
 msgid "merge - Apply differences between two sources"
 msgstr "merge - 合併兩份來源之間的差異"
 
-#: lib/SVK/Command.pod:214
+#: lib/SVK/Command.pod:215
 msgid "merge -r N:M DEPOTPATH [PATH]"
 msgstr "merge -r N:M 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:215
+#: lib/SVK/Command.pod:216
 msgid "merge -r N:M DEPOTPATH1 DEPOTPATH2"
 msgstr "merge -r N:M 檔案庫路徑1 檔案庫路徑2"
 
-#: lib/SVK/Command.pod:216
+#: lib/SVK/Command.pod:217
 msgid "merge -r N:M [--to|--from] [PATH]"
 msgstr "merge -r N:M [--to|--from] [路徑]"
 
-#: lib/SVK/Command.pod:217
+#: lib/SVK/Command.pod:218
 msgid "mirror - Initialize a mirrored depotpath"
 msgstr "mirror - 初始化映射的檔案庫路徑"
 
-#: lib/SVK/Command.pod:218
+#: lib/SVK/Command.pod:219
 msgid "mirror --detach DEPOTPATH"
 msgstr "mirror --detach 檔案庫路徑"
 
-#: lib/SVK/Command.pod:219
+#: lib/SVK/Command.pod:220
 msgid "mirror --list [DEPOTNAME...]"
 msgstr "mirror --list [檔案庫名稱...]"
 
-#: lib/SVK/Command.pod:220
+#: lib/SVK/Command.pod:221
 msgid "mirror --recover DEPOTPATH"
 msgstr "mirror --recover 檔案庫路徑"
 
-#: lib/SVK/Command.pod:221
+#: lib/SVK/Command.pod:222
 msgid "mirror --relocate DEPOTPATH [http|svn]://host/path "
 msgstr "mirror --relocate 檔案庫路徑 [http|svn]://伺服器/路徑"
 
-#: lib/SVK/Command.pod:222
+#: lib/SVK/Command.pod:223
 msgid "mirror --upgrade //"
 msgstr "mirror --upgrade //"
 
-#: lib/SVK/Command.pod:223
+#: lib/SVK/Command.pod:224
 msgid "mirror --upgrade /DEPOTNAME/"
 msgstr "mirror --upgrade /檔案庫名稱/"
 
-#: lib/SVK/Command.pod:224
+#: lib/SVK/Command.pod:225
 msgid "mirror DEPOTPATH [http|svn]://host/path"
 msgstr "mirror 檔案庫路徑 [http|svn]://伺服器/路徑"
 
-#: lib/SVK/Command.pod:225
+#: lib/SVK/Command.pod:226
 msgid "mirror [http|svn]://host/path DEPOTPATH"
 msgstr "mirror [http|svn]://伺服器/路徑 檔案庫路徑"
 
-#: lib/SVK/Command.pod:226
+#: lib/SVK/Command.pod:227
 msgid "mirror cvs::pserver:user@host:/cvsroot:module/... DEPOTPATH"
 msgstr "mirror cvs::pserver:使用者@伺服器:/cvsroot:module/... 檔案庫路徑"
 
-#: lib/SVK/Command.pod:227
+#: lib/SVK/Command.pod:228
 msgid "mirror p4:user@host:1666://path/... DEPOTPATH"
 msgstr "mirror p4:使用者@伺服器:1666://路徑/... 檔案庫路徑"
 
-#: lib/SVK/Command.pod:228
+#: lib/SVK/Command.pod:229
 msgid "mkdir - Create a versioned directory"
 msgstr "mkdir - 建立納入版本控制的目錄"
 
-#: lib/SVK/Command.pod:229
+#: lib/SVK/Command.pod:230
 msgid "mkdir DEPOTPATH"
 msgstr "mkdir 檔案庫路徑"
 
-#: lib/SVK/Command.pod:230
+#: lib/SVK/Command.pod:231
 msgid "move - Move a file or directory"
 msgstr "move - 移動檔案或目錄"
 
-#: lib/SVK/Command.pod:231
+#: lib/SVK/Command.pod:232
 msgid "move DEPOTPATH1 DEPOTPATH2"
 msgstr "move 檔案庫路徑1 檔案庫路徑2"
 
@@ -1767,35 +1770,35 @@ msgstr "未指定檔案庫"
 msgid "no such depot: %1"
 msgstr "無此檔案庫：%1"
 
-#: lib/SVK/Command.pod:232
+#: lib/SVK/Command.pod:233
 msgid "patch - Manage patches"
 msgstr "patch - 管理補綴檔"
 
-#: lib/SVK/Command.pod:233
+#: lib/SVK/Command.pod:234
 msgid "patch apply PATCHNAME [DEPOTPATH | PATH] [-- MERGEOPTIONS]"
 msgstr "patch apply 補綴名稱 [檔案庫路徑 | 路徑] [-- 合併選項]"
 
-#: lib/SVK/Command.pod:234
+#: lib/SVK/Command.pod:235
 msgid "patch delete PATCHNAME"
 msgstr "patch delete 補綴名稱"
 
-#: lib/SVK/Command.pod:235
+#: lib/SVK/Command.pod:236
 msgid "patch list"
 msgstr "patch list"
 
-#: lib/SVK/Command.pod:236
+#: lib/SVK/Command.pod:237
 msgid "patch regen PATCHNAME"
 msgstr "patch regen 補綴名稱"
 
-#: lib/SVK/Command.pod:237
+#: lib/SVK/Command.pod:238
 msgid "patch send PATCHNAME"
 msgstr "patch send 補綴名稱"
 
-#: lib/SVK/Command.pod:238
+#: lib/SVK/Command.pod:239
 msgid "patch update PATCHNAME"
 msgstr "patch update 補綴名稱"
 
-#: lib/SVK/Command.pod:239
+#: lib/SVK/Command.pod:240
 msgid "patch view PATCHNAME"
 msgstr "patch view 補綴名稱"
 
@@ -1810,10 +1813,9 @@ msgstr "路徑 %1 已存在"
 msgid "path %1 does not exist"
 msgstr "路徑 %1 不存在。"
 
-#. ($update_target->{path})
 #. ($target->path)
-#: lib/SVK/Command/Propset.pm:44 lib/SVK/Command/Update.pm.orig:97
-#: lib/SVK/Command/Update.pm:90
+#. ($update_target->{path})
+#: lib/SVK/Command/Propset.pm:44 lib/SVK/Command/Update.pm:90
 msgid "path %1 does not exist.\n"
 msgstr "路徑 %1 不存在。\n"
 
@@ -1829,19 +1831,19 @@ msgstr "路徑 %1 不是已取出的路徑。\n"
 msgid "path %1 not found"
 msgstr "找不到路徑 %1"
 
-#: lib/SVK/Command.pod:240
+#: lib/SVK/Command.pod:241
 msgid "propdel - Delete a property on files or dirs"
 msgstr "propdel - 刪除檔案或目錄的屬性"
 
-#: lib/SVK/Command.pod:241
+#: lib/SVK/Command.pod:242
 msgid "propdel PROPNAME [DEPOTPATH | PATH...]"
 msgstr "propdel 屬性名稱 [檔案庫路徑 | 路徑...]"
 
-#: lib/SVK/Command.pod:242
+#: lib/SVK/Command.pod:243
 msgid "propedit - Edit a property on path"
 msgstr "propedit - 編輯某路徑的屬性"
 
-#: lib/SVK/Command.pod:243
+#: lib/SVK/Command.pod:244
 msgid "propedit PROPNAME [DEPOTPATH | PATH...]"
 msgstr "propedit 屬性名稱 [檔案庫路徑 | 路徑...]"
 
@@ -1850,51 +1852,51 @@ msgstr "propedit 屬性名稱 [檔案庫路徑 | 路徑...]"
 msgid "property %1"
 msgstr "屬性 %1"
 
-#: lib/SVK/Command.pod:244
+#: lib/SVK/Command.pod:245
 msgid "property values; when there are multiple paths"
 msgstr "即使指定的路徑不止一個，也不要在每項之前顯示路徑名稱"
 
-#: lib/SVK/Command.pod:245
+#: lib/SVK/Command.pod:246
 msgid "propget - Display a property on path"
 msgstr "propget - 顯示某路徑的屬性"
 
-#: lib/SVK/Command.pod:246
+#: lib/SVK/Command.pod:247
 msgid "propget PROPNAME [DEPOTPATH | PATH...]"
 msgstr "propget 屬性名稱 [檔案庫路徑 | 路徑...]"
 
-#: lib/SVK/Command.pod:247
+#: lib/SVK/Command.pod:248
 msgid "proplist - List all properties on files or dirs"
 msgstr "proplist - 列出檔案或目錄的所有屬性"
 
-#: lib/SVK/Command.pod:248
+#: lib/SVK/Command.pod:249
 msgid "proplist PATH..."
 msgstr "proplist 路徑..."
 
-#: lib/SVK/Command.pod:249
+#: lib/SVK/Command.pod:250
 msgid "propset - Set a property on path"
 msgstr "propset - 設定路徑的某項屬性"
 
-#: lib/SVK/Command.pod:250
+#: lib/SVK/Command.pod:251
 msgid "propset PROPNAME PROPVAL [DEPOTPATH | PATH...]"
 msgstr "propset 屬性名稱 屬性值 [檔案庫路徑 | 路徑...]"
 
-#: lib/SVK/Command.pod:251
+#: lib/SVK/Command.pod:252
 msgid "pull - Bring changes from another repository"
 msgstr "pull - 拉取遠端檔案庫裡的更動"
 
-#: lib/SVK/Command.pod:252
+#: lib/SVK/Command.pod:253
 msgid "pull DEPOTPATH"
 msgstr "pull 檔案庫路徑"
 
-#: lib/SVK/Command.pod:253
+#: lib/SVK/Command.pod:254
 msgid "pull [PATH...]"
 msgstr "pull [路徑...]"
 
-#: lib/SVK/Command.pod:254
+#: lib/SVK/Command.pod:255
 msgid "push - Move changes into another repository"
 msgstr "push - 推送更動到遠端檔案庫裡"
 
-#: lib/SVK/Command.pod:255
+#: lib/SVK/Command.pod:256
 msgid "push [DEPOTPATH | PATH]"
 msgstr "push [檔案庫路徑 | 路徑]"
 
@@ -1907,39 +1909,39 @@ msgstr "q)離開？"
 msgid "rename %1 to %2 failed: %3"
 msgstr "無法將 %1 改名成 %2：%3"
 
-#: lib/SVK/Command.pod:256
+#: lib/SVK/Command.pod:257
 msgid "resolved - Remove conflict mark from checkout items"
 msgstr "resolved - 移除已取出項目上的衝突標記"
 
-#: lib/SVK/Command.pod:257
+#: lib/SVK/Command.pod:258
 msgid "resolved PATH..."
 msgstr "resolved 路徑..."
 
-#: lib/SVK/Command.pod:258
+#: lib/SVK/Command.pod:259
 msgid "revert - Revert changes made in checkout copies"
 msgstr "revert - 復原對已取出的複本所作過的更動"
 
-#: lib/SVK/Command.pod:259
+#: lib/SVK/Command.pod:260
 msgid "revert PATH..."
 msgstr "revert 路徑..."
 
-#: lib/SVK/Command.pod:260
+#: lib/SVK/Command.pod:261
 msgid "s: Skip this file."
 msgstr "s: 略過這個檔案。"
 
-#: lib/SVK/Command.pod:261
+#: lib/SVK/Command.pod:262
 msgid "smerge - Automatically merge all changes between branches"
 msgstr "smerge - 自動合併不同分支的所有差異"
 
-#: lib/SVK/Command.pod:262
+#: lib/SVK/Command.pod:263
 msgid "smerge DEPOTPATH [PATH]"
 msgstr "smerge 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:263
+#: lib/SVK/Command.pod:264
 msgid "smerge DEPOTPATH1 DEPOTPATH2"
 msgstr "smerge 檔案庫路徑1 檔案庫路徑2"
 
-#: lib/SVK/Command.pod:264
+#: lib/SVK/Command.pod:265
 msgid "smerge [--to|--from] [PATH]"
 msgstr "smerge [--to|--from] [路徑]"
 
@@ -1947,47 +1949,47 @@ msgstr "smerge [--to|--from] [路徑]"
 msgid "source checksum mismatch"
 msgstr "來源的檢查值不符"
 
-#: lib/SVK/Command.pod:265
+#: lib/SVK/Command.pod:266
 msgid "status - Display the status of items in the checkout copy"
 msgstr "status - 顯示已取出複本的狀態"
 
-#: lib/SVK/Command.pod:266
+#: lib/SVK/Command.pod:267
 msgid "status [PATH..]"
 msgstr "status [路徑..]"
 
-#: lib/SVK/Command.pod:267
+#: lib/SVK/Command.pod:268
 msgid "switch - Switch to another branch and keep local changes"
 msgstr "switch - 切換到另一個分支，並保留本地版本"
 
-#: lib/SVK/Command.pod:268
+#: lib/SVK/Command.pod:269
 msgid "switch DEPOTPATH [PATH]"
 msgstr "switch 檔案庫路徑 [路徑]"
 
-#: lib/SVK/Command.pod:269
+#: lib/SVK/Command.pod:270
 msgid "sync - Synchronize a mirrored depotpath"
 msgstr "sync - 同步化映射的檔案庫路徑"
 
-#: lib/SVK/Command.pod:270
+#: lib/SVK/Command.pod:271
 msgid "sync --all [DEPOTNAME...]"
 msgstr "sync --all [檔案庫名稱...]"
 
-#: lib/SVK/Command.pod:271
+#: lib/SVK/Command.pod:272
 msgid "sync DEPOTPATH"
 msgstr "sync 檔案庫路徑"
 
-#: lib/SVK/Command.pod:272
+#: lib/SVK/Command.pod:273
 msgid "t: Keep only changes to their file."
 msgstr "t: 僅保留對方更動，捨棄已方的更動。"
 
-#: lib/SVK/Command/Commit.pm:365
+#: lib/SVK/Command/Commit.pm:368
 msgid "unexpected error: commit to mirrored path but no mirror object"
 msgstr "未預期的錯誤：送交更動至映射的路徑，但找不到映射物件"
 
-#: lib/SVK/Command.pod:273
+#: lib/SVK/Command.pod:274
 msgid "update - Bring changes from repository to checkout copies"
 msgstr "update - 將檔案庫裡的更動更新到取出的工作複本上"
 
-#: lib/SVK/Command.pod:274
+#: lib/SVK/Command.pod:275
 msgid "update [PATH...]"
 msgstr "update [路徑...]"
 
@@ -1996,14 +1998,14 @@ msgstr "update [路徑...]"
 msgid "use 'svk patch regen %1' instead.\n"
 msgstr "請改用「svk patch regen %1」。\n"
 
-#: lib/SVK/Command.pod:275
+#: lib/SVK/Command.pod:276
 msgid "verify - Verify change signatures"
 msgstr "verify - 檢驗更動的簽章"
 
-#: lib/SVK/Command.pod:276
+#: lib/SVK/Command.pod:277
 msgid "verify CHANGE [DEPOTNAME]"
 msgstr "verify 更動 檔案庫名稱"
 
-#: lib/SVK/Command.pod:277
+#: lib/SVK/Command.pod:278
 msgid "y: Keep only changes to your file."
 msgstr "y: 僅保留已方更動，捨棄對方的更動。"
