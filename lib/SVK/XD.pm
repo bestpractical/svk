@@ -825,6 +825,11 @@ sub _delta_file {
 				$cinfo->{'.copyfrom_rev'} ||  -1, $pool) :
 				    undef;
     my $newprop = $cinfo->{'.newprop'};
+    # XXX: generic auto prop for auto-added items
+    $newprop = {'svn:special' => '*'}
+	if -l $arg{copath} && !$schedule
+	    && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
+
     $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool)
 	if keys %$newprop;
 

@@ -88,14 +88,12 @@ is_output ($svk, 'diff', [$copath],
 	    '@@ -1 +1 @@',
 	    '-link /tmp+link .'], 'merge');
 
-TODO: {
-local $TODO = "import should also set svn:special prop";
 symlink ('non', "$copath/B/new-non.lnk");
 $svk->import ('--force', '-m', 'use import', '//', $copath);
 unlink ("$copath/B/new-non.lnk");
 $svk->revert ('-R', "$copath/B");
 ok (-l "$copath/B/new-non.lnk", 'import sets auto prop too');
-}
+
 is_output ($svk, 'status', [$copath], [], 'import');
 
 # XXX: test for conflicts resolving etc; XD should stop translating when conflicted
