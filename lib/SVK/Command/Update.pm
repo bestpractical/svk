@@ -62,9 +62,11 @@ sub do_update {
     mkdir ($cotarget->{copath}) or die $!
 	unless $self->{check_only} || -e $cotarget->{copath};
 
+    my $notify = SVK::Notify->new_with_report
+	($report, $update_target->{targets}[0], 1);
     my $merge = SVK::Merge->new
 	(repos => $cotarget->{repos}, base => $cotarget, base_root => $xdroot,
-	 no_recurse => $self->{nonrecursive}, report => $report, nodelay => 1,
+	 no_recurse => $self->{nonrecursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, xd => $self->{xd}, check_only => $self->{check_only});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  oldroot => $xdroot, newroot => $newroot,

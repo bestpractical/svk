@@ -33,7 +33,7 @@ sub skip_print {
 }
 
 sub print_report {
-    my ($print, $report, $target) = @_;
+    my ($print, $is_copath, $report, $target) = @_;
     return $print unless defined $report;
     sub {
 	my $path = shift;
@@ -42,10 +42,12 @@ sub print_report {
 		$path = '';
 	    }
 	    else {
-		$path =~ s|^\Q$target/||;
+		$path =~ s|^\Q$target\E/||;
 	    }
 	}
-	$print->($path ? $report ? "$report/$path" : $path
+	$print->($path ? $report ? $is_copath ? SVK::Target->copath ($report, $path)
+		                              : "$report/$path"
+                                 : $path
 		       : $report || '.', @_);
     };
 }
@@ -58,9 +60,9 @@ sub new {
 }
 
 sub new_with_report {
-    my ($class, $report, $target) = @_;
-    $class->new	( cb_skip => print_report (\&skip_print, $report),
-		  cb_flush => print_report (\&flush_print, $report, $target));
+    my ($class, $report, $target, $is_copath) = @_;
+    $class->new	( cb_skip => print_report (\&skip_print, $is_copath, $report),
+		  cb_flush => print_report (\&flush_print, $is_copath, $report, $target));
 }
 
 sub node_status {
