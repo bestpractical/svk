@@ -189,7 +189,7 @@ sub getopt {
     local *ARGV = $argv;
     my $recursive = $self->opt_recursive;
     my $toggle = 0;
-    $opt{$recursive ? 'N||non-recursive' : 'R|recursive'} = \$toggle
+    $opt{$recursive ? 'N|non-recursive' : 'R|recursive'} = \$toggle
 	if defined $recursive;
     die loc ("Unknown options.\n")
 	unless GetOptions (%opt, $self->_opt_map ($self->options));

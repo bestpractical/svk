@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw ( abs2rel );
+use SVK::Util qw( abs2rel );
 
 sub options {
     ($_[0]->SUPER::options,
