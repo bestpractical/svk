@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 45;
+use Test::More tests => 47;
 BEGIN { require 't/tree.pl' };
 
 use SVK::Util qw( HAS_SYMLINK is_symlink);
@@ -47,6 +47,10 @@ is_output ($svk, 'add', ["$copath/A"],
 _symlink ('/non-exists', "$copath/A/non.lnk");
 is_output ($svk, 'add', ["$copath/A/non.lnk"],
 	   [__("A   $copath/A/non.lnk")], 'dangling symlink');
+is_output ($svk, 'rm', ["$copath/A/non.lnk"],
+	   [__("$copath/A/non.lnk is scheduled, use 'svk revert'.")]);
+is_output ($svk, 'rm', ["$copath/A/bar.lnk"],
+	   [__("$copath/A/bar.lnk is scheduled, use 'svk revert'.")]);
 is_output ($svk, 'status', ["$copath/A"],
 	   [__"A   $copath/A",
 	    __"A   $copath/A/bar",

@@ -634,8 +634,10 @@ sub do_delete {
 				    elsif ($st eq 'D') {
 					push @deleted, $copath;
 				    }
-				    elsif (-f $copath) {
-					die loc("%1 is scheduled, use 'svk revert'.\n", $report);
+				    else {
+					lstat ($copath);
+					die loc("%1 is scheduled, use 'svk revert'.\n", $report)
+					    if -e _ && !-d _;
 				    }
 				})),
 			    cb_unknown => sub {
