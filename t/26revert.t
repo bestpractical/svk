@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 7;
+use Test::More tests => 10;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -52,3 +52,13 @@ TODO: {
     local $TODO = 'should inhibit redundant message if nothing was changed';
     is_output ($svk, 'revert', ['A/foo'], [], 'do it again');
 }
+
+append_file ("A/foo", "modified");
+$svk->commit ('-m', 'modify A/foo');
+overwrite_file ("A/foo", "foobarbaz");
+$svk->update ('-r1');
+is_output ($svk, 'st', [],
+	  [__('C   A/foo')]);
+is_output ($svk, 'revert', ['-R'],
+	   [__("Reverted $corpath/A/foo")]);
+is_output ($svk, 'st', [], []);
