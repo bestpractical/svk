@@ -25,7 +25,10 @@ sub run {
 	  xdroot => $xdroot,
 	  nodelay => 1,
 	  delete_verbose => 1,
-	  editor => SVK::Editor::Status->new (report => $target->{report}),
+	  editor => SVK::Editor::Status->new (
+	      report => $target->{report},
+	      notify => SVK::Notify->new_with_report ($target->{report}, undef, 1)
+	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_unknown =>
 	  sub { my $path = abs2rel($_[1], $target->{copath} => length($report) ? $report : undef);

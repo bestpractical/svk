@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config is_symlink );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel splitdir catdir $SEP %Config is_symlink splitpath );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -771,16 +771,15 @@ sub _unknown_verbose {
 		return if $seen{$copath};
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
-		# XXX: translate $dpath from SEP to /
 		if ($arg{entry}) {
-		    $dpath = abs2rel($dpath, $arg{copath} => $arg{entry});
+		    $dpath = abs2rel($dpath, $arg{copath} => $arg{entry}, '/');
 		}
 		else {
 		    if ($dpath eq $arg{copath}) {
 			$dpath = '';
 		    }
 		    else {
-			$dpath = abs2rel($dpath, $arg{copath});
+			$dpath = abs2rel($dpath, $arg{copath}, '/');
 		    }
 		}
 		$arg{cb_unknown}->($dpath, catdir($File::Find::dir, $_));
@@ -802,7 +801,7 @@ sub _node_deleted_or_absent {
 	    if ($arg{delete_verbose}) {
 		foreach my $file ($self->{checkout}->find
 		     ($arg{copath}, {'.schedule' => 'delete'})) {
-		    $file = abs2rel($file, $arg{copath});
+		    $file = abs2rel($file, $arg{copath} => undef, '/');
 		    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
 			if $file;
 		}
@@ -893,12 +892,13 @@ sub _delta_dir {
     # compute targets for children
     my $targets;
     for (@{$arg{targets} || []}) {
-	my ($a, $b) = m|^(.*?)(?:/(.*))?$|;
-	if ($b) {
-	    push @{$targets->{$a}}, $b
+	my ($volume, $directories, $file) = splitpath ($_);
+	if ( my $path = $volume.$directories ) {
+	    chop $path;
+	    push @{$targets->{$path}}, $file
 	}
 	else {
-	    $targets->{$a} = undef;
+	    $targets->{$file} = undef;
 	}
     }
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
