@@ -10,6 +10,7 @@ sub options {
      'l|lump'           => 'lump',
      'C|check-only'     => 'check_only',
      'S|sign'	        => 'sign',
+     'P|patch=s'        => 'patch',
     );
 }
 
@@ -23,7 +24,7 @@ sub parse_arg {
         unshift @arg, $self->{from_path};
     }
 
-    if ($self->{lump}) {
+    if ($self->{lump} or $self->{patch}) {
         $self->{log}++;
         $self->{message} = '';
         delete $self->{incremental};
