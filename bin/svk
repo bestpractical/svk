@@ -13,7 +13,7 @@ use Data::Hierarchy;
 use SVN::DiffEditor;
 
 use vars qw/$xd $info/;
-use subs qw/co up st blame ci del rm ps pl cp sy sm/;
+use subs qw/co up st blame ci del rm ps pl cp sy sm desc/;
 
 my $svn_mirror;
 eval 'require SVN::Mirror' and ++$svn_mirror;
@@ -654,6 +654,15 @@ Show the log messages for revisions.
 
 =cut
 
+sub log_remote_rev {
+    my ($repos, $rev) = @_;
+    my $revprops = $repos->fs->revision_proplist ($rev);
+
+    my ($rrev) = map {$revprops->{$_}} grep {m/^svm:headrev:/} keys %$revprops;
+
+    return $rrev ? " (orig r$rrev)" : '';
+}
+
 sub log {
     local @ARGV = @_;
     my ($limit, $revspec, $cross, $verbose) = (undef, undef, 0, 0);
@@ -682,18 +691,21 @@ sub log {
 	}
     }
 
-    do_log ($repos, $path, $fromrev, $torev, $verbose, $cross);
+    do_log ($repos, $path, $fromrev, $torev, $verbose, $cross, 1);
 }
 
 sub do_log {
-    my ($repos, $path, $fromrev, $torev, $verbose, $cross, $output) = @_;
+    my ($repos, $path, $fromrev, $torev, $verbose, $cross, $remote, $output)
+	= @_;
     $output ||= \*STDOUT;
     print $output ('-' x 70);
     print $output "\n";
     $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
 		     sub { my ($paths, $rev, $author, $date, $message) = @_;
 			   no warnings 'uninitialized';
-			   print $output "r$rev:  $author | $date\n";
+			   print $output "r$rev".
+			       ($remote ? log_remote_rev($repos, $rev): '').
+				   ":  $author | $date\n";
 			   if ($paths) {
 			       print $output "Changed paths:\n";
 			       for (sort keys %$paths) {
@@ -1033,7 +1045,7 @@ sub get_new_ticket {
 
 sub log_for_merge {
     my $buf = IO::String->new (\my $tmp);
-    do_log (@_, 0, 0, $buf);
+    do_log (@_, 0, 0, 0, $buf);
     return $tmp;
 }
 
@@ -1207,6 +1219,7 @@ sub sync {
 *cp = *copy;
 *sm = *smerge;
 *sy = *sync;
+*desc = *describe;
 
 my $defaultdepot;
 
