@@ -15,6 +15,7 @@ inc/Module/Install/WriteAll.pm
 lib/SVK.pm
 lib/SVK/Command.pm
 lib/SVK/Command/Add.pm
+lib/SVK/Command/Admin.pm
 lib/SVK/Command/Annotate.pm
 lib/SVK/Command/Cat.pm
 lib/SVK/Command/Checkout.pm
@@ -128,6 +129,7 @@ t/31cat.t
 t/32list.t
 t/33prop.t
 t/34revprop.t
+t/35admin.t
 t/70symlink.t
 t/tree.pl
 TODO
