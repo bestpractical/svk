@@ -37,7 +37,11 @@ sub run {
         my @newarg;
         foreach my $depot (@arg) {
             $depot =~ s{/}{}g;
-            my $target = eval { $self->arg_depotpath ("/$depot/") } or next;
+            my $target = eval { $self->arg_depotpath ("/$depot/") };
+	    unless ($target) {
+		print $@;
+		next;
+	    }
 	    push @newarg, (
                 map {$self->arg_depotpath("/$depot$_")}
                     SVN::Mirror::list_mirror ($target->{repos})

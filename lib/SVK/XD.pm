@@ -287,7 +287,7 @@ sub find_repos {
     my ($depot, $path) = $depotpath =~ m|^/([^/]*)(/.*?)/?$|
 	or die loc("%1 is not a depot path.\n", $depotpath);
 
-    my $repospath = $self->{depotmap}{$depot} or die loc("no such depot: %1", $depot);
+    my $repospath = $self->{depotmap}{$depot} or die loc("No such depot: %1.\n", $depot);
 
     return ($repospath, $path, $open && _open_repos ($repospath));
 }

@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 19;
+plan_svm tests => 22;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -18,6 +18,18 @@ $svk->copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for 
 
 my $uri = uri($srepospath);
 $svk->mirror ('//m', $uri.($spath eq '/' ? '' : $spath));
+
+TODO: {
+local $TODO = 'better message';
+is_output ($svk, 'sync', ['//'],
+	   ['// is not a mirrored path.']);
+is_output ($svk, 'sync', ['//what'],
+	   ['// is not a mirrored path.']);
+}
+is_output ($svk, 'sync', ['/what/'],
+	   ["No such depot: what."]);
+$svk->sync (-a => '/what/',
+	    ["No such depot: what."]);
 
 $svk->sync ('//m');
 
