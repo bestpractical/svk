@@ -388,14 +388,29 @@ does not exist.
 
 sub abs_path {
     my $path = shift;
-    if (defined &Win32::GetFullPathName) {
-	$path = '.' if !length $path;
-	$path = Win32::GetFullPathName($path);
-	return((-d dirname($path)) ? $path : undef);
+
+    if (!IS_WIN32) {
+	return Cwd::abs_path ($path) unless -l $path;
+	my (undef, $dir, $pathname) = splitpath ($path);
+	return catpath (undef, Cwd::abs_path ($dir), $pathname);
     }
-    return Cwd::abs_path ($path) unless -l $path;
-    my (undef, $dir, $pathname) = splitpath ($path);
-    return catpath (undef, Cwd::abs_path ($dir), $pathname);
+
+    # Win32 - Complex handling to get the correct base case
+    $path = '.' if !length $path;
+    $path = ucfirst(Win32::GetFullPathName($path));
+    return undef unless -d dirname($path);
+
+    my ($base, $remainder) = ($path, '');
+    while (length($base) > 1) {
+	my $new_base = Win32::GetLongPathName($base);
+	return $new_base.$remainder if defined $new_base;
+
+	$new_base = dirname($base);
+	$remainder = substr($base, length($new_base)) . $remainder;
+	$base = $new_base;
+    }
+
+    return undef;
 }
 
 =head3 abs2rel ($pathname, $old_basedir, $new_basedir, $sep)
