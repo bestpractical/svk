@@ -32,6 +32,9 @@ sub run {
         print loc("'Use %1 merge -c' to obtain similar functionality.",$0)."\n\n";
     }
     my @revlist = $self->parse_revlist($src);
+    for my $r (@revlist) {
+        die("Revision spec must be N:M.\n") unless defined($r->[1])
+    }
 
     my $repos = $src->{repos};
     my $fs = $repos->fs;
