@@ -19,7 +19,7 @@ sub add_file {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = [$self->{conflict}{$opath} || 'A', ''];
+    $self->{info}{$path}{status} = [$self->{conflict}{$path} || 'A', ''];
     return $path;
 }
 
@@ -28,7 +28,7 @@ sub open_file {
     my $opath = $path;
     $path = "$self->{copath}/$opath";
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
-    $self->{info}{$path}{status} = [$self->{conflict}{$opath} || '', ''];
+    $self->{info}{$path}{status} = [$self->{conflict}{$path} || '', ''];
     return $path;
 }
 
@@ -51,6 +51,7 @@ sub close_file {
     print sprintf ("%1s%1s \%s\n", $self->{info}{$path}{status}[0],
 		   $self->{info}{$path}{status}[1],
 		   $rpath);
+    delete $self->{conflict}{$path};
 }
 
 sub absent_file {
@@ -98,6 +99,15 @@ sub close_directory {
 		   $self->{info}{$path}{status}[1] || '',
 		   $rpath)
 	if $self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[1];
+
+    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
+	 sort keys %{$self->{conflict}}) {
+	delete $self->{conflict}{$_};
+	s|^$self->{copath}/|$self->{rpath}|;
+
+	print sprintf ("%1s%1s \%s\n", 'C', '', $_);
+    }
+
 }
 
 sub absent_directory {
@@ -107,6 +117,8 @@ sub absent_directory {
 
 sub conflict {
     my ($self, $path) = @_;
+    my $opath = $path;
+    $path = "$self->{copath}/$opath";
     $self->{conflict}{$path} = 'C';
 }
 

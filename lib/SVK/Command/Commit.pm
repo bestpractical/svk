@@ -213,6 +213,7 @@ sub run {
 	( %$target,
 	  baseroot => $xdroot,
 	  xdroot => $xdroot,
+	  nodelay => 1,
 	  delete_verbose => 1,
 	  absent_ignore => 1,
 	  editor => SVK::CommitStatusEditor->new

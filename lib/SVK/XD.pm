@@ -321,7 +321,7 @@ sub do_delete {
 	 }, @paths) if @paths;
 
     for (@deleted) {
-	print "D  $_\n";
+	print "D  $_\n" unless $arg{quiet};
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
 
@@ -400,9 +400,12 @@ sub do_revert {
     };
 
     my $unschedule = sub {
+	my $sche = $self->{checkout}->get ($_[1])->{'.schedule'};
 	$self->{checkout}->store ($_[1],
 				  {'.schedule' => undef,
 				   '.newprop' => undef});
+	-d $_[1] ? rmtree ([$_[1]]) : unlink($_[1])
+	    if $sche eq 'add';
 	print loc("Reverted %1\n", $_[1]);
     };
 
@@ -1035,7 +1038,15 @@ sub delete_entry {
     $self->{get_copath}($copath);
     # XXX: check if everyone under $path is sane for delete";
     return if $self->{check_only};
-    -d $copath ? rmtree ([$copath]) : unlink($copath);
+    if ($self->{update}) {
+	-d $copath ? rmtree ([$copath]) : unlink($copath);
+    }
+    else {
+	$self->{xd}->do_delete (%$self,
+				path => "$self->{anchor}/$path",
+				copath => $copath,
+				quiet => 1);
+    }
 }
 
 sub close_directory {

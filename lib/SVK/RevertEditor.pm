@@ -23,7 +23,8 @@ sub absent_file {
 sub close_directory {
     my ($self, $path) = @_;
     &{$self->{cb_unschedule}} ($self->{info}{$path}{dpath}, $path)
-	    if $self->{info}{$path}{status}[0] eq 'A';
+	    if $self->{info}{$path}{status}[0] eq 'A' ||
+		$self->{info}{$path}{status}[1] eq 'M';
 }
 
 sub absent_directory {
