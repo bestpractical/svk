@@ -964,6 +964,20 @@ sub _node_props {
     return ($newprops, $fullprop)
 }
 
+sub _node_type {
+    my $copath = shift;
+    lstat ($copath);
+    return '' if !-e _;
+    unless (-r _) {
+	print loc ("Warning: $copath is unreadable.\n");
+	return;
+    }
+    return 'file' if -f _ or is_symlink;
+    return 'directory' if -d _;
+    print loc ("Warning: unsupported node type $copath.\n");
+    return;
+}
+
 sub _delta_file {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
@@ -1107,9 +1121,8 @@ sub _delta_dir {
 	    next;
 	}
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
-	lstat ($copath);
-	my $type = -e _ ? (-d _ and not is_symlink) ? 'directory' : 'file'
-	                : '';
+	my $type = _node_type ($copath);
+	next unless defined $type;
 	my $delta = $type ? $type eq 'directory' ? \&_delta_dir : \&_delta_file
 	                  : $kind == $SVN::Node::file ? \&_delta_file : \&_delta_dir;
 	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
@@ -1192,10 +1205,7 @@ sub _delta_dir {
 	    }
 	    next;
 	}
-	lstat ($newpaths{copath});
-	# XXX: warn about unreadable entry?
-	next unless -r _;
-	my $type = (-d _ and not is_symlink) ? 'directory' : 'file';
+	my $type = _node_type ($newpaths{copath}) or next;
 	my $delta = $type eq 'directory' ? \&_delta_dir : \&_delta_file;
 	my $copyfrom = $ccinfo->{'.copyfrom'};
 	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
