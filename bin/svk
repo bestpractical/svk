@@ -7,7 +7,7 @@ require SVN::Repos;
 require SVN::Fs;
 use SVN::XD;
 use YAML qw(LoadFile DumpFile);
-use Getopt::Long;
+use Getopt::Long qw(:config no_ignore_case);
 use File::Spec;
 use File::Path ();
 use Data::Hierarchy;
@@ -899,8 +899,11 @@ sub get_buffer_from_editor {
     while (1) {
 	my $mtime = (stat($file))[9];
 	my $ans;
+	my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
+	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
+			: "vi"; # fall back to something
 	print "waiting for editor...\n";
-	system ("\$EDITOR $file");
+	system ("$editor $file");
 	last if (stat($file))[9] > $mtime;
 	do {
 	    print "$what not modified: a)bort, e)dit, c)ommit?\n";
