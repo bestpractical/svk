@@ -1247,11 +1247,10 @@ sub _combine_prop {
 sub _copy_source {
     my ($self, $entry, $copath, $root) = @_;
     return unless $entry->{scheduleanchor};
-    my $descendent = abs2rel($copath, $entry->{scheduleanchor}, '');
+    my $descendent = abs2rel($copath, $entry->{scheduleanchor}, '', '/');
     $entry = $self->{checkout}->get ($entry->{scheduleanchor})
 	if $entry->{scheduleanchor} ne $copath;
     my $from = $entry->{'.copyfrom'} or return;
-    # XXX: translate SEP to /
     $from .= $descendent;
     return ($from, $root ? $root->fs->revision_root ($entry->{'.copyfrom_rev'})
 	    : $entry->{'.copyfrom_rev'});
