@@ -3,9 +3,9 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 45;
+plan tests => 47;
 
-our $output;
+our ($output, $answer);
 BEGIN { require 't/tree.pl' };
 my ($xd, $svk) = build_test('foo');
 $svk->mkdir ('-m', 'init', '//V');
@@ -21,6 +21,7 @@ is_output ($svk, 'copy', ['//V/me', '//V/D/de', $copath],
 	    __"A   $copath/de"]);
 is_output ($svk, 'cp', ['//V/me', $copath],
 	   [__"Path $corpath/me already exists."]);
+
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   [__"$corpath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
@@ -170,6 +171,11 @@ is_output ($svk, 'cp', ['-p', '-m', 'copy direcly', '//V/me', '//V/newdir-with-p
 	   ['Committed revision 18.']);
 
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
+
+$answer = 'somepath';
+is_output ($svk, 'cp', ['-m', '', '//V/me'],
+	   ['Committed revision 19.']);
+is_copied_from ("//somepath", '/V/me', 3);
 
 sub is_copied_from {
     my ($path, @expected) = @_;

@@ -14,6 +14,8 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if @arg < 1;
 
+    push @arg, '' if @arg == 1;
+
     my $dst = pop(@arg);
     my @src = (map {$self->arg_co_maybe ($_)} @arg);
 
