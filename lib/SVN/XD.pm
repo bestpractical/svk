@@ -46,6 +46,22 @@ sub create_xd_root {
     return ($txn, $root);
 }
 
+sub xd_storage_cb {
+    my ($info, $target, $copath) = @_;
+    return
+	( cb_exist => sub { $_ = shift; s|^$target/|$copath/|; -e $_},
+	  cb_conflict => sub { $_ = shift;s|^$target/|$copath/|;
+			       $info->{checkout}->store ($_, {conflict => 1})},
+	  cb_localmod => sub { my ($path, $checksum) = @_;
+			       $path =~ s|^$target/|$copath/|;
+			       open my ($base), '<', $path;
+			       my $md5 = SVN::XD::MergeEditor::md5 ($base);
+			       return undef if $md5 eq $checksum;
+			       seek $base, 0, 0;
+			       return [$base, $path];
+			   });
+}
+
 sub do_update {
     my ($info, %arg) = @_;
     my $fs = $arg{repos}->fs;
@@ -63,17 +79,28 @@ sub do_update {
 
     ($txn, $xdroot) = create_xd_root ($info, %arg);
 
+    my $mtarget = $target eq '/' ? '' : $target;
+
+    my $editor = SVN::XD::MergeEditor->new
+	(_debug => 0,
+	 fs => $fs,
+	 anchor => $anchor,
+	 xdroot => $xdroot,
+	 target => $mtarget,
+	 storage => SVN::XD::Editor->new
+	 ( target => $mtarget,
+	   copath => $arg{copath},
+	   checkout => $info->{checkout},
+	   update => 1,
+	 ),
+	 xd_storage_cb ($info, $mtarget, $arg{copath}),
+	);
+
+#    $editor = SVN::Delta::Editor->new(_debug=>1),
+
     SVN::Repos::dir_delta ($xdroot, $anchor, $target,
 			   $fs->revision_root ($arg{rev}), $arg{path},
-			   SVN::XD::UpdateEditor->new (_debug => 0,
-						       fs => $fs,
-						       anchor => $anchor,
-						       xdroot => $xdroot,
-						       checkout => $info->{checkout},
-						       target => $target eq '/' ? '' : $target,
-						       copath => $arg{copath},
-						      ),
-#			   SVN::Delta::Editor->new(_debug=>1),
+			   $editor,
 			   1, 1, 0, 1);
 
     SVN::Fs::close_txn ($txn) if $txn;
@@ -128,7 +155,7 @@ sub do_propset {
 
     my ($txn, $xdroot) = create_xd_root ($info, %arg);
 
-    die "$arg{copath} not under version control"
+    die "$arg{copath} ($arg{path})not under version control"
 	if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
 
     #XXX: support working on multiple paths and recursive
@@ -201,7 +228,7 @@ sub checkout_crawler {
 	chop $pdir;
 
 	push @{$torm{$pdir}}, $_
-	    unless exists $schedule{$pdir};
+	    unless exists $schedule{$pdir} && $schedule{$pdir} eq 'delete';
     }
 
     my ($txn, $xdroot) = create_xd_root ($info, %arg);
@@ -257,6 +284,46 @@ sub checkout_crawler {
 		 if $arg{cb_changed} && md5file($File::Find::name) ne
 		     $xdroot->file_md5_checksum ($cpath);
 	  }, $arg{copath});
+    SVN::Fs::close_txn ($txn) if $txn;
+}
+
+sub do_merge {
+    my ($info, %arg) = @_;
+
+    my (undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
+    my (undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
+    if ($anchor eq '/' && $target eq '') {
+	$anchor = '';
+	$target = '/';
+    }
+    chop $anchor if length($anchor) > 1;
+
+    my $fs = $arg{repos}->fs;
+    my ($txn, $xdroot) = create_xd_root ($info, %arg);
+
+    my $mtarget = $target eq '/' ? '' : $target;
+    my $editor = SVN::XD::MergeEditor->new
+	(_debug => 0,
+	 fs => $fs,
+	 anchor => $anchor,
+	 xdroot => $xdroot,
+	 target => $mtarget,
+
+	 storage => SVN::XD::Editor->new
+	 ( target => $mtarget,
+	   copath => $arg{copath},
+	   checkout => $info->{checkout},
+	   check_only => $arg{check_only},
+	 ),
+	 xd_storage_cb ($info, $mtarget, $arg{copath}),
+	);
+
+    SVN::Repos::dir_delta ($fs->revision_root ($arg{fromrev}),
+			   $anchor, $target,
+			   $fs->revision_root ($arg{torev}), $arg{path},
+			   $editor,
+			   1, 1, 0, 1);
+
     SVN::Fs::close_txn ($txn) if $txn;
 }
 
@@ -336,12 +403,102 @@ sub md5file {
     return $ctx->hexdigest;
 }
 
-
-package SVN::XD::UpdateEditor;
+package SVN::XD::Editor;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use File::Path;
+
+sub set_target_revision {
+    my ($self, $revision) = @_;
+    $self->{revision} = $revision;
+}
+
+sub open_root {
+    my ($self, $base_revision) = @_;
+    $self->{baserev} = $base_revision;
+    return $self->{copath};
+}
+
+sub add_file {
+    my ($self, $path) = @_;
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
+    die "$path already exists" if -e $path;
+    return $path;
+}
+
+sub open_file {
+    my ($self, $path) = @_;
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
+    die "path not exists" unless -e $path;
+    return $path;
+}
+
+sub apply_textdelta {
+    my ($self, $path, $checksum) = @_;
+    my $base;
+    return if $self->{check_only};
+    if (-e $path) {
+	my (undef,$dir,$file) = File::Spec->splitpath ($path);
+	my $basename = "$dir.svk.$file.base";
+	open $base, '<', $path;
+	if ($checksum) {
+	    my $md5 = SVN::XD::MergeEditor::md5($base);
+	    die "source checksum mismatch" if $md5 ne $checksum;
+	    seek $base, 0, 0;
+	}
+	rename ($path, $basename);
+	$self->{base}{$path} = [$base, $basename];
+
+    }
+    open my ($fh), '+>', $path or warn "can't open $path";
+    return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty(),
+				 $fh, undef, undef)];
+}
+
+sub close_file {
+    my ($self, $path) = @_;
+    if ($self->{base}{$path}) {
+	close $self->{base}{$path}[0];
+	unlink $self->{base}{$path}[1];
+    }
+    $self->{checkout}->store ($path, {revision => $self->{revision}})
+	if $self->{update};
+}
+
+sub add_directory {
+    my ($self, $path) = @_;
+    $path = $self->{copath} if $path eq $self->{copath};
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
+    mkdir ($path);
+    return $path;
+}
+
+sub open_directory {
+    my ($self, $path) = @_;
+    $path = $self->{copath} if $path eq $self->{copath};
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
+    return $path;
+}
+
+sub delete_entry {
+    my ($self, $path, $revision) = @_;
+    $path =~ s|^$self->{target}/|$self->{copath}/|;
+    # check if everyone under $path is sane for delete";
+    return if $self->{check_only};
+    -d $path ? rmtree ([$path]) : unlink($path);
+}
+
+sub close_directory {
+    my ($self, $path) = @_;
+    $self->{checkout}->store_recursively ($path,
+					  {revision => $self->{revision}})
+	if $self->{update};
+}
+
+package SVN::XD::MergeEditor;
+our @ISA = qw(SVN::Delta::Editor);
 use Digest::MD5;
+use File::Temp qw/:mktemp/;
 
 sub md5 {
     my $fh = shift;
@@ -353,89 +510,76 @@ sub md5 {
 sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;
+    $self->{storage}->set_target_revision ($revision);
 }
 
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
+    $self->{storage_baton}{''} = $self->{storage}->open_root ($baserev);
     return '';
 }
 
 sub add_file {
     my ($self, $path) = @_;
     # tag for merge of file adding
-    $path =~ s|^$self->{target}/|$self->{copath}/|;
-    $self->{info}{$path}{status} = (-e $path ? undef : ['A']);
+    $self->{info}{$path}{status} = (&{$self->{cb_exist}}($path) ? undef : ['A']);
+    $self->{storage_baton}{$path} = $self->{storage}->add_file ($path)
+	if $self->{info}{$path}{status};
     return $path;
 }
 
 sub open_file {
     my ($self, $path) = @_;
     # modified but rm locally - tag for conflict?
-    $path =~ s|^$self->{target}/|$self->{copath}/|;
-    $self->{info}{$path}{status} = (-e $path ? [] : undef);
+    $self->{info}{$path}{status} = (&{$self->{cb_exist}}($path) ? [] : undef);
+    $self->{storage_baton}{$path} = $self->{storage}->open_file ($path)
+	if $self->{info}{$path}{status};
     return $path;
 }
 
 sub apply_textdelta {
     my ($self, $path, $checksum) = @_;
     return unless $self->{info}{$path}{status};
-    my ($fh, $base);
-    unless ($self->{info}{$path}{status}[0]) {
-	my (undef,$dir,$file) = File::Spec->splitpath ($path);
-	open $base, '<', $path;
-
-	if ($checksum) {
-	    my $md5 = md5($base);
-	    if ($checksum ne $md5) {
-#		close $base;
-#		undef $self->{info}{$path}{status};
-#		return undef;
-		# prepare for merge to be done in close_file
-		my $localname = "$dir.svk.$file.localmod";
-		rename ($path, $localname);
-		seek $base, 0, 0;
-		$self->{info}{$path}{merge} = [$base, $localname];
-		undef $base;
-		local $/;
-		# XXX: try to use some slurp function
-		my $rpath = $path;
-		$rpath =~ s|^$self->{copath}/|$self->{target}/|;
-		$rpath = "$self->{anchor}/$rpath" if $self->{anchor};
-		my $buf = $self->{xdroot}->file_contents ($rpath);
-		open $base, '+>', $path or die $!;
-		print $base (<$buf>);
-	    }
-	    seek $base, 0, 0;
+    my ($base, $newname);
+    unless ($self->{info}{$path}{status}[0]) { # open, has base
+	if ($self->{info}{$path}{fh}{local} = 
+	    &{$self->{cb_localmod}}($path, $checksum)) {
+	    # retrieve base
+	    $self->{info}{$path}{fh}{base} = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	    my $rpath = $path;
+	    $rpath = "$self->{anchor}/$rpath" if $self->{anchor};
+	    my $buf = $self->{xdroot}->file_contents ($rpath);
+	    $self->{info}{$path}{fh}{base}[0]->print(<$buf>);
+	    seek $self->{info}{$path}{fh}{base}[0], 0, 0;
+	    # get new
+	    my ($fh, $file) = mkstemps("/tmp/svk-mergeXXXXX", '.tmp');
+	    $self->{info}{$path}{fh}{new} = [$fh, $file];
+	    return [SVN::TxDelta::apply ($self->{info}{$path}{fh}{base}[0],
+					 $fh, undef, undef)];
 	}
-	$self->{info}{$path}{status}[0] = 'U'
-	    unless exists $self->{info}{$path}{merge};
-
-	my $basename = "$dir.svk.$file.base";
-	rename ($path, $basename);
-	$self->{info}{$path}{base} = [$base, $basename];
-
     }
-    open $fh, '+>', $path or warn "can't open $path";
-    $self->{info}{$path}{fh} = $fh;
-    return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty(),
-				 $fh, undef, undef)];
+    $self->{info}{$path}{status}[0] = 'U';
+    return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
+					      $checksum);
 }
 
 sub close_file {
     my ($self, $path, $checksum) = @_;
     my $info = $self->{info}{$path};
+    my $fh = $info->{fh};
     no warnings 'uninitialized';
+
     # let close_directory reports about its children
-    if ($info->{merge}) {
-	my ($orig, $new, $local) = ($info->{base}[0], $info->{fh}, $info->{merge}[0]);
-	open my ($fh), '+<', $path;
+    if ($info->{fh}{local}) {
+	my ($orig, $new, $local) = map {$fh->{$_}[0]} qw/base new local/;
 	seek $orig, 0, 0;
+	open $new, $fh->{new}[1];
 	seek $local, 0, 0;
 	{
 	    local $/;
 	    $orig = <$orig>;
-	    $new = <$fh>;
+	    $new = <$new>;
 	    $local = <$local>;
 	}
 	# XXX: use traverse so we just output the result instead of
@@ -455,70 +599,57 @@ sub close_file {
 		  q{<!-- ------  END  CONFLICT ------ -->},
 	      }},
 	    );
-	seek $fh, 0, 0;
-	truncate $fh, 0;
-	print $fh join("\n", @$merged)."\n";
-	close $info->{merge}[0];
-	unlink $info->{merge}[1];
-	undef $info->{merge};
-	if ($info->{status}[0] eq 'C') {
-	    $self->{checkout}->store ($path, {conflict => 1});
-	}
+
+	close $fh->{base}[0];
+	unlink $fh->{base}[1];
+	close $fh->{new}[0];
+	unlink $fh->{new}[1];
+	my $handle = $self->{storage}->
+	    apply_textdelta ($self->{storage_baton}{$path});
+
+	SVN::TxDelta::send_string ((join("\n", @$merged)."\n"), @$handle)
+		if $handle;
+	&{$self->{cb_conflict}} ($path)
+	    if $info->{status}[0] eq 'C';
     }
+
     if ($info->{status}) {
 	print sprintf ("%1s%1s \%s\n", $info->{status}[0],
 		       $info->{status}[1], $path);
-	$self->{checkout}->store ($path,
-				  {revision => $self->{revision}})
     }
     else {
 	print "   $path - skipped\n";
     }
-    if ($info->{base}) {
-	close $info->{base}[0];
-	unlink $info->{base}[1];
-    }
-    close $info->{fh};
-    undef $self->{info}{$path};
+    $self->{storage}->close_file ($self->{storage_baton}{$path});
 }
 
 sub add_directory {
     my ($self, $path) = @_;
-    $path = $self->{copath} if $path eq $self->{copath};
-    $path =~ s|^$self->{target}/|$self->{copath}/|;
-    mkdir ($path);
+    $self->{storage_baton}{$path} = $self->{storage}->add_directory ($path);
     return $path;
 }
 
 sub open_directory {
     my ($self, $path) = @_;
-    $path = $self->{copath} if $path eq $self->{copath};
-    $path =~ s|^$self->{target}/|$self->{copath}/|;
+    $self->{storage_baton}{$path} = $self->{storage}->open_directory ($path);
     return $path;
 }
 
 sub close_directory {
     my ($self, $path) = @_;
-
-    $self->{checkout}->store_recursively ($path,
-					  {revision => $self->{revision}})
-	if $path;
-
+    $self->{storage}->close_directory ($self->{storage_baton}{$path});
     print ".  $path\n";
 }
 
 sub delete_entry {
     my ($self, $path, $revision) = @_;
-    $path =~ s|^$self->{target}/|$self->{copath}/|;
-    # check if everyone under $path is sane for delete";
-    -d $path ? rmtree ([$path]) : unlink($path);
+    $self->{storage}->delete_entry ($path, $revision);
     $self->{info}{$path}{status} = ['D'];
 }
 
 sub close_edit {
     my ($self) = @_;
-    print "finishing update\n";
+    $self->{storage}->close_edit();
 }
-
 
 1;

@@ -106,7 +106,7 @@ sub update {
 
 sub checkout {
     local @ARGV = @_;
-    my $rev;
+    my $rev = 0;
     die unless GetOptions ("r|revision=i"  => \$rev);
     my ($depotpath, $copath) = @ARGV;
 
@@ -457,6 +457,38 @@ sub commit {
 			baserev => $cinfo->{revision},
 			targets => $targets,
 		       );
+}
+
+=head2 merge
+
+    svk merge
+
+=cut
+
+sub merge {
+    local @ARGV = @_;
+    my ($check_only, $revspec);
+    die unless GetOptions ("C|check-only"	=> \$check_only,
+			   "r|revision=s"	=> \$revspec);
+
+    die "revision required" unless $revspec;
+    my ($src, $dst) = @ARGV;
+    my ($fromrev, $torev) = $revspec =~ m/^(\d+):(\d+)$/
+	or die "revision must be N:M";
+    my ($repospath, $path) = find_repos ($src, 0);
+    # XXX: try to see if dst is copath or depot
+    my ($drepospath, $dpath, $cinfo, $repos) = find_repos_from_co ($dst, 1);
+    die "different repos?" unless $repospath eq $drepospath;
+    my $copath = File::Spec->rel2abs ($dst || '');
+
+    SVN::XD::do_merge ($info,
+		       repos => $repos,
+		       path => $path,
+		       copath => $copath,
+		       fromrev => $fromrev,
+		       check_only => $check_only,
+		       torev => $torev,
+		      );
 }
 
 *co = *checkout;
