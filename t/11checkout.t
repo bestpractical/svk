@@ -104,12 +104,12 @@ is_output ($svk, 'checkout', ['--detach', '//V-3.1'], [
             "'//V-3.1' is not a checkout path.",
             ]);
 
-is_output ($svk, 'checkout', ['--detach', "$corpath/boo"], [
+is_output ($svk, 'checkout', ['--detach', __("$corpath/boo")], [
             __("Checkout path '$corpath/boo' detached."),
             ]);
 
-is_output ($svk, 'checkout', ['--detach', "$corpath/boo"], [
-            "'$corpath/boo' is not a checkout path.",
+is_output ($svk, 'checkout', ['--detach', __("$corpath/boo")], [
+            __("'$corpath/boo' is not a checkout path."),
             ]);
 
 is_output ($svk, 'checkout', ['--relocate', "//V-3.1", $corpath], [
@@ -120,31 +120,31 @@ is_output ($svk, 'checkout', ['--relocate', "//V-3.1/A/Q", $corpath], [
             "'//V-3.1/A/Q' maps to multiple checkout paths."
             ]);
 
-is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", "$corpath/co-root-a"], [
+is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/co-root-a")], [
             __("Overlapping checkout path is not supported ($corpath/co-root-a)")
             ]);
 
-is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", "$corpath/foo"], [
+is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/foo")], [
             "Checkout '//V-3.1-non' ".__("relocated to '$corpath/foo'.")
             ]);
 
-is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", "$corpath/bar"], [
+is_output ($svk, 'checkout', ['--relocate', "//V-3.1-non", __("$corpath/bar")], [
             "Checkout '//V-3.1-non' ".__("relocated to '$corpath/bar'.")
             ]);
 
 ok (!-e "$corpath/bar", '... did not create a new copath');
 
-is_output ($svk, 'checkout', ['--relocate', "$corpath/just-q", "$corpath/baz/boo"], [
+is_output ($svk, 'checkout', ['--relocate', __("$corpath/just-q"), __("$corpath/baz/boo")], [
             __("Checkout '$corpath/just-q' relocated to '$corpath/baz/boo'.")
             ]);
 
 ok (-e "$corpath/baz", '... did create a new copath');
 
-is_output ($svk, 'checkout', ['--relocate', "$corpath/just-q", "$corpath/baz/boo"], [
+is_output ($svk, 'checkout', ['--relocate', __("$corpath/just-q"), __("$corpath/baz/boo")], [
             __("'$corpath/just-q' is not a checkout path.")
             ]);
 
-is_output ($svk, 'checkout', ['--relocate', "$corpath/baz/boo", "$corpath/baz"], [
+is_output ($svk, 'checkout', ['--relocate', __("$corpath/baz/boo"), __("$corpath/baz")], [
             __("Cannot rename $corpath/baz/boo to $corpath/baz; please move it manually."),
             __("Checkout '$corpath/baz/boo' relocated to '$corpath/baz'."),
             ]);

@@ -43,8 +43,8 @@ is_output($svk, 'checkout', ["$uri/C" => "$corpath/C"], [
             "Syncing $uri/C",
             "Retrieving log information from 1 to 2",
             "Committed revision 6 from revision 1.",
-            "Syncing //mirror/C/(/mirror/C) in ".__("$corpath/C to 6."),
-            "A   $corpath/C/R",
+	    "Syncing //mirror/C/(/mirror/C) in ".__("$corpath/C to 6."),
+            __("A   $corpath/C/R"),
             ]);
 
 is_output($svk, 'update', ["$corpath/C"], [
