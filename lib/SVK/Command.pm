@@ -130,10 +130,11 @@ sub arg_condensed {
 sub arg_co_maybe {
     my ($self, $arg) = @_;
 
-    my ($repospath, $path, $copath, undef, $repos) =
+    my ($repospath, $path, $copath, $cinfo, $repos) =
 	main::find_repos_from_co_maybe ($arg, 1);
     return { repos => $repos,
 	     repospath => $repospath,
+	     depotpath => $cinfo->{depotpath} || $arg,
 	     copath => $copath,
 	     path => $path,
 	   };

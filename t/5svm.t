@@ -52,3 +52,8 @@ append_file ("$copath/T/xd", "back to mirror directly again\n");
 svk::commit ('-m', 'commit to deep mirrored path', "$copath/T/xd");
 ok(1);
 
+svk::copy ('-m', 'branch in source', '/test/A', '/test/A-98');
+svk::copy ('-m', 'branch in source', '/test/A-98', '/test/A-99');
+
+svk::mirror ('//m-99', "file://${srepospath}/A-99");
+svk::sync ('//m-99');

@@ -92,3 +92,9 @@ svk::mirror ('/client2/trunk', "file://${srepospath}".($spath eq '/' ? '' : $spa
 svk::sync ('/client2/trunk');
 svk::copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
 
+
+svk::copy ('-m', 'branch on source', '/test/A', '/test/A-cp');
+svk::mirror ('//m-cp', "file://${srepospath}/A-cp");
+svk::sync ('//m-cp');
+svk::smerge ('-C', '//l', '//m-cp');
+svk::smerge ('-C', '//m', '//m-cp');

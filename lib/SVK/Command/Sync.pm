@@ -18,6 +18,11 @@ sub parse_arg {
 
 sub lock { $_[0]->lock_none }
 
+sub copy_notify {
+    my ($m, $path, $from_path, $from_rev) = @_;
+    warn "copy_notify: ".join(',',@_);
+}
+
 sub run {
     my ($self, @arg) = @_;
     die "require SVN::Mirror" unless $self->svn_mirror;
@@ -35,6 +40,7 @@ sub run {
 	my $m = SVN::Mirror->new (target_path => $target->{path},
 				  target => $target->{repospath},
 				  pool => SVN::Pool->new, auth => $self->auth,
+				  cb_copy_notify => \&copy_notify,
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();
 	$m->run ($self->{torev});
