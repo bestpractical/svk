@@ -242,6 +242,7 @@ sub do_update {
 					    target => $target,
 					    update => 1);
 
+    $storage = SVK::DelayEditor->new ($storage);
     my $editor = SVK::MergeEditor->new
 	(_debug => 0,
 	 fs => $fs,
