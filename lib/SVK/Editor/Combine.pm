@@ -1,7 +1,7 @@
 package SVK::Editor::Combine;
 use strict;
 
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);

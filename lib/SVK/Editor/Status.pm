@@ -1,7 +1,7 @@
 package SVK::Editor::Status;
 use strict;
 use SVN::Delta;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub new {

@@ -9,7 +9,7 @@ name		('SVK');
 author		('Chia-liang Kao <clkao@clkao.org>');
 abstract	('A decentralized version control system');
 license		('perl');
-version_from	('lib/SVK.pm');
+version_from	('lib/SVK/Version.pm');
 install_script	('bin/svk');
 clean_files	('t/checkout', 't/apache_svn');
 requires(

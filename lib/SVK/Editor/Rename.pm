@@ -1,6 +1,6 @@
 package SVK::Editor::Rename;
 use strict;
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw(SVK::Editor::Patch);
 use SVK::I18N;
 

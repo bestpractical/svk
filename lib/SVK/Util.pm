@@ -17,7 +17,7 @@ our @EXPORT_OK = qw(
 
     is_symlink is_executable is_uri can_run
 );
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 
 use Config ();

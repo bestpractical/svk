@@ -1,6 +1,6 @@
 package SVK;
 use strict;
-our $VERSION = '0.29';
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 # Load classes on demand.
 use Class::Autouse qw(:superloader);

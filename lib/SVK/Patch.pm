@@ -2,7 +2,7 @@ package SVK::Patch;
 use strict;
 use SVK::I18N;
 use SVK::Util qw( read_file write_file );
-our $VERSION = $SVK::VERSION;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 =head1 NAME
 
