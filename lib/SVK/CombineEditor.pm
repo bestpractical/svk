@@ -112,6 +112,7 @@ sub close_file {
     my ($self, $path, $md5) = @_;
     unlink ${*{$self->{base}{$path}}}
 	if $self->{base}{$path} && ${*{$self->{base}{$path}}};
+    delete $self->{base}{$path};
     $self->{md5}{$path} = $md5;
 }
 
