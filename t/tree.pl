@@ -40,6 +40,11 @@ for (qw/SVKRESOLVE SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
 }
 $ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';
 
+$ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
+$ENV{USER} ||= (
+    (defined &Win32::LoginName) ? Win32::LoginName() : ''
+) || $ENV{USERNAME};
+
 # Make "prove -l" happy; abs_path() returns "undef" if the path 
 # does not exist. This makes perl very unhappy.
 @INC = grep defined, map abs_path($_), @INC;
