@@ -346,8 +346,13 @@ sub apply_textdelta {
 	unless $self->{notify}->node_status ($path);
 
     $self->ensure_open ($path);
-    return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
-					      $checksum, $pool);
+    my $handle = $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
+						    $checksum, $pool);
+    if ($self->{storage_has_unwritable} && !$handle) {
+	delete $self->{notify}{status}{$path};
+	$self->{notify}->flush ($path);
+    }
+    return $handle;
 }
 
 sub _merge_text_change {
@@ -389,8 +394,8 @@ sub _overwrite_local_file {
     my ($self, $fh, $path, $nfh, $pool) = @_;
     my $handle = $self->{storage}->
 	apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
-		$pool);
-    
+			 $pool);
+
     if ($handle && $#{$handle} >= 0) {
 	if ($self->{send_fulltext}) {
 	    SVN::TxDelta::send_stream ($nfh, @$handle, $pool);
@@ -400,6 +405,10 @@ sub _overwrite_local_file {
 	    my $txstream = SVN::TxDelta::new($fh->{local}[FH], $nfh, $pool);
 	    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	}
+    }
+    elsif ($self->{storage_has_unwritable}) {
+	delete $self->{notify}{status}{$path};
+	$self->{notify}->flush ($path);
     }
 }
 
@@ -482,10 +491,15 @@ sub add_directory {
 	$self->{notify}->node_status ($path, 'G');
     }
     else {
-	$self->{added}{$path} = 1;
-	$self->{storage_baton}{$path} =
+	my $baton =
 	    $self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
 					     @arg);
+	unless (defined $baton) {
+	    $self->{notify}->flush ($path);
+	    return undef;
+	}
+	$self->{storage_baton}{$path} = $baton;
+	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, 'A');
 	$self->{notify}->flush ($path, 1);
     }

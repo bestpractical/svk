@@ -1435,7 +1435,7 @@ sub get_fh {
 	$eol ||= get_eol_layer($prop, $mode, $checkle);
     }
     $eol ||= ':raw';
-    open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!\n";
+    open my ($fh), $mode.$eol, $fname or return undef;
     $layer->via ($fh) if $layer;
     return $fh;
 }
