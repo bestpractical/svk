@@ -4,7 +4,7 @@ require Test::More;
 require 't/tree.pl';
 use Test::More;
 eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
-plan tests => 8;
+plan tests => 13;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -80,8 +80,24 @@ ok ($output =~ /under mirrored path/);
 is_output_like ($svk, 'mirror', ['--list'],
 		qr"//m.*$uri/A\n//m-99.*$uri/A-99");
 
+is_output_like ($svk, 'mirror', ['//m-99', "$uri/A-99"],
+		qr"already", 'repeated mirror failed');
+
 is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');
+
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
 	   ['Committed revision 12.', 'Committed revision 13.']);
+
+is_output_like ($svk, 'mirror', ['--delete', '//l'],
+		qr"not a mirrored", '--delete on non-mirrored path');
+
+is_output_like ($svk, 'mirror', ['--delete', '//m/T'],
+		qr"inside", '--delete inside a mirrored path');
+
+is_output_like ($svk, 'mirror', ['--delete', '//m'],
+		qr"Committed revision 14.", '--delete on mirrored path');
+
+is_output_like ($svk, 'mirror', ['--delete', '//m'],
+		qr"not a mirrored", '--delete on non-mirrored path');
 

@@ -8,7 +8,8 @@ use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('upgrade' => 'upgrade',
-     'list'    => 'list');
+     'list'    => 'list',
+     'delete'  => 'delete');
 }
 
 sub parse_arg {
@@ -49,6 +50,16 @@ sub run {
 	}
 	return;
     }
+    elsif ($self->{delete}) {
+	my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos},
+						    $target->{path});
+
+        die loc("%1 is not a mirrored path.\n", $target->{depotpath}) if !$m;
+        die loc("%1 is inside a mirrored path.\n", $target->{depotpath}) if $mpath;
+
+	$m->delete(1); # remove svm:source and svm:uuid too
+        return;
+    }
 
     my $m = SVN::Mirror->new (target_path => $target->{path},
 			      source => $source,
@@ -61,7 +72,8 @@ sub run {
 			      target => $target->{repospath},
 			     );
 
-    $m->init;
+    $m->init or die loc("%1 already mirrored, use 'svk mirror --delete' to remove it first.\n", $target->{depotpath});
+
     return;
 }
 
@@ -83,12 +95,14 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  mirror DEPOTPATH [http|svn]://host/path
 
  mirror --list
+ mirror --delete DEPOTPATH
  mirror --upgrade //
  mirror --upgrade /DEPOT/
 
 =head1 OPTIONS
 
  --list                 : list mirrored paths
+ --delete               : mark a path as no longer mirrored
  --upgrade              : upgrade mirror state to the latest version
 
 =head1 AUTHORS
