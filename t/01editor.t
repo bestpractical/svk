@@ -31,7 +31,6 @@ rm -f $2.tmp
 TMP
 $tmp->close;
 chmod 0755, $tmp->filename;
-my $repospath = "/tmp/svk-$$";
 $ENV{EDITOR} = "$tmp props";
 
 $svk->ps ('someprop', 'somevalue', "$copath/B/nor");

@@ -1224,7 +1224,6 @@ sub load {
     $spath =~ s{/}{_}g;
     my $self = bless { root => $factory->{root},
 		       path => $path, spath => $spath }, __PACKAGE__;
-    $self->lock;
     $self->read;
     return $self;
 }
@@ -1277,9 +1276,12 @@ sub write {
     # not first time file and no entry changed
     return if -s $path && !keys %{$self->{signature}};
 
+    $self->lock;
+    return unless $self->{locked};
     my ($hash, $file) = @_;
     open my $fh, '>', $path or die $!;
     print {$fh} %{ $self->{newsignature} };
+    $self->unlock;
 }
 
 sub changed {
@@ -1308,9 +1310,7 @@ sub invalidate {
 
 sub flush {
     my ($self) = @_;
-    return unless $self->{locked};
     $self->write;
-    $self->unlock;
 }
 
 package SVK::XD::Root;
