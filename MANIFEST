@@ -67,6 +67,7 @@ lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Resolve.pm
+lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
 lib/SVK/Resolve/FileMerge.pm
 lib/SVK/Resolve/GtkDiff.pm
@@ -74,8 +75,8 @@ lib/SVK/Resolve/Guiffy.pm
 lib/SVK/Resolve/KDiff3.pm
 lib/SVK/Resolve/Meld.pm
 lib/SVK/Resolve/P4WinMerge.pm
-lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/TkDiff.pm
+lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Target.pm
 lib/SVK/Target/Universal.pm

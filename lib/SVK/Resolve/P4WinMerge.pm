@@ -1,9 +1,14 @@
 package SVK::Resolve::P4WinMerge;
 use strict;
 use base 'SVK::Resolve';
-use File::Copy ();
+use SVK::Util qw( catdir );
 
-sub paths { 'C:\Program Files\Perforce' }
+sub paths {
+    return catdir(
+	($ENV{ProgramFiles} || 'C:\Program Files'),
+	'Perforce',
+    );
+}
 
 sub commands { 'p4winmrg' }
 

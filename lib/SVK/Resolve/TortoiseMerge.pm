@@ -1,8 +1,15 @@
 package SVK::Resolve::TortoiseMerge;
 use strict;
 use base 'SVK::Resolve';
+use SVK::Util qw( catdir );
 
-sub paths { 'C:\Program Files\TortoiseSVN\bin' }
+sub paths {
+    return catdir(
+	($ENV{ProgramFiles} || 'C:\Program Files'), 
+	'TortoiseSVN',
+	'bin',
+    );
+}
 
 sub arguments {
     my $self = shift;

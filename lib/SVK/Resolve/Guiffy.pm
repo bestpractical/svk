@@ -1,8 +1,15 @@
 package SVK::Resolve::Guiffy;
 use strict;
 use base 'SVK::Resolve';
+use File::Glob;
+use SVK::Util qw( catdir );
 
-sub paths { 'C:\Program Files\Guiffy62' }
+sub paths {
+    return File::Glob::bsd_glob(catdir(
+	($ENV{ProgramFiles} || 'C:\Program Files'), 
+	'Guiffy*',
+    ));
+}
 
 sub arguments {
     my $self = shift;
