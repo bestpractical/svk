@@ -427,6 +427,7 @@ SVK::Command::Commit - Commit changes to depot
 
  -m [--message] arg     : specify commit message ARG
  -C [--check-only]      : try operation but make no changes
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --import               : import mode; automatically add and delete nodes
  --direct               : commit directly even if the path is mirrored

@@ -35,6 +35,7 @@ SVK::Command::Move - Move a file or directory
  -r [--revision] arg    : act on revision ARG instead of the head revision
  -m [--message] arg     : specify commit message ARG
  -C [--check-only]      : try operation but make no changes
+ -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
 
 =head1 AUTHORS
