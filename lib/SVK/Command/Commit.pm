@@ -290,7 +290,7 @@ sub run {
 		my $corev = $self->{xd}{checkout}->get($cotarget)->{revision};
 		return $revcache{$corev} if exists $revcache{corev};
 		my $rev = ($xdroot->node_history ($revtarget)->prev (0)->location)[1];
-		$revcache{$corev} = $fs->revision_prop ($rev, "svm:headrev:$cb{mirror}{source}");
+		$revcache{$corev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());
     return;
 }
