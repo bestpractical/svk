@@ -5,6 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('r|revision=i'    => 'rev',
@@ -36,23 +37,40 @@ sub run {
 	      copath => undef
 	    );
 
-        my $sync_target = (
-            $self->{merge} ? $update_target->copied_from : $update_target
-        );
+        # Because merging under the copath anchor is unsafe,
+        # we always merge to the copath root.
+        my $entry = $self->{xd}{checkout}->get ($target->{copath});
+        my $merge_target = $self->arg_depotpath ($entry->{depotpath});
+        my $sync_target = $merge_target;
 
-        if ($self->{sync}) {
-            require SVK::Command::Sync;
-            my $sync = SVK::Command::Sync->new;
-            %$sync = (%$self, %$sync);
-            $sync->run($sync_target);
-            $sync_target->refresh_revision;
+        if ($self->{merge}) {
+            my $copied_from = $merge_target->copied_from;
+            if ($copied_from) {
+                $sync_target = $copied_from;
+            }
+            else {
+                delete $self->{merge};
+            }
+        }
+
+        if ($self->{sync} and HAS_SVN_MIRROR) {
+            # Because syncing under the mirror anchor is impossible,
+            # we always sync from the mirror anchor.
+            my ($m, $mpath) = SVN::Mirror::is_mirrored (
+                $sync_target->{repos},
+                $sync_target->{path}
+            );
+            $m->run;
         }
 
         if ($self->{merge}) {
             require SVK::Command::Smerge;
             my $smerge = SVK::Command::Smerge->new;
-            %$smerge = ( message => '', log => 1, %$self, %$smerge, sync => 0);
-            $smerge->run($sync_target => $update_target);
+            %$smerge = (
+                ($self->{incremental} ? () : (message => '', log => 1)),
+                %$self, %$smerge, sync => 0,
+            );
+            $smerge->run($merge_target->copied_from => $merge_target);
             $update_target->refresh_revision;
         }
 

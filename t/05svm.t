@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 14;
+plan tests => 15;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -97,6 +97,13 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
             __('A   t/checkout/svm2/T/xd'),
             __('A   t/checkout/svm2/be'),
             __('A   t/checkout/svm2/N'), ]);
+
+is_output($svk, 'update', ['--sync', '--merge', "$copath2/T"], [
+            "Syncing $uri/A-99",
+            'Auto-merging (12, 12) /m-99 to /m-99-copy (base /m-99:12).',
+            'Empty merge.',
+            "Syncing //m-99-copy(/m-99-copy/T) in $corpath2/T to 13.",
+            ]);
 
 $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 # has some output
