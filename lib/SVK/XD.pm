@@ -690,12 +690,12 @@ sub do_propset {
 	$xdroot = $self->xdroot (%arg);
 	my ($source_path, $source_root) = $self->_copy_source ($entry, $arg{copath}, $xdroot);
 	$source_path ||= $arg{path}; $source_root ||= $xdroot;
-	die loc("%1(%2) is not under version control", $arg{copath}, $source_path)
+	die loc("%1 is not under version control.\n", $arg{report})
 	    if $xdroot->check_path ($source_path) == $SVN::Node::none;
     }
 
     #XXX: support working on multiple paths and recursive
-    die loc("%1 is already scheduled for delete", $arg{copath})
+    die loc("%1 is already scheduled for delete.\n", $arg{report})
 	if $entry->{'.schedule'} eq 'delete';
     %values = %{$entry->{'.newprop'}}
 	if exists $entry->{'.schedule'};
