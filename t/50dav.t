@@ -3,6 +3,9 @@ use strict;
 # XXX: apache::test seems to alter inc to use blib
 require SVK::Command::Merge;
 
+# XXX: apache::TestConfig assumes lib.pm is compiled.
+require lib;
+
 use SVK::Util qw(can_run);
 
 BEGIN {
@@ -14,11 +17,6 @@ BEGIN {
 }
 
 use Apache::TestConfig;
-
-plan_svm tests => 3;
-
-use Cwd;
-use File::Path;
 use File::Spec::Functions qw(rel2abs catdir);
 
 our $output;
@@ -37,9 +35,13 @@ my $cfg = Apache::TestConfig->new
       t_dir => $apache_root,
       apxs => $apxs,
  )->httpd_config;
+unless ($cfg->find_and_load_module ('mod_dav.so') &&
+	$cfg->find_and_load_module ('mod_dav_svn.so')) {
+    plan skip_all => "Can't find mod_dav_svn";
+}
 
-$cfg->find_and_load_module ('mod_dav.so') or die ;
-$cfg->find_and_load_module ('mod_dav_svn.so') or die;
+plan_svm tests => 3;
+
 $cfg->postamble (Location => "/svn",
 		 qq{DAV svn\n    SVNPath $srepospath\n});
 $cfg->generate_httpd_conf;

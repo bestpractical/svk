@@ -1,3 +1,47 @@
+[Changes for 0.27 - 20 Dec, 2004]
+
+* Allow "svk cp URI" to work akin to "svk co URI". [Autrijus]
+
+* Fix delete (and move) path reporting.
+
+* Fix checkout to deep directory that doesn't exist.
+
+* Fix cp/mv src modified-ness check.
+
+* New: checkout --export mode to detach after checkout.
+
+* Normalize line endings in all incoming patch blocks. [Autrijus]
+
+* Fix a case in merge involving renames.  When a file was renamed and
+  its parent was also renamed separately, it should not be skipped.
+
+* Remove the useless ticket associated with SVK::Patch, so the size of
+  patch blocks is reduced.
+
+* Fix a bug in svk add would ask users to add parent where it's
+  already added.
+
+* sync -a shouldn't die on stalled depotmap entry.
+
+* Fix patch creation (commit -P) bug dying when there's something
+  deleted.
+
+* Fix commit buffer target parsing, particularly for the case that
+  only a file is the target and the property will not be committed and
+  lost.
+
+* merge and push now supports --verbatim. [Alejandro Mery]
+
+* "svk log" now displays "(no author)" for revisions without an
+   author. [Leland David]
+
+* Fix a case that smerge would use wrong base when the anchor was
+  replaced by itself in the history.
+
+* Fix a problem for svk with svn 1.2.x, editor::merge will generate
+  "Bad file descriptor" fatal error when merging into a dav server.
+  This was caused by improper pool life scope and is now fixed.
+
 [Changes for 0.26 - 9 Nov, 2004]
 
 * svk push -P. [Autrijus]
