@@ -4,7 +4,7 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::XD;
-use SVK::Util qw( slurp_fh );
+use SVK::Util qw( slurp_fh is_symlink );
 use SVK::I18N;
 
 sub options {
@@ -27,39 +27,6 @@ sub run {
     my ($self, $target) = @_;
     my $xdroot = $self->{xd}->xdroot (%$target);
 
-    my $unschedule = sub {
-	$self->{xd}{checkout}->store ($_[1], {$self->_schedule_empty});
-	print loc("Reverted %1\n", $_[1]);
-    };
-    my $revert = sub {
-	# XXX: need to repsect copied resources
-	my $kind = $xdroot->check_path ($_[0]);
-	if ($kind == $SVN::Node::none) {
-	    print loc("%1 is not versioned; ignored.\n", $_[1]);
-	    return;
-	}
-	if ($kind == $SVN::Node::dir) {
-	    mkdir $_[1] unless -e $_[1];
-	}
-	else {
-	    # XXX: PerlIO::via::symlink should take care of this
-	    unlink $_[1] if -l $_[1];
-	    my $fh = SVK::XD::get_fh ($xdroot, '>', $_[0], $_[1]);
-	    my $content = $xdroot->file_contents ($_[0]);
-	    slurp_fh ($content, $fh);
-	    close $fh or die $!;
-	    # XXX: get_fh should open file with proper permission bit
-	    $self->{xd}->fix_permission ($_[1], 1)
-		if defined $xdroot->node_prop ($_[0], 'svn:executable');
-	}
-	$unschedule->(@_);
-    };
-
-    my $revert_item = sub {
-	exists $self->{xd}{checkout}->get ($_[1])->{'.schedule'} ?
-	    &$unschedule (@_) : &$revert (@_);
-    };
-
     if ($self->{rec}) {
 	$self->{xd}->checkout_delta
 	    ( %$target,
@@ -73,26 +40,73 @@ sub run {
 		      my $st = $status->[0];
 		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
 		      my $copath = $target->copath ($path);
-		      if ($st eq 'M' || $st eq 'D' || $st eq '!' || $st eq 'R') {
-			  $revert->($dpath, $copath);
-		      }
-		      else {
-			  $unschedule->($dpath, $copath);
-		      }
+
+                      if ($st =~ /[DMR!]/) {
+                          return $self->do_revert($copath, $dpath, $xdroot);
+                      }
+
+                      if ($target->{targets}) {
+                          # Check that we are not reverting parents
+                          $target->contains_copath ($copath) or return;
+                      }
+
+                      $self->do_unschedule($copath);
 		  },
 		),
 	      ));
     }
+    elsif ($target->{targets}) {
+	$self->revert_item($target->copath ($_), "$target->{path}/$_", $xdroot)
+	    for @{$target->{targets}};
+    }
     else {
-	if ($target->{targets}) {
-	    &$revert_item ("$target->{path}/$_", $target->copath ($_))
-		for @{$target->{targets}};
-	}
-	else {
-	    &$revert_item ($target->{path}, $target->{copath});
-	}
+	$self->revert_item($target->{copath}, $target->{path}, $xdroot);
     }
     return;
+}
+
+sub revert_item {
+    my ($self, $copath, $dpath, $xdroot) = @_;
+
+    if ($self->{xd}{checkout}->get ($copath)->{'.schedule'}) {
+	$self->do_unschedule($copath);
+    }
+    else {
+	# XXX - Should inhibit the "Reverted %1" message if nothing changed
+	$self->do_revert($copath, $dpath, $xdroot);
+    }
+}
+
+sub do_revert {
+    my ($self, $copath, $dpath, $xdroot) = @_;
+
+    # XXX: need to respect copied resources
+    my $kind = $xdroot->check_path ($dpath);
+    if ($kind == $SVN::Node::none) {
+	print loc("%1 is not versioned; ignored.\n", $copath);
+	return;
+    }
+    if ($kind == $SVN::Node::dir) {
+	mkdir $copath unless -e $copath;
+    }
+    else {
+	# XXX: PerlIO::via::symlink should take care of this
+	unlink $copath if is_symlink($copath);
+	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath);
+	my $content = $xdroot->file_contents ($dpath);
+	slurp_fh ($content, $fh);
+	close $fh or die $!;
+	# XXX: get_fh should open file with proper permission bit
+	$self->{xd}->fix_permission ($copath, 1)
+	    if defined $xdroot->node_prop ($dpath, 'svn:executable');
+    }
+    $self->do_unschedule($copath);
+}
+
+sub do_unschedule {
+    my ($self, $copath) = @_;
+    $self->{xd}{checkout}->store ($copath, {$self->_schedule_empty});
+    print loc("Reverted %1\n", $copath);
 }
 
 1;

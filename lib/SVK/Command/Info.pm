@@ -39,10 +39,10 @@ sub run {
 	print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
 	    if($m->{source});
 	for (keys %ancestors) {
-	    print loc("Copied from %1, Rev. %2\n",(split/:/)[1],$ancestors{$_});
+	    print loc("Copied From: %1, Rev. %2\n",(split/:/)[1],$ancestors{$_});
 	}
 	for (keys %$minfo) {
-	    print loc("Merge from %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
+	    print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
 	}
 	print "\n";
     }
@@ -66,43 +66,43 @@ SVK::Command::Info - Display information about a file or directory
 
 =head1 DESCRIPTION
 
-For example, here's the way to display the info of a checkout path
+For example, here's the way to display the info of a checkout path:
 
  % svk info ~/dev/svk
  Checkout Path: /Users/gugod/dev/svk
  Depot Path: //svk/local
  Revision: 447
  Last Changed Rev.: 447
- Copied from /svk/trunk, Rev. 434
- Merge from /svk/trunk, Rev. 445
+ Copied From: /svk/trunk, Rev. 434
+ Merge From: /svk/trunk, Rev. 445
 
-You can see the result has some very basic information,
-the actual depot path, and current revision. Below are advanced
-information about the copy/merge log about this B<depot path>.
-The result of 'svk info //svk/local' is almost the same as above,
-except for the 'Checkout Path:' line is not there, because
-you're not refering to a checkout path.
+You can see the result has some basic information: the actual depot path,
+and current revision. Next are advanced information about copy and merge
+source for this depot path.
 
-One thing you have to notice is the revision number on 'Copied from'
-and 'Merge from' line is not the one to //svk/local after
-copy/merge, but is to //svk/trunk. The example above state that,
-"//svk/local is copied from the 434-th revision of //svk/trunk", and
-"//svk/local is merge from the 445-th revision of //svk/trunk".
-So if you do a 'svk log -r 434 //svk/local', svk would tell you
-that //svk/local doesn't exist at revision 434.
+The result of C<svk info //svk/local> is almost the same as above,
+except for the C<Checkout Path:> line is not there, because
+you are not referring to a checkout path.
+
+Note that the revision numbers on C<Copied From:> and C<Merge From:> lines
+are for the source path (//svk/trunk), not the target path (//svk/local).
+The example above state that, I<//svk/local is copied from the revision 434
+of //svk/trunk>, and I<//svk/local was merged from the revision 445 of
+//svk/trunk>.  Hence if you do a C<svk log -r 434 //svk/local>, svk would tell
+you that //svk/local does not exist at revision 434.
 
 So far there is no easy way to tell the actual revision number
-of //svk/local right after the copy/merge.
+of //svk/local right after a copy or merge.
 
-If the target depot path, or the corresponding depot path of the
-target checkout path is actually a mirroring path, it would display
-like this:
+If the target is a depot path, or the corresponding depot path of the target
+checkout path is actually a mirroring path, the output of this command will
+look like this:
 
  % svk info //svk/trunk
  Depot Path: //svk/trunk
  Revision: 447
  Last Changed Rev.: 445
- Mirrored From: https://svn.elixus.org/repos/member/clkao/svk, Rev. 1744
+ Mirrored From: svn://svn.clkao.org/svk, Rev. 1744
 
 So you can see this depot path is mirror from a remote repository,
 and so far mirrored up to revision 1774.

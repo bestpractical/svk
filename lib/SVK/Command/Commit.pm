@@ -67,7 +67,7 @@ sub get_commit_message {
     my ($self, $msg) = @_;
     return if defined $self->{message};
     $self->{message} = get_buffer_from_editor
-	('log message', $target_prompt, join ("\n", $msg || '', $target_prompt, ''), 'commit');
+	(loc('log message'), $target_prompt, join ("\n", $msg || '', $target_prompt, ''), 'commit');
 }
 
 # Return the editor according to copath, path, and is_mirror (path)
@@ -199,7 +199,7 @@ sub get_committable {
     if ($fh) {
 	close $fh;
 	($self->{message}, $targets) =
-	    get_buffer_from_editor ('log message', $target_prompt,
+	    get_buffer_from_editor (loc('log message'), $target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
 	unlink $file;
     }

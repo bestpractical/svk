@@ -81,7 +81,7 @@ sub run {
 	($dst->{report}, '', 1) if $dst->{copath};
 
     if ($self->{incremental} && !$self->{check_only}) {
-	die loc ("Not possible to do incremental merge without merge ticket.\n")
+	die loc ("Not possible to do incremental merge without a merge ticket.\n")
 	    if $self->{no_ticket};
 	print loc ("-m ignored in incremental merge\n") if $self->{message};
 	my @rev;
@@ -123,8 +123,8 @@ SVK::Command::Merge - Apply differences between two sources
 
 =head1 SYNOPSIS
 
-merge -r N:M DEPOTPATH [PATH]\r
-merge -r N:M DEPOTPATH1 DEPOTPATH2
+ merge -r N:M DEPOTPATH [PATH]
+ merge -r N:M DEPOTPATH1 DEPOTPATH2
 
 =head1 OPTIONS
 

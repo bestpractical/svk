@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 42;
+use Test::More tests => 45;
 use strict;
 use File::Temp;
 require 't/tree.pl';
@@ -15,6 +15,7 @@ overwrite_file ("$copath/A/bar", "foobarbazz");
 is_output_like ($svk, 'ps', [], qr'SYNOPSIS', 'ps - help');
 is_output_like ($svk, 'pe', [], qr'SYNOPSIS', 'ps - help');
 is_output_like ($svk, 'propdel', [], qr'SYNOPSIS', 'propdel - help');
+is_output_like ($svk, 'pg', [], qr'SYNOPSIS', 'pg - help');
 
 is_output_like ($svk, 'pl', ["$copath/A"], qr'not found');
 
@@ -179,3 +180,7 @@ is_output ($svk, 'pl', ['-v'],
 	    'myvalue2',
 	    '  newprop: prepended_prop', '',
 	    '  pedirect: prepended_prop']);
+
+is_output ($svk, 'pg', ['myprop2'], ['prepended_prop', 'myvalue2']);
+is_output ($svk, 'pg', ['nosuchprop'], []);
+

@@ -41,7 +41,7 @@ SVK::Command::Describe - Describe a change
 
 =head1 SYNOPSIS
 
- describe CHANGE [DEPOTPATH | COPATH]
+ describe REV [DEPOTPATH | COPATH]
 
 =head1 OPTIONS
 

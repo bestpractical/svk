@@ -86,7 +86,7 @@ __DATA__
 
 =head1 NAME
 
-SVK::Command::Update - Bring changes from the repository into checkout copies
+SVK::Command::Update - Bring changes from repository to checkout copies
 
 =head1 SYNOPSIS
 
@@ -100,7 +100,7 @@ SVK::Command::Update - Bring changes from the repository into checkout copies
 =head1 DESCRIPTION
 
 Synchronize checkout copies to revision given by -r or to HEAD
-revision by deafult.
+revision by default.
 
 For each updated item a line will start with a character reporting the
 action taken. These characters have the following meaning:

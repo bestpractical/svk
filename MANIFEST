@@ -107,6 +107,7 @@ t/22status.t
 t/23commit.t
 t/24diff.t
 t/25log.t
+t/26revert.t
 t/30annotate.t
 t/31cat.t
 t/32list.t

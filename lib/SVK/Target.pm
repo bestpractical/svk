@@ -2,7 +2,7 @@ package SVK::Target;
 use strict;
 our $VERSION = $SVK::VERSION;
 use SVK::XD;
-use SVK::Util qw( get_anchor catfile IS_WIN32 );
+use SVK::Util qw( get_anchor catfile abs2rel IS_WIN32 );
 use SVK::Target::Universal;
 use Clone;
 
@@ -163,6 +163,17 @@ Returns corresponding L<SVK::Target::Universal> object.
 sub universal {
     SVK::Target::Universal->new ($_[0]);
 }
+
+sub contains_copath {
+    my ($self, $copath) = @_;
+    foreach my $base (@{$self->{targets}}) {
+	if ($copath ne abs2rel ($copath, $self->copath ($base))) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
 
 =head1 AUTHORS
 

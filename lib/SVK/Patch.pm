@@ -175,7 +175,7 @@ sub apply {
 sub apply_to {
     my ($self, $target, $storage, %cb) = @_;
     my $base = $self->{_target}
-	or die loc("Target not local nor mirrored, unable to test patch.");
+	or die loc("Target not local nor mirrored, unable to test patch.\n");
     # XXX: cb_merged
     my $editor = SVK::Editor::Merge->new
 	( base_anchor => $base->path,
@@ -220,7 +220,7 @@ sub update {
 sub regen {
     my ($self) = @_;
     my $target = $self->{_target}
-	or die loc("Target not local nor mirrored, unable to regen patch.");
+	or die loc("Target not local nor mirrored, unable to regen patch.\n");
     unless ($self->{level} == 0 || $self->{_source_updated}) {
 	print "Source of path <$self->{name}> not updated or not local. No need to update.\n";
 	return;

@@ -431,18 +431,22 @@ sub usage {
     $buf =~ s/SVK::Command::(\w+)/\l$1/g;
     $buf =~ s/^AUTHORS.*//sm;
     $buf =~ s/^DESCRIPTION.*//sm unless $want_detail;
-    foreach my $line (split(/\n/, $buf, -1)) {
-	if ($line =~ /^(\s*)(.+?)( +)(: .+?)(\s*)$/) {
-	    my $spaces = $3;
-	    my $loc = $1 . loc($2 . $4) . $5;
-	    $loc =~ s/: /$spaces: / if $spaces;
-	    print $loc, "\n";
+    foreach my $line (split(/\n\n+/, $buf, -1)) {
+	if (my @lines = $line =~ /^( {4}\s+.+\s*)$/mg) {
+            foreach my $chunk (@lines) {
+                $chunk =~ /^(\s*)(.+?)( *)(: .+?)?(\s*)$/ or next;
+                my $spaces = $3;
+                my $loc = $1 . loc($2 . ($4||'')) . $5;
+                $loc =~ s/: /$spaces: / if $spaces;
+                print $loc, "\n";
+            }
+            print "\n";
 	}
-	elsif ($line =~ /^(\s*)(.+?)(\s*)$/) {
-	    print $1||'', loc($2), $3||'', "\n";
-	}
-	else {
-	    print "\n";
+        elsif ($line =~ /^(\s+)(\w+ - .*)$/) {
+            print $1, loc($2), "\n\n";
+        }
+        elsif (length $line) {
+            print loc($line), "\n\n";
 	}
     }
 }

@@ -4,7 +4,6 @@ our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::XD;
-use SVK::Util qw(get_buffer_from_editor);
 
 sub options {
     ('strict'	=> 'strict',

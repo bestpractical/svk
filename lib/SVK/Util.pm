@@ -110,8 +110,6 @@ our $EOL = IS_WIN32 ? "\015\012" : "\012";
 Repeatedly prompt the user for a line of answer, until it matches 
 the regular expression pattern.  Returns the chomped answer line.
 
-=back
-
 =cut
 
 sub get_prompt {
@@ -160,7 +158,7 @@ sub get_buffer_from_editor {
 	system (@editor, $file) and die loc("Aborted: %1\n", $!);
 	last if (stat($file))[9] > $mtime;
 	my $ans = get_prompt(
-	    loc("%1 not modified: a)bort, e)dit, c)ommit?", $what),
+	    loc("%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what)),
 	    qr/^[aec]/,
 	);
 	last if $ans =~ /^c/;

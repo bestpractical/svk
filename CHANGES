@@ -1,4 +1,4 @@
-[Changes for 0.21]
+[Changes for 0.21 - 20 Sep, 2004]
 
 * svk now runs natively on win32. [Autrijus]
 
@@ -56,7 +56,7 @@
 
 * Fix tests for File::MimeInfo not installed.
 
-* full zh_tw translation for code locs. [Autrijus]
+* full zh_tw and zh_cn translation. [Autrijus]
 
 * Transaction errors are now reported nicely.
 

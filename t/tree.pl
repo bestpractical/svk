@@ -27,6 +27,10 @@ our $copath;
 for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
     $ENV{$_} = '' if $ENV{$_};
 }
+$ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';
+
+# Make "prove -l" happy
+@INC = map abs_path($_), @INC;
 
 my $pool = SVN::Pool->new_default;
 

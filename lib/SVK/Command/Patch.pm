@@ -136,14 +136,14 @@ SVK::Command::Patch - Manage patches
 
 =head1 SYNOPSIS
 
- patch create NAME DEPOTPATH DEPOTPATH
+ patch create PATCHNAME DEPOTPATH1 DEPOTPATH2
  patch list
- patch view NAME
- patch regen NAME
- patch update NAME
- patch apply NAME
- patch send NAME
- patch delete NAME
+ patch view PATCHNAME
+ patch regen PATCHNAME
+ patch update PATCHNAME
+ patch apply PATCHNAME
+ patch send PATCHNAME
+ patch delete PATCHNAME
 
 =head1 OPTIONS
 

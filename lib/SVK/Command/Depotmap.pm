@@ -39,7 +39,7 @@ sub _do_edit {
     if ( !$self->{'init'} ) {
         do {
             $map =
-              get_buffer_from_editor( 'depot map', $sep, "$map\n$sep\n",
+              get_buffer_from_editor( loc('depot map'), $sep, "$map\n$sep\n",
                 'depotmap' );
             $new = eval { YAML::Load($map) };
             print "$@\n" if $@;
@@ -87,11 +87,11 @@ and let you edit your depot-directory mapping.
 
 Each line contains a map entry, the format is:
 
- depotname: 'path/to/repos'
+ depotname: '/path/to/repos'
 
-The depotname could be used to refer to a DEPOTPATH as
+The depotname may then be used as part of a DEPOTPATH:
 
- /depotname/path/in/repos
+ /depotname/path/inside/repos
 
 =head1 AUTHORS
 

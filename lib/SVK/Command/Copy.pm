@@ -156,7 +156,7 @@ SVK::Command::Copy - Make a versioned copy
 =head1 SYNOPSIS
 
  copy DEPOTPATH1 DEPOTPATH2
- copy DEPOTPATH1 PATH
+ copy DEPOTPATH PATH
 
 =head1 OPTIONS
 

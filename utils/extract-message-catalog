@@ -6,8 +6,6 @@ use File::Find;
 use Text::Wrap;
 use Pod::Simple::Text;
 
-$Text::Wrap::columns = 1024 if $Text::Wrap::columns;
-
 chdir "$FindBin::Bin/..";
 
 my (@files, @pms, @pods);
@@ -29,12 +27,15 @@ foreach my $pm (@pms) {
 	elsif ($line =~ /^([A-Z_]+)/) {
 	    $strings{$1}++;
 	}
-	elsif (my @lines = $line =~ /^\s+(.+)\s*$/mg) {
+	elsif (my @lines = $line =~ /^ {4}\s+(.+)\s*$/mg) {
 	    foreach my $chunk (@lines) { 
 		$chunk =~ s/ +: /: /;
 		$strings{$chunk}++;
 	    }
 	}
+        else {
+            $strings{$line}++;
+        }
     }
     next unless %strings;
 }

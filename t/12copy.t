@@ -162,6 +162,6 @@ is_copied_from ("//V/A/Q/me", '/V/me', 3);
 sub is_copied_from {
     my ($path, @expected) = @_;
     $svk->info ($path);
-    my ($rsource, $rrev) = $output =~ m/Copied from (.*?), Rev. (\d+)/;
+    my ($rsource, $rrev) = $output =~ m/Copied From: (.*?), Rev. (\d+)/;
     is_deeply ([$rsource, $rrev], \@expected);
 }

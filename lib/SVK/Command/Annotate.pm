@@ -75,7 +75,7 @@ __DATA__
 
 =head1 NAME
 
-SVK::Command::Annotate - Print files with per-line revision and author info
+SVK::Command::Annotate - Display per-line revision and author info
 
 =head1 SYNOPSIS
 
