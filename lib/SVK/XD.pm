@@ -10,7 +10,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Delay;
 use SVK::Editor::XD;
 use SVK::I18N;
-use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text );
+use SVK::Util qw( slurp_fh md5 get_anchor abs_path mimetype mimetype_is_text abs2rel catdir catfile $SEP );
 use Data::Hierarchy '0.18';
 use File::Spec;
 use File::Find;
@@ -18,6 +18,7 @@ use File::Path;
 use YAML qw(LoadFile DumpFile);
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
+use Config;
 
 
 =head1 NAME
@@ -88,7 +89,7 @@ sub new {
     my $class = shift;
     my $self = bless {}, $class;
     %$self = @_;
-    $self->{signature} ||= SVK::XD::Signature->new (root => "$self->{svkpath}/cache")
+    $self->{signature} ||= SVK::XD::Signature->new (root => catdir($self->{svkpath}, 'cache'))
 	if $self->{svkpath};
     return $self;
 }
@@ -120,8 +121,8 @@ sub load {
 	$info = LoadFile ($self->{statefile});
     }
 
-    $info ||= { depotmap => {'' => "$self->{svkpath}/local" },
-	        checkout => Data::Hierarchy->new() };
+    $info ||= { depotmap => {'' => catdir($self->{svkpath}, 'local') },
+	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
 }
 
@@ -288,7 +289,7 @@ sub find_repos_from_co {
 	$copath = '';
     }
     else {
-	$copath =~ s|^\Q$coroot\E/|/|;
+	$copath = abs2rel($copath, $coroot, '');
     }
 
     return ($repospath, $path eq '/' ? $copath || '/' : $path.$copath,
@@ -340,24 +341,27 @@ sub condense {
     my $self = shift;
     my @targets = map {abs_path($_)} @_;
     my ($anchor, $report);
-    $report = $_[0];
+    my $source = shift;
+    $source =~ s{/}{$SEP}g;
+    $report = $source;
     for (@targets) {
 	if (!$anchor) {
 	    $anchor = $_;
-	    $report = $_[0]
+	    $report = $source;
 	}
 	my $cinfo = $self->{checkout}->get ($anchor);
 	my $schedule = $cinfo->{'.schedule'} || '';
 	if ($anchor ne $_ || -f $anchor || $cinfo->{scheduleanchor} ||
 	    $schedule eq 'add' || $schedule eq 'delete') {
-	    while ($anchor.'/' ne substr ($_, 0, length($anchor)+1) ||
+	    while (index($_, $anchor.$SEP) != 0 or
 		   $self->{checkout}->get ($anchor)->{scheduleanchor}) {
 		($anchor, $report) = get_anchor (0, $anchor, $report);
 	    }
 	}
     }
     return ($report, $anchor,
-	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
+	    map {abs2rel($_, $anchor)} grep {$_ ne $anchor} @targets);
+
 }
 
 sub xdroot {
@@ -382,8 +386,7 @@ sub create_xd_root {
 	    $root = $txn->root();
 	    next if $_ eq $copath;
 	}
-	s|^\Q$copath\E/||;
-	my $path = "$arg{path}/$_";
+	my $path = abs2rel($_, $copath, $arg{path});
 	$root->delete ($path)
 	    if $root->check_path ($path) != $SVN::Node::none;
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
@@ -571,9 +574,9 @@ sub do_delete {
 			  );
 
     # actually remove it from checkout path
-    my @paths = grep {-l $_ || -e $_} (exists $arg{targets}[0] ?
-			      map { "$arg{copath}/$_" } @{$arg{targets}}
-			      : $arg{copath});
+    my @paths = grep {-l or -e} (
+	exists $arg{targets}[0] ? map { catfile($arg{copath}, $_) } @{$arg{targets}} : $arg{copath}
+    );
     find(sub {
 	     my $cpath = $File::Find::name;
 	     no warnings 'uninitialized';
@@ -764,7 +767,7 @@ sub _unknown_verbose {
 		}
 		$arg{cb_unknown}->($dpath, $File::Find::name);
 	  }}, defined $arg{targets} ?
-	  map {"$arg{copath}/$_"} @{$arg{targets}} : $arg{copath});
+	  map { catfile($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
 }
 
 sub _node_deleted_or_absent {
@@ -824,13 +827,13 @@ sub _delta_file {
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
-    lstat ($arg{copath});
-    my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l _);
-    my $mymd5 = md5($fh);
-    my ($baton, $md5);
+    my ($fh, $mymd5);
+    $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $arg{add} && !-l $arg{copath});
+    $mymd5 = md5($fh);
 
+    my ($baton, $md5);
     return $modified unless $schedule || $arg{add} ||
-	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
+	($arg{base} && $mymd5 && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
 
     $baton = $arg{editor}->add_file ($arg{entry}, $arg{baton},
 				     $cinfo->{'.copyfrom'} ?
@@ -870,12 +873,13 @@ sub _delta_dir {
     # compute targets for children
     my $targets;
     for (@{$arg{targets} || []}) {
-	my ($a, $b) = m|^(.*?)(?:/(.*))?$|;
-	if ($b) {
-	    push @{$targets->{$a}}, $b
+	my (@path, $file) = grep length, File::Spec->splitpath($_);
+	my $path = catdir(@path);
+	if (defined $file) {
+	    push @{$targets->{$path}}, $file;
 	}
 	else {
-	    $targets->{$a} = undef;
+	    $targets->{$path} = undef;
 	}
     }
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
@@ -942,7 +946,6 @@ sub _delta_dir {
 			 split ("\n", $self->get_props
 				($arg{xdroot}, $arg{path},
 				 $arg{copath})->{'svn:ignore'} || ''));
-
     opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
     my @direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
     closedir $dir;
@@ -974,7 +977,7 @@ sub _delta_dir {
 	}
 	lstat ($newpaths{copath});
 	next unless -r _ || -l _;
-	my $delta = (-d _ && !-l _)
+	my $delta = (-d _ and (!$Config{d_symlink} or !-l _))
 	    ? \&_delta_dir : \&_delta_file;
 	my $kind = $ccinfo->{'.copyfrom'} ?
 	    $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'}) : $SVN::Node::none;
@@ -1083,7 +1086,7 @@ sub get_eol_layer {
     my $k = $prop->{'svn:eol-style'};
     return ':raw' unless $k;
     return ':crlf' if $k eq 'CRLF';
-    return '' if $k eq 'native';
+    return ' ' if $k eq 'native';
     return ':raw'; # unsupported or lf
 }
 
