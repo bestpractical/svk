@@ -1,4 +1,6 @@
 bin/svk
+bin/svkup
+bin/svkupd
 CHANGES
 inc/ExtUtils/AutoInstall.pm
 inc/Module/Install.pm
@@ -52,10 +54,13 @@ lib/SVK/Command/Switch.pm
 lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
+lib/SVK/Editor/Checkout.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
+lib/SVK/Editor/Local.pm
 lib/SVK/Editor/Merge.pm
+lib/SVK/Editor/Network.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Sign.pm

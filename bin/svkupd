@@ -86,7 +86,6 @@ sub process_request {
     my ($req, $length) = unpack ('nn', $header);
     read $sock, $line, $length or die $!;
     $line =~ s/\s+$//;
-    warn "got $line";
 
     my ($cmd, @arg) = split (' ', $line);
     unless (exists $cmd{$cmd}) {

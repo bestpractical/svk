@@ -1,15 +1,13 @@
 package SVK::Editor::XD;
 use strict;
 our $VERSION = $SVK::VERSION;
-our @ISA = qw(SVN::Delta::Editor);
+use base qw(SVK::Editor::Checkout);
 use SVK::I18N;
-use SVN::Delta;
-use File::Path;
 use SVK::Util qw( get_anchor md5_fh );
 
 =head1 NAME
 
-SVK::Editor::XD - An editor for modifying checkout copies
+SVK::Editor::XD - An editor for modifying svk checkout copies
 
 =head1 SYNOPSIS
 
@@ -20,6 +18,7 @@ $editor = SVK::Editor::XD->new
       newroot => $fs->revision_root ($torev),
       xd => $xd,
       get_copath => sub { ... },
+      get_path => sub { ... },
     );
 
 
@@ -27,7 +26,8 @@ $editor = SVK::Editor::XD->new
 
 SVK::Editor::XD modifies existing checkout copies at the paths
 translated by the get_copath callback, according to the incoming
-editor calls.
+editor calls.  The path in the depot is translated with the get_path
+callback.
 
 There are two modes, one is for applying changes to checkout copy as
 external modification, like merging changes. The other is update mode,
@@ -35,15 +35,13 @@ which is used for bringing changes from depot to checkout copies.
 
 =head1 PARAMETERS
 
+In addition to the paramters to L<SVK::Editor::Checkout>:
+
 =over
-
-=item path
-
-The anchor of the editor calls.
 
 =item target
 
-The target path of the editor calls.  Used only for path reporting translation.
+The target path of the editor calls.
 
 =item xd
 
@@ -61,148 +59,94 @@ New root after the editor calls.
 
 Working in update mode.
 
-=item get_copath
+=item get_path
 
-A callback to translate paths in editor calls to copath.
-
-=item report
-
-Path for reporting modifications.
-
-=item ignore_checksum
-
-Don't do checksum verification.
-
-=back
+A callback to translate paths in editor calls to path in depot.
 
 =cut
 
-sub set_target_revision {
-    my ($self, $revision) = @_;
-    $self->{revision} = $revision;
-}
+sub get_base {
+    my ($self, $path, $copath, $checksum) = @_;
+    my $dpath = $path;
+    $self->{get_path}->($dpath);
 
-sub open_root {
-    my ($self, $base_revision) = @_;
-    $self->{baserev} = $base_revision;
-    return '';
-}
+    my ($dir,$file) = get_anchor (1, $copath);
+    my $basename = "$dir.svk.$file.base";
 
-sub add_file {
-    my ($self, $path, $pdir) = @_;
-    my $copath = $path;
-    $self->{added}{$path} = 1;
-    $self->{get_copath}($copath);
-    die loc("path %1 already exists", $path)
-	if !$self->{added}{$pdir} && (-l $copath || -e _);
-    return $path;
-}
+    rename ($copath, $basename)
+	or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
 
-sub open_file {
-    my ($self, $path) = @_;
-    my $copath = $path;
-    $self->{get_copath}($copath);
-    die loc("path %1 does not exist", $path) unless -l $copath || -e _;
-    return $path;
-}
-
-sub apply_textdelta {
-    my ($self, $path, $checksum, $pool) = @_;
-    my $base;
-    return if $self->{check_only};
-    my ($copath, $dpath) = ($path, $path);
-    $self->{get_copath}($copath);
-    $self->{get_path}($dpath);
-    unless ($self->{added}{$path}) {
-	my ($dir,$file) = get_anchor (1, $copath);
-	my $basename = "$dir.svk.$file.base";
-
-	rename ($copath, $basename)
-	  or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
-
-	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
-	if (!$self->{ignore_checksum} && $checksum) {
-	    my $md5 = md5_fh ($base);
-	    die loc("source checksum mismatch") if $md5 ne $checksum;
-	    seek $base, 0, 0;
-	}
-
-	$self->{base}{$path} = [$base, $basename,
-				-l $basename ? () : [stat($base)]];
+    my $base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
+    if (!$self->{ignore_checksum} && $checksum) {
+	my $md5 = md5_fh ($base);
+	die loc("source checksum mismatch") if $md5 ne $checksum;
+	seek $base, 0, 0;
     }
+
+    return [$base, $basename, -l $basename ? () : [stat($base)]];
+}
+
+sub get_fh {
+    my ($self, $path, $copath) = @_;
+    my $dpath = $path;
+    $self->{get_path}->($dpath);
     # XXX: should test merge to co with keywords
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
 	or warn "can't open $path";
-
-    # The fh is refed by the current default pool, not the pool here
-    return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
-				 $fh, undef, undef, $pool)];
+    return $fh;
 }
 
 sub close_file {
-    my ($self, $path) = @_;
+    my $self = shift;
+    $self->SUPER::close_file (@_);
+    my $path = shift;
     my $copath = $path;
     $self->{get_copath}($copath);
-    if ((my $base = $self->{base}{$path})) {
-	close $base->[0];
-	unlink $base->[1];
-	chmod $base->[2][2], $copath if $base->[2];
-	delete $self->{base}{$path};
-    }
-    elsif (!$self->{update} && !$self->{check_only}) {
-	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' });
-    }
     if ($self->{update}) {
 	# XXX: use store_fast with new data::hierarchy release.
 	$self->{xd}{checkout}->store_fast ($copath, {revision => $self->{revision}});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
+    else {
+	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
+	    if !$self->{base}{$path} &&  !$self->{check_only};
+    }
     delete $self->{props}{$path};
     delete $self->{added}{$path};
 }
 
 sub add_directory {
-    my ($self, $path, $pdir) = @_;
+    my $self = shift;
+    my ($path) = @_;
+    $self->SUPER::add_directory (@_);
     my $copath = $path;
     $self->{get_copath}($copath);
-    die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
-    mkdir ($copath) or die $! unless $self->{check_only};
     $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
 	if !$self->{update} && !$self->{check_only};
     $self->{added}{$path} = 1;
     return $path;
 }
 
-sub open_directory {
-    my ($self, $path) = @_;
-    # XXX: test if directory exists
-    return $path;
-}
+sub do_delete {
+    my $self = shift;
+    return $self->SUPER::do_delete (@_)
+	if $self->{update};
 
-sub delete_entry {
-    my ($self, $path, $revision) = @_;
-    my $copath = $path;
-    $self->{get_copath}($copath);
+    my ($path, $copath) = @_;
     $self->{get_path}($path);
-    # XXX: check if everyone under $path is sane for delete";
-    return if $self->{check_only};
-    if ($self->{update}) {
-	-d $copath ? rmtree ([$copath]) : unlink($copath);
-    }
-    else {
-	$self->{xd}->do_delete (%$self,
-				path => $path,
-				copath => $copath,
-				quiet => 1);
-    }
+    $self->{xd}->do_delete (%$self,
+			    path => $path,
+			    copath => $copath,
+			    quiet => 1);
 }
 
 sub close_directory {
     my ($self, $path) = @_;
-    return if $self->{target} && !$path;
+    # the root is just an anchor
+    return if $self->{target} && $path eq '';
     my $copath = $path;
     $self->{get_copath}($copath);
     $self->{xd}{checkout}->store_recursively ($copath,
@@ -239,7 +183,6 @@ sub change_dir_prop {
 
 sub close_edit {
     my ($self) = @_;
-    $self->close_directory('');
 }
 
 sub abort_edit {

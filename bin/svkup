@@ -11,20 +11,16 @@ use SVK::Editor::Network;
 use SVK::Target;
 use YAML;
 
-
 =head2 TODO
 
 =over
 
-=item on base checksum mismatch, issue oob retrieval
-
-=item abstract SVK::Editor::Local
+=item on base checksum mismatch, issue oob retrieval, or fixup at the
+end (need to serialize the textdelta though.
 
 =item signature caching
 
-
 =back
-
 
 =cut
 
@@ -68,6 +64,8 @@ sub read_msg {
 $handler{0} = sub { read_msg (0, @_) };
 $handler{65535} = sub { read_msg (1, @_) };
 
+eval { use Time::HiRes qw(time); };
+
 sub main {
     my $sock = IO::Socket::INET->new ( PeerAddr => $server,
 				       Blocking => 1,
@@ -77,8 +75,9 @@ sub main {
     my ($read, $write) = (0, 0);
     eval { require IO::Statistics; 1} and $iostat++;
     IO::Statistics->count (\$read, \$write, $sock);
-    init ($sock);
 
+    my $t = time;
+    init ($sock);
 
     while (!$done) {
 	my $req;
@@ -89,7 +88,8 @@ sub main {
 	dispatch ($sock, $req);
     }
 
-    print "read $read bytes, wrote $write bytes\n" if $iostat;
+    print "Running time: ".(time - $t)."\n";
+    print "Read $read bytes, wrote $write bytes\n" if $iostat;
 }
 
 sub dispatch {
