@@ -41,7 +41,7 @@ sub run {
 	my $newroot = $fs->revision_root ($torev);
 
 	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
-	    SVK::DiffEditor::output_diff (\*STDOUT, $target->{path}, "revision $fromrev",
+	    SVK::DiffEditor::output_diff ($target->{path}, "revision $fromrev",
 					  "revision $torev",
 					  $target->{path}, $target2->{path},
 					  $baseroot->file_contents ($target->{path}),
@@ -78,7 +78,7 @@ sub run {
 	my $baseroot = $self->{revspec} ? $fs->revision_root ($self->{revspec}) : $xdroot;
 
 	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
-	    SVK::DiffEditor::output_diff (\*STDOUT, $target->{path},
+	    SVK::DiffEditor::output_diff ($target->{path},
 					  'revision '.
 					  ($self->{revspec} || $self->{xd}{checkout}->get
 					   ($target->{copath})->{revision}),

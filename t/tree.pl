@@ -31,6 +31,7 @@ sub new_repos {
     while (-e $repospath) {
 	$repospath = $reposbase . '-'. (++$i);
     }
+    my $pool = SVN::Pool->new;
     $repos = SVN::Repos::create("$repospath", undef, undef, undef,
 				{'fs-type' => $ENV{SVNFSTYPE} || 'bdb'})
 	or die "failed to create repository at $repospath";
@@ -42,6 +43,7 @@ sub build_test {
 
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
     my $xd = SVK::XD->new (depotmap => $depotmap,
+			   svkpath => $depotmap->{''},
 			   checkout => Data::Hierarchy->new);
     my $svk = SVK->new (xd => $xd, output => \$output);
     push @TOCLEAN, [$xd, $svk];

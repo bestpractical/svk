@@ -1,3 +1,27 @@
+[Changes for 0.15 - 22 May, 2004]
+
+* Fix a bug that keyword-substituted files would cause merge or conflict.
+
+* Various pool fixes to support SVNFSTYPE=fsfs.
+
+* Support external merge tools.
+
+* Merge collision for added files on both sides.
+
+* Support options and value without whitespace in between.
+
+* Support svk <cmd> --help.
+
+* Allow users to override svkpath with $ENV{SVKROOT}. [Jesse Vincent]
+
+* Fix the merge ticket for the case that the mirrored source is / on remote.
+
+* svk patch: patch management.
+
+* svk ls features to accommodate shell completion. [Jesse Vincent]
+
+* Various merge improvement including better ancestor in certain cases.
+
 [Changes for 0.14 - 26 Apr, 2004]
 
 * Display copy/merge information in svk info. [Kang-min Liu]

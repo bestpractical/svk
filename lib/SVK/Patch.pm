@@ -141,21 +141,22 @@ sub local_mirror {
     my ($self, $repos) = @_;
     my ($anchor, $m) = resolve_svm_source ($repos, @{$self}{qw/target_uuid target_path/});
     return unless $anchor;
-    return ($anchor, $m->find_local_rev ($self->{target_rev}));
+    return ($anchor, $m ? $m->find_local_rev ($self->{target_rev}) : $self->{target_rev}, $m);
 }
 
 sub view {
     my ($self, $repos) = @_;
     my $fs = $repos->fs;
     print "=== Patch <$self->{name}> level $self->{level}\n";
-    my ($anchor, $mrev) = $self->local_mirror ($repos)
+    my ($anchor, $mrev, $mirrored) = $self->local_mirror ($repos)
 	or die "Target not local nor mirrored, unable to view patch.\n";
 
     my @source = @{$self}{qw/source_uuid source_path source_rev/};
     print "Source: ".join(':', @source).$self->_path_attribute_text ($fs, @source)."\n";
 
     print "Target: ".join(':', @{$self}{qw/target_uuid target_path target_rev/}).
-	$self->_path_attribute_text ($fs, $self->{source_uuid}, $anchor, $mrev)."\n";
+	$self->_path_attribute_text ($fs, $mirrored ? $self->{source_uuid} : $self->{target_uuid},
+				     $anchor, $mrev)."\n";
     print "Log:\n".$self->{log}."\n";
     my $baseroot = $fs->revision_root ($mrev);
     $self->editor->drive

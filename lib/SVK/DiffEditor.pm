@@ -68,7 +68,7 @@ sub close_file {
 		    $self->{info}{$path}{new}->filename);
 	}
 	else {
-	    output_diff ($self->{fh} || \*STDOUT, $path, $llabel, $rlabel,
+	    output_diff ($path, $llabel, $rlabel,
 			 $self->{lpath} || '', $self->{rpath} || '',
 			 $base, \$self->{info}{$path}{new});
 	}
@@ -84,7 +84,7 @@ sub _full_label {
 }
 
 sub output_diff {
-    my ($fh, $path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
+    my ($path, $llabel, $rlabel, $lpath, $rpath, $ltext, $rtext) = @_;
 
     # XXX: this slurp is dangerous. waiting for streamy svndiff routine
     local $/;
@@ -92,26 +92,25 @@ sub output_diff {
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
     my $showpath = ($lpath ne $rpath);
-    print $fh "=== $path\n";
-    print $fh '=' x 66,"\n";
-    print $fh "--- "._full_label ($path, $showpath ? $lpath : undef, $llabel)."\n";
-    print $fh "+++ "._full_label ($path, $showpath ? $rpath : undef, $rlabel)."\n";
-    print $fh Text::Diff::diff ($ltext, $rtext);
+    print "=== $path\n";
+    print '=' x 66,"\n";
+    print "--- "._full_label ($path, $showpath ? $lpath : undef, $llabel)."\n";
+    print "+++ "._full_label ($path, $showpath ? $rpath : undef, $rlabel)."\n";
+    print Text::Diff::diff ($ltext, $rtext);
 }
 
 sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
-	my $fh = $self->{fh} || \*STDOUT;
-	print $fh "\n", loc("Property changes on: %1\n", $path), ('_' x 67), "\n";
+	print "\n", loc("Property changes on: %1\n", $path), ('_' x 67), "\n";
 	for (sort keys %{$self->{info}{$path}{prop}}) {
-	    print $fh loc("Name: %1\n", $_);
+	    print loc("Name: %1\n", $_);
 	    my $baseprop;
 	    $baseprop = $self->{cb_baseprop}->($path, $_)
 		unless $self->{info}{$path}{added};
-	    print $fh Text::Diff::diff (\ ($baseprop || ''),
-					\$self->{info}{$path}{prop}{$_},
-					{ STYLE => 'SVK::DiffEditor::NoHeader' });
+	    print Text::Diff::diff (\ ($baseprop || ''),
+				    \$self->{info}{$path}{prop}{$_},
+				    { STYLE => 'SVK::DiffEditor::NoHeader' });
 	}
 	print "\n\n";
     }

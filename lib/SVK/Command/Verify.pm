@@ -4,7 +4,6 @@ our $VERSION = '0.14';
 
 use base qw( SVK::Command );
 use SVK::XD;
-use SVK::DiffEditor;
 
 sub options {
     ();
