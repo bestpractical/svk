@@ -46,7 +46,7 @@ sub get_buffer_from_editor {
 	close $fh;
     }
     else {
-	open $fh, $file;
+	open $fh, $file or die $!;
 	local $/;
 	$content = <$fh>;
     }
@@ -58,6 +58,7 @@ sub get_buffer_from_editor {
     while (1) {
 	my $mtime = (stat($file))[9];
 	print loc("Waiting for editor...\n");
+	# XXX: check $?
 	system (@editor, $file) and die loc("Aborted: %1\n", $!);
 	last if (stat($file))[9] > $mtime;
 	my $ans = get_prompt(
@@ -68,7 +69,7 @@ sub get_buffer_from_editor {
 	die loc("Aborted.\n") if $ans =~ /^a/;
     }
 
-    open $fh, $file;
+    open $fh, $file or die $!;
     local $/;
     my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
     close $fh;

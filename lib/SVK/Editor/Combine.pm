@@ -42,7 +42,7 @@ sub replay {
 	my $fh;
 	$edit->add_file ($_)
 	    if $self->{added}{$_};
-	open $fh, $fname;
+	open $fh, '<:raw', $fname or die $!;
 	$edit->modify_file ($_, $fh, $self->{md5}{$_});
     }
     $edit->close_edit;
@@ -60,7 +60,7 @@ sub cb_localmod {
     if (exists $self->{files}{$path}) {
 	return if $self->{md5}{$path} eq $checksum;
 	my $fname = ${*{$self->{files}{$path}}};
-	open my ($fh), $fname or die $!;
+	open my ($fh), '<:raw', $fname or die $!;
 	return [$fh, $fname, $self->{md5}{$path}];
     }
 
@@ -90,7 +90,7 @@ sub apply_textdelta {
     if (exists $self->{files}{$path}) {
 	$base = $self->{files}{$path};
 	my $fname = ${*$base};
-	open $base, $fname;
+	open $base, '<:raw', $fname or die $!;
 	${*$base} = $fname;
     }
     else {

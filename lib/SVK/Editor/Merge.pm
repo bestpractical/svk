@@ -233,6 +233,7 @@ sub cleanup_fh {
 
 sub prepare_fh {
     my ($self, $fh) = @_;
+    # XXX: need to respect eol-style here?
     for my $name (qw/base new local/) {
 	next unless $fh->{$name}[0];
 	next if $fh->{$name}[1];
@@ -324,7 +325,8 @@ sub close_file {
 		    $mfn,
 		    );
 	    die "$path not merged" unless -e $mfn;
-	    open $mfh, '<', $mfn or die $!;
+	    # XXX: eol layer here?
+	    open $mfh, '<:raw', $mfn or die $!;
 	    $checksum = md5 ($mfh);
 	    $conflict = 0;
 	}

@@ -75,7 +75,7 @@ sub store {
     # XXX: shouldn't alter self when store
     delete $self->{$_}
 	for grep {m/^_/} keys %$self;
-    open FH, '>', $file;
+    open FH, '>', $file or die $!;
     print FH encode_base64(compress (nfreeze ($self)));
 }
 

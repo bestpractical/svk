@@ -53,7 +53,7 @@ sub run {
 
     my $final;
     if ($target->{copath}) {
-	open $final, $target->{copath};
+	$final = SVK::XD::get_fh ($target->root ($self->{xd}), '<', $target->{path}, $target->{copath});
 	$ann->add ( "\t(working copy): \t\t", [map {chomp;$_}<$final>]);
 	seek $final, 0, 0;
     }

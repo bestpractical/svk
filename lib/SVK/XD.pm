@@ -1277,7 +1277,7 @@ sub lock {
     my ($self) = @_;
     my $path = $self->lock_path;
     return if -e $path;
-    open my $fh, '>', $path;
+    open my $fh, '>', $path or warn $!, return;
     print $fh $$;
     $self->{locked} = 1;
 }
@@ -1293,7 +1293,7 @@ sub read {
     my ($self) = @_;
     my $path = $self->path;
     if (-s $path) {
-        open my $fh, '<', $path or die $!;
+        open my $fh, '<:raw', $path or die $!;
         $self->{signature} =  { <$fh> };
     }
     else {
@@ -1314,7 +1314,7 @@ sub write {
     $self->lock;
     return unless $self->{locked};
     my ($hash, $file) = @_;
-    open my $fh, '>', $path or die $!;
+    open my $fh, '>:raw', $path or die $!;
     print {$fh} %{ $self->{newsignature} };
     $self->unlock;
 }

@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or plan skip_all => "SVN::Mirror not installed";
-plan tests => 18;
+plan tests => 19;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test', 'client2');
@@ -172,45 +172,39 @@ $svk->proplist ('-v', $copath);
 rmdir "$copath/newdir";
 $svk->revert ('-R', $copath);
 ok (-e "$copath/newdir", 'smerge to checkout - add directory');
-$svk->mirror ('/client2/trunk', "file://${srepospath}".($spath eq '/' ? '' : $spath));
-
-$svk->sync ('/client2/trunk');
-$svk->copy ('-m', 'client2 branch', '/client2/trunk', '/client2/local');
-
 
 $svk->copy ('-m', 'branch on source', '/test/A', '/test/A-cp');
 $svk->ps ('-m', 'prop on A', 'blah', 'tobemerged', '/test/A');
+
 $svk->mirror ('//m-all', "file://${srepospath}/");
-$svk->sync ('//m-all');
-$svk->smerge ('-C', '//m-all/A', '//m-all/A-cp');
-is_output ($svk, 'smerge', ['-m', 'merge down prop only', '//m-all/A', '//m-all/A-cp'],
-	   ['Auto-merging (17, 19) /m-all/A to /m-all/A-cp (base /m-all/A:17).',
+ok ($@ =~ m'Mirroring overlapping paths not supported');
+$svk->mirror ('/client2/m-all', "file://${srepospath}/");
+$svk->sync ('/client2/m-all');
+$svk->smerge ('-C', '/client2/m-all/A', '/client2/m-all/A-cp');
+is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
+	   ['Auto-merging (6, 8) /m-all/A to /m-all/A-cp (base /m-all/A:6).',
 	    "Merging back to SVN::Mirror source file://$srepospath.",
 	    ' U  .',
 	    "New merge ticket: $suuid:/A:7",
 	    'Merge back committed as revision 8.',
 	    "Syncing file://$srepospath",
 	    'Retrieving log information from 8 to 8',
-	    'Committed revision 20 from revision 8.']);
-$svk->pl ('-v', '//m-all/A-cp');
+	    'Committed revision 9 from revision 8.']);
+$svk->pl ('-v', '/client2/m-all/A-cp');
 
-TODO: {
-local $TODO = 'this can fail with hash key randomization, fix has_local or forbid mirroring same repository';
-
-is_output ($svk, 'smerge', ['-m', 'merge down prop only', '//m-all/A', '//m-all/A-cp'],
-	   ['Auto-merging (19, 19) /m-all/A to /m-all/A-cp (base /m-all/A:19).',
+is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
+	   ['Auto-merging (8, 8) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
 	    "Merging back to SVN::Mirror source file://$srepospath.",
 	    'Empty merge.'], 'empty merge');
 
 $svk->ps ('-m', 'prop on A/be', 'proponly', 'proponly', '/test/A/be');
-$svk->sync ('//m-all');
-is_output ($svk, 'smerge', ['-m', 'merge down prop only', '//m-all/A', '//m-all/A-cp'],
-	   ['Auto-merging (19, 21) /m-all/A to /m-all/A-cp (base /m-all/A:19).',
+$svk->sync ('/client2/m-all');
+is_output ($svk, 'smerge', ['-m', 'merge down prop only', '/client2/m-all/A', '/client2/m-all/A-cp'],
+	   ['Auto-merging (8, 10) /m-all/A to /m-all/A-cp (base /m-all/A:8).',
 	    "Merging back to SVN::Mirror source file://$srepospath.",
 	    ' U  be',
 	    "New merge ticket: $suuid:/A:9",
 	    'Merge back committed as revision 10.',
 	    "Syncing file://$srepospath",
 	    'Retrieving log information from 10 to 10',
-	    'Committed revision 22 from revision 10.']);
-}
+	    'Committed revision 11 from revision 10.']);
