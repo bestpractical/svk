@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 22;
+use Test::More tests => 23;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -97,6 +97,7 @@ my $r12output = ['=== A/foo',
 		 '@@ -1 +0,0 @@',
 		 '-foobar'];
 is_sorted_output ($svk, 'diff', ['-r1:2'], $r12output, 'diff - rN:M copath');
+is_sorted_output ($svk, 'diff', ['-r1', '-r2'], $r12output, 'diff - rN:M copath');
 is_sorted_output ($svk, 'diff', ['-r1:2', '//'], $r12output, 'diff - rN:M depotdir');
 is_output ($svk, 'diff', ['-r1:2', '//A/foo'],
 	   ['=== foo',

@@ -9,7 +9,7 @@ use autouse 'SVK::Util' => qw(get_anchor);
 sub options {
     ("v|verbose"    => 'verbose',
      "s|summarize"  => 'summarize',
-     "r|revision=s" => 'revspec');
+     "r|revision=s@" => 'revspec');
 }
 
 sub parse_arg {
@@ -26,7 +26,16 @@ sub run {
     my $yrev = $fs->youngest_rev;
     my ($oldroot, $newroot, $cb_llabel, $report);
     my ($r1, $r2);
-    ($r1, $r2) = $self->{revspec} =~ m/^(\d+)(?::(\d+))?$/ if $self->{revspec};
+    if (my $revspec = $self->{revspec}) {
+	$revspec = [map {split /:/} @$revspec];
+	if ($#{$revspec} > 1) {
+	    die loc ("Invliad -r.\n");
+	}
+	else {
+	    # XXX: check \D for @$revspec
+	    ($r1, $r2) = @$revspec;
+	}
+    }
 
     # translate to target and target2
     if ($target2) {
