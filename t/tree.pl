@@ -131,6 +131,7 @@ sub cleanup_test {
     use YAML;
     print Dump($xd);
     for my $depot (sort keys %{$xd->{depotmap}}) {
+	my $pool = SVN::Pool->new_default;
 	my (undef, undef, $repos) = $xd->find_repos ("/$depot/", 1);
 	print "===> depot $depot (".$repos->fs->get_uuid."):\n";
 	$svk->log ('-v', "/$depot/");
