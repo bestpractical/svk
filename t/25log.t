@@ -1,9 +1,9 @@
 #!/usr/bin/perl
-use Test::More tests => 2;
+use Test::More tests => 4;
 use strict;
 require 't/tree.pl';
 our $output;
-my ($xd, $svk) = build_test();
+my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('commit');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
@@ -30,3 +30,11 @@ r2.*\QChanged paths:
 r1.*\Q  A  /A
   A  /A/bar
   A  /A/foo\E|s);
+
+$svk->mirror ('/test/A', "file://$repospath/A");
+$svk->sync ('/test/A');
+
+is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],
+		qr'r3 \(orig r2\)');
+is_output_like ($svk, 'log', ['-v', '-l1', '/test/A/'],
+		qr'r3 \(orig r2\)');

@@ -13,14 +13,15 @@ sub options {
      'v|verbose'	=> 'verbose');
 }
 
-sub log_remote_rev {
-    # XXX: Use an api instead
-    my ($fs, $rev) = @_;
-    my $revprops = $fs->revision_proplist ($rev);
-
-    my ($rrev) = map {$revprops->{$_}} grep {m/^svm:headrev:/} sort keys %$revprops;
-
-    return $rrev ? " (orig r$rrev)" : '';
+# returns a sub for getting remote rev
+sub _log_remote_rev {
+    my ($repos, $path) = @_;
+    return unless SVN::Mirror::list_mirror ($repos);
+    # save some initialization
+    my $m = SVN::Mirror::is_mirrored (@_) || 'SVN::Mirror';
+    sub {
+	' (orig r'.$m->find_remote_rev ($_[0], $repos).')'
+    }
 }
 
 sub parse_arg {
@@ -46,11 +47,13 @@ sub run {
 
     $self->{cross} ||= 0;
 
+    my $remote = _log_remote_rev ($target->{repos}, $target->{path});
+
     my $sep = ('-' x 70)."\n";
     print $sep;
     _get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, '', 1)} );
+	       sub {_show_log (@_, $sep, undef, '', $remote)} );
     return;
 }
 
@@ -96,7 +99,7 @@ sub _show_log {
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     no warnings 'uninitialized';
     $output->print ("r$rev$host".
-		    ($remote ? log_remote_rev($root->fs, $rev): '').
+		    ($remote ? $remote->($rev): '').
 		    ":  $author | $date\n");
     if ($paths) {
 	$output->print (loc("Changed paths:\n"));
@@ -126,6 +129,7 @@ sub do_log {
     use Sys::Hostname;
     my ($host) = split ('\.', hostname, 2);
     $host = $showhost ? '@'.$host : '';
+    $remote = _log_remote_rev ($repos, $path) if $remote;
     _get_logs ($repos->fs, -1, $path, $fromrev, $torev, $verbose, $cross,
 	       sub {_show_log (@_, $sep, $output, $host, $remote)} )
 }

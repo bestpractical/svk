@@ -11,7 +11,7 @@ use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
 use File::Spec;
 use Cwd;
-use File::Temp qw(mktemp);
+use File::Temp 0.14 qw(mktemp);
 my $svn_mirror = eval 'require SVN::Mirror; 1' ? 1 : 0;
 
 sub svn_mirror { $svn_mirror }
