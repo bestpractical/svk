@@ -11,7 +11,7 @@ my ($xd2, $svk2) = build_test();
 
 is_output_like ($svk, 'patch', [], qr'SYNOPSIS');
 is_output_like ($svk, 'patch', ['blah'], qr'SYNOPSIS');
-is_output ($svk, 'patch', ['view'], ['Filename required.']);
+is_output ($svk, 'patch', ['--view'], ['Filename required.']);
 
 $svk->mkdir ('-m', 'init', '//trunk');
 my $tree = create_basic_tree ($xd, '//trunk');
@@ -60,7 +60,7 @@ my $patch1 = ['',
 	      ' file fe added later',
 	      '+fnord'];
 
-is_output ($svk2, 'patch', ['view', 'test-1'],
+is_output ($svk2, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:3 [mirrored]",
@@ -87,18 +87,18 @@ is_output ($svk2, 'smerge', ['-lm', '', '-P', '-', '//local', '//trunk'],
 ok (-e "$xd2->{svkpath}/patch/test-1.patch");
 mkdir ("$xd->{svkpath}/patch");
 copy ("$xd2->{svkpath}/patch/test-1.patch" => "$xd->{svkpath}/patch/test-1.patch");
-is_output ($svk, 'patch', ['list'], ['test-1@1: ']);
+is_output ($svk, 'patch', ['--list'], ['test-1@1: ']);
 
 my ($scopath, $scorpath) = get_copath ('patch1');
 $svk->checkout ('//trunk', $scopath);
 overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\n");
 $svk->commit ('-m', "modified on trunk", $scopath);
 
-$svk->patch ('view', 'test-1');
-is_output ($svk, 'patch', [qw/test test-1/], ['G   B/fe', 'Empty merge.'],
+$svk->patch ('--view', 'test-1');
+is_output ($svk, 'patch', [qw/--test test-1/], ['G   B/fe', 'Empty merge.'],
 	   'patch still applicable from server.');
 
-is_output ($svk, 'patch', ['view', 'test-1'],
+is_output ($svk, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6",
 	    "Target: $uuid:/trunk:3 [local] [updated]",
@@ -106,20 +106,20 @@ is_output ($svk, 'patch', ['view', 'test-1'],
 
 $svk2->sync ('-a');
 
-is_output ($svk2, 'patch', [qw/test test-1/],
+is_output ($svk2, 'patch', [qw/--test test-1/],
 	   ["Checking locally against mirror source $uri/trunk.",
 	    'G   B/fe',
 	    'Empty merge.'],
 	   'patch still applicable from original.');
 
-is_output ($svk2, 'patch', ['view', 'test-1'],
+is_output ($svk2, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:3 [mirrored] [updated]",
             "        ($uri/trunk)",
 	    @$log1, @$patch1]);
 
-is_output ($svk2, 'patch', ['update', 'test-1'],
+is_output ($svk2, 'patch', ['--update', 'test-1'],
 	   ['G   B/fe']);
 
 my $patch2 = [split ("\n", << 'END_OF_DIFF')];
@@ -135,7 +135,7 @@ my $patch2 = [split ("\n", << 'END_OF_DIFF')];
 
 END_OF_DIFF
 
-is_output ($svk2, 'patch', ['view', 'test-1'],
+is_output ($svk2, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
@@ -144,26 +144,26 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 
 copy ("$xd2->{svkpath}/patch/test-1.patch" => "$xd->{svkpath}/patch/test-1.patch");
 
-is_output ($svk, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.'],
+is_output ($svk, 'patch', [qw/--test test-1/], ['U   B/fe', 'Empty merge.'],
 	   'patch applies cleanly on server.');
 
-is_output ($svk2, 'patch', [qw/test test-1/],
+is_output ($svk2, 'patch', [qw/--test test-1/],
 	   ["Checking locally against mirror source $uri/trunk.",
 	    'U   B/fe',
 	    'Empty merge.'],
 	   'patch applies cleanly from local.');
 
-is_output ($svk, 'patch', ['view', 'test-1'],
+is_output ($svk, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6",
 	    "Target: $uuid:/trunk:4 [local]",
 	    @$log1, @$patch2]);
 
-is_output ($svk, 'patch', ['apply', 'test-1', $scopath, '--', '-C'],
+is_output ($svk, 'patch', ['--apply', 'test-1', $scopath, '--', '-C'],
 	   [__("U   $scopath/B/fe"),
 	    "New merge ticket: $uuid2:/local:6"]);
 $svk2->cp ('-m', 'branch', '//trunk', '//patch-branch');
-is_output ($svk2, 'patch', ['apply', 'test-1', '//patch-branch', '--', '-C'],
+is_output ($svk2, 'patch', ['--apply', 'test-1', '//patch-branch', '--', '-C'],
 	   ['U   B/fe',
 	    'Empty merge.']);
 
@@ -171,25 +171,25 @@ overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
 
 $svk->ci ('-Pfrom-ci-P', '-mTest', $scopath);
 # check me
-$svk->patch ('view', 'from-ci-P');
+$svk->patch ('--view', 'from-ci-P');
 
 $svk->commit ('-m', "modified on trunk", $scopath);
-is_output ($svk, 'patch', [qw/test test-1/],
+is_output ($svk, 'patch', [qw/--test test-1/],
 	   ['C   B/fe', 'Empty merge.', '1 conflict found.',
 	    'Please do a merge to resolve conflicts and regen the patch.'],
 	   'patch not applicable due to conflicts.');
 overwrite_file ("$copath/B/fe", "file fe added later\nbzzzzz\nfnord\n");
 $svk2->commit ('-m', "catch up on local", $copath);
-is_output ($svk2, 'patch', ['view', 'test-1'],
+is_output ($svk2, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 1',
 	    "Source: $uuid2:/local:6 [local] [updated]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
             "        ($uri/trunk)",
 	    @$log1, @$patch2]);
-is_output ($svk2, 'patch', [qw/regen test-1/],
+is_output ($svk2, 'patch', [qw/--regen test-1/],
 	   ['G   B/fe']);
 
-is_output ($svk2, 'patch', ['view', 'test-1'],
+is_output ($svk2, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 2',
 	    "Source: $uuid2:/local:9 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored]",
@@ -209,7 +209,7 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    '+fnord']);
 
 $svk2->sync ('-a');
-is_output ($svk2, 'patch', ['view', 'test-1'],
+is_output ($svk2, 'patch', ['--view', 'test-1'],
 	   ['==== Patch <test-1> level 2',
 	    "Source: $uuid2:/local:9 [local]",
 	    "Target: $uuid:/trunk:4 [mirrored] [updated]",
@@ -235,8 +235,8 @@ is_output ($svk, 'ci', ['-m', 'delete something', '-P', 'delete', $scopath],
 TODO: {
 local $TODO = 'later';
 
-is_output ($svk2, 'patch', ['update', 'test-1'],
+is_output ($svk2, 'patch', ['--update', 'test-1'],
 	   ['G   B/fe']);
-is_output ($svk, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.']);
-is_output ($svk2, 'patch', [qw/test test-1/], ['U   B/fe', 'Empty merge.']);
+is_output ($svk, 'patch', [qw/--test test-1/], ['U   B/fe', 'Empty merge.']);
+is_output ($svk2, 'patch', [qw/--test test-1/], ['U   B/fe', 'Empty merge.']);
 }

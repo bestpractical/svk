@@ -24,6 +24,10 @@ sub lock {
 sub run {
     my ($self, $src, $dst) = @_;
     # XXX: support checkonly
+    
+    warn "$0 cmerge is deprecated, pending improvements to the Subversion API.\n";
+    warn "Use '$0 merge -c' to obtain similar functionality.\n\n";
+
     my @revlist = $self->parse_revlist;
 
     my $repos = $src->{repos};
@@ -102,6 +106,10 @@ __DATA__
 SVK::Command::Cmerge - Merge specific changes
 
 =head1 SYNOPSIS
+
+ This command is currently deprecated, pending improvements to the
+ Subversion API. In the meantime, use C<svk merge -c> to obtain
+ similar functionality.
 
  cmerge -c CHGSPEC DEPOTPATH [PATH]
  cmerge -c CHGSPEC DEPOTPATH1 DEPOTPATH2

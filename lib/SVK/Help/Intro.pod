@@ -4,51 +4,94 @@ SVK::Help::Intro - Introduction to svk
 
 =head1 DESCRIPTION
 
-svk is a I<client> program that makes distributed version control
-possible.  While version control systems like CVS and Subversion are
-cool and sine qua non for most of us, they rely on centralized
-repository: one can't do much without being online.  SVK will make
-your offline life easier and offer more.
+svk is an open source distributed version control system which is
+designed to interoperate with Subversion.  Like other version control
+systems, it keeps track of each change you make to a project and allows
+you to maintain multiple parallel tracks of development.  svk also has
+a number of powerful features which are rarely found in other version
+control systems.
 
-svk makes distributed and offline work possible by introducing the
-concept of I<local depots>.  Before, there are only your working
-directory and (mostly remote) central repository. By introducing this
-middle layer, which resides in your own local storage, you can commit,
-checkout, diff with your local depot, which you can later I<sync> with
-the remote repository via very simple pair of commands, C<svk push>
-and C<svk pull>.
+svk has been designed from the ground up to support development
+models that are simple and intuitive for software developers.  It has
+advanced smart branching and merging semantics that make it easy to
+maintain multiple parallel lines of development and painless to merge
+changes across branches. svk's built in patch manager makes it easy
+for non-committers to share changes among themselves and with project
+maintainers
 
-We say svk is a client because svk makes uses of existing version
-control systems.  By default it uses Subversion, and Subversion users
-will immediately find similarities in the look and feel of svk.  In
-addition to Subversion, svk also works with other version control
-systems such as cvs and Perforce.  This means you can use svk as your
-local version control client even if your source tree resides in a
-repository that is not using Subversion.  What's more, you can use svk
-to work with all the different repositories, like Subversion, cvs and
-Perforce, with only one client program.
+svk provides powerful support for I<distributed development>.  Every svk
+client is capable of fully mirroring remote Subversion repositories so
+that you have full access to a project's history at any time, even when
+they are off the network or on the wrong side of a firewall.  You can
+branch a remote project at any point in that project's history, whether
+or not you have write access to that project's repository.  Later, you
+can integrate changes from the project's master server (usually with a
+single command) or push your branch up to another Subversion repository.
 
-Local depot is one of the key ideas of svk.  Mirrored from a remote
-repository, it offers many benefits in addition to making offline and
-distributed work possible.  For example, a non-committer can copy
-(mirror) the source tree of a project and then work on his or her own
-local copy--ci, co, diff, file manipulations, everything that before
-would require rights to commit.  As you can see, the concept of local
-copy is actually that of local branch.  If the non-committer now
-obtains rights to commit, she or he can merge with the repository with
-no effort.  C<svk push> will do the trick.
 
-Another powerful feature of svk is its patch management. Instead of
-merging different versions between different depots, branches or
-repositories, svk can generate history-sensitive patch files.  Take
-the example of the non-committer we mentioned above.  Now instead of
-commit-and-merge, which would require rights to commit, he or she can
-generate patch files and send them to project admins. The admins can
-later examine and apply these patches. This feature greatly expands
-the version control model and at the same time makes access control
-more flexible.
+=head1 GETTING STARTED
 
-See also L<http://svk.elixus.org>
+svk has a rich command line interface that can be somewhat daunting
+at first. the following few commands are all you'll need for day to
+day operation. 
+
+=over
+
+=item svk mirror
+
+First, you'll need to Using svk, you can I<mirror> a remote repository.
+
+=item svk sync
+
+When you've set up a new mirror or want to get some work done without
+a network connection, I<sync> your local repository with upstream
+repositories.
+
+=item svk copy
+
+After that, it's easy to I<copy> remote branches to create local
+branches. (svk branches are simply directories, just like Subversion
+branches.)
+
+=item svk checkout
+
+When you want to get some work done, you can I<checkout> a working copy
+to make local changes.
+
+=item svk add, svk delete and svk move
+
+As you work on the files in your working copy, feel free to I<add>
+new files, I<delete> existing files and I<move> files around.
+
+=item svk commit
+
+When you're done, just I<commit> your changes to your local repository,
+whether or not you have network.  If you I<commit> to a mirrored path,
+rather than a local branch, you'll need to be able to access the path's
+upstream subversion server, but the commit will be sent to the server
+instantly.
+
+=item svk pull
+
+Life doesn't stop when you make a local branch.  From time to time,
+I<pull> down changes from the upstream repository.
+
+
+=item svk push
+
+
+When you're ready to share your changes with the world, I<push> them to
+the upstream repository.
+
+=back
+
+To see a full list of svk's commands, type C<svk help commands>.
+For help with a specific command, just type C<svk help I<command>>.
+
+The svk wiki (L<http://svk.elixus.org>) is a great place to find the
+latest svk tips, tricks and updates.  If you run into trouble using svk,
+the wiki's the right place to start looking for help.
 
 =cut
 
+1;
