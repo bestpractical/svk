@@ -26,4 +26,3 @@ is ($srepos->fs->youngest_rev, $old_srev, 'sync is idempotent');
 $svk->smerge ('-IB', '//local', '//remote');
 $svk->smerge ('-IB', '//local', '//remote');
 is ($drepos->fs->youngest_rev, 4, 'smerge -IB is idempotent');
-

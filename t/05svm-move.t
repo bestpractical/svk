@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
 use Test::More;
-use Cwd;
 
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
