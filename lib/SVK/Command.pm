@@ -152,7 +152,9 @@ sub invoke {
     my $error;
     local $SVN::Error::handler = sub {
 	$error = $_[0];
-	SVN::Error::croak_on_error (@_);
+	my $error_message = $error->expanded_message();
+	$error->clear();
+	die $error_message."\n";
     };
 
     local $@;
