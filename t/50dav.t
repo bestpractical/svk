@@ -10,6 +10,7 @@ use SVK::Util qw(can_run);
 
 BEGIN {
     require 't/tree.pl';
+    plan (skip_all => "Test does not run under root") if $> == 0;
     eval { require Apache2 };
     eval { require Apache::Test;
 	   $Apache::Test::VERSION >= 1.18 }
