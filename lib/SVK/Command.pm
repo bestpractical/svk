@@ -20,6 +20,10 @@ my %alias = qw( co checkout
 		pe propedit
 		pl proplist
 		cp copy
+		mv move
+		ren move
+		rename move
+		mi mirror
 		sm smerge
 		sy sync
 		desc describe
