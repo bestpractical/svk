@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
-use Test::More tests => 11;
 use strict;
 BEGIN { require 't/tree.pl' };
+use Test::More tests => 11;
+
 our $output;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('mkdir');
@@ -31,7 +32,7 @@ is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deeper/file'],
 
 SKIP: {
 skip 'SVN::Mirror not installed', 4
-    unless eval { require SVN::Mirror; 1 };
+    unless HAS_SVN_MIRROR;
 
 my $uri = uri($repospath);
 

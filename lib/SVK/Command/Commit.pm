@@ -8,7 +8,6 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh find_svm_source tmpfile abs2rel );
-use SVN::Simple::Edit;
 
 sub options {
     ('m|message=s'  => 'message',
@@ -50,25 +49,6 @@ sub check_mirrored_path {
 	return;
     }
     return 1;
-}
-
-# OBSOLETED: do not create new callers to this function.
-# Use get_dynamic_editor instead.
-sub get_commit_editor {
-    my ($self, $xdroot, $committed, $path, %arg) = @_;
-    ${$arg{callback}} = $committed if $arg{editor};
-    return SVN::Simple::Edit->new
-	(_editor => [$arg{editor} ||
-		     SVN::Repos::get_commit_editor($arg{repos},
-						   "file://$arg{repospath}",
-						   $path,
-						   $arg{author}, $arg{message},
-						   $committed)],
-	 base_path => $path,
-	 $arg{mirror} ? () : ( root => $xdroot ),
-	 pool => SVN::Pool->new,
-	 missing_handler =>
-	 SVN::Simple::Edit::check_missing ($xdroot));
 }
 
 sub get_commit_message {
@@ -165,7 +145,7 @@ sub get_editor {
 	    if $self->{patch} =~ m!/!;
 	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
 				     $target->depotname, $source, $target->new (targets => undef));
-	$patch->{ticket} = SVK::Merge->new (xd => $self->{xd})->merge_info ($source)->add_target ($source)->as_string
+	$patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
 	    if $source;
 	$patch->{log} = $self->{message};
 	my $fname = $self->{xd}->patch_file ($self->{patch});
@@ -271,6 +251,7 @@ sub get_committable {
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
+	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	unlink $file;
     }
 
@@ -282,13 +263,14 @@ sub committed_commit {
     my $fs = $target->{repos}->fs;
     sub {
 	my $rev = shift;
-	my (undef, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
+	my ($entry, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
+	my (undef, $coanchor) = $self->{xd}->find_repos ($entry->{depotpath});
 	my $oldroot = $fs->revision_root ($rev-1);
-	my $oldrev = $oldroot->node_created_rev ($target->{path});
 	# optimize checkout map
 	for my $copath ($self->{xd}{checkout}->find ($dataroot, {revision => qr/.*/})) {
 	    my $corev = $self->{xd}{checkout}->get ($copath)->{revision};
-	    next if $corev < $oldrev;
+	    # XXX: cache the node_created_rev for entries within $target->path
+	    next if $corev < $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/'));
 	    $self->{xd}{checkout}->store_override ($copath, {revision => $rev});
 	}
 	# update checkout map with new revision

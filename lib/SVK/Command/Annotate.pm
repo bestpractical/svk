@@ -84,6 +84,7 @@ SVK::Command::Annotate - Display per-line revision and author info
 =head1 SYNOPSIS
 
  annotate FILE
+ annotate DEPOTPATH[@rev]
 
 =head1 OPTIONS
 

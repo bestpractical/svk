@@ -86,11 +86,14 @@ sub AUTOLOAD {
 	my $newpath = $self->rename_check ($arg[0]);
 	if ($newpath ne $arg[0]) {
 	    ++$renamed;
-	    if (exists $self->{renamed}[$arg[1]]) {
-	    }
-	    else {
+	    # XXX: always reanchor for now. skip those non-leaf matching.
+	    # 'mv A/file A/B/file; mv A/B A/C'
+	    # tracking the change made on file would die on opening 'B'
+#	    if (exists $self->{renamed}[$arg[1]]) {
+#	    }
+#	    else {
 		++$renamed_anchor unless _same_parent ($newpath, $arg[0]);
-	    }
+#	    }
 	    $arg[0] = $newpath;
 	}
     }

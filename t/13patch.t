@@ -1,14 +1,10 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
-use File::Copy qw( copy );
 BEGIN { require 't/tree.pl' };
+plan_svm tests => 29;
+
+use File::Copy qw( copy );
 our $output;
-
-eval "require SVN::Mirror"
-or plan skip_all => "SVN::Mirror not installed";
-plan tests => 28;
-
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
 my ($xd2, $svk2) = build_test();
@@ -226,6 +222,11 @@ is_output ($svk2, 'patch', ['view', 'test-1'],
 	    ' file fe added later',
 	    '+bzzzzz',
 	    '+fnord']);
+
+$svk->st ($scopath);
+$svk->rm ("$scopath/me");
+is_output ($svk, 'ci', ['-m', 'delete something', '-P', 'delete', $scopath],
+	   ['Patch delete created.']);
 TODO: {
 local $TODO = 'later';
 

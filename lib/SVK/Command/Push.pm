@@ -11,6 +11,7 @@ sub options {
      'C|check-only'     => 'check_only',
      'S|sign'	        => 'sign',
      'P|patch=s'        => 'patch',
+     'verbatim'		=> 'verbatim',
     );
 }
 
@@ -57,6 +58,7 @@ SVK::Command::Push - Move changes into another repository
  -C [--check-only]      : try operation but make no changes
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ --verbatim             : verbatim merge log without indents and header
 
 =head1 AUTHORS
 

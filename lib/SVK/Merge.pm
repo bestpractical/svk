@@ -263,10 +263,10 @@ sub log {
     my $print_rev = SVK::Command::Log::_log_remote_rev
 	($self->{repos}, $self->{src}->path, $self->{remoterev},
 	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
-    my $sep = $verbatim ? '' : ('-' x 70)."\n";
+    my $sep = $verbatim || $self->{verbatim} ? '' : ('-' x 70)."\n";
     my $cb_log = sub {
 	SVK::Command::Log::_show_log
-		(@_, $sep, $buf, 1, $print_rev)
+		(@_, $sep, $buf, 1, $print_rev, 0, $self->{verbatim} ? 1 : 0)
 		    unless $self->_is_merge_from ($self->{src}->path, $self->{dst}, $_[0]);
     };
 
@@ -446,6 +446,16 @@ sub del_target {
     $target = $target->universal
 	if UNIVERSAL::isa ($target, 'SVK::Target');
     delete $self->{join(':', $target->{uuid}, $target->{path})};
+    return $self;
+}
+
+sub remove_duplicated {
+    my ($self, $other) = @_;
+    for (keys %$other) {
+	if ($self->{$_} && $self->{$_}{rev} <= $other->{$_}{rev}) {
+	    delete $self->{$_};
+	}
+    }
     return $self;
 }
 

@@ -10,7 +10,7 @@ require SVN::Repos;
 require SVN::Fs;
 use File::Path;
 use File::Temp;
-use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
+use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
 use Test::More;
 
 # Fake standard input
@@ -25,7 +25,7 @@ BEGIN {
 }
 
 sub plan_svm {
-    eval { require SVN::Mirror; 1 } or do {
+    unless (HAS_SVN_MIRROR) {
 	plan skip_all => "SVN::Mirror not installed";
 	exit;
     };
@@ -45,7 +45,7 @@ END {
 our $output = '';
 our $copath;
 
-for (qw/SVKRESOLVE SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
+for (qw/SVKRESOLVE SVKMERGE SVKDIFF SVKPGP LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
     $ENV{$_} = '' if $ENV{$_};
 }
 $ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';

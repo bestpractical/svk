@@ -7,6 +7,10 @@ use SVK::XD;
 use SVK::Editor::Status;
 use SVK::Util qw( abs2rel );
 
+sub options {
+    ("q|quiet"    => 'quiet');
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
@@ -31,9 +35,16 @@ sub run {
 	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_obstruct => \&SVK::Editor::Status::obstruct,
-	  cb_unknown =>
-	  sub { my $path = abs2rel($_[1], $target->{copath} => length($report) ? $report : undef);
-		print "?   $path\n" }
+	  $self->{quiet} ?
+              ()         :
+              (cb_unknown =>
+                 sub { my $path = abs2rel($_[1],
+                                          $target->{copath} => 
+                                            length($report) ? $report : undef
+                                         );
+                       print "?   $path\n"
+                 }
+              )
 	);
     return;
 }
@@ -52,7 +63,7 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
 =head1 OPTIONS
 
- None
+ -q [--quiet]           : do not display files not under version control
 
 =head1 AUTHORS
 

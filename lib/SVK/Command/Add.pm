@@ -28,8 +28,13 @@ sub run {
 	die loc ("%1 already under version control.\n", $target->{report})
 	    unless $target->{targets};
 	# check for multi-level targets
-	die loc ("Please add the parent directory first.\n")
-	    if grep { m{[/\Q$SEP\E]}o } @{$target->{targets}};
+	for (@{$target->{targets}}) {
+	    # XXX: consolidate sep for targets
+	    my ($parent) = m{^(.*)[/\Q$SEP\E]}o or next;
+	    die loc ("Please add the parent directory '%1' first.\n", $parent)
+		unless $self->{xd}{checkout}->
+		    get ($target->copath ($parent))->{'.schedule'};
+	}
     }
 
     $self->{xd}->checkout_delta

@@ -35,13 +35,10 @@ sub run {
 	if $base->{path} eq '/';
     my $tmpbranch = "$src->{path}-merge-$$";
 
-    $self->do_copy_direct
-	( %$src,
-	  path => $base->{path},
-	  dpath => $tmpbranch,
-	  message => "preparing for cherry picking merging",
-	  rev => $base->{revision},
-	) unless $self->{check_only};
+    $self->command (copy =>
+		    { message => "preparing for cherry picking merging" }
+		   )->run ($base => $src->new (path => $tmpbranch))
+		       unless $self->{check_only};
 
     my $ceditor = SVK::Editor::Combine->new(tgt_anchor => $base->{path},
 					    #$check_only ? $base_path : $tmpbranch,
@@ -119,6 +116,7 @@ SVK::Command::Cmerge - Merge specific changes
  -a [--auto]            : merge from the previous merge point
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
 
 =head1 AUTHORS

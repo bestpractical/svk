@@ -1,13 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
-require 't/tree.pl';
-use Test::More;
+BEGIN { require 't/tree.pl' };
+plan_svm tests => 1;
+
 our $output;
-eval "require SVN::Mirror"
-or plan skip_all => "SVN::Mirror not installed";
-
-plan tests => 1;
-
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('new');
 

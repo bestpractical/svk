@@ -1,13 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
 BEGIN { require 't/tree.pl' };
-our $output;
-eval { require SVN::Mirror; 1 } or do {
-    plan skip_all => "SVN::Mirror not installed";
-    exit;
-};
-plan tests => 5;
+plan_svm tests => 5;
 
 my ($xd, $svk) = build_test('test');
 

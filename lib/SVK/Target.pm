@@ -55,6 +55,8 @@ sub root {
 
 =head2 same_repos
 
+Returns true if all C<@other> targets are from the same repository
+
 =cut
 
 sub same_repos {
@@ -66,6 +68,8 @@ sub same_repos {
 }
 
 =head2 same_source
+
+Returns true if all C<@other> targets are mirrored from the same source
 
 =cut
 
@@ -108,6 +112,12 @@ sub normalize {
     $self->{revision} = ($root->node_history ($self->path)->prev(0)->location)[1]
 	unless $self->{revision} == $root->node_created_rev ($self->path);
 }
+
+=head2 as_depotpath
+
+Makes target depotpath. Takes C<$revision> number optionally.
+
+=cut
 
 sub as_depotpath {
     my ($self, $revision) = @_;
@@ -195,6 +205,12 @@ sub contains_mirror {
 	SVN::Mirror::list_mirror ($self->{repos});
 }
 
+=head2 depotname
+
+Returns depotname of the target
+
+=cut
+
 sub depotname {
     my $self = shift;
 
@@ -218,6 +234,7 @@ sub copied_from {
             path => $path,
             depotpath => '/' . $self->depotname . $path,
             revision => undef,
+            report => '',
         );
 
         # make a depot path

@@ -14,7 +14,7 @@ our @EXPORT_OK = qw(
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
     move_path make_path splitpath splitdir tmpdir tmpfile
 
-    is_symlink is_executable is_uri is_empty_path can_run
+    is_symlink is_executable is_uri can_run
 );
 our $VERSION = $SVK::VERSION;
 
@@ -90,7 +90,7 @@ use constant HAS_SYMLINK => $Config::Config{d_symlink};
 sub HAS_SVN_MIRROR () {
     no warnings 'redefine';
     local $@;
-    my $has_svn_mirror = eval { require SVN::Mirror; 1 };
+    my $has_svn_mirror = $ENV{SVKNOSVM} ? 0 : eval { require SVN::Mirror; 1 };
     *HAS_SVN_MIRROR = $has_svn_mirror ? sub () { 1 } : sub () { 0 };
     return $has_svn_mirror;
 }
@@ -174,7 +174,7 @@ sub get_buffer_from_editor {
 
     open $fh, $file or die $!;
     local $/;
-    my @ret = defined $sep ? split (/^\Q$sep\E$/m, <$fh>, 2) : (<$fh>);
+    my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
     close $fh;
     unlink $file;
 
@@ -637,28 +637,6 @@ sub move_path {
         "Cannot rename %1 to %2; please move it manually.\n",
         catfile($source), catfile($target),
     );
-}
-
-=head3 move_path ($source, $target)
-
-Move a path to another place, creating intermediate directories in the target
-path if neccessary.  If move failed, tell the user to move it manually.
-
-=cut
-
-sub is_empty_path {
-    my ($path) = @_;
-
-    return 1 if !-e $path;
-    return 0 if !-d $path;
-
-    opendir my $dh, $path or die $!;
-    while (my $node = readdir($dh)) {
-        next if $node =~ /^\.\.?$/;
-        return 0 if catdir($path, $node);
-    }
-
-    return 1;
 }
 
 sub traverse_history {

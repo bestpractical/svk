@@ -2,8 +2,7 @@
 use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 18;
+plan_svm tests => 18;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');

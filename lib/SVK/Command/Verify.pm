@@ -30,9 +30,9 @@ sub _verify {
 			   0, 1, 0, 1
 			  );
 
-    print "Verification failed\n" if $editor->{fail};
-
-
+    return loc ("Signature verification failed.\n") if $editor->{fail};
+    print "Signature verified.\n";
+    return;
 }
 
 sub run {
@@ -40,8 +40,10 @@ sub run {
     my $target = $self->arg_depotpath ("/$depot/");
     my $fs = $target->{repos}->fs;
     my $sig = $fs->revision_prop ($chg, 'svk:signature');
-    return "No signature found for change $chg at /$depot/\n" unless $sig;
-    _verify ($target->{repos}, $sig, $chg);
+    return _verify ($target->{repos}, $sig, $chg)
+	if $sig;
+    print "No signature found for change $chg at /$depot/.\n";
+    return;
 }
 
 # XXX: Don't need this editor once root->paths_changed is available.
@@ -69,7 +71,8 @@ sub close_edit {
     my $sig = $self->{sig};
     local *D;
     # verify the signature
-    open D, "|gpg --verify --batch --no-tty";
+    my $pgp = $ENV{SVKPGP} || 'gpg';
+    open D, "|$pgp --verify --batch --no-tty";
     print D $sig;
     close D;
 

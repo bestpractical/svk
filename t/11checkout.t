@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 36;
+use Test::More tests => 39;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -21,7 +21,15 @@ ok (-e "$copath/co-root/V/A/Q/qu");
 $svk->checkout ('//V/A', "$copath/co-root-a");
 ok (-e "$copath/co-root-a/Q/qu");
 
-$svk->checkout ('//V-3.1', "$copath/co-root-v3.1");
+$svk->checkout ('//V/A', "$copath/co-root-deep/there");
+ok (-e "$copath/co-root-deep/there/Q/qu");
+
+$svk->checkout ('--export', '//V/A', "$copath/co-root-export");
+ok (-e "$copath/co-root-export/Q/qu");
+
+is_output ($svk, 'checkout', ['-q', '//V-3.1', "$copath/co-root-v3.1"],
+	   ["Syncing //V-3.1(/V-3.1) in ".__"$corpath/co-root-v3.1 to 6."],
+	   'quiet');
 ok (-e "$copath/co-root-v3.1/A/Q/qu");
 
 chdir ($copath);
@@ -92,6 +100,7 @@ is_output ($svk, 'checkout', ['--list'], [
             "//V-3.1/A/Q/qu      \t".__("$corpath/boo"),
             "//V-3.1/A/Q/qu      \t".__("$corpath/qu"),
             "//V/A               \t".__("$corpath/co-root-a"),
+	    "//V/A               \t".__("$corpath/co-root-deep/there"),
             ]);
 
 is_output ($svk, 'checkout', ['--detach', '//V-3.1'], [

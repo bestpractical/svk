@@ -58,7 +58,7 @@ sub run {
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1)} );
+	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0)} );
     return;
 }
 
@@ -112,7 +112,7 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log {
-    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime) = @_;
+    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime, $verbatim) = @_;
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     if (defined $use_localtime) {
@@ -121,7 +121,8 @@ sub _show_log {
 	$date = time2str("%Y-%m-%d %T %z", str2time ($date));
     }
     $indent = (' ' x $indent);
-    $output->print ($indent.$print_rev->($rev).":  $author | $date\n");
+    $author = loc('(no author)') if !defined($author) or !length($author);
+    $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
     if ($paths) {
 	$output->print ($indent.loc("Changed paths:\n"));
 	for (sort keys %$paths) {
@@ -140,7 +141,7 @@ sub _show_log {
     }
     $message = ($indent ? '' : "\n")."$message\n$sep";
 #    $message =~ s/\n\n+/\n/mg;
-    $message =~ s/^/$indent/mg if $indent;
+    $message =~ s/^/$indent/mg if $indent and !$verbatim;
     $output->print ($message);
 }
 

@@ -1,9 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
 BEGIN { require 't/tree.pl' };
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 21;
+plan tests => 41;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -33,7 +31,11 @@ overwrite_file ("A/deep/X", "fnord");
 overwrite_file ("A/deep/new", "fnord");
 $svk->add ('A/deep/new');
 $svk->ps ('dirprop', 'myvalue', 'A');
-$svk->commit ('-N', '-m', 'trying -N', 'A');
+is_output ($svk, 'commit', ['-N', '-m', 'trying -N', 'A'],
+	   ['Committed revision 2.']);
+is_output ($svk, 'pl', ['-v', 'A'],
+	   ['Properties on A:',
+	    '  dirprop: myvalue']);
 is_output ($svk, 'status', [],
 	   [__('M   A/bar'),
 	    __('M   A/deep/baz'),
@@ -72,6 +74,9 @@ $svk->commit ('-m', 'rm something', 'A/foo');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 	   [$corpath, __("$corpath/A/barnew"), __("$corpath/A/foo")]);
 
+SKIP: {
+skip 'SVN::Mirror not installed', 1
+    unless HAS_SVN_MIRROR;
 # The '--sync' and '--merge' below would have no effect.
 is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
             "Syncing //(/) in $corpath to 5.",
@@ -80,14 +85,14 @@ is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
             __"U   $corpath/A/deep/la/no",
             __" U  $corpath/A",
            ]);
-
+}
+$svk->update ($corpath) unless HAS_SVN_MIRROR;
 $svk->commit ('-m', 'the rest');
 
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})], [$corpath]);
 $svk->rm ('A/deep/la');
 $svk->commit ('-m', 'remove something deep');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})], [$corpath]);
-
 
 is_output ($svk, 'status', [],
 	   [__('?   A/deep/X')]);
@@ -120,15 +125,36 @@ overwrite_file ("A/newdir/bar", "fnord");
 is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/newdir/bar'],
 	   ['Committed revision 11.']);
 is_output ($svk, 'status', [], [], 'import finds anchor');
-$svk->update ('-r9');
+# XXX: uncomment this to see post-commit subdir checkout optimization bug
+#$svk->update ('-r9');
 
 overwrite_file ("A/foo", "foobar");
 overwrite_file ("A/bar", "foobar");
 $svk->add("A/foo", "A/bar");
 $svk->commit ('-m', 'foo');
 
-overwrite_file ("A/foo", "foobar2");
-overwrite_file ("A/bar", "foobar2");
+append_file ("A/foo", "foobar2");
+append_file ("A/bar", "foobar2");
+$svk->ps ('bar', 'foo', '.');
+is_output ($svk, 'commit', ['-m', 'bozo', 'A/bar', '.'],
+	   ['Committed revision 13.']);
+is_output ($svk, 'status', [],
+	   [], 'commit A/bar . means .' );
+is_output ($svk, 'pl', ['-v', '.'],
+	   ['Properties on .:',
+	    '  bar: foo']);
+append_file ("A/bar", "foobar2");
+append_file ("A/foo", "foobar2");
+$svk->ps ('bar', 'bozo', '.');
+is_output ($svk, 'commit', ['-N', '-m', 'bozo', 'A/bar', '.'],
+	   ['Committed revision 14.']);
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
+is_output ($svk, 'pl', ['-v', '.'],
+	   ['Properties on .:',
+	    '  bar: bozo']);
+
+our $answer = 'c';
 
 set_editor(<< 'TMP');
 $_ = shift;
@@ -143,6 +169,62 @@ close _;
 print @_;
 TMP
 
+append_file ("A/bar", "foobar2");
+$svk->ps ('bar', 'foo', '.');
+
+is_output ($svk, 'st', [],
+	   [__('M   A/bar'),
+	    __('M   A/foo'),
+	    ' M  .']);
+
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Committed revision 15.']);
+
+is_output ($svk, 'pl', ['-v', '.'],
+	   ['Properties on .:',
+	    '  bar: foo']);
+is_output ($svk, 'st', [],
+	   [__('M   A/foo')]);
+
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'No targets to commit.'], 'target edited to empty');
+
+append_file ("A/foo", "foobar2");
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
+
+$svk->ps ('foo', 'bar', '.');
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+	    ' M  .']);
+$svk->commit;
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
+is_output ($svk, 'pl', ['-v', '.'],
+	   ['Properties on .:',
+	    '  bar: foo',
+	    '  foo: bar']);
+
+overwrite_file ("A/bar", "foobar");
+$svk->pd ('bar', '.');
+is_output ($svk, 'st', [],
+	   [__('M   A/bar'),
+	    __('M   A/foo'),
+	    ' M  .']);
 $svk->commit;
 is_output ($svk, 'status', [],
 	   [__('M   A/foo')]);
+
+$svk->revert ('-R');
+append_file ("A/bar", "foobar2");
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Committed revision 18.'], 'buffer unmodified');
+$answer = 'a';
+append_file ("A/bar", "foobar2");
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Aborted.'], 'buffer unmodified');

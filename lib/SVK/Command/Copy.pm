@@ -28,7 +28,7 @@ sub parse_arg {
         # (otherwise it hurts when user types //deep/directory/name)
         $self->{parent} = 1;
 
-        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): "));
+        my $path = get_prompt(loc("Enter a depot path to copy into (under // if no leading '/'): ")) || '//A';
         $path =~ s{^//+}{};
         $path =~ s{//+}{/};
         $path = "//$path" unless $path =~ m!^/!;
@@ -50,20 +50,6 @@ sub parse_arg {
 sub lock {
     my $self = shift;
     $_[-1]->{copath} ? $self->lock_target ($_[-1]) : $self->lock_none;
-}
-
-sub do_copy_direct {
-    # OBSOLETED
-    my ($self, %arg) = @_;
-    my $fs = $arg{repos}->fs;
-    my $edit = $self->get_commit_editor ($fs->revision_root ($fs->youngest_rev),
-					 sub { print loc("Committed revision %1.\n", $_[0]) },
-					 '/', %arg);
-    # XXX: check parent, check isfile, check everything...
-    $edit->open_root();
-    $edit->copy_directory ($arg{dpath}, "file://$arg{repospath}$arg{path}",
-			   $arg{revision});
-    $edit->close_edit();
 }
 
 sub handle_co_item {
@@ -111,8 +97,8 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
-    # XXX: this anchorification is bad on checkout root
-    $target->anchorify;
+    # Use condensed to do proper anchorification.
+    $target = $self->arg_condensed ($target->copath);
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),

@@ -18,6 +18,7 @@ sub options {
      'track-rename'	=> 'track_rename',
      'host=s'   	=> 'host',
      'I|incremental'	=> 'incremental',
+     'verbatim'		=> 'verbatim',
      'no-ticket'	=> 'no_ticket',
      'r|revision=s'	=> 'revspec',
      'c|change=s',	=> 'chgspec',
@@ -111,7 +112,7 @@ sub run {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
 	++$self->{no_ticket} if $self->{patch};
-	# XXX: these should come from parse_arg
+	# avoid generating merge ticket pointing to other changes
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
@@ -211,6 +212,7 @@ SVK::Command::Merge - Apply differences between two sources
  -f [--from]            : merge from the specified path
  -P [--patch] arg       : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
 

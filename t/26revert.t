@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 10;
+use Test::More tests => 11;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -32,6 +32,16 @@ is_output ($svk, 'revert', ['-R'],
 	    __("Reverted $corpath/A/deep/baz"),
 	    __("Reverted $corpath/A/foo"),
            ], 'revert everything');
+
+TODO: {
+# this creates dangling sticky .schedule for descendents
+local $TODO = 'disallow reverting added dir without -R';
+
+$svk->add('A');
+is_output ($svk, 'revert', ['A'],
+	   ["Can't revert added directory A, use revert -R"],
+	   'deny reverting dir only');
+}
 
 $svk->add('A');
 $svk->commit ('-m', 'commit everything');

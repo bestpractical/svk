@@ -1,9 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More;
 BEGIN { require 't/tree.pl' };
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 49;
+plan_svm tests => 49;
 
 our ($output, $answer);
 BEGIN { require 't/tree.pl' };
@@ -159,22 +157,31 @@ is_output ($svk, 'status', [$copath],
 $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
 
-is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/A/Q/'],
+is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
 	   ['Committed revision 17.']);
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
-is_output ($svk, 'cp', ['-m', 'copy direcly', '//V/me', '//V/newdir-with-p/me-dcopied'],
+is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
 	   [qr'Transaction is out of date',
 	    'Please update checkout first.']);
-is_output ($svk, 'cp', ['-p', '-m', 'copy direcly', '//V/me', '//V/newdir-with-p/me-dcopied'],
+is_output ($svk, 'cp', ['-p', '-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
 	   ['Committed revision 18.']);
 
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
+require Cwd;
+my $cwd = Cwd::cwd();
+mkdir "$corpath-some";
+chdir "$corpath-some";
 $answer = 'somepath';
 is_output ($svk, 'cp', ['-m', '', '//V/me'],
-	   ['Committed revision 19.']);
+	   ['Committed revision 19.',
+            'Syncing //somepath(/somepath) in '.__("$corpath-some/somepath to 19."),
+            'A   somepath']);
 is_copied_from ("//somepath", '/V/me', 3);
+unlink "$corpath-some/somepath";
+rmdir "$corpath-some";
+chdir $cwd;
 
 $svk->copy ("$copath/A", "$copath/B/A-cp-in-B");
 is_output ($svk, 'status', [$copath],

@@ -79,6 +79,9 @@ sub load {
     my $content = do {
         open my $fh, "< $file" or die loc("cannot open %1: %2", $file, $!);
 
+        # Normalize all line endings to LF
+        binmode($fh, ":eol(LF)");
+
         # Serialized patches always begins with a block marker.
         # We need the \nVersion: to not trip over inlined block makers.
         # This is safe because unidiff can't have lines beginning with 'V'.
@@ -208,6 +211,7 @@ sub view {
 	    cb_baseprop => sub { my ($path, $pname) = @_;
 				 return $baseroot->node_prop ("$anchor/$path", $pname);
 			     },
+	    oldtarget => $self->{_target}, oldroot => $baseroot,
 	    llabel => "revision $self->{target}{rev}",
 	    rlabel => "patch $self->{name} level $self->{level}",
 	    external => $ENV{SVKDIFF},
@@ -296,9 +300,26 @@ sub regen {
 	$self->{_source} = $source;
 	$self->{source} = $source->universal;
 	$self->{editor} = $patch;
-	$self->{ticket} = $merge->merge_info ($source)->add_target ($source)->as_string;
+	$self->ticket ($merge, $source, $target);
     }
     return $conflict;
+}
+
+=head2 ticket ($merge, $source, $target;
+
+Associate the patch with ticket generated from C<$source> but excluding
+duplicated ones from <$target>.
+
+=cut
+
+sub ticket {
+    my ($self, $merge, $source, $target) = @_;
+    $self->{ticket} =
+	$merge->merge_info ($source)
+	->add_target ($source)
+	->del_target ($target)
+        ->remove_duplicated ($merge->merge_info ($target))
+	->as_string;
 }
 
 =head2 commit_editor
