@@ -31,7 +31,7 @@ sub run {
     while ($hist = $hist->prev($self->{cross})) {
 	$pool->clear;
 	my ($path, $rev) = $hist->location;
-	unshift @revs, $rev;
+	unshift @revs, [$path, $rev];
     }
 
     print loc("Annotations for %1 (%2 active revisions):\n", $target->{path}, scalar @revs);
@@ -40,11 +40,12 @@ sub run {
     for (@revs) {
 	$pool->clear;
 	local $/;
-	my $content = $fs->revision_root($_)->file_contents($target->{path});
+	my ($path, $rev) = @$_;
+	my $content = $fs->revision_root ($rev)->file_contents ($path);
 	$content = [split "[\n\r]", <$content>];
-	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $_,
-			    $fs->revision_prop ($_, 'svn:author') || '',
-			    substr($fs->revision_prop ($_, 'svn:date'),0,10)),
+	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $rev,
+			    $fs->revision_prop ($rev, 'svn:author') || '',
+			    substr($fs->revision_prop ($rev, 'svn:date'),0,10)),
 		    $content);
     }
 
@@ -55,7 +56,7 @@ sub run {
 	seek $final, 0, 0;
     }
     else {
-	$final = $fs->revision_root($revs[-1])->file_contents($target->{path});
+	$final = $fs->revision_root($revs[-1][1])->file_contents($revs[-1][0]);
     }
     my $result = $ann->result;
     while (my $info = shift @$result) {
