@@ -471,9 +471,10 @@ L<SVK::Editor::Merge> when called in array context.
 sub get_editor {
     my ($self, %arg) = @_;
     my $t = translator($arg{target});
-    $arg{get_copath} = sub { $_[0] = $arg{copath}, return
-				 if $arg{target} eq $_[0];
-			     $_[0] =~ s|$t|$arg{copath}/|
+    my ($copath, $target) = @arg{qw/copath target/};
+    $arg{get_copath} = sub { $_[0] = $copath, return
+				 if $target eq $_[0];
+			     $_[0] =~ s|$t|$copath/|
 				 or die loc("unable to translate %1 with %2", $_[0], $t);
 			     $_[0] =~ s|/$||;
 			 };
@@ -654,6 +655,7 @@ Don't generate text deltas in C<apply_textdelta> calls.
 sub depot_delta {
     my ($self, %arg) = @_;
     my @root = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} @arg{qw/oldroot newroot/};
+    # XXX: if dir_delta croaks the editor would leak since the baton is not properly destroyed.
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
 			   $arg{editor}, undef,
@@ -1328,8 +1330,7 @@ sub new {
 my $globaldestroy;
 
 sub DESTROY {
-    # XXX: maybe just for 5.8.0 ?
-#    warn "===> attempt to destroy root $_[0]" if $globaldestroy;
+    warn "===> attempt to destroy root $_[0]" if $globaldestroy;
     return if $globaldestroy;
     $_[0][0]->abort if $_[0][0];
 }

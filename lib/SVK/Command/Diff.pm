@@ -78,7 +78,9 @@ sub run {
 	    },
 	  cb_baseprop =>
 	  sub { my ($rpath, $pname) = @_;
-		return $oldroot->node_prop ("$target->{path}/$rpath", $pname);
+		my $path = "$target->{path}/$rpath";
+		return $oldroot->check_path ($path) == $SVN::Node::none ?
+		    undef : $oldroot->node_prop ($path, $pname);
 	    },
 	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision $r1"),
 	  rlabel => $target2->{copath} ? 'local' : "revision $r2",
@@ -92,7 +94,7 @@ sub run {
 	);
 
     if ($target2->{copath}) {
-	if ($newroot->check_path ($target2->{path}) == $SVN::Node::file) {
+	if ($oldroot->check_path ($target2->{path}) != $SVN::Node::dir) {
 	    my $tgt;
 	    ($target2->{path}, $tgt) = get_anchor (1, $target2->{path});
 	    ($target->{path}, $target2->{copath}) =
@@ -114,7 +116,7 @@ sub run {
     }
     else {
 	my $tgt = '';
-	if ($newroot->check_path ($target2->{path}) == $SVN::Node::file) {
+	if ($oldroot->check_path ($target2->{path}) != $SVN::Node::dir) {
 	    ($target->{path}, $tgt) =
 		get_anchor (1, $target->{path});
 	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
