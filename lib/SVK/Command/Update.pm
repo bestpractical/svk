@@ -72,7 +72,7 @@ sub run {
             require SVK::Command::Smerge;
             my $smerge = SVK::Command::Smerge->new;
             %$smerge = (
-                ($self->{incremental} ? () : (message => '', log => 0)),
+                ($self->{incremental} ? () : (message => '', log => 1)),
                 %$self, %$smerge, sync => 0,
             );
             $smerge->run(
