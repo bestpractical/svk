@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
-		  find_svm_source tmpfile abs2rel find_prev_copy from_native);
+		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native);
 
 sub options {
     ('m|message=s'  => 'message',
@@ -236,6 +236,7 @@ sub get_committable {
 	( notify => SVK::Notify->new
 	  ( cb_flush => sub {
 		my ($path, $status) = @_;
+		to_native ($path, 'path');
 		my $copath = $target->copath ($path);
 		push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
 				 $copath];
@@ -324,6 +325,7 @@ sub committed_commit {
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
+	    from_native ($dpath, 'path');
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
 	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop, '>');

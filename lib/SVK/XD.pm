@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
-		  to_native );
+		  from_native to_native );
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML'	 => qw(LoadFile DumpFile);
@@ -578,7 +578,7 @@ sub auto_prop {
     my $prop;
     $prop->{'svn:executable'} = '*' if is_executable($copath);
     # auto mime-type
-    open my $fh, '<', $copath or die "$copath: $!";
+    open my $fh, '<', $copath or Carp::confess "$copath: $!";
     if (my $type = mimetype($fh)) {
 	# add only binary mime types or text/* but not text/plain
 	$prop->{'svn:mime-type'} = $type
@@ -1081,13 +1081,15 @@ sub _delta_dir {
     # XXX: Merge this with @direntries so we have single entry to descendents
     for my $entry (sort keys %$entries) {
 	my $newtarget;
+	my $copath = $entry;
+	to_native ($copath, 'path');
 	if (defined $targets) {
-	    next unless exists $targets->{$entry};
-	    $newtarget = delete $targets->{$entry};
+	    next unless exists $targets->{$copath};
+	    $newtarget = delete $targets->{$copath};
 	}
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
-	my $copath = SVK::Target->copath ($arg{copath}, $entry);
+	$copath = SVK::Target->copath ($arg{copath}, $copath);
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
 	lstat ($copath);
@@ -1126,16 +1128,19 @@ sub _delta_dir {
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
 	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
-	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir);
+	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} }
+	    map { from_native($_); $_ } readdir ($dir);
     }
 
-    for my $entry (@direntries) {
+    for my $copath (@direntries) {
+	my $entry = $copath;
+	to_native ($copath, 'path');
 	my $newtarget;
 	if (defined $targets) {
-	    next unless exists $targets->{$entry};
-	    $newtarget = delete $targets->{$entry};
+	    next unless exists $targets->{$copath};
+	    $newtarget = delete $targets->{$copath};
 	}
-	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $entry),
+	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $copath),
 			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			 base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",

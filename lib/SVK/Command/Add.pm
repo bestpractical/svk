@@ -6,7 +6,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( $SEP is_symlink );
+use SVK::Util qw( $SEP is_symlink to_native);
 
 sub options {
     ('q|quiet'		=> 'quiet');
@@ -60,6 +60,7 @@ sub run {
 	      })),
 	  cb_unknown => sub {
 	      lstat ($_[1]);
+	      to_native ($_[0]);
 	      $self->do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
 			     (!-d _ or is_symlink));
 	  },

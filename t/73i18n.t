@@ -8,7 +8,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 
-plan tests => 12;
+plan tests => 20;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -51,6 +51,13 @@ is_output ($svk, 'mkdir', [-m => $msg, '--encoding', 'big5', "//A/$msg-dir"],
 	   ['Committed revision 5.']);
 $svk->up ($copath);
 ok (-e "$copath/$msgutf8-dir");
+overwrite_file ("$copath/$msgutf8-dir/newfile", "new file\n");
+overwrite_file ("$copath/$msgutf8-dir/newfile2", "new file\n");
+is_output ($svk, 'add', ["$copath/$msgutf8-dir/newfile2"],
+	   [__"A   $copath/$msgutf8-dir/newfile2"]);
+is_output ($svk, 'st', [$copath],
+	   [__"?   $copath/$msgutf8-dir/newfile",
+	    __"A   $copath/$msgutf8-dir/newfile2"]);
 
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => '//'],
@@ -70,8 +77,21 @@ is_output ($svk, 'checkout', ['//A', $copath],
 ok (-e "$copath/$msg-dir", 'file checked out in filename of native encoding');
 ok (!-e "$copath/$msgutf8-dir", 'not utf8');
 
-overwrite_file ("$copath/$msg", "with big5 filename\n");
-$svk->add ("$copath/$msg");
+overwrite_file ("$copath/$msg-dir/$msg", "with big5 filename\n");
+is_output ($svk, 'st', [$copath],
+	   [__"?   $copath/$msg-dir/$msg"]);
+is_output ($svk, 'st', ["$copath/$msg-dir"],
+	   [__"?   $copath/$msg-dir/$msg"]);
+is_output ($svk, 'add', ["$copath/$msg-dir/$msg"],
+	   [__"A   $copath/$msg-dir/$msg"]);
+
+is_output ($svk, 'commit', ["$copath/$msg-dir"],
+	   ['Waiting for editor...',
+	    'Committed revision 6.']);
+is_output ($svk, 'st', [$copath],
+	   [], 'clean checkout after commit');
+is_output ($svk, 'st', ["$copath/$msg-dir"],
+	   [], 'clean checkout after commit');
 
 # reset
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8');
