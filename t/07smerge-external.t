@@ -119,7 +119,6 @@ $answer = 'a'; # accept
 
 set_editor(<< "TMP");
 \$_ = shift;
-sleep 2;
 open _, ">\$_" or die $!;
 print _ "edited\\n";
 TMP
@@ -141,7 +140,6 @@ is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 
 set_editor(<< "TMP");
 \$_ = \$ARGV[6];
-sleep 2;
 open _, ">\$_" or die $!;
 print _ "merged\\n";
 TMP

@@ -52,7 +52,6 @@ open _ or die $!;
 @_ = ("prepended_prop\n", <_>);
 close _;
 unlink $_;
-sleep 2;
 open _, '>', $_ or die $!;
 print _ @_;
 close _;

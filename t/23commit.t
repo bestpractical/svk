@@ -124,7 +124,6 @@ open _ or die $!;
 @_ = grep !/foo/, <_>;
 close _;
 unlink $_;
-sleep 2;
 open _, '>', $_ or die $!;
 print _ @_;
 close _;

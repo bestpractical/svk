@@ -153,7 +153,10 @@ sub get_buffer_from_editor {
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
 			: DEFAULT_EDITOR; # fall back to something
     my @editor = split (' ', $editor);
+    my $time = time;
+
     while (1) {
+        utime ($time - 10, $time - 10, $file);
 	my $mtime = (stat($file))[9];
 	print loc("Waiting for editor...\n");
 	# XXX: check $?
