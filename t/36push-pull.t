@@ -2,9 +2,10 @@
 use strict;
 use Test::More;
 use Cwd;
+use File::Path;
 
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 7;
+plan_svm tests => 8;
 
 my $initial_cwd = getcwd;
 
@@ -136,4 +137,20 @@ is_output ($svk, "pull", ["sub"], [
 	"Syncing //l-sub(/l-sub/sub) in ".__("$corpath_subdir/sub to 18."),
        __("U   sub/xd")]);
 chdir ($initial_cwd);
+our $output;
+$svk->cp (-m => 'copy', '/test/A' => '/test/A-cp');
+$svk->mkdir (-m => 'dir in A', '/test/A/notforcp');
+$svk->mkdir (-m => 'dir in A-ap', '/test/A-cp/cp-only');
+$svk->mi ('--detach' => '//m');
+$svk->mi ('//all', $uri);
+$svk->sync ('-a');
 
+rmtree [$corpath_default];
+$svk->checkout ('//all/A-cp', $corpath_default);
+
+TODO: {
+local $TODO = 'pull on mirrored path should not smerge from the same source';
+is_output ($svk, 'pull', [$copath_default],
+	   ["Syncing //all/A-cp(/all/A-cp) in $corpath_default to 32.",
+	    __"A   $copath_default/cp-only"]);
+}
