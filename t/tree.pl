@@ -10,7 +10,7 @@ require SVN::Repos;
 require SVN::Fs;
 use File::Path;
 use File::Temp;
-use SVK::Util qw( catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
+use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 );
 
 # Fake standard input
 our $answer = 's'; # skip
@@ -19,6 +19,8 @@ BEGIN {
     *SVK::Util::get_prompt = sub {
         ref($answer) ? shift(@$answer) : $answer
     } unless $ENV{DEBUG_INTERACTIVE};
+
+    chdir catdir( dirname(__FILE__), '..' );
 }
 
 use Carp;
@@ -30,7 +32,6 @@ END {
     $SIG{__WARN__} = sub { 1 };
     cleanup_test($_) for @TOCLEAN;
 }
-
 
 our $output = '';
 our $copath;
