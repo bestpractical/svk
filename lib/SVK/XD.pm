@@ -17,6 +17,7 @@ use File::Find;
 use File::Path;
 use YAML qw(LoadFile DumpFile);
 use PerlIO::via::dynamic;
+use PerlIO::via::symlink;
 
 =head1 NAME
 
@@ -779,7 +780,6 @@ sub _node_deleted_or_absent {
 	return 1 if $schedule eq 'delete';
     }
 
-    lstat ($arg{copath});
     unless (-e _ || -l _) {
 	return 1 if $arg{absent_ignore};
 	if ($arg{absent_as_delete}) {
@@ -808,6 +808,7 @@ sub _delta_file {
 	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton});
     }
 
+    lstat ($arg{copath});
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, rev => $rev,
 						type => 'file');
 
@@ -1145,7 +1146,6 @@ sub _fh_symlink {
     my ($mode, $fname) = @_;
     my $fh;
     if ($mode eq '>') {
-	use PerlIO::via::symlink;
 	open $fh, '>:via(symlink)', $fname;
     }
     elsif ($mode eq '<') {

@@ -23,6 +23,7 @@ requires(
         'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.02',
+        'PerlIO::via::symlink'  => '0.01',
         'SVN::Simple::Edit'     => '0.21',
 );
 features(
