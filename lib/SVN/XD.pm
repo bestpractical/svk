@@ -92,13 +92,17 @@ sub do_update {
     my $fs = $arg{repos}->fs;
 
     my ($txn, $xdroot) = create_xd_root ($info, %arg);
-    my ($anchor, $target, $copath) = ($arg{path});
+    my ($anchor, $target, $copath) = ($arg{path}, '');
+    $arg{target_path} ||= $arg{path};
+    my ($tanchor, $ttarget) = ($arg{target_path}, '');
 
     print "syncing $arg{depotpath}($arg{path}) to $arg{copath} to $arg{rev}\n";
     unless ($xdroot->check_path ($arg{path}) == $SVN::Node::dir) {
 	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
-	undef $target unless $target;
 	chop $anchor if length($anchor) > 1;
+
+	(undef,$tanchor,$ttarget) = File::Spec->splitpath ($arg{target_path});
+	chop $tanchor if length($tanchor) > 1;
 
 	(undef,undef,$copath) = File::Spec->splitpath ($arg{copath});
     }
@@ -107,7 +111,7 @@ sub do_update {
 	( copath => $arg{copath},
 	  get_copath => sub { my $t = translator($target);
 			      $_[0] = $arg{copath}, return
-				  if $target && $target eq $_[0];
+				  if $target eq $_[0];
 			      $_[0] =~ s|$t|$arg{copath}/|
 				  or die "unable to translate $_[0] with $t";
 			      $_[0] =~ s|/$||;
@@ -124,10 +128,10 @@ sub do_update {
 	(_debug => 0,
 	 fs => $fs,
 	 send_fulltext => 1,
-	 anchor => $anchor,
+	 anchor => $tanchor,
+	 target => $ttarget,
 	 base_anchor => $anchor,
 	 base_root => $xdroot,
-	 target => $target,
 	 storage => $storage,
 # SVN::Delta::Editor->new (_debug => 1,_editor => [$storage]),
 	 xd_storage_cb ($info, $anchor, $target, $arg{copath}, $xdroot),
@@ -135,9 +139,8 @@ sub do_update {
 
 #    $editor = SVN::Delta::Editor->new(_debug=>1),
 
-    $target ||= '' if $SVN::Core::VERSION ge '0.36.0';
-    SVN::Repos::dir_delta ($xdroot, $anchor, $target,,
-			   $fs->revision_root ($arg{rev}), $arg{path},
+    SVN::Repos::dir_delta ($xdroot, $anchor, $target,
+			   $fs->revision_root ($arg{rev}), $arg{target_path},
 			   $editor, undef,
 			   1, 1, 0, 1);
 
@@ -642,9 +645,9 @@ sub do_merge {
     my ($info, %arg) = @_;
     # XXX: reorganize these shit
     my ($anchor, $target) = ($arg{path});
-    my ($base_anchor, $base_target) = ($arg{base_path} || $arg{path});
+    my ($base_anchor, $base_target) = ($arg{base_path} || $arg{path}, '');
     my ($txn, $xdroot);
-    my ($tgt_anchor, $tgt) = ($arg{dpath});
+    my ($tgt_anchor, $tgt) = ($arg{dpath}, '');
     my ($storage, $findanchor, %cb);
 
     my $fs = $arg{repos}->fs;
@@ -663,8 +666,6 @@ sub do_merge {
     if ($findanchor) {
 	(undef,$anchor,$target) = File::Spec->splitpath ($arg{path});
 	(undef,$base_anchor,$base_target) = File::Spec->splitpath ($base_anchor);
-	undef $target unless $target;
-	undef $base_target unless $base_target;
 	chop $anchor if length($anchor) > 1;
 	chop $base_anchor if length($base_anchor) > 1;
 
@@ -757,7 +758,6 @@ sub do_merge {
 	  %cb,
 	);
 
-    $base_target ||= '' if $SVN::Core::VERSION ge '0.36.0';
     SVN::Repos::dir_delta ($fs->revision_root ($arg{fromrev}),
 			   $base_anchor, $base_target,
 			   $fs->revision_root ($arg{torev}), $arg{path},

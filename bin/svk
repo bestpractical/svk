@@ -311,6 +311,46 @@ sub checkout {
     update ($copath);
 }
 
+=head2 switch
+
+Bring current checkout to another branch.
+
+  usage: switch DEPOTPATH [PATH]
+
+=cut
+
+sub switch {
+    local @ARGV = @_;
+    my $rev;
+    die unless GetOptions ("r|revision=i"  => \$rev);
+    my ($target, $copath) = @_;
+    $copath ||= '';
+    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    my ($trepospath, $tpath) = find_repos ($target, 0);
+
+    $copath = Cwd::abs_path ($copath);
+
+    die "different depot" unless $repospath eq $trepospath;
+
+    my ($entry, @where) = $info->{checkout}->get ($copath);
+
+    die "can only switch checkout root" unless $where[-1] eq $copath;
+
+    $rev = $repos->fs->youngest_rev unless defined $rev;
+
+    SVN::XD::do_update ($info,
+			repos => $repos,
+			depotpath => $cinfo->{depotpath},
+			copath => $copath,
+			repospath => $repospath,
+			path => $path,
+			target_path => $tpath,
+			rev => $rev,
+		       );
+
+    $info->{checkout}->store ($copath, {depotpath => $target});
+}
+
 =head2 info
 
 Display information about a file or directory.
@@ -402,8 +442,7 @@ sub diff {
 	      rpath  => $path2,
 	    );
 
-	SVN::Repos::dir_delta ($baseroot, $path,
-			       $SVN::Core::VERSION ge '0.36.0' ? '' : undef,
+	SVN::Repos::dir_delta ($baseroot, $path, '',
 			       $newroot, $path2,
 			       $editor, undef,
 			       1, 1, 0, 1);
@@ -659,6 +698,19 @@ sub add {
 		     path => $path,
 		     recursive => !$nrec,
 		    );
+}
+
+=head2 mkdir
+
+Create a versioned directory.
+
+=cut
+
+sub mkdir {
+    local @ARGV = @_;
+    my ($copath, @targets);
+    die unless @ARGV;
+    (undef, $copath, @targets) = condense (@ARGV);
 }
 
 =head2 delete (del, rm)
