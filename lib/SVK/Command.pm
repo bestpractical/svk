@@ -113,7 +113,6 @@ arguments are expanded for shell globbing with C<File::Glob::bsd_glob>.
 sub invoke {
     my ($pkg, $xd, $cmd, $output, @args) = @_;
     my ($help, $ofh, $ret);
-    local @ARGV = @args;
     my $pool = SVN::Pool->new_default;
     $ofh = select $output if $output;
     my $error;
@@ -124,20 +123,19 @@ sub invoke {
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
-	die loc ("Unknown options.\n")
-	    unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
+	$cmd->getopt (\@args, 'h|help' => \$help);
 
 	# Fake shell globbing on Win32 if we are called from main
 	if (IS_WIN32 and caller(1) eq 'main') {
 	    require File::Glob;
-	    @ARGV = map {
+	    @args = map {
 		/[?*{}\[\]]/
 		    ? File::Glob::bsd_glob($_, File::Glob::GLOB_NOCHECK())
 		    : $_
-	    } @ARGV;
+	    } @args;
 	}
 
-	if ($help || !(@args = $cmd->parse_arg(@ARGV))) {
+	if ($help || !(@args = $cmd->parse_arg(@args))) {
 	    select STDERR unless $output;
 	    $cmd->usage;
 	}
@@ -154,6 +152,20 @@ sub invoke {
 	print $@ if $@;
     }
     select $ofh if $ofh
+}
+
+=head3 getopt ($argv, %opt)
+
+Takes a arrayref of argv for run getopt for the command, with
+additional %opt getopt options.
+
+=cut
+
+sub getopt {
+    my ($self, $argv, %opt) = @_;
+    local *ARGV = $argv;
+    die loc ("Unknown options.\n")
+	unless GetOptions (%opt, $self->_opt_map ($self->options));
 }
 
 =head2 Instance Methods
