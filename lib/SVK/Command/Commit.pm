@@ -111,7 +111,7 @@ sub get_editor {
 		($mpath, $self->{message},
 		 sub { print loc("Merge back committed as revision %1.\n", $_[0]);
 		       my $rev = shift;
-		       $m->_new_ra->change_rev_prop ($_[0], 'svk:signature',
+		       $m->_new_ra->change_rev_prop ($rev, 'svk:signature',
 						     $self->{signeditor}{sig})
 			   if $self->{sign};
 		       $m->run ($rev);
