@@ -59,7 +59,7 @@ sub AUTOLOAD {
 sub apply_textdelta {
     my ($self, $baton, @arg) = @_;
     pop @arg if ref ($arg[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
-    push @{$self->{edit_tree}[$baton]}, [undef, 'apply_textdelta', $baton, @arg, undef];
+    push @{$self->{edit_tree}[$baton]}, [undef, 'apply_textdelta', $baton, @arg, ''];
     open my ($svndiff), '>', \$self->{edit_tree}[$baton][-1][-1];
     return [SVN::TxDelta::to_svndiff ($svndiff)];
 }

@@ -131,8 +131,7 @@ sub find_svm_source {
 	$rev = $m->find_remote_rev ($rev);
 	$path =~ s/\Q$mpath\E$//;
 	$uuid = $m->{source_uuid};
-	$path = $m->{source}.$mpath;
-	$path =~ s/^\Q$m->{source_root}\E//;
+	$path = $m->{source_path}.$mpath;
 	$path ||= '/';
     }
     else {
