@@ -449,6 +449,16 @@ sub del_target {
     return $self;
 }
 
+sub remove_duplicated {
+    my ($self, $other) = @_;
+    for (keys %$other) {
+	if ($self->{$_} && $self->{$_}{rev} <= $other->{$_}{rev}) {
+	    delete $self->{$_};
+	}
+    }
+    return $self;
+}
+
 sub subset_of {
     my ($self, $other) = @_;
     my $subset = 1;

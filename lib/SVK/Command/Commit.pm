@@ -145,7 +145,7 @@ sub get_editor {
 	    if $self->{patch} =~ m!/!;
 	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
 				     $target->depotname, $source, $target->new (targets => undef));
-	$patch->{ticket} = SVK::Merge->new (xd => $self->{xd})->merge_info ($source)->add_target ($source)->as_string
+	$patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
 	    if $source;
 	$patch->{log} = $self->{message};
 	my $fname = $self->{xd}->patch_file ($self->{patch});
