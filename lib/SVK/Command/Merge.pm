@@ -207,7 +207,7 @@ SVK::Command::Merge - Apply differences between two sources
 =head1 OPTIONS
 
  -r [--revision] N:M    : act on revisions between N and M
- -m [--message] arg     : specify commit message ARG
+ -c [--change] N        : act on change N (between revisions N-1 and N)
  -C [--check-only]      : try operation but make no changes
  -I [--incremental]     : apply each change individually
  -a [--auto]            : merge from the previous merge point
