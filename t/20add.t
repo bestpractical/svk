@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -54,6 +54,11 @@ $svk->revert ('-R', '.');
 is_output ($svk, 'add', ['A'],
 	   ['A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor');
+$svk->revert ('-R', '.');
+
+is_output ($svk, 'add', ['A/'],
+	   ['A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
+	   'add - anchor with trailing slash');
 $svk->revert ('-R', '.');
 
 is_output ($svk, 'add', [qw/-N A/],

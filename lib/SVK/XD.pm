@@ -356,6 +356,7 @@ sub condense {
 	    }
 	}
     }
+    $report =~ s|/$||;
     return ($report, $anchor,
 	    map {s|^\Q$anchor\E/||;$_} grep {$_ ne $anchor} @targets);
 }
@@ -915,6 +916,7 @@ sub _delta_dir {
 
     # XXX: Merge this with @direntries so we have single entry to descendents
     for my $entry (sort keys %$entries) {
+	# XXX: when we are not in the target, $signautre is not properly iterated over.
 	next if defined $targets && !exists $targets->{$entry};
 	my $kind = $entries->{$entry}->kind;
 	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$entry");
@@ -1190,8 +1192,10 @@ Returns a file handle with keyword translation and line-ending layers attached.
 
 sub get_fh {
     my ($root, $mode, $path, $fname, $raw, $layer, $eol, $prop) = @_;
-    local $@;
-    $prop ||= eval { $root->node_proplist ($path) };
+    {
+	local $@;
+	$prop ||= eval { $root->node_proplist ($path) };
+    }
     unless ($raw) {
 	return _fh_symlink ($mode, $fname)
 	    if defined $prop->{'svn:special'} || -l $fname;
@@ -1201,7 +1205,7 @@ sub get_fh {
 	}
     }
     $eol ||= ':raw';
-    open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!";
+    open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!\n";
     $layer->via ($fh) if $layer;
     return $fh;
 }
