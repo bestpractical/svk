@@ -863,6 +863,19 @@ sub resolve_svm_source {
     return ($uuid, $path, $rev);
 }
 
+sub get_new_ticket {
+    my ($root, $dst, $uuid, $path, $rev) = @_;
+
+    my $minfo = $root->node_prop ($dst, 'svk:merge') || '';
+
+    $minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
+		    ("$uuid:$path" => $rev);
+		} split ("\n", $minfo) };
+    $minfo->{"$uuid:$path"} = $rev;
+
+    return join ("\n", map {"$_:$minfo->{$_}"} sort keys %$minfo);
+}
+
 sub merge {
     local @ARGV = @_;
     my ($check_only, $message, $auto, $no_ticket, $revspec);
@@ -903,6 +916,7 @@ sub merge {
 			($message,
 			 sub { print "Merge back committed as revision $_[0].\n" }
 			);
+		    $base_rev = $m->{fromrev};
 		}
 	    }
 	}
@@ -922,10 +936,13 @@ sub merge {
 	my ($uuid, $path, $rev) = resolve_svm_source ($repos, $path);
 	print "merge ticket: $uuid:$path:$rev\n" unless $no_ticket;
 	# XXX: cb_merged for XD
+	my $root = $repos->fs->revision_root ($repos->fs->youngest_rev);
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
 			   # XXX: have to be multiple-safe
-			   $editor->change_dir_prop ($baton, 'svk:merge',
-						     "$uuid:$path:$rev");
+			   $editor->change_dir_prop
+			       ($baton, 'svk:merge',
+				get_new_ticket ($root, $dpath, $uuid,
+						$path, $rev));
 		       } unless $no_ticket;
     }
 
