@@ -1,6 +1,10 @@
-[Changes for 0.08 - ]
+[Changes for 0.08 - 16 Feb, 2003]
 
 * Support multi-parent branch auto merging.
+
+* Support property diff output in DiffEditor.
+
+* Cherry picking merge support.
 
 * svk sync -a to sync all mirrored path in the given depot.
 
@@ -8,7 +12,9 @@
 
 * Respect conflict flag in status and commit.
 
-* various doc improvements and code cleanups.
+* Store and respect the deleted state of mixed-revision checkout copy.
+
+* Various doc improvements and code cleanups.
 
 [Changes for 0.07 - 15 Jan, 2003]
 
