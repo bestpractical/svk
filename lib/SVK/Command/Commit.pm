@@ -198,6 +198,10 @@ sub get_committable {
 
     if ($fh) {
 	close $fh;
+
+        # get_buffer_from_editor may modify it, so it must be a ref first
+        $target->{targets} ||= [];
+
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});

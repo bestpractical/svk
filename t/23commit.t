@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -100,3 +100,29 @@ is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/newdir/bar']
 	   ['Committed revision 10.']);
 is_output ($svk, 'status', [], [], 'import finds anchor');
 $svk->update ('-r9');
+
+overwrite_file ("A/foo", "foobar");
+overwrite_file ("A/bar", "foobar");
+$svk->add("A/foo", "A/bar");
+$svk->commit ('-m', 'foo');
+
+overwrite_file ("A/foo", "foobar2");
+overwrite_file ("A/bar", "foobar2");
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+# remove foo from the targets
+@_ = grep !/foo/, <_>;
+close _;
+unlink $_;
+sleep 2;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+
+$svk->commit;
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
