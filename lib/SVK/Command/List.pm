@@ -17,52 +17,52 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
-    return @arg;
+    return map {$self->arg_co_maybe ($_)} @arg;
 }
 
 sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, @arg) = @_;
-    _do_list($self, 0, @arg);
+    _do_list($self, 0, $_) for @arg;
     return;
 }
 
 sub _do_list {
-    my ($self, $level, @arg) = @_;
-    for (@arg) {
-	my (undef, $path, $copath, undef, $repos) = $self->{xd}->find_repos_from_co_maybe ($_, 1);
+    my ($self, $level, $target) = @_;
 
-	my $pool = SVN::Pool->new_default;
-	my $fs = $repos->fs;
-	my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
-	unless ($root->check_path ($path) == $SVN::Node::dir) {
-	    print loc("Path %1 is not a versioned directory\n", $path) unless ($root->check_path($path) == $SVN::Node::file);
-	    next;
-	}
-	
-    $path .= "/" if ($root->check_path ($path) == $SVN::Node::dir);
-    $path =~ s#/+#/#g;
-    $path = "/$path";
+    my $pool = SVN::Pool->new_default;
+    my $fs = $target->{repos}->fs;
+    my $root = $fs->revision_root ($self->{rev} || $fs->youngest_rev);
+    unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
+	print loc("Path %1 is not a versioned directory\n", $target->{path})
+	    unless $kind == $SVN::Node::file;
+	return;
+    }
 
-    my $entries = $root->dir_entries ($path);
-	for (sort keys %$entries) {
+    my $depotname = '';
+    if(m{^/(.+?)/}) {
+        $depotname = $1 if defined $self->{xd}->{depotmap}->{$1};
+    }
+
+    my $entries = $root->dir_entries ($target->{path});
+    for (sort keys %$entries) {
+	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
         if ($self->{'fullpath'}) {
-            print $path;
+            print $target->{depotpath};
         }
         else {
     	    print " " x ($level);
         }
-	    print $_.($entries->{$_}->kind == $SVN::Node::dir ? '/' : '')."\n";
-	    if (($self->{recursive}) && (!$self->{'depth'} ||( $level < $self->{'depth'} )) &&
-	    	($entries->{$_}->kind == $SVN::Node::dir)) {
-                if (defined $copath) {
-		    _do_list($self, $level+1, "$copath/$_");
-                }
-                else {
-                    _do_list($self, $level+1, "/$path/$_");
-                }
-	    }
+
+	print $_.($isdir ? '/' : '')."\n";
+	if ($isdir && ($self->{recursive}) &&
+	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
+	    _do_list($self, $level+1,
+		     SVK::Target->new (%$target,
+				       copath => $target->{copath} ? "$target->{copath}/$_" : undef,
+				       path => "$target->{path}/$_",
+				       depotpath => "$target->{path}/$_"));
 	}
     }
 }

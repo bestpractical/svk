@@ -103,6 +103,7 @@ t/24diff.t
 t/25log.t
 t/30annotate.t
 t/31cat.t
+t/32list.t
 t/tree.pl
 utils/extract-docs
 utils/extract-message-catalog
