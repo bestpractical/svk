@@ -54,7 +54,7 @@ sub run {
 
     my ($editor, %cb) = $self->get_editor ($target);
     $cb{callback} =
-	sub { $yrev = [0];
+	sub { $yrev = $_[0];
 	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
 			$copath, $target->{depotpath}, $yrev) };
 
