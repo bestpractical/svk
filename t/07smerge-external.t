@@ -32,12 +32,7 @@ is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 $ENV{SVKMERGE} = 'utils/svk-merge mine';
 $svk->sm ('//trunk', $copath);
 is_output ($svk, 'diff', ["$copath/test.pl"],
-	   ['=== /local/test.pl',
-	    '==================================================================',
-	    '--- /local/test.pl  (revision 5)',
-	    '+++ /local/test.pl  (local)'],
-	   'svk-merge mine');
-
+	   [], 'svk-merge mine');
 $ENV{SVKMERGE} = 'utils/svk-merge theirs';
 $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
 is_output ($svk, 'up', ["$copath"],

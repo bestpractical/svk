@@ -28,7 +28,6 @@ overwrite_file ("A/deep/X", "fnord");
 overwrite_file ("A/deep/new", "fnord");
 $svk->add ('A/deep/new');
 $svk->commit ('-m', 'commit from deep anchor', 'A/deep');
-$svk->status;
 $svk->update ('-r', 1);
 overwrite_file ("A/barnew", "fnord");
 $svk->add ('A/barnew');

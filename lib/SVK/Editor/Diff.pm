@@ -54,6 +54,7 @@ sub apply_textdelta {
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     if ($self->{info}{$path}{new}) {
+	my $rpath = $self->{report} ? "$self->{report}$path" : $path;
 	my $base = $self->{info}{$path}{added} ?
 	    \'' : $self->{cb_basecontent} ($path);
 	my $llabel = $self->{llabel} || $self->{cb_llabel}->($path);
@@ -62,13 +63,13 @@ sub close_file {
 	if ($self->{external}) {
 	    # XXX: the 2nd file could be - and save some disk IO
 	    system (split (' ', $self->{external}),
-		    '-L', _full_label ($path, undef, $llabel),
+		    '-L', _full_label ($rpath, undef, $llabel),
 		    $self->{info}{$path}{base}->filename,
-		    '-L', _full_label ($path, undef, $rlabel),
+		    '-L', _full_label ($rpath, undef, $rlabel),
 		    $self->{info}{$path}{new}->filename);
 	}
 	else {
-	    output_diff ($path, $llabel, $rlabel,
+	    output_diff ($rpath, $llabel, $rlabel,
 			 $self->{lpath} || '', $self->{rpath} || '',
 			 $base, \$self->{info}{$path}{new});
 	}
@@ -102,7 +103,8 @@ sub output_diff {
 sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
-	print "\n", loc("Property changes on: %1\n", $path), ('_' x 67), "\n";
+	my $rpath = $self->{report} ? "$self->{report}$path" : $path;
+	print "\n", loc("Property changes on: %1\n", $rpath), ('_' x 67), "\n";
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    print loc("Name: %1\n", $_);
 	    my $baseprop;

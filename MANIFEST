@@ -78,6 +78,7 @@ t/04merge.t
 t/05svm.t
 t/06keyword.t
 t/07smerge-anchor.t
+t/07smerge-delete.t
 t/07smerge-external.t
 t/07smerge-foreign.t
 t/07smerge-multi.t
@@ -87,6 +88,7 @@ t/10switch.t
 t/11checkout.t
 t/12copy.t
 t/13patch.t
+t/19cleanup.t
 t/20add.t
 t/21delete.t
 t/22status.t

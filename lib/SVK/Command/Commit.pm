@@ -178,7 +178,7 @@ sub run {
 		push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
 				 $copath];
 		    no warnings 'uninitialized';
-		print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $path) if $fh;
+		print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath) if $fh;
 	    }));
     $self->{xd}->checkout_delta
 	( %$target,

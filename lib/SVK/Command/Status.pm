@@ -19,7 +19,6 @@ sub run {
     my $xdroot = $self->{xd}->xdroot (%$target);
     $self->{xd}->checkout_delta
 	( %$target,
-	  baseroot => $xdroot,
 	  xdroot => $xdroot,
 	  nodelay => 1,
 	  delete_verbose => 1,

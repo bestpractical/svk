@@ -5,6 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Util qw(get_anchor);
 use SVK::Editor::Diff;
 
 sub options {
@@ -23,99 +24,100 @@ sub lock { $_[0]->lock_none }
 sub run {
     my ($self, $target, $target2) = @_;
     my $fs = $target->{repos}->fs;
+    my $yrev = $fs->youngest_rev;
+    my ($oldroot, $newroot, $cb_llabel, $report);
+    my ($r1, $r2);
+    ($r1, $r2) = $self->{revspec} =~ m/^(\d+)(?::(\d+))?$/ if $self->{revspec};
 
-    if (($self->{revspec} && (my ($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/))
-	|| $target2) {
+    # translate to target and target2
+    if ($target2) {
 	if ($target->{copath}) {
-	    die loc("invalid arguments") if $target2;
+	    die loc("invalid arguments");
 	}
-	elsif ($target2) {
-	    die loc("different repository")
-		if $target->{repospath} ne $target2->{repospath};
+	if ($target2->{copath}) {
+	    die loc("invalid arguments") if $target->{copath};
+	    # prevent oldroot being xdroot below
+	    $r1 ||= $yrev;
 	}
-
-	$target2 ||= { path => $target->{path} };
-	$fromrev ||= $self->{revspec} || $fs->youngest_rev;
-	$torev ||= $self->{revspec} || $fs->youngest_rev;
-	my $baseroot = $fs->revision_root ($fromrev);
-	my $newroot = $fs->revision_root ($torev);
-
-	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
-	    SVK::Editor::Diff::output_diff ($target->{path}, "revision $fromrev",
-					  "revision $torev",
-					  $target->{path}, $target2->{path},
-					  $baseroot->file_contents ($target->{path}),
-					  $newroot->file_contents ($target2->{path}));
-	    return;
-	}
-
-	my $editor = SVK::Editor::Diff->new
-	    ( cb_basecontent => sub { my ($rpath) = @_;
-				      my $base = $baseroot->file_contents ("$target->{path}/$rpath");
-				      return $base;
-				  },
-	      cb_baseprop => sub { my ($rpath, $pname) = @_;
-				   return $baseroot->node_prop ("$target->{path}/$rpath", $pname);
-			       },
-	      llabel => "revision $fromrev",
-	      rlabel => "revision $torev",
-	      lpath  => $target->{path},
-	      rpath  => $target2->{path},
-	      external => $ENV{SVKDIFF},
-	    );
-
-	SVN::Repos::dir_delta ($baseroot, $target->{path}, '',
-			       $newroot, $target2->{path},
-			       $editor, undef,
-			       1, 1, 0, 1);
-
     }
     else {
-	die loc("revision should be N:M or N")
-	    if $self->{revspec} && $self->{revspec} !~ /^\d+$/;
-
-	my $xdroot = $self->{xd}->xdroot (%$target);
-	my $baseroot = $self->{revspec} ? $fs->revision_root ($self->{revspec}) : $xdroot;
-
-	if ($baseroot->check_path ($target->{path}) == $SVN::Node::file) {
-	    SVK::Editor::Diff::output_diff ($target->{path},
-					  'revision '.
-					  ($self->{revspec} || $self->{xd}{checkout}->get
-					   ($target->{copath})->{revision}),
-					  "local",
-					  $target->{path}, $target->{path},
-					  $baseroot->file_contents ($target->{path}),
-					  SVK::XD::get_fh ($xdroot, '<',
-							   $target->{path}, $target->{copath}));
-	    return;
+	delete $target->{copath} if $r1 && $r2;
+	if ($target->{copath}) {
+	    %$target2 = %$target;
+	    delete $target->{copath};
+	    $report = $target->{report};
 	}
+	else {
+	    # XXX: require revspec;
+	    %$target2 = %$target;
+	}
+    }
 
-	my $editor = SVK::Editor::Diff->new
-	    ( cb_basecontent =>
-	      sub { my ($rpath) = @_;
-		    $baseroot->file_contents ("$target->{path}/$rpath");
-		},
-	      cb_baseprop =>
-	      sub { my ($rpath, $pname) = @_;
-		    return $baseroot->node_prop ("$target->{path}/$rpath", $pname);
+    if ($target2->{copath}) {
+	$newroot = $self->{xd}->xdroot (%$target2);
+	$oldroot = $newroot unless $r1;
+	$cb_llabel =
+	    sub { my ($rpath) = @_;
+		  'revision '.($r1 ||
+			       $self->{xd}{checkout}->get ("$target2->{copath}/$rpath")->{revision});
 	      },
-	      cb_llabel =>
-	      sub { my ($rpath) = @_;
-		    $self->{revspec} ||
-		    'revision '.
-			$self->{xd}{checkout}->get ("$target->{copath}/$rpath")->{revision};
-	      },
-	      rlabel => "local",
-	      external => $ENV{SVKDIFF},
-	    );
+    }
 
+    $r1 ||= $yrev, $r2 ||= $yrev;
+    $oldroot ||= $fs->revision_root ($r1);
+    $newroot ||= $fs->revision_root ($r2);
+
+    my $editor = SVK::Editor::Diff->new
+	( cb_basecontent =>
+	  sub { my ($rpath) = @_;
+		my $base = $oldroot->file_contents ("$target->{path}/$rpath");
+		return $base;
+	    },
+	  cb_baseprop =>
+	  sub { my ($rpath, $pname) = @_;
+		return $oldroot->node_prop ("$target->{path}/$rpath", $pname);
+	    },
+	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision $r1"),
+	  rlabel => $target2->{copath} ? 'local' : "revision $r2",
+	  external => $ENV{SVKDIFF},
+	  $target->{path} ne $target2->{path} ?
+	  ( lpath  => $target->{path},
+	    rpath  => $target2->{path} ) : (),
+	);
+
+    if ($target2->{copath}) {
+	if ($newroot->check_path ($target2->{path}) == $SVN::Node::file) {
+	    my $tgt;
+	    ($target2->{path}, $tgt) = get_anchor (1, $target2->{path});
+	    ($target->{path}, $target2->{copath}) =
+		get_anchor (0, $target->{path}, $target2->{copath});
+	    $target2->{targets} = [$tgt];
+	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
+	}
+	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
-	    ( %$target,
-	      baseroot => $baseroot,
-	      xdroot => $xdroot,
+	    ( %$target2,
+	      base_root => $oldroot,
+	      base_path => $target->{path},
+	      xdroot => $newroot,
 	      editor => $editor,
 	    );
     }
+    else {
+	my $tgt = '';
+	if ($newroot->check_path ($target2->{path}) == $SVN::Node::file) {
+	    ($target->{path}, $tgt) =
+		get_anchor (1, $target->{path});
+	    $report = (get_anchor (0, $report))[0].'/' if defined $report;
+	}
+	$editor->{report} = $report;
+	SVN::Repos::dir_delta ($oldroot->isa ('SVK::XD::Root') ? $oldroot->[1] : $oldroot,
+			       $target->{path}, $tgt,
+			       $newroot, $target2->{path},
+			       $editor, undef,
+			       1, 1, 0, 1);
+    }
+
     return;
 }
 
@@ -132,6 +134,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
     diff [-r REV] [PATH]
     diff -r N:M DEPOTPATH
     diff DEPOTPATH1 DEPOTPATH2
+    diff DEPOTPATH PATH
 
 =head1 OPTIONS
 

@@ -109,6 +109,7 @@ sub is_output {
     $svk->$cmd (@$arg);
     is_deeply ([split ("\n", $output)], $expected,
 	       $test || join(' ', $cmd, @$arg));
+    diag $@ if $@;
 }
 
 sub is_output_like {

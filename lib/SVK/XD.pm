@@ -72,7 +72,7 @@ sub store {
 sub lock {
     my ($self, $path) = @_;
     if ($self->{checkout}->get ($path)->{lock}) {
-	die loc("%1 already locked, use 'svk cleanup' if lock is stalled", $path);
+	die loc("%1 already locked, use 'svk cleanup' if lock is stalled\n", $path);
     }
     $self->{checkout}->store ($path, {lock => $$});
     $self->{modified} = 1;
@@ -268,7 +268,35 @@ sub xd_storage_cb {
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
 			       return [$base, undef, $md5];
-			   });
+			   },
+	  cb_dirdelta => sub { my ($path, $base_root, $base_path, $pool) = @_;
+			       my $copath = $path;
+			       $arg{get_copath} ($copath);
+			       my $modified;
+			       my $editor =  SVK::Editor::Status->new
+				   ( notify => SVK::Notify->new
+				     ( cb_flush => sub {
+					   my ($path, $status) = @_;
+					   $modified->{$path} = $status->[0];
+				       }));
+			       $self->checkout_delta
+				   ( %arg,
+				     # XXX: proper anchor handling
+				     path => "$arg{path}/$path",
+				     copath => $copath,
+				     base_root => $base_root,
+				     base_path => $base_path,
+				     xdroot => $arg{oldroot},
+				     nodelay => 1,
+				     depth => 1,
+				     editor => $editor,
+				     cb_unknown =>
+				     sub { # XXX: unkonwn as added?
+				     },
+				   );
+			       return $modified;
+			   },
+	);
 }
 
 sub get_editor {
@@ -538,6 +566,7 @@ sub do_revert {
 }
 
 use Regexp::Shellish qw( :all ) ;
+# XXX: checkout_delta is getting too complicated and too many options
 
 sub ignore {
     no warnings;
@@ -591,8 +620,8 @@ sub _delta_file {
     my $mymd5 = md5($fh);
     my $md5;
 
-    return unless $schedule || $arg{add} || $arg{base}
-	|| $mymd5 ne ($md5 = $arg{xdroot}->file_md5_checksum ($arg{path}));
+    return unless $schedule || $arg{add} ||
+	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
 
     my $baton = $arg{add} ?
 	$arg{editor}->add_file ($arg{entry}, $arg{baton},
@@ -609,7 +638,7 @@ sub _delta_file {
 	for sort keys %$newprop;
 
     if (!$arg{base} ||
-	$mymd5 ne ($md5 ||= $arg{xdroot}->file_md5_checksum ($arg{path}))) {
+	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
 	seek $fh, 0, 0;
 	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool);
 	$self->_delta_content (%arg, baton => $baton, fh => $fh, pool => $pool);
@@ -620,6 +649,7 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($self, %arg) = @_;
+    return if defined $arg{depth} && $arg{depth} == 0;
     my $pool = SVN::Pool->new_default (undef);
     $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none;
     my $rev = $arg{add} ? 0 : $arg{cb_rev}->($arg{entry} || '');
@@ -656,6 +686,7 @@ sub _delta_dir {
 	# XXX: limit with targets
 	# XXX: should still be recursion since the entries
 	# might not be consistent
+	# XXX: check with xdroot since this might be deleted when from base_root to xdroot
 	$arg{editor}->delete_entry ($arg{entry}, $rev, $arg{baton}, $pool);
 	if ($arg{delete_verbose}) {
 	    for ($self->{checkout}->find
@@ -676,12 +707,12 @@ sub _delta_dir {
     }
 
     if ($arg{base}) {
-	$entries = $arg{xdroot}->dir_entries ($arg{path})
+	$entries = $arg{base_root}->dir_entries ($arg{base_path})
 	    if $arg{kind} == $SVN::Node::dir;
     }
     $baton ||= $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton}, $rev, $pool);
 
-    if ($schedule eq 'prop' || $arg{add}) {
+    if (($schedule eq 'prop' || $arg{add}) && (!defined $arg{targets} || exists $targets->{''})) {
 	my $newprop = $cinfo->{'.newprop'};
 	$arg{editor}->change_dir_prop ($baton, $_, $newprop->{$_}, $pool)
 	    for sort keys %$newprop;
@@ -693,14 +724,16 @@ sub _delta_dir {
 	$self->$delta ( %arg,
 			add => 0,
 			base => 1,
-		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
-		   kind => $kind,
-		   targets => $targets->{$_},
-		   baton => $baton,
-		   root => 0,
-		   cinfo => undef,
-		   path => "$arg{path}/$_",
-		   copath => "$arg{copath}/$_")
+			depth => $arg{depth} ? $arg{depth} - 1: undef,
+			entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+			kind => $kind,
+			targets => $targets->{$_},
+			baton => $baton,
+			root => 0,
+			cinfo => undef,
+			base_path => "$arg{base_path}/$_",
+			path => "$arg{path}/$_",
+			copath => "$arg{copath}/$_")
 	    if !defined $arg{targets} || exists $targets->{$_};
     }
 
@@ -717,7 +750,10 @@ sub _delta_dir {
 	next if m/$ignore/;
 	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$_");
 	my $sche = $ccinfo->{'.schedule'} || '';
-	unless ($sche || $arg{auto_add}) {
+	my $add = ($sche || $arg{auto_add}) ||
+	    ($arg{xdroot} ne $arg{base_root} &&
+	     $arg{xdroot}->check_path ("$arg{path}/$_") != $SVN::Node::none);
+	unless ($add) {
 	    if ($arg{cb_unknown} &&
 		(!defined $arg{targets} || exists $targets->{$_})) {
 		if ($arg{unknown_verbose}) {
@@ -748,7 +784,7 @@ sub _delta_dir {
 	my $kind = $ccinfo->{'.copyfrom'} ?
 	    $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'}) : $SVN::Node::none;
 	$self->$delta ( %arg,
-			add => 1,
+			add => $add,
 			base => exists $ccinfo->{'.copyfrom'},
 			entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 			kind => $kind,
@@ -756,6 +792,8 @@ sub _delta_dir {
 			targets => $targets->{$_},
 			root => 0,
 			path => $ccinfo->{'.copyfrom'} || "$arg{path}/$_",
+			# XXX: what shold base_path be when there's copyfrom?
+			base_path => $ccinfo->{'.copyfrom'} || "$arg{base_path}/$_",
 			copyfrom => $ccinfo->{'.copyfrom'},
 			cinfo => $ccinfo,
 			copath => "$arg{copath}/$_")
@@ -786,7 +824,9 @@ sub _get_rev {
 
 sub checkout_delta {
     my ($self, %arg) = @_;
-    my $kind = $arg{xdroot}->check_path ($arg{path});
+    $arg{base_root} ||= $arg{xdroot};
+    $arg{base_path} ||= $arg{path};
+    my $kind = $arg{base_root}->check_path ($arg{base_path});
     my $copath = $arg{copath};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
@@ -929,12 +969,12 @@ sub do_import {
 		base => 1,
 		cb_rev => sub { $yrev },
 		editor => $editor,
-		baseroot => $root,
+		base_root => $root,
+		base_path => $arg{path},
 		xdroot => $root,
 		kind => $SVN::Node::dir,
 		absent_as_delete => 1,
 		baton => $baton, root => 1);
-
 
     $editor->close_directory ($baton);
 

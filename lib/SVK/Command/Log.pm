@@ -95,11 +95,11 @@ sub _show_log {
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     no warnings 'uninitialized';
-    print $output "r$rev$host".
-	($remote ? log_remote_rev($root->fs, $rev): '').
-	    ":  $author | $date\n";
+    $output->print ("r$rev$host".
+		    ($remote ? log_remote_rev($root->fs, $rev): '').
+		    ":  $author | $date\n");
     if ($paths) {
-	print $output loc("Changed paths:\n");
+	$output->print (loc("Changed paths:\n"));
 	for (sort keys %$paths) {
 	    my $entry = $paths->{$_};
 	    my ($action, $propaction) = ($chg->[$entry->change_kind], ' ');
@@ -107,15 +107,14 @@ sub _show_log {
 	    $propaction = 'M' if $action eq 'M' && $entry->prop_mod;
 	    $action = ' ' if $action eq 'M' && !$entry->text_mod;
 	    $action = 'M' if $action eq 'A' && $copyfrom_path && $entry->text_mod;
-	    print $output
+	    $output->print (
 		"  $action$propaction $_".
 		    ($copyfrom_path ?
 		     ' ' . loc("(from %1:%2)", $copyfrom_path, $copyfrom_rev) : ''
-		    ).
-			"\n";
+		    )."\n");
 	}
     }
-    print $output "\n$message\n".('-' x 70). "\n";
+    $output->print ("\n$message\n".('-' x 70). "\n");
 }
 
 sub do_log {

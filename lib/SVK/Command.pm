@@ -83,9 +83,8 @@ sub invoke {
 	$cmd->usage;
     }
     else {
-	$cmd->lock (@args);
-	$ret = eval { $cmd->run (@args) };
-	$xd->unlock () if $xd;
+	eval { $cmd->lock (@args); $ret = $cmd->run (@args) };
+	$xd->unlock if $xd;
     }
     print $ret if $ret;
     select $ofh if $output;
