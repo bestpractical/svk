@@ -83,16 +83,18 @@ sub _next_is_merge {
     my ($self, $repos, $path, $rev, $checkfrom) = @_;
     return if $rev == $checkfrom;
     my $fs = $repos->fs;
-    my $pool = SVN::Pool->new_default;
     my $hist = $fs->revision_root ($checkfrom)->node_history ($path);
+    my $pool = SVN::Pool->new_default;
     my $newhist = $hist->prev (0);
     my $nextrev;
     while ($hist = $newhist) {
-	$pool->clear;
-	$hist = $newhist;
+	my $thisrev = ($hist->location)[1];
 	$newhist = $hist->prev (0);
-	$nextrev = ($hist->location)[1], last
-	    if $newhist && ($newhist->location)[1] == $rev;
+	if ($newhist and ($newhist->location)[1] == $rev) {
+	    $nextrev = $thisrev;
+	    last;
+	}
+	$pool->clear;
     }
     return unless $nextrev;
     my ($merge, $pmerge) =
