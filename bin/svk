@@ -188,6 +188,9 @@ sub annotate {
 	unshift @revs, $rev;
     }
 
+    print "Annotations for $path (".($#revs+1)." active revisions)\n";
+    print '*' x 16;
+    print "\n";
     my $pool = SVN::Pool->new_default;
     for (@revs) {
 	$pool->clear;
