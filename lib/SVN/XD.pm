@@ -273,6 +273,7 @@ sub do_revert {
 				 xdroot => $xdroot,
 				 delete_verbose => 1,
 				 absent_verbose => 1,
+				 strict_add => 1,
 				 editor => SVN::RevertEditor->new
 				 (copath => $arg{copath},
 				  dpath => $arg{path},
@@ -318,7 +319,7 @@ sub _delta_file {
 
     unless (-e $arg{copath}) {
 	my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
-	if ($schedule eq 'delete') {
+	if ($schedule eq 'delete' || $arg{absent_as_delete}) {
 	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
 	}
 	else {
@@ -328,8 +329,9 @@ sub _delta_file {
     }
 
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
-    return if !$arg{add} && SVN::MergeEditor::md5($fh) eq
-	$arg{xdroot}->file_md5_checksum ($arg{path});
+    my $mymd5 = SVN::MergeEditor::md5($fh);
+    return if !$arg{add} &&
+	$mymd5 eq $arg{xdroot}->file_md5_checksum ($arg{path});
 
     my $baton = $arg{add} ?
 	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1) :
@@ -337,7 +339,7 @@ sub _delta_file {
 
     seek $fh, 0, 0;
     _delta_content ($info, %arg, baton => $baton, fh => $fh);
-    $arg{editor}->close_file ($baton);
+    $arg{editor}->close_file ($baton, $mymd5);
 }
 
 sub _delta_dir {
@@ -346,7 +348,13 @@ sub _delta_dir {
     my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
     unless (-d $arg{copath}) {
 	if ($schedule ne 'delete') {
-	    $arg{editor}->absent_directory ($arg{entry}, $arg{baton});
+	    if ($arg{absent_as_delete}) {
+		$arg{editor}->delete_entry ($arg{entry}, $arg{baton});
+		return;
+	    }
+	    else {
+		$arg{editor}->absent_directory ($arg{entry}, $arg{baton});
+	    }
 	    return unless $arg{absent_verbose};
 	}
     }
@@ -369,9 +377,9 @@ sub _delta_dir {
 	    $arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1);
     }
     else {
-	$entries = $arg{xdroot}->dir_entries ($arg{path});
-	$baton = $arg{editor}->open_directory ($arg{entry}, $arg{baton})
-	    unless $arg{root};
+	$entries = $arg{xdroot}->dir_entries ($arg{path})
+	    if $arg{xdroot}->check_path ($arg{path}) == $SVN::Node::dir;
+	$baton = $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton});
     }
 
     for (keys %{$entries}) {
@@ -389,12 +397,15 @@ sub _delta_dir {
 
     if ($dir) {
 
-    my $ignore = ignore
-	(split ("\n", get_props ($info, $arg{xdroot}, $arg{path},
-				 $arg{copath})->{'svn:ignore'} || ''));
+    my $svn_ignore = get_props ($info, $arg{xdroot}, $arg{path},
+				$arg{copath})->{'svn:ignore'}
+        if $arg{xdroot}->check_path ($arg{path}) == $SVN::Node::dir;
+    my $ignore = ignore (split ("\n", $svn_ignore || ''));
     for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
 	next if m/$ignore/;
-	my $sche = $info->{checkout}->get_single ("$arg{copath}/$_")->{schedule};
+	my $sche = $arg{strict_add} ?
+	    $info->{checkout}->get_single ("$arg{copath}/$_")->{schedule} :
+	    $info->{checkout}->get ("$arg{copath}/$_")->{schedule};
 	unless ($sche) {
 	    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_")
 		if $arg{cb_unknown};
@@ -670,6 +681,86 @@ sub do_merge {
 			   1, 1, 0, 1);
 
     $txn->abort if $txn;
+}
+
+sub do_import {
+    my ($info, %arg) = @_;
+    my $fs = $arg{repos}->fs;
+    my $yrev = $fs->youngest_rev;
+    my $root = $fs->revision_root ($yrev);
+    my $kind = $root->check_path ($arg{path});
+
+    die "import destination is a file"
+	if $kind == $SVN::Node::file;
+
+    if ($kind == $SVN::Node::none) {
+	my $edit = SVN::Simple::Edit->new
+	    (SVN::Repos::get_commit_editor($arg{repos},
+					   "file://$arg{repospath}",
+					   '/', $ENV{USER},
+					   "directory for svk import",
+					   sub {print "Import path $arg{path} initialized.\n"}));
+	$edit->open_root ($yrev);
+	$edit->add_directory ($arg{path});
+	$edit->close_edit;
+	$yrev = $fs->youngest_rev;
+	$root = $fs->revision_root ($yrev);
+    }
+
+    my $editor = SVN::MergeEditor->new
+	(anchor => $arg{path},
+	 base_anchor => $arg{path},
+	 base_root => $root,
+	 storage => SVN::Delta::Editor->new
+	 ( SVN::Repos::get_commit_editor($arg{repos},
+					 "file://$arg{repospath}",
+					 $arg{path}, $ENV{USER},
+					 $arg{message},
+					 sub {print "Directory $arg{copath} imported to depotpath $arg{depotpath} as revision $_[0].\n"})),
+	 cb_exist =>
+		sub { my $path = $arg{path}.'/'.shift;
+		      $root->check_path ($path) != $SVN::Node::none;
+		  },
+	 cb_rev => sub { $yrev },
+	 cb_localmod => sub {},
+	 cb_conflict => sub { die "fatal error: conflict in import" },
+	);
+
+    $editor = SVN::XD::CheckEditor->new ($editor)
+	if $arg{check_only};
+
+    my $baton = $editor->open_root ($yrev);
+
+    if (exists $info->{checkout}->get ($arg{copath})->{depotpath}) {
+	die "Import source is a checkout path. it's likely not what you want";
+    }
+
+    # XXX: check the entry first
+    $info->{checkout}->store ($arg{copath},
+			      {depotpath => $arg{depotpath},
+			       schedule => 'add',
+			       newprop => undef,
+			       conflict => undef,
+			       revision =>0});
+
+    _delta_dir ($info, %arg,
+		editor => $editor,
+		baseroot => $root,
+		xdroot => $root,
+		absent_as_delete => 1,
+		baton => $baton, root => 1);
+
+
+    $editor->close_directory ($baton);
+
+    $editor->close_edit ();
+
+    $info->{checkout}->store ($arg{copath},
+			      {depotpath => undef,
+			       revision => undef,
+			       schedule => undef});
+
+
 }
 
 use SVN::Simple::Edit;

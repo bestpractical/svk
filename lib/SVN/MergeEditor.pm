@@ -345,9 +345,10 @@ sub close_directory {
 
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
+    no warnings 'uninitialized';
     return unless &{$self->{cb_exist}}($path);
 
-    $self->{storage}->delete_entry ($path, $revision,
+    $self->{storage}->delete_entry ($path, &{$self->{cb_rev}}($path),
 				    $self->{storage_baton}{$pdir}, @arg);
     $self->{info}{$path}{status} = ['D'];
 }

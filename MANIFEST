@@ -4,6 +4,8 @@ MANIFEST
 Makefile.PL
 lib/SVN/DiffEditor.pm
 lib/SVN/MergeEditor.pm
+lib/SVN/RevertEditor.pm
+lib/SVN/StatusEditor.pm
 lib/SVN/XD.pm
 bin/svk
 t/tree.pl

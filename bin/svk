@@ -407,6 +407,7 @@ sub diff {
 				 path => $path,
 				 baseroot => $baseroot,
 				 xdroot => $xdroot,
+				 strict_add => 1,
 				 editor => $editor,
 				);
 	$txn->abort if $txn;
@@ -436,6 +437,7 @@ sub status {
 			     baseroot => $xdroot,
 			     xdroot => $xdroot,
 			     delete_verbose => 1,
+			     strict_add => 1,
 			     editor => SVN::StatusEditor->new
 			     (copath => $copath, dpath => $path),
 			     cb_unknown => sub {print "?  $_[1]\n"}
@@ -1241,6 +1243,44 @@ sub sync {
     }
 }
 
+=head2 import
+
+Import directory into depot.
+
+  usage: import [DEPOTPATH] [PATH]
+
+  options:
+    -m message:        commit message
+    -C [--check-only]: don't perform actual writes
+
+=cut
+
+sub import {
+    local @ARGV = @_;
+    my ($check_only, $message, $auto, $log, $no_ticket, $revspec);
+    die unless GetOptions ("C|check-only"	=> \$check_only,
+			   "m|message=s"	=> \$message);
+
+    my ($src, $dst) = @ARGV;
+    my ($repospath, $path, $repos) = find_repos ($src, 1);
+    $dst = File::Spec->rel2abs ($dst || '');
+
+    unless (defined $message || $check_only) {
+	$message = get_buffer_from_editor
+	    ('log message', $target_prompt, 
+	     "\n$target_prompt\n", "svk-commitXXXXX");
+    }
+
+    SVN::XD::do_import ($info,
+			depotpath => $src,
+			repos => $repos,
+			repospath => $repospath,
+			path => $path,
+			copath => $dst,
+			check_only => $check_only,
+			message => $message
+		       );
+}
 
 *co = *checkout;
 *up = *update;
