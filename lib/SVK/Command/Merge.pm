@@ -131,7 +131,8 @@ sub run {
 	     fromrev => $baserev);
     }
 
-    if ($merge->{fromrev} == $merge->{src}{revision}) {
+    if ($merge->{fromrev} == $merge->{src}{revision} or
+	(!$merge->{base}{revision} && $merge->{base}{path} ne '/')) {
 	print loc ("Empty merge.\n");
 	return;
     }
