@@ -52,7 +52,7 @@ sub callbacks {
     my $self = shift;
     ( cb_exist => sub { $self->cb_exist (@_) },
       cb_localmod => sub { $self->cb_localmod (@_) },
-      cb_localprop => sub { $self->cb_localmod (@_) },
+      cb_localprop => sub { $self->cb_localprop (@_) },
     );
 }
 

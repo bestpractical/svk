@@ -323,7 +323,7 @@ sub committed_commit {
 	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
-	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop, '>');
+	    my $eol = SVK::XD::get_eol_layer ($prop, '>');
 	    # XXX: can't bypass eol translation when normalization needed
 	    next unless $layer || ($eol ne ':raw' && $eol ne ' ');
 

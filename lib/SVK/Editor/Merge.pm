@@ -296,13 +296,14 @@ sub cleanup_fh {
 }
 
 sub prepare_fh {
-    my ($self, $fh) = @_;
+    my ($self, $fh, $eol) = @_;
     # XXX: need to respect eol-style here?
     for my $name (qw/base new local/) {
 	my $entry = $fh->{$name};
 	next unless $entry->[FH];
 	next if $entry->[FILENAME];
 	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
+	binmode $tmp->[FH], $eol if $eol;
 	slurp_fh ($entry->[FH], $tmp->[FH]);
 	close $entry->[FH];
 	$entry = $fh->{$name} = $tmp;
@@ -407,7 +408,8 @@ sub close_file {
     no warnings 'uninitialized';
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
-	$self->prepare_fh ($fh);
+	my $eol = $self->{cb_localprop}->($path, 'svn:eol-style', $pool);
+	$self->prepare_fh ($fh, get_eol_layer({'svn:eol-style' => $eol}, '>'));
 
 	if ($checksum eq $fh->{local}[CHECKSUM] ||
 	    File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0) {
@@ -426,6 +428,8 @@ sub close_file {
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
+	my $eol_layer = get_eol_layer({'svn:eol-style' => $eol}, '<');
+	binmode $mfh, $eol_layer if $eol_layer;
 	$self->_overwrite_local_file ($fh, $path, $mfh, $pool);
 
 	undef $fh->{base}[FILENAME] if $info->{addmerge};
