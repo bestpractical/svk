@@ -56,9 +56,9 @@ sub callbacks {
 
 sub cb_exist {
     my ($self, $path) = @_;
-    return 1 if exists $self->{files}{$path};
+    return $SVN::Node::file if exists $self->{files}{$path};
     $path = $self->{tgt_anchor}.'/'.$path;;
-    $self->{base_root}->check_path ($path) != $SVN::Node::none;
+    return $self->{base_root}->check_path ($path);
 }
 
 sub cb_localmod {

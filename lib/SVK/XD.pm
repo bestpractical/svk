@@ -417,7 +417,16 @@ sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
     return
-	( cb_exist => sub { $_ = shift; $arg{get_copath} ($_); -e $_ || is_symlink($_) },
+	( cb_exist => sub { my $copath = shift; my $path = $copath;
+			    $arg{get_copath} ($copath);
+			    $arg{get_path} ($path);
+			    lstat ($copath);
+			    return $SVN::Node::none unless -e _;
+			    return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
+				if $self->{checkout}->get ($copath)->{'.schedule'} or
+				    $arg{oldroot}->check_path ($path);
+			    return $SVN::Node::unknown;
+			},
 	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
 			  $self->{checkout}->get ($_)->{revision} },
 	  cb_conflict => sub { $_ = shift; $arg{get_copath} ($_);

@@ -123,7 +123,7 @@ sub cb_for_root {
     my ($root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my $path = $anchor.'/'.shift;
-		   $root->check_path ($path) != $SVN::Node::none;
+		   return $root->check_path ($path);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
@@ -191,7 +191,11 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
-    if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+	unless ($kind == $SVN::Node::file) {
+	    $self->{notify}->flush ($path) ;
+	    return undef;
+	}
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
 	$self->{info}{$path}{fpool} = pop @arg;
@@ -414,15 +418,23 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
-    if (!$self->{added}{$pdir} && $self->{cb_exist}->($path)) {
-	$self->{notify}->flush ($path) ;
-	return undef;
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+	unless ($kind == $SVN::Node::dir) {
+	    $self->{notify}->flush ($path) ;
+	    return undef;
+	}
+	$self->{storage_baton}{$path} =
+	    $self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
+					      $self->{cb_rev}->($path), @arg);
+	$self->{notify}->node_status ($path, 'G');
     }
-    $self->{added}{$path} = 1;
-    $self->{storage_baton}{$path} =
-	$self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
-					 @arg);
-    $self->{notify}->node_status ($path, 'A');
+    else {
+	$self->{added}{$path} = 1;
+	$self->{storage_baton}{$path} =
+	    $self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
+					     @arg);
+	$self->{notify}->node_status ($path, 'A');
+    }
     $self->{notify}->flush ($path, 1);
     ++$self->{changes};
     return $path;
