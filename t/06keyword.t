@@ -53,22 +53,22 @@ $svk->commit ('-m', 'appending a file and change props', $copath);
 is_output ($svk, 'st', ["$copath/A/foo"], [], 'commit does keyword expansion');
 
 mkdir ("$copath/le");
-overwrite_file ("$copath/le/dos", "dos\n");
-overwrite_file ("$copath/le/unix", "unix\n");
-overwrite_file ("$copath/le/native", "native\n");
-overwrite_file ("$copath/le/na", "na\n");
+overwrite_file_raw ("$copath/le/dos", "dos\n");
+overwrite_file_raw ("$copath/le/unix", "unix\n");
+overwrite_file_raw ("$copath/le/native", "native\n");
+overwrite_file_raw ("$copath/le/na", "na\n");
 $svk->add ("$copath/le");
 $svk->ps ('svn:eol-style', 'CRLF', "$copath/le/dos");
 $svk->ps ('svn:eol-style', 'native', "$copath/le/native");
 $svk->ps ('svn:eol-style', 'LF', "$copath/le/unix");
 $svk->ps ('svn:eol-style', 'NA', "$copath/le/na");
 $svk->commit ('-m', 'test line ending', $copath);
-is_file_content ("$copath/le/dos", "dos\r\n");
-is_file_content ("$copath/le/unix", "unix\n");
-is_file_content ("$copath/le/na", "na\n");
+is_file_content_raw ("$copath/le/dos", "dos\r\n");
+is_file_content_raw ("$copath/le/unix", "unix\n");
+is_file_content_raw ("$copath/le/na", "na\n");
 if ($^O eq 'MSWin32') {
-    is_file_content ("$copath/le/native", "native\r\n");
+    is_file_content_raw ("$copath/le/native", "native\r\n");
 }
 else {
-    is_file_content ("$copath/le/native", "native\n");
+    is_file_content_raw ("$copath/le/native", "native\n");
 }

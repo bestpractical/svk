@@ -62,6 +62,7 @@ $svk->commit ('-m', 'more mod on trunk', "$copath/trunk");
 
 is_output_like ($svk, 'smerge', ['-m', 'mergeback from //work', '//work', '//trunk'],
 		qr|base /trunk:5|);
+
 is_output_like ($svk, 'smerge', ['-m', 'mergeback from //trunk', '//trunk', '//work'],
 		qr|base /work:7|);
 $svk->update ($copath);
