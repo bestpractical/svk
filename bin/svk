@@ -50,25 +50,26 @@ variable to your preferred svk depot path.
 =cut
 
 my $cmd = shift;
-{
-    my $show_version;
-    local *ARGV = [$cmd || ''];
-    die unless GetOptions ('v|version' => \$show_version);
-
-    if ($show_version || ($cmd && $cmd eq 'version')) {
-	print loc("This is svk, version %1.\n", $VERSION);
-	exit 0;
-    }
-}
 
 unless ($cmd) {
     print loc("Type 'svk help' for usage.\n");
     exit 0;
 }
 
-if ($cmd eq 'help') {
-    SVK::Command->invoke (undef, $cmd, undef, @ARGV);
+if ($cmd eq 'help' or $cmd eq '--help') {
+    SVK::Command->invoke (undef, 'help', undef, @ARGV);
     exit 0;
+}
+
+{
+    my $show_version;
+    local *ARGV = [$cmd || ''];
+    GetOptions ('v|version' => \$show_version) or exit;
+
+    if ($show_version || ($cmd && $cmd eq 'version')) {
+	print loc("This is svk, version %1.\n", $VERSION);
+	exit 0;
+    }
 }
 
 $ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
