@@ -85,6 +85,10 @@ sub handle_co_item {
 sub handle_direct_item {
     my ($self, $editor, $anchor, $m, $src, $dst) = @_;
     $src->normalize;
+    # if we have targets, ->{path} must exist
+    if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->{path})) {
+	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report});
+    }
     my ($path, $rev) = @{$src}{qw/path revision/};
     if ($m) {
 	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;

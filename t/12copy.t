@@ -162,8 +162,7 @@ is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
-	   [qr'Transaction is out of date',
-	    'Please update checkout first.']);
+	   ["Parent directory //V/newdir-with-p doesn't exist, use -p."]);
 is_output ($svk, 'cp', ['-p', '-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
 	   ['Committed revision 18.']);
 
