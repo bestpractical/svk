@@ -1,7 +1,7 @@
-This is the README file for svk 0.1 release, a decentralized version
+This is the README file for svk 0.05 release, a decentralized version
 control system.
 
-*NOTE* The 0.1 release is aimed to be a working prototype, all things
+*NOTE* The 0.05 release is aimed to be a working prototype, all things
 are subject to change, including project name, binary name, perl
 module namespaces, depot spec, etc. Since the underlying local
 repository is still a subversion repository, you are free to switch
@@ -20,6 +20,7 @@ A quick glance about svk for people already familiar with Subversion:
 o the depot spec is like : /[depotname]/<path>
   ~/.svk/config holds a depotmap hash for mapping depotname (which
   could be empty) to a path containing a subversion repository.
+  Please use "svk depotmap" to edit the mapping.
 
 o svk uses the subversion fs library. the SVN::XD module is a svn_wc
   (working copy) replacement (XD is character increment of WC).
@@ -39,7 +40,7 @@ o using a local repository holding the subversion tree for benchmark,
 
 * Installation
 
-You need subversion 0.33 release or newer, with perl bindings support
+You need subversion 0.35 release or newer, with perl bindings support
 to use svk.
 
 svk uses the stanard perl module install process:
@@ -50,10 +51,7 @@ svk uses the stanard perl module install process:
 
 * Usage
 
-o Initialize: You need to create a primary repository with svnadmin
-  for svk to use. The default one svk looks for is ~/svn/svm
-
-  Use "svk depotmap" to make other repositories accessible from svk.
+o Use "svk depotmap" to make other repositories accessible from svk.
 
 o Mirroring: For example if you want to bring the svk source tree to
   your local repository:
@@ -97,14 +95,8 @@ o merge
   The commit by merge will be made to the remote repository in this
   case. (It's advised to check with -C to see if the merge succeeds)
 
-  Please note that currently Algorithm::Merge has many bugs that will
-  fail merging, a merge regression code is built into the merge command,
-  please help report failed merge to the authors. We will either try
-  to fix Algorithm::Merge or use svn's diff library when it goes
-  streamy instead of mmapping.
-
 o smerge
 
-  Smart merge, or star-merge. This will be a frontend of merge
+  Smart merge, or star-merge. This is a frontend of merge
   described above, storing extra information about performed merges,
   and finds appropriate revision numbers to use automatically.
