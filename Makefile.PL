@@ -26,6 +26,7 @@ requires(
         'PerlIO::via::dynamic'  => '0.02',
         'PerlIO::via::symlink'  => '0.01',
         'SVN::Simple::Edit'     => '0.21',
+        'Date::Parse'           => '0',
 );
 features(
     'Localized messages' => [

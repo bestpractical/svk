@@ -38,6 +38,7 @@ lib/SVK/Command/Move.pm
 lib/SVK/Command/Patch.pm
 lib/SVK/Command/Propdel.pm
 lib/SVK/Command/Propedit.pm
+lib/SVK/Command/Propget.pm
 lib/SVK/Command/Proplist.pm
 lib/SVK/Command/Propset.pm
 lib/SVK/Command/Resolved.pm

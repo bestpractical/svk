@@ -17,6 +17,7 @@ my %alias = qw( co checkout
 		ci commit
 		del delete
 		rm delete
+		pg propget
 		ps propset
 		pe propedit
 		pl proplist

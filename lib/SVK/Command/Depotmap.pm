@@ -54,8 +54,9 @@ sub _do_edit {
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;
+        $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 	SVN::Repos::create($path, undef, undef, undef,
-			   {'fs-type' => $ENV{SVNFSTYPE} || 'bdb',
+			   {'fs-type' => $ENV{SVNFSTYPE},
 			    'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
     }

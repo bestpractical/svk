@@ -5,6 +5,8 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
+use Date::Parse qw(str2time);
+use Date::Format qw(time2str);
 
 sub options {
     ('r|revision=i'  => 'rev',
@@ -44,13 +46,27 @@ sub _do_list {
     my $entries = $root->dir_entries ($target->{path});
     for (sort keys %$entries) {
 	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
+
+        if ($self->{verbose}) {
+	    my $rev = $root->node_created_rev ("$target->{path}/$_");
+            my $fs = $target->{'repos'}->fs;
+
+            my $svn_date =
+                $fs->revision_prop ($rev, 'svn:date');
+            # Additional fields for verbose: revision author size datetime
+            printf "%7ld %-8.8s %10s %12s ", $rev,
+                $fs->revision_prop ($rev, 'svn:author'),
+                ($isdir) ? "" : $root->file_length ("$target->{path}/$_"),
+		time2str ("%b %d %H:%M", str2time ($svn_date));
+        }
+
         if ($self->{'fullpath'}) {
-	    print $target->{depotpath}.'/';
+            print $target->{depotpath}.'/';
+        } else {
+            print " " x ($level);
         }
-        else {
-	    print " " x ($level);
-        }
-	print $_.($isdir ? '/' : '')."\n";
+        print $_.($isdir ? '/' : '')."\n";
+
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
 	    _do_list($self, $level+1, $target->new (path => "$target->{path}/$_",
