@@ -14,14 +14,14 @@ use SVK::Command::Log;
 
 sub options {
     (
-        'view'    => 'view',
+        'view|cat'    => 'view',
         'dump'    => 'dump',
-        'regen'   => 'regen',
-        'update'  => 'update',
+        'regen|regenerate'   => 'regen',
+        'update|up'  => 'update',
         'test'    => 'test',
         'apply'   => 'apply',
-        'delete'  => 'delete',
-        'list'    => 'list',
+        'delete|del|rm'  => 'delete',
+        'list|ls'    => 'list',
         'depot=s' => 'depot'
     );
 }
@@ -190,12 +190,12 @@ SVK::Command::Patch - Manage patches
 
 =head1 SYNOPSIS
 
- patch --list
- patch --view PATCHNAME
- patch --regen PATCHNAME
- patch --update PATCHNAME
- patch --apply PATCHNAME [DEPOTPATH | PATH] [-- MERGEOPTIONS]
- patch --delete PATCHNAME
+ patch --ls    [--list]
+ patch --cat   [--view]       PATCHNAME
+ patch --regen [--regenerate] PATCHNAME
+ patch --up    [--update]     PATCHNAME
+ patch --apply                PATCHNAME [DEPOTPATH | PATH] [-- MERGEOPTIONS]
+ patch --rm    [--delete]     PATCHNAME
 
 =head1 OPTIONS
 
@@ -203,53 +203,80 @@ SVK::Command::Patch - Manage patches
 
 =head1 DESCRIPTION
 
-Note that patches are created with C<commit -P> or C<smerge -P>.
+To create a patch, use C<commit -P> or C<smerge -P>.  To import a patch
+that's sent to you by someone else, just drop it into the C<patch>
+directory in your local svk repository. (That's usually C<~/.svk/>.)
+
+svk patches are compatible with GNU patch. Extra svk-specific metadata
+is stored in an encoded chunk at the end of the file.
 
 A patch name of C<-> refers to the standard input and output.
 
 =head1 INTRODUCTION
 
-C<svk patch> command can help out on the situation where you want to
-maintain your patchset to a given project.  It is used under the
+C<svk patch> command can help out on the situation where you want
+to maintain your patchset to a given project.  It is used under the
 situation that you have no direct write access to remote repository,
 thus C<svk push> cannot be used.
 
-Suppose you mirror project C<foo> to C<//mirror/foo>, create a local
-copy on C<//foo>, and check out to C<~/dev/foo>. After you work a
-while, you will do a:
+Suppose you mirror project C<foo> to C<//mirror/foo>, create a local copy
+on C<//local/foo>, and check out to C<~/dev/foo>. After you've done some
+work, you type:
 
     svk commit -m "Add my new feature"
 
-to commit changes from C<~/dev/foo> to C<//foo>. Then you want
-to send the difference between C<//foo> and C<//mirror/foo> to
-the project admin. This is the way you do it:
+to commit changes from C<~/dev/foo> to C<//local/foo>. If you have commit
+access to the upstream repository, you can submit your changes directly
+like this:
 
-    cd ~/dev/foo
-    svk push -P Foo
+    svk push //local/foo
 
-The C<-P> parameter means the name of your patch, you may like
-to name it as the feature name or repository name. After that
-you may send the patch file generated under C<~/.svk/patch>
-to the project admin.
+Sometimes, it's useful to send a patch, rather than submit changes
+directly, either because you don't have permission to commit to the
+upstream repository or because you don't think your changes are ready
+to be committed.
 
-As time goes by, project C<foo> will keep going, so you'll need
-to keep your patch up-to-date. This is the way you do it:
+To create a patch containing the differences between C<//local/foo>
+and C<//mirror/foo>, use this command:
 
-    1. cd ~/dev/foo
-    2. svk pull
-    3. # Unbreak anything that breaks
-    4. svk patch update Foo
-    5. svk patch regen Foo
+    svk push -P Foo //local/foo
 
-The purpose of line 2 is to keep your C<//foo> up-to-day with
-C<//mirror/foo>. Line 4 refresh the Foo patch if any of the involved
-file is changed remotely. Line 5 re-computes the difference of
-C<//foo> C<//mirror/foo> and generate a new revision of Foo patch.
+The C<-P> flag tells svk that you want to create a patch rather than
+push the changes to the upstream repository.  C<-P> takes a single flag:
+a patch name.  It probably makes sense to name it after the feature
+implemented or bug fixed by the patch. Patch files you generate will be
+created in the C<patch> subdirectory of your local svk repository.
 
-Normally you'll also use C<svk patch list> to list the patches you've
-generated, and C<svk patch view> to view them.
+Over time, other developers will make changes to project C<foo>. From
+time to time, you may need to update your patch so that it still applies
+cleanly. 
 
-Many features still want to be complete, please help svk.
+First, make sure your local branch is up to date with any changes made
+upstream:
+
+    svk pull //local/foo
+
+Next, update your patch so that it will apply cleanly to the newest
+version of the upstream repository:
+
+    svk patch --update Foo
+
+Finally, regenerate your patch to include other changes you've made on
+your local branch since you created or last regenerated the patch:
+
+    svk patch --regen Foo
+
+To get a list of all patches your svk knows about, run:
+
+    svk patch --list
+
+To see the current version of a specific patch, run:
+    
+    svk patch --view Foo
+
+When you're done with a patch and don't want it hanging around anymore,
+run
+    svk patch --delete Foo
 
 =head1 AUTHORS
 
