@@ -37,8 +37,8 @@ sub apply_textdelta {
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
-    $self->{info}{$path}{status}[1] = 'M'
-	unless $self->{info}{$path}{status}[0] eq 'A';
+    my $stat = $self->{info}{$path}{status};
+    $stat->[1] = 'M' unless $stat->[0] eq 'A';
 }
 
 sub close_file {
@@ -64,8 +64,11 @@ sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     my $opath = $path;
     $path = "$self->{copath}/$opath";
+    my $rpath = $opath;
+    $rpath = "$self->{rpath}$opath" if $self->{rpath};
     $self->{info}{$path}{dpath} = "$self->{dpath}/$opath";
     $self->{info}{$path}{status} = ['A', '', $arg[0] ? '+' : ''];
+    print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}}, $rpath);
     return $path;
 }
 
@@ -80,7 +83,8 @@ sub open_directory {
 
 sub change_dir_prop {
     my ($self, $path, $name, $value) = @_;
-    $self->{info}{$path}{status}[1] = 'M';
+    my $stat = $self->{info}{$path}{status};
+    $stat->[1] = 'M' unless $stat->[0] eq 'A';
 }
 
 sub close_directory {
@@ -91,18 +95,16 @@ sub close_directory {
 	$rpath = $self->{rpath};
 	chop $rpath;
     }
-    print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}},
-		   $rpath)
-	if $self->{info}{$path}{status}[0] || $self->{info}{$path}{status}[1];
-
-    for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
+    for (grep {"$path/" eq substr ($_, 0, length($path)+1)}
 	 sort keys %{$self->{conflict}}) {
 	delete $self->{conflict}{$_};
 	s|^\Q$self->{copath}\E/|$self->{rpath}|;
 
 	print sprintf ("%1s%1s  \%s\n", 'C', '', $_);
     }
-
+    my $stat = $self->{info}{$path}{status};
+    print sprintf ("%1s%1s%1s \%s\n", @$stat, $rpath || '.')
+	if ($stat->[0] || $stat->[1]) && $stat->[0] ne 'A';
 }
 
 sub absent_directory {

@@ -20,17 +20,15 @@ $svk->copy ('//V', "$copath/V-copy");
 append_file ("$copath/me-copy", "foobar");
 append_file ("$copath/V-copy/D/de", "foobar");
 $svk->rm ("$copath/V-copy/B/fe");
-$svk->status ($copath);
-
-is ($output, 'A + t/checkout/copy/D-copy
-D   t/checkout/copy/V-copy/B/fe
-M   t/checkout/copy/V-copy/D/de
-A + t/checkout/copy/V-copy
-A + t/checkout/copy/de
-A + t/checkout/copy/de-copy
-A + t/checkout/copy/me
-M + t/checkout/copy/me-copy
-');
+is_output ($svk, 'status', [$copath],
+	   ['A + t/checkout/copy/D-copy',
+	    'A + t/checkout/copy/V-copy',
+	    'D   t/checkout/copy/V-copy/B/fe',
+	    'M   t/checkout/copy/V-copy/D/de',
+	    'A + t/checkout/copy/de',
+	    'A + t/checkout/copy/de-copy',
+	    'A + t/checkout/copy/me',
+	    'M + t/checkout/copy/me-copy']);
 $svk->commit ('-m', 'commit depot -> checkout copies', $copath);
 is_copied_from ("$copath/me", '/V/me', 3);
 is_copied_from ("$copath/me-copy", '/V/me', 3);

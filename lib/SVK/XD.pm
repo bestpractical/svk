@@ -30,6 +30,9 @@ sub load {
     my ($self) = @_;
     my $info;
 
+    mkdir($self->{svkpath}) || die loc("Cannot create svk-config-directory: $!")
+        unless -d $self->{svkpath};
+
     $self->giant_lock ();
 
     if (-e $self->{statefile}) {
@@ -97,7 +100,8 @@ sub giant_lock {
 	die loc("another svk might be running; remove %1 if not", $self->{giantlock});
     }
 
-    open my ($lock), '>', $self->{giantlock};
+    open my ($lock), '>', $self->{giantlock}
+	or die loc("cannot acquire giant lock");
     print $lock $$;
     close $lock;
     $self->{giantlocked} = 1;
@@ -459,9 +463,12 @@ sub do_propset {
 
 sub do_revert {
     my ($self, %arg) = @_;
-
     my $xdroot = $self->xdroot (%arg);
-
+    my $storeundef = {'.schedule' => undef,
+		      scheduleanchor => undef,
+		      '.copyfrom' => undef,
+		      '.copyfrom_rev' => undef,
+		      '.newprop' => undef};
     my $revert = sub {
 	# XXX: need to repsect copied resources
 	my $kind = $xdroot->check_path ($_[0]);
@@ -478,23 +485,13 @@ sub do_revert {
 	    slurp_fh ($content, $fh);
 	    close $fh;
 	}
-	$self->{checkout}->store ($_[1],
-				  {'.schedule' => undef,
-				   scheduleanchor => undef,
-				   '.copyfrom' => undef,
-				   '.copyfrom_rev' => undef,
-				  });
+	$self->{checkout}->store ($_[1], $storeundef);
 	print loc("Reverted %1\n", $_[1]);
     };
 
     my $unschedule = sub {
 	my $sche = $self->{checkout}->get ($_[1])->{'.schedule'};
-	$self->{checkout}->store ($_[1],
-				  {'.schedule' => undef,
-				   scheduleanchor => undef,
-				   '.copyfrom' => undef,
-				   '.copyfrom_rev' => undef,
-				   '.newprop' => undef});
+	$self->{checkout}->store ($_[1], $storeundef);
 #	-d $_[1] ? rmtree ([$_[1]]) : unlink($_[1])
 #	    if $sche eq 'add';
 	print loc("Reverted %1\n", $_[1]);

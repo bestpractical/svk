@@ -51,6 +51,10 @@ The anchor of the base tree.
 
 The root object of the base tree.
 
+=item external
+
+External tool that would be called upon textual conflicts.
+
 =item storage
 
 The editor that will receive the merged callbacks.
@@ -277,8 +281,7 @@ sub close_file {
         $self->{notify}->node_status ($path) = $conflict ? 'C' : 'G';
 	if ($conflict && $self->{external}) {
 	    $mfn = tmpfile ('merge', OPEN => 0);
-	    # invoking external merge tool
-	    system ($self->{external},
+	    system (split (' ', $self->{external}),
 		    "$path (YOURS)", $fh->{local}[1],
 		    "$path (BASE)", $fh->{base}[1],
 		    "$path (THEIRS)", $fh->{new}[1],

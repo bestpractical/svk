@@ -17,7 +17,7 @@ requires(
         'Algorithm::Diff'       => '0',
         'YAML'                  => '0',
         'Regexp::Shellish'      => '0',
-        'Data::Hierarchy'       => '0.17',
+        'Data::Hierarchy'       => '0.18',
         'File::Temp'            => '0.14',
         'Clone'	                => '0',
         'Pod::Escapes'          => '0',

@@ -5,11 +5,11 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::I18N;
 
-sub parse_arg { shift; @_; }
+sub parse_arg { shift; @_ ? @_ : ''; }
 
 sub run {
     my $self = shift;
-    unless (@_) {
+    unless (@_ && $_[0]) {
 	my @cmd;
 	my $dir = $INC{'SVK/Command.pm'};
 	$dir =~ s/\.pm$//;
