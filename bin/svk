@@ -1366,7 +1366,7 @@ sub sync {
 	if $#ARGV > 0 && $skip_to;
 
     if ($sync_all) {
-	my (undef, undef, $repos) = find_repos ('//', 1);
+	my (undef, undef, $repos) = find_repos ($ARGV[0] || '//', 1);
 	@ARGV = map {'/'.$_} SVN::Mirror::list_mirror ($repos);
     }
 
