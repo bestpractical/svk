@@ -98,6 +98,8 @@ sub run {
         return;
     }
 
+    die loc ("%1 already exists.\n", $target->path)
+	if $target->root->check_path ($target->path);
     $m->init or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n", $target->{depotpath});
 
     return;

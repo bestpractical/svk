@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 18;
+plan_svm tests => 19;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -146,6 +146,9 @@ is_output ($svk, 'mirror', ['--detach', '//m'], [
 
 is_output_like ($svk, 'mirror', ['--detach', '//m'],
             qr"not a mirrored", '--detach on non-mirrored path');
+
+is_output ($svk, 'mirror', ['//m', $uri.($spath eq '/' ? '' : $spath)],
+	   ['/m already exists.']);
 
 $svk->copy ('-m', 'make a copy', '//m-99-copy', '//m-99-copy-twice');
 
