@@ -229,8 +229,8 @@ local $TODO = 'unwritable subdirectory should remain old state';
 is_output_like ($svk, 'diff', ['3.1'], qr'revision 7');
 }
 
-$svk->up (-r5 => '3.1');
-warn $output;
-$svk->up (-r3 => '3.1');
-warn $output;
+#$svk->up (-r5 => '3.1');
+#warn $output;
+#$svk->up (-r3 => '3.1');
+#warn $output;
 }
