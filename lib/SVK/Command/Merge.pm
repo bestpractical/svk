@@ -14,7 +14,7 @@ sub options {
     ($_[0]->SUPER::options,
      'a|auto'		=> 'auto',
      'l|log'		=> 'log',
-     's|summary'	=> 'summary',
+     'summary'		=> 'summary',
      'remoterev'	=> 'remoterev',
      'track-rename'	=> 'track_rename',
      'host=s'   	=> 'host',

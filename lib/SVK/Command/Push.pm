@@ -9,7 +9,7 @@ sub options {
     ('f|from=s'         => 'from_path',
      'l|lump'           => 'lump',
      'C|check-only'     => 'check_only',
-     's|summary'	=> 'summary',
+     'summary'		=> 'summary',
      'S|sign'	        => 'sign',
      'P|patch=s'        => 'patch',
      'verbatim'		=> 'verbatim',
