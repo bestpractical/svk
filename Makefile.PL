@@ -32,6 +32,7 @@ requires(
         'URI'                   => '0',
         'PerlIO::eol'           => '0.13',
 	'Class::Autouse'	=> '1.15',
+	'Getopt::Long'		=> '2.34',
 );
 features(
     'Localized messages' => [
