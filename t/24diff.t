@@ -4,7 +4,7 @@ use strict;
 require 't/tree.pl';
 our $output;
 my ($xd, $svk) = build_test();
-my ($copath, $corpath) = get_copath ('commit');
+my ($copath, $corpath) = get_copath ('diff');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 chdir ($copath);

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Test::More tests => 11;
+use Test::More tests => 12;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -69,3 +69,8 @@ $svk->ps ('someprop', 'somevalue', 'A');
 chdir ('A');
 is_output ($svk, 'status', [],
 	   [ '?   bar', 'C   foo', ' M  .'], 'status - conflict only');
+chdir ('..');
+$svk->revert ('-R', '.');
+$svk->ps ('someprop', 'somevalue', 'A/deep/baz');
+is_output ($svk, 'status', ['A/deep'],
+	   [' M  A/deep/baz'], 'prop only');

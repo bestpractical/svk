@@ -939,7 +939,10 @@ sub _delta_dir {
     for my $entry (sort keys %$entries) {
 	next if defined $targets && !exists $targets->{$entry};
 	my $kind = $entries->{$entry}->kind;
-	next if $kind == $SVN::Node::file && $signature && !$signature->changed ($entry);
+	my $ccinfo = $self->{checkout}->get ("$arg{copath}/$entry");
+	my $sche = $ccinfo->{'.schedule'} || '';
+	next if $kind == $SVN::Node::file && $signature && !$signature->changed ($entry)
+	    && !$sche;
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
 	$self->$delta ( %arg,
 			add => 0,
