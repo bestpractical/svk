@@ -49,16 +49,22 @@ sub do_propset_direct {
     my $path = abs2rel ($target->path, $anchor => undef, '/');
 
     if ($kind == $SVN::Node::dir) {
-	my $baton = $editor->open_directory ($path, 0, -1);
-	$editor->change_dir_prop ($baton, $propname, $propvalue);
-	$editor->close_directory ($baton);
+	if ($anchor eq $target->path) {
+	    $editor->change_dir_prop ($editor->{_root_baton}, $propname, $propvalue);
+	}
+	else {
+	    my $baton = $editor->open_directory ($path, 0, -1);
+	    $editor->change_dir_prop ($baton, $propname, $propvalue);
+	    $editor->close_directory ($baton);
+	}
     }
     else {
 	my $baton = $editor->open_file ($path, 0, -1);
 	$editor->change_file_prop ($baton, $propname, $propvalue);
 	$editor->close_file ($baton, undef);
     }
-    $self->adjust_anchor ($editor);
+    $self->adjust_anchor ($editor)
+	unless $anchor eq $target->path;
     $self->finalize_dynamic_editor ($editor);
     return;
 }

@@ -422,8 +422,7 @@ If the pathname is not under C<$old_basedir>, it is not unmodified.
 
 If C<$new_basedir> is an empty string, removes the old base directory but
 keeps the trailing slash.  If C<$new_basedir> is C<undef>, also removes
-the trailing slash.  However, if C<$sep> is the same as C<$pathname> and
-C<$old_basedir>, then the root slash is preserved.
+the trailing slash.
 
 By default, the return value of this function will use C<$SEP> as its
 path separator.  Setting C<$sep> to C</> will turn native path separators
@@ -444,12 +443,6 @@ sub abs2rel {
     }
 
     $rel =~ s/\Q$SEP/$sep/go if $sep and $SEP ne $sep;
-
-    # exception: abs2rel('/', '/', undef, '/') should be '/'
-    if (!length($rel) and $sep and $pathname eq $sep) {
-        return $pathname;
-    }
-
     return $rel;
 }
 
