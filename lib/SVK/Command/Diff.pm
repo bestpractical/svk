@@ -76,15 +76,15 @@ sub run {
 	SVK::Editor::Status->new
 	: SVK::Editor::Diff->new
 	( cb_basecontent =>
-	  sub { my ($rpath) = @_;
-		my $base = $oldroot->file_contents ("$target->{path}/$rpath");
+	  sub { my ($rpath, $pool) = @_;
+		my $base = $oldroot->file_contents ("$target->{path}/$rpath", $pool);
 		return $base;
 	    },
 	  cb_baseprop =>
-	  sub { my ($rpath, $pname) = @_;
+	  sub { my ($rpath, $pname, $pool) = @_;
 		my $path = "$target->{path}/$rpath";
-		return $oldroot->check_path ($path) == $SVN::Node::none ?
-		    undef : $oldroot->node_prop ($path, $pname);
+		return $oldroot->check_path ($path, $pool) == $SVN::Node::none ?
+		    undef : $oldroot->node_prop ($path, $pname, $pool);
 	    },
 	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision $r1"),
 	  rlabel => $target2->{copath} ? 'local' : "revision $r2",

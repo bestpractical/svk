@@ -204,12 +204,12 @@ sub view {
     my $anchor = $self->{_target}->path;
     $self->editor->drive
 	( SVK::Editor::Diff->new
-	  ( cb_basecontent => sub { my ($path) = @_;
-				    my $base = $baseroot->file_contents ("$anchor/$path");
+	  ( cb_basecontent => sub { my ($path, $pool) = @_;
+				    my $base = $baseroot->file_contents ("$anchor/$path", $pool);
 				    return $base;
 				},
-	    cb_baseprop => sub { my ($path, $pname) = @_;
-				 return $baseroot->node_prop ("$anchor/$path", $pname);
+	    cb_baseprop => sub { my ($path, $pname, $pool) = @_;
+				 return $baseroot->node_prop ("$anchor/$path", $pname, $pool);
 			     },
 	    oldtarget => $self->{_target}, oldroot => $baseroot,
 	    llabel => "revision $self->{target}{rev}",
