@@ -22,7 +22,7 @@ my $auth = SVN::Core::auth_open
 
 =head1 NAME
 
-svk - subversion keeper command line interface
+svk - a decentralized version control system
 
 =head1 SYNOPSIS
 

@@ -31,7 +31,7 @@ use ExtUtils::AutoInstall
 
 WriteMakefile(
     AUTHOR              => 'Chia-liang Kao (clkao@clkao.org)',
-    ABSTRACT            => 'subversion keeper',
+    ABSTRACT            => 'A decentralized version control system',
     NAME                => 'SVN::XD',
     VERSION_FROM        => 'lib/SVN/XD.pm',
     DISTNAME            => 'SVN-XD',

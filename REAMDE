@@ -1,5 +1,5 @@
-This is the README file for SubversionKeeper (svk) 0.1 release, a
-decentralized version control system.
+This is the README file for svk 0.1 release, a decentralized version
+control system.
 
 *NOTE* The 0.1 release is aimed to be a working prototype, all things
 are subject to change, including project name, binary name, perl
@@ -10,7 +10,7 @@ some of the operations that svk does not yet implement.
 
 * About
 
-Subversion aims to take over the CVS user base, while SubversionKeeper
+Subversion (svn) aims to take over the CVS user base, while svk
 attempts to take over the others - including people who already
 switched to other scm, and people who had not started using scm. It is
 written in Perl and is using subversion's underlying filesystem.
