@@ -13,7 +13,8 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 1;
+    return if @arg < 1;
+    push @arg, '.' if @arg == 1;
     return ($arg[0], map {$self->arg_co_maybe ($_)} @arg[1..$#arg]);
 }
 
@@ -23,8 +24,11 @@ sub run {
     my ($self, $pname, @targets) = @_;
 
     foreach my $target (@targets) {
+        my $proplist = $self->{xd}->do_proplist ($target);
+        exists $proplist->{$pname} or next;
+
         print $target->path, ' - ' if @targets > 1 and !$self->{strict};
-        print $self->{xd}->do_proplist ($target)->{$pname};
+        print $proplist->{$pname};
         print "\n" if !$self->{strict};
     }
 
@@ -47,7 +51,7 @@ SVK::Command::Propget - Display a property on path
 
  --strict:                  Do not print an extra newline at the end of the
                             property values; when there are multiple paths
-                            involved, do not prefix path names before values.
+                            involved, do not prefix path names before values
 
 =head1 AUTHORS
 
