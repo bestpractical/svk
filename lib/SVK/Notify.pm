@@ -87,7 +87,9 @@ sub notify_translate {
 	my $sub = $self->{$_} or next;
 	$self->{$_} = sub { my $path = shift;
 			    $translate->($path);
-			    unshift @_, $path; goto &$sub };
+			    $sub->($path, @_);
+#			    unshift @_, $path; goto &$sub
+			};
     }
 }
 
