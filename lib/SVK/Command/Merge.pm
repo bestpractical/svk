@@ -19,13 +19,54 @@ sub options {
      'host=s'   	=> 'host',
      'I|incremental'	=> 'incremental',
      'no-ticket'	=> 'no_ticket',
-     'r|revision=s'	=> 'revspec');
+     'r|revision=s'	=> 'revspec',
+     't|to'             => 'to',
+     'f|from'           => 'from');
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 0 || $#arg > 1;
-    return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
+    return if $#arg > 1;
+
+    if (!$self->{to} && !$self->{from}) {
+
+        if (scalar (@arg) == 0) {
+            return;
+        }
+
+        return ($self->arg_depotpath ($arg[0]), $self->arg_co_maybe ($arg[1] || ''));
+    }
+
+    if (scalar (@arg) == 2) {
+        die loc("Cannot specify 'to' or 'from' when specifying a source and destination.\n");
+    }
+
+    if ($self->{to} && $self->{from}) {
+        die loc("Cannot specify both 'to' and 'from'.\n");
+    }
+
+    my $target1 = $self->arg_co_maybe ($arg[0] || "");
+    my $merge = SVK::Merge->new (%$target1);
+
+    # evil trick to take the first element from the array
+    my ($ancestor) = $merge->copy_ancestors ($target1->{repos}, 
+        $target1->{path}, $target1->{revision}, 1);
+
+    if (!defined ($ancestor)) {
+        die loc ("This path has not been branched.\n");
+    }
+
+    my $target2 = $target1->new (path => (split (/:/, $ancestor))[1]);
+
+    # make a depot path
+    $target2->depotpath();
+
+    if ($self->{from}) {
+        return ($target1, $target2);
+    }
+    else {
+        return ($target2, $target1);
+    }
 }
 
 sub lock {
@@ -125,6 +166,7 @@ SVK::Command::Merge - Apply differences between two sources
 
  merge -r N:M DEPOTPATH [PATH]
  merge -r N:M DEPOTPATH1 DEPOTPATH2
+ merge -r N:M [--to|--from] [PATH]
 
 =head1 OPTIONS
 
@@ -137,6 +179,8 @@ SVK::Command::Merge - Apply differences between two sources
  -s [--sign]            : sign this change
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
+ -t [--to]:             : merge to the specified path
+ -f [--from]:           : merge from the specified path
 
 =head1 AUTHORS
 

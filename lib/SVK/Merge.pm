@@ -100,7 +100,7 @@ sub find_merge_base {
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
 	my $rev = $srcinfo->{$_} < $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
-	# XXX: shuold compare revprop svn:date instead, for old dead branch being newly synced back
+	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
 	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
 	    if !$basepath || $rev > $baserev;
     }

@@ -30,6 +30,7 @@ SVK::Command::Smerge - Automatic merge all changes between branches
 
  smerge DEPOTPATH [PATH]
  smerge DEPOTPATH1 DEPOTPATH2
+ smerge [--to|--from] [PATH]
 
 =head1 OPTIONS
 
@@ -44,6 +45,8 @@ SVK::Command::Smerge - Automatic merge all changes between branches
  --track-rename         : track changes made to renamed node
  --host arg             : use ARG as the hostname shown in merge log
  --remoterev            : use remote revision numbers in merge log
+ -t [--to]:             : merge to the specified path
+ -f [--from]:           : merge from the specified path
 
 =head1 AUTHORS
 

@@ -38,7 +38,7 @@ sub apply_textdelta {
     unless ($self->{external}) {
 	my $newtype = $info->{prop} && $info->{prop}{'svn:mime-type'};
 	my $is_text = !$newtype || mimetype_is_text ($newtype);
-	if ($is_text) {
+	if ($is_text && !$info->{added}) {
 	    my $basetype = $self->{cb_baseprop}->($path, 'svn:mime-type');
 	    $is_text = !$basetype || mimetype_is_text ($basetype);
 	}

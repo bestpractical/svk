@@ -272,7 +272,7 @@ sub find_repos {
 
 =item find_repos_from_co
 
-Given the checkout path and an optiona about if the repository should
+Given the checkout path and an option about if the repository should
 be opened. Returns an array of repository path, the path inside
 repository, the absolute checkout path, the checkout info, and the
 C<SVN::Repos> object if caller wants the repository to be opened.

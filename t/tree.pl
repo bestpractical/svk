@@ -29,8 +29,9 @@ for (qw/SVKMERGE SVKDIFF LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
 }
 $ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';
 
-# Make "prove -l" happy
-@INC = map abs_path($_), @INC;
+# Make "prove -l" happy; abs_path() returns "undef" if the path 
+# does not exist. This makes perl very unhappy.
+@INC = grep defined, map abs_path($_), @INC;
 
 my $pool = SVN::Pool->new_default;
 
