@@ -118,6 +118,7 @@ sub find_svm_source {
     }
     else {
 	$uuid = $fs->get_uuid;
+	$rev = ($root->node_history ($path)->prev (0)->location)[1];
     }
 
     return ($uuid, $path, $rev);

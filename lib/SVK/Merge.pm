@@ -10,21 +10,41 @@ sub new {
     return $self;
 }
 
+sub _next_is_merge {
+    my ($self, $repos, $path, $rev, $checkfrom) = @_;
+    return if $rev == $checkfrom;
+    my $fs = $repos->fs;
+    my $pool = SVN::Pool->new_default;
+    my $hist = $fs->revision_root ($checkfrom)->node_history ($path);
+    my $newhist = $hist->prev (0);
+    my $nextrev;
+    while ($hist = $newhist) {
+	$pool->clear;
+	$hist = $newhist;
+	$newhist = $hist->prev (0);
+	$nextrev = ($hist->location)[1], last
+	    if $newhist && ($newhist->location)[1] == $rev;
+    }
+    return unless $nextrev;
+    my ($merge, $pmerge) =
+	map {$fs->revision_root ($_)->node_prop ($path, 'svk:merge')} ($nextrev, $rev);
+    return if $merge eq $pmerge;
+    return ($nextrev, $merge);
+}
+
 sub find_merge_base {
     my ($self, $repos, $src, $dst) = @_;
     my $srcinfo = $self->find_merge_sources ($repos, $src);
     my $dstinfo = $self->find_merge_sources ($repos, $dst);
-    my ($basepath, $baserev);
-
-    for (
-	grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
-	(sort keys %{ { %$srcinfo, %$dstinfo } })
-    ) {
+    my ($basepath, $baserev, $baseentry);
+    my @common = grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
+	(sort keys %{ { %$srcinfo, %$dstinfo } });
+    for (@common) {
 	my ($path) = m/:(.*)$/;
 	my $rev = $srcinfo->{$_} < $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
 	# XXX: shuold compare revprop svn:date instead, for old dead branch being newly synced back
 	if (!$basepath || $rev > $baserev) {
-	    ($basepath, $baserev) = ($path, $rev);
+	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
 	}
     }
 
@@ -33,7 +53,7 @@ sub find_merge_base {
 	  unless $self->{baseless} or $self->{base};
 
 	my $fs = $repos->fs;
-	my ($from_rev, $to_rev) = ($self->{base}, $repos->fs->youngest_rev);
+	my ($from_rev, $to_rev) = ($self->{base}, $fs->youngest_rev);
 
 	if (!$from_rev) {
 	    # baseless merge
@@ -48,6 +68,27 @@ sub find_merge_base {
 	return ($src, $from_rev, $to_rev);
     };
 
+    if ($basepath ne $src && $basepath ne $dst) {
+	my ($fromrev, $torev) = ($srcinfo->{$baseentry}, $dstinfo->{$baseentry});
+	($fromrev, $torev) = ($torev, $fromrev) if $torev < $fromrev;
+	my ($mrev, $merge) = $self->_next_is_merge ($repos, $basepath, $fromrev, $torev);
+	if ($merge) {
+	    my $minfo = SVK::Merge::Info->new ($merge);
+	    my $fs = $repos->fs;
+	    my $root = $fs->revision_root ($fs->youngest_rev);
+	    my ($srcinfo, $dstinfo) = map { SVK::Merge::Info->new ($root->node_prop ($_, 'svk:merge')) }
+		($src, $dst);
+	    my $subset = 1;
+	    for (keys %$minfo) {
+		$subset = 0, last
+		    unless exists $srcinfo->{$_} && $minfo->{$_} <= $srcinfo->{$_} &&
+			exists $dstinfo->{$_} && $minfo->{$_} <= $dstinfo->{$_};
+	    }
+	    $baserev = $mrev
+		if $subset;
+	}
+    }
+
     return ($basepath, $baserev, $dstinfo->{$repos->fs->get_uuid.':'.$src} || $baserev);
 }
 
@@ -56,7 +97,8 @@ sub find_merge_sources {
     my $pool = SVN::Pool->new_default;
 
     my $fs = $repos->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
+    my $yrev = $fs->youngest_rev;
+    my $root = $fs->revision_root ($yrev);
     my $minfo = $root->node_prop ($path, 'svk:merge');
     my $myuuid = $fs->get_uuid ();
     if ($minfo) {
@@ -68,17 +110,18 @@ sub find_merge_sources {
 			    } split ("\n", $minfo) };
     }
     if ($verbatim) {
-	my ($uuid, $path, $rev) = find_svm_source ($repos, $path);
-	$minfo->{join(':', $uuid, $path)} = $rev
-	    unless $noself;
+	unless ($noself) {
+	    my ($uuid, $path, $rev) = find_svm_source ($repos, $path);
+	    $minfo->{join(':', $uuid, $path)} = $rev;
+	}
 	return $minfo;
     }
     else {
-	$minfo->{join(':', $myuuid, $path)} = $fs->youngest_rev
+	$minfo->{join(':', $myuuid, $path)} = ($root->node_history ($path)->prev (0)->location)[1]
 	    unless $noself;
     }
 
-    my %ancestors = $self->copy_ancestors ($repos, $path, $fs->youngest_rev, 1);
+    my %ancestors = $self->copy_ancestors ($repos, $path, $yrev, 1);
     for (sort keys %ancestors) {
 	my $rev = $ancestors{$_};
 	$minfo->{$_} = $rev
@@ -166,10 +209,24 @@ sub get_new_ticket {
 
 sub log {
     my $self = shift;
-    open my $buf, '>', \(my $tmp);
+    open my $buf, '>', \ (my $tmp);
     SVK::Command::Log::do_log (@_, 0, 0, 0, 1, $buf);
     $tmp =~ s/^/ /mg;
     return $tmp;
+}
+
+package SVK::Merge::Info;
+
+# XXX: cleanup minfo handling and put them here
+
+sub new {
+    my ($class, $merge) = @_;
+
+    my $minfo = { map {my ($uuid, $path, $rev) = split ':', $_;
+		       ("$uuid:$path" => $rev)
+		   } split ("\n", $merge) };
+    bless $minfo, $class;
+    return $minfo;
 }
 
 1;
