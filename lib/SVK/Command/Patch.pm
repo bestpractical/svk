@@ -118,7 +118,6 @@ sub _store {
 
 sub _load {
     my ($self, $name) = @_;
-    # XXX: support alternative path
     SVK::Patch->load (
         $self->{xd}->patch_file ($name),
         $self->{xd},

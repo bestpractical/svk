@@ -1026,7 +1026,6 @@ sub _delta_dir {
 	my $copath = SVK::Target->copath ($arg{copath}, $entry);
 	my $ccinfo = $self->{checkout}->get ($copath);
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
-	# XXX: save this stat() result for node_delete_or_absent
 	lstat ($copath);
 	my $type = -e _ ? (-d _ and not is_symlink) ? 'directory' : 'file'
 	                : '';

@@ -111,7 +111,7 @@ sub run {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
 	++$self->{no_ticket} if $self->{patch};
-	# XXX: these should come from parse_arg
+	# avoid generating merge ticket pointing to other changes
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},

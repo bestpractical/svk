@@ -760,14 +760,12 @@ sub find_checkout_anchor {
 
         if ($copied_from) {
             return ($anchor_target, $copied_from);
-            last;
         }
         elsif (@rel_path) {
             $anchor_target->descend (shift (@rel_path));
         }
         else {
             return ($self->arg_depotpath ($entry->{depotpath}), undef);
-            last;
         }
     }
 }
