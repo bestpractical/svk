@@ -4,10 +4,6 @@ require SVN::Delta;
 our $VERSION = '0.05';
 our @ISA = qw(SVN::Delta::Editor);
 
-sub set_target_revision {
-    my ($self, $revision) = @_;
-}
-
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{info}{$self->{copath}}{status} = ['', '', ''];

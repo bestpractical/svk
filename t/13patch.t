@@ -5,7 +5,7 @@ use Test::More;
 our $output;
 eval "require SVN::Mirror"
 or Test::More->import (skip_all => "SVN::Mirror not installed");
-Test::More->import ('tests', 1);
+Test::More->import ('tests', 4);
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
@@ -27,16 +27,30 @@ $svk2->commit ('-m', "modified on local", $copath);
 
 $svk2->patch ('create', 'test-1', '//local', '//trunk');
 $svk2->patch ('view', 'test-1');
-warn $output;
 
 ok (-e "$xd2->{svkpath}/patch/test-1.svkpatch");
 mkdir ("$xd->{svkpath}/patch");
 link ("$xd2->{svkpath}/patch/test-1.svkpatch", "$xd->{svkpath}/patch/test-1.svkpatch");
-
+$svk->patch ('list');
+is ($output, 'test-1@1: 
+');
 my ($scopath, $scorpath) = get_copath ('patch1');
 $svk->checkout ('//trunk', $scopath);
 overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\n");
 $svk->commit ('-m', "modified on trunk", $scopath);
 
 $svk->patch ('view', 'test-1');
-warn $output;
+$svk->patch ('test', 'test-1');
+is ($output, 'G  B/fe
+Empty merge.
+', 'patch still applicable.');
+
+overwrite_file ("$scopath/B/fe", "on trunk\nfile fe added later\nbzzzzz\n");
+$svk->commit ('-m', "modified on trunk", $scopath);
+
+$svk->patch ('test', 'test-1');
+is ($output, 'C  B/fe
+Empty merge.
+1 conflict found.
+Please do a merge to resolve conflicts and update the patch.
+', 'patch not applicable due to conflicts.');

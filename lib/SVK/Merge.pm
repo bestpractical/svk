@@ -27,7 +27,8 @@ sub _next_is_merge {
     }
     return unless $nextrev;
     my ($merge, $pmerge) =
-	map {$fs->revision_root ($_)->node_prop ($path, 'svk:merge')} ($nextrev, $rev);
+	map {$fs->revision_root ($_)->node_prop ($path, 'svk:merge') || ''}
+	    ($nextrev, $rev);
     return if $merge eq $pmerge;
     return ($nextrev, $merge);
 }

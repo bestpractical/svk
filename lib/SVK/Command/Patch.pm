@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::Patch;
 use SVK::Merge;
 use SVK::Editor::Merge;
+use SVK::I18N;
 use SVK::Util qw (resolve_svm_source);
 use SVK::Command::Log;
 

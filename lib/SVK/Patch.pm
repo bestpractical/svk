@@ -177,11 +177,12 @@ sub view {
 sub applicable {
     my ($self, $repos) = @_;
     # XXX: support testing with other path
-    my ($anchor, $mrev) = $self->local_mirror ($repos)
+    my ($anchor, $mrev, $mirrored) = $self->local_mirror ($repos)
 	or die "Target not local nor mirrored, unable to test patch.\n";
 
     my $fs = $repos->fs;
-    my (undef, $updated) = $self->_path_attribute ($fs, $self->{source_uuid}, $anchor, $mrev);
+    my (undef, $updated) = $self->_path_attribute ($fs, $mirrored ? $self->{source_uuid}
+						   : $self->{target_uuid}, $anchor, $mrev);
     unless ($updated) {
 	print "Target of patch <$self->{name}> not updated. No need to test.\n";
 #	return;
