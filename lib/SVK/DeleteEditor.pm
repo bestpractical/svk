@@ -25,7 +25,7 @@ sub close_directory {
 
 sub delete_entry {
     my ($self, $path) = @_;
-    &{$self->{cb_delete}} ("$self->{dpath}/$path", "$self->{copath}/$path");
+    $self->{cb_delete}->("$self->{dpath}/$path", "$self->{copath}/$path");
 }
 
 1;

@@ -31,7 +31,8 @@ sub new_repos {
     while (-e $repospath) {
 	$repospath = $reposbase . '-'. (++$i);
     }
-    $repos = SVN::Repos::create("$repospath", undef, undef, undef, undef)
+    $repos = SVN::Repos::create("$repospath", undef, undef, undef,
+				{'fs-type' => $ENV{SVNFSTYPE} || 'bdb'})
 	or die "failed to create repository at $repospath";
     return $repospath;
 }

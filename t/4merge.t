@@ -3,6 +3,7 @@ use Test::More tests => 5;
 use strict;
 require 't/tree.pl';
 
+our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('merge');
 
@@ -41,7 +42,7 @@ overwrite_file ("$copath/A/foo",
 		"some local mods\nfoobar\n\nsome more foobarzz\nyy\n");
 
 $svk->update ($copath);
-ok ($xd->{checkout}->get ("$corpath/A/foo")->{'.conflict'}, 'conflict');
+ok ($output =~ m/1 conflict found\./, 'conflict');
 
 $svk->revert ("$copath/A/foo");
 

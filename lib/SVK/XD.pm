@@ -258,9 +258,10 @@ sub xd_storage_cb {
 				   unless $arg{check_only};
 			   },
 	  cb_localmod => sub { my ($path, $checksum) = @_;
-			       $arg{get_copath} ($path);
+			       my $copath = $path;
+			       $arg{get_copath} ($copath);
 			       my $base = get_fh ($arg{oldroot}, '<',
-						  "$arg{anchor}/$arg{path}", $path);
+						  "$arg{anchor}/$path", $copath);
 			       my $md5 = md5 ($base);
 			       return undef if $md5 eq $checksum;
 			       seek $base, 0, 0;
@@ -334,6 +335,8 @@ sub do_update {
 			   $newroot, $arg{target_path},
 			   $editor, undef,
 			   1, $arg{recursive}, 0, 1);
+
+    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
 }
 
 sub do_add {
@@ -547,11 +550,10 @@ sub _delta_content {
     if ($arg{send_delta} && $arg{base}) {
 	my $txstream = SVN::TxDelta::new
 	    ($arg{xdroot}->file_contents ($arg{path}), $arg{fh}, $arg{pool});
-
-	SVN::TxDelta::send_txstream ($txstream, @$handle, $arg{pool});
+	SVN::TxDelta::send_txstream ($txstream, @$handle, SVN::Pool->new ($arg{pool}));
     }
     else {
-	SVN::TxDelta::send_stream ($arg{fh}, @$handle, $arg{pool})
+	SVN::TxDelta::send_stream ($arg{fh}, @$handle, SVN::Pool->new ($arg{pool}))
     }
 }
 
@@ -559,11 +561,11 @@ sub _delta_file {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
     $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none;
-    my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry});
+    my $rev = $arg{add} ? 0 : $arg{cb_rev}->($arg{entry});
     my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
-	&{$arg{cb_conflict}} ($arg{editor}, $arg{entry}, $arg{baton});
+	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton});
     }
 
     unless (-e $arg{copath}) {
@@ -612,7 +614,7 @@ sub _delta_dir {
     my ($self, %arg) = @_;
     my $pool = SVN::Pool->new_default (undef);
     $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none;
-    my $rev = $arg{add} ? 0 : &{$arg{cb_rev}} ($arg{entry} || '');
+    my $rev = $arg{add} ? 0 : $arg{cb_rev}->($arg{entry} || '');
     my $cinfo = $arg{cinfo} || $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
 
@@ -721,13 +723,13 @@ sub _delta_dir {
 			      else {
 				  $dpath =~ s|^\Q$arg{copath}\E/||;
 			      }
-			      &{$arg{cb_unknown}} ($dpath, $File::Find::name);
+			      $arg{cb_unknown}->($dpath, $File::Find::name);
 			  },
 			  $targets->{$_} ? map {"$newco/$_"} @{$targets->{$_}}
 			                : $newco);
 		}
 		else {
-		    &{$arg{cb_unknown}} ("$arg{path}/$_", "$arg{copath}/$_")
+		    $arg{cb_unknown}->("$arg{path}/$_", "$arg{copath}/$_")
 			if $arg{cb_unknown};
 		}
 
@@ -787,7 +789,7 @@ sub checkout_delta {
 			   $self->_get_rev ($target);
 		       };
     $arg{kind} = $kind;
-    my $rev = &{$arg{cb_rev}} ('');
+    my $rev = $arg{cb_rev}->('');
     my $baton = $arg{editor}->open_root ($rev);
 
     if ($kind == $SVN::Node::file) {
@@ -819,13 +821,13 @@ sub checkout_delta {
 			  else {
 			      $dpath =~ s|^\Q$arg{copath}\E/||;
 			  }
-			  &{$arg{cb_unknown}} ($dpath, $File::Find::name);
+			  $arg{cb_unknown}->($dpath, $File::Find::name);
 		      },
 		      $arg{targets} ? map {"$arg{copath}/$_"} @{$arg{targets}}
 		      : $arg{copath});
 	    }
 	    else {
-		&{$arg{cb_unknown}} ($arg{path}, $arg{copath})
+		$arg{cb_unknown}->($arg{path}, $arg{copath})
 		    if $arg{cb_unknown};
 	    }
 
@@ -1017,7 +1019,7 @@ sub get_keyword_layer {
 
     return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".&{$kmap{$1}}($root, $path).' $'/eg },
+         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg },
 	 untranslate =>
 	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g});
 }
@@ -1065,7 +1067,6 @@ our @ISA = qw(SVN::Delta::Editor);
 sub close_edit {
     my $self = shift;
     print loc("Commit checking finished.\n");
-    print loc("%*(%1,conflict) found.\n", $self->{conflicts}) if $self->{conflicts};
     $self->{_editor}->abort_edit (@_);
 }
 
@@ -1228,6 +1229,11 @@ sub change_dir_prop {
 }
 
 sub close_edit {
+    my ($self) = @_;
+    $self->close_directory('');
+}
+
+sub abort_edit {
     my ($self) = @_;
     $self->close_directory('');
 }

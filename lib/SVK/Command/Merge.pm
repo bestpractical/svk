@@ -81,8 +81,8 @@ sub run {
 			   $editor, undef,
 			   1, 1, 0, 1);
 
-    # cleanup txn
-    $cb{txn}->abort if $cb{txn};
+
+    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
 
     return;
 }

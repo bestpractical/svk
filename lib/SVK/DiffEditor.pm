@@ -61,8 +61,8 @@ sub close_file {
     if ($self->{info}{$path}{new}) {
 	my $base = $self->{info}{$path}{added} ?
 	    \'' : $self->{cb_basecontent} ($path);
-	my $llabel = $self->{llabel} || &{$self->{cb_llabel}} ($path);
-	my $rlabel = $self->{rlabel} || &{$self->{cb_rlabel}} ($path);
+	my $llabel = $self->{llabel} || $self->{cb_llabel}->($path);
+	my $rlabel = $self->{rlabel} || $self->{cb_rlabel}->($path);
 
 	if ($self->{external}) {
 	    # XXX: the 2nd file could be - and save some disk IO
@@ -112,7 +112,7 @@ sub output_prop_diff {
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    print $fh loc("Name: %1\n", $_);
 	    my $baseprop;
-	    $baseprop = &{$self->{cb_baseprop}} ($path, $_)
+	    $baseprop = $self->{cb_baseprop}->($path, $_)
 		unless $self->{info}{$path}{added};
 	    print $fh Text::Diff::diff (\ ($baseprop || ''),
 					\$self->{info}{$path}{prop}{$_},

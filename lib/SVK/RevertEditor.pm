@@ -8,33 +8,33 @@ sub close_file {
     my ($self, $path) = @_;
 
     if ($self->{info}{$path}{status}[0] eq 'M') {
-	&{$self->{cb_revert}} ($self->{info}{$path}{dpath}, $path);
+	$self->{cb_revert}->($self->{info}{$path}{dpath}, $path);
     }
     else {
-	&{$self->{cb_unschedule}} ($self->{info}{$path}{dpath}, $path);
+	$self->{cb_unschedule}->($self->{info}{$path}{dpath}, $path);
     }
 }
 
 sub absent_file {
     my ($self, $path) = @_;
-    &{$self->{cb_revert}} ("$self->{dpath}/$path", "$self->{copath}/$path");
+    $self->{cb_revert}->("$self->{dpath}/$path", "$self->{copath}/$path");
 }
 
 sub close_directory {
     my ($self, $path) = @_;
-    &{$self->{cb_unschedule}} ($self->{info}{$path}{dpath}, $path)
+    $self->{cb_unschedule}->($self->{info}{$path}{dpath}, $path)
 	    if $self->{info}{$path}{status}[0] eq 'A' ||
 		$self->{info}{$path}{status}[1] eq 'M';
 }
 
 sub absent_directory {
     my ($self, $path) = @_;
-    &{$self->{cb_revert}} ("$self->{dpath}/$path", "$self->{copath}/$path");
+    $self->{cb_revert}->("$self->{dpath}/$path", "$self->{copath}/$path");
 }
 
 sub delete_entry {
     my ($self, $path) = @_;
-    &{$self->{cb_revert}} ("$self->{dpath}/$path", "$self->{copath}/$path");
+    $self->{cb_revert}->("$self->{dpath}/$path", "$self->{copath}/$path");
 }
 
 1;

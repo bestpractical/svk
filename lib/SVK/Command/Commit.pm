@@ -123,7 +123,7 @@ sub get_editor {
 						     $self->{signeditor}{sig})
 			   if $self->{sign};
 		       $m->run ($rev);
-		       &{$callback} ($m->find_local_rev ($rev), @_)
+		       $callback->($m->find_local_rev ($rev), @_)
 			   if $callback }
 		);
 	    $base_rev = $m->{fromrev};
@@ -141,7 +141,7 @@ sub get_editor {
 		  $fs->change_rev_prop ($_[0], 'svk:signature',
 					$self->{signeditor}{sig})
 		      if $self->{sign};
-		  &{$callback} (@_) if $callback; }
+		  $callback->(@_) if $callback; }
 	  ));
     $base_rev ||= $target->{repos}->fs->youngest_rev;
 
@@ -160,10 +160,6 @@ sub get_editor {
 		  $root->check_path ($path) != $SVN::Node::none;
 	      },
 	    cb_rev => sub { $base_rev; },
-	    cb_conflict => sub { die loc("conflict on %1", "$target->{path}/$_[0]")
-				     unless $self->{check_only};
-				 $editor->{conflicts}++;
-			     },
 	    cb_localmod => $self->{cb_localmod} ||
 	    sub { my ($path, $checksum, $pool) = @_;
 		  $path = "$target->{path}/$path";

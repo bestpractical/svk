@@ -1,12 +1,13 @@
 #!/usr/bin/perl
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 5;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test('');
 
 my $tree = create_basic_tree ($xd, '//');
 my ($copath, $corpath) = get_copath ('keyword');
+our $output;
 $svk->checkout ('//', $copath);
 
 is_file_content ("$copath/A/be",
@@ -31,5 +32,5 @@ local $TODO = "take care of svn:executable after commit";
 ok (-x "$copath/A/be");
 };
 
-append_file ("$copath/A/be", "more and more\n");
-
+$svk->update ('-r', 2, $copath);
+ok ($output =~ m|^UU A/be$|m, 'keyword does not cause merge');
