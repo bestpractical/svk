@@ -20,7 +20,7 @@ is_output ($svk, 'copy', ['//V/me', '//V/D/de', $copath],
 	   [__"A   $copath/me",
 	    __"A   $copath/de"]);
 is_output ($svk, 'cp', ['//V/me', $copath],
-	   [__"Path $corpath/me already exists."]);
+	   [__"Path $copath/me already exists."]);
 
 is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   [__"$corpath/me is not a directory."], 'multi to nondir');

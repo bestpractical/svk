@@ -291,21 +291,15 @@ C<SVN::Repos> object if caller wants the repository to be opened.
 
 sub find_repos_from_co {
     my ($self, $copath, $open) = @_;
-    die loc("path %1 is not a checkout path.\n", $copath)
-	unless abs_path ($copath);
-    $copath = abs_path ($copath);
+    my $report = $copath;
+    $copath = abs_path (File::Spec->canonpath ($copath));
+    die loc("path %1 is not a checkout path.\n", $report)
+	unless $copath;
     my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
     die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
     my ($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, $open);
 
-    if ($copath eq $coroot) {
-	$copath = '';
-    }
-    else {
-	$copath = abs2rel($copath, $coroot => '', '/');
-    }
-
-    return ($repospath, $path eq '/' ? $copath || '/' : $path.$copath,
+    return ($repospath, abs2rel ($copath, $coroot => $path, '/'), $copath,
 	    $cinfo, $repos);
 }
 
@@ -319,12 +313,11 @@ a depotpath. In that case, the checkout paths returned iwll be undef.
 sub find_repos_from_co_maybe {
     my ($self, $target, $open) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos);
-    unless (($repospath, $path, $repos) = eval { $self->find_repos ($target, $open) }) {
-	($repospath, $path, $cinfo, $repos) = $self->find_repos_from_co ($target, $open);
-	$copath = abs_path ($target);
+    if (($repospath, $path, $repos) = eval { $self->find_repos ($target, $open) }) {
+	return ($repospath, $path, undef, undef, $repos);
     }
     undef $@;
-    return ($repospath, $path, $copath, $cinfo, $repos);
+    return $self->find_repos_from_co ($target, $open);
 }
 
 =item find_depotname

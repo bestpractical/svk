@@ -289,7 +289,7 @@ sub arg_condensed {
     s{[/\Q$SEP\E]$}{}o for @arg; # XXX band-aid
 
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
-    my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
+    my ($repospath, $path, undef, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
     my $target = SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -424,7 +424,7 @@ sub arg_co_maybe {
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
 	  copath => $copath,
-	  report => $arg,
+	  report => $copath ? File::Spec->canonpath ($arg) : $arg,
 	  path => $path,
 	  revision => $rev,
 	);
@@ -438,12 +438,12 @@ Argument is a checkout path.
 
 sub arg_copath {
     my ($self, $arg) = @_;
-    my ($repospath, $path, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
+    my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
-	  report => $arg,
-	  copath => abs_path ($arg),
+	  report => File::Spec->canonpath ($arg),
+	  copath => $copath,
 	  path => $path,
 	  cinfo => $cinfo,
 	  depotpath => $cinfo->{depotpath},

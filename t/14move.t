@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 2;
+use Test::More tests => 8;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -30,3 +30,29 @@ is_output ($svk, 'status', [$copath],
 	    __"A + $copath/be"]);
 
 $svk->commit ('-m', 'move in checkout committed', $copath);
+is_output ($svk, 'status', [$copath], []);
+is_output ($svk, 'mv', ["$copath/Q/", "$copath/Q-new/"],
+	   [__"D   $copath/Q",
+	    __"D   $copath/Q/qu",
+	    __"D   $copath/Q/qz",
+	    __"A   $copath/Q-new",
+	    __"A   $copath/Q-new/qu",
+	    __"A   $copath/Q-new/qz"]);
+
+is_output ($svk, 'status', [$copath],
+	   [__"A + $copath/Q-new",
+	    __"D   $copath/Q",
+	    __"D   $copath/Q/qu",
+	    __"D   $copath/Q/qz"]);
+
+is_output ($svk, 'mv', ["$copath/be", "$copath/Q-new/"],
+	   [__"D   $copath/be",
+	    __"A   $copath/Q-new/be"]);
+
+is_output ($svk, 'mv', ["$copath/B/fe", "$copath/Q-new/fe"],
+	   [__"D   $copath/B/fe",
+	    __"A   $copath/Q-new/fe"]);
+$svk->revert ("$copath/B/fe", "$copath/Q-new/fe");
+
+is_output ($svk, 'mv', ["$copath/B/fe", "$copath/Q-new/be"],
+	   [__"Path $copath/Q-new/be already exists."]);
