@@ -374,7 +374,6 @@ sub do_delete {
     my $xdroot = $self->xdroot (%arg);
     my @deleted;
 
-    # XXX: this needs to be refactored
     # check for if the file/dir is modified.
     $self->checkout_delta ( %arg,
 			    baseroot => $xdroot,
@@ -441,15 +440,13 @@ sub do_proplist {
 
 sub do_propset {
     my ($self, %arg) = @_;
-    my %values;
-
-    my ($txn, $xdroot);
+    my ($xdroot, %values);
     my $entry = $self->{checkout}->get ($arg{copath});
     $entry->{'.schedule'} ||= '';
     $entry->{'.newprop'} ||= {};
 
     unless ($entry->{'.schedule'} eq 'add' || !$arg{repos}) {
-	($txn, $xdroot) = create_xd_root ($self, %arg);
+	$xdroot = $self->xdroot (%arg);
 
 	die loc("%1(%2) is not under version control", $arg{copath}, $arg{path})
 	    if $xdroot->check_path ($arg{path}) == $SVN::Node::none;
@@ -467,8 +464,6 @@ sub do_propset {
 					    $arg{propvalue},
 					   }});
     print " M $arg{copath}\n" unless $arg{quiet};
-
-    $txn->abort if $txn;
 }
 
 sub do_revert {

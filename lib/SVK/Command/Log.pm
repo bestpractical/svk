@@ -92,7 +92,7 @@ $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log { 
     my ($rev, $root, $paths, $props, $output, $host, $remote) = @_;
-    $output ||= \*STDOUT;
+    $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
     no warnings 'uninitialized';
     print $output "r$rev$host".

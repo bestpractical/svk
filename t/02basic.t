@@ -4,6 +4,7 @@ use strict;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test();
+our $output;
 my ($copath, $corpath) = get_copath ('basic');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
@@ -17,13 +18,11 @@ ok(exists $xd->{checkout}->get
    ("$corpath/A/foo")->{'.schedule'}, 'add recursively');
 ok(!exists $xd->{checkout}->get
    ("$corpath/A/notused")->{'.schedule'}, 'add works on specified target only');
-# check output with selecting some io::stringy object?
-#$svk->status ("$copath");
 $svk->commit ('-m', 'commit message here', "$copath");
 unlink ("$copath/A/notused");
 $svk->revert ('-R', $copath);
 ok(!-e "$copath/A/notused", 'non-targets not committed');
-ok ($xd->{checkout}->get ("$corpath")->{revision} == 1,
+is ($xd->{checkout}->get ("$corpath")->{revision}, 1,
     'checkout optimzation after commit');
 mkdir "$copath/A/new";
 mkdir "$copath/A/new/newer";
@@ -44,8 +43,8 @@ $svk->add ("$copath/A/baz");
 $svk->ps ('someprop', 'propvalue', "$copath/A/baz");
 $svk->status ("$copath/A");
 $svk->pl ('-v', "$copath/A/baz");
-
 $svk->commit ('-m', 'commit message here', "$copath/A");
+
 $svk->rm ("$copath/A/bar");
 ok(!-e "$copath/A/bar");
 $svk->commit ('-m', 'remove files', "$copath/A");
@@ -55,13 +54,13 @@ ok(!-e "$copath/A/bar");
 
 $svk->revert ('-R', "$copath/A");
 ok(!-e "$copath/A/bar");
-
 $svk->pl ('-v', "$copath/A/baz");
 
 $svk->status ("$copath/A");
 $svk->ps ('neoprop', 'propvalue', "$copath/A/baz");
 $svk->pl ("$copath/A/baz");
 $svk->pl ("$copath/A");
+
 $svk->commit ('-m', 'commit message here', "$copath/A");
 
 $svk->ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');

@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+use strict;
+my $mode = shift;
+my ($Working_label,  $Working_file,
+    $Common_label,   $Common_file,
+    $Selected_label, $Selected_file,
+    $Output_file,
+   ) = @ARGV;
+
+if ($mode eq 'theirs') {
+    link ($Selected_file, $Output_file);
+}
+elsif ($mode eq 'mine') {
+    link ($Working_file, $Output_file);
+}
+else {
+    die "need to specify mode: theirs or mine.";
+}
+
+print "Accpeted $mode\n";
+exit 0;

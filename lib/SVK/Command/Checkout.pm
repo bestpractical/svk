@@ -27,10 +27,9 @@ sub run {
 
     die loc("checkout path %1 already exists", $copath) if -e $copath;
 
-    if (my ($entry, @where) = $self->{xd}{checkout}->get ($copath)) {
-	die loc("overlapping checkout path not supported yet (%1)", $where[-1])
-	    if exists $entry->{depotpath} && $where[-1] ne $copath;
-    }
+    my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
+    die loc("overlapping checkout path not supported yet (%1)", $where[0])
+	if exists $entry->{depotpath} && $#where > 0;
 
     $self->{xd}{checkout}->store_recursively ( $copath,
 					       { depotpath => $target->{depotpath},

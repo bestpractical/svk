@@ -71,13 +71,15 @@ sub invoke {
     my ($pkg, $xd, $cmd, $output, @args) = @_;
     my ($help, $ofh, $ret);
     local @ARGV = @args;
-
+    my $pool = SVN::Pool->new_default;
     $ofh = select $output if $output;
     $cmd = get_cmd ($pkg, $cmd);
     $cmd->{xd} = $xd;
     die unless GetOptions ('h|help' => \$help, _opt_map($cmd, $cmd->options));
-    @args = $cmd->parse_arg(@ARGV);
-    if ($help || $#args == -1) {
+    @args = eval { $cmd->parse_arg(@ARGV) };
+    if ($@) {
+    }
+    elsif ($help || $#args == -1) {
 	$cmd->usage;
     }
     else {

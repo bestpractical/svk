@@ -290,7 +290,8 @@ sub close_file {
 		    "$path (THEIRS)", $fh->{new}[1],
 		    $mfn,
 		    );
-	    open $mfh, $mfn;
+	    die "$path not merged" unless -e $mfn;
+	    open $mfh, '<', $mfn or die $!;
 	    $checksum = md5 ($mfh);
 	    $conflict = 0;
 	}

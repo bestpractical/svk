@@ -1,3 +1,4 @@
 #!/bin/sh
-
-meld $2 $5 $6
+# merge to the middle pane then save and quit
+cp -f $4 $7
+meld $2 $7 $6

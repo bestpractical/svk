@@ -78,14 +78,14 @@ sub cleanup_test {
     for my $depot (sort keys %{$xd->{depotmap}}) {
 	my $path = $xd->{depotmap}{$depot};
 	print "===> depot $depot:\n";
-	undef $svk->{output};
 	$svk->log ('-v', "/$depot/");
+	print ${$svk->{output}};
     }
 }
 
 sub append_file {
     my ($file, $content) = @_;
-    open my ($fh), '>>', $file or die $!;
+    open my ($fh), '>>', $file or die "can't append $file: $!";
     print $fh $content;
     close $fh;
 }

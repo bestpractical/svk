@@ -11,8 +11,6 @@ use SVN::Simple::Edit;
 
 my $target_prompt = '=== below are targets to be committed ===';
 
-my $auth;
-
 sub options {
     ('m|message=s'  => 'message',
      'C|check-only' => 'check_only',
@@ -35,7 +33,7 @@ sub target_prompt { $target_prompt }
 
 sub auth {
     eval 'require SVN::Client' or die $@;
-    $auth ||= SVN::Core::auth_open
+    return SVN::Core::auth_open
 	([SVN::Client::get_simple_provider (),
 	  SVN::Client::get_ssl_server_trust_file_provider (),
 	  SVN::Client::get_username_provider ()]);
@@ -221,33 +219,34 @@ sub run {
 
     my $committed = sub {
 	my ($rev) = @_;
-	my (undef, @datapoint) = $self->{xd}{checkout}->get ($target->{copath});
+	my (undef, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
 	my $fs = $target->{repos}->fs;
-	for (reverse @$targets) {
-	    my $store = ($_->[0] eq 'D' || -d $_->[1]) ?
-		'store_recursively' : 'store';
-	    $self->{xd}{checkout}->$store ($_->[1], { '.schedule' => undef,
-						      '.copyfrom' => undef,
-						      '.copyfrom_rev' => undef,
-						      '.newprop' => undef,
-						      $_->[0] eq 'D' ? ('.deleted' => 1) : (),
-						      scheduleanchor => undef,
-						      revision => $rev,
-						    });
-	}
 	my $oldroot = $fs->revision_root ($rev-1);
 	my $oldrev = $oldroot->node_created_rev ($target->{path});
-	for (@datapoint) {
-	    # use store_single to effectively override all the oldvalue but not others.
-	    for my $path ($self->{xd}{checkout}->find ($_, {revision => qr/.*/})) {
-		next unless $self->{xd}{checkout}->get ($path)->{revision} >= $oldrev;
-		# XXX: should be a data::hierarchy api to simply do this and remove
-		# duplicates
-		$self->{xd}{checkout}->store_override ($path, {revision => $rev});
-		$self->{xd}{checkout}->store ($path, {'.deleted' => undef});
-	    }
+	# optimize checkout map
+	for my $copath ($self->{xd}{checkout}->find ($dataroot, {revision => qr/.*/})) {
+	    my $corev = $self->{xd}{checkout}->get ($copath)->{revision};
+	    next if $corev < $oldrev;
+	    $self->{xd}{checkout}->store_override ($copath, {revision => $rev});
+	}
+	# update checkout map with new revision
+	for (reverse @$targets) {
+	    my ($action, $path) = @$_;
+	    $self->{xd}{checkout}->store_recursively
+		($path, { '.schedule' => undef,
+			  '.copyfrom' => undef,
+			  '.copyfrom_rev' => undef,
+			  '.newprop' => undef,
+			  scheduleanchor => undef
+			});
+	    $self->{xd}{checkout}->store
+		($path, { revision => $rev,
+			  $action eq 'D' ? ('.deleted' => 1) : (),
+			})
+		    unless $self->{xd}{checkout}->get ($path)->{revision} == $rev;
 	}
 	my $root = $fs->revision_root ($rev);
+	# update keyword-trnslated files
 	for (@$targets) {
 	    next if $_->[0] eq 'D';
 	    my ($action, $tpath) = @$_;
