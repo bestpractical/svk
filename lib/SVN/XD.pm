@@ -451,7 +451,10 @@ sub do_merge {
 		      $root->check_path ($path) != $SVN::Node::none;
 		  },
 		cb_rev => sub { $base_rev; },
-		cb_conflict => sub { die "conflict $tgt_anchor/$_[0]"; },
+		cb_conflict => sub { die "conflict $tgt_anchor/$_[0]"
+					 unless $arg{check_only};
+				     $editor->{conflicts}++;
+				 },
 		cb_localmod =>
 		sub { my ($path, $checksum) = @_;
 		      $path = "$tgt_anchor/$path";
@@ -716,7 +719,8 @@ our @ISA = qw(SVN::Delta::Editor);
 
 sub close_edit {
     my $self = shift;
-    print "Commit checking finished\n";
+    print "Commit checking finished.\n";
+    print $self->{conflicts}." Conflicts found.\n" if $self->{conflicts};
     $self->{_editor}->abort_edit (@_);
 }
 

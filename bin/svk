@@ -779,6 +779,7 @@ sub merge {
 	print "merge ticket: $uuid:$path:$rev\n" unless $no_ticket;
 	# XXX: cb_merged for XD
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
+			   # XXX: have to be multiple-safe
 			   $editor->change_dir_prop ($baton, 'svk:merge',
 						     "$uuid:$path:$rev");
 		       } unless $no_ticket;

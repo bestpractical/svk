@@ -50,12 +50,12 @@ ok ($svk::info->{checkout}->get ("$corpath/A/foo")->{conflict}, 'conflict');
 
 svk::revert ("$copath/A/foo");
 
-append_file ("$copath/A/foo", "late modification...\n");
+overwrite_file ("$copath/A/foo", "late modification...\nfoobar\n\nsome more foobar\nzz\n");
 svk::commit ('-m', 'commit message here', "$copath");
 svk::update ($copath);
 svk::merge ("-r", "3:2", '//', $copath);
 
-is_file_content ("$copath/A/foo", "foobar\nlate modification...\n",
+is_file_content ("$copath/A/foo", "late modification...\nfoobar\n",
 		 'basic merge for revert');
 
 svk::merge (qw/-C -r 2:3/, '//A', '//B');

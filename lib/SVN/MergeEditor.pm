@@ -30,56 +30,66 @@ transparently.
 
 =head2 options for base and target tree
 
-=head3 anchor
+=over
+
+=item anchor
 
 The anchor of the target tree.
 
-=head3 target
+=item target
 
 The target path component of the target tree.
 
-=head3 base_annchor
+=item base_annchor
 
 The anchor of the base tree.
 
-=head3 base_root
+=item base_root
 
 The root object of the base tree.
 
-=head3 storage
+=item storage
+
+The editor that will recieve the merged callbacks.
+
+=back
 
 =head2 callbacks for local tree
 
 Since the merger needs to have information about the local tree, some
 callbacks must be supplied.
 
-=head3 cb_exist
+=over
+
+=item cb_exist
 
 Check if the given path exists.
 
-=head3 cb_rev
+=item cb_rev
 
 Check the revision of the given path.
 
-=head3 cb_conflict
+=item cb_conflict
 
 Called when a conflict is detected.
 
-=head3 cb_localmod
+=item cb_localmod
 
 Called when the merger needs to retrieve the local modification of a
 file. Return an arrayref of filename, filehandle, and md5. Return
 undef if there is no local modification.
 
-=head3 cb_merged
+=item cb_merged
 
 Called right before closing the top directory with storage editor,
 root baton, and pool.
 
+=back
+
 =cut
 
 use Digest::MD5;
-use Algorithm::Merge;
+use File::Compare ();
 use YAML;
 use File::Temp qw/:mktemp/;
 
@@ -143,6 +153,35 @@ sub cleanup_fh {
     }
 }
 
+sub prepare_fh {
+    my ($self, $fh) = @_;
+    for my $name (qw/base new local/) {
+	next unless $fh->{$name}[0];
+	next if $fh->{$name}[1];
+	my $tmp = [mkstemps("/tmp/svk-mergeXXXXX", '.tmp')];
+	my $slurp = $fh->{$name}[0];
+
+=for future
+
+# wait for 0.35
+
+	$/ = \16384;
+	while (<$slurp>) {
+	    print {$tmp->[0]} $_;
+	}
+
+=cut
+
+	undef $/;
+	$slurp = <$slurp>;
+	print {$tmp->[0]} $slurp;
+	close $fh->{$name}[0];
+	$fh->{$name} = $tmp;
+	seek $fh->{$name}[0], 0, 0;
+
+    }
+}
+
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $self->{info}{$path}{status};
@@ -179,35 +218,23 @@ sub close_file {
 
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
-	my ($orig, $new, $local) =
-	    map {$fh->{$_} && $fh->{$_}[0]} qw/base new local/;
-	seek $orig, 0, 0;
-	open $new, $fh->{new}[1];
-	{
-	    local $/;
-	    $orig = <$orig>;
-	    $new = <$new>;
-	    $local = <$local> if $local;
-	}
+	$self->prepare_fh ($fh);
 
-	if ($new eq $orig || $new eq $local) {
+	if (File::Compare::compare ($fh->{new}[1], $fh->{base}[1]) == 0 ||
+	    ($fh->{local}[0] && File::Compare::compare ($fh->{new}[1], $fh->{local}[1]) == 0)) {
 	    $self->cleanup_fh ($fh);
-	    delete $self->{info}{$path};
-	    $checksum = Digest::MD5::md5_hex ($new)
-		if $new eq $orig;
-	    undef $checksum if $local;
-	    $self->{info}{$path}{status}[0] = 'g'
-		if $new eq $local;
+	    $self->{info}{$path}{status}[0] = 'g';
 	    return;
 	}
 
 	$self->ensure_open ($path);
-	unless ($local) {
+	unless ($fh->{local}[0]) {
 	    my $handle = $self->{storage}->
 		apply_textdelta ($self->{storage_baton}{$path}, $fh->{base}[2],
 				 $pool);
 
-	    SVN::TxDelta::send_string ($new, @$handle, $pool)
+	    open my ($new), $fh->{new}[1];
+	    SVN::TxDelta::send_stream ($new, @$handle, $pool)
 		    if $handle && $#{$handle} > 0;
 	    $self->{storage}->close_file ($self->{storage_baton}{$path},
 					  $checksum, $pool);
@@ -215,49 +242,37 @@ sub close_file {
 	    return;
 	}
 
-	my @mergearg =
-	    ([split "\n", $orig],
-	     [split "\n", $new],
-	     [split "\n", $local],
-	    );
-	# merge consistencies check
-	my $diff3 = Algorithm::Merge::diff3 (@mergearg);
+	my $diff = SVN::Core::diff_file_diff3
+	    (map {$fh->{$_}[1]} qw/base local new/);
+	my $merge_fname = mktemp ("/tmp/svk-mergeXXXXX");
+	SVN::Core::diff_file_output_merge
+		( $merge_fname, $diff,
+		  (map {
+		      $fh->{$_}[1]
+		  } qw/base local new/),
+		  "||||||| base",
+		  "<<<<<<< local",
+		  ">>>>>>> new",
+		  "=======",
+		  1, 0);
 
-	for (@$diff3) {
-	    if ($_->[0] eq 'u' && ($_->[1] ne $_->[2] || $_->[2] ne $_->[3])) {
-		my $file = '/tmp/svk-merge-bug.yml';
-		unlink ($file);
-		YAML::DumpFile ($file, { orig => $orig, new => $new,
-					 local => $local ,diff3 => $diff3 });
-		$self->cleanup_fh ($fh);
-		die "merge result inconsistent while merging $path, please send the file $file to {clkao,jsmith}\@cpan.org";
-	    }
-	}
-
-	# XXX: use traverse so we just output the result instead of
-	# buffering it
-	$info->{status}[0] = 'G';
-	my $merged = eval {Algorithm::Merge::merge (@mergearg,
-	     {CONFLICT => sub {
-		  my ($left, $right) = @_;
-		  $info->{status}[0] = 'C';
-		  q{<!-- ------ START CONFLICT ------ -->},
-		  (@$left),
-		  q{<!-- ---------------------------- -->},
-		  (@$right),
-		  q{<!-- ------  END  CONFLICT ------ -->},
-	      }}) };
-	die $@ if $@;
+	$info->{status}[0] = SVN::Core::diff_contains_conflicts ($diff)
+	    ? 'C' : 'G';
 
 	$self->cleanup_fh ($fh);
 	my $handle = $self->{storage}->
 	    apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[2],
 			     $pool);
 
-	$merged = (join("\n", @$merged)."\n");
-	SVN::TxDelta::send_string ($merged, @$handle, $pool)
+	open my ($mfh), $merge_fname;
+	SVN::TxDelta::send_stream ($mfh, @$handle, $pool)
 		if $handle && $#{$handle} > 0;
-	$checksum = Digest::MD5::md5_hex ($merged);
+
+	seek $mfh, 0, 0;
+	$checksum = md5 ($mfh);
+	close $mfh;
+	unlink ($merge_fname);
+
 	&{$self->{cb_conflict}} ($path)
 	    if $info->{status}[0] eq 'C';
     }
@@ -343,6 +358,21 @@ sub close_edit {
     my ($self, @arg) = @_;
     $self->{storage}->close_edit(@arg);
 }
+
+=head1 BUGS
+
+=over
+
+=item Tree merge
+
+still very primitive, have to handle lots of cases
+
+=item Text merge
+
+Algorithm::Merge is too fragile. should fall back to svn's
+internal diff library.
+
+=back
 
 =head1 AUTHORS
 
