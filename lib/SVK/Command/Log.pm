@@ -1,6 +1,6 @@
 package SVK::Command::Log;
 use strict;
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 use base qw( SVK::Command );
 use SVK::XD;
@@ -46,27 +46,11 @@ sub run {
 
     $self->{cross} ||= 0;
 
-    if ($SVN::Core::VERSION ge '1.0.2') {
-	print ('-' x 70);
-	print "\n";
-	_get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
-		   $self->{verbose}, $self->{cross},
-		   sub {_show_log (@_, undef, '', 1)} );
-	return;
-    }
-
-    # XXX: obsolete after svn 1.0.2 release
-    if ($self->{limit}) {
-	my $pool = SVN::Pool->new_default;
-	my $hist = $fs->revision_root ($fromrev)->node_history ($target->{path});
-	while (($hist = $hist->prev ($self->{cross})) && $self->{limit}--) {
-	    $pool->clear;
-	    $torev = ($hist->location)[1];
-	}
-    }
-
-    do_log ($target->{repos}, $target->{path}, $fromrev, $torev,
-	    $self->{verbose}, $self->{cross}, 1);
+    print ('-' x 70);
+    print "\n";
+    _get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
+	       $self->{verbose}, $self->{cross},
+	       sub {_show_log (@_, undef, '', 1)} );
     return;
 }
 
@@ -143,30 +127,8 @@ sub do_log {
     use Sys::Hostname;
     my ($host) = split ('\.', hostname, 2);
     $host = $showhost ? '@'.$host : '';
-    # XXX: obsolete after svn 1.0.2 release
-    $SVN::Core::VERSION ge '1.0.2' ?
-	_get_logs ($repos->fs, -1, $path, $fromrev, $torev, $verbose, $cross,
-		   sub {_show_log (@_, $output, $host, $remote)} )
-	    : $repos->get_logs ([$path], $fromrev, $torev, $verbose, !$cross,
-				sub { my ($paths, $rev, $author, $date, $message) = @_;
-				      no warnings 'uninitialized';
-				      print $output "r$rev$host".
-					  ($remote ? log_remote_rev($repos->fs, $rev): '').
-					      ":  $author | $date\n";
-				      if ($paths) {
-					  print $output loc("Changed paths:\n");
-					  for (sort keys %$paths) {
-					      my $entry = $paths->{$_};
-					      print $output
-						  '  '.$entry->action." $_".
-						      ($entry->copyfrom_path ?
-						       ' ' . loc("(from %1:%2)", $entry->copyfrom_path, $entry->copyfrom_rev) : ''
-						      ).
-							  "\n";
-					  }
-				      }
-				      print $output "\n$message\n".('-' x 70). "\n";
-				  });
+    _get_logs ($repos->fs, -1, $path, $fromrev, $torev, $verbose, $cross,
+	       sub {_show_log (@_, $output, $host, $remote)} )
 }
 
 1;

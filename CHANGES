@@ -1,3 +1,37 @@
+[Changes for 0.14 - 26 Apr, 2004]
+
+* Display copy/merge information in svk info. [Kang-min Liu]
+
+* Fix annotate -x for renamed files.
+
+* Allow import --force over checkout path.
+
+* Allow svk command output to be stored in a scalar.
+
+* Support svk copy depotpath path.
+
+* Implement dir add with history in checkout_delta.
+
+* Add stat as alias to status. [Dave Rolsky]
+
+* Forbid the command that use simple edit (mkdir, mv, cp)
+  to work on mirrored path unless run with --direct.
+
+* Provide more accurate action (propmod, edit after copy) in svk log.
+
+* Fix sync -a on depot other than //.
+
+* sm -l now indent the log message. [Autrijus]
+
+* Support non-recursive checkout.
+
+* Let svk copy and add reported paths relative to the one given from
+  command line.
+
+* Fix status output for added directory from MergeEditor.
+
+* Support mirroring from vcp source via SVN::Mirror.
+
 [Changes for 0.13 - 11 Apr, 2004]
 
 * Fix svk checkout anchor problems for creating and checking.
@@ -7,7 +41,7 @@
 
 * Baseless smerge via -B / --baseless. [Autrijus]
 
-* Arbitary-based smerge via -b / --base. [ Autrijus]
+* Arbitary-based smerge via -b / --base. [Autrijus]
 
 * Get rid of IO::String.
 

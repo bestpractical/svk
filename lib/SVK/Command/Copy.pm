@@ -1,6 +1,6 @@
 package SVK::Command::Copy;
 use strict;
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 use base qw( SVK::Command::Commit );
 use SVK::Util qw( get_anchor );
 use SVK::I18N;

@@ -1,6 +1,6 @@
 package SVK::MergeEditor;
 use strict;
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::Notify;
 use SVK::Util qw( slurp_fh md5 get_anchor );

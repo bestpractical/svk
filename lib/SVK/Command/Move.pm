@@ -1,6 +1,6 @@
 package SVK::Command::Move;
 use strict;
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 use base qw( SVK::Command::Copy SVK::Command::Delete );
 use SVK::I18N;
 

@@ -1,6 +1,6 @@
 package SVK::XD;
 use strict;
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
