@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 
 sub options {
     ('v|verbose'    => 'verbose',
@@ -32,9 +33,9 @@ sub run {
 					     );
 	return unless %$props;
 	my $report = $target->{copath} || $target->{depotpath};
-	print "Properties on $report:\n";
+	print loc("Properties on %1:\n", $report);
 	while (my ($key, $value) = each (%$props)) {
-	    print "$key: $value\n";
+	    print loc("%1: %2\n", $key, $value);
 	}
     }
 

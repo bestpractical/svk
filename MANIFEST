@@ -12,6 +12,7 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Scripts.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
+lib/SVK.pm
 lib/SVK/CombineEditor.pm
 lib/SVK/Command.pm
 lib/SVK/Command/Add.pm
@@ -24,14 +25,15 @@ lib/SVK/Command/Commit.pm
 lib/SVK/Command/Copy.pm
 lib/SVK/Command/Delete.pm
 lib/SVK/Command/Depotmap.pm
+lib/SVK/Command/Describe.pm
 lib/SVK/Command/Diff.pm
 lib/SVK/Command/Import.pm
 lib/SVK/Command/Info.pm
 lib/SVK/Command/List.pm
 lib/SVK/Command/Log.pm
 lib/SVK/Command/Merge.pm
-lib/SVK/Command/Mkdir.pm
 lib/SVK/Command/Mirror.pm
+lib/SVK/Command/Mkdir.pm
 lib/SVK/Command/Propedit.pm
 lib/SVK/Command/Proplist.pm
 lib/SVK/Command/Propset.pm
@@ -45,18 +47,21 @@ lib/SVK/Command/Update.pm
 lib/SVK/CommitStatusEditor.pm
 lib/SVK/DeleteEditor.pm
 lib/SVK/DiffEditor.pm
+lib/SVK/I18N.pm
+lib/SVK/I18N/i_default.po
+lib/SVK/I18N/zh_tw.po
 lib/SVK/MergeEditor.pm
 lib/SVK/RevertEditor.pm
 lib/SVK/SignEditor.pm
 lib/SVK/StatusEditor.pm
 lib/SVK/Util.pm
 lib/SVK/XD.pm
-lib/SVK.pm
 Makefile.PL
 MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
 README
 SIGNATURE
+t/10switch.t
 t/1use.t
 t/2basic.t
 t/3import.t
@@ -66,5 +71,4 @@ t/6keyword.t
 t/7smerge.t
 t/8multimerge.t
 t/9cherrypicking.t
-t/10switch.t
 t/tree.pl

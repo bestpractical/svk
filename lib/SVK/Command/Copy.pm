@@ -2,6 +2,7 @@ package SVK::Command::Copy;
 use strict;
 our $VERSION = '0.11';
 use base qw( SVK::Command::Commit );
+use SVK::I18N;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -19,7 +20,7 @@ sub do_copy_direct {
     my ($self, %arg) = @_;
     my $fs = $arg{repos}->fs;
     my $edit = $self->get_commit_editor ($fs->revision_root ($fs->youngest_rev),
-					 sub { print "Committed revision $_[0].\n" },
+					 sub { print loc("Committed revision %1.\n", $_[0]) },
 					 '/', %arg);
     # XXX: check parent, check isfile, check everything...
     $edit->open_root();
@@ -30,7 +31,7 @@ sub do_copy_direct {
 
 sub run {
     my ($self, $src, $dst) = @_;
-    die "different repos?" if $src->{repospath} ne $dst->{repospath};
+    die loc("repos paths mismatch") if $src->{repospath} ne $dst->{repospath};
     $self->{rev} ||= $src->{repos}->fs->youngest_rev;
 
     $self->get_commit_message ();

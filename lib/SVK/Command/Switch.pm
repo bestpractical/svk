@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command::Update );
 use SVK::XD;
+use SVK::I18N;
 use File::Spec;
 
 sub parse_arg {
@@ -18,11 +19,11 @@ sub lock { $_[0]->lock_target ($_[2]) }
 sub run {
     my ($self, $target, $depotpath) = @_;
 
-    die "different depot" unless $target->{repospath} eq $depotpath->{repospath};
+    die loc("different depot") unless $target->{repospath} eq $depotpath->{repospath};
 
     my ($entry, @where) = $self->{xd}{checkout}->get ($depotpath->{copath});
 
-    die "can only switch checkout root" unless $where[0] eq $depotpath->{copath};
+    die loc("can only switch checkout root") unless $where[0] eq $depotpath->{copath};
 
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 

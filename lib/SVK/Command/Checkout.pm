@@ -4,13 +4,14 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command::Update );
 use SVK::XD;
+use SVK::I18N;
 use Cwd;
 use File::Spec;
 
 sub parse_arg {
     my ($self, @arg) = @_;
     my $depotpath = $self->arg_depotpath ($arg[0]);
-    die "don't know where to checkout" unless $arg[1] || $depotpath->{path} ne '/';
+    die loc("don't know where to checkout") unless $arg[1] || $depotpath->{path} ne '/';
 
     $arg[1] =~ s|/$|| if $arg[1];
     $arg[1] ||= (File::Spec->splitdir($depotpath->{path}))[-1];
@@ -23,10 +24,10 @@ sub lock { $_[0]->{xd}->lock ($_[2]) }
 sub run {
     my ($self, $target, $copath) = @_;
 
-    die "checkout path $copath already exists" if -e $copath;
+    die loc("checkout path %1 already exists", $copath) if -e $copath;
 
     if (my ($entry, @where) = $self->{xd}{checkout}->get ($copath)) {
-	die "overlapping checkout path not supported yet ($where[-1])"
+	die loc("overlapping checkout path not supported yet (%1)", $where[-1])
 	    if exists $entry->{depotpath} && $where[-1] ne $copath;
     }
 

@@ -2,10 +2,13 @@ package SVK::Command;
 use strict;
 our $VERSION = '0.09';
 use Getopt::Long qw(:config no_ignore_case);
+# XXX: Pod::Simple isn't happy with SVN::Simple::Edit, so load it first
+use SVN::Simple::Edit;
 use Pod::Simple::Text ();
 use Pod::Simple::SimpleTree ();
 use File::Find ();
 use Cwd;
+use SVK::I18N;
 
 my %alias = qw( co checkout
 		up update
@@ -36,7 +39,7 @@ sub parse_arg {}
 
 sub _opt_map {
     my ($self, %opt) = @_;
-    return map {$_ => \$self->{$opt{$_}}}keys %opt;
+    return map {$_ => \$self->{$opt{$_}}} sort keys %opt;
 }
 
 sub _cmd_map {
@@ -62,7 +65,7 @@ sub help {
 	my @cmd;
 	my $dir = $INC{'SVK/Command.pm'};
 	$dir =~ s/\.pm$//;
-	print "Available commands:\n";
+	print loc("Available commands:\n");
 	File::Find::find (sub {
 			      push @cmd, $File::Find::name if m/\.pm$/;
 			  }, $dir);
@@ -97,7 +100,7 @@ sub brief_usage {
     while (my $row = shift @rows) {
         if ( ref($row) eq 'ARRAY' && $row->[0] eq 'head1' && $row->[2] eq 'NAME')  {
             my $buf = $rows[0][2];
-            $buf =~ s/SVK::Command::(\w+)/\L$1/g;
+            $buf =~ s/SVK::Command::(\w+ - .+)/loc(lcfirst($1))/eg;
             print "   $buf\n";
             last;
         }
@@ -114,10 +117,17 @@ sub usage {
     $parser->output_string(\$buf);
     $parser->parse_file($INC{"$fname.pm"});
 
-    $buf =~ s/SVK::Command::(\w+)/\L$1/g;
+    $buf =~ s/SVK::Command::(\w+)/\l$1/g;
     $buf =~ s/^AUTHORS.*//sm;
     $buf =~ s/^DESCRIPTION.*//sm unless $detail;
-    print $buf;
+    foreach my $line (split(/\n/, $buf, -1)) {
+	if ($line =~ /^(\s*)(.+)(\s*)$/) {
+	    print $1, loc($2), $3, "\n";
+	}
+	else {
+	    print "\n";
+	}
+    }
 
     exit 0;
 }
@@ -201,4 +211,3 @@ sub arg_path {
 }
 
 1;
-

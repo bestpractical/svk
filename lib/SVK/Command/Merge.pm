@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command::Commit );
 use SVK::XD;
+use SVK::I18N;
 use SVK::CommitStatusEditor;
 use SVK::Command::Log;
 use SVK::Util qw (get_buffer_from_editor);
@@ -31,19 +32,19 @@ sub run {
     my ($self, $src, $dst) = @_;
     my ($fromrev, $torev, $baserev, $cb_merged, $cb_closed);
 
-    die "different repos?" unless $src->{repospath} eq $dst->{repospath};
+    die loc("repos paths mismatch") unless $src->{repospath} eq $dst->{repospath};
     my $repos = $src->{repos};
     unless ($self->{auto}) {
-	die "revision required" unless $self->{revspec};
+	die loc("revision required") unless $self->{revspec};
 	($baserev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/
-	    or die "revision must be N:M";
+	    or die loc("revision must be N:M");
     }
 
     my $base_path = $src->{path};
     if ($self->{auto}) {
 	($base_path, $baserev, $fromrev, $torev) =
 	    ($self->find_merge_base ($repos, $src->{path}, $dst->{path}), $repos->fs->youngest_rev);
-	print "auto merge ($fromrev, $torev) $src->{path} -> $dst->{path} (base $base_path)\n";
+	print loc("Auto-merging (%1, %2) %3 to %4 (base %5).\n", $fromrev, $torev, $src->{path}, $dst->{path}, $base_path);
 	$cb_merged = sub { my ($editor, $baton, $pool) = @_;
 			   $editor->change_dir_prop
 			       ($baton, 'svk:merge',
@@ -100,7 +101,10 @@ sub find_merge_base {
     my $dstinfo = $self->find_merge_sources ($repos, $dst);
     my ($basepath, $baserev);
 
-    for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}} (keys %{{%$srcinfo,%$dstinfo}})) {
+    for (
+	grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
+	(sort keys %{ { %$srcinfo, %$dstinfo } })
+    ) {
 	my ($path) = m/:(.*)$/;
 	my $rev = $srcinfo->{$_} < $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
 	# XXX: shuold compare revprop svn:date instead, for old dead branch being newly synced back
@@ -139,7 +143,7 @@ sub find_merge_sources {
     }
 
     my %ancestors = $self->copy_ancestors ($repos, $path, $fs->youngest_rev, 1);
-    for (keys %ancestors) {
+    for (sort keys %ancestors) {
 	my $rev = $ancestors{$_};
 	$minfo->{$_} = $rev
 	    unless $minfo->{$_} && $minfo->{$_} > $rev;
@@ -234,11 +238,11 @@ sub get_new_ticket {
     # bring merge history up to date as from source
     ($uuid, $dst) = $self->resolve_svm_source ($repos, $dst);
 
-    for (keys %{{%$srcinfo,%$dstinfo}}) {
+    for (sort keys %{ { %$srcinfo, %$dstinfo } }) {
 	next if $_ eq "$uuid:$dst";
 	no warnings 'uninitialized';
 	$newinfo->{$_} = $srcinfo->{$_} > $dstinfo->{$_} ? $srcinfo->{$_} : $dstinfo->{$_};
-	print "new merge ticket: $_:$newinfo->{$_}\n"
+	print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_})
 	    if !$dstinfo->{$_} || $newinfo->{$_} > $dstinfo->{$_};
     }
 

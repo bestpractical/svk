@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.11';
 
 use base qw( SVK::Command::Commit );
+use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -13,7 +14,7 @@ sub lock { $_[0]->lock_none }
 
 sub run {
     my ($self, $target, $source) = @_;
-    die "require SVN::Mirror" unless $self->svn_mirror;
+    die loc("cannot load SVN::Mirror") unless $self->svn_mirror;
 
     my $m = SVN::Mirror->new (target_path => $target->{path}, target => $target->{repospath},
 			      repos => $target->{repos},

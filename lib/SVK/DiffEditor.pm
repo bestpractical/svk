@@ -4,6 +4,7 @@ use SVN::Delta;
 our $VERSION = '0.09';
 our @ISA = qw(SVN::Delta::Editor);
 
+use SVK::I18N;
 use IO::String;
 use Text::Diff;
 
@@ -64,7 +65,7 @@ sub output_diff {
     $rtext = \<$rtext> if ref ($rtext) && ref ($rtext) ne 'SCALAR';
 
     my $showpath = ($lpath ne $rpath);
-    print $fh "Index: $path\n";
+    print $fh loc("Index: %1\n", $path);
     print $fh '=' x 66,"\n";
     print $fh "--- $path ".($showpath ? "  ($lpath)  " : '')." ($llabel)\n";
     print $fh "+++ $path ".($showpath ? "  ($rpath)  " : '')." ($rlabel)\n";
@@ -75,9 +76,9 @@ sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
 	my $fh = $self->{fh} || \*STDOUT;
-	print $fh "\nProperty changes on: $path\n".('_' x 67)."\n";
-	for (keys %{$self->{info}{$path}{prop}}) {
-	    print $fh "Name: $_\n";
+	print $fh "\n", loc("Property changes on: %1\n", $path), ('_' x 67), "\n";
+	for (sort keys %{$self->{info}{$path}{prop}}) {
+	    print $fh loc("Name: %1\n", $_);
 	    print $fh  Text::Diff::diff (\(&{$self->{cb_baseprop}} ($path, $_) || ''),
 		\$self->{info}{$path}{prop}{$_});
 	}

@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 use SVK::Util qw(get_buffer_from_editor get_prompt);
 use YAML;
 use File::Path;
@@ -19,12 +20,12 @@ sub run {
 	$new = eval { YAML::Load ($map) };
 	print "$@\n" if $@;
     } while ($@);
-    print "New depot map saved.\n";
+    print loc("New depot map saved.\n");
     $self->{xd}{depotmap} = $new;
     for my $path (values %{$self->{xd}{depotmap}}) {
 	next if -d $path;
 	my $ans = get_prompt(
-	    "Repository $path does not exist, create? (y/n)",
+	    loc("Repository %1 does not exist, create? (y/n)", $path),
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;

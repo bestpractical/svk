@@ -2,6 +2,7 @@ package SVK::MergeEditor;
 use strict;
 our $VERSION = '0.05';
 our @ISA = qw(SVN::Delta::Editor);
+use SVK::I18N;
 use SVK::Util qw( slurp_fh md5 get_anchor );
 
 =head1 NAME
@@ -305,7 +306,7 @@ sub close_file {
 	    if $self->{storage_baton}{$path};
     }
     else {
-	print "   $path - skipped\n";
+	print "   ", loc("%1 - skipped\n", $path);
     }
     delete $self->{info}{$path};
 }
@@ -333,7 +334,7 @@ sub close_directory {
     no warnings 'uninitialized';
 
     for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
-	 keys %{$self->{info}}) {
+	 sort keys %{$self->{info}}) {
 	print sprintf ("%1s%1s \%s\n", $self->{info}{$_}{status}[0],
 		       $self->{info}{$_}{status}[1], $_);
 	delete $self->{info}{$_};

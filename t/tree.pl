@@ -57,7 +57,7 @@ sub cleanup_test {
     my $info = shift;
     use YAML;
     print Dump($info) if $ENV{TEST_VERBOSE};
-    for my $depot (keys %{$info->{depotmap}}) {
+    for my $depot (sort keys %{$info->{depotmap}}) {
 	my $path = $info->{depotmap}{$depot};
 	die if $path eq '/';
 	print "===> depot $depot:\n".`svn log -v file://$path`

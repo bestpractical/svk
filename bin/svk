@@ -5,6 +5,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use SVK::XD;
+use SVK::I18N;
 use SVK::Util qw(get_anchor);
 use Getopt::Long qw(:config no_ignore_case);
 use Cwd;
@@ -56,11 +57,11 @@ sub open_repos {
 
 sub find_repos {
     my ($depotpath, $open) = @_;
-    die "not depotspec" unless $depotpath;
+    die loc("no depot spec") unless $depotpath;
     my ($depot, $path) = $depotpath =~ m|^/(\w*)(/.*)/?$|
-	or die "not depot spec";
+	or die loc("invalid depot spec");
 
-    my $repospath = $info->{depotmap}{$depot} or die "no such depot: $depot";
+    my $repospath = $info->{depotmap}{$depot} or die loc("no such depot: %1", $depot);
 
     return ($repospath, $path, $open && open_repos ($repospath));
 }
@@ -70,7 +71,7 @@ sub find_repos_from_co {
     $copath = Cwd::abs_path ($copath || '');
 
     my ($cinfo, $coroot) = $info->{checkout}->get ($copath);
-    die "$copath not a checkout path" unless %$cinfo;
+    die loc("path %1 is not a checkout path", $copath) unless %$cinfo;
     my ($repospath, $path, $repos) = find_repos ($cinfo->{depotpath}, $open);
 
     if ($copath eq $coroot) {
@@ -142,7 +143,7 @@ my $cmd = shift;
 GetOptions ("version"  => \$show_version) unless $cmd;
 
 if ($show_version) {
-    print "This is svk version ".$VERSION."\n";
+    print loc("This is svk, version %1.\n", $VERSION);
     exit 0;
 }
 
@@ -150,7 +151,7 @@ my $updated;
 
 if ($0 eq __FILE__) {
     unless ($cmd) {
-	print "Type 'svk help' for usage.\n";
+	print loc("Type 'svk help' for usage.\n");
 	exit 0;
     }
 
@@ -168,7 +169,7 @@ if ($0 eq __FILE__) {
     $SIG{INT} = sub {
 	$info->unlock ();
 	$info->store ();
-	die "interrupted\n";
+	die loc("Interrupted.\n");
     };
 
     my $msg = SVK::Command->invoke ($info, $cmd, @ARGV);

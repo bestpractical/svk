@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.11';
 use base qw( SVK::Command::Commit );
 use SVK::XD;
+use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -22,10 +23,10 @@ sub do_propset_direct {
     my $root = $fs->revision_root ($fs->youngest_rev);
     my $kind = $root->check_path ($arg{path});
 
-    die "path $arg{path} does not exist" if $kind == $SVN::Node::none;
+    die loc("path %1 does not exist", $arg{path}) if $kind == $SVN::Node::none;
 
     my $edit = $self->get_commit_editor
-	($root, sub { print "Committed revision $_[0].\n" }, '/', %arg);
+	($root, sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %arg);
     $edit->open_root();
 
     if ($kind == $SVN::Node::dir) {

@@ -4,6 +4,7 @@ require Exporter;
 @EXPORT_OK = qw(md5 get_buffer_from_editor slurp_fh get_anchor get_prompt);
 $VERSION   = '0.09';
 
+use SVK::I18N;
 use Digest::MD5 qw(md5_hex);
 use File::Temp;
 use Term::ReadLine;
@@ -47,15 +48,15 @@ sub get_buffer_from_editor {
 	my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
 	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
 			: "vi"; # fall back to something
-	print "waiting for editor...\n";
-	system ($editor, $file) and die "Aborted";
+	print loc("Waiting for editor...\n");
+	system ($editor, $file) and die loc("Aborted.\n");
 	last if (stat($file))[9] > $mtime;
 	my $ans = get_prompt(
-	    "$what not modified: a)bort, e)dit, c)ommit?",
+	    loc("%1 not modified: a)bort, e)dit, c)ommit?", $what),
 	    qr/^[aec]/,
 	);
 	last if $ans =~ /^c/;
-	die "aborted.\n" if $ans =~ /^a/;
+	die loc("Aborted.\n") if $ans =~ /^a/;
     }
 
     open $fh, $file;

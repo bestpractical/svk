@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 use SVK::DiffEditor;
 
 sub options {
@@ -26,10 +27,10 @@ sub run {
     if (($self->{revspec} && (my ($fromrev, $torev) = $self->{revspec} =~ m/^(\d+):(\d+)$/))
 	|| $target2) {
 	if ($target->{copath}) {
-	    die "Invalid arguments" if $target2;
+	    die loc("invalid arguments") if $target2;
 	}
 	elsif ($target2) {
-	    die "different repository"
+	    die loc("different repository")
 		if $target->{repospath} ne $target2->{repospath};
 	}
 
@@ -69,7 +70,7 @@ sub run {
 
     }
     else {
-	die "revision should be N:M or N"
+	die loc("revision should be N:M or N")
 	    if $self->{revspec} && $self->{revspec} !~ /^\d+$/;
 
 	my $xdroot = $self->{xd}->xdroot (%$target);

@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.11';
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 use Algorithm::Annotate;
 
 sub options {
@@ -33,7 +34,7 @@ sub run {
 	unshift @revs, $rev;
     }
 
-    print "Annotations for $target->{path} (".($#revs+1)." active revisions)\n";
+    print loc("Annotations for %1 (%2 active revisions):\n", $target->{path}, scalar @revs);
     print '*' x 16;
     print "\n";
     for (@revs) {

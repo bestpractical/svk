@@ -4,6 +4,7 @@ our $VERSION = '0.11';
 
 use base qw( SVK::Command );
 use SVK::XD;
+use SVK::I18N;
 use SVK::CommitStatusEditor;
 
 sub options {
@@ -18,7 +19,7 @@ sub log_remote_rev {
     my ($repos, $rev) = @_;
     my $revprops = $repos->fs->revision_proplist ($rev);
 
-    my ($rrev) = map {$revprops->{$_}} grep {m/^svm:headrev:/} keys %$revprops;
+    my ($rrev) = map {$revprops->{$_}} grep {m/^svm:headrev:/} sort keys %$revprops;
 
     return $rrev ? " (orig r$rrev)" : '';
 }
@@ -73,14 +74,13 @@ sub do_log {
 			       ($remote ? log_remote_rev($repos, $rev): '').
 				   ":  $author | $date\n";
 			   if ($paths) {
-			       print $output "Changed paths:\n";
+			       print $output loc("Changed paths:\n");
 			       for (sort keys %$paths) {
 				   my $entry = $paths->{$_};
 				   print $output
 				       '  '.$entry->action." $_".
 					   ($entry->copyfrom_path ?
-					    " (from ".$entry->copyfrom_path.
-					    ':'.$entry->copyfrom_rev.')' : ''
+					    ' ' . loc("(from %1:%2)", $entry->copyfrom_path, $entry->copyfrom_rev) : ''
 					   ).
 					   "\n";
 			       }

@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.11';
 
 use base qw( SVK::Command::Commit );
+use SVK::I18N;
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -20,15 +21,15 @@ sub lock { $_[0]->lock_none }
 
 sub copy_notify {
     my ($m, $path, $from_path, $from_rev) = @_;
-    warn "copy_notify: ".join(',',@_);
+    warn loc("copy_notify: %1", join(',',@_));
 }
 
 sub run {
     my ($self, @arg) = @_;
-    die "require SVN::Mirror" unless $self->svn_mirror;
+    die loc("cannot load SVN::Mirror") unless $self->svn_mirror;
 
     # XXX: support HEAD
-    die "argument skipto not allowed when multiple target specified"
+    die loc("argument skipto not allowed when multiple target specified")
 	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);
 
     if ($self->{sync_all}) {

@@ -3,6 +3,7 @@ use strict;
 our $VERSION = '0.11';
 
 use base qw( SVK::Command );
+use SVK::I18N;
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -16,11 +17,11 @@ sub run {
     my ($self, @arg) = @_;
     for (@arg) {
 	if ($self->{xd}{checkout}->get ($_->{copath})->{lock}) {
-	    print "Cleanup stalled lock at $_->{copath}\n";
+	    print loc("Cleaned up stalled lock on %1.\n", $_->{copath});
 	    $self->{xd}{checkout}->store ($_->{copath}, {lock => undef});
 	}
 	else {
-	    print "$_->{copath} not locked\n";
+	    print loc("Path %1 was not locked.\n", $_->{copath});
 	}
     }
     return;

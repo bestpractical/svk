@@ -118,7 +118,7 @@ sub close_file {
 
 sub DESTROY {
     my ($self) = @_;
-    for (keys %{$self->{files}}) {
+    for (sort keys %{$self->{files}}) {
 	unlink ${*{$self->{files}{$_}}};
     }
 }
