@@ -54,7 +54,7 @@ sub run {
     $torev ||= 0;
     $self->{cross} ||= 0;
 
-    $target->as_depotpath($self->find_path_base_rev($target))
+    $target->as_depotpath($self->find_base_rev($target))
 	if defined $target->{copath};
     my $fs = $target->{repos}->fs;
 

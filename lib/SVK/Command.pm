@@ -908,9 +908,12 @@ sub resolv_revision {
     my $yrev = $fs->youngest_rev;
     my $rev;
     if($revstr =~ /^HEAD$/) {
-        $rev = $self->find_path_head_rev($target);
+        $rev = $self->find_head_rev($target);
     } elsif ($revstr =~ /^BASE$/) {
-        $rev = $self->find_path_base_rev($target);
+        $rev = $self->find_base_rev($target);
+    } elsif ($revstr =~ /\{\d\d\d\d-\d\d-\d\d\}/) { 
+        die "DATE revspec is not implemented yet\n";
+#        $rev = $self->find_date_rev($target,$1);
     } elsif ($revstr =~ /\D/) {
         die loc("%1 is not a number",$revstr)
     } else {
@@ -919,7 +922,7 @@ sub resolv_revision {
     return $rev
 }
 
-sub find_path_base_rev {
+sub find_base_rev {
     my ($self,$target) = @_;
     die(loc("BASE can only be issued with a check-out path\n"))
         unless(defined($target->{copath}));
@@ -927,7 +930,7 @@ sub find_path_base_rev {
     return $rev;
 }
 
-sub find_path_head_rev {
+sub find_head_rev {
     my ($self,$target) = @_;
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
