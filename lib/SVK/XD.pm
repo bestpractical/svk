@@ -12,7 +12,7 @@ use SVK::Editor::XD;
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
-		  md5_fh  traverse_history );
+		  md5_fh get_prompt traverse_history make_path dirname );
 use Data::Hierarchy 0.21;
 use File::Spec;
 use File::Find;
@@ -133,7 +133,38 @@ sub load {
     $info ||= { depotmap => {'' => catdir($self->{svkpath}, 'local') },
 	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
+
+    $self->create_depots('');
 }
+
+=item store
+
+=cut
+
+sub create_depots {
+    my $self = shift;
+    my $depotmap = $self->{depotmap};
+    for my $path (@{$depotmap}{sort (@_ ? @_ : keys %$depotmap)}) {
+        $path =~ s{[$SEP/]+$}{}go;
+
+	next if -d $path;
+	my $ans = get_prompt(
+	    loc("Repository %1 does not exist, create? (y/n)", $path),
+	    qr/^[yn]/i,
+	);
+	next if $ans =~ /^n/i;
+
+        make_path(dirname($path));
+
+        $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
+	SVN::Repos::create($path, undef, undef, undef,
+			   {'fs-type' => $ENV{SVNFSTYPE},
+			    'bdb-txn-nosync' => '1',
+			    'bdb-log-autoremove' => '1'});
+    }
+    return;
+}
+
 
 =item store
 

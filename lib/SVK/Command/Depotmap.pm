@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_buffer_from_editor get_prompt dirname abs_path move_path make_path $SEP );
+use SVK::Util qw( get_buffer_from_editor abs_path move_path );
 use YAML;
 use File::Path;
 
@@ -112,7 +112,7 @@ sub _do_relocate {
     $self->{xd}{depotmap}{$depot} = $path;
 
     print loc("Depot '%1' relocated to '%2'.\n", $depot, $path);
-    $self->create_depots;
+    $self->{xd}->create_depots;
 }
 
 sub _do_detach {
@@ -122,29 +122,6 @@ sub _do_detach {
         or die loc("Depot '%1' does not exist in the depot map.\n", $depot);
 
     print loc("Depot '%1' detached.\n", $depot);
-    return;
-}
-
-sub create_depots {
-    my ($self) = @_;
-    for my $path (values %{$self->{xd}{depotmap}}) {
-        $path =~ s{[$SEP/]+$}{}go;
-
-	next if -d $path;
-	my $ans = get_prompt(
-	    loc("Repository %1 does not exist, create? (y/n)", $path),
-	    qr/^[yn]/i,
-	);
-	next if $ans =~ /^n/i;
-
-        make_path(dirname($path));
-
-        $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
-	SVN::Repos::create($path, undef, undef, undef,
-			   {'fs-type' => $ENV{SVNFSTYPE},
-			    'bdb-txn-nosync' => '1',
-			    'bdb-log-autoremove' => '1'});
-    }
     return;
 }
 
