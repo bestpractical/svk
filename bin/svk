@@ -42,17 +42,42 @@ svk - a decentralized version control system
 
 Describe the usage of this program or its subcommands.
 
-  usage: help [SUBCOMMANDS..]
+  usage: help [SUBCOMMANDS...]
 
 =cut
 
 use Pod::Text;
 
 sub help {
-    my $cmd = shift;
     my $parser = new Pod::Text->new ();
-    $parser->select("COMMANDS/.*\\b$cmd\\b.*");
-    $parser->parse_from_file($0);
+    @_ = qw/help/ unless @_;
+    # XXX: the order from selected is not preserved.
+    $parser->select (map {"COMMANDS/.*\\b$_\\b.*"} @_);
+    $parser->parse_from_file ($0);
+}
+
+=head2 depotmap
+
+Create or edit the depot mapping configuration.
+
+Each line contains a map entry, the format is:
+
+ depotname: 'path/to/repos'
+
+=cut
+
+sub depotmap {
+    my $sep = '===edit the above depot map===';
+    my $map = YAML::Dump ($info->{depotmap});
+    my $new;
+    do {
+	$map = get_buffer_from_editor ('depot map', $sep, "$map\n$sep\n",
+				       '/tmp/svk-depotmapXXXXX');
+	$new = eval { YAML::Load ($map) };
+	print "$@\n" if $@;
+    } while ($@);
+    print "New depot map saved.\n";
+    $info->{depotmap} = $new;
 }
 
 sub _init {
@@ -133,22 +158,22 @@ sub update {
     my $rev;
     die unless GetOptions ("r|revision=i"  => \$rev);
 
-    my ($copath) = @ARGV;
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
-    $copath = File::Spec->rel2abs ($copath || '');
+    push @ARGV, '' if $#ARGV < 0;
+    for my $copath (@ARGV) {
+	my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+	$copath = File::Spec->rel2abs ($copath);
 
-    # XXX: support via reporter facility in the future
+	$rev = $repos->fs->youngest_rev unless defined $rev;
 
-    $rev = $repos->fs->youngest_rev unless defined $rev;
-
-    SVN::XD::do_update ($info,
-			repos => $repos,
-			depotpath => $cinfo->{depotpath},
-			copath => $copath,
-			repospath => $repospath,
-			path => $path,
-			rev => $rev,
-		       );
+	SVN::XD::do_update ($info,
+			    repos => $repos,
+			    depotpath => $cinfo->{depotpath},
+			    copath => $copath,
+			    repospath => $repospath,
+			    path => $path,
+			    rev => $rev,
+			   );
+    }
 }
 
 =head2 checkout (co)
@@ -184,7 +209,7 @@ sub checkout {
     mkdir ($copath);
     $info->{checkout}->store_recursively ($copath, {depotpath => $depotpath, revision =>0});
 
-    update ($copath, $rev)
+    update ($copath);
 }
 
 =head2 info
@@ -255,9 +280,14 @@ sub diff {
 							repos => $repos,
 							copath => $copath);
 	my $editor = SVN::DiffEditor->new
-	    ( cb_getbase => sub { my ($rpath) = @_;
-				  $baseroot->file_contents ("$path/$rpath");
-			      }
+	    ( cb_basecontent =>
+	      sub { my ($rpath) = @_;
+		    $baseroot->file_contents ("$path/$rpath");
+		},
+	      cb_baseprop =>
+	      sub { my ($rpath, $prop) = @_;
+		    $baseroot->node_prop ("$path/$rpath", $prop);
+	      },
 	    );
 
 	undef $@;
@@ -385,15 +415,16 @@ sub add {
     my $nrec = 0;
     die unless GetOptions ("N|non-recursive"	=> \$nrec);
 
-    my ($copath) = @ARGV;
-    $copath = File::Spec->rel2abs ($copath || '');
-    my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
+    for my $copath (@ARGV) {
+	$copath = File::Spec->rel2abs ($copath || '');
+	my ($repospath, $path, $cinfo) = find_repos_from_co ($copath, 0);
 
-    SVN::XD::do_add ($info,
-		     copath => $copath,
-		     path => $path,
-		     recursive => !$nrec,
-		    );
+	SVN::XD::do_add ($info,
+			 copath => $copath,
+			 path => $path,
+			 recursive => !$nrec,
+			);
+    }
 }
 
 =head2 delete
@@ -424,20 +455,23 @@ sub proplist {
     die unless GetOptions ("v|verbose"	=> \$verbose,
 			   "r|revision=i" => \$rev);
 
-    my ($copath) = @ARGV;
-    $copath = File::Spec->rel2abs ($copath || '');
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    push @ARGV, '' if $#ARGV < 0;
+    for my $copath (@ARGV) {
+	$copath = File::Spec->rel2abs ($copath);
+	my ($repospath, $path, undef, $repos) =
+	    find_repos_from_co ($copath, 1);
 
-    my $props = SVN::XD::do_proplist ($info,
-				      repos => $repos,
-				      copath => $copath,
-				      path => $path,
-				      rev => $rev,
-				     );
-    return unless %$props;
-    print "Properties on $copath:\n";
-    while (my ($key, $value) = each (%$props)) {
-	print "$key: $value\n";
+	my $props = SVN::XD::do_proplist ($info,
+					  repos => $repos,
+					  copath => $copath,
+					  path => $path,
+					  rev => $rev,
+					 );
+	return unless %$props;
+	print "Properties on $copath:\n";
+	while (my ($key, $value) = each (%$props)) {
+	    print "$key: $value\n";
+	}
     }
 }
 
@@ -468,16 +502,18 @@ sub revert {
     my $rec = 0;
     die unless GetOptions ("R|recursive"	=> \$rec);
 
-    my ($copath) = @ARGV;
-    $copath = File::Spec->rel2abs ($copath || '');
-    my ($repospath, $path, $cinfo, $repos) = find_repos_from_co ($copath, 1);
+    for my $copath (@ARGV) {
+	$copath = File::Spec->rel2abs ($copath || '');
+	my ($repospath, $path, undef, $repos) =
+	    find_repos_from_co ($copath, 1);
 
-    SVN::XD::do_revert ($info,
-			repos => $repos,
-			copath => $copath,
-			path => $path,
-			recursive => $rec,
-		       );
+	SVN::XD::do_revert ($info,
+			    repos => $repos,
+			    copath => $copath,
+			    path => $path,
+			    recursive => $rec,
+			   );
+    }
 }
 
 =head2 log
@@ -552,22 +588,36 @@ Commit changes to depot.
 my $target_prompt = '=== below are targets to be committed ===';
 use File::Temp qw/:mktemp/;
 
-sub get_commit_message {
-    my ($file) = @_;
+sub get_buffer_from_editor {
+    my ($what, $sep, $content, $file) = @_;
+    my $fh;
+    if ($content) {
+	($fh, $file) = mkstemps ($file, '.tmp');
+	print $fh $content;
+	close $file;
+    }
+
     while (1) {
-	my $mtime = (stat($file))[7];
+	my $mtime = (stat($file))[9];
 	my $ans;
 	print "waiting for editor...\n";
 	system ("\$EDITOR $file");
-	last if (stat($file))[7] > $mtime;
+	last if (stat($file))[9] > $mtime;
 	do {
-	    print "log message not modified: a)bort, e)dit, c)ommit?\n";
+	    print "$what not modified: a)bort, e)dit, c)ommit?\n";
 	    $ans = <STDIN>;
 	    chomp $ans;
 	    die "Aborted" if $ans eq 'a';
 	}
-	    while ($ans !~ m/^[aec]/);
+	while ($ans !~ m/^[aec]/);
     }
+
+    open $fh, $file;
+    local $/;
+    my @ret = split ("\n$sep\n", <$fh>, 2);
+    close $fh;
+    unlink $file;
+    return wantarray ? @ret : $ret[0];
 }
 
 sub commit {
@@ -620,15 +670,9 @@ sub commit {
 
     if ($fh) {
 	close $fh;
-	get_commit_message ($file);
-	open $fh, '<', $file;
-	local $/;
-	$message = <$fh>;
-	my $target;
-	($message, $target) = split ("\n$target_prompt\n", $message, 2);
-	# XXX: parse and check target sanity
-	close $fh;
-	unlink $file;
+	$message =
+	    get_buffer_from_editor ('log message', $target_prompt,
+				    undef, $file);
     }
 
     # if $copath itself is a file or is in the targets,
@@ -814,18 +858,9 @@ sub merge {
     my ($drepospath, $dpath, $editor, $base_rev, $copath);
     if (($drepospath, $dpath) = eval { find_repos ($dst, 0) }) {
 	unless ($message || $check_only) {
-	    my ($fh, $file) = mkstemps("svk-commitXXXXX", '.tmp');
-	    print $fh "$target_prompt\n";
-	    close $fh;
-	    get_commit_message ($file);
-	    open $fh, '<', $file;
-	    local $/;
-	    $message = <$fh>;
-	    my $target;
-	    ($message, undef) = split ("\n$target_prompt\n", $message, 2);
-	    # XXX: parse and check target sanity
-	    close $fh;
-	    unlink $file;
+	    $message = get_buffer_from_editor
+		('log message', $target_prompt,
+		 "\n$target_prompt\n", "svk-commitXXXXX");
 	}
 	if ($svn_mirror) {
 	    my $m = SVN::Mirror->new(target_path => $dpath,
@@ -910,7 +945,7 @@ sub mirror {
 
 Syncrhonize a mirrored depotpath.
 
-  usage: sync DEPOTPATH
+  usage: sync [DEPOTPATH...]
 
 =cut
 
@@ -922,14 +957,18 @@ sub sync {
 			   "t|torev=s"	=> \$torev);
     die "require SVN::Mirror" unless $svn_mirror;
 
-    my ($dpath) = @ARGV;
-    my ($repospath, $path) = find_repos ($dpath);
+    die "argument skipto not allowed when multiple target specified"
+	if $#ARGV > 0 && $skip_to;
 
-    my $m = SVN::Mirror->new (target_path => $path, target => $repospath,
-			      pool => SVN::Pool->new, auth => $auth,
-			      get_source => 1, skip_to => $skip_to);
-    $m->init ();
-    $m->run ($torev);
+    for my $dpath (@ARGV) {
+	my ($repospath, $path) = find_repos ($dpath);
+
+	my $m = SVN::Mirror->new (target_path => $path, target => $repospath,
+				  pool => SVN::Pool->new, auth => $auth,
+				  get_source => 1, skip_to => $skip_to);
+	$m->init ();
+	$m->run ($torev);
+    }
 }
 
 
@@ -954,11 +993,11 @@ no strict 'refs';
 #$xd = SVN::XD->new (%$info);
 
 if ($0 eq __FILE__) {
-    if ($cmd !~ m/_/ && main->can($cmd)) {
+    if ($cmd && $cmd !~ m/_/ && main->can($cmd)) {
 	_init();
 
 	$SIG{INT} = sub {
-	    update_info();
+	    _update_info();
 	    die "interrupted\n";
 	};
 

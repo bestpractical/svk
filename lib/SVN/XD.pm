@@ -292,7 +292,8 @@ sub _delta_file {
 
     unless (-e $arg{copath}) {
 	warn "$arg{path} removed";
-	if ($info->{checkout}->get_single ($arg{copath})->{schedule} eq 'delete') {
+	my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
+	if ($schedule eq 'delete') {
 	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
 	}
 	else {
@@ -300,11 +301,15 @@ sub _delta_file {
 	}
 	return;
     }
+
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath});
-    return if SVN::MergeEditor::md5($fh) eq
+    return if !$arg{add} && SVN::MergeEditor::md5($fh) eq
 	$arg{xdroot}->file_md5_checksum ($arg{path});
 
-    my $baton = $arg{editor}->open_file ($arg{entry}, $arg{baton}, 0);
+    my $baton = $arg{add} ?
+	$arg{editor}->add_file ($arg{entry}, $arg{baton}, undef, -1) :
+	$arg{editor}->open_file ($arg{entry}, $arg{baton}, 0);
+
     seek $fh, 0, 0;
     _delta_content ($info, %arg, baton => $baton, fh => $fh);
     $arg{editor}->close_file ($baton);
@@ -312,18 +317,30 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($info, %arg) = @_;
-    my $entries = $arg{xdroot}->dir_entries ($arg{path});
+    my $schedule = $info->{checkout}->get_single ($arg{copath})->{schedule} || '';
     unless (-d $arg{copath}) {
-	warn "$arg{path} removed";
-	if ($info->{checkout}->get_single ($arg{copath})->{schedule} eq 'delete') {
-	    $arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
-	}
-	else {
+	if ($schedule ne 'delete') {
 	    $arg{editor}->absent_directory ($arg{entry}, $arg{baton});
+	    return;
+	}
+    }
+
+    my ($entries, $baton) = ({});
+    if ($schedule eq 'delete') {
+	$arg{editor}->delete_entry ($arg{entry}, 0, $arg{baton});
+	if ($arg{delete_verbose}) {
+	    # pull the deleted lists
 	}
 	return;
     }
-    my $baton = $arg{editor}->open_directory ($arg{entry}, $arg{baton});
+    elsif ($arg{add}) {
+	$arg{editor}->add_directory ($arg{entry}, $arg{baton}, undef, -1);
+    }
+    else {
+	$entries = $arg{xdroot}->dir_entries ($arg{path});
+	$arg{editor}->open_directory ($arg{entry}, $arg{baton});
+    }
+
     for (keys %{$entries}) {
 	my $delta = $entries->{$_}->kind == $SVN::Node::file
 	    ? \&_delta_file : \&_delta_dir;
@@ -333,9 +350,26 @@ sub _delta_dir {
 		   path => "$arg{path}/$_",
 		   copath => "$arg{copath}/$_");
     }
-    $arg{editor}->close_directory ($baton);
     # check scheduled addition
+    opendir my ($dir), $arg{copath}
+	or die "can't opendir $arg{copath}: $!";
+    for (grep { !m/^\.+$/ && !exists $entries->{$_} } readdir ($dir)) {
+	my $sche = $info->{checkout}->get_single ("$arg{copath}/$_")->{schedule};
+	warn "? $arg{copath}/$_" unless $sche;
+	return unless $sche;
+	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
+	&{$delta} ($info, %arg,
+		   add => 1,
+		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
+		   baton => $baton,
+		   path => "$arg{path}/$_",
+		   copath => "$arg{copath}/$_");
+    }
+
+    closedir $dir;
     # chekc prop diff
+    $arg{editor}->close_directory ($baton)
+	unless $schedule eq 'delete';
 }
 
 sub checkout_delta {
@@ -705,6 +739,7 @@ sub do_commit {
 
 sub get_keyword_layer {
     my ($root, $path) = @_;
+    return '' if $root->check_path ($path) == $SVN::Node::none;
     my $k = eval { $root->node_prop ($path, 'svn:keywords') };
     use Carp;
     confess "can't get keyword layer for $path: $@" if $@;

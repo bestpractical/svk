@@ -29,7 +29,7 @@ sub open_file {
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     $self->{info}{$path}{new} = '';
-    $self->{info}{$path}{base} = $self->{cb_getbase} ($path)
+    $self->{info}{$path}{base} = $self->{cb_basecontent} ($path)
 	unless $self->{info}{$path}{added};
 
     return [SVN::TxDelta::apply ($self->{info}{$path}{base},
@@ -40,13 +40,13 @@ sub apply_textdelta {
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     my $base = $self->{info}{$path}{added} ?
-	undef : $self->{cb_getbase} ($path);
+	undef : $self->{cb_basecontent} ($path);
     local $/;
-    $base = <$base> if $base;
+    $base = $base ? <$base> : '';
     print "Index: $path\n";
     print '=' x 66;
     print "\n";
-    print Text::Diff::diff (\$base || \'', \$self->{info}{$path}{new});
+    print Text::Diff::diff (\$base, \$self->{info}{$path}{new});
     delete $self->{info}{$path};
 
 }

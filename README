@@ -53,11 +53,7 @@ svk uses the stanard perl module install process:
 o Initialize: You need to create a primary repository with svnadmin
   for svk to use. The default one svk looks for is ~/svn/svm
 
-  After the first time you run svk, you'll have a .svk/config file, you
-  can edit the depotmap for modifying the default repository and adding
-  other maps to make the repositories accessible from svk.
-
-  (Note that these operations should have a svk subcommand in the future.)
+  Use "svk depotmap" to make other repositories accessible from svk.
 
 o Mirroring: For example if you want to bring the svk source tree to
   your local repository:
