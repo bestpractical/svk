@@ -212,7 +212,10 @@ sub get_editor {
 sub exclude_mirror {
     my ($self, $target) = @_;
     return () if $self->{direct} or !HAS_SVN_MIRROR;
-    ( exclude => { map { abs2rel ($_, $target->{path} => undef, '/')  => 1 } $target->contains_mirror },
+
+    ( exclude => {
+	map { substr ($_, length($target->{path})) => 1 }
+	    $target->contains_mirror },
     );
 }
 

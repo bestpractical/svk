@@ -10,8 +10,8 @@ my ($copath, $corpath) = get_copath ('cleanup');
 my ($repospath) = $xd->find_repos ('//');
 
 $xd->{svkpath} = $repospath;
-$xd->{statefile} = "$repospath/svk.config";
-$xd->{giantlock} = "$repospath/svk.giant";
+$xd->{statefile} = __("$repospath/svk.config");
+$xd->{giantlock} = __("$repospath/svk.giant");
 
 $xd->giant_lock;
 is_file_content ($xd->{giantlock}, $$, 'giant locked');

@@ -24,7 +24,7 @@ $svk->checkout ('//', $copath);
 append_file ("$copath/local/A/be", "modified on A\n");
 append_file ("$copath/remote/A/be", "modified on A\n");
 is_output ($svk, 'commit', ['-m', 'modify A', $copath],
-	   ["$copath/remote is a mirrored path, please commit separately.",
+	   [__("$copath/remote is a mirrored path, please commit separately."),
 	    'Committed revision 5.']);
 is_output ($svk, 'status', [$copath],
 	   [__"M   $copath/remote/A/be"]);
@@ -39,5 +39,5 @@ is_output ($svk, 'commit', ['-m', 'empty', $copath],
 # XXX: maybe don't report unless we have something to commit in mpath.
 append_file ("$copath/local/A/be", "modified on A\n");
 is_output ($svk, 'commit', ['-m', 'modify A', $copath],
-	   ["$copath/remote is a mirrored path, please commit separately.",
+	   [__("$copath/remote is a mirrored path, please commit separately."),
 	    'Committed revision 7.']);
