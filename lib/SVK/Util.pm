@@ -121,7 +121,7 @@ sub find_svm_source {
 	    unless $rev == $root->node_created_rev ($path);
 	$rev = $m->find_remote_rev ($rev);
 	$path =~ s/\Q$mpath\E$//;
-	$uuid = $root->node_prop ($path, 'svm:uuid');
+	$uuid = $m->{source_uuid};
 	$path = $m->{source}.$mpath;
 	$path =~ s/^\Q$m->{source_root}\E//;
 	$path ||= '/';

@@ -1,5 +1,12 @@
 [Changes for 0.18 - ]
 
+***WANRING*** 
+
+Mirrored path states incompatible with previous versions of SVK. run
+svk mirror --upgrade // (and other depots if you have).
+
+***WANRING*** 
+
 * More code cleanup, documentation and test suites.
 
 * Fix <cmd> --help regression.
@@ -21,6 +28,16 @@
 * svk mirror --list and --upgrade commands.
 
 * Make SVN::Mirror required when it already exists. [Ruslan U. Zakirov]
+
+* Various commands should now respect path@rev target syntax.
+
+* Depot creation now respects $ENV{SVNFSTYPE}.
+
+* Fix a bug that smerge -I is giving incorrect merge ticket.
+
+* Fix delete merging conflicts handling and implement partial deletes.
+
+* Fix checkout path reporting and anchoring problem.
 
 [Changes for 0.17 - 17 Jul, 2004]
 

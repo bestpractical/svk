@@ -96,7 +96,7 @@ $chg->[$SVN::Fs::PathChange::add] = 'A';
 $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
-sub _show_log { 
+sub _show_log {
     my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev) = @_;
     $output ||= select;
     my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
@@ -127,11 +127,8 @@ sub _show_log {
 
 sub do_log {
     my (%arg) = @_;
-    my $output = $arg{output} || \*STDOUT;
-    print $output $arg{sep} if $arg{sep};
-    $arg{indent} ||= 0, $arg{cross} ||= 0;
-    _get_logs ($arg{repos}->fs, -1, @arg{qw/path fromrev torev verbose cross/},
-	       sub {_show_log (@_, @arg{qw/sep output indent print_rev/}) });
+    $arg{cross} ||= 0, $arg{limit} ||= -1;
+    _get_logs ($arg{repos}->fs, @arg{qw/limit path fromrev torev verbose cross cb_log/});
 }
 
 1;

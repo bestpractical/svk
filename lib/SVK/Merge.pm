@@ -255,10 +255,14 @@ sub log {
     my $print_rev = SVK::Command::Log::_log_remote_rev
 	($self->{repos}, $self->{src}{path}, $self->{remoterev},
 	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
+    my $sep = $verbatim ? '' : ('-' x 70)."\n";
+    my $cb_log = sub { SVK::Command::Log::_show_log
+	    (@_, $sep, $buf, 1, $print_rev) };
+
+    print $buf " $sep" if $sep;
     SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{src}{path},
 			       fromrev => $self->{fromrev}+1, torev => $self->{src}{revision},
-			       print_rev => $print_rev, output => $buf, indent => 1,
-			       sep => $verbatim ? '' : ('-' x 70)."\n");
+			       cb_log => $cb_log);
     return $tmp;
 }
 

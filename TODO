@@ -1,13 +1,14 @@
 * install
   - make pperl suggested dependecies and automatic enable it.
 
+* finalize SVK::Patch interface
+
 * signal handling
   - SIGINT should be handled gracefully.
 
 * path reporting
   - $target->{report} should really be handled automatically.
-  - show paths in import.
-  - show correct paths in checkout.
+  - show paths in import and commit.
 
 * svk diff
   - use tmp files and libsvn_diff's output_diff function instead of non-streamy Text::Diff.
@@ -23,13 +24,13 @@
 * checkout maintenance
   - move checkouts.
   - purge dead checkouts.
+  - purge checkout signatures.
 
 * checkout signatures
   - command to purge cache.
   - cache for modified files also, but the gain is marginal.
 
-* finalize SVK::Patch interface
-
 * improve mirror information
-  - svk mirror --list
   - svk mirror --relocate
+
+* list should report error with non-existing targets

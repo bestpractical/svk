@@ -29,17 +29,19 @@ sub do_delete_direct {
 
     die loc("path %1 does not exist", $arg{path}) if $kind == $SVN::Node::none;
 
+    if ($self->svn_mirror &&
+	(my ($m, $mpath) = SVN::Mirror::is_mirrored ($arg{repos},
+						     $arg{path}))) {
+	die "Can't delete something inside mirrored path"
+	    if $mpath;
+	$m->delete;
+    }
+
     my $edit = $self->get_commit_editor
 	($root, sub { print loc("Committed revision %1.\n", $_[0]) }, '/', %arg);
     $edit->open_root();
 
     $edit->delete_entry ($arg{path});
-    if ($self->svn_mirror &&
-	(my ($m, $mpath) = SVN::Mirror::is_mirrored ($arg{repos},
-						     $arg{path}))) {
-	my $uuid = $root->node_prop ($arg{path}, 'svm:uuid');
-	$edit->change_dir_prop ('', "svm:mirror:$uuid:".($m->{source_path} || '/'), undef);
-    }
 
     $edit->close_edit();
 }

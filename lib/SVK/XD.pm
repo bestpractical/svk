@@ -762,6 +762,7 @@ sub _node_deleted_or_absent {
     my $schedule = $arg{cinfo}{'.schedule'} || '';
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
+	$arg{rev} = $arg{cb_rev}->($arg{entry});
 	$arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
 
 	if ($arg{type} ne 'file') {
@@ -784,6 +785,7 @@ sub _node_deleted_or_absent {
     lstat ($arg{copath});
     unless (-e _ || -l _) {
 	return 1 if $arg{absent_ignore};
+	$arg{rev} = $arg{cb_rev}->($arg{entry});
 	if ($arg{absent_as_delete}) {
 	    $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
 	}
@@ -804,17 +806,14 @@ sub _delta_file {
     my $modified;
     $arg{add} = 1 if $arg{auto_add} && $arg{kind} == $SVN::Node::none ||
 	$schedule eq 'replace';
-    my $rev = $arg{cb_rev}->($arg{entry});
+
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
 	++$modified;
 	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton});
     }
 
     lstat ($arg{copath});
-    return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, rev => $rev,
-						type => 'file');
-
-    $rev = 0 if $arg{add};
+    return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool, type => 'file');
 
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, undef, $arg{add} && !-l _);
     my $mymd5 = md5($fh);
@@ -834,7 +833,7 @@ sub _delta_file {
     $newprop = {'svn:special' => '*'}
 	if -l _ && !$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none;
 
-    $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool)
+    $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool)
 	if keys %$newprop;
 
     $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_}, $pool)
@@ -843,7 +842,7 @@ sub _delta_file {
     if (!$arg{base} ||
 	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
 	seek $fh, 0, 0;
-	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool);
+	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool);
 	$self->_delta_content (%arg, baton => $baton, fh => $fh, pool => $pool);
     }
 

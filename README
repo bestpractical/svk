@@ -1,9 +1,9 @@
-This is the README file for svk 0.17 release, a decentralized version
+This is the README file for svk 0.18 release, a decentralized version
 control system.
 
 The latest version could be found at
 
-    http://svn.elixus.org/repos/member/clkao/svk
+    svn://svn.clkao.org/svk
 
 You need Module::Install if you are not installing from release tarballs.
 

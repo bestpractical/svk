@@ -4,7 +4,7 @@ require Test::More;
 require 't/tree.pl';
 use Test::More;
 eval "require SVN::Mirror; 1" or plan skip_all => 'require SVN::Mirror';
-plan tests => 5;
+plan tests => 7;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -42,6 +42,8 @@ $svk->switch ('//m', $copath);
 $svk->update ($copath);
 
 append_file ("$copath/T/xd", "back to mirror directly\n");
+overwrite_file ("$copath/T/foo", "back to mirror directly\n");
+$svk->add ("$copath/T/foo");
 $svk->status ($copath);
 
 $svk->commit ('-m', 'commit to mirrored path', $copath);
@@ -62,3 +64,9 @@ $svk->mkdir ('-m', 'bad mkdir', '//m/badmkdir');
 ok ($output =~ /under mirrored path/);
 is_output_like ($svk, 'mirror', ['--list'],
 		qr"/m.*file://$srepospath/A\n/m-99.*file://$srepospath/A-99");
+
+$svk->delete ('-m', 'die!', '//m-99/be');
+ok ($@ =~ m'inside mirrored path', 'delete failed');
+is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
+	   ['Committed revision 11.', 'Committed revision 12.']);
+
