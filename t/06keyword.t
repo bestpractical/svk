@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 19;
+use Test::More tests => 20;
 BEGIN { require 't/tree.pl' };
 
 my ($xd, $svk) = build_test();
@@ -52,7 +52,10 @@ $svk->ps ('svn:keywords', 'URL Author Rev Date Id FileRev', "$copath/A/foo");
 $svk->commit ('-m', 'appending a file and change props', $copath);
 is_output ($svk, 'st', ["$copath/A/foo"], [], 'commit does keyword expansion');
 
+require Encode::Newlines;
 my ($CR, $LF, $CRLF) = ("\015", "\012", "\015\012");
+my $Native = Encode::Newlines::Native();
+
 mkdir ("$copath/le");
 overwrite_file_raw ("$copath/le/dos", "dos$CR");
 overwrite_file_raw ("$copath/le/unix", "unix$CR");
@@ -72,16 +75,11 @@ is_file_content_raw ("$copath/le/dos", "dos$CRLF");
 is_file_content_raw ("$copath/le/unix", "unix$LF");
 is_file_content_raw ("$copath/le/mac", "mac$CR");
 is_file_content_raw ("$copath/le/na", "na$CR");
+is_file_content_raw ("$copath/le/native", "native$Native");
 
-if ($^O =~ /^MSWin|cygwin|os2|dos/) {
-    is_file_content_raw ("$copath/le/native", "native$CRLF");
-}
-elsif ($^O =~ /^MacOS/) {
-    is_file_content_raw ("$copath/le/native", "native$CR");
-}
-else {
-    is_file_content_raw ("$copath/le/native", "native$LF");
-}
+$svk->pd ('svn:eol-style', "$copath/le/native");
+$svk->commit ('-m', 'test line ending', $copath);
+is_file_content_raw ("$copath/le/native", "native$LF");
 
 $SIG{__DIE__} = sub {
     $_[0] =~ /Mixed newlines/ or return;

@@ -29,7 +29,7 @@ requires(
         'Date::Parse'           => '0',
         'File::Type'            => '0',
         'URI'                   => '0',
-        'Encode::Newlines'      => '0',
+        'Encode::Newlines'      => '0.02',
 );
 features(
     'Localized messages' => [
