@@ -61,7 +61,7 @@ sub absent_file {
 
 sub delete_entry {
     my ($self, $path) = @_;
-    print "D  $self->{rpath}$path\n";
+    print "D   $self->{rpath}$path\n";
 }
 
 sub add_directory {
