@@ -11,10 +11,17 @@ our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('symlink');
 
+my @symlinks;
 sub _symlink {
     my ($from, $to) = @_;
     return symlink($from => $to) if HAS_SYMLINK;
     overwrite_file ($to, "link $from");
+    push @symlinks, $to;
+}
+
+sub _fix_symlinks {
+    $svk->ps('svn:special' => '*', @symlinks) if @symlinks;
+    @symlinks = ();
 }
 
 $svk->checkout ('//', $copath);
@@ -38,6 +45,8 @@ is_output ($svk, 'status', ["$copath/A"],
 	    __"A   $copath/A/bar.lnk",
 	    __"A   $copath/A/dir.lnk",
 	    __"A   $copath/A/non.lnk"], 'status added symlinks');
+
+_fix_symlinks();
 $svk->commit ('-m', 'init', $copath);
 
 rmtree [$copath];
@@ -53,6 +62,7 @@ is_output ($svk, 'status', [$copath], [], 'unmodified status');
 
 unlink ("$copath/A/dir.lnk");
 _symlink ('.', "$copath/A/dir.lnk");
+
 is_output ($svk, 'status', [$copath],
 	   [__("M   $copath/A/dir.lnk")], 'modified status');
 
@@ -74,8 +84,11 @@ $svk->revert ('-R', $copath);
 is_output ($svk, 'status', [$copath], [], 'revert');
 $svk->cp ('//A/non.lnk', "$copath/non.lnk.cp");
 ok (_l "$copath/non.lnk.cp", 'copy');
+
+_fix_symlinks();
 is_output ($svk, 'commit', ['-m', 'add copied symlink', $copath],
 	   ['Committed revision 2.']);
+
 $svk->cp ('-m', 'make branch', '//A', '//B');
 # XXX: commit and then update will break checkout optimization,
 # make a separate test for that
@@ -83,6 +96,7 @@ $svk->update ($copath);
 unlink ("$copath/B/dir.lnk");
 _symlink ('.', "$copath/B/dir.lnk");
 
+_fix_symlinks();
 $svk->commit ('-m', 'change something', "$copath/B");
 
 $svk->smerge ('-C', '//B', "$copath/A");
@@ -111,6 +125,8 @@ is_output ($svk, 'status', [$copath],
 overwrite_file ("$copath/B/new-non.lnk", "foobar\n");
 is_output ($svk, 'add', ["$copath/B/new-non.lnk"],
 	   [__('R   t/checkout/symlink/B/new-non.lnk')], 'replace symlink with normal file');
+
+_fix_symlinks();
 is_output ($svk, 'commit', ['-m', 'change to non-link', $copath],
 	   ['Committed revision 6.']);
 $svk->update ('-r5', $copath);
