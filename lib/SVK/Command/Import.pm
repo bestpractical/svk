@@ -45,8 +45,10 @@ SVK::Command::Import - Import directory into depot
 
 =head1 OPTIONS
 
-    -m message:        commit message
+    -m [--message] message:        commit message
     -C [--check-only]: don't perform actual writes
+    -s [--sign]:	Needs description
+    --force:	Needs description
 
 =head1 AUTHORS
 

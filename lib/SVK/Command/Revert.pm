@@ -40,6 +40,10 @@ SVK::Command::Revert - Revert changes made in checkout copies
 
     revert PATH...
 
+=head1 OPTIONS
+
+  -R [--recursive]:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

@@ -34,6 +34,13 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
     mirror DEPOTPATH SOURCEURL
 
+=head1 OPTIONS
+
+  -m [--message] arg:	Needs description
+  -C [--check-only]:	Needs description
+  -s [--sign]:	Needs description
+  --force:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

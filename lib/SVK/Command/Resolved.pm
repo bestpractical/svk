@@ -41,6 +41,10 @@ SVK::Command::Resolved - Remove conflict mark from checkout items
 
     resolved PATH...
 
+=head1 OPTIONS
+
+  -R [--recursive]:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

@@ -60,6 +60,12 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 
     sync DEPOTPATH
 
+=head1 OPTIONS
+
+  -a [--all]:	Needs description
+  -t [--torev] arg:	Needs description
+  -s [--skipto] arg:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

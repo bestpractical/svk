@@ -59,8 +59,7 @@ SVK::Command::Checkout - Checkout the depotpath
 
 =head1 OPTIONS
 
-    -r [--revision]:      revision
-
+    -r [--revision] rev:      revision
 
 =head1 AUTHORS
 

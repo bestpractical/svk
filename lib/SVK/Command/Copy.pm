@@ -53,6 +53,14 @@ SVK::Command::Copy - Make a versioned copy
 
     copy DEPOTPATH1 DEPOTPATH2
 
+=head1 OPTIONS
+
+  -m [--message] arg:	Needs description
+  -C [--check-only]:	Needs description
+  -s [--sign]:	Needs description
+  -r [--revision] arg:	Needs description
+  --force:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

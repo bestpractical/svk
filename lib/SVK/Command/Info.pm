@@ -39,6 +39,10 @@ SVK::Command::Info - Display information about a file or directory
 
     info [PATH]
 
+=head1 OPTIONS
+
+   None
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

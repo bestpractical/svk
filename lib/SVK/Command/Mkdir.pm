@@ -50,6 +50,13 @@ SVK::Command::Mkdir - Create a versioned directory
 
     mkdir DEPOTPATH
 
+=head1 OPTIONS
+
+  -m [--message] message:	Commit message
+  -C [--check-only]:	Needs description
+  -s [--sign]:	Needs description
+  --force:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

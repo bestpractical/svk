@@ -48,6 +48,10 @@ SVK::Command::Switch - Switch to another branch and keep local modifications
 
     -r [--revision]:      revision
 
+=head1 OPTIONS
+
+  -r [--revision] arg:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

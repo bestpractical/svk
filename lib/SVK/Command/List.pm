@@ -69,6 +69,7 @@ SVK::Command::List - List entries in a directory from depot
     options:
     -r [--revision] REV:    revision
     -R [--recursive]:       recursive
+    -v [--verbose]:	Needs description
 
 =head1 AUTHORS
 

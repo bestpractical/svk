@@ -44,6 +44,9 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
     status [PATH..]
 
+=head1 OPTIONS
+
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

@@ -76,6 +76,13 @@ SVK::Command::Propset - Set a property on path
 
     propset PROPNAME PROPVAL [PATH|DEPOTPATH...]
 
+=head1 OPTIONS
+
+  -m [--message] message:	Commit message
+  -C [--check-only]:	Needs description
+  -s [--sign]:	Needs description
+  -force:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

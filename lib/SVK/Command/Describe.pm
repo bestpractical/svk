@@ -38,6 +38,10 @@ SVK::Command::Describe - Describe a change
     describe CHANGE DEPOTNAME
     describe CHANGE [PATH]
 
+=head1 OPTIONS
+
+   None
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

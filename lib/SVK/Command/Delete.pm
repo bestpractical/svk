@@ -35,6 +35,10 @@ SVK::Command::Delete - Remove versioned item
 
     delete [PATH...]
 
+=head1 OPTIONS
+
+   None
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

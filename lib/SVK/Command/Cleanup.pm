@@ -38,6 +38,10 @@ SVK::Command::Cleanup - Remove stalled locks
 
     cleanup [PATH...]
 
+=head1 OPTIONS
+
+   None
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

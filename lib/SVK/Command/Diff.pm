@@ -129,6 +129,11 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
     diff -r N:M DEPOTPATH
     diff DEPOTPATH1 DEPOTPATH2
 
+=head1 OPTIONS
+
+  -r [--revision] rev|old:new :	Needs description
+  -v [--verbose]:	Needs description
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

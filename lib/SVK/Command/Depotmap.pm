@@ -57,6 +57,10 @@ The depotname could be used in DEPOTPATH as
 
  /depotname/path/in/repos
 
+=head1 OPTIONS
+
+   None
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

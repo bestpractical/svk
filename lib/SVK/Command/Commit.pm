@@ -330,7 +330,8 @@ SVK::Command::Commit - Commit changes to depot
     options:
     -m [--message] ARG:    specify commit message ARG
     -s [--sign]:           sign the commit
-
+    -C [--check-only]:	Needs description
+    --force:	Needs description
 
 =head1 AUTHORS
 
