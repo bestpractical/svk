@@ -331,7 +331,7 @@ sub do_update {
     SVN::Repos::dir_delta ($xdroot->[1], $anchor, $target,
 			   $newroot, $arg{target_path},
 			   $editor, undef,
-			   1, 1, 0, 1);
+			   1, $arg{recursive}, 0, 1);
 }
 
 sub do_add {
@@ -537,7 +537,7 @@ sub _delta_content {
     my $handle = $arg{editor}->apply_textdelta ($arg{baton}, undef, $arg{pool});
     return unless $handle && $#{$handle} > 0;
 
-    if ($arg{send_delta} && !$arg{add}) {
+    if ($arg{send_delta} && $arg{base}) {
 	my $txstream = SVN::TxDelta::new
 	    ($arg{xdroot}->file_contents ($arg{path}), $arg{fh}, $arg{pool});
 
@@ -574,7 +574,7 @@ sub _delta_file {
     my $mymd5 = md5($fh);
     my $md5;
 
-    return unless $schedule || ($arg{add} && !$cinfo->{'.copyfrom'})
+    return unless $schedule || $arg{add} || $arg{base}
 	|| $mymd5 ne ($md5 = $arg{xdroot}->file_md5_checksum ($arg{path}));
 
     my $baton = $arg{add} ?
@@ -582,19 +582,23 @@ sub _delta_file {
 				$cinfo->{'.copyfrom'} ?
 				"file://$arg{repospath}$cinfo->{'.copyfrom'}" : undef,
 				$cinfo->{'.copyfrom_rev'} ||  -1, $pool) :
-	$arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool);
+				    undef;
 
     my $newprop = $cinfo->{'.newprop'};
+    $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool)
+	if keys %$newprop;
+
     $arg{editor}->change_file_prop ($baton, $_, $newprop->{$_}, $pool)
 	for sort keys %$newprop;
 
-    if (($arg{add} && !$cinfo->{'.copyfrom'}) || 
+    if (!$arg{base} ||
 	$mymd5 ne ($md5 ||= $arg{xdroot}->file_md5_checksum ($arg{path}))) {
 	seek $fh, 0, 0;
+	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $rev, $pool);
 	$self->_delta_content (%arg, baton => $baton, fh => $fh, pool => $pool);
     }
 
-    $arg{editor}->close_file ($baton, $mymd5, $pool);
+    $arg{editor}->close_file ($baton, $mymd5, $pool) if $baton;
 }
 
 sub _delta_dir {
@@ -653,11 +657,12 @@ sub _delta_dir {
 					 ("file://$arg{repospath}$arg{copyfrom}",
 					  $cinfo->{'.copyfrom_rev'}) : (undef, -1), $pool);
     }
-    else {
+
+    if ($arg{base}) {
 	$entries = $arg{xdroot}->dir_entries ($arg{path})
 	    if $arg{kind} == $SVN::Node::dir;
-	$baton = $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton}, $rev, $pool);
     }
+    $baton ||= $arg{root} ? $arg{baton} : $arg{editor}->open_directory ($arg{entry}, $arg{baton}, $rev, $pool);
 
     if ($schedule eq 'prop' || $arg{add}) {
 	my $newprop = $cinfo->{'.newprop'};
@@ -670,6 +675,7 @@ sub _delta_dir {
 	my $delta = ($kind == $SVN::Node::file) ? \&_delta_file : \&_delta_dir;
 	$self->$delta ( %arg,
 			add => 0,
+			base => 1,
 		   entry => $arg{entry} ? "$arg{entry}/$_" : $_,
 		   kind => $kind,
 		   targets => $targets->{$_},
@@ -717,15 +723,18 @@ sub _delta_dir {
 	    next;
 	}
 	my $delta = (-d "$arg{copath}/$_") ? \&_delta_dir : \&_delta_file;
+	my $kind = $SVN::Node::none;
 	if ($arg{copyfrom}) {
 	    die "replaced copies not implemented yet"
 		if "$arg{copyfrom}/$_" ne $ccinfo->{'.copyfrom'};
 	}
-	# XXX: only the copyroot needs to be added.
+	$kind = $arg{xdroot}->check_path ($ccinfo->{'.copyfrom'})
+	    if $ccinfo->{'.copyfrom'};
 	$self->$delta ( %arg,
 			add => 1,
+			base => exists $ccinfo->{'.copyfrom'},
 			entry => $arg{entry} ? "$arg{entry}/$_" : $_,
-			kind => $SVN::Node::none,
+			kind => $kind,
 			baton => $baton,
 			targets => $targets->{$_},
 			root => 0,
@@ -775,10 +784,10 @@ sub checkout_delta {
     my $baton = $arg{editor}->open_root ($rev);
 
     if ($kind == $SVN::Node::file) {
-	$self->_delta_file (%arg, baton => $baton);
+	$self->_delta_file (%arg, baton => $baton, base => 1);
     }
     elsif ($kind == $SVN::Node::dir) {
-	$self->_delta_dir (%arg, baton => $baton, root => 1);
+	$self->_delta_dir (%arg, baton => $baton, root => 1, base => 1);
     }
     else {
 	my $delta = (-d $arg{copath}) ? \&_delta_dir : \&_delta_file;
@@ -893,6 +902,7 @@ sub do_import {
 
     $self->_delta_dir ( %arg,
 	        auto_add => 1,
+		base => 1,
 		cb_rev => sub { $yrev },
 		editor => $editor,
 		baseroot => $root,
@@ -1125,10 +1135,7 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	my ($copyfrom, $copyfrom_rev);
-	($copyfrom, $copyfrom_rev) = $self->{cb_history}->($path) if $self->{cb_history};
-	$self->{xd}->do_add (copath => $copath, quiet => $self->{quiet},
-			     copyfrom => $copyfrom, copyfrom_rev => $copyfrom_rev)
+	$self->{xd}->do_add (copath => $copath, quiet => $self->{quiet});
     }
     $self->{checkout}->store ($copath, {revision => $self->{revision}})
 	if $self->{update};
@@ -1141,10 +1148,7 @@ sub add_directory {
     my $copath = $path;
     $self->{get_copath}($copath);
     mkdir ($copath) unless $self->{check_only};
-    my ($copyfrom, $copyfrom_rev);
-    ($copyfrom, $copyfrom_rev) = $self->{cb_history}->($path) if $self->{cb_history};
-    $self->{xd}->do_add (copath => $copath, quiet => $self->{quiet},
-			 copyfrom => $copyfrom, copyfrom_rev => $copyfrom_rev)
+    $self->{xd}->do_add (copath => $copath, quiet => $self->{quiet})
 	if !$self->{update} && !$self->{check_only};
     return $path;
 }

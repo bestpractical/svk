@@ -1,22 +1,27 @@
 #!/usr/bin/perl
-
 END {
-    cleanup_test($_) for @TOCLEAN;
+    rm_test($_) for @TOCLEAN;
 }
 
 require Data::Hierarchy;
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
+use File::Path;
 use SVK;
 use SVK::XD;
 use strict;
+
+our @TOCLEAN;
+END {
+    cleanup_test($_) for @TOCLEAN;
+}
+
 
 our $output = '';
 #select IO::Scalar->new (\$output);
 
 my $pool = SVN::Pool->new_default;
-our @TOCLEAN;
 
 sub new_repos {
     my $repospath = "/tmp/svk-$$";
@@ -37,28 +42,38 @@ sub build_test {
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
     my $xd = SVK::XD->new (depotmap => $depotmap,
 			   checkout => Data::Hierarchy->new);
-    push @TOCLEAN, $xd;
-    return ($xd, SVK->new (xd => $xd, output => \$output));
+    my $svk = SVK->new (xd => $xd, output => \$output);
+    push @TOCLEAN, [$xd, $svk];
+    return ($xd, $svk);
 }
 
 sub get_copath {
     my ($name) = @_;
     my $copath = "t/checkout/$name";
-    `mkdir -p $copath` unless -d $copath;
-    `rm -rf $copath` if -e $copath;
+    mkpath [$copath] unless -d $copath;
+    rmtree [$copath] if -e $copath;
     return ($copath, File::Spec->rel2abs($copath));
 }
 
-sub cleanup_test {
-    my $info = shift;
-    use YAML;
-    print Dump($info) if $ENV{TEST_VERBOSE};
-    for my $depot (sort keys %{$info->{depotmap}}) {
-	my $path = $info->{depotmap}{$depot};
+sub rm_test {
+    my ($xd, $svk) = @{+shift};
+    for my $depot (sort keys %{$xd->{depotmap}}) {
+	my $path = $xd->{depotmap}{$depot};
 	die if $path eq '/';
-	print "===> depot $depot:\n".`svn log -v file://$path`
-	    if $ENV{TEST_VERBOSE};
-	`rm -rf $path`;
+	rmtree [$path];
+    }
+}
+
+sub cleanup_test {
+    return unless $ENV{TEST_VERBOSE};
+    my ($xd, $svk) = @{+shift};
+    use YAML;
+    print Dump($xd);
+    for my $depot (sort keys %{$xd->{depotmap}}) {
+	my $path = $xd->{depotmap}{$depot};
+	print "===> depot $depot:\n";
+	undef $svk->{output};
+	$svk->log ('-v', "/$depot/");
     }
 }
 

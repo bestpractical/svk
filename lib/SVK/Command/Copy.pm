@@ -56,17 +56,16 @@ sub run {
 					       newroot => $xdroot,
 					       anchor => $sanchor,
 					       target => $starget,
-					       cb_history =>
-					       sub {
-						   my ($path) = @_;
-						   $path =~ s/^\Q$starget\E/$src->{path}/;
-						   return ($path, $self->{rev});
-					       }
 					     );
 	SVN::Repos::dir_delta ($fs->revision_root (0), $sanchor, $starget,
 			       $fs->revision_root ($self->{rev}), $src->{path},
 			       $editor, undef,
 			       1, 1, 0, 1);
+	$self->{xd}{checkout}->store_recursively ($dst->{copath}, {'.schedule' => undef,
+								   '.newprop' => undef});
+	$self->{xd}{checkout}->store ($dst->{copath}, {'.schedule' => 'add',
+						       '.copyfrom' => $src->{path},
+						       '.copyfrom_rev' => $self->{rev}});
     }
     else {
 	return unless $self->check_mirrored_path ($dst);

@@ -47,6 +47,8 @@ sub run {
     $self->{cross} ||= 0;
 
     if ($SVN::Core::VERSION ge '1.0.2') {
+	print ('-' x 70);
+	print "\n";
 	_get_logs ($fs, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 		   $self->{verbose}, $self->{cross},
 		   sub {_show_log (@_, undef, '', 1)} );

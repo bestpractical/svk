@@ -45,15 +45,6 @@ sub auth {
 	  SVN::Client::get_username_provider ()]);
 }
 
-sub path_is_mirrored {
-    my ($self, $repos, $path) = @_;
-    my $fs = $repos->fs;
-    my $root = $fs->revision_root ($fs->youngest_rev);
-
-    my $rev = (($root->node_history ($path)->prev (0)->location)[1]);
-    return (grep {m/^svm:headrev:/} sort keys %{$fs->revision_proplist ($rev)});
-}
-
 sub under_mirror {
     my ($self, $target) = @_;
     svn_mirror && SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
@@ -190,9 +181,7 @@ sub get_editor {
 sub run {
     my ($self, $target) = @_;
 
-    my $is_mirrored;
-    $is_mirrored = $self->path_is_mirrored ($target->{repos}, $target->{path})
-	if svn_mirror;
+    my $is_mirrored = $self->under_mirror ($target);
     print loc("Commit into mirrored path: merging back directly.\n")
 	if $is_mirrored;
 

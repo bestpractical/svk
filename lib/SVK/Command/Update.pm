@@ -6,7 +6,8 @@ use base qw( SVK::Command );
 use SVK::XD;
 
 sub options {
-    ('r|revision=i'  => 'rev');
+    ('r|revision=i'   => 'rev',
+     'N|nonrecursive' => 'nonrecursive');
 }
 
 sub parse_arg {
@@ -30,6 +31,7 @@ sub run {
 	$self->{xd}->do_update
 	    ( %$target,
 	      rev => $self->{rev},
+	      recursive => !$self->{nonrecursive},
 	    );
     }
     return;
@@ -50,6 +52,7 @@ SVK::Command::Update - Bring changes from the repository into checkout copies
 =head1 OPTIONS
 
     -r [--revision]:      revision
+    -N [--nonrecursive]:  update non-recursively
 
 =head1 DESCRIPTION
 

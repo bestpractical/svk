@@ -20,6 +20,7 @@ requires(
         'Data::Hierarchy'       => '0.17',
         'File::Temp'            => '0.14',
         'Clone'	                => '0',
+        'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.02',
         'SVN::Simple::Edit'     => '0.21',
