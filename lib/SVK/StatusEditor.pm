@@ -48,7 +48,7 @@ sub change_file_prop {
 sub close_file {
     my ($self, $path) = @_;
     my $rpath = $path;
-    $rpath =~ s|^$self->{copath}/|$self->{rpath}|;
+    $rpath =~ s|^\Q$self->{copath}\E/|$self->{rpath}|;
     print sprintf ("%1s%1s%1s \%s\n", @{$self->{info}{$path}{status}},
 		   $rpath);
     delete $self->{conflict}{$path};
@@ -90,7 +90,7 @@ sub change_dir_prop {
 sub close_directory {
     my ($self, $path) = @_;
     my $rpath = $path;
-    $rpath =~ s|^$self->{copath}/|$self->{rpath}|;
+    $rpath =~ s|^\Q$self->{copath}\E/|$self->{rpath}|;
     if ($rpath eq $self->{copath}) {
 	$rpath = $self->{rpath};
 	chop $rpath;
@@ -102,7 +102,7 @@ sub close_directory {
     for (grep {$path ? "$path/" eq substr ($_, 0, length($path)+1) : 1}
 	 sort keys %{$self->{conflict}}) {
 	delete $self->{conflict}{$_};
-	s|^$self->{copath}/|$self->{rpath}|;
+	s|^\Q$self->{copath}\E/|$self->{rpath}|;
 
 	print sprintf ("%1s%1s \%s\n", 'C', '', $_);
     }

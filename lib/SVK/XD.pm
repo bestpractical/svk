@@ -650,7 +650,7 @@ sub _delta_dir {
 	if ($arg{delete_verbose}) {
 	    for ($self->{checkout}->find
 		 ($arg{copath}, {'.schedule' => 'delete'})) {
-		s|^$arg{copath}/?||;
+		s|^\Q$arg{copath}\E/?||;
 		$arg{editor}->delete_entry ("$arg{entry}/$_", $rev, $arg{baton}, $pool)
 		    if $_;
 	    }
@@ -716,10 +716,10 @@ sub _delta_dir {
 			      return if m/$ignore/;
 			      my $dpath = $File::Find::name;
 			      if ($arg{entry}) {
-				  $dpath =~ s/^$arg{copath}/$arg{entry}/;
+				  $dpath =~ s/^\Q$arg{copath}\E/$arg{entry}/;
 			      }
 			      else {
-				  $dpath =~ s|^$arg{copath}/||;
+				  $dpath =~ s|^\Q$arg{copath}\E/||;
 			      }
 			      &{$arg{cb_unknown}} ($dpath, $File::Find::name);
 			  },
@@ -817,7 +817,7 @@ sub checkout_delta {
 			      $dpath = '';
 			  }
 			  else {
-			      $dpath =~ s|^$arg{copath}/||;
+			      $dpath =~ s|^\Q$arg{copath}\E/||;
 			  }
 			  &{$arg{cb_unknown}} ($dpath, $File::Find::name);
 		      },
@@ -1149,7 +1149,7 @@ sub close_file {
     }
     elsif (!$self->{update} && !$self->{check_only}) {
 	my $report = $path;
-	$report =~ s/^$self->{target}/$self->{report}/;
+	$report =~ s/^\Q$self->{target}\E/$self->{report}/;
 	$self->{xd}->do_add (report => $report,
 			     copath => $copath, quiet => $self->{quiet});
     }
@@ -1165,7 +1165,7 @@ sub add_directory {
     $self->{get_copath}($copath);
     mkdir ($copath) unless $self->{check_only};
     my $report = $path;
-    $report =~ s/^$self->{target}/$self->{report}/;
+    $report =~ s/^\Q$self->{target}\E/$self->{report}/;
     $self->{xd}->do_add (report => $report,
 			 copath => $copath, quiet => $self->{quiet})
 	if !$self->{update} && !$self->{check_only};
