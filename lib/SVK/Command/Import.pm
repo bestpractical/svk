@@ -53,13 +53,16 @@ sub run {
     }
 
     my ($editor, %cb) = $self->get_editor ($target);
-    $cb{callback} =
+    ${$cb{callback}} =
 	sub { $yrev = $_[0];
 	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
 			$copath, $target->{depotpath}, $yrev) };
 
     my $baton = $editor->open_root ($yrev);
-
+    local $SIG{INT} = sub {
+	$editor->abort_edit;
+	die loc("Interrupted.\n");
+    };
     if (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{is_checkout}++;
 	die loc("Import source cannot be a checkout path")
