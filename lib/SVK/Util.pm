@@ -15,6 +15,7 @@ use SVK::I18N;
 use Digest::MD5;
 use Cwd;
 use File::Temp 0.14 qw(mktemp);
+use File::Basename qw(dirname);
 use File::Spec::Functions qw(catfile catdir catpath splitpath splitdir tmpdir );
 # ra must be loaded earlier since it uses the default pool
 use SVN::Core;
@@ -196,7 +197,8 @@ sub abs_path {
     my $path = shift;
     if (defined &Win32::GetFullPathName) {
 	$path = '.' if !length $path;
-	return scalar Win32::GetFullPathName($path)
+	$path = Win32::GetFullPathName($path);
+	return((-d dirname($path)) ? $path : undef);
     }
     return Cwd::abs_path ($path) unless -l $path;
     my (undef, $dir, $pathname) = splitpath ($path);
