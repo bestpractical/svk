@@ -26,8 +26,8 @@ sub parse_arg {
         @arg[0,1] = @arg[1,0];
     }
     elsif (!eval { $self->{xd}->find_repos($arg[0]); 1 }) {
-        # The user entered a path 
-        @arg = $arg[0], $self->prompt_depotpath('import');
+        # The user entered a path
+	$arg[0] = ($self->prompt_depotpath('import', undef, 1));
     }
 
     return ($self->arg_depotpath ($arg[0]), $self->arg_path ($arg[1]));

@@ -833,7 +833,7 @@ sub find_checkout_anchor {
 }
 
 sub prompt_depotpath {
-    my ($self, $action, $default) = @_;
+    my ($self, $action, $default, $allow_exist) = @_;
     my $path;
     my $prompt = '';
     if (defined $default and $default =~ m{(^/[^/]*/)}) {
@@ -869,7 +869,7 @@ svk use the default.
 	$path =~ s{/$}{};
 
 	my $target = $self->arg_depotpath ($path);
-	last if $target->root->check_path ($target->path) == $SVN::Node::none;
+	last if $allow_exist or $target->root->check_path ($target->path) == $SVN::Node::none;
 	print loc ("Path %1 already exists.\n", $path);
     }
 

@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 21;
+plan tests => 23;
 
 use Cwd;
 use File::Path;
@@ -81,7 +81,7 @@ ok (-f copath ('dir'));
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 $svk->mkdir ('-m', 'init', '/test/A');
 SKIP: {
-skip 'SVN::Mirror not installed', 4 unless HAS_SVN_MIRROR;
+skip 'SVN::Mirror not installed', 6 unless HAS_SVN_MIRROR;
 my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
 $svk->mirror ('//m', $uri);
 $svk->sync ('//m');
@@ -101,19 +101,27 @@ $svk->import ('--from-checkout', '-m', 'import into mirrored path', '//m', $copa
 
 is ($srepos->fs->youngest_rev, 23, 'import to remote directly with proper base rev');
 
+$svk->import ('--from-checkout', '-m', 'import into mirrored path', $copath, '//m');
+
+is ($srepos->fs->youngest_rev, 24, 'import to remote directly with proper base rev');
+
 $svk->checkout ('--detach', $copath);
 
 is_output ($svk, 'import', ['-m', 'import into mirrored path from noncheckout', '//m/hate', $copath],
 	   ["Merging back to mirror source $uri.",
-	    'Merge back committed as revision 24.',
+	    'Merge back committed as revision 25.',
 	    "Syncing $uri",
-	    "Retrieving log information from 24 to 24",
-	    "Committed revision 11 from revision 24.",
+	    "Retrieving log information from 24 to 25",
+	    "Committed revision 11 from revision 25.",
 	    "Import path /m/hate initialized.",
 	    "Merging back to mirror source $uri.",
-	    "Merge back committed as revision 25.",
+	    "Merge back committed as revision 26.",
 	    "Syncing $uri",
-	    "Retrieving log information from 25 to 25",
-	    "Committed revision 12 from revision 25.",
+	    "Retrieving log information from 26 to 26",
+	    "Committed revision 12 from revision 26.",
 	    "Directory $corpath imported to depotpath //m/hate as revision 12."]);
+our $answer = ['//m/hate'];
+$svk->import (-m => 'via prompt', $copath);
+is ($srepos->fs->youngest_rev, 27);
+
 }
