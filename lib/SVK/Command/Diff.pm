@@ -40,12 +40,12 @@ sub run {
     # translate to target and target2
     if ($target2) {
 	if ($target->{copath}) {
-	    die loc("invalid arguments") if !$target2->{copath};
+	    die loc("Invalid arguments.\n") if !$target2->{copath};
             $self->run($_) foreach @_[1..$#_];
             return;
 	}
 	if ($target2->{copath}) {
-	    die loc("invalid arguments") if $target->{copath};
+	    die loc("Invalid arguments.\n") if $target->{copath};
 	    # prevent oldroot being xdroot below
 	    $r1 ||= $yrev;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
@@ -80,6 +80,11 @@ sub run {
     $r1 ||= $yrev, $r2 ||= $yrev;
     $oldroot ||= $fs->revision_root ($r1);
     $newroot ||= $fs->revision_root ($r2);
+
+    unless ($target2->{copath}) {
+	die loc("path %1 does not exist.\n", $target2->{report})
+	    if $fs->revision_root ($r2)->check_path ($target2->{path}) == $SVN::Node::none;
+    }
 
     my $editor = $self->{summarize} ?
 	SVK::Editor::Status->new
