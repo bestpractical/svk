@@ -156,7 +156,7 @@ sub run {
     else {
 	print loc("Incremental merge not guaranteed even if check is successful\n")
 	    if $self->{incremental};
-	$merge->run ($self->get_editor ($dst, undef, $src));
+	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
     }
     return;
 }
