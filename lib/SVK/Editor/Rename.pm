@@ -145,7 +145,7 @@ sub adjust_anchor {
     my ($pbaton) = $self->open_parent ($path);
     my @newentry = @$entry;
     # move the call to a proper place
-    unshift @{$self->{edit_tree}[$pbaton]}, \@newentry;
+    push @{$self->{edit_tree}[$pbaton]}, \@newentry;
     $newentry[2+$self->baton_at ($entry->[1])] = $pbaton;
     @$entry = [];
 }
