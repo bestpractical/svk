@@ -58,7 +58,7 @@ sub parse_arg {
         }
     }
 
-    my $target2 = $target1->copied_from;
+    my $target2 = $target1->copied_from($self->{sync});
     if (!defined ($target2)) {
         die loc ("Cannot find the path which '%1' copied from.\n", $arg[0]);
     }
@@ -92,8 +92,10 @@ sub run {
         my $sync = SVK::Command::Sync->new;
         %$sync = (%$self, %$sync);
 	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));
-        $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
-        $src->refresh_revision;
+        if ($m->{target_path}) {
+            $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
+            $src->refresh_revision;
+        }
     }
 
     if ($dst->root ($self->{xd})->check_path ($dst->path) != $SVN::Node::dir) {

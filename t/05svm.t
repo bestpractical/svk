@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 16;
+plan tests => 18;
 our $output;
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -139,9 +139,6 @@ is_output_like ($svk, 'mirror', ['//m-99', "$uri/A-99"],
 is_output_like ($svk, 'delete', ['-m', 'die!', '//m-99/be'],
 		qr'inside mirrored path', 'delete failed');
 
-is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-	   ['Committed revision 19.', 'Committed revision 20.']);
-
 is_output_like ($svk, 'mirror', ['--detach', '//l'],
 		qr"not a mirrored", '--detach on non-mirrored path');
 
@@ -149,10 +146,30 @@ is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
 		qr"inside", '--detach inside a mirrored path');
 
 is_output ($svk, 'mirror', ['--detach', '//m'], [
-                "Committed revision 21.",
+                "Committed revision 19.",
                 "Mirror path '//m' detached.",
                 ], '--detach on mirrored path');
 
 is_output_like ($svk, 'mirror', ['--detach', '//m'],
 		qr"not a mirrored", '--detach on non-mirrored path');
+
+$svk->copy ('-m', 'make a copy', '//m-99-copy', '//m-99-copy-twice');
+
+my ($copath4, $corpath4) = get_copath ('svm4');
+$svk->checkout ('//m-99-copy-twice', $copath4);
+is_output($svk, 'update', ['--sync', '--merge', $copath4], [
+            "Syncing $uri/A-99",
+            'Auto-merging (16, 16) /m-99 to /m-99-copy-twice (base /m-99:16).',
+            "Empty merge.",
+            "Syncing //m-99-copy-twice(/m-99-copy-twice) in $corpath4 to 20.",
+            ]);
+
+is_output($svk, 'smerge', ['-m', '', '--sync', '--from', $copath4], [
+            "Auto-merging (0, 20) /m-99-copy-twice to /m-99 (base /m-99:16).",
+            "Merging back to SVN::Mirror source $uri/A-99.",
+            "Empty merge.",
+            ]);
+
+is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
+	   ['Committed revision 21.', 'Committed revision 22.']);
 
