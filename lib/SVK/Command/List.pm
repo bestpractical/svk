@@ -38,11 +38,16 @@ sub _do_list {
 	}
 	my $entries = $root->dir_entries ($path);
 	for (sort keys %$entries) {
-	    print "\t" x ($level-1);
+	    print "\t" x ($level);
 	    print $_.($entries->{$_}->kind == $SVN::Node::dir ? '/' : '')."\n";
 	    if (($self->{recursive}) && 
 	    	($entries->{$_}->kind == $SVN::Node::dir)) {
-		_do_list($self, $level+1, "$copath/$_");
+                if (defined $copath) {
+		    _do_list($self, $level+1, "$copath/$_");
+                }
+                else {
+                    _do_list($self, $level+1, "/$path/$_");
+                }
 	    }
 	}
     }
