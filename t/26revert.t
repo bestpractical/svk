@@ -55,7 +55,6 @@ is_output ($svk, 'revert', ['-R', 'A/deep'],
 	   [__("Reverted A/deep/bar"),
 	    __("Reverted A/deep/baz"),
 	   ], 'partial revert after modification');
-warn $output;
 is_output ($svk, 'revert', ['A/foo'],
 	   [__("Reverted A/foo")], 'revert a modified file');
 
