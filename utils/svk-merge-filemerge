@@ -13,6 +13,7 @@
 # $6  Foreign file    /tmp/svk-mergeUgPfz.tmp
 # $7  Target file     svk-mergeFa4Rp
 
-echo "Left: $1 Right: $3  Ancestor: $5  Target file: $7"
+echo "Left: $1 Right: $5  Ancestor: $3  Target file: $7"
 
-/Developer/Applications/Utilities/FileMerge.app/Contents/MacOS/FileMerge -left $2 -right $4 -ancestor $6 -merge $7
+/Developer/Applications/Utilities/FileMerge.app/Contents/MacOS/FileMerge -left $
+2 -right $6 -ancestor $4 -merge $7
