@@ -696,9 +696,15 @@ sub do_log {
 			   print $output "r$rev:  $author | $date\n";
 			   if ($paths) {
 			       print $output "Changed paths:\n";
-			       for (keys %$paths) {
+			       for (sort keys %$paths) {
+				   my $entry = $paths->{$_};
 				   print $output
-				       '  '.$paths->{$_}->action." $_\n";
+				       '  '.$entry->action." $_".
+					   ($entry->copyfrom_path ?
+					    " (from ".$entry->copyfrom_path.
+					    ':'.$entry->copyfrom_rev.')' : ''
+					   ).
+					   "\n";
 			       }
 			   }
 			   print $output "\n$message\n".('-' x 70). "\n";
