@@ -133,7 +133,7 @@ if ($0 eq __FILE__) {
     }
 
     if ($cmd eq 'help') {
-	SVK::Command->help (@ARGV);
+	SVK::Command->invoke(undef, $cmd, @ARGV);
 	exit 0;
     }
 

@@ -65,22 +65,6 @@ sub get_cmd {
     $pkg->new;
 }
 
-sub help {
-    my ($pkg, $cmd) = @_;
-    unless ($cmd) {
-	my @cmd;
-	my $dir = $INC{'SVK/Command.pm'};
-	$dir =~ s/\.pm$//;
-	print loc("Available commands:\n");
-	File::Find::find (sub {
-			      push @cmd, $File::Find::name if m/\.pm$/;
-			  }, $dir);
-	$pkg->brief_usage ($_) for sort @cmd;
-	return;
-    }
-    get_cmd ($pkg, $cmd)->usage(1);
-}
-
 sub invoke {
     my $pkg = shift;
     my $xd = shift;
@@ -93,7 +77,7 @@ sub invoke {
     my @args = $cmd->parse_arg(@ARGV);
     $cmd->lock (@args);
     my $ret = $cmd->run (@args);
-    $xd->unlock ();
+    $xd->unlock () if $xd;
     return $ret;
 }
 
