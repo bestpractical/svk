@@ -945,6 +945,8 @@ sub resolve_revision {
 	}
 	die loc ("Can't find local revision for %1 on %2.\n", $rrev, $target->path)
 	    unless defined $rev;
+    } elsif ($revstr =~ /^-\d+$/) {
+        $rev = $self->find_head_rev($target) + $revstr;
     } elsif ($revstr =~ /\D/) {
         die loc("%1 is not a number.\n",$revstr)
     } else {
