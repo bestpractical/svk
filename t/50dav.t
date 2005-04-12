@@ -30,7 +30,7 @@ my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 
 my $apache_root = rel2abs (catdir ('t', 'apache_svn'));
-my $apxs = $ENV{APXS} || can_run ('apxs');
+my $apxs = $ENV{APXS} || can_run('apxs2') || can_run ('apxs');
 die unless $apxs;
 my $cfg = Apache::TestConfig->new
     ( top_dir => $apache_root,
