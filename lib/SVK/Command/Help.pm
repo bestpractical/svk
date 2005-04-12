@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( get_encoder );
+use SVK::Util qw( get_encoder can_run );
 use autouse 'File::Find' => qw(find);
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
@@ -15,7 +15,7 @@ sub parse_arg { shift; @_ ? @_ : 'index'; }
 sub run {
     my $self = shift;
 
-    if(defined($ENV{SVKPAGER})){
+    if($ENV{SVKPAGER} && can_run($ENV{SVKPAGER})){
         eval '$ENV{PAGER}=$ENV{SVKPAGER};use IO::Pager;IO::Pager->new(*STDOUT)';
     }
 
