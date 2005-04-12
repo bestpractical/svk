@@ -28,6 +28,6 @@ is_output ($svk, 'info', [], \@co_info);
 is_output ($svk, 'info', [''], \@co_info);
 is_output ($svk, 'info', [$corpath], \@co_info);
 
-ok ($svk->info ('//info-root') > 0);
+ok ($svk->info ('//info-root') == 0);
 is_output_like ($svk, 'info', ['//info-root'], qr'Filesystem has no item');
 is_output_like ($svk, 'info', ['info-root'], qr'Filesystem has no item');
