@@ -418,7 +418,7 @@ sub _overwrite_local_file {
 
 sub _merge_file_unchanged {
     my ($self, $path, $checksum, $pool) = @_;
-    ++$self->{changes};
+    ++$self->{changes} unless $self->{g_merge_no_a_change};
     $self->{notify}->node_status ($path, 'g');
     $self->ensure_close ($path, $checksum, $pool);
     return;

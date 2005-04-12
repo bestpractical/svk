@@ -254,7 +254,7 @@ is_output ($svk, 'smerge', ['-m', 'merge back', '//l', '//m'],
 	   'Please sync mirrored path /m first.']);
 
 $svk->update ($scopath);
-overwrite_file ("$scopath/A/Q/qu", "on trunk\nfirst line in qu\non cp branch\n2nd line in qu\n");
+overwrite_file ("$scopath/A/Q/qu", "on trunk\nfirst line in qu\non cp branch\n2nd line in qu\nExtra stuff\n");
 $svk->commit ('-m', 'commit on source', $scopath);
 # osx is not happy with too many files opened by default
 SVK::XD->_reset_repos;
@@ -262,7 +262,7 @@ $svk->sync ('-a', '/client2/');
 is_output ($svk, 'smerge', ['-C', '/client2/m-all/A-cp', '/client2/m-all/A'],
 	   ['Auto-merging (0, 13) /m-all/A-cp to /m-all/A (base /m-all/A:12).',
 	    "Checking locally against mirror source $uri.",
-	    'g   Q/qu',
+	    'G   Q/qu',
 	    "New merge ticket: $suuid:/A-cp:12"]);
 
 
@@ -281,7 +281,7 @@ is_output ($svk, 'smerge', ['/client2/m-all/A-cp', '/client2/m-all/A'],
 	   ['Auto-merging (0, 13) /m-all/A-cp to /m-all/A (base /m-all/A:12).',
 	    'Waiting for editor...',
 	    "Merging back to mirror source $uri.",
-	    'g   Q/qu',
+	    'G   Q/qu',
 	    "New merge ticket: $suuid:/A-cp:12",
 	    "Merge back committed as revision 14.",
 	    "Syncing $uri",

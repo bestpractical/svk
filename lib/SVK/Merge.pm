@@ -326,6 +326,7 @@ sub run {
 	  target => $target,
 	  storage => $storage,
 	  notify => $notify,
+	  g_merge_no_a_change => ($src->path ne $base->path),
 	  # if storage editor is E::XD, applytext_delta returns undef
 	  # for failed operations, and merge editor should mark them as skipped
 	  storage_has_unwritable => $is_copath && !$self->{check_only},
