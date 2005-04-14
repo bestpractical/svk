@@ -761,7 +761,6 @@ Don't generate text deltas in C<apply_textdelta> calls.
 sub depot_delta {
     my ($self, %arg) = @_;
     my @root = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} @arg{qw/oldroot newroot/};
-    # XXX: if dir_delta croaks the editor would leak since the baton is not properly destroyed.
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
 			   $arg{editor}, undef,
@@ -1656,17 +1655,13 @@ sub new {
     bless [@arg], $class;
 }
 
-# XXX: workaround some stalled refs in svn/perl
-my $globaldestroy;
-
 sub DESTROY {
-    warn "===> attempt to destroy root $_[0], leaked?" if $globaldestroy;
-    return if $globaldestroy;
+    return unless $_[0][0];
+    # if this destructor is called upon the pool cleanup which holds the
+    # txn also, we need to use a new pool, otherwise it segfaults for
+    # doing allocation in a pool that is being destroyed.
+    my $pool = SVN::Pool->new_default;
     $_[0][0]->abort if $_[0][0];
-}
-
-END {
-    $globaldestroy = 1;
 }
 
 =head1 AUTHORS
