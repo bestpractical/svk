@@ -798,6 +798,17 @@ sub msg_handler {
 	 });
 }
 
+=head3 msg_handler ($error)
+
+XXX Undocumented
+
+=cut
+
+sub clear_handler {
+    my ($self, $err) = @_;
+    delete $self->{$err};
+}
+
 =head3 command ($cmd, \%args)
 
 Construct a command object of the C<$cmd> subclass and return it.

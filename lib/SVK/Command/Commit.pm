@@ -197,6 +197,8 @@ sub get_editor {
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY) {
+	    # XXX: this error should actually be clearer in the destructor of $editor.
+	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
 	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");
