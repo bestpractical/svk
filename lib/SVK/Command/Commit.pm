@@ -195,6 +195,7 @@ sub get_editor {
 
     unless ($self->{check_only}) {
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
+	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
