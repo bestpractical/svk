@@ -53,6 +53,7 @@ sub run {
 					    pool => SVN::Pool->new,
 					   );
 
+    my $spool = SVN::Pool->new_default;
     for (@revlist) {
 	my ($fromrev, $torev) = @$_;
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
@@ -64,6 +65,7 @@ sub run {
 			)->run ($ceditor, $ceditor->callbacks,
 				# XXX: should be base_root's rev?
 				cb_rev => sub { $fs->youngest_rev });
+	$spool->clear;
     }
 
     $ceditor->replay (SVN::Delta::Editor->new

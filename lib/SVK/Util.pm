@@ -267,7 +267,7 @@ Get the current encoding from locale
 sub get_encoding {
     return 'utf8' if $^O eq 'darwin';
     local $@;
-    return resolve_alias (eval {
+    return (resolve_alias (eval {
 	require Locale::Maketext::Lexicon;
         local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
         Locale::Maketext::Lexicon::encoding();
@@ -275,7 +275,7 @@ sub get_encoding {
         require 'encoding.pm';
         defined &encoding::_get_locale_encoding() or die;
         return encoding::_get_locale_encoding();
-    }) or 'utf8';
+    }) or 'utf8');
 }
 
 =head3 get_encoder ([$encoding])
