@@ -52,7 +52,6 @@ sub open_file {
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     my $info = $self->{info}{$path};
-    $info->{new} = '';
     $info->{base} = $self->{cb_basecontent} ($path, $info->{fpool})
 	unless $info->{added};
 
@@ -72,7 +71,6 @@ sub apply_textdelta {
 	    return undef;
 	}
     }
-
     my $new;
     if ($self->{external}) {
 	my $tmp = tmpfile ('diff');
@@ -83,6 +81,7 @@ sub apply_textdelta {
 	$info->{new} = $new = tmpfile ('diff');
     }
     else {
+	$info->{new} = '';
 	open $new, '>', \$info->{new};
     }
 
@@ -92,7 +91,7 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
-    if ($self->{info}{$path}{new}) {
+    if (exists $self->{info}{$path}{new}) {
 	no warnings 'uninitialized';
 	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
 	my $base = $self->{info}{$path}{added} ?
