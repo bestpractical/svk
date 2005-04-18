@@ -1,3 +1,20 @@
+[Changes for 0.992 - 18 Apr, 2005]
+
+* Fix keyword translation for undesired characters. [matthewd]
+
+* Fix svk switch from a removed branch.
+
+* Don't trust LML would return a valid encoding that Encode knows.
+  [Eric Gillespie <epg@pretzelnet.org>]
+
+* Recognize merge-conflict error, so no stacktrace for it.
+
+* svk info now skips files not under version control. [#8220] [gugod]
+
+* Fix locked mirror messages.
+
+* Various pool usage fixes.
+
 [Changes for 0.991 - 29 Mar, 2005]
 
 * Fix a regression for smerge supplying message from editor.
