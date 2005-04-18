@@ -208,7 +208,6 @@ is_sorted_output ($svk, 'up', ["3.1"],
 	    __('U   3.1/me'),
 	    __('A   3.1/D'),
 	    __('A   3.1/D/de')]);
-warn $output;
 TODO: {
 local $TODO = 'unwritable subdirectory should remain old state';
 
