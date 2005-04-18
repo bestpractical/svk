@@ -27,20 +27,21 @@ sub copy_notify {
 }
 
 sub lock_message {
+    my $target = shift;
     my $i = 0;
     sub {
 	my ($mirror, $what, $who) = @_;
-	print loc("Waiting for %1 lock on %2: %3.\n", $what, $mirror->{target_path}, $who);
-	if (++$i % 3) {
+	print loc("Waiting for %1 lock on %2: %3.\n", $what, $target->{depotpath}, $who);
+	if (++$i % 3 == 0) {
 	    print loc ("
 The mirror is currently locked. This might be because the mirror is
 in the middle of a sensitive operation or because a process holding
-the lock hung or died.  To check if the mirror lock is stalled,  see 
+the lock hung or died.  To check if the mirror lock is stalled,  see
 if $who is a running, valid process
 
 If the mirror lock is stalled, please interrupt this process and run:
     svk mirror --unlock %1
-", $mirror->{target_path});
+", $target->{depotpath});
 	}
     }
 }
@@ -80,7 +81,7 @@ sub run {
 				  pool => SVN::Pool->new,
 				  config => $self->{svnconfig},
 				  cb_copy_notify => sub { $self->copy_notify (@_) },
-				  lock_message => lock_message(),
+				  lock_message => lock_message($target),
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();
