@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 10;
+use Test::More tests => 13;
 require 't/tree.pl';
+use File::Path;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
@@ -43,6 +44,15 @@ $svk->mv (-m => 'mv', '//A-branch' => '//A-branch-renamed');
 
 is_output ($svk, 'switch', ['//A-branch-renamed'],
 	   ["Syncing //A-branch(/A-branch) in $corpath to 4."]);
-
 is_output ($svk, 'switch', ['--detach'],
 	   [__("Checkout path '$corpath' detached.")]);
+
+rmtree [$corpath];
+$svk->co ('//A-branch-renamed/P', $corpath);
+
+is_output ($svk, 'cp', [-m => 'another branch', '//A-branch-renamed', '//A-branch-new'],
+	   ['Committed revision 5.']);
+our $DEBUG =1;
+is_output ($svk, 'switch', ['//A-branch-new/P', $corpath],
+	   ["Syncing //A-branch-renamed/P(/A-branch-renamed/P) in $corpath to 5."]);
+is_output ($svk, 'st', [$corpath], []);
