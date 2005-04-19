@@ -47,7 +47,9 @@ sub run {
 
     $self->SUPER::run ($cotarget);
 
-    $self->{xd}{checkout}->store ($cotarget->{copath}, {depotpath => $target->{depotpath}});
+    $self->{xd}{checkout}->store ($cotarget->{copath},
+				  {depotpath => $target->{depotpath},
+				   revision => $target->{revision}});
     return;
 }
 
