@@ -54,7 +54,7 @@ sub _mkpdir {
         mkdir => { message => "Directory for svk import.", parent => 1 },
     )->run ($target);
 
-    print loc("Import path %1 initialized.\n", $target->{path});
+    print loc("Import path %1 initialized.\n", $target->{depotpath});
 }
 
 sub run {
@@ -67,14 +67,20 @@ sub run {
     die loc("import destination cannot be a file") if $kind == $SVN::Node::file;
 
     if ($kind == $SVN::Node::none) {
-	$self->_mkpdir ($target);
-	$target->refresh_revision;
-	$root = $target->root;
+	if ($self->{check_only}) {
+	    print loc("Import path %1 will be created.\n", $target->{depotpath});
+	    $target = $target->new (revision => 0, path => '/');
+	}
+	else {
+	    $self->_mkpdir ($target);
+	    $target->refresh_revision;
+	    $root = $target->root;
+	}
     }
 
     unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{xd}{checkout}->store
-	    ($copath, {depotpath => $target->{depotpath},
+	    ($copath, {depotpath => '/'.$target->depotname.$target->{path},
 		       '.newprop' => undef,
 		       '.conflict' => undef,
 		       revision => $target->{revision}});
@@ -110,6 +116,16 @@ sub run {
 
     $self->{import} = 1;
     $self->run_delta ($target->new (copath => $copath), $root, $editor, %cb);
+
+    if ($self->{check_only}) {
+	print loc("Directory %1 will be imported to depotpath %2.\n",
+		  $copath, $target->{depotpath});
+	$self->{xd}{checkout}->store
+	    ($copath, {depotpath => undef,
+		       revision => undef,
+		       '.schedule' => undef});
+    }
+    return;
 }
 
 1;
