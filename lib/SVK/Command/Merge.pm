@@ -186,6 +186,7 @@ sub run {
 	print loc("Incremental merge not guaranteed even if check is successful\n")
 	    if $self->{incremental};
 	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
+	delete $self->{save_message};
     }
     return;
 }

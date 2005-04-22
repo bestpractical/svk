@@ -196,6 +196,7 @@ sub invoke {
 	print $@ if $@;
 	$ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
     }
+    undef $cmd; undef $pool; # this needs to happen before finish select
     select $ofh if $ofh;
 
     return ($ret || 0);

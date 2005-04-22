@@ -63,7 +63,7 @@ sub get_commit_message {
 	$self->{message} = get_buffer_from_editor
 	    (loc('log message'), $self->message_prompt,
 	     join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
-	++$self->{message_from_editor};
+	++$self->{save_message};
     }
     $self->decode_commit_message;
 }
@@ -91,6 +91,7 @@ sub finalize_dynamic_editor {
     my ($self, $editor) = @_;
     $editor->close_directory ($editor->{_root_baton});
     $editor->close_edit;
+    delete $self->{save_message};
 }
 
 sub adjust_anchor {
@@ -98,24 +99,18 @@ sub adjust_anchor {
     $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
 }
 
-sub get_editor {
+sub save_message {
     my $self = shift;
-    my ($editor, %cb) = eval { $self->_get_editor (@_) };
-    if ($@) {
-	if ($self->{message_from_editor}) {
-	    local $@;
-	    my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
-	    print $fh $self->{message};
-	    print loc ("Commit message saved in %1.\n", $file);
-	}
-	die $@;
-    }
-    return ($editor, %cb);
+    return unless $self->{save_message};
+    local $@;
+    my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
+    print $fh $self->{message};
+    print loc ("Commit message saved in %1.\n", $file);
 }
 
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
-sub _get_editor {
+sub get_editor {
     my ($self, $target, $callback, $source) = @_;
     my ($editor, %cb);
 
@@ -214,7 +209,10 @@ sub _get_editor {
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
-	     $SVN::Error::FS_NOT_DIRECTORY) {
+	     $SVN::Error::FS_NOT_DIRECTORY,
+	     $SVN::Error::FS_NOT_FOUND,
+	     $SVN::Error::RA_DAV_REQUEST_FAILED,
+	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
@@ -280,6 +278,7 @@ sub get_committable {
 	    close $fh;
 	    unlink $file;
 	}
+
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	die loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
     }
@@ -293,8 +292,8 @@ sub get_committable {
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
-	++$self->{message_from_editor};
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
+	++$self->{save_message};
 	unlink $file;
     }
     $self->decode_commit_message;
@@ -435,7 +434,12 @@ sub run_delta {
 		my $rev = ($fs->revision_root ($source_rev)->node_history ($source_path)->prev (0)->location)[1];
 		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());
+    delete $self->{save_message};
     return;
+}
+
+sub DESTROY {
+    $_[0]->save_message;
 }
 
 1;
