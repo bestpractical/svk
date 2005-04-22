@@ -59,10 +59,12 @@ sub fill_commit_message {
 sub get_commit_message {
     my ($self, $msg) = @_;
     $self->fill_commit_message;
-    $self->{message} = get_buffer_from_editor
-	(loc('log message'), $self->message_prompt,
-	 join ("\n", $msg || '', $self->message_prompt, ''), 'commit')
-	    unless defined $self->{message};
+    unless (defined $self->{message}) {
+	$self->{message} = get_buffer_from_editor
+	    (loc('log message'), $self->message_prompt,
+	     join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
+	++$self->{message_from_editor};
+    }
     $self->decode_commit_message;
 }
 
@@ -96,9 +98,24 @@ sub adjust_anchor {
     $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
 }
 
+sub get_editor {
+    my $self = shift;
+    my ($editor, %cb) = eval { $self->_get_editor (@_) };
+    if ($@) {
+	if ($self->{message_from_editor}) {
+	    local $@;
+	    my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
+	    print $fh $self->{message};
+	    print loc ("Commit message saved in %1.\n", $file);
+	}
+	die $@;
+    }
+    return ($editor, %cb);
+}
+
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
-sub get_editor {
+sub _get_editor {
     my ($self, $target, $callback, $source) = @_;
     my ($editor, %cb);
 
@@ -276,6 +293,7 @@ sub get_committable {
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
+	++$self->{message_from_editor};
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	unlink $file;
     }
