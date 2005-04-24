@@ -46,7 +46,7 @@ is_output ($svk, 'switch', ['//A-branch-renamed'],
 	   ["Syncing //A-branch(/A-branch) in $corpath to 4."]);
 is_output ($svk, 'switch', ['--detach'],
 	   [__("Checkout path '$corpath' detached.")]);
-
+chdir ('..');
 rmtree [$corpath];
 $svk->co ('//A-branch-renamed/P', $corpath);
 
