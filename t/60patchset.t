@@ -14,7 +14,7 @@ my ($xd, $svk) = build_test();
 
 my $tree = create_basic_tree ($xd, '//');
 
-my ($copath, $corpath) = get_copath ('smerge');
+my ($copath, $corpath) = get_copath ('patchset');
 $svk->checkout ('//', $copath);
 
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
