@@ -94,8 +94,8 @@ sub run {
     my $yrev = $fs->youngest_rev;
 
     if (my @mirrors = $dst->contains_mirror) {
-	die loc ("%1 can not be used as merge target, because it contains mirrored path:\n", $dst->{report})
-	    .join("\n", @mirrors, '')
+	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->{report})
+	    .join(",", @mirrors)."\n"
 		unless $mirrors[0] eq $dst->path;
     }
 

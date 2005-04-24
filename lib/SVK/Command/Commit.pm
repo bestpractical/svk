@@ -210,7 +210,6 @@ sub get_editor {
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY,
-	     $SVN::Error::FS_NOT_FOUND,
 	     $SVN::Error::RA_DAV_REQUEST_FAILED,
 	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
