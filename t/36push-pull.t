@@ -203,7 +203,7 @@ is_output ($svk, 'push', [],
 	    'Empty merge.',
 	    '===> Auto-merging (18, 25) /l2 to /m (base /m:16).',
 	    "Merging back to mirror source $uri/A.",
-	    "Transaction is out of date: Out of date: '/A/Q/qz' in transaction '11-1'",
+	    qr"Transaction is out of date: Out of date: '/A/Q/qz' in transaction '.*'",
 	    'Please sync mirrored path /m first.']);
 
 chdir ($initial_cwd);

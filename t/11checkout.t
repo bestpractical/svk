@@ -200,7 +200,7 @@ SKIP: {
 chmod 0500, "3.1/B";
 skip 'no working chmod', 4 if -w "3.1/B" || $^O eq 'MSWin32';
 
-is_output ($svk, 'up', ["3.1"],
+is_sorted_output ($svk, 'up', ["3.1"],
 	   ["Syncing //V-3.1(/V-3.1) in ".__"$corpath/3.1 to 6.",
 	    __('D   3.1/A/P'),
 	    __('    3.1/B/S - skipped'),
