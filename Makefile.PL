@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 my $required_svn = '1.0.7';
-my $required_svm = '0.58';
+my $required_svm = '0.59';
 
 use strict;
 use inc::Module::Install;
