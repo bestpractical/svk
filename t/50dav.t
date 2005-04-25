@@ -43,7 +43,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn";
 }
 
-plan_svm tests => 7;
+plan_svm tests => 11;
 
 $cfg->postamble (Location => "/svn",
 		 qq{DAV svn\n    SVNPath $srepospath\n});
@@ -96,4 +96,37 @@ is_output ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", $copath],
 	    "Can't decode commit message as utf8.", "try --encoding."]);
 is_output_like ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", '--encoding', 'iso-8859-1', $copath],
 		qr'Committed revision');
+
+$svk->rm (-m => 'mkdir', '/test/A/Q');
+$svk->mkdir (-m => 'mkdir', '//local/Q/foo');
+set_editor(<< "TMP");
+\$_ = shift;
+open _ or die \$!;
+\@_ = ("from editor\n", <_>);
+close _;
+unlink \$_;
+open _, '>', \$_ or die \$!;
+print _ \@_;
+close _;
+TMP
+
+# when merge/commit failed, log message should be somewhere.
+
+chdir ($copath);
+$svk->sm(-f => '//local');
+ok (my ($filename) = $output =~ m/saved in (.*)\./s);
+is_file_content ($filename, "from editor\n");
+
 $server->stop;
+
+
+append_file ("be", "changes\n");
+
+is_output ($svk, 'commit', [],
+	   ['Commit into mirrored path: merging back directly.',
+	    'Waiting for editor...',
+	    "Merging back to mirror source $uri/A.",
+	    qr"RA layer request failed: OPTIONS request failed on '/svn/A': OPTIONS of '/svn/A': could not connect to server .*",
+	    qr'Commit message saved in (.*)\.']);
+($filename) = $output =~ m/saved in (.*)\./s;
+is_file_content ($filename, "from editor\n");

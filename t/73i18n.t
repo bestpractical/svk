@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use Cwd;
 use File::Path;
 BEGIN { require 't/tree.pl' };
 use POSIX qw(setlocale LC_CTYPE);
@@ -37,9 +38,14 @@ TMP
 is_output ($svk, 'cp', [-m => $msg, '--encoding', 'big5', '//A' => '//A-cp'],
 	   ['Committed revision 3.']);
 
-is_output ($svk, 'commit', [$copath],
+my $oldwd = Cwd::getcwd;
+chdir ($copath);
+is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
-	    "Can't decode commit message as utf8.", "try --encoding."]);
+	    "Can't decode commit message as utf8.", "try --encoding.",
+	    qr'Commit message saved in (.*)\.',
+	   ]);
+chdir ($oldwd);
 is_output ($svk, 'commit', [$copath, '--encoding', 'big5'],
 	   ['Waiting for editor...',
 	    'Committed revision 4.']);

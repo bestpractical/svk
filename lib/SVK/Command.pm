@@ -149,11 +149,11 @@ sub invoke {
     my ($help, $ofh, $ret);
     my $pool = SVN::Pool->new_default;
     $ofh = select $output if $output;
-    my $error;
     local $SVN::Error::handler = sub {
-	$error = $_[0];
+	my $error = $_[0];
 	my $error_message = $error->expanded_message();
 	$error->clear();
+	$cmd->handle_error ($error) if defined $cmd;
 	die $error_message."\n";
     };
 
@@ -191,11 +191,11 @@ sub invoke {
     $xd->giant_unlock if $xd && ref ($cmd) && !$cmd->{hold_giant};
 
     $ofh = select STDERR unless $output;
-    unless ($error and $cmd->handle_error ($error)) {
-	print $ret if $ret && $ret !~ /^\d+$/;
-	print $@ if $@;
-	$ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
-    }
+    print $ret if $ret && $ret !~ /^\d+$/;
+    # if an error handler terminates editor call, there will be stack trace
+    print $@ if $@ && $@ !~ m/\n.+\n.+\n/;
+    $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
+    undef $cmd; undef $pool; # this needs to happen before finish select
     select $ofh if $ofh;
 
     return ($ret || 0);
