@@ -1,3 +1,19 @@
+[Changes for 0.993 - 25 Apr, 2005]
+
+* Save commit message from editor in a tmpfile if commit fails. [#8336]
+
+* Fix tests for bdb backend.
+
+* svk import -C should not actually create import path nor turn path
+  into copath. [#8719]
+
+* Fix a bug that a dummy switch won't update revision metadata, which
+  might be non-exist for the new branch.
+
+* Ignore existing locks when trying to unlock a mirror.
+
+* Added examples to the intro. [jesse]
+
 [Changes for 0.992 - 18 Apr, 2005]
 
 * Fix keyword translation for undesired characters. [matthewd]
