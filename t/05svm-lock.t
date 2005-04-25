@@ -42,10 +42,14 @@ if (($pid =fork) == 0) {
 waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
 sleep 2;
 kill (15, $pid);
+wait;
 
-is_output_like ($svk, 'pl', ['-v', '--revprop', '-r', 0, '//'],
-		qr'lock');
+SKIP: {
+$svk->pl('-v', '--revprop', '-r', 0, '//');
+skip 'no lock found', 2 unless $output =~ m/lock/;
 
-$svk->mirror ('--unlock', '//remote');
+is_output ($svk, 'mirror', ['--unlock', '//remote'],
+	   ['mirror locks on //remote removed.']);
 is_output_unlike ($svk, 'pl',  ['-v', '--revprop', '-r', 0, '//'],
 		  qr'lock');
+}

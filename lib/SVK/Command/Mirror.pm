@@ -102,6 +102,7 @@ sub run {
     my $m = SVN::Mirror->new
 	( target_path => $target->path,
 	  repos => $target->{repos},
+	  ignore_lock => 1,
 	  get_source => 1
 	);
     $m->init;
