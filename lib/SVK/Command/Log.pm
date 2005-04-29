@@ -50,13 +50,12 @@ sub run {
         ($fromrev, $torev) = $self->resolve_revspec($target);
 	$torev ||= $fromrev;
     }
+    $target->as_depotpath($self->find_base_rev($target))
+	if defined $target->{copath};
+
     $fromrev ||= $target->{revision};
     $torev ||= 0;
     $self->{cross} ||= 0;
-
-    $target->as_depotpath($self->find_base_rev($target))
-	if defined $target->{copath};
-    my $fs = $target->{repos}->fs;
 
     my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
 
