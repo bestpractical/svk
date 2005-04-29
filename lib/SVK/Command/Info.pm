@@ -29,14 +29,7 @@ sub run {
 	my (undef,$m) = eval'resolve_svm_source($repos, find_svm_source($repos,$path,$rev))';
         if($@) { print "$@\n"; $exception .= "$@\n" ; next }
 	print loc("Checkout Path: %1\n",$copath) if($copath);
-	my $depot = sub {
-	    # This sub() reverse lookup a hash and return a key
-	    my ($hash,$value) = @_;
-	    for(keys %$hash) { return $_ if $hash->{$_} eq $value }
-	    # This $target located outside depotmap ? that shouldn't happen
-	    return "(?)"; 
-	}->($self->{xd}{depotmap},$target->{repospath});
-	print loc("Depot Path: %1\n","/${depot}${path}");
+	print loc("Depot Path: %1\n","/".$target->depotname.${path});
 	print loc("Revision: %1\n", $rev);
 	print loc(
 	    "Last Changed Rev.: %1\n",
