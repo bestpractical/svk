@@ -1,3 +1,23 @@
+[Changes for 0.994 - 29 Apr, 2005]
+
+* Fix the warning "Revision too large" when doing svk log -l1 on a
+  checkout which is not HEAD.
+
+* Fix an edge case in post-commit checkout optimization on deleted
+  entry.  This was causing stacktrace and not updating the checkout
+  metadata accordingly.
+
+* Only consider a g-merge to be a change when the merge source and destination
+  paths are the same.  This eliminates empty revisions created by
+  push. [matthewd]
+
+* Improve the "Depot path" information, display the full path inside
+  the repository instead of the checkout-point. [gugod]
+
+* make sure $ENV{SVKPAGER} refers to an executable. [gugod]
+
+* Fix svk diff on 0-length file on checkout.
+
 [Changes for 0.993 - 25 Apr, 2005]
 
 * Save commit message from editor in a tmpfile if commit fails. [#8336]
