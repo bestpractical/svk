@@ -29,7 +29,7 @@ sub run {
 	my (undef,$m) = eval'resolve_svm_source($repos, find_svm_source($repos,$path,$rev))';
         if($@) { print "$@\n"; $exception .= "$@\n" ; next }
 	print loc("Checkout Path: %1\n",$copath) if($copath);
-	print loc("Depot Path: %1\n", $depotpath);
+	print loc("Depot Path: %1\n","/".$target->depotname.${path});
 	print loc("Revision: %1\n", $rev);
 	print loc(
 	    "Last Changed Rev.: %1\n",
