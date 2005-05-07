@@ -458,6 +458,7 @@ SVK::Command::Commit - Commit changes to depot
 =head1 OPTIONS
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
  -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
