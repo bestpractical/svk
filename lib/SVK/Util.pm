@@ -135,6 +135,11 @@ sub get_prompt { {
     Term::ReadKey::ReadMode(IS_WIN32 ? 'normal' : 'raw');
     my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
+    my $erase;
+    if (!IS_WIN32) {
+       my %keys = Term::ReadKey::GetControlChars();
+       $erase = $keys{ERASE};
+    }
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
         if ($key =~ /[\012\015]/) {
@@ -149,6 +154,11 @@ sub get_prompt { {
             $msg =~ s{\n\z}{$formfeed\n};
             die $msg;
         }
+       elsif (defined $erase and $key eq $erase) {
+            next unless length $answer;
+            $out->("\cH \cH");
+            chop $answer; next;
+       }
         elsif ($key eq "\cH") {
             next unless length $answer;
             $out->("$key $key");
