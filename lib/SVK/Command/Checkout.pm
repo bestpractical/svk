@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP get_encoding );
+use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP get_encoding abs_path_noexist );
 use File::Path;
 
 sub options {
@@ -39,7 +39,7 @@ sub parse_arg {
 
 sub lock {
     my ($self, $src, $dst) = @_;
-    my $abs_path = abs_path ($dst) or return;
+    my $abs_path = abs_path_noexist ($dst) or return;
     $self->{xd}->lock ($abs_path);
 }
 
