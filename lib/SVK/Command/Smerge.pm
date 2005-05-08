@@ -35,6 +35,7 @@ SVK::Command::Smerge - Automatically merge all changes between branches
 =head1 OPTIONS
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
  -I [--incremental]     : apply each change individually
  -l [--log]             : use logs of merged revisions as commit message

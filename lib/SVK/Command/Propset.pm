@@ -128,6 +128,7 @@ SVK::Command::Propset - Set a property on path
 =head1 OPTIONS
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
  -R [--recursive]       : descend recursively

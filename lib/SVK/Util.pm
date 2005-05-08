@@ -16,7 +16,7 @@ our @EXPORT_OK = qw(
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
     move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
-    catdepot
+    catdepot abs_path_noexist 
 
     is_symlink is_executable is_uri can_run
 );
@@ -135,6 +135,11 @@ sub get_prompt { {
     Term::ReadKey::ReadMode(IS_WIN32 ? 'normal' : 'raw');
     my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
+    my $erase;
+    if (!IS_WIN32) {
+       my %keys = Term::ReadKey::GetControlChars();
+       $erase = $keys{ERASE};
+    }
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
         if ($key =~ /[\012\015]/) {
@@ -149,6 +154,11 @@ sub get_prompt { {
             $msg =~ s{\n\z}{$formfeed\n};
             die $msg;
         }
+       elsif (defined $erase and $key eq $erase) {
+            next unless length $answer;
+            $out->("\cH \cH");
+            chop $answer; next;
+       }
         elsif ($key eq "\cH") {
             next unless length $answer;
             $out->("$key $key");
@@ -538,6 +548,28 @@ sub abs_path {
     }
 
     return undef;
+}
+
+=head3 abs_path_noexist ($path)
+
+Return paths with components in symlink resolved, but keep the final
+path even if it's symlink.  Unlike abs_path(), returns a valid value
+even if the base directory doesn't exist.
+
+=cut
+
+sub abs_path_noexist {
+    my $path = shift;
+
+    my $rest = '';
+    until (abs_path ($path)) {
+	return $rest unless length $path;
+	my $new_path = dirname($path);
+	$rest = substr($path, length($new_path)) . $rest;
+	$path = $new_path;
+    }
+
+    return abs_path ($path) . $rest;
 }
 
 =head3 abs2rel ($pathname, $old_basedir, $new_basedir, $sep)

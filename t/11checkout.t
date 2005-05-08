@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 50;
+use Test::More tests => 52;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -34,6 +34,12 @@ is_output ($svk, 'checkout', ['-q', '//V-3.1', "$copath/co-root-v3.1"],
 ok (-e "$copath/co-root-v3.1/A/Q/qu");
 
 chdir ($copath);
+$svk->checkout('//V-3.1/A', 'foo/bar');
+ok (-e 'foo/bar/Q/qu');
+is_output ($svk, 'update', ['foo/bar'], ["Syncing //V-3.1/A(/V-3.1/A) in ".__"$corpath/foo/bar to 6."]);
+$svk->checkout('-d', 'foo/bar');
+rmtree ['foo'];
+
 $svk->checkout ('//V-3.1');
 ok (-e 'V-3.1/A/Q/qu');
 is_output_like ($svk, 'checkout', ['//'], qr"don't know where to checkout");

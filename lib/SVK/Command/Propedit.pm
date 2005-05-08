@@ -51,6 +51,7 @@ SVK::Command::Propedit - Edit a property on path
 =head1 OPTIONS
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
  -R [--recursive]       : descend recursively
  -r [--revision] REV	: act on revision REV instead of the head revision
