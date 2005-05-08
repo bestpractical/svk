@@ -1,3 +1,17 @@
+[Changes for 1.00 - 9 May, 2005]
+
+* Fix backspace in prompt function for certain terminals.
+  [Martijn van Beers <martijn@eekeek.org>]
+
+* Fix the case that when checkout creates parent directory for you,
+  the state wasn't properly flushed due to inappropriate lock.
+  [matthewd]
+
+* Document --file for everything that supports --message. [matthewd]
+
+* Support 'vim -d' and 'gvim -df' for conflict resolution.
+  [Derrick Daugherty <derrick@blinky-lights.org>]
+
 [Changes for 0.994 - 29 Apr, 2005]
 
 * Fix the warning "Revision too large" when doing svk log -l1 on a
