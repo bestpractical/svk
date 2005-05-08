@@ -41,11 +41,13 @@ the following merge tools:
  FileMerge
  GtkDiff
  Guiffy
+ GVim
  KDiff3
  Meld
  P4WinMerge
  TkDiff
  TortoiseMerge
+ Vim
  XXDiff
 
 If you want svk to spawn a specific merge tool, set this variable to
