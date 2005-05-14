@@ -100,16 +100,24 @@ sub load {
     $self->{_xd} = $xd;
     $self->{_depot} = $depot;
 
+    my $not_applicable;
+
     for (qw/source target/) {
 	next unless $self->{$_};
 	my $tmp = $self->{"_$_"} = $self->{$_}->local ($xd, $depot) or next;
 	$tmp = $tmp->new (revision => undef);
-	$tmp->normalize;
+	if (wantarray) {
+	    eval { $tmp->normalize };
+	    $not_applicable = $@
+		if $@;
+	} else {
+	    $tmp->normalize;
+	}
 	$self->{"_${_}_updated"} = 1
 	    if $tmp->{revision} > $self->{"_$_"}->{revision};
     }
     (undef, undef, $self->{_repos}) = $self->{_xd}->find_repos ("/$self->{_depot}/", 1);
-    return $self;
+    return wantarray ? ($self, $not_applicable) : $self;
 }
 
 =head2 store
