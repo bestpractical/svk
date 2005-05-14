@@ -10,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 32;
+plan tests => 34;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -120,6 +120,14 @@ is_output ($svk, 'rm', ["$copath/$msg-dir/$msg"],
 is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	   ['Waiting for editor...',
 	    'Committed revision 7.']);
+
+$svk->cp (-m => "$msg hate", -r6 => '//A' => '//A-cp2');
+$svk->smerge ('-I', '//A' => '//A-cp2');
+is_output_like ($svk, 'log', [-r8 => '//'],
+		qr/\Q$msg\E/);
+is_output_like ($svk, 'log', [-r9 => '//'],
+		qr/\Q$msg\E/);
+
 is_output ($svk, 'st', ["$copath/$msg-dir"],
 	   [], 'clean checkout after commit');
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],

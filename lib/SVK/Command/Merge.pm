@@ -175,6 +175,7 @@ sub run {
 
 	    print '===> '.$merge->info;
 	    $self->{message} = $merge->log (1);
+	    $self->decode_commit_message;
 
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
