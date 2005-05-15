@@ -115,15 +115,15 @@ sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless defined $path;
     return if $self->{check_only};
-    my ($copath, $dpath, $base) = ($path, $path);
-    $self->{get_copath}($copath);
-    $self->{get_path}($dpath);
+    my ($copath, $spath, $dpath, $base) = ($path, $path, $path);
+    $self->{get_copath}->($copath);
+    $self->{get_store_path}->($spath);
+    $self->{get_path}->($dpath);
     unless ($self->{added}{$path}) {
 	my ($dir,$file) = get_anchor (1, $copath);
 	my $basename = catpath (undef, $dir, ".svk.$file.base");
 
 	rename ($copath, $basename) or return undef;
-
 	$base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename) or return undef;
 	if (!$self->{ignore_checksum} && $checksum) {
 	    my $md5 = md5_fh ($base);
@@ -136,7 +136,7 @@ sub apply_textdelta {
     }
     # XXX: should test merge to co with keywords
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
-    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath,
+    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $spath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
 	or return undef;
     # The fh is refed by the current default pool, not the pool here
@@ -214,13 +214,12 @@ sub delete_entry {
     return unless defined $pdir;
     my $copath = $path;
     $self->{get_copath}($copath);
-    $self->{get_path}($path);
-    # XXX: check if everyone under $path is sane for delete";
     return if $self->{check_only};
     if ($self->{update}) {
 	-d $copath ? rmtree ([$copath]) : unlink($copath);
     }
     else {
+	$self->{get_path}($path);
 	$self->{xd}->do_delete (%$self,
 				path => $path,
 				copath => $copath,

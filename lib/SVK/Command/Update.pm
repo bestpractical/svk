@@ -124,6 +124,7 @@ sub do_update {
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+					  store_path => $update_target->path,
 					  check_only => $self->{check_only},
 					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
