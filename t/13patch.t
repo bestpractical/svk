@@ -242,7 +242,7 @@ is_output ($svk2, 'patch', [qw/--test test-1/], ['U   B/fe', 'Empty merge.']);
 }
 
 $svk->rm ('-m', "removed //trunk", '//trunk');
-is_output ($svk, 'patch', ['--list'],
+is_sorted_output ($svk, 'patch', ['--list'],
 	   ['test-1@1: [n/a]',
 	    'from-ci-P@1: [n/a]',
 	    'delete@1: [n/a]']);
