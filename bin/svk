@@ -6,6 +6,21 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
+BEGIN {
+    # autouse hates Devel::DProf. If we're running with DProf,
+    # we need to emasculate autouse by blowing a new import sub into its
+    # package at runtime.
+    
+    if($main::INC{'Devel/DProf.pm'})  {
+    eval q[
+         sub autouse::import {
+            shift; # get rid of $CLASS
+            eval 'use ' . shift(@_) . 'qw(' . join( ' ', @_ ) . ')';
+        } 
+        ];
+    }
+}
+
 
 =head1 NAME
 
