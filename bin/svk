@@ -12,6 +12,7 @@ BEGIN {
     # package at runtime.
     
     if($main::INC{'Devel/DProf.pm'})  {
+        no warnings qw/redefine/; 
     eval q[
          sub autouse::import {
             shift; # get rid of $CLASS
