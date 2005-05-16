@@ -10,8 +10,9 @@ BEGIN {
     # autouse hates Devel::DProf. If we're running with DProf,
     # we need to emasculate autouse by blowing a new import sub into its
     # package at runtime.
-    
-    if($main::INC{'Devel/DProf.pm'})  {
+   
+    # XXX TODO this doesn't actually work 
+    if(0) {#$main::INC{'Devel/DProf.pm'})  {
         no warnings qw/redefine/; 
     eval q[
          sub autouse::import {
