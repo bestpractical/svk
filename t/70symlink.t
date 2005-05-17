@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 47;
+use Test::More tests => 51;
 BEGIN { require 't/tree.pl' };
 
 use SVK::Util qw( HAS_SYMLINK is_symlink);
@@ -26,6 +26,7 @@ sub _check_symlinks {
     unless (HAS_SYMLINK) {
 	ok(1); ok(1); return;
     }
+    # doesn't work on a single target
     is_output ($svk, 'pg', ['svn:special', @_],
 	       [map { "$_ - *" } @_], 'got svn:special');
     for (@_) {
@@ -199,15 +200,16 @@ is_output ($svk, 'status', [$copath],
 	   [__("?   $copath/entry.lnk")]);
 unlink ("$copath/entry.lnk");
 
-# it's currently only a propchange to merge, should it be a full replace?
-# $svk->smerge ('-Ct', '//B');
-TODO: {
-local $TODO = 'obstructured';
-unlink ("$copath/A/dir.lnk");
-_symlink ('.', "$copath/A/dir.lnk");
-is_output ($svk, 'status', [$copath],
-	   ["~   $copath/A/dir.lnk"], 'change file back to symlink');
-_fix_symlinks();
-}
+unlink ("$copath/non.lnk.cp");
+overwrite_file ("$copath/non.lnk.cp", "hate\n");
 
-# XXX: test for conflicts resolving etc; XD should stop translating when conflicted
+is_output ($svk, 'status', [$copath],
+	   ["~   $copath/non.lnk.cp"], 'overwrite symlink with normal file');
+is_output ($svk, 'status', [$copath],
+	   ["~   $copath/non.lnk.cp"], 'change file back to symlink');
+TODO: {
+local $TODO = 'revert overwritten symlink from file';
+$svk->revert ($copath);
+is_output ($svk, 'status', [$copath], []);
+_check_symlinks ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
+}
