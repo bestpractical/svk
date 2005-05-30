@@ -203,6 +203,8 @@ unlink ("$copath/entry.lnk");
 unlink ("$copath/non.lnk.cp");
 overwrite_file ("$copath/non.lnk.cp", "hate\n");
 
+SKIP: {
+skip 'no real symlinks', 5 unless HAS_SYMLINK;
 is_output ($svk, 'status', [$copath],
 	   ["~   $copath/non.lnk.cp"], 'overwrite symlink with normal file');
 is_output ($svk, 'status', [$copath],
@@ -212,4 +214,5 @@ local $TODO = 'revert overwritten symlink from file';
 $svk->revert ($copath);
 is_output ($svk, 'status', [$copath], []);
 _check_symlinks ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
+}
 }
