@@ -87,7 +87,7 @@ sub run {
 
 sub _find_copath {
     my ($self, $path) = @_;
-    my $abs_path = abs_path($path);
+    my $abs_path = abs_path_noexist($path);
     my $map = $self->{xd}{checkout}{hash};
 
     # Check if this is a checkout path

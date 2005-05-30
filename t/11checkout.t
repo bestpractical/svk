@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 52;
+use Test::More tests => 53;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -240,3 +240,10 @@ is_output_like ($svk, 'diff', ['3.1'], qr'revision 7');
 #$svk->up (-r3 => '3.1');
 #warn $output;
 }
+
+my ($copath_noexist, $corpath_noexist) = get_copath ('checkout-noexist');
+mkdir ($copath_noexist);
+$svk->checkout ('//V/A', "$copath_noexist/A");
+rmtree [$corpath_noexist];
+is_output ($svk, 'checkout', ['--detach', __("$corpath_noexist/A")], [
+            __("Checkout path '$corpath_noexist/A' detached.")]);
