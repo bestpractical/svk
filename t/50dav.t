@@ -118,6 +118,7 @@ ok (my ($filename) = $output =~ m/saved in (.*)\./s);
 is_file_content ($filename, "from editor\n");
 
 $server->stop;
+print "\n";
 
 
 append_file ("be", "changes\n");
@@ -126,7 +127,7 @@ is_output ($svk, 'commit', [],
 	   ['Commit into mirrored path: merging back directly.',
 	    'Waiting for editor...',
 	    "Merging back to mirror source $uri/A.",
-	    qr"RA layer request failed: OPTIONS request failed on '/svn/A': OPTIONS of '/svn/A': could not connect to server .*",
+	    qr"RA layer request failed: OPTIONS request failed on '/svn/A': OPTIONS of '/svn/A': .*",
 	    qr'Commit message saved in (.*)\.']);
 ($filename) = $output =~ m/saved in (.*)\./s;
 is_file_content ($filename, "from editor\n");
