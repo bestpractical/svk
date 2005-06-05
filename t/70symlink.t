@@ -22,17 +22,28 @@ sub _fix_symlinks {
     @symlinks = ();
 }
 
-sub _check_symlinks {
+sub _check_symlinks1 {
     unless (HAS_SYMLINK) {
 	ok(1); ok(1); return;
     }
     # doesn't work on a single target
     is_output ($svk, 'pg', ['svn:special', @_],
 	       [map { "$_ - *" } @_], 'got svn:special');
+    return 1;
+}
+
+sub _check_symlinks2 {
     for (@_) {
 	ok (0, "$_ is symlink"), return if HAS_SYMLINK and !is_symlink ($_);
     }
     ok (1, 'paths are symlinks');
+}
+
+sub _check_symlinks {
+    my (@params) = @_;
+
+    return unless _check_symlinks1(@params);
+    _check_symlinks2(@params);
 }
 
 $svk->checkout ('//', $copath);
@@ -213,6 +224,14 @@ TODO: {
 local $TODO = 'revert overwritten symlink from file';
 $svk->revert ($copath);
 is_output ($svk, 'status', [$copath], []);
-_check_symlinks ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
+}
+
+# the first part of _check_symlinks currently passes but the second part fails.
+# once both parts are passing revert back to a single call like the rest of the file.
+
+_check_symlinks1 ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
+TODO: {
+local $TODO = 'revert overwritten symlink from file';
+_check_symlinks2 ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
 }
 }
