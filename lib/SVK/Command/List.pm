@@ -25,8 +25,14 @@ sub parse_arg {
 
 sub run {
     my ($self, @arg) = @_;
-    _do_list($self, 0, $_) for @arg;
-    return;
+    my $exception = '';
+
+    for (@arg) {
+        eval { _do_list($self, 0, $_); print "\n" };
+        $exception .= "$@\n" if $@;
+    }
+
+    die($exception) if($exception);
 }
 
 sub _do_list {
@@ -35,7 +41,7 @@ sub _do_list {
     $target->as_depotpath ($self->{rev});
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
-       print loc("Path %1 is not a versioned directory\n", $target->{path})
+       die loc("Path %1 is not a versioned directory\n", $target->{path})
            unless $kind == $SVN::Node::file;
        return;
     }
