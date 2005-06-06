@@ -26,7 +26,7 @@ sub run {
 	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
 
 	$target->{revision} = $rev;
-	my (undef,$m) = eval'resolve_svm_source($repos, find_svm_source($repos,$path,$rev))';
+	my (undef,$m) = eval { resolve_svm_source($repos, find_svm_source($repos,$path,$rev)) };
 	if($@) { $exception .= "$@\n" ; next }
 	print loc("Checkout Path: %1\n",$copath) if($copath);
 	print loc("Depot Path: %1\n","/".$target->depotname.${path});

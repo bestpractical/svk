@@ -229,7 +229,7 @@ sub view {
 
 sub apply {
     my ($self, $check_only) = @_;
-    my $commit = SVK::Command->get_cmd ('commit', $self->{_xd});
+    my $commit = SVK::Command->get_cmd ('commit', xd => $self->{_xd});
     my $target = $self->{_target};
     $commit->{message} = "Apply $self->{name}\@$self->{level}";
     $commit->{check_only} = $check_only;

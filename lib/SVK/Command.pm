@@ -1,5 +1,6 @@
 package SVK::Command;
 use strict;
+use base qw(App::CLI App::CLI::Command);
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
@@ -7,6 +8,7 @@ use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
 		  find_svm_source $SEP IS_WIN32 HAS_SVN_MIRROR catdepot traverse_history);
 use SVK::I18N;
 use Encode;
+use constant subcommands => '*';
 
 =head1 NAME
 
@@ -33,7 +35,8 @@ information is displayed instead.
 
 =cut
 
-my %alias = qw( ann		annotate
+use constant alias =>
+            qw( ann		annotate
                 blame		annotate
                 praise		annotate
 		co		checkout
@@ -72,65 +75,12 @@ my %alias = qw( ann		annotate
 		ver		version
 	    );
 
+use constant global_options => ( 'h|help|?' => 'help' );
+
+my %alias = alias;
 my %cmd2alias = map { $_ => [] } values %alias;
 while( my($alias, $cmd) = each %alias ) {
     push @{$cmd2alias{$cmd}}, $alias;
-}
-
-
-=head3 new ($xd)
-
-Base constructor for all commands.
-
-=cut
-
-sub new {
-    my ($class, $xd) = @_;
-    my $self = bless { xd => $xd }, $class;
-    return $self;
-}
-
-=head3 get_cmd ($cmd, $xd)
-
-Load the command subclass specified in C<$cmd>, and return a new
-instance of it, populated with C<$xd>.  Command aliases are handled here.
-
-To construct a command object from another command object, use the
-C<command> instance method instead.
-
-=cut
-
-sub get_cmd {
-    my ($pkg, $cmd, $xd) = @_;
-    die "Command not recognized, try $0 help.\n"
-	unless $cmd =~ m/^[?a-z]+$/;
-    $pkg = join('::', 'SVK::Command', _cmd_map ($cmd));
-    my $file = "$pkg.pm";
-    $file =~ s!::!/!g;
-
-    unless (eval {require $file; 1} and $pkg->can('run')) {
-	warn $@ if $@ and exists $INC{$file};
-	die "Command not recognized, try $0 help.\n";
-    }
-    $pkg->new ($xd);
-}
-
-sub _cmd_map {
-    my ($cmd) = @_;
-    $cmd = $alias{$cmd} if exists $alias{$cmd};
-    $cmd =~ s/^(.)/\U$1/;
-    return $cmd;
-}
-
-# rebless to subcommand class if it exists
-sub _subcommand {
-    my ($self) = @_;
-    no strict 'refs';
-    for (grep {$self->{$_}} values %{{$self->options}}) {
-	if (exists ${ref($self).'::'}{$_.'::'}) {
-	    return bless ($self, (ref($self)."::$_"));
-	}
-    }
 }
 
 =head3 invoke ($xd, $cmd, $output_fh, @args)
@@ -148,57 +98,66 @@ sub invoke {
     my ($pkg, $xd, $cmd, $output, @args) = @_;
     my ($help, $ofh, $ret);
     my $pool = SVN::Pool->new_default;
+
+    local *ARGV = [$cmd, @args];
     $ofh = select $output if $output;
-    local $SVN::Error::handler = sub {
-	my $error = $_[0];
-	my $error_message = $error->expanded_message();
-	$error->clear();
-	$cmd->handle_error ($error) if defined $cmd;
-	die $error_message."\n";
-    };
-
-    local $@;
-    eval {
-	$cmd = get_cmd ($pkg, $cmd, $xd);
-	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
-	$cmd->getopt (\@args, 'h|help|?' => \$help);
-	$cmd->_subcommand;
-
-	# Fake shell globbing on Win32 if we are called from main
-	if (IS_WIN32 and caller(1) eq 'main') {
-	    @args = map {
-		/[?*{}\[\]]/
-		    ? bsd_glob($_, File::Glob::GLOB_NOCHECK())
-		    : $_
-	    } @args;
-	}
-
-	if ($help || !(@args = $cmd->parse_arg(@args))) {
-	    select STDERR unless $output;
-	    $cmd->usage;
-	}
-	else {
-	    $cmd->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
-	    eval { $cmd->lock (@args);
-		   $xd->giant_unlock if $xd && !$cmd->{hold_giant};
-		   $ret = $cmd->run (@args) };
-	    $xd->unlock if $xd;
-	    die $@ if $@;
-	}
-    };
-
-    # in case parse_arg dies
-    $xd->giant_unlock if $xd && ref ($cmd) && !$cmd->{hold_giant};
-
+    $ret = eval {$pkg->dispatch ($xd ? (xd => $xd, svnconfig => $xd->{svnconfig}) : (),
+				 output => $output) };
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
     # if an error handler terminates editor call, there will be stack trace
     print $@ if $@ && $@ !~ m/\n.+\n.+\n/;
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
-    undef $cmd; undef $pool; # this needs to happen before finish select
-    select $ofh if $ofh;
 
+    undef $pool;
+    select $ofh if $ofh;
     return ($ret || 0);
+}
+
+sub run_command {
+    my ($self, @args) = @_;
+    my $ret;
+
+    local $SVN::Error::handler = sub {
+	my $error = $_[0];
+	my $error_message = $error->expanded_message();
+	$error->clear();
+	$self->handle_error ($error);
+	die $error_message."\n";
+    };
+
+    # XXX: this eval is too nasty
+    eval {
+	# Fake shell globbing on Win32 if we are called from main
+	if (IS_WIN32 and caller(1) eq 'main') {
+	    @args = map {
+		/[?*{}\[\]]/
+		    ? bsd_glob($_, File::Glob::GLOB_NOCHECK())
+			: $_
+		    } @args;
+	}
+	if ($self->{help} || !(@args = $self->parse_arg(@args))) {
+	    select STDERR unless $self->{output};
+	    $self->usage;
+	}
+	else {
+	    $self->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
+	    eval { $self->lock (@args);
+		   $self->{xd}->giant_unlock if $self->{xd} && !$self->{hold_giant};
+		   $ret = $self->run (@args) };
+	    $self->{xd}->unlock if $self->{xd};
+	    die $@ if $@;
+	}
+
+    };
+    # in case parse_arg dies, unlock giant
+    $self->{xd}->giant_unlock if $self->{xd} && ref ($self) && !$self->{hold_giant};
+    die $@ if $@;
+    return $ret;
+}
+
+sub error_cmd {
+    loc ("Command not recognized, try %1 help.\n", $0);
 }
 
 =head3 getopt ($argv, %opt)
@@ -223,6 +182,16 @@ sub getopt {
 	if defined $recursive;
 }
 
+sub command_options {
+    my $self = shift;
+    $self->{recursive} = $self->opt_recursive;
+    my %opt;
+    $opt{$self->{recursive} ? 'N|non-recursive' : 'R|recursive'} =
+	sub { $self->{recursive} = !$self->{recursive} }
+	    if defined $self->{recursive};
+    ($self->options, %opt);
+}
+
 =head2 Instance Methods
 
 C<SVK::Command-E<gt>invoke> loads the corresponding class
@@ -244,13 +213,6 @@ Defines if the command needs the recursive flag and its default.  The
 value will be stored in C<recursive>.
 
 =cut
-
-sub options { () }
-
-sub _opt_map {
-    my ($self, %opt) = @_;
-    return map {$_ => \$self->{$opt{$_}}} sort keys %opt;
-}
 
 =head3 parse_arg (@args)
 
@@ -826,7 +788,7 @@ sub command {
 
     my $cmd = (
         $is_rebless ? bless($self, "SVK::Command::$command")
-                    : "SVK::Command::$command"->new ($self->{xd})
+                    : "SVK::Command::$command"->new (xd => $self->{xd})
     );
     $cmd->{$_} = $args->{$_} for sort keys %$args;
 

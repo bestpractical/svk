@@ -42,8 +42,8 @@ my $oldwd = Cwd::getcwd;
 chdir ($copath);
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
-	    "Can't decode commit message as utf8.", "try --encoding.",
 	    qr'Commit message saved in (.*)\.',
+	    "Can't decode commit message as utf8.", "try --encoding.",
 	   ]);
 chdir ($oldwd);
 is_output ($svk, 'commit', [$copath, '--encoding', 'big5'],
