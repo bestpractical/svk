@@ -55,19 +55,40 @@ sub run {
 
     if ($self->{sync_all}) {
 	local $@;
+	my %arg = (!defined($arg[0]) ? () : map {$_ => 1} @arg);
 	@arg = (defined($arg[0]) ? @arg : sort keys %{$self->{xd}{depotmap}});
         my @newarg;
-        foreach my $depot (@arg) {
-            $depot =~ s{/}{}g;
-            my $target = eval { $self->arg_depotpath ("/$depot/") };
+        foreach my $arg (@arg) {
+            my $orig_arg = $arg;
+            $arg = "/$arg/" if $arg !~ m{/};
+            $arg = "$arg/" unless $arg =~ m{/$};
+
+	    my ($depot) = eval { $self->arg_depotname ($arg) };
+	    unless (defined $depot) {
+		if ($arg =~ m{^/[^/]+/$}) {
+		    print loc("%1 is not a valid depotname\n", $arg);
+		} else {
+		    print loc("%1 does not contain a valid depotname\n", $arg);
+		}
+		next;
+	    }
+
+	    my $target = eval { $self->arg_depotpath ($arg) };
 	    unless ($target) {
 		print $@;
 		next;
 	    }
-	    push @newarg, (
-                map {$self->arg_depotpath("/$depot$_")}
-                    SVN::Mirror::list_mirror ($target->{repos})
-            );
+
+	    my $arg_re = qr/^\Q$arg\E/;
+	    my @tempnewarg = 
+		map {"/$depot$_/" =~ /$arg_re/ ? $self->arg_depotpath("/$depot$_") : ()}
+		    SVN::Mirror::list_mirror ($target->{repos});
+
+	    unless (@tempnewarg || !exists $arg{$orig_arg} || $arg =~ m{^/[^/]*/$}) {
+		print loc("no mirrors found underneath %1\n", $arg);
+		next;
+	    }
+	    push @newarg, @tempnewarg;
 	}
         @arg = @newarg;
     }
@@ -115,11 +136,12 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 =head1 SYNOPSIS
 
  sync DEPOTPATH
- sync --all [DEPOTNAME...]
+ sync --all [DEPOTNAME|DEPOTPATH...]
 
 =head1 OPTIONS
 
- -a [--all]             : synchronize all mirrored paths
+ -a [--all]             : synchronize all mirrored paths under
+                          the DEPOTNAME/DEPOTPATH(s) provided
  -s [--skipto] REV	: start synchronization at revision REV
  -t [--torev] REV	: stop synchronization at revision REV
 
