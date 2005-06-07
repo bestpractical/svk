@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 52;
+plan_svm tests => 56;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -108,6 +108,18 @@ TODO: {
 local $TODO = 'revert removes known nodes copied';
 is_output ($svk, 'status', [$copath], []);
 }
+
+# depot -> depot copying
+is_output ($svk, 'copy', ['-m' => 'depot->depot dir copy',
+                          '//V/D' => '//V/D-depot-copy'],
+           ['Committed revision 10.']);
+is_copied_from ('//V/D-depot-copy' => '/V/D', 8);
+
+is_output( $svk, 'copy', ['-m' => 'depot->depot file copy',
+                          '//V/me' => '//V/me-depot-copy'],
+           ['Committed revision 11.']);
+is_copied_from ('//V/me-depot-copy' => '/V/me', 3);
+
 # copy on mirrored paths
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/foo/', 1);
 my $uri = uri($srepospath);
@@ -120,7 +132,7 @@ is_output ($svk, 'cp', ['//V/new', '//foo-remote/new'],
 	   ['Different sources.']);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/me-dcopied'],
-	   ['Committed revision 13.']);
+	   ['Committed revision 15.']);
 is_copied_from ("//V/me-dcopied", '/V/me', 3);
 
 is_output ($svk, 'cp', ['-m', 'copy for remote', '//foo-remote/me', '//foo-remote/me-rcopied'],
@@ -129,9 +141,9 @@ is_output ($svk, 'cp', ['-m', 'copy for remote', '//foo-remote/me', '//foo-remot
 	    'Merge back committed as revision 3.',
 	    "Syncing $uri",
 	    'Retrieving log information from 3 to 3',
-	    'Committed revision 14 from revision 3.']);
+	    'Committed revision 16 from revision 3.']);
 
-is_copied_from ("//foo-remote/me-rcopied", '/foo-remote/me', 12);
+is_copied_from ("//foo-remote/me-rcopied", '/foo-remote/me', 14);
 is_copied_from ("/foo/me-rcopied", '/me', 2);
 
 
@@ -141,7 +153,7 @@ $svk->checkout ('//foo-remote', $copath);
 is_output ($svk, 'cp', ['//V/me', "$copath/me-rcopied"],
 	   ['Different sources.']);
 $svk->copy ('-m', 'from co', "$copath/me", '//foo-remote/me-rcopied.again');
-is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 12);
+is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 14);
 is_copied_from ("/foo/me-rcopied.again", '/me', 2);
 
 append_file ("$copath/me", "bzz\n");
@@ -158,13 +170,13 @@ $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
-	   ['Committed revision 17.']);
+	   ['Committed revision 19.']);
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
 	   ["Parent directory //V/newdir-with-p doesn't exist, use -p."]);
 is_output ($svk, 'cp', ['-p', '-m', 'copy directly', '//V/me', '//V/newdir-with-p/me-dcopied'],
-	   ['Committed revision 18.']);
+	   ['Committed revision 20.']);
 
 is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
@@ -174,8 +186,8 @@ mkdir "$corpath-some";
 chdir "$corpath-some";
 $answer = 'somepath';
 is_output ($svk, 'cp', ['-m', '', '//V/me'],
-	   ['Committed revision 19.',
-            'Syncing //somepath(/somepath) in '.__("$corpath-some/somepath to 19."),
+	   ['Committed revision 21.',
+            'Syncing //somepath(/somepath) in '.__("$corpath-some/somepath to 21."),
             'A   somepath']);
 is_copied_from ("//somepath", '/V/me', 3);
 unlink "$corpath-some/somepath";
@@ -194,7 +206,7 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    'Merge back committed as revision 6.',
 	    "Syncing $uri",
 	    'Retrieving log information from 6 to 6',
-	    'Committed revision 20 from revision 6.']);
+	    'Committed revision 22 from revision 6.']);
 
 mkdir "$copath/foo";
 is_output ($svk, 'cp', ['//foo-remote', "$copath/foo"],
