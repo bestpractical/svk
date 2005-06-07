@@ -113,6 +113,7 @@ t/05svm-copy.t
 t/05svm-head.t
 t/05svm-lock.t
 t/05svm-move.t
+t/05svm-all.t
 t/05svm.t
 t/06keyword.t
 t/07smerge-anchor-replace.t
