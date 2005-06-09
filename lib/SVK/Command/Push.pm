@@ -61,6 +61,12 @@ SVK::Command::Push - Move changes into another repository
  -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
 
+=head1 DESCRIPTION
+
+This command is a wrapper around the C<smerge> subcommand. 
+
+C<svk push> is exactly the same as running C<svk smerge -If .>.
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
