@@ -43,7 +43,6 @@ sub _do_list {
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
        die loc("Path %1 is not a versioned directory\n", $target->{path})
            unless $kind == $SVN::Node::file;
-       return;
     }
 
     # XXX: SVK::Target should take care of this.
