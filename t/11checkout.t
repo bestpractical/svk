@@ -44,7 +44,7 @@ $svk->checkout ('//V-3.1');
 ok (-e 'V-3.1/A/Q/qu');
 is_output_like ($svk, 'checkout', ['//'], qr"don't know where to checkout");
 
-is_output_like ($svk, 'checkout', ['//V-3.1'], qr'already exists');
+is_output ($svk, 'checkout', ['//V-3.1'], ["Syncing //V-3.1(/V-3.1) in ".__"$corpath/V-3.1 to 6."], 'check same depot path became update');
 overwrite_file ('some-file', 'blah blah blah');
 is_output_like ($svk, 'checkout', ['//V-3.1', 'some-file'], qr'already exists');
 is_output_like ($svk, 'checkout', ['//V-3.1', 'V-3.1/l2'], qr'Overlapping checkout');
