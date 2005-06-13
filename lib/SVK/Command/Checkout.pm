@@ -48,6 +48,11 @@ sub run {
     my ($self, $target, $report) = @_;
 
     if (-e $report) {
+	my $copath = abs_path($report);
+	my ($entry, @where) = $self->{xd}{checkout}->get($copath);
+
+        return $self->SUPER::run ($target->new(report => $report, copath => $copath))
+	    if exists $entry->{depotpath} && $entry->{depotpath} eq $target->{depotpath};
 	die loc("Checkout path %1 already exists.\n", $report);
     }
     else {
@@ -61,9 +66,10 @@ sub run {
 	}
     }
 
+    # abs_path doesn't work until the parent is created.
     my $copath = abs_path ($report);
-
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
+
     die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 
