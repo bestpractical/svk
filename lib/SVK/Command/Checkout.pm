@@ -12,6 +12,7 @@ sub options {
     ($_[0]->SUPER::options,
      'l|list' => 'list',
      'd|delete|detach' => 'detach',
+     'purge' => 'purge',
      'export' => 'export',
      'relocate' => 'relocate');
 }
@@ -111,10 +112,10 @@ sub lock {}
 sub run {
     my ($self) = @_;
     my $map = $self->{xd}{checkout}{hash};
-    my $fmt = "%-20s\t%-s\n";
-    printf $fmt, loc('Depot Path'), loc('Path');
-    print '=' x 60, "\n";
-    print sort(map sprintf($fmt, $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
+    my $fmt = "%1s %-30s\t%-s\n";
+    printf $fmt, ' ', loc('Depot Path'), loc('Path');
+    print '=' x 72, "\n";
+    print sort(map sprintf($fmt, -e $_ ? ' ' : '?', $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
     return;
 }
 
@@ -195,8 +196,39 @@ sub run {
     return;
 }
 
-1;
+package SVK::Command::Checkout::purge;
+use base qw( SVK::Command::Checkout );
+use SVK::Util qw( get_prompt );
+use SVK::I18N;
 
+sub parse_arg { undef }
+
+sub lock { ++$_[0]->{hold_giant} }
+
+sub run {
+    my ($self) = @_;
+    my $map = $self->{xd}{checkout}{hash};
+
+    $self->rebless('checkout::detach');
+
+    for my $path (sort grep $map->{$_}{depotpath}, keys %$map) {
+	next if -e $path;
+
+	my $depotpath = $map->{$path}{depotpath};
+
+	get_prompt(loc(
+	    "Purge checkout of %1 to non-existing directory %2? (y/n) ",
+	    $depotpath, $path
+	), qr/^[YyNn]/) =~ /^[Yy]/ or next;
+	
+	# Recall that we are now an SVK::Command::Checkout::detach
+	$self->run($path);
+    } 
+    
+    return;
+}
+
+1;
 __DATA__
 
 =head1 NAME
@@ -209,6 +241,7 @@ SVK::Command::Checkout - Checkout the depotpath
  checkout --list
  checkout --detach [DEPOTPATH | PATH]
  checkout --relocate DEPOTPATH|PATH PATH
+ checkout --purge
 
 =head1 OPTIONS
 
@@ -218,6 +251,7 @@ SVK::Command::Checkout - Checkout the depotpath
  -q [--quiet]           : quiet mode
  --export               : export mode; checkout a detached copy
  --relocate             : relocate the checkout to another path
+ --purge                : detach checkout directories which no longer exist
 
 =head1 AUTHORS
 
