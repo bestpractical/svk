@@ -431,10 +431,10 @@ is_output ($svk, 'diff', ['-r5'],
 overwrite_file ("A/newfile", "");
 $svk->st;
 is_output ($svk, 'diff', ['A/newfile'],
-	   ['=== A/newfile',
+	   [__('=== A/newfile'),
 	    '==================================================================',
-	    '--- A/newfile  (revision 6)',
-	    '+++ A/newfile  (local)',
+	    __('--- A/newfile  (revision 6)'),
+	    __('+++ A/newfile  (local)'),
 	    '@@ -1,3 +0,0 @@',
 	    '-foobar',
 	    '-newline',
