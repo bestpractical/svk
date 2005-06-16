@@ -3,25 +3,25 @@ use strict;
 use SVK;
 our $VERSION = $SVK::VERSION;
 use SVK::I18N;
-use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 BEGIN {
     # autouse hates Devel::DProf. If we're running with DProf,
     # we need to emasculate autouse by blowing a new import sub into its
     # package at runtime.
-   
-    # XXX TODO this doesn't actually work 
-    if(0) {#$main::INC{'Devel/DProf.pm'})  {
-        no warnings qw/redefine/; 
-    eval q[
-         sub autouse::import {
-            shift; # get rid of $CLASS
-            eval 'use ' . shift(@_) . 'qw(' . join( ' ', @_ ) . ')';
-        } 
-        ];
+    if($main::INC{'Devel/DProf.pm'})  {
+	$main::INC{'autouse.pm'} = __FILE__;
+	*{autouse::import} = sub {
+	    require UNIVERSAL::require;
+	    warn "==> yo.".join(',',@_);
+	    shift; # get rid of $CLASS
+	    my $class = shift;
+	    $class->require or die $!;
+	    $class->export_to_level(1, undef, @_);
+        }
     }
 }
+use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
 
 
 =head1 NAME
