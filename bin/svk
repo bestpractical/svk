@@ -13,7 +13,6 @@ BEGIN {
 	$main::INC{'autouse.pm'} = __FILE__;
 	*{autouse::import} = sub {
 	    require UNIVERSAL::require;
-	    warn "==> yo.".join(',',@_);
 	    shift; # get rid of $CLASS
 	    my $class = shift;
 	    $class->require or die $!;
