@@ -847,7 +847,9 @@ sub _copies_in_root {
     my ($root) = @_;
     my $copies;
     my $changed = $root->paths_changed;
+    my $pool = SVN::Pool->new_default;
     for (keys %$changed) {
+	$pool->clear;
 	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
 	my ($copyfrom_rev, $copyfrom_path) = $root->copied_from ($_);
 	$copies->{$_} = [$copyfrom_rev, $copyfrom_path]
