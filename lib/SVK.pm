@@ -6,6 +6,11 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Class::Autouse qw(:superloader);
 
 use SVN::Core;
+BEGIN {
+    if (my $init = SVN::Core->can('utf_initialize')) {
+	$init->();
+    }
+}
 
 sub import {
     return unless ref ($_[0]);
