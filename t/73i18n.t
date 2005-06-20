@@ -43,7 +43,7 @@ chdir ($copath);
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    qr'Commit message saved in (.*)\.',
-	    "Can't decode commit message as utf8.", "try --encoding.",
+	    qr"Can't decode commit message as utf.*", "try --encoding.",
 	   ]);
 chdir ($oldwd);
 is_output ($svk, 'commit', [$copath, '--encoding', 'big5'],
@@ -62,17 +62,17 @@ overwrite_file ("$copath/$msgutf8-dir/newfile", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/newfile2", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/$msg", "new file\n"); # nasty file
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/$msg"],
-	   [__"$msg: Can't decode path as utf8.",
+	   [__"$msg: Can't decode path as utf-8-strict.",
 	    __"Unknown target: $msg."]);
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/newfile2"],
-	   [__"$msg: Can't decode path as utf8.",
+	   [__"$msg: Can't decode path as utf-8-strict.",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'st', [$copath],
-	   [__"$msg: Can't decode path as utf8.",
+	   [__"$msg: Can't decode path as utf-8-strict.",
 	    __"?   $copath/$msgutf8-dir/newfile",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'ci', ['--import', '-m', 'hate', $copath],
-	   [__"$msg: Can't decode path as utf8."],
+	   [__"$msg: Can't decode path as utf-8-strict."],
 	   'import with bizzare filename is fatal.');
 
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
@@ -80,7 +80,7 @@ is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
 is_output ($svk, 'ls', ["//A"],
 	   ['Q/', 'be', "$msgutf8-dir/"]);
 is_output ($svk, 'ls', ["//A/$msg-dir"],
-	   ["Can't decode path as utf8."]);
+	   ["Can't decode path as utf-8-strict."]);
 #### BEGIN big5 enivonrment
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => '//'],

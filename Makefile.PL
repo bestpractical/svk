@@ -34,6 +34,7 @@ requires(
 	'Class::Autouse'	=> '1.15',
 	'Getopt::Long'		=> '2.34',
 	'App::CLI'		=> '0',
+	'Encode'		=> '2.10',
 );
 features(
     'Localized messages' => [
