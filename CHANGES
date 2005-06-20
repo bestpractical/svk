@@ -1,3 +1,38 @@
+[Changes for 1.01 - 24 Jun, 2005]
+
+* Fix a memory leak when constructing copy cache for revisions
+  involving many changed paths.
+
+* Fix svk ls -f to list the path, instead of depot root path. [Autrijus]
+
+* Fix a bug that push (smerge -I) will use wrongly encoded commit
+  message if you are not using utf8. [Jorge Daza <jorge@drqueue.org>]
+
+* Fix a crash bug when switch to a branch that has new files with keywords.
+
+* When checkout to existing directory, if the direcotry is from the
+  very same depotpath, do an update instead of dying.  This resembles
+  the svn and cvs behaviour.
+
+* Fix patch list/view/dump/delete for those can't be applied. [Jody Belka]
+
+* Fix svk checkout --detach to detach a checkout even if the directory's
+  parent no longer exists. [Jody Belka]
+
+* svk checkout --list now shows removed checkout with '?', and
+  supports --purge.  [David Glasser]
+
+* Fix a bug that a file is not properly handled when a symlink is
+  overwritten by file, without proper replace.
+
+* svk blame now takes --remoterev to show remote revision.
+
+* svk sync -a now does the right thing on given depotpath. [Jody Belka]
+
+* Misc documentation and tests fixes and improvements. [jesse,knew,matthewd,Tom Sibley]
+
+* Fix the autouse hack so Devel::DProf works again.
+
 [Changes for 1.00 - 9 May, 2005]
 
 * Fix backspace in prompt function for certain terminals.
