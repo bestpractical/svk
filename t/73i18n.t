@@ -43,7 +43,7 @@ chdir ($copath);
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    qr'Commit message saved in (.*)\.',
-	    qr"Can't decode commit message as utf.*", "try --encoding.",
+	    "Can't decode commit message as utf-8-strict.", "try --encoding.",
 	   ]);
 chdir ($oldwd);
 is_output ($svk, 'commit', [$copath, '--encoding', 'big5'],
