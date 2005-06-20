@@ -65,9 +65,10 @@ sub _do_list {
         }
 
         if ($self->{'fullpath'}) {
-	    my $dpath = $target->{depotpath};
+	    my $dpath = $target->{path};
 	    to_native ($dpath, 'path', $enc);
-            print $dpath.'/';
+	    $dpath .= '/' unless $dpath eq '/';
+            print '/'.$target->depotname.$dpath;
         } else {
             print " " x ($level);
         }
