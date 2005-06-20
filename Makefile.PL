@@ -33,6 +33,7 @@ requires(
         'PerlIO::eol'           => '0.13',
 	'Class::Autouse'	=> '1.15',
 	'Getopt::Long'		=> '2.34',
+	'Encode'		=> '2.10',
 );
 features(
     'Localized messages' => [

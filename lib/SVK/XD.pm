@@ -261,7 +261,7 @@ sub giant_lock {
     }
 
     open my ($lock), '>', $self->{giantlock}
-	or die loc("Cannot acquire giant loc %1:%2.\n", $self->{giantlock}, $!);
+	or die loc("Cannot acquire giant lock %1:%2.\n", $self->{giantlock}, $!);
     print $lock $$;
     close $lock;
     $self->{giantlocked} = 1;
