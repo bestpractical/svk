@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 30;
+plan_svm tests => 36;
 
 use File::Copy qw( copy );
 our $output;
@@ -240,3 +240,27 @@ is_output ($svk2, 'patch', ['--update', 'test-1'],
 is_output ($svk, 'patch', [qw/--test test-1/], ['U   B/fe', 'Empty merge.']);
 is_output ($svk2, 'patch', [qw/--test test-1/], ['U   B/fe', 'Empty merge.']);
 }
+
+$svk->rm ('-m', "removed //trunk", '//trunk');
+is_sorted_output ($svk, 'patch', ['--list'],
+	   ['test-1@1: [n/a]',
+	    'from-ci-P@1: [n/a]',
+	    'delete@1: [n/a]']);
+
+is_output ($svk, 'patch', ['--view', 'test-1'],
+	   ['==== Patch <test-1> level 1',
+	    "Source: $uuid2:/local:6",
+	    "Target: $uuid:/trunk:4 [local] [updated]",
+	    @$log1, @$patch2]);
+
+eval { $svk->patch ('--update', 'test-1') };
+is ($@, '', "Can't update an non-applicable patch");
+
+eval { $svk->patch ('--regen', 'test-1') };
+is ($@, '', "Can't regenerate an non-applicable patch");
+
+eval { $svk->patch ('--apply', 'test-1') };
+is ($@, '', "Can't apply an non-applicable patch");
+
+eval { $svk->patch ('--delete', 'test-1') };
+is ($@, '', 'Successfully deleted patch test-1');
