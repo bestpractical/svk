@@ -596,24 +596,9 @@ sub parse_revlist {
     die loc("Can't assign --revision and --change at the same time.\n")
 	if $self->{revspec} and $self->{chgspec};
     my ($fromrev, $torev);
-    if ($self->{chgspec}) {
-	my @revlist;
-	for (split (',', $self->{chgspec})) {
-	    my $reverse;
-	    if (($fromrev, $torev) = m/^(\d+)-(\d+)$/) {
-		--$fromrev;
-	    }
-	    elsif (($reverse, $torev) = m/^(-?)(\d+)$/) {
-		$fromrev = $torev - 1;
-		($fromrev, $torev) = ($torev, $fromrev) if $reverse;
-	    }
-	    else {
-		die loc("Change spec %1 not recognized.\n", $_);
-	    }
-	    push @revlist , [$fromrev, $torev];
-	}
-	return @revlist;
-    }
+
+    my @revlist = $self->resolve_chgspec($target);
+    return @revlist if(@revlist);
 
     # revspec
     if (($fromrev, $torev) = $self->resolve_revspec($target)) {
@@ -879,6 +864,32 @@ svk use the default.
     }
 
     return $path;
+}
+
+## Resolve the correct revision numbers given by "-c"
+sub resolve_chgspec {
+    my ($self,$target) = @_;
+    my @revlist;
+    my ($fromrev,$torev);
+    if(my $chgspec = $self->{chgspec}) {
+	for (split (',', $self->{chgspec})) {
+	    my $reverse;
+	    if (($fromrev, $torev) = m/^(\d+)-(\d+)$/) {
+		--$fromrev;
+	    }
+	    elsif (($reverse, $torev) = m/^(-?)(\d+)$/) {
+		$fromrev = $torev - 1;
+		($fromrev, $torev) = ($torev, $fromrev) if $reverse;
+	    }
+	    else {
+		eval { $torev = $self->resolve_revision($target,$_); };
+		die loc("Change spec %1 not recognized.\n", $_) if($@);
+		$fromrev = $torev - 1;
+	    }
+	    push @revlist , [$fromrev, $torev];
+	}
+    }
+    return @revlist;
 }
 
 sub resolve_revspec {
