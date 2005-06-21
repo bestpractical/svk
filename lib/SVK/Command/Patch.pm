@@ -183,6 +183,7 @@ sub run {
     $patch->apply_to ($dst, $mergecmd->get_editor ($dst),
 		      resolve => $merge->resolver,
 		      ticket => $ticket);
+    delete $mergecmd->{save_message};
     return;
 }
 
