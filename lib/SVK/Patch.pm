@@ -77,7 +77,7 @@ sub load {
     my ($class, $file, $xd, $depot) = @_;
 
     my $content = do {
-        open my $fh, "< $file" or die loc("cannot open %1: %2", $file, $!);
+        open my $fh, "< $file" or die loc("cannot open %1: %2\n", $file, $!);
 
         # Normalize all line endings to LF
         binmode($fh, ":eol(LF)");
