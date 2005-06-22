@@ -25,6 +25,9 @@
 * Fix a bug that a file is not properly handled when a symlink is
   overwritten by file, without proper replace.
 
+* Fix a bug that patch --apply thinks the commit fails and save the
+  commit message to a temp file.
+
 * svk blame now takes --remoterev to show remote revision.
 
 * svk sync -a now does the right thing on given depotpath. [Jody Belka]
