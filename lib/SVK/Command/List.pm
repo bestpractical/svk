@@ -11,7 +11,7 @@ use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
 
 sub options {
-    ('r|revision=i'  => 'rev',
+    ('r|revision=s'  => 'rev',
      'v|verbose'	   => 'verbose',
      'f|full-path'      => 'fullpath',
      'd|depth=i'      => 'depth');
@@ -38,7 +38,7 @@ sub run {
 sub _do_list {
     my ($self, $level, $target) = @_;
     my $pool = SVN::Pool->new_default;
-    $target->as_depotpath ($self->{rev});
+    $target->as_depotpath ($self->resolve_revision($target,$self->{rev}));
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
        die loc("Path %1 is not a versioned directory\n", $target->{path})
