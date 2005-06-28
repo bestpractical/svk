@@ -15,6 +15,9 @@ sub parse_arg {
 
     @arg = ('') if $#arg < 0;
 
+    $self->{lump} = 1; # -- XXX -- will break otherwise -- XXX ---
+    $self->{incremental} = !$self->{lump};
+
     if ($self->{all}) {
         my $checkout = $self->{xd}{checkout}{hash};
         @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
@@ -28,16 +31,13 @@ sub parse_arg {
                 to => 1,
                 log => 1,
                 message => '',
-                incremental => !$self->{lump},
             }
         )->parse_arg (@arg);
     }
 
-    $self->{lump} = 1; # -- XXX -- will break otherwise -- XXX ---
 
     $self->{sync}++;
     $self->{merge}++;
-    $self->{incremental} = !$self->{lump};
 
     $self->SUPER::parse_arg (@arg);
 }
