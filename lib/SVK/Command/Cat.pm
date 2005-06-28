@@ -6,7 +6,7 @@ use base qw( SVK::Command );
 use SVK::Util qw(slurp_fh);
 
 sub options {
-    ('r|revision=i'  => 'rev');
+    ('r|revision=s'  => 'rev');
 }
 
 sub parse_arg {

@@ -9,7 +9,7 @@ use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
-    ('r|revision=i'    => 'rev',
+    ('r|revision=s'    => 'rev',
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
      'q|quiet'         => 'quiet',
@@ -42,8 +42,7 @@ sub run {
 	my $update_target = SVK::Target->new
 	    ( %$target,
 	      path => $self->{update_target_path} || $target->{path},
-	      revision => defined $self->{rev} ?
-	      $self->{rev} : $target->{repos}->fs->youngest_rev,
+	      revision => defined $self->{rev} ? $self->resolve_revision($target->clone,$self->{rev}) : $target->{repos}->fs->youngest_rev,
 	      copath => undef
 	    );
 
