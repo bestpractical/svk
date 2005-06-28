@@ -3,6 +3,11 @@
 * Fix a memory leak when constructing copy cache for revisions
   involving many changed paths.
 
+* Fix a memory leak when updating directories containing lots of files.
+
+* Fix memory leaks when having mixed-revision checkout with many
+  entries.
+
 * Fix svk ls -f to list the path, instead of depot root path. [Autrijus]
 
 * Fix a bug that push (smerge -I) will use wrongly encoded commit
@@ -31,6 +36,11 @@
 * svk blame now takes --remoterev to show remote revision.
 
 * svk sync -a now does the right thing on given depotpath. [Jody Belka]
+
+* make svk update, ls, and cat use new revspec parser so they support
+  remote-revision form and friends. [gugod]
+
+* Pull as a lump under all conditions, even depot path. [Norman Nunley]
 
 * Misc documentation and tests fixes and improvements. [jesse,knew,matthewd,Tom Sibley]
 
