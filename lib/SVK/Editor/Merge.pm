@@ -134,7 +134,7 @@ sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my $path = $anchor.'/'.shift;
-		   return $root->check_path ($path);
+		   return $root->check_path ($path, $_[1]);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
@@ -209,7 +209,7 @@ sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
     my $pool = pop @arg;
-    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path, $pool))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -235,7 +235,7 @@ sub add_file {
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    if ($self->{cb_exist}->($path)) {
+    if ($self->{cb_exist}->($path, $pool)) {
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
@@ -481,9 +481,10 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
+    my $pool = $arg[-1];
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
-    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path, $pool))) {
 	unless ($kind == $SVN::Node::dir) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -512,9 +513,10 @@ sub add_directory {
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
+    my $pool = $arg[-1];
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
-	unless ($self->{cb_exist}->($path) || $self->{open_nonexist}) {
+	unless ($self->{cb_exist}->($path, $pool) || $self->{open_nonexist}) {
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}
@@ -610,7 +612,7 @@ sub _check_delete_conflict {
 	    $torm->{$name} = undef, next
 		if $entry->kind == $SVN::Node::file;
 
-	    if ($self->{cb_exist}->($cpath)) {
+	    if ($self->{cb_exist}->($cpath, $pool)) {
 		$torm->{$name} = $self->_check_delete_conflict
 		    ($cpath, $crpath, $SVN::Node::dir, $pdir, $pool);
 		if (ref ($torm->{$name})) {
@@ -651,7 +653,7 @@ sub _partial_delete {
 	    $self->_partial_delete ($torm->{$_}, $cpath, $baton,
 				    SVN::Pool->new ($pool));
 	}
-	elsif ($self->{cb_exist}->($cpath)) {
+	elsif ($self->{cb_exist}->($cpath, $pool)) {
 	    $self->{storage}->delete_entry ($cpath, $self->{cb_rev}->($cpath),
 					    $baton, $pool);
 	}
@@ -662,7 +664,8 @@ sub _partial_delete {
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
-    return unless defined $pdir && $self->{cb_exist}->($path);
+    my $pool = $arg[-1];
+    return unless defined $pdir && $self->{cb_exist}->($path, $pool);
 
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
     my $torm = $self->_check_delete_conflict ($path, $rpath,
@@ -735,7 +738,7 @@ sub _merge_prop_change {
     {
 	local $@;
 	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0], $pool) };
-	$prop->{local} = $self->{cb_exist}->($path)
+	$prop->{local} = $self->{cb_exist}->($path, $pool)
 	    ? $self->{cb_localprop}->($path, $_[0], $pool) : undef;
     }
     # XXX: only known props should be auto-merged with default resolver
