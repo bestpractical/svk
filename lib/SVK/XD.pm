@@ -426,19 +426,24 @@ sub create_xd_root {
 	    ($self->{checkout}->get ($paths[0] || $copath)->{revision}))
 	if $#paths <= 0;
 
+    my $pool = SVN::Pool->new;
+    my $base_rev;
     for (@paths) {
 	my $cinfo = $self->{checkout}->get ($_);
 	unless ($root) {
-	    $txn = $fs->begin_txn ($cinfo->{revision});
+	    $base_rev = $cinfo->{revision};
+	    $txn = $fs->begin_txn ($base_rev);
 	    $root = $txn->root();
 	    next if $_ eq $copath;
 	}
+	next if $cinfo->{revision} == $base_rev;
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
-	$root->delete ($path)
-	    if eval { $root->check_path ($path) != $SVN::Node::none };
-	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
-				$root, $path)
+	$root->delete ($path, $pool)
+	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
+	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
+				$root, $path, $pool)
 		unless $cinfo->{'.deleted'};
+	$pool->clear;
     }
     return ($txn, $root);
 }
