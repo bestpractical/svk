@@ -139,7 +139,6 @@ $svk->commit ('-m', 'modification to mirror', "$corpath_default");
 
 is_output ($svk, "pull", ["//l"], [
         "Auto-merging (14, 16) /m to /l (base /m:14).",
-        "===> Auto-merging (14, 16) /m to /l (base /m:14).",
         "U   new-file",
         "New merge ticket: $test_uuid:/A:8",
         "Committed revision 17."]);
