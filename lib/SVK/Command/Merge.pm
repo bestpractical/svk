@@ -172,6 +172,10 @@ sub run {
 		$merge->{fromrev} = $previous_base;
 	    }
 
+	    # skip the merge if this change is merged from the dst.
+	    # XXX: should be strict, only skip if that's the only merge.
+	    next if $merge->_is_merge_from ($merge->{src}->path, $dst, $rev);
+ 
 	    print '===> '.$merge->info;
 	    $self->{message} = $merge->log (1);
 	    $self->decode_commit_message;

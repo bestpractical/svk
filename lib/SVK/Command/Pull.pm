@@ -7,6 +7,7 @@ use SVK::XD;
 
 sub options {
    ('a|all'		=> 'all',
+    'force-incremental' => 'force_incremental',
     'l|lump'		=> 'lump');
 }
 
@@ -15,7 +16,10 @@ sub parse_arg {
 
     @arg = ('') if $#arg < 0;
 
-    $self->{lump} = 1; # -- XXX -- will break otherwise -- XXX ---
+    # -- XXX -- will break otherwise -- XXX ---
+    # (Possibly fixed now, so we'll add an undocumented option to override
+    # this, to enable testing.)
+    $self->{lump} = 1 unless $self->{force_incremental};
     $self->{incremental} = !$self->{lump};
 
     if ($self->{all}) {
