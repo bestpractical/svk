@@ -1,3 +1,181 @@
+[Changes for 1.01 - 24 Jun, 2005]
+
+* Fix a memory leak when constructing copy cache for revisions
+  involving many changed paths.
+
+* Fix svk ls -f to list the path, instead of depot root path. [Autrijus]
+
+* Fix a bug that push (smerge -I) will use wrongly encoded commit
+  message if you are not using utf8. [Jorge Daza <jorge@drqueue.org>]
+
+* Fix a crash bug when switch to a branch that has new files with keywords.
+
+* When checkout to existing directory, if the direcotry is from the
+  very same depotpath, do an update instead of dying.  This resembles
+  the svn and cvs behaviour.
+
+* Fix patch list/view/dump/delete for those can't be applied. [Jody Belka]
+
+* Fix svk checkout --detach to detach a checkout even if the directory's
+  parent no longer exists. [Jody Belka]
+
+* svk checkout --list now shows removed checkout with '?', and
+  supports --purge.  [David Glasser]
+
+* Fix a bug that a file is not properly handled when a symlink is
+  overwritten by file, without proper replace.
+
+* svk blame now takes --remoterev to show remote revision.
+
+* svk sync -a now does the right thing on given depotpath. [Jody Belka]
+
+* Misc documentation and tests fixes and improvements. [jesse,knew,matthewd,Tom Sibley]
+
+* Fix the autouse hack so Devel::DProf works again.
+
+[Changes for 1.00 - 9 May, 2005]
+
+* Fix backspace in prompt function for certain terminals.
+  [Martijn van Beers <martijn@eekeek.org>]
+
+* Fix the case that when checkout creates parent directory for you,
+  the state wasn't properly flushed due to inappropriate lock.
+  [matthewd]
+
+* Document --file for everything that supports --message. [matthewd]
+
+* Support 'vim -d' and 'gvim -df' for conflict resolution.
+  [Derrick Daugherty <derrick@blinky-lights.org>]
+
+[Changes for 0.994 - 29 Apr, 2005]
+
+* Fix the warning "Revision too large" when doing svk log -l1 on a
+  checkout which is not HEAD.
+
+* Fix an edge case in post-commit checkout optimization on deleted
+  entry.  This was causing stacktrace and not updating the checkout
+  metadata accordingly.
+
+* Only consider a g-merge to be a change when the merge source and destination
+  paths are the same.  This eliminates empty revisions created by
+  push. [matthewd]
+
+* Improve the "Depot path" information, display the full path inside
+  the repository instead of the checkout-point. [gugod]
+
+* make sure $ENV{SVKPAGER} refers to an executable. [gugod]
+
+* Fix svk diff on 0-length file on checkout.
+
+[Changes for 0.993 - 25 Apr, 2005]
+
+* Save commit message from editor in a tmpfile if commit fails. [#8336]
+
+* Fix tests for bdb backend.
+
+* svk import -C should not actually create import path nor turn path
+  into copath. [#8719]
+
+* Fix a bug that a dummy switch won't update revision metadata, which
+  might be non-exist for the new branch.
+
+* Ignore existing locks when trying to unlock a mirror.
+
+* Added examples to the intro. [jesse]
+
+[Changes for 0.992 - 18 Apr, 2005]
+
+* Fix keyword translation for undesired characters. [matthewd]
+
+* Fix svk switch from a removed branch.
+
+* Don't trust LML would return a valid encoding that Encode knows.
+  [Eric Gillespie <epg@pretzelnet.org>]
+
+* Recognize merge-conflict error, so no stacktrace for it.
+
+* svk info now skips files not under version control. [#8220] [gugod]
+
+* Fix locked mirror messages.
+
+* Various pool usage fixes.
+
+[Changes for 0.991 - 29 Mar, 2005]
+
+* Fix a regression for smerge supplying message from editor.
+
+* Fix an edge case that push doesn't report empty merge when
+  the mirrored remote repository is completely empty.
+
+* Proper locking for svn::mirror objects, and mirror --unlock.
+
+* svk patch subcommands are now options. [jesse]
+
+* Support HEAD, BASE, and {DATE} in many commands using -r. [gugod]
+
+* Support mkdir multiple copaths. [hcchien]
+
+* Add --summary to smerge and push to show logs for changes to be merged. [#7791]
+
+* Optionally support paging help text with IO::Pager. [gugod]
+
+* Fix support for replace with history.
+
+* Don't trust LML would return a valid encoding that Encode knows.
+  [Eric Gillespie <epg@pretzelnet.org>]
+
+* Make multiple -r options to dwim. [#7038]
+
+* Allow import into mirrored path, and cleanup old code.
+
+* Allow merge -c -REV to rollback rev.  This is the same as -rREV:REV-1.
+
+* Add missing -c help to merge. [Ethan Tuttle <ethan@etuttle.com>]
+
+* Make checkout, update, and merge deal with unwritable checkout copy
+  more gracefully.
+
+* Fix move on mirrored path.
+
+* Fix rm for scheduled symlinks.
+
+* Proper message for cp nonexisting parent without -p.
+
+* Properly skip special node types like socket or device in checkout_delta.
+
+* On writing mixed-eol files, don't croak on normalization.
+
+* When doing file-anchored merges, ensure file is opened before
+  cb_merged is called.
+
+* When doing file-level merge, translate and report the target path
+  properly.
+
+* Do proper eol translation per svn:eol on local (yours) node
+  before textual merges are invoked.
+
+* Proper io layer ordering, and force re-translation for merge text
+  when needed.
+
+* Reopen FH in prepare_fh when needed, since apply_textdelta already
+  closed the fh for us.
+
+* Propset now works on multiple overlapping copaths. [#8139]
+
+* Fix a buglet that two props set on a added node will be reported
+  as added and prop-modified.
+
+* Make svk info work on removed path. [mathhewd]
+
+* Reflect errors in bin/svk exit codes. [matthewd]
+
+* Update various help messages [#7217] [#7877] [hcchien]
+
+* svk verify now only checks with the content guarded by PGP block.
+
+* Fix a bug that interactive merge dies out horribly when you
+  edit the merged file, exit with saving and answer a)bort.
+
 [Changes for 0.30 - 2 Mar, 2005]
 
 * Support native encodings for pathnames and log messages handling.

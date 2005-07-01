@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
 use SVK::Util qw (find_svm_source resolve_svm_source);
+use YAML;
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -17,15 +18,18 @@ sub parse_arg {
 
 sub run {
     my ($self, @arg) = @_;
-
+    my $exception='';
     for my $target (@arg) {
 	my ($copath,$path,$repos,$depotpath) = @$target{qw/copath path repos depotpath/};
 	my $yrev = $repos->fs->youngest_rev;
 	my $rev = $target->{copath} ?
 	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
-	my (undef,$m) = resolve_svm_source($repos, find_svm_source($repos,$path));
+
+	$target->{revision} = $rev;
+	my (undef,$m) = eval { resolve_svm_source($repos, find_svm_source($repos,$path,$rev)) };
+	if($@) { $exception .= "$@\n" ; next }
 	print loc("Checkout Path: %1\n",$copath) if($copath);
-	print loc("Depot Path: %1\n", $depotpath);
+	print loc("Depot Path: %1\n","/".$target->depotname.${path});
 	print loc("Revision: %1\n", $rev);
 	print loc(
 	    "Last Changed Rev.: %1\n",
@@ -43,6 +47,7 @@ sub run {
 	}
 	print "\n";
     }
+    die($exception) if($exception);
 }
 
 1;

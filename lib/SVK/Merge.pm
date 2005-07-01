@@ -165,7 +165,10 @@ sub find_merge_sources {
     my ($self, $target, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
     my $info = $self->merge_info ($target->new);
-    $info->add_target ($target) unless $noself;
+
+    $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath)->{revision})
+	if defined $target->{copath};
+    $info->add_target ($target, $self->{xd}) unless $noself;
 
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
     return $minfo if $verbatim;
@@ -323,6 +326,10 @@ sub run {
 	  target => $target,
 	  storage => $storage,
 	  notify => $notify,
+	  g_merge_no_a_change => ($src->path ne $base->path),
+	  # if storage editor is E::XD, applytext_delta returns undef
+	  # for failed operations, and merge editor should mark them as skipped
+	  storage_has_unwritable => $is_copath && !$self->{check_only},
 	  allow_conflicts => $is_copath,
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},

@@ -54,7 +54,7 @@ sub _mkpdir {
         mkdir => { message => "Directory for svk import.", parent => 1 },
     )->run ($target);
 
-    print loc("Import path %1 initialized.\n", $target->{path});
+    print loc("Import path %1 initialized.\n", $target->{depotpath});
 }
 
 sub run {
@@ -67,14 +67,20 @@ sub run {
     die loc("import destination cannot be a file") if $kind == $SVN::Node::file;
 
     if ($kind == $SVN::Node::none) {
-	$self->_mkpdir ($target);
-	$target->refresh_revision;
-	$root = $target->root;
+	if ($self->{check_only}) {
+	    print loc("Import path %1 will be created.\n", $target->{depotpath});
+	    $target = $target->new (revision => 0, path => '/');
+	}
+	else {
+	    $self->_mkpdir ($target);
+	    $target->refresh_revision;
+	    $root = $target->root;
+	}
     }
 
     unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{xd}{checkout}->store
-	    ($copath, {depotpath => $target->{depotpath},
+	    ($copath, {depotpath => '/'.$target->depotname.$target->{path},
 		       '.newprop' => undef,
 		       '.conflict' => undef,
 		       revision => $target->{revision}});
@@ -110,6 +116,16 @@ sub run {
 
     $self->{import} = 1;
     $self->run_delta ($target->new (copath => $copath), $root, $editor, %cb);
+
+    if ($self->{check_only}) {
+	print loc("Directory %1 will be imported to depotpath %2.\n",
+		  $copath, $target->{depotpath});
+	$self->{xd}{checkout}->store
+	    ($copath, {depotpath => undef,
+		       revision => undef,
+		       '.schedule' => undef});
+    }
+    return;
 }
 
 1;
@@ -129,9 +145,10 @@ SVK::Command::Import - Import directory into depot
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
+ -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  -f [--from-checkout]   : import from a checkout path
  -t [--to-checkout]     : turn the source into a checkout path

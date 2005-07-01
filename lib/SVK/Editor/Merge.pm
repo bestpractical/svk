@@ -134,7 +134,7 @@ sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my $path = $anchor.'/'.shift;
-		   return $root->check_path ($path);
+		   return $root->check_path ($path, $_[1]);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
@@ -209,7 +209,7 @@ sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
     my $pool = pop @arg;
-    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path, $pool))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -235,7 +235,7 @@ sub add_file {
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    if ($self->{cb_exist}->($path)) {
+    if ($self->{cb_exist}->($path, $pool)) {
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
@@ -296,13 +296,19 @@ sub cleanup_fh {
 }
 
 sub prepare_fh {
-    my ($self, $fh) = @_;
-    # XXX: need to respect eol-style here?
+    my ($self, $fh, $eol) = @_;
     for my $name (qw/base new local/) {
 	my $entry = $fh->{$name};
 	next unless $entry->[FH];
-	next if $entry->[FILENAME];
+	# if there's eol translation required, we can't use the
+	# prepared tmp files.
+	if ($entry->[FILENAME]) {
+	    next unless $eol;
+	    # reopen the tmp file, since apply_textdelta closes it
+	    open $entry->[FH], $entry->[FILENAME];
+	}
 	my $tmp = [tmpfile("$name-"), $entry->[CHECKSUM]];
+	binmode $tmp->[FH], $eol if $eol;
 	slurp_fh ($entry->[FH], $tmp->[FH]);
 	close $entry->[FH];
 	$entry = $fh->{$name} = $tmp;
@@ -340,8 +346,13 @@ sub apply_textdelta {
 	unless $self->{notify}->node_status ($path);
 
     $self->ensure_open ($path);
-    return $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
-					      $checksum, $pool);
+    my $handle = $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
+						    $checksum, $pool);
+    if ($self->{storage_has_unwritable} && !$handle) {
+	delete $self->{notify}{status}{$path};
+	$self->{notify}->flush ($path);
+    }
+    return $handle;
 }
 
 sub _merge_text_change {
@@ -383,8 +394,8 @@ sub _overwrite_local_file {
     my ($self, $fh, $path, $nfh, $pool) = @_;
     my $handle = $self->{storage}->
 	apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
-		$pool);
-    
+			 $pool);
+
     if ($handle && $#{$handle} >= 0) {
 	if ($self->{send_fulltext}) {
 	    SVN::TxDelta::send_stream ($nfh, @$handle, $pool);
@@ -394,7 +405,23 @@ sub _overwrite_local_file {
 	    my $txstream = SVN::TxDelta::new($fh->{local}[FH], $nfh, $pool);
 	    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	}
+	return 1;
     }
+
+    if ($self->{storage_has_unwritable}) {
+	delete $self->{notify}{status}{$path};
+	$self->{notify}->flush ($path);
+	return 0;
+    }
+    return 1;
+}
+
+sub _merge_file_unchanged {
+    my ($self, $path, $checksum, $pool) = @_;
+    ++$self->{changes} unless $self->{g_merge_no_a_change};
+    $self->{notify}->node_status ($path, 'g');
+    $self->ensure_close ($path, $checksum, $pool);
+    return;
 }
 
 sub close_file {
@@ -407,15 +434,18 @@ sub close_file {
     no warnings 'uninitialized';
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
-	$self->prepare_fh ($fh);
 
-	if ($checksum eq $fh->{local}[CHECKSUM] ||
-	    File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0) {
-	    ++$self->{changes};
-	    $self->{notify}->node_status ($path, 'g');
-	    $self->ensure_close ($path, $checksum, $pool);
-	    return;
-	}
+	$self->_merge_file_unchanged ($path, $checksum, $pool), return
+	    if $checksum eq $fh->{local}[CHECKSUM];
+
+	my $eol = $self->{cb_localprop}->($path, 'svn:eol-style', $pool);
+	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
+	$eol_layer = '' if $eol_layer eq ':raw';
+	$self->prepare_fh ($fh, $eol_layer);
+	# XXX: There used be a case that this explicit comparison is
+	# needed, but i'm not sure anymore.
+	$self->_merge_file_unchanged ($path, $checksum, $pool), return
+	    if File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0;
 
 	$self->ensure_open ($path);
         if ($info->{addmerge}) {
@@ -424,14 +454,17 @@ sub close_file {
         }
 	my ($conflict, $mfh) = $self->_merge_text_change ($fh, $path, $pool);
 	$self->{notify}->node_status ($path, $conflict ? 'C' : 'G');
+
+	$eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '<');
+	binmode $mfh, $eol_layer or die $! if $eol_layer;
+
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
-	$self->_overwrite_local_file ($fh, $path, $mfh, $pool);
-
-	undef $fh->{base}[FILENAME] if $info->{addmerge};
+	if ($self->_overwrite_local_file ($fh, $path, $mfh, $pool)) {
+	    undef $fh->{base}[FILENAME] if $info->{addmerge};
+	    $self->node_conflict ($path) if $conflict;
+	}
 	$self->cleanup_fh ($fh);
-
-	$self->node_conflict ($path) if $conflict;
     }
     elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
 	# open but prop edit only, load local checksum
@@ -448,9 +481,10 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
+    my $pool = $arg[-1];
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
-    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path))) {
+    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path, $pool))) {
 	unless ($kind == $SVN::Node::dir) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -461,10 +495,15 @@ sub add_directory {
 	$self->{notify}->node_status ($path, 'G');
     }
     else {
-	$self->{added}{$path} = 1;
-	$self->{storage_baton}{$path} =
+	my $baton =
 	    $self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
 					     @arg);
+	unless (defined $baton) {
+	    $self->{notify}->flush ($path);
+	    return undef;
+	}
+	$self->{storage_baton}{$path} = $baton;
+	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, 'A');
 	$self->{notify}->flush ($path, 1);
     }
@@ -474,9 +513,10 @@ sub add_directory {
 
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
+    my $pool = $arg[-1];
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
-	unless ($self->{cb_exist}->($path) || $self->{open_nonexist}) {
+	unless ($self->{cb_exist}->($path, $pool) || $self->{open_nonexist}) {
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}
@@ -572,7 +612,7 @@ sub _check_delete_conflict {
 	    $torm->{$name} = undef, next
 		if $entry->kind == $SVN::Node::file;
 
-	    if ($self->{cb_exist}->($cpath)) {
+	    if ($self->{cb_exist}->($cpath, $pool)) {
 		$torm->{$name} = $self->_check_delete_conflict
 		    ($cpath, $crpath, $SVN::Node::dir, $pdir, $pool);
 		if (ref ($torm->{$name})) {
@@ -613,7 +653,7 @@ sub _partial_delete {
 	    $self->_partial_delete ($torm->{$_}, $cpath, $baton,
 				    SVN::Pool->new ($pool));
 	}
-	elsif ($self->{cb_exist}->($cpath)) {
+	elsif ($self->{cb_exist}->($cpath, $pool)) {
 	    $self->{storage}->delete_entry ($cpath, $self->{cb_rev}->($cpath),
 					    $baton, $pool);
 	}
@@ -624,7 +664,8 @@ sub _partial_delete {
 sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
-    return unless defined $pdir && $self->{cb_exist}->($path);
+    my $pool = $arg[-1];
+    return unless defined $pdir && $self->{cb_exist}->($path, $pool);
 
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
     my $torm = $self->_check_delete_conflict ($path, $rpath,
@@ -697,7 +738,7 @@ sub _merge_prop_change {
     {
 	local $@;
 	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0], $pool) };
-	$prop->{local} = $self->{cb_exist}->($path)
+	$prop->{local} = $self->{cb_exist}->($path, $pool)
 	    ? $self->{cb_localprop}->($path, $_[0], $pool) : undef;
     }
     # XXX: only known props should be auto-merged with default resolver

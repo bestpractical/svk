@@ -57,11 +57,12 @@ sub open_root {
     require SVK::XD;
     $self->{signature} ||= SVK::XD::Signature->new (root => $self->{xd}->cache_directory)
 	if $self->{update};
-    return $self->open_directory ('');
+    return $self->open_directory ('', '');
 }
 
 sub add_file {
     my ($self, $path, $pdir) = @_;
+    return unless defined $pdir;
     my $copath = $path;
     $self->{added}{$path} = 1;
     $self->{get_copath}($copath);
@@ -71,7 +72,8 @@ sub add_file {
 }
 
 sub open_file {
-    my ($self, $path) = @_;
+    my ($self, $path, $pdir) = @_;
+    return unless defined $pdir;
     my $copath = $path;
     $self->{get_copath}($copath);
     die loc("path %1 does not exist", $path) unless -l $copath || -e _;
@@ -80,7 +82,7 @@ sub open_file {
 
 sub get_fh {
     my ($self, $path, $copath) = @_;
-    open my $fh, '>', $copath or warn "can't open $path: $!";
+    open my $fh, '>', $copath or warn "can't open $path: $!", return;
     $self->{iod}{$path} = IO::Digest->new ($fh, 'MD5')
 	unless $self->{ignore_checksum};
     return $fh;
@@ -88,6 +90,7 @@ sub get_fh {
 
 sub get_base {
     my ($self, $path, $copath, $checksum) = @_;
+    return unless defined $path;
     my ($dir,$file) = get_anchor (1, $copath);
     my $basename = catpath (undef, $dir, ".svk.$file.base");
     rename ($copath, $basename)
@@ -117,6 +120,7 @@ sub close_base {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
+    return unless defined $path;
     return if $self->{check_only};
     my ($copath, $dpath) = ($path, $path);
     $self->{get_copath}($copath);
@@ -127,7 +131,7 @@ sub apply_textdelta {
 	$base = $self->{base}{$path}[0];
     }
 
-    my $fh = $self->get_fh ($path, $copath);
+    my $fh = $self->get_fh ($path, $copath) or return undef;
 
     # The fh is refed by the current default pool, not the pool here
     return [SVN::TxDelta::apply ($base || SVN::Core::stream_empty($pool),
@@ -153,15 +157,18 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path, $pdir) = @_;
+    return unless defined $pdir;
     my $copath = $path;
     $self->{get_copath}($copath);
     die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
-    mkdir ($copath) or die $! unless $self->{check_only};
+    mkdir ($copath) or return undef
+	unless $self->{check_only};
     return $path;
 }
 
 sub open_directory {
-    my ($self, $path) = @_;
+    my ($self, $path, $pdir) = @_;
+    return undef unless defined $pdir;
     # XXX: test if directory exists
     if ($self->{update}) {
 	my $copath = $path;
@@ -178,15 +185,17 @@ sub do_delete {
 }
 
 sub delete_entry {
-    my ($self, $path, $revision) = @_;
+    my ($self, $path, $revision, $pdir) = @_;
+    return unless defined $pdir;
+    return if $self->{check_only};
     my $copath = $path;
     $self->{get_copath}($copath);
-    return if $self->{check_only};
     $self->do_delete ($path, $copath);
 }
 
 sub close_directory {
     my ($self, $path) = @_;
+    return unless defined $path;
     delete $self->{added}{$path};
 }
 

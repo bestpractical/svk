@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 23;
+use Test::More tests => 27;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -22,6 +22,10 @@ $svk->propset ('svn:mime-type', 'image/png', 'A/binary');
 is_output ($svk, 'diff', ['//asdf-non'],
 	   ['path //asdf-non does not exist.']);
 is_output ($svk, 'diff', ['//asdf-non', 'A/binary'],
+	   ['path //asdf-non does not exist.']);
+is_output ($svk, 'diff', ['A/binary', '//asdf-non'],
+	   ['Invalid arguments.']);
+is_output ($svk, 'diff', ['//asdf-non', '//'],
 	   ['path //asdf-non does not exist.']);
 is_output ($svk, 'diff', [],
            ['=== A/binary',
@@ -423,3 +427,22 @@ is_output ($svk, 'diff', ['-r5'],
 	    'Name: anewprop',
 	    ' +value'
 	   ]);
+
+overwrite_file ("A/newfile", "");
+$svk->st;
+is_output ($svk, 'diff', ['A/newfile'],
+	   [__('=== A/newfile'),
+	    '==================================================================',
+	    __('--- A/newfile  (revision 6)'),
+	    __('+++ A/newfile  (local)'),
+	    '@@ -1,3 +0,0 @@',
+	    '-foobar',
+	    '-newline',
+	    '-fnord'
+	   ]);
+
+# I'm not sure I really *like* the fact that this produces no output, but 
+# that's consistent with svn and there's no obvious thing to print
+unlink ('A/newfile');
+is_output ($svk, 'diff', ['A/newfile'],
+	   [  ]);

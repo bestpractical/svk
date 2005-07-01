@@ -5,7 +5,7 @@ our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(
     IS_WIN32 DEFAULT_EDITOR TEXT_MODE HAS_SYMLINK HAS_SVN_MIRROR $EOL $SEP
 
-    get_prompt get_buffer_from_editor
+    get_prompt get_buffer_from_editor edit_file
 
     get_encoding get_encoder from_native to_native
 
@@ -15,7 +15,8 @@ our @EXPORT_OK = qw(
     read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
-    move_path make_path splitpath splitdir tmpdir tmpfile
+    move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
+    catdepot abs_path_noexist 
 
     is_symlink is_executable is_uri can_run
 );
@@ -27,7 +28,7 @@ use SVK::I18N;
 use SVN::Core;
 use SVN::Ra;
 use autouse 'Encode'            => qw(resolve_alias decode encode);
-use autouse 'File::Glob' 	=> qw(bsd_glob);
+use File::Glob qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
 use autouse 'File::Spec::Functions' => 
                                qw(catdir catpath splitpath splitdir tmpdir);
@@ -134,6 +135,11 @@ sub get_prompt { {
     Term::ReadKey::ReadMode(IS_WIN32 ? 'normal' : 'raw');
     my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
+    my $erase;
+    if (!IS_WIN32) {
+       my %keys = Term::ReadKey::GetControlChars();
+       $erase = $keys{ERASE};
+    }
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
         if ($key =~ /[\012\015]/) {
@@ -148,6 +154,11 @@ sub get_prompt { {
             $msg =~ s{\n\z}{$formfeed\n};
             die $msg;
         }
+       elsif (defined $erase and $key eq $erase) {
+            next unless length $answer;
+            $out->("\cH \cH");
+            chop $answer; next;
+       }
         elsif ($key eq "\cH") {
             next unless length $answer;
             $out->("$key $key");
@@ -174,6 +185,25 @@ sub get_prompt { {
     return $answer;
 } }
 
+=head3 edit_file ($file_name)
+
+Launch editor to edit a file.
+
+=cut
+
+sub edit_file {
+    my ($file) = @_;
+    my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
+	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
+			: DEFAULT_EDITOR; # fall back to something
+    my @editor = split (/ /, $editor);
+
+    print loc("Waiting for editor...\n");
+
+    # XXX: check $?
+    system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
+}
+
 =head3 get_buffer_from_editor ($what, $sep, $content, $filename, $anchor, $targets_ref)
 
 XXX Undocumented
@@ -194,10 +224,6 @@ sub get_buffer_from_editor {
 	$content = <$fh>;
     }
 
-    my $editor =	defined($ENV{SVN_EDITOR}) ? $ENV{SVN_EDITOR}
-	   		: defined($ENV{EDITOR}) ? $ENV{EDITOR}
-			: DEFAULT_EDITOR; # fall back to something
-    my @editor = split (/ /, $editor);
     my $time = time;
 
     while (1) {
@@ -205,10 +231,7 @@ sub get_buffer_from_editor {
         my $md5 = md5_fh($fh);
         close $fh;
 
-	print loc("Waiting for editor...\n");
-
-	# XXX: check $?
-	system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
+	edit_file ($file);
 
         open $fh, '<', $file or die $!;
         last if ($md5 ne md5_fh($fh));
@@ -254,14 +277,15 @@ Get the current encoding from locale
 sub get_encoding {
     return 'utf8' if $^O eq 'darwin';
     local $@;
-    return resolve_alias (eval {
+    return (resolve_alias (eval {
 	require Locale::Maketext::Lexicon;
         local $Locale::Maketext::Lexicon::Opts{encoding} = 'locale';
         Locale::Maketext::Lexicon::encoding();
     } || eval {
-        require 'open.pm';
-        return open::_get_locale_encoding();
-    }) or 'utf8';
+        require 'encoding.pm';
+        defined &encoding::_get_locale_encoding() or die;
+        return encoding::_get_locale_encoding();
+    }) or 'utf8');
 }
 
 =head3 get_encoder ([$encoding])
@@ -526,6 +550,28 @@ sub abs_path {
     return undef;
 }
 
+=head3 abs_path_noexist ($path)
+
+Return paths with components in symlink resolved, but keep the final
+path even if it's symlink.  Unlike abs_path(), returns a valid value
+even if the base directory doesn't exist.
+
+=cut
+
+sub abs_path_noexist {
+    my $path = shift;
+
+    my $rest = '';
+    until (abs_path ($path)) {
+	return $rest unless length $path;
+	my $new_path = dirname($path);
+	$rest = substr($path, length($new_path)) . $rest;
+	$path = $new_path;
+    }
+
+    return abs_path ($path) . $rest;
+}
+
 =head3 abs2rel ($pathname, $old_basedir, $new_basedir, $sep)
 
 Replace the base directory in the native pathname to another base directory
@@ -595,9 +641,10 @@ sub devnull () {
              : File::Spec::Functions::devnull();
 }
 
-=head3 get_anchor ($need_target)
+=head3 get_anchor ($need_target, @paths)
 
-XXX Undocumented
+Returns the (anchor, target) pairs for native path @paths.  Discard
+the targets being returned unless $need_target.
 
 =cut
 
@@ -608,6 +655,30 @@ sub get_anchor {
 	chop $anchor if length ($anchor) > 1;
 	($volume.$anchor, $need_target ? ($target) : ())
     } @_;
+}
+
+=head3 get_depot_anchor ($need_target, @paths)
+
+Returns the (anchor, target) pairs for depotpaths @paths.  Discard the
+targets being returned unless $need_target.
+
+=cut
+
+sub get_depot_anchor {
+    my $need_target = shift;
+    map {
+	my (undef, $anchor, $target) = File::Spec::Unix->splitpath ($_);
+	chop $anchor if length ($anchor) > 1;
+	($anchor, $need_target ? ($target) : ())
+    } @_;
+}
+
+=head3 catdepot ($depot_name, @paths)
+
+=cut
+
+sub catdepot {
+    return File::Spec::Unix->catdir('/', @_);
 }
 
 =head3 make_path ($path)
@@ -772,12 +843,13 @@ revision.
 
 =cut
 
-sub _copies_in_rev {
-    my ($fs, $rev) = @_;
+sub _copies_in_root {
+    my ($root) = @_;
     my $copies;
-    my $root = $fs->revision_root ($rev);
     my $changed = $root->paths_changed;
+    my $pool = SVN::Pool->new_default;
     for (keys %$changed) {
+	$pool->clear;
 	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
 	my ($copyfrom_rev, $copyfrom_path) = $root->copied_from ($_);
 	$copies->{$_} = [$copyfrom_rev, $copyfrom_path]
@@ -787,26 +859,30 @@ sub _copies_in_rev {
 }
 
 sub find_prev_copy {
-    my ($fs, $endrev) = @_;
+    my ($fs, $endrev, $ppool) = @_;
     my $pool = SVN::Pool->new_default;
+    # hold this resulting root in the subpool of ppool.
+    my $spool = $ppool ? SVN::Pool::create ($$ppool) : $pool;
     my ($rev, $startrev) = ($endrev, $endrev);
-    my $copy;
+    my ($root, $copy);
     while ($rev > 0) {
 	$pool->clear;
+	SVN::Pool::apr_pool_clear ($spool) if $ppool;
 	if (defined (my $cache = $fs->revision_prop ($rev, 'svk:copy_cache_prev'))) {
 	    $startrev = $rev + 1;
 	    $rev = $cache;
 	    last if $rev == 0;
 	}
-	if ($copy = _copies_in_rev ($fs, $rev)) {
+	$root = $fs->revision_root ($rev, $spool);
+	if ($copy = _copies_in_root ($root)) {
 	    last;
 	}
 	--$rev; --$startrev;
     }
     $fs->change_rev_prop ($_, 'svk:copy_cache_prev', $rev), $pool->clear
 	for $startrev..$endrev;
-    undef $copy unless $rev;
-    return ($rev, $copy);
+    return unless $rev;
+    return ($root, $copy);
 }
 
 1;

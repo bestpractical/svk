@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( get_encoder );
+use SVK::Util qw( get_encoder can_run );
 use autouse 'File::Find' => qw(find);
 
 sub parse_arg { shift; @_ ? @_ : 'index'; }
@@ -14,6 +14,11 @@ sub parse_arg { shift; @_ ? @_ : 'index'; }
 
 sub run {
     my $self = shift;
+
+    if($ENV{SVKPAGER} && can_run($ENV{SVKPAGER})){
+        eval '$ENV{PAGER}=$ENV{SVKPAGER};use IO::Pager;IO::Pager->new(*STDOUT)';
+    }
+
     foreach my $topic (@_) {
         if ($topic eq 'commands') {
             my @cmd;
@@ -25,7 +30,7 @@ sub run {
             );
             $self->brief_usage ($_) for sort @cmd;
         }
-        elsif (my $cmd = eval { $self->get_cmd ($topic) }) {
+        elsif (my $cmd = eval { SVK::Command->get_cmd ($topic) }) {
             $cmd->usage(1);
         }
         elsif (my $file = $self->_find_topic($topic)) {
@@ -88,7 +93,16 @@ SVK::Command::Help - Show help
 
 =head1 OPTIONS
 
- None
+Optionally svk helps can pipe through a pager, for it is easier to
+read if the output is too long. For using this feature, please
+set environment variable SVKPAGER to some pager program.
+For example:
+
+    # bash, zsh users
+    export SVKPAGER='/usr/bin/less'
+
+    # tcsh users
+    setenv SVKPAGER '/usr/bin/less'
 
 =head1 AUTHORS
 

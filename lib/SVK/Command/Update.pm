@@ -9,7 +9,7 @@ use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
-    ('r|revision=i'    => 'rev',
+    ('r|revision=s'    => 'rev',
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
      'q|quiet'         => 'quiet',
@@ -42,8 +42,7 @@ sub run {
 	my $update_target = SVK::Target->new
 	    ( %$target,
 	      path => $self->{update_target_path} || $target->{path},
-	      revision => defined $self->{rev} ?
-	      $self->{rev} : $target->{repos}->fs->youngest_rev,
+	      revision => defined $self->{rev} ? $self->resolve_revision($target->clone,$self->{rev}) : $target->{repos}->fs->youngest_rev,
 	      copath => undef
 	    );
 
@@ -124,6 +123,7 @@ sub do_update {
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+					  store_path => $update_target->path,
 					  check_only => $self->{check_only},
 					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
@@ -147,7 +147,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
 =head1 OPTIONS
 
- -r [--revision] arg    : act on revision ARG instead of the head revision
+ -r [--revision] REV	: act on revision REV instead of the head revision
  -N [--non-recursive]   : do not descend recursively
  -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update

@@ -24,7 +24,9 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $self->lock_target (@_[2..$#_]);
+    my @paths = @_[2..$#_];
+    return unless grep {$_->copath} @paths;
+    $self->lock_target ($self->arg_condensed (map {$_->{report}} @_[2..$#_]));
 }
 
 sub do_propset_direct {
@@ -125,12 +127,13 @@ SVK::Command::Propset - Set a property on path
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
+ -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
  -R [--recursive]       : descend recursively
- -r [--revision] arg    : act on revision ARG instead of the head revision
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -r [--revision] REV	: act on revision REV instead of the head revision
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --revprop              : operate on a revision property (use with -r)
  --direct               : commit directly even if the path is mirrored

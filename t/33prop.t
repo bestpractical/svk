@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
-use Test::More tests => 51;
+use Test::More tests => 52;
 use strict;
 use File::Temp;
 require 't/tree.pl';
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('basic');
+my ($copath, $corpath) = get_copath ('prop');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 mkdir "$copath/A";
@@ -41,6 +41,7 @@ is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A/foo"],
 	   [__("$copath/A/foo is already scheduled for delete.")]);
 
 $svk->revert (-R => $copath);
+
 is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A"],
 	   [__(" M  $copath/A")]);
 
@@ -56,6 +57,12 @@ is_output ($svk, 'pg', ['myprop', "$copath/A"],
 	   ['myvalue']);
 
 $svk->commit ('-m', 'commit', $copath);
+
+is_output ($svk, 'ps', ['thisprop', 'thisvalue', "$copath/A", "$copath/A/foo"],
+	   [__(" M  $copath/A"),
+	    __(" M  $copath/A/foo")]);
+
+$svk->revert (-R => $copath);
 
 is_output ($svk, 'ps', ['myprop', 'myvalue2', "$copath/A"],
 	   [__(" M  $copath/A")]);

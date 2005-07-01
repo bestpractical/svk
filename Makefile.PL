@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 my $required_svn = '1.0.7';
-my $required_svm = '0.57';
+my $required_svm = '0.60';
 
 use strict;
 use inc::Module::Install;
@@ -16,7 +16,7 @@ requires(
 #        'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Algorithm::Diff'       => '0',
-        'YAML'                  => '0.36',
+        'YAML'                  => '0.38',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
@@ -32,12 +32,19 @@ requires(
         'URI'                   => '0',
         'PerlIO::eol'           => '0.13',
 	'Class::Autouse'	=> '1.15',
+	'Getopt::Long'		=> '2.34',
+	'App::CLI'		=> '0',
+	'Encode'		=> '2.10',
 );
 features(
     'Localized messages' => [
 	-default => 1,
         'Locale::Maketext::Lexicon' => '0.42',
         'Locale::Maketext::Simple'  => '0.12',
+    ],
+    'Message display through a pager' => [
+        -default => 1,
+        'IO::Pager'             => '0',
     ],
 );
 

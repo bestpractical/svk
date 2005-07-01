@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 45;
+plan tests => 47;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -73,13 +73,18 @@ $svk->rm ('A/foo');
 $svk->commit ('-m', 'rm something', 'A/foo');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 	   [$corpath, __("$corpath/A/barnew"), __("$corpath/A/foo")]);
+append_file ("A/bar", "this is bad");
+is_output ($svk, 'commit', [-m => 'commit after certain rm', 'A'],
+	   ['Committed revision 6.']);
+is_output ($svk, 'st', [],
+	   [__('?   A/deep/X')]);
 
 SKIP: {
 skip 'SVN::Mirror not installed', 1
     unless HAS_SVN_MIRROR;
 # The '--sync' and '--merge' below would have no effect.
 is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
-            "Syncing //(/) in $corpath to 5.",
+            "Syncing //(/) in $corpath to 6.",
             __"A   $corpath/A/deep/new",
             __"U   $corpath/A/deep/baz",
             __"U   $corpath/A/deep/la/no",

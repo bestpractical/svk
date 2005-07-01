@@ -49,7 +49,7 @@ is_output ($svk, 'diff', ["$copath/test.pl"],
 
 $answer = 't'; # theirs
 $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
-# TODO: Don't stuff up line endings (currently problematic on Win32)
+
 is_output ($svk, 'diff', ["//trunk/test.pl", "//local/test.pl"],
 	   [__"=== test.pl",
 	    "==================================================================",

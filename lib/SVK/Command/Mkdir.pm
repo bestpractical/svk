@@ -6,7 +6,6 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( abs2rel get_anchor );
-use File::Path;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -16,9 +15,31 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     # XXX: support multiple
-    return if $#arg != 0;
+    #return if $#arg != 0;
+    my @paths;
     my @targets;
-    my $path = $arg[0];
+    my $parent = $self->{parent};
+    for my $path (@arg) {
+	my ($addtargets, $addpaths) = $self->create($path);
+	push @paths, @$addpaths;
+	push @targets, @$addtargets;
+	$self->{parent} = $parent;
+    }
+    if (scalar @paths) {
+	return $self->rebless (
+	    add => {
+		recursive => 1
+	    }
+	)->parse_arg (@paths);
+    }
+    return @targets;
+}
+
+sub create {
+    my $self = shift;
+    my $path = shift;
+    my @paths;
+    my @targets;
     # parsing all of the folder we need to add.
     until (@targets = eval { ($self->arg_co_maybe ($path)) }) {
 	my ($parent, $target) = get_anchor(1, $path);
@@ -28,7 +49,9 @@ sub parse_arg {
 	    # should tell the user about parent not exist
             return ($self->arg_depotpath($path));
         }
-        $self->parse_arg($parent);
+        my ($subtargets, $subpaths) = $self->create($parent);
+	push @paths, @$subpaths;
+	push @targets, @$subtargets;
 	undef $self->{parent};
     }
     # execute the mkdir
@@ -36,16 +59,11 @@ sub parse_arg {
         my $target = $self->arg_condensed ($path);
         foreach (@{$target->{targets}}) {
             my $copath = $target->copath ($_);
-	    $self->{parent} ? mkpath ([$copath])
-	    	: mkdir ($copath) or die "$copath: $!";
+	    mkdir ($copath) or die "$copath: $!";
         }
-        return $self->rebless (
-           add => {
-              recursive => 1
-           }
-        )->parse_arg ($path)
+	push @paths, $path;
     }
-    return @targets;
+    return (\@targets, \@paths);
 }
 
 sub run {
@@ -75,10 +93,11 @@ SVK::Command::Mkdir - Create a versioned directory
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
+ -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -p [--parent]          : create intermediate directories as required
  -C [--check-only]      : try operation but make no changes
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
 
 =head1 AUTHORS

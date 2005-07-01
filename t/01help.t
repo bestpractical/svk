@@ -6,7 +6,8 @@ require 't/tree.pl';
 plan skip_all => 'MANIFEST not exists' unless -e 'MANIFEST';
 open FH, 'MANIFEST' or die $!;
 my @cmd = map { chomp; s|^lib/SVK/Command/(\w+)\.pm$|$1| ? $_ : () } <FH>;
-
+my $pager = $ENV{SVKPAGER};
+delete $ENV{SVKPAGER};
 our $output;
 my ($xd, $svk) = build_test();
 
@@ -20,9 +21,7 @@ is_output ($svk, 'help', ['bzzzzz'], ["Cannot find help topic 'bzzzzz'."]);
 
 {
     my $warned = 0;
-    local $SIG{__WARN__} = sub { $warned++ };
-    is_output ($svk, 'help', ['--boo'], ['Unknown options.']);
-    ok($warned, 'Unknown option raised a warning');
+    is_output ($svk, 'help', ['--boo'], ['Unknown option: b']);
 }
 
 for (@cmd) {
@@ -31,16 +30,13 @@ for (@cmd) {
     is_output_like ($svk, lc($_), ['--help'], qr'SYNOPSIS');
 }
 
-
 # Test ALIASES section
 {
     # First with rm which has aliases.
-    my $rm_help     = $svk->help('delete');
-    my($alias_list) = $rm_help =~ qr/\nALIASES\n\n \s+ (.*?) \n/x;
-    is( $alias_list, "del, remove, rm" );
-
+    is_output_like ($svk, 'help', ['delete'], qr/\nALIASES\n\n\s+del, remove, rm\n/);
 
     # Then with add which has no aliases.
-    my $add_help     = $svk->help('add');
-    unlike( $add_help, qr/\nALIASES\n\n/ );
+    $svk->help('add');
+    like( $output, qr/\nSYNOPSIS\n\n/ );
+    unlike( $output, qr/\nALIASES\n\n/ );
 }

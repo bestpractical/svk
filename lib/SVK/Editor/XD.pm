@@ -79,7 +79,7 @@ sub get_base {
     my $basename = "$dir.svk.$file.base";
 
     rename ($copath, $basename)
-	or die loc("rename %1 to %2 failed: %3", $copath, $basename, $!);
+	or warn loc("rename %1 to %2 failed: %3", $copath, $basename, $!), return;
 
     my $base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
     if (!$self->{ignore_checksum} && $checksum) {
@@ -93,13 +93,14 @@ sub get_base {
 
 sub get_fh {
     my ($self, $path, $copath) = @_;
-    my $dpath = $path;
+    my ($dpath, $spath) = ($path, $path);
     $self->{get_path}->($dpath);
+    $self->{get_store_path}->($spath);
     # XXX: should test merge to co with keywords
     delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
-    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $dpath, $copath,
+    my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $spath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
-	or warn "can't open $path";
+	or warn "can't open $path: $!", return;
     return $fh;
 }
 
@@ -107,6 +108,7 @@ sub close_file {
     my $self = shift;
     $self->SUPER::close_file (@_);
     my $path = shift;
+    return unless defined $path;
     my $copath = $path;
     $self->{get_copath}($copath);
     if ($self->{update}) {
@@ -132,8 +134,9 @@ sub close_file {
 
 sub add_directory {
     my $self = shift;
-    my ($path) = @_;
-    $self->SUPER::add_directory (@_);
+    my ($path, $pdir) = @_;
+    my $ret = $self->SUPER::add_directory (@_);
+    return undef unless defined $ret;
     my $copath = $path;
     $self->{get_copath}($copath);
     $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
@@ -141,7 +144,7 @@ sub add_directory {
     $self->{added}{$path} = 1;
     push @{$self->{cursignature}}, $self->{signature}->load ($copath)
 	if $self->{update};
-    return $path;
+    return $ret;
 }
 
 sub do_delete {
@@ -160,10 +163,11 @@ sub do_delete {
 sub close_directory {
     my ($self, $path) = @_;
     # the root is just an anchor
-    return if $self->{target} && $path eq '';
+    return if $self->{target} && !length($path);
     my $copath = $path;
     $self->{get_copath}($copath);
     if ($self->{update}) {
+	# XXX: handle unwritable entries and back them up after the store
 	$self->{xd}{checkout}->store_recursively ($copath,
 						  {revision => $self->{revision},
 						   '.deleted' => undef});
@@ -178,6 +182,7 @@ sub close_directory {
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
+    return unless defined $path;
     $self->{props}{$path}{$name} = $value
 	if $self->{added}{$path};
     return if $self->{check_only};

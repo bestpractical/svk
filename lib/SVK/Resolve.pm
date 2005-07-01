@@ -2,7 +2,7 @@ package SVK::Resolve;
 use strict;
 use SVK::I18N;
 use SVK::Util qw(
-    slurp_fh tmpfile get_prompt get_buffer_from_editor
+    slurp_fh tmpfile get_prompt edit_file
     read_file can_run is_executable bsd_glob
 );
 use File::Copy ();
@@ -81,21 +81,8 @@ sub do_resolve {
 sub edit {
     my $self = shift;
 
-    local $@;
-    my $content = eval { get_buffer_from_editor (
-        loc("Merged file"),     # name
-        undef,                  # separator
-        undef,                  # content
-        $self->{merged},        # filename
-    ) };
-
-    return 0 if $@;
-
-    $self->{has_conflict} = (index($content, $self->{marker}) >= 0);
-
-    open my $mfh, '>', $self->{merged} or die $!;
-    print $mfh $content;
-    close $mfh;
+    edit_file ($self->{merged});
+    $self->{has_conflict} = index (read_file ($self->{merged}), $self->{marker}) >= 0;
 
     return 0;
 }

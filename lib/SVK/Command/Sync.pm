@@ -26,6 +26,26 @@ sub copy_notify {
     return find_local_mirror ($m->{repos}, $m->{rsource_uuid}, $from_path, $from_rev);
 }
 
+sub lock_message {
+    my $target = shift;
+    my $i = 0;
+    sub {
+	my ($mirror, $what, $who) = @_;
+	print loc("Waiting for %1 lock on %2: %3.\n", $what, $target->{depotpath}, $who);
+	if (++$i % 3 == 0) {
+	    print loc ("
+The mirror is currently locked. This might be because the mirror is
+in the middle of a sensitive operation or because a process holding
+the lock hung or died.  To check if the mirror lock is stalled,  see
+if $who is a running, valid process
+
+If the mirror lock is stalled, please interrupt this process and run:
+    svk mirror --unlock %1
+", $target->{depotpath});
+	}
+    }
+}
+
 sub run {
     my ($self, @arg) = @_;
     die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
@@ -35,19 +55,40 @@ sub run {
 
     if ($self->{sync_all}) {
 	local $@;
+	my %arg = (!defined($arg[0]) ? () : map {$_ => 1} @arg);
 	@arg = (defined($arg[0]) ? @arg : sort keys %{$self->{xd}{depotmap}});
         my @newarg;
-        foreach my $depot (@arg) {
-            $depot =~ s{/}{}g;
-            my $target = eval { $self->arg_depotpath ("/$depot/") };
+        foreach my $arg (@arg) {
+            my $orig_arg = $arg;
+            $arg = "/$arg/" if $arg !~ m{/};
+            $arg = "$arg/" unless $arg =~ m{/$};
+
+	    my ($depot) = eval { $self->arg_depotname ($arg) };
+	    unless (defined $depot) {
+		if ($arg =~ m{^/[^/]+/$}) {
+		    print loc("%1 is not a valid depotname\n", $arg);
+		} else {
+		    print loc("%1 does not contain a valid depotname\n", $arg);
+		}
+		next;
+	    }
+
+	    my $target = eval { $self->arg_depotpath ($arg) };
 	    unless ($target) {
 		print $@;
 		next;
 	    }
-	    push @newarg, (
-                map {$self->arg_depotpath("/$depot$_")}
-                    SVN::Mirror::list_mirror ($target->{repos})
-            );
+
+	    my $arg_re = qr/^\Q$arg\E/;
+	    my @tempnewarg = 
+		map {"/$depot$_/" =~ /$arg_re/ ? $self->arg_depotpath("/$depot$_") : ()}
+		    SVN::Mirror::list_mirror ($target->{repos});
+
+	    unless (@tempnewarg || !exists $arg{$orig_arg} || $arg =~ m{^/[^/]*/$}) {
+		print loc("no mirrors found underneath %1\n", $arg);
+		next;
+	    }
+	    push @newarg, @tempnewarg;
 	}
         @arg = @newarg;
     }
@@ -61,6 +102,7 @@ sub run {
 				  pool => SVN::Pool->new,
 				  config => $self->{svnconfig},
 				  cb_copy_notify => sub { $self->copy_notify (@_) },
+				  lock_message => lock_message($target),
 				  revprop => ['svk:signature'],
 				  get_source => 1, skip_to => $self->{skip_to});
 	$m->init ();
@@ -94,13 +136,14 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 =head1 SYNOPSIS
 
  sync DEPOTPATH
- sync --all [DEPOTNAME...]
+ sync --all [DEPOTNAME|DEPOTPATH...]
 
 =head1 OPTIONS
 
- -a [--all]             : synchronize all mirrored paths
- -s [--skipto] arg      : start synchronization at revision ARG
- -t [--torev] arg       : stop synchronization at revision ARG
+ -a [--all]             : synchronize all mirrored paths under
+                          the DEPOTNAME/DEPOTPATH(s) provided
+ -s [--skipto] REV	: start synchronization at revision REV
+ -t [--torev] REV	: stop synchronization at revision REV
 
 =head1 AUTHORS
 

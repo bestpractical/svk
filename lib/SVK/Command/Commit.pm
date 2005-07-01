@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
+use SVK::Command::Sync;
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder );
@@ -58,10 +59,12 @@ sub fill_commit_message {
 sub get_commit_message {
     my ($self, $msg) = @_;
     $self->fill_commit_message;
-    $self->{message} = get_buffer_from_editor
-	(loc('log message'), $self->message_prompt,
-	 join ("\n", $msg || '', $self->message_prompt, ''), 'commit')
-	    unless defined $self->{message};
+    unless (defined $self->{message}) {
+	$self->{message} = get_buffer_from_editor
+	    (loc('log message'), $self->message_prompt,
+	     join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
+	++$self->{save_message};
+    }
     $self->decode_commit_message;
 }
 
@@ -88,11 +91,21 @@ sub finalize_dynamic_editor {
     my ($self, $editor) = @_;
     $editor->close_directory ($editor->{_root_baton});
     $editor->close_edit;
+    delete $self->{save_message};
 }
 
 sub adjust_anchor {
     my ($self, $editor) = @_;
     $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
+}
+
+sub save_message {
+    my $self = shift;
+    return unless $self->{save_message};
+    local $@;
+    my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
+    print $fh $self->{message};
+    print loc ("Commit message saved in %1.\n", $file);
 }
 
 # Return the editor according to copath, path, and is_mirror (path)
@@ -129,6 +142,7 @@ sub get_editor {
 	}
 	else {
 	    print loc("Merging back to mirror source %1.\n", $m->{source});
+	    $m->{lock_message} = SVK::Command::Sync::lock_message ();
 	    $m->{config} = $self->{svnconfig};
 	    $m->{revprop} = ['svk:signature'];
 	    ($base_rev, $editor) = $m->get_merge_back_editor
@@ -192,7 +206,14 @@ sub get_editor {
     }
 
     unless ($self->{check_only}) {
-	for ($SVN::Error::FS_TXN_OUT_OF_DATE, $SVN::Error::FS_ALREADY_EXISTS) {
+	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
+	     $SVN::Error::FS_CONFLICT,
+	     $SVN::Error::FS_ALREADY_EXISTS,
+	     $SVN::Error::FS_NOT_DIRECTORY,
+	     $SVN::Error::RA_DAV_REQUEST_FAILED,
+	    ) {
+	    # XXX: this error should actually be clearer in the destructor of $editor.
+	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
 	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");
@@ -256,6 +277,7 @@ sub get_committable {
 	    close $fh;
 	    unlink $file;
 	}
+
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	die loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
     }
@@ -270,6 +292,7 @@ sub get_committable {
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
+	++$self->{save_message};
 	unlink $file;
     }
     $self->decode_commit_message;
@@ -286,7 +309,9 @@ sub committed_commit {
 	my $oldroot = $fs->revision_root ($rev-1);
 	# optimize checkout map
 	for my $copath ($self->{xd}{checkout}->find ($dataroot, {revision => qr/.*/})) {
-	    my $corev = $self->{xd}{checkout}->get ($copath)->{revision};
+	    my $coinfo = $self->{xd}{checkout}->get ($copath);
+	    next if $coinfo->{'.deleted'};
+	    my $corev = $coinfo->{revision};
 	    # XXX: cache the node_created_rev for entries within $target->path
 	    next if $corev < $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/'));
 	    $self->{xd}{checkout}->store_override ($copath, {revision => $rev});
@@ -323,7 +348,7 @@ sub committed_commit {
 	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
-	    my $eol = SVK::XD::get_eol_layer ($root, $dpath, $prop, '>');
+	    my $eol = SVK::XD::get_eol_layer ($prop, '>');
 	    # XXX: can't bypass eol translation when normalization needed
 	    next unless $layer || ($eol ne ':raw' && $eol ne ' ');
 
@@ -410,7 +435,12 @@ sub run_delta {
 		my $rev = ($fs->revision_root ($source_rev)->node_history ($source_path)->prev (0)->location)[1];
 		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());
+    delete $self->{save_message};
     return;
+}
+
+sub DESTROY {
+    $_[0]->save_message;
 }
 
 1;
@@ -427,10 +457,12 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 OPTIONS
 
- -m [--message] arg     : specify commit message ARG
+ -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
  -C [--check-only]      : try operation but make no changes
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ -N [--non-recursive]   : operate on single directory only
  --encoding ENC         : treat value as being in charset encoding ENC
  --import               : import mode; automatically add and delete nodes
  --direct               : commit directly even if the path is mirrored

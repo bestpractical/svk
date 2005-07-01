@@ -25,27 +25,17 @@ sub run {
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
     my ($oldroot, $newroot, $cb_llabel, $report);
-    my ($r1, $r2);
-    if (my $revspec = $self->{revspec}) {
-	$revspec = [map {split /:/} @$revspec];
-	if ($#{$revspec} > 1) {
-	    die loc ("Invliad -r.\n");
-	}
-	else {
-	    # XXX: check \D for @$revspec
-	    ($r1, $r2) = @$revspec;
-	}
-    }
+    my ($r1, $r2) = $self->resolve_revspec($target,$target2);
 
     # translate to target and target2
     if ($target2) {
 	if ($target->{copath}) {
-	    die loc("invalid arguments") if !$target2->{copath};
+	    die loc("Invalid arguments.\n") if !$target2->{copath};
             $self->run($_) foreach @_[1..$#_];
             return;
 	}
 	if ($target2->{copath}) {
-	    die loc("invalid arguments") if $target->{copath};
+	    die loc("Invalid arguments.\n") if $target->{copath};
 	    # prevent oldroot being xdroot below
 	    $r1 ||= $yrev;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
@@ -80,6 +70,11 @@ sub run {
     $r1 ||= $yrev, $r2 ||= $yrev;
     $oldroot ||= $fs->revision_root ($r1);
     $newroot ||= $fs->revision_root ($r2);
+
+    unless ($target2->{copath}) {
+	die loc("path %1 does not exist.\n", $target2->{report})
+	    if $fs->revision_root ($r2)->check_path ($target2->{path}) == $SVN::Node::none;
+    }
 
     my $editor = $self->{summarize} ?
 	SVK::Editor::Status->new
@@ -165,7 +160,17 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
 =head1 OPTIONS
 
- -r [--revision] N:M    : act on revisions between N and M
+ -r [--revision] arg    : ARG (some commands also take ARG1:ARG2 range)
+
+                          A revision argument can be one of:
+
+                          "HEAD"       latest in repository
+                          NUMBER       revision number
+                          NUM1:NUM2    revision range
+
+                          Given negative NUMBER means "HEAD"+NUMBER.
+                          (Counting backwards)
+
  -s [--summarize]       : show summary only
  -v [--verbose]         : print extra information
 

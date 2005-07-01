@@ -4,12 +4,13 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( traverse_history );
+use SVK::Util qw( traverse_history HAS_SVN_MIRROR );
 use Algorithm::Annotate;
 
 sub options {
-    ('x|cross'  => 'cross',
-     'r|revision=i'  => 'rev');
+    ('x|cross'       => 'cross',
+     'remoterev'     => 'remoterev',
+     'r|revision=s'  => 'rev');
 }
 
 sub parse_arg {
@@ -21,8 +22,14 @@ sub parse_arg {
 
 sub run {
     my ($self, $target) = @_;
-
-    $target->as_depotpath ($self->{rev}) if defined $self->{rev};
+    my $m;
+    if(defined $self->{rev}) {
+        my $r = $self->resolve_revision($target,$self->{rev});
+        $target->as_depotpath($r);
+    }
+    if (HAS_SVN_MIRROR) {
+	($m) = SVN::Mirror::is_mirrored ($target->{repos}, $target->path);
+    }
     my $fs = $target->{repos}->fs;
     my $ann = Algorithm::Annotate->new;
     my @revs;
@@ -47,7 +54,8 @@ sub run {
 	my $content = $fs->revision_root ($rev)->file_contents ($path);
 	$content = [split /\015?\012|\015/, <$content>];
 	no warnings 'uninitialized';
-	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $rev,
+	my $rrev = ($m && $self->{remoterev}) ? $m->find_remote_rev($rev) : $rev;
+	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $rrev,
 			    $fs->revision_prop ($rev, 'svn:author'),
 			    substr($fs->revision_prop ($rev, 'svn:date'),0,10)),
 		    $content);

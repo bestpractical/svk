@@ -27,7 +27,7 @@ BEGIN {
         ref($answer) ? shift(@$answer) : $answer
     } unless $ENV{DEBUG_INTERACTIVE};
 
-    chdir catdir( dirname(__FILE__), '..' );
+    chdir catdir(abs_path(dirname(__FILE__)), '..' );
 }
 
 sub plan_svm {
@@ -225,6 +225,13 @@ sub is_output_like {
     $svk->$cmd (@$arg);
     @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
     goto &like;
+}
+
+sub is_output_unlike {
+    my ($svk, $cmd, $arg, $expected, $test) = @_;
+    $svk->$cmd (@$arg);
+    @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
+    goto &unlike;
 }
 
 sub is_ancestor {

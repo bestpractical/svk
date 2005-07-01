@@ -5,13 +5,14 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Update );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP get_encoding );
+use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP get_encoding abs_path_noexist );
 use File::Path;
 
 sub options {
     ($_[0]->SUPER::options,
      'l|list' => 'list',
      'd|delete|detach' => 'detach',
+     'purge' => 'purge',
      'export' => 'export',
      'relocate' => 'relocate');
 }
@@ -19,20 +20,27 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    @arg or return;
-    my $depotpath = $self->arg_uri_maybe ($arg[0]);
-    die loc("don't know where to checkout %1\n", $arg[0]) unless $arg[1] || $depotpath->{path} ne '/';
+    return if $#arg < 0 || $#arg > 1;
 
-    $arg[1] =~ s|/$|| if $arg[1];
-    $arg[1] = (splitdir($depotpath->{path}))[-1]
-        if !defined($arg[1]) or $arg[1] =~ /^\.?$/;
+    my ($src, $dst) = @arg;
+    $dst = '' unless defined $dst;
 
-    return ($depotpath, $arg[1]);
+    my $depotpath = $self->arg_uri_maybe
+	($src,
+	 eval { $self->arg_co_maybe ($dst, 'Checkout destination') }
+	 ? "path '$dst' is already a checkout" : undef);
+    die loc("don't know where to checkout %1\n", $src) unless length ($dst) || $depotpath->{path} ne '/';
+
+    $dst =~ s|/$|| if length $dst;
+    $dst = (splitdir($depotpath->{path}))[-1]
+        if !length($dst) or $dst =~ /^\.?$/;
+
+    return ($depotpath, $dst);
 }
 
 sub lock {
     my ($self, $src, $dst) = @_;
-    my $abs_path = abs_path ($dst) or return;
+    my $abs_path = abs_path_noexist ($dst) or return;
     $self->{xd}->lock ($abs_path);
 }
 
@@ -40,6 +48,11 @@ sub run {
     my ($self, $target, $report) = @_;
 
     if (-e $report) {
+	my $copath = abs_path($report);
+	my ($entry, @where) = $self->{xd}{checkout}->get($copath);
+
+        return $self->SUPER::run ($target->new(report => $report, copath => $copath))
+	    if exists $entry->{depotpath} && $entry->{depotpath} eq $target->{depotpath};
 	die loc("Checkout path %1 already exists.\n", $report);
     }
     else {
@@ -53,9 +66,10 @@ sub run {
 	}
     }
 
+    # abs_path doesn't work until the parent is created.
     my $copath = abs_path ($report);
-
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
+
     die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 
@@ -80,7 +94,7 @@ sub run {
 
 sub _find_copath {
     my ($self, $path) = @_;
-    my $abs_path = abs_path($path);
+    my $abs_path = abs_path_noexist($path);
     my $map = $self->{xd}{checkout}{hash};
 
     # Check if this is a checkout path
@@ -104,10 +118,10 @@ sub lock {}
 sub run {
     my ($self) = @_;
     my $map = $self->{xd}{checkout}{hash};
-    my $fmt = "%-20s\t%-s\n";
-    printf $fmt, loc('Depot Path'), loc('Path');
-    print '=' x 60, "\n";
-    print sort(map sprintf($fmt, $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
+    my $fmt = "%1s %-30s\t%-s\n";
+    printf $fmt, ' ', loc('Depot Path'), loc('Path');
+    print '=' x 72, "\n";
+    print sort(map sprintf($fmt, -e $_ ? ' ' : '?', $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
     return;
 }
 
@@ -188,8 +202,39 @@ sub run {
     return;
 }
 
-1;
+package SVK::Command::Checkout::purge;
+use base qw( SVK::Command::Checkout );
+use SVK::Util qw( get_prompt );
+use SVK::I18N;
 
+sub parse_arg { undef }
+
+sub lock { ++$_[0]->{hold_giant} }
+
+sub run {
+    my ($self) = @_;
+    my $map = $self->{xd}{checkout}{hash};
+
+    $self->rebless('checkout::detach');
+
+    for my $path (sort grep $map->{$_}{depotpath}, keys %$map) {
+	next if -e $path;
+
+	my $depotpath = $map->{$path}{depotpath};
+
+	get_prompt(loc(
+	    "Purge checkout of %1 to non-existing directory %2? (y/n) ",
+	    $depotpath, $path
+	), qr/^[YyNn]/) =~ /^[Yy]/ or next;
+	
+	# Recall that we are now an SVK::Command::Checkout::detach
+	$self->run($path);
+    } 
+    
+    return;
+}
+
+1;
 __DATA__
 
 =head1 NAME
@@ -202,15 +247,17 @@ SVK::Command::Checkout - Checkout the depotpath
  checkout --list
  checkout --detach [DEPOTPATH | PATH]
  checkout --relocate DEPOTPATH|PATH PATH
+ checkout --purge
 
 =head1 OPTIONS
 
- -r [--revision] arg    : act on revision ARG instead of the head revision
+ -r [--revision] REV	: act on revision REV instead of the head revision
  -l [--list]            : list checkout paths
  -d [--detach]          : mark a path as no longer checked out
  -q [--quiet]           : quiet mode
  --export               : export mode; checkout a detached copy
  --relocate             : relocate the checkout to another path
+ --purge                : detach checkout directories which no longer exist
 
 =head1 AUTHORS
 

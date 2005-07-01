@@ -87,7 +87,9 @@ sub notify_translate {
 	my $sub = $self->{$_} or next;
 	$self->{$_} = sub { my $path = shift;
 			    $translate->($path);
-			    unshift @_, $path; goto &$sub };
+			    $sub->($path, @_);
+#			    unshift @_, $path; goto &$sub
+			};
     }
 }
 
@@ -113,7 +115,7 @@ sub prop_status {
 	&& !($st->[0] && ($st->[0] eq 'A' || $st->[0] eq 'R'))
 	    # not overriding things more informative
 	    && (!$st->[1] || $prop{$s} > $prop{$st->[1]});
-    return $self->{status}{$path}[1];
+    return defined $st ? $st->[1] : undef;
 }
 
 sub hist_status {

@@ -21,7 +21,7 @@ sub options {
      'I|incremental'	=> 'incremental',
      'verbatim'		=> 'verbatim',
      'no-ticket'	=> 'no_ticket',
-     'r|revision=s'	=> 'revspec',
+     'r|revision=s@'	=> 'revspec',
      'c|change=s',	=> 'chgspec',
      't|to'             => 'to',
      'f|from'           => 'from',
@@ -57,7 +57,7 @@ sub parse_arg {
             # to the most immediate copy anchor under copath root.
             ($target1, $target2) = $self->find_checkout_anchor (
                 $target1, 1, $self->{sync}
-            );
+               );
             delete $target1->{copath};
         }
     }
@@ -66,7 +66,6 @@ sub parse_arg {
     if (!defined ($target2)) {
         die loc ("Cannot find the path which '%1' copied from.\n", $arg[0] || '');
     }
-
     return ( ($self->{from}) ? ($target1, $target2) : ($target2, $target1) );
 }
 
@@ -95,8 +94,8 @@ sub run {
     my $yrev = $fs->youngest_rev;
 
     if (my @mirrors = $dst->contains_mirror) {
-	die loc ("%1 can not be used as merge target, because it contains mirrored path:\n", $dst->{report})
-	    .join("\n", @mirrors, '')
+	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->{report})
+	    .join(",", @mirrors)."\n"
 		unless $mirrors[0] eq $dst->path;
     }
 
@@ -130,7 +129,7 @@ sub run {
     }
     else {
 	die loc("Incremental merge not supported\n") if $self->{incremental};
-	my @revlist = $self->parse_revlist;
+	my @revlist = $self->parse_revlist($src);
 	die "multi-merge not yet" if $#revlist > 0;
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
@@ -173,8 +172,13 @@ sub run {
 		$merge->{fromrev} = $previous_base;
 	    }
 
+	    # skip the merge if this change is merged from the dst.
+	    # XXX: should be strict, only skip if that's the only merge.
+	    next if $merge->_is_merge_from ($merge->{src}->path, $dst, $rev);
+ 
 	    print '===> '.$merge->info;
 	    $self->{message} = $merge->log (1);
+	    $self->decode_commit_message;
 
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
@@ -187,6 +191,7 @@ sub run {
 	print loc("Incremental merge not guaranteed even if check is successful\n")
 	    if $self->{incremental};
 	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
+	delete $self->{save_message};
     }
     return;
 }
@@ -216,7 +221,7 @@ SVK::Command::Merge - Apply differences between two sources
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
- -P [--patch] arg       : instead of commit, save this change as a patch
+ -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point

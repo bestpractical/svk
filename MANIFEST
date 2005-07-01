@@ -56,6 +56,7 @@ lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
 lib/SVK/Editor/Checkout.pm
 lib/SVK/Editor/Combine.pm
+lib/SVK/Editor/Combiner.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Local.pm
@@ -67,6 +68,7 @@ lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/XD.pm
+lib/SVK/Help/Environment.pod
 lib/SVK/Help/Index.pod
 lib/SVK/Help/Intro.pod
 lib/SVK/Help/zh_cn/Index.pod
@@ -78,17 +80,20 @@ lib/SVK/I18N/zh_tw.po
 lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
+lib/SVK/Patchset.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
 lib/SVK/Resolve/FileMerge.pm
 lib/SVK/Resolve/GtkDiff.pm
 lib/SVK/Resolve/Guiffy.pm
+lib/SVK/Resolve/GVim.pm
 lib/SVK/Resolve/KDiff3.pm
 lib/SVK/Resolve/Meld.pm
 lib/SVK/Resolve/P4WinMerge.pm
 lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
+lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Target.pm
 lib/SVK/Target/Universal.pm
@@ -115,6 +120,7 @@ t/05svm-copy.t
 t/05svm-head.t
 t/05svm-lock.t
 t/05svm-move.t
+t/05svm-all.t
 t/05svm.t
 t/06keyword.t
 t/07smerge-anchor-replace.t
@@ -154,6 +160,7 @@ t/25log.t
 t/26revert-remove.t
 t/26revert.t
 t/27mkdir.t
+t/28info.t
 t/30annotate.t
 t/31cat.t
 t/32list.t
@@ -161,11 +168,14 @@ t/33prop.t
 t/34revprop.t
 t/35admin.t
 t/36push-pull.t
+t/37revspec.t
 t/50dav.t
+t/60patchset.t
 t/70symlink.t
 t/71autovivify.t
 t/72sign.t
 t/73i18n.t
+t/74chgspec.t
 t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl

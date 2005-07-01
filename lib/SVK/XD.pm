@@ -8,7 +8,7 @@ use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
-		  from_native to_native get_encoder );
+		  from_native to_native get_encoder get_depot_anchor );
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML'	 => qw(LoadFile DumpFile);
@@ -262,7 +262,7 @@ sub giant_lock {
     }
 
     open my ($lock), '>', $self->{giantlock}
-	or die loc("Cannot acquire giant loc %1:%2.\n", $self->{giantlock}, $!);
+	or die loc("Cannot acquire giant lock %1:%2.\n", $self->{giantlock}, $!);
     print $lock $$;
     close $lock;
     $self->{giantlocked} = 1;
@@ -427,19 +427,24 @@ sub create_xd_root {
 	    ($self->{checkout}->get ($paths[0] || $copath)->{revision}))
 	if $#paths <= 0;
 
+    my $pool = SVN::Pool->new;
+    my $base_rev;
     for (@paths) {
 	my $cinfo = $self->{checkout}->get ($_);
 	unless ($root) {
-	    $txn = $fs->begin_txn ($cinfo->{revision});
+	    $base_rev = $cinfo->{revision};
+	    $txn = $fs->begin_txn ($base_rev);
 	    $root = $txn->root();
 	    next if $_ eq $copath;
 	}
+	next if $cinfo->{revision} == $base_rev;
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
-	$root->delete ($path)
-	    if eval { $root->check_path ($path) != $SVN::Node::none };
-	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}),
-				$root, $path)
+	$root->delete ($path, $pool)
+	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
+	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
+				$root, $path, $pool)
 		unless $cinfo->{'.deleted'};
+	$pool->clear;
     }
     return ($txn, $root);
 }
@@ -454,14 +459,15 @@ sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
     return
-	( cb_exist => sub { my $copath = shift; my $path = $copath;
+	( cb_exist => sub { my ($copath, $pool) = @_;
+			    my $path = $copath;
 			    $arg{get_copath} ($copath);
 			    lstat ($copath);
 			    return $SVN::Node::none unless -e _;
 			    $arg{get_path} ($path);
 			    return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
 				if $self->{checkout}->get ($copath)->{'.schedule'} or
-				    $arg{oldroot}->check_path ($path);
+				    $arg{oldroot}->check_path ($path, $pool);
 			    return $SVN::Node::unknown;
 			},
 	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
@@ -543,13 +549,16 @@ L<SVK::Editor::Merge> when called in array context.
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my ($copath, $path) = @arg{qw/copath path/};
+    my ($copath, $path, $spath) = @arg{qw/copath path store_path/};
+    $spath = $path unless defined $spath;
     my $encoding = $self->{checkout}->get ($copath)->{encoding};
     $path = '' if $path eq '/';
+    $spath = '' if $spath eq '/';
     $encoding = Encode::find_encoding($encoding) if $encoding;
     $arg{get_copath} = sub { to_native ($_[0], 'path', $encoding) if $encoding;
 			     $_[0] = SVK::Target->copath ($copath,  $_[0]) };
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
+    $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
 
     return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
@@ -612,8 +621,16 @@ sub do_delete {
     # check for if the file/dir is modified.
     unless ($arg{targets}) {
 	my $target;
-	($arg{path}, $target, $arg{copath}, undef, $arg{report}) =
-	    get_anchor (1, @arg{qw/path copath report/});
+	($arg{path}, $target, $arg{copath}) =
+	    get_anchor (1, @arg{qw/path copath/});
+	# XXX: This logic is flawed; whether this is target has a copath
+	# doesn't actually tell us whether the report is a copath or depot
+	# path. (See also SVK::Target::anchorify.)
+	if ($arg{copath}) {
+	    ($arg{report}) = get_anchor (0, $arg{report});
+	} else {
+	    ($arg{report}) = get_depot_anchor (0, $arg{report});
+	}
 	$arg{targets} = [$target];
     }
 
@@ -754,7 +771,6 @@ Don't generate text deltas in C<apply_textdelta> calls.
 sub depot_delta {
     my ($self, %arg) = @_;
     my @root = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} @arg{qw/oldroot newroot/};
-    # XXX: if dir_delta croaks the editor would leak since the baton is not properly destroyed.
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
 			   $arg{editor}, undef,
@@ -955,7 +971,7 @@ sub _node_props {
     my $newprops = (!$schedule && $arg{auto_add} && $arg{kind} == $SVN::Node::none && $arg{type} eq 'file')
 	? $self->auto_prop ($arg{copath}) : $arg{cinfo}{'.newprop'};
     my $fullprop = _combine_prop ($props, $newprops);
-    if ($arg{add}) {
+    if (!$arg{base} or $arg{in_copy}) {
 	$newprops = $fullprop;
     }
     elsif ($arg{base_root} ne $arg{xdroot} && $arg{base}) {
@@ -967,17 +983,19 @@ sub _node_props {
 
 sub _node_type {
     my $copath = shift;
-    lstat ($copath);
+    my $st = [lstat ($copath)];
     return '' if !-e _;
     unless (-r _) {
 	print loc ("Warning: $copath is unreadable.\n");
 	return;
     }
-    return 'file' if -f _ or is_symlink;
-    return 'directory' if -d _;
+    return ('file', $st) if -f _ or is_symlink;
+    return ('directory', $st) if -d _;
     print loc ("Warning: unsupported node type $copath.\n");
-    return;
+    return ('', $st);
 }
+
+use Fcntl ':mode';
 
 sub _delta_file {
     my ($self, %arg) = @_;
@@ -996,6 +1014,13 @@ sub _delta_file {
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
 
     my ($newprops, $fullprops) = $self->_node_props (%arg);
+    if (HAS_SYMLINK && (defined $fullprops->{'svn:special'} xor S_ISLNK($arg{st}[2]))) {
+	# special case obstructure for links, since it's not standard
+	return 1 if $self->_node_deleted_or_absent (%arg,
+						    type => 'link',
+						    pool => $pool);
+	return 1 unless $arg{obstruct_as_replace};
+    }
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $fullprops);
     my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
@@ -1122,7 +1147,7 @@ sub _delta_dir {
 	    next;
 	}
 	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
-	my $type = _node_type ($copath);
+	my ($type, $st) = _node_type ($copath);
 	next unless defined $type;
 	my $delta = $type ? $type eq 'directory' ? \&_delta_dir : \&_delta_file
 	                  : $kind == $SVN::Node::file ? \&_delta_file : \&_delta_dir;
@@ -1140,6 +1165,7 @@ sub _delta_dir {
 			targets => $newtarget,
 			baton => $baton,
 			root => 0,
+			st => $st,
 			cinfo => $ccinfo,
 			base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
 			path => $newpath,
@@ -1206,13 +1232,14 @@ sub _delta_dir {
 	    }
 	    next;
 	}
-	my $type = _node_type ($newpaths{copath}) or next;
+	my ($type, $st) = _node_type ($newpaths{copath}) or next;
 	my $delta = $type eq 'directory' ? \&_delta_dir : \&_delta_file;
 	my $copyfrom = $ccinfo->{'.copyfrom'};
 	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
 	$self->$delta ( %arg, %newpaths, add => 1, baton => $baton,
 			root => 0, base => 0, cinfo => $ccinfo,
 			type => $type,
+			st => $st,
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			$copyfrom ?
 			( base => 1,
@@ -1294,7 +1321,7 @@ sub do_resolved {
 }
 
 sub get_eol_layer {
-    my ($root, $path, $prop, $mode, $checkle) = @_;
+    my ($prop, $mode, $checkle) = @_;
     my $k = $prop->{'svn:eol-style'} or return ':raw';
     # short-circuit no-op write layers on lf platforms
     if (NATIVE eq LF) {
@@ -1313,6 +1340,15 @@ sub get_eol_layer {
     else {
         return ':raw'; # unsupported
     }
+}
+
+# Remove anything from the keyword value that could prevent us from being able
+# to correctly collapse it again later.
+sub _sanitize_keyword_value {
+    my $value = shift;
+    $value =~ s/[\r\n]/ /g;
+    $value =~ s/ +\$/\$/g;
+    return $value;
 }
 
 sub get_keyword_layer {
@@ -1335,7 +1371,7 @@ sub get_keyword_layer {
 		 sub { my ($root, $path) = @_;
 		       my $rev = $root->node_created_rev ($path);
 		       my $fs = $root->fs;
-			$fs->revision_prop ($rev, 'svn:author');
+		       $fs->revision_prop ($rev, 'svn:author');
 		 },
 		 Id =>
 		 sub { my ($root, $path) = @_;
@@ -1386,9 +1422,9 @@ sub get_keyword_layer {
 
     return PerlIO::via::dynamic->new
 	(translate =>
-         sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/"\$$1: ".$kmap{$1}->($root, $path).' $'/eg; },
+         sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/"\$$1: "._sanitize_keyword_value($kmap{$1}->($root, $path)).' $'/eg; },
 	 untranslate =>
-	 sub { $_[1] =~ s/\$($keyword)\b[-#:\w\t \.\/]*\$/\$$1\$/g; });
+	 sub { $_[1] =~ s/\$($keyword)(?:: .*? )?\$/\$$1\$/g; });
 }
 
 sub _fh_symlink {
@@ -1423,10 +1459,10 @@ sub get_fh {
 	if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
     if (keys %$prop) {
 	$layer ||= get_keyword_layer ($root, $path, $prop);
-	$eol ||= get_eol_layer($root, $path, $prop, $mode, $checkle);
+	$eol ||= get_eol_layer($prop, $mode, $checkle);
     }
     $eol ||= ':raw';
-    open my ($fh), $mode.$eol, $fname or die "can't open $fname: $!\n";
+    open my ($fh), $mode.$eol, $fname or return undef;
     $layer->via ($fh) if $layer;
     return $fh;
 }
@@ -1640,17 +1676,13 @@ sub new {
     bless [@arg], $class;
 }
 
-# XXX: workaround some stalled refs in svn/perl
-my $globaldestroy;
-
 sub DESTROY {
-    warn "===> attempt to destroy root $_[0], leaked?" if $globaldestroy;
-    return if $globaldestroy;
+    return unless $_[0][0];
+    # if this destructor is called upon the pool cleanup which holds the
+    # txn also, we need to use a new pool, otherwise it segfaults for
+    # doing allocation in a pool that is being destroyed.
+    my $pool = SVN::Pool->new_default;
     $_[0][0]->abort if $_[0][0];
-}
-
-END {
-    $globaldestroy = 1;
 }
 
 =head1 AUTHORS

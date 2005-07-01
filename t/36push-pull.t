@@ -5,7 +5,7 @@ use Cwd;
 use File::Path;
 
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 12;
+plan_svm tests => 13;
 
 my $initial_cwd = getcwd;
 
@@ -139,7 +139,6 @@ $svk->commit ('-m', 'modification to mirror', "$corpath_default");
 
 is_output ($svk, "pull", ["//l"], [
         "Auto-merging (14, 16) /m to /l (base /m:14).",
-        "===> Auto-merging (14, 16) /m to /l (base /m:14).",
         "U   new-file",
         "New merge ticket: $test_uuid:/A:8",
         "Committed revision 17."]);
@@ -186,8 +185,27 @@ is_output ($svk, "pull", ["sub"], [
 	"Committed revision 24.",
 	"Syncing //l-sub(/l-sub/sub) in ".__("$corpath_subdir/sub to 24."),
        __("U   sub/xd")]);
-chdir ($initial_cwd);
+
+overwrite_file ("$corpath_second/Q/qz", "asfd orz\n");
+$svk->commit (-m => 'randome changes', $corpath_second);
+
+overwrite_file ("$corpath_test/Q/qz", "asfd orz\n");
+$svk->commit (-m => 'randome changes', $corpath_test);
+
+chdir ($corpath_second);
 our $output;
+
+is_output ($svk, 'push', [],
+	   ['Auto-merging (0, 25) /l2 to /m (base /m:16).',
+	    '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
+	    "Merging back to mirror source $uri/A.",
+	    'Empty merge.',
+	    '===> Auto-merging (18, 25) /l2 to /m (base /m:16).',
+	    "Merging back to mirror source $uri/A.",
+	    qr"Transaction is out of date: Out of date: '/A/Q/qz' in transaction '.*'",
+	    'Please sync mirrored path /m first.']);
+
+chdir ($initial_cwd);
 $svk->cp (-m => 'copy', '/test/A' => '/test/A-cp');
 $svk->mkdir (-m => 'dir in A', '/test/A/notforcp');
 $svk->mkdir (-m => 'dir in A-ap', '/test/A-cp/cp-only');

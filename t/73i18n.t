@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use Cwd;
 use File::Path;
 BEGIN { require 't/tree.pl' };
 use POSIX qw(setlocale LC_CTYPE);
@@ -9,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 32;
+plan tests => 34;
 our ($answer, $output);
 
 my ($xd, $svk) = build_test();
@@ -37,9 +38,14 @@ TMP
 is_output ($svk, 'cp', [-m => $msg, '--encoding', 'big5', '//A' => '//A-cp'],
 	   ['Committed revision 3.']);
 
-is_output ($svk, 'commit', [$copath],
+my $oldwd = Cwd::getcwd;
+chdir ($copath);
+is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
-	    "Can't decode commit message as utf8.", "try --encoding."]);
+	    qr'Commit message saved in (.*)\.',
+	    "Can't decode commit message as utf-8-strict.", "try --encoding.",
+	   ]);
+chdir ($oldwd);
 is_output ($svk, 'commit', [$copath, '--encoding', 'big5'],
 	   ['Waiting for editor...',
 	    'Committed revision 4.']);
@@ -56,17 +62,17 @@ overwrite_file ("$copath/$msgutf8-dir/newfile", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/newfile2", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/$msg", "new file\n"); # nasty file
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/$msg"],
-	   [__"$msg: Can't decode path as utf8.",
+	   [__"$msg: Can't decode path as utf-8-strict.",
 	    __"Unknown target: $msg."]);
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/newfile2"],
-	   [__"$msg: Can't decode path as utf8.",
+	   [__"$msg: Can't decode path as utf-8-strict.",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'st', [$copath],
-	   [__"$msg: Can't decode path as utf8.",
+	   [__"$msg: Can't decode path as utf-8-strict.",
 	    __"?   $copath/$msgutf8-dir/newfile",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'ci', ['--import', '-m', 'hate', $copath],
-	   [__"$msg: Can't decode path as utf8."],
+	   [__"$msg: Can't decode path as utf-8-strict."],
 	   'import with bizzare filename is fatal.');
 
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
@@ -74,7 +80,7 @@ is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
 is_output ($svk, 'ls', ["//A"],
 	   ['Q/', 'be', "$msgutf8-dir/"]);
 is_output ($svk, 'ls', ["//A/$msg-dir"],
-	   ["Can't decode path as utf8."]);
+	   ["Can't decode path as utf-8-strict."]);
 #### BEGIN big5 enivonrment
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => '//'],
@@ -114,6 +120,14 @@ is_output ($svk, 'rm', ["$copath/$msg-dir/$msg"],
 is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	   ['Waiting for editor...',
 	    'Committed revision 7.']);
+
+$svk->cp (-m => "$msg hate", -r6 => '//A' => '//A-cp2');
+$svk->smerge ('-I', '//A' => '//A-cp2');
+is_output_like ($svk, 'log', [-r8 => '//'],
+		qr/\Q$msg\E/);
+is_output_like ($svk, 'log', [-r9 => '//'],
+		qr/\Q$msg\E/);
+
 is_output ($svk, 'st', ["$copath/$msg-dir"],
 	   [], 'clean checkout after commit');
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],

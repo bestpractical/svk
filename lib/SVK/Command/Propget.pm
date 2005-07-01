@@ -50,7 +50,7 @@ SVK::Command::Propget - Display a property on path
 =head1 OPTIONS
 
  -R [--recursive]       : descend recursively
- -r [--revision] arg    : act on revision ARG instead of the head revision
+ -r [--revision] REV	: act on revision REV instead of the head revision
  --revprop              : operate on a revision property (use with -r)
  --strict               : do not print an extra newline at the end of the
                           property values; when there are multiple paths

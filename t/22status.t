@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
+use Test::More tests => 17;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -104,4 +104,15 @@ is_output ($svk, 'status', ['deeper/deeper'],
 	    __('C   deeper/deeper/baz')
 	   ]);
 chdir ('..');
+$svk->revert ('-R', 'A');
+$svk->add ('A/deeper');
+$svk->ps ('foo', 'bar', 'A/deeper');
+$svk->ps ('bar', 'ksf', 'A/deeper');
+is_output ($svk, 'st', [],
+	   [map {__($_)}
+	    ('?   A/bar',
+	     'A   A/deeper',
+	     'A   A/deeper/deeper',
+	     'A   A/deeper/deeper/baz',
+	     '~   A/deep')]);
 

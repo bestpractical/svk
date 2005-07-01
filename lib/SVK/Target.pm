@@ -3,7 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
-			       IS_WIN32 find_prev_copy );
+			       IS_WIN32 find_prev_copy get_depot_anchor );
 
 
 =head1 NAME
@@ -92,13 +92,21 @@ sub anchorify {
     my ($self) = @_;
     die "anchorify $self->{depotpath} already with targets: ".join(',', @{$self->{targets}})
 	if exists $self->{targets}[0];
-    ($self->{path}, $self->{targets}[0], $self->{depotpath}) =
-	get_anchor (1, $self->{path}, $self->{depotpath});
+    ($self->{path}, $self->{targets}[0]) = get_anchor (1, $self->{path});
+    ($self->{depotpath}) = get_depot_anchor (0, $self->{depotpath});
     ($self->{copath}, $self->{copath_target}) = get_anchor (1, $self->{copath})
 	if $self->{copath};
     # XXX: prepend .. if exceeded report?
-    ($self->{report}) = get_anchor (0, $self->{report})
-	if $self->{report}
+    if ($self->{report}) {
+	# XXX: This logic is flawed; whether this is target has a copath
+	# doesn't actually tell us whether the report is a copath or depot
+	# path. (See also SVK::XD::do_delete)
+	if ($self->{copath}) {
+	    ($self->{report}) = get_anchor (0, $self->{report});
+	} else {
+	    ($self->{report}) = get_depot_anchor (0, $self->{report});
+	}
+    }
 }
 
 =head2 normalize
@@ -234,12 +242,16 @@ sub copy_ancestors {
     my $fs = $self->{repos}->fs;
     my $t = $self->new->as_depotpath;
     my @result;
-    while (my ($copyto, $copyfrom_rev, $copyfrom_path) = $t->nearest_copy) {
+    my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
+    my ($root, $path) = ($t->root, $t->path);
+    while (my (undef, $copyfrom_root, $copyfrom_path) = nearest_copy ($root, $path, $new_pool)) {
 	$t->{path} = $copyfrom_path;
-	$t->{revision} = $copyfrom_rev;
-	push @result, [@{$t}{qw(path revision)}];
-	# if the original target is anchorified, do so too.
-	delete $t->{targets}, $t->anchorify if exists $self->{targets}[0];
+	$t->{revision} = $copyfrom_root->revision_root_revision;
+	push @result, [$copyfrom_path, $copyfrom_root->revision_root_revision];
+	($root, $path) = ($copyfrom_root, $copyfrom_path);
+
+	$old_pool->clear;
+	($old_pool, $new_pool) = ($new_pool, $old_pool);
     }
     return @result;
 }
@@ -247,39 +259,40 @@ sub copy_ancestors {
 # given a root object and a path, returns the revision where it's ancestor
 # is from another path.
 sub nearest_copy {
-    my ($root, $path) = @_;
+    my ($root, $path, $ppool) = @_;
     if (ref ($root) eq __PACKAGE__) {
 	($root, $path) = ($root->root, $root->path);
     }
     my $fs = $root->fs;
     my $spool = SVN::Pool->new_default;
-    my $old_pool = SVN::Pool->new;
-    my $new_pool = SVN::Pool->new;
+    my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
 
     # normalize
     my $hist = $root->node_history ($path)->prev(0);
     my $rev = ($hist->location)[1];
+    $root = $fs->revision_root ($rev, $ppool);
 
     while ($hist = $hist->prev(1, $new_pool)) {
 	# Find history_prev revision, if the path is different, bingo.
 	my ($hppath, $hprev) = $hist->location;
-	return ($rev, $hprev, $hppath) if $hppath ne $path; # got it
+	return ($root, $fs->revision_root ($hprev, $ppool), $hppath)
+	    if $hppath ne $path; # got it
 
 	# Find nearest copy of the current revision (up to but *not*
 	# including the revision itself). If the copy contains us, bingo.
 	my $copy;
-	($rev, $copy) = find_prev_copy ($fs, $hprev) or last; # no more copies
-
+	($root, $copy) = find_prev_copy ($fs, $hprev, $new_pool) or last; # no more copies
+	$rev = $root->revision_root_revision;
 	if (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path)) {
 	    # there were copy, but the descendent might not exist there
-	    last unless $fs->revision_root ($fromrev)->check_path ($frompath);
-	    return ($rev, $fromrev, $frompath);
+	    my $proot = $fs->revision_root ($fromrev, $ppool);
+	    last unless $proot->check_path ($frompath);
+	    return ($root, $proot, $frompath);
 	}
 
 	if ($rev < $hprev) {
 	    # Reset the hprev root to this earlier revision to avoid infinite looping
 	    local $@;
-	    $root = $fs->revision_root ($rev, $new_pool);
 	    $hist = eval { $root->node_history ($path)->prev(0, $new_pool) } or last;
 	}
         $old_pool->clear;
@@ -328,8 +341,9 @@ sub copied_from {
     $target->as_depotpath;
 
     my $root = $target->root;
-
-    while ((undef, $target->{revision}, $target->{path}) = $target->nearest_copy) {
+    my $fromroot;
+    while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
+	$target->{revision} = $fromroot->revision_root_revision;
 	# Check for existence.
 	if ($root->check_path ($target->{path}) == $SVN::Node::none) {
 	    next;

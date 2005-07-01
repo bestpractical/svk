@@ -39,17 +39,23 @@ is_ancestor ($svk, '//xyz/fnord',
 my ($repospath, $path, $repos) = $xd->find_repos ('//', 1);
 my $fs = $repos->fs;
 
-#my $target = SVK::Target->new (repos => $repos, path => '/baz/S');
-#$target->copy_ancestors;
-
 $svk->ps(-m=>'mod', 'foo', 'bar', '//baz/S');
-is_deeply ([SVK::Target::nearest_copy ($fs->revision_root (208), '/baz/S')],
+is_copy ([SVK::Target::nearest_copy ($fs->revision_root (208), '/baz/S')],
 	   [205, 204, '/bar/B/S']);
-is_deeply ([SVK::Target::nearest_copy ($fs->revision_root (208), '/baz')],
+is_copy ([SVK::Target::nearest_copy ($fs->revision_root (208), '/baz')],
 	   [205, 204, '/bar/B']);
-is_deeply ([SVK::Target::nearest_copy ($fs->revision_root (204), '/bar/B/S')],
+is_copy ([SVK::Target::nearest_copy ($fs->revision_root (204), '/bar/B/S')],
 	   [204, 3, '/foo/B/S']);
-is_deeply ([SVK::Target::nearest_copy ($fs->revision_root (3), '/foo/B/S')],
+is_copy ([SVK::Target::nearest_copy ($fs->revision_root (3), '/foo/B/S')],
 	   [3, 2, '/foo/A']);
-is_deeply ([SVK::Target::nearest_copy ($fs->revision_root (2), '/foo/A')],
+is_copy ([SVK::Target::nearest_copy ($fs->revision_root (2), '/foo/A')],
 	   []);
+
+sub is_copy {
+    if (exists $_[0][0]) {
+	$_[0][0] = $_[0][0]->revision_root_revision;
+	$_[0][1] = $_[0][1]->revision_root_revision;
+    }
+    goto \&is_deeply;
+}
+
