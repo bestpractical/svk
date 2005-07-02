@@ -46,6 +46,7 @@ sub run {
     else {
 	$target->as_depotpath if $r1 && $r2;
 	if ($target->{copath}) {
+	    $target = $self->arg_condensed($target->{report});
 	    $target2 = $target->new;
 	    $target->as_depotpath;
 	    $report = $target->{report};
