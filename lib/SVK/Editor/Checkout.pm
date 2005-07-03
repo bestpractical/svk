@@ -14,7 +14,7 @@ SVK::Editor::File - An editor for modifying files on filesystems
 
 =head1 SYNOPSIS
 
-$editor = SVK::Editor::File->new
+$editor = SVK::Editor::Checkout->new
     ( path => $path,
       get_copath => sub { ... },
     );
@@ -53,10 +53,6 @@ sub set_target_revision {
 
 sub open_root {
     my ($self, $base_revision) = @_;
-    require Data::Hierarchy;
-    require SVK::XD;
-    $self->{signature} ||= SVK::XD::Signature->new (root => $self->{xd}->cache_directory)
-	if $self->{update};
     return $self->open_directory ('', '');
 }
 
@@ -139,7 +135,6 @@ sub apply_textdelta {
 }
 
 sub close_file {
-    # XXX: checksum
     my ($self, $path, $checksum) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
@@ -170,12 +165,6 @@ sub open_directory {
     my ($self, $path, $pdir) = @_;
     return undef unless defined $pdir;
     # XXX: test if directory exists
-    if ($self->{update}) {
-	my $copath = $path;
-	$self->{get_copath}->($copath);
-	push @{$self->{cursignature}}, $self->{signature}->load ($copath);
-	$self->{cursignature}[-1]{keepold} = 1;
-    }
     return $path;
 }
 

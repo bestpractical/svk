@@ -70,6 +70,13 @@ A callback to translate paths in editor calls to path in depot.
 
 =cut
 
+sub open_root {
+    my ($self, $base_revision) = @_;
+    $self->{signature} ||= SVK::XD::Signature->new (root => $self->{xd}->cache_directory)
+	if $self->{update};
+    return $self->SUPER::open_root($base_revision);
+}
+
 sub get_base {
     my ($self, $path, $copath, $checksum) = @_;
     my $dpath = $path;
@@ -147,6 +154,20 @@ sub add_directory {
     return $ret;
 }
 
+sub open_directory {
+    my ($self, $path, $pdir) = @_;
+    my $ret = $self->SUPER::open_directory ($path, $pdir);
+    return undef unless defined $ret;
+    # XXX: test if directory exists
+    if ($self->{update}) {
+	my $copath = $path;
+	$self->{get_copath}->($copath);
+	push @{$self->{cursignature}}, $self->{signature}->load ($copath);
+	$self->{cursignature}[-1]{keepold} = 1;
+    }
+    return $ret;
+}
+
 sub do_delete {
     my $self = shift;
     return $self->SUPER::do_delete (@_)
@@ -162,6 +183,7 @@ sub do_delete {
 
 sub close_directory {
     my ($self, $path) = @_;
+    return unless defined $path;
     # the root is just an anchor
     return if $self->{target} && !length($path);
     my $copath = $path;
