@@ -37,7 +37,13 @@ sub open_root {
 }
 
 sub add_file {
-    my ($self, $path, $pdir, undef, undef, $pool) = @_;
+    my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
+    if (defined $from_path) {
+	$self->_print
+	    ( "=== $path\n",
+	      loc ("== copy with modification can't be displayed, use svk patch --apply.\n" ));
+	return;
+    }
     $self->{info}{$path}{added} = 1;
     $self->{info}{$path}{fpool} = $pool;
     return $path;
@@ -51,6 +57,7 @@ sub open_file {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
+    return unless $path;
     my $info = $self->{info}{$path};
     $info->{base} = $self->{cb_basecontent} ($path, $info->{fpool})
 	unless $info->{added};
@@ -91,6 +98,7 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
+    return unless $path;
     if (exists $self->{info}{$path}{new}) {
 	no warnings 'uninitialized';
 	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
