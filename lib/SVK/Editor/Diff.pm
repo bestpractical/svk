@@ -38,7 +38,7 @@ sub open_root {
 
 sub add_file {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
-    if (length $from_path) {
+    if (defined $from_path) {
 	$self->_print
 	    ( "=== $path\n",
 	      loc ("== copy with modification can't be displayed, use svk patch --apply.\n" ));
