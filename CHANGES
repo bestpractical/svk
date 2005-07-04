@@ -8,6 +8,15 @@
 * Fix memory leaks when having mixed-revision checkout with many
   entries.
 
+* Fix a segfault in patch creation and viewing triggered by
+  copy+modification files.
+
+* Fix a bug in svk diff: diffing deeply added directory triggers
+  "checkout_delta called with non-dir".
+
+* Partially fix a bug that deleting a path containing mirrors will
+  result in inconsistent mirror state.
+
 * Fix svk ls -f to list the path, instead of depot root path. [Autrijus]
 
 * Fix a bug that push (smerge -I) will use wrongly encoded commit
