@@ -30,6 +30,7 @@ $svk->commit ('-m', 'change on local', $copath);
 is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 		qr|1 conflict found.|);
 
+$ENV{SVKRESOLVE} = '';
 $answer = 't'; # yours
 $svk->sm ('//trunk', $copath);
 is_output ($svk, 'diff', ["$copath/test.pl"],
