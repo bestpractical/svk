@@ -5,7 +5,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use SVK::I18N;
-use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
+use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
 		  from_native to_native get_encoder get_depot_anchor );
@@ -409,6 +409,37 @@ sub condense {
     }
     return ($report, $anchor, $#targets == 0 && $targets[0] eq $anchor ? ()
 	    : map { abs2rel($_, $anchor) } @targets);
+}
+
+# simliar to command::arg_copath, but still return a target when
+# basepath doesn't exist, arg_copath shuold be gradually deprecated
+sub target_from_copath_maybe {
+    my ($self, $arg) = @_;
+
+    my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
+    my ($repospath, $path, $depotpath, $copath, $repos);
+    local $@;
+    unless (($repospath, $path, $repos) = eval { $self->find_repos ($arg, 1) }) {
+	$arg = File::Spec->canonpath($arg);
+	$copath = abs_path_noexist($arg);
+	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
+	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
+	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
+	$path = abs2rel ($copath, $coroot => $path, '/');
+	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
+	$depotpath = "/$depotpath$path";
+    }
+
+    from_native ($path, 'path', $self->{encoding});
+    return SVK::Target->new
+	( repos => $repos,
+	  repospath => $repospath,
+	  depotpath => $depotpath || $arg,
+	  copath => $copath,
+	  report => $arg,
+	  path => $path,
+	  revision => $rev,
+	);
 }
 
 sub xdroot {

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 56;
+plan_svm tests => 61;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -168,6 +168,29 @@ is_output ($svk, 'cp', ["$copath/me", "$copath/me-cocopied"], [__("Path $copath/
 
 $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
+
+is_output($svk, 'copy', ["$copath/me", "$copath/nonexist/fnord"],
+	  [__"Parent directory t/checkout/copy/nonexist doesn't exist, use -p."]);
+
+is_output($svk, 'copy', [-p => "$copath/me", "$copath/nonexist/fnord"],
+	   [__("A   $copath/nonexist"),
+	    __("A   $copath/nonexist/fnord")]
+	  );
+
+is_output ($svk, 'status', [$copath],
+	   [__("A   $copath/nonexist"),
+	    __("A + $copath/nonexist/fnord")]
+	  );
+
+is_output($svk, 'copy', ["$copath/me", "$copath/me-cocopied/fnord"],
+	  [__"t/checkout/copy/me-cocopied is not a directory."]);
+
+is_output($svk, 'copy', [-p => "$copath/me", "$copath/me-cocopied/fnord/orz"],
+	  ["mkdir t/checkout/copy/me-cocopied: File exists",
+	  ]);
+
+$svk->revert('-R', $copath);
+rmtree ["$copath/nonexist"];
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
 	   ['Committed revision 19.']);

@@ -2,7 +2,7 @@ package SVK::Command::Copy;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
-use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri );
+use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri make_path );
 use SVK::I18N;
 
 sub options {
@@ -24,7 +24,7 @@ sub parse_arg {
 	if (grep {is_uri($_)} @arg) > 1;
     my @src;
 
-    if ( my $target = eval { $self->arg_co_maybe ($dst) }) {
+    if ( my $target = eval { $self->{xd}->target_from_copath_maybe($dst) }) {
         $dst = $target;
 	# don't allow new uri in source when target is copath
 	@src = (map {$self->arg_co_maybe
@@ -77,6 +77,23 @@ sub handle_co_item {
     my $entry = $self->{xd}{checkout}->get ($copath);
     $src->normalize;
     $src->anchorify; $dst->anchorify;
+    unless (-e $dst->{copath}) {
+	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})
+	    unless $self->{parent};
+	# this sucks
+	make_path($dst->{report});
+	my $add = $self->command('add');
+	$add->run($add->parse_arg($dst->{report}));
+    }
+    unless (-d $dst->{copath}) {
+	die loc ("%1 is not a directory.\n", $dst->{report});
+    }
+    unless ($dst->root($self->{xd})->check_path ($dst->{path})) {
+	my $info = $self->{xd}{checkout}->get($dst->{copath});
+	die loc ("Parent directory %1 is unknown, add first.\n", $dst->{report})
+	    unless $info->{'.schedule'};
+    }
+
     # if SVK::Merge could take src being copath to do checkout_delta
     # then we have 'svk cp copath... copath' for free.
     SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,

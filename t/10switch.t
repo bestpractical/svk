@@ -20,7 +20,6 @@ is_output_like ($svk, 'switch', ['//A-branch', '.', 'foo'], qr'SYNOPSIS');
 overwrite_file ("$copath/Q/qu", "first line in qu\nlocally modified on branch\n2nd line in qu\n");
 
 #$svk->switch ('-C', '//A');
-our $DEBUG = 1;
 is_output ($svk, 'switch', ['//A', $copath],
 	   ["Syncing //A-branch(/A-branch) in $corpath to 3.",
 	    map __($_),

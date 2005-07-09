@@ -693,7 +693,12 @@ sub make_path {
     return undef if !defined($path) or -d $path;
 
     require File::Path;
-    return File::Path::mkpath([$path]);
+    my $ret = eval { File::Path::mkpath([$path]) };
+    if ($@) {
+	$@ =~ s/ at .*/\n/;
+	die $@;
+    }
+    return $ret;
 }
 
 =head3 splitpath ($path)
