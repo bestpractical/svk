@@ -3,6 +3,20 @@
 * Fix a memory leak when constructing copy cache for revisions
   involving many changed paths.
 
+* Fix a memory leak when updating directories containing lots of files.
+
+* Fix memory leaks when having mixed-revision checkout with many
+  entries.
+
+* Fix a segfault in patch creation and viewing triggered by
+  copy+modification files.
+
+* Fix a bug in svk diff: diffing deeply added directory triggers
+  "checkout_delta called with non-dir".
+
+* Partially fix a bug that deleting a path containing mirrors will
+  result in inconsistent mirror state.
+
 * Fix svk ls -f to list the path, instead of depot root path. [Autrijus]
 
 * Fix a bug that push (smerge -I) will use wrongly encoded commit
@@ -25,9 +39,17 @@
 * Fix a bug that a file is not properly handled when a symlink is
   overwritten by file, without proper replace.
 
+* Fix a bug that patch --apply thinks the commit fails and save the
+  commit message to a temp file.
+
 * svk blame now takes --remoterev to show remote revision.
 
 * svk sync -a now does the right thing on given depotpath. [Jody Belka]
+
+* make svk update, ls, and cat use new revspec parser so they support
+  remote-revision form and friends. [gugod]
+
+* Pull as a lump under all conditions, even depot path. [Norman Nunley]
 
 * Misc documentation and tests fixes and improvements. [jesse,knew,matthewd,Tom Sibley]
 

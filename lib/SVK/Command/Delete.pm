@@ -46,8 +46,20 @@ sub do_delete_direct {
     $self->finalize_dynamic_editor ($editor);
 }
 
+sub _ensure_mirror {
+    my ($self, $target) = @_;
+    my @m = $target->contains_mirror or return;
+    return if !$target->{copath} && $#m == 0 && $m[0] eq $target->path;
+
+    my $depotname = $target->depotname;
+    die loc("%1 contains mirror, remove explicitly: ", "/$depotname".$target->path).
+	join(',', map { "/$depotname$_" } @m)."\n"
+}
+
 sub run {
     my ($self, $target) = @_;
+
+    $self->_ensure_mirror($target);
 
     if ($target->{copath}) {
 	$self->{xd}->do_delete ( %$target, no_rm => $self->{keep} );

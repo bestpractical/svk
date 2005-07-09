@@ -4,6 +4,7 @@ inc/ExtUtils/AutoInstall.pm
 inc/Module/Install.pm
 inc/Module/Install/AutoInstall.pm
 inc/Module/Install/Base.pm
+inc/Module/Install/Build.pm
 inc/Module/Install/Can.pm
 inc/Module/Install/Fetch.pm
 inc/Module/Install/Include.pm
@@ -116,6 +117,7 @@ t/05svm-head.t
 t/05svm-lock.t
 t/05svm-move.t
 t/05svm-all.t
+t/05svm-rm.t
 t/05svm.t
 t/06keyword.t
 t/07smerge-anchor-replace.t

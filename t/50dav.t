@@ -2,6 +2,8 @@
 use strict;
 # XXX: apache::test seems to alter inc to use blib
 require SVK::Command::Merge;
+use POSIX qw(setlocale LC_CTYPE);
+
 
 # XXX: apache::TestConfig assumes lib.pm is compiled.
 require lib;
@@ -17,6 +19,8 @@ BEGIN {
 	or plan (skip_all => "Apache::Test 1.18 required for testing dav");
     plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
 }
+setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
+    or plan skip_all => 'cannot set locale to en_US.UTF-8';
 
 use Apache::TestConfig;
 use File::Spec::Functions qw(rel2abs catdir);
