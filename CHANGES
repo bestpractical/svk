@@ -24,7 +24,7 @@
 
 * Fix a crash bug when switch to a branch that has new files with keywords.
 
-* When checkout to existing directory, if the direcotry is from the
+* When checkout to existing directory, if the directory is from the
   very same depotpath, do an update instead of dying.  This resembles
   the svn and cvs behaviour.
 
@@ -51,7 +51,7 @@
 
 * Pull as a lump under all conditions, even depot path. [Norman Nunley]
 
-* Misc documentation and tests fixes and improvements. [jesse,knew,matthewd,Tom Sibley]
+* Misc documentation and tests fixes and improvements. [jesse,knewt,matthewd,Tom Sibley]
 
 * Fix the autouse hack so Devel::DProf works again.
 
