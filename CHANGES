@@ -1,4 +1,4 @@
-[Changes for 1.01 - 24 Jun, 2005]
+[Changes for 1.01 - 11 Jul, 2005]
 
 * Fix a memory leak when constructing copy cache for revisions
   involving many changed paths.
