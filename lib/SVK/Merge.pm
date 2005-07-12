@@ -375,7 +375,6 @@ package SVK::Merge::Info;
 
 sub new {
     my ($class, $merge) = @_;
-
     my $minfo = { map { my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
 			("$uuid:$path" => SVK::Target::Universal->new ($uuid, $path, $rev))
 		    } grep { length $_ } split (/\n/, $merge || '') };

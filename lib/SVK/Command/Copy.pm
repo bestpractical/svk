@@ -111,7 +111,7 @@ sub handle_co_item {
 }
 
 sub handle_direct_item {
-    my ($self, $editor, $anchor, $m, $src, $dst) = @_;
+    my ($self, $editor, $anchor, $m, $src, $dst, $other_call) = @_;
     $src->normalize;
     # if we have targets, ->{path} must exist
     if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->{path})) {
@@ -126,8 +126,9 @@ sub handle_direct_item {
     else {
 	$path = "file://$src->{repospath}$path";
     }
-    $editor->close_directory
-	($editor->add_directory (abs2rel ($dst->path, $anchor => undef, '/'), 0, $path, $rev));
+    my $baton = $editor->add_directory (abs2rel ($dst->path, $anchor => undef, '/'), 0, $path, $rev);
+    $other_call->($baton) if $other_call;
+    $editor->close_directory($baton);
     $self->adjust_anchor ($editor);
 }
 
