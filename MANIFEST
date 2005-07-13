@@ -169,6 +169,7 @@ t/70symlink.t
 t/71autovivify.t
 t/72sign.t
 t/73i18n.t
+t/75hook.t
 t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl
