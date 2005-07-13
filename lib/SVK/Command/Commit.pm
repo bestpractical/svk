@@ -210,7 +210,7 @@ sub get_editor {
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY,
-	     $SVN::Error::RA_DAV_REQUEST_FAILED,
+            $SVN::Error::RA_DAV_REQUEST_FAILED,
 	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
@@ -219,6 +219,8 @@ sub get_editor {
 				       : "Please update checkout first.");
 	    $self->add_handler ($_, sub { $editor->abort_edit });
 	}
+	$self->clear_handler ($SVN::Error::REPOS_HOOK_FAILURE);
+	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
     return ($editor, %cb, mirror => $m, callback => \$callback,
