@@ -50,7 +50,7 @@ sub run {
                       if ($st =~ /[DMRC!]/) {
 			  # conflicted items do not necessarily exist
 			  return $self->do_unschedule ($target, $copath)
-			      if $st eq 'C' && !$xdroot->check_path ($dpath);
+			      if ($st eq 'C' || $status->[2]) && !$xdroot->check_path ($dpath);
                           return $self->do_revert($target, $copath, $dpath, $xdroot);
                       }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 18;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -80,3 +80,19 @@ is_output ($svk, 'st', [],
 is_output ($svk, 'revert', ['-R'],
 	   [__("Reverted A/foo")]);
 is_output ($svk, 'st', [], []);
+
+$svk->cp('A/foo', 'A/foo.cp');
+
+is_output ($svk, 'revert', ['-R'],
+	   [__("Reverted A/foo.cp")]);
+
+is_output ($svk, 'st', [], ['?   A/foo.cp']);
+unlink('A/foo.cp');
+
+$svk->cp('A/foo', 'A/foo.cp');
+append_file('A/foo.cp', 'some thing');
+is_output ($svk, 'revert', ['-R'],
+	   [__("Reverted A/foo.cp")]);
+
+is_output ($svk, 'st', [], ['?   A/foo.cp']);
+unlink('A/foo.cp');
