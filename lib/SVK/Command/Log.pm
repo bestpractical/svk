@@ -94,11 +94,11 @@ sub _get_logs {
         path        => $path,
         cross       => $cross,
         callback    => sub {
-            return 0 if !$limit--; # last
-
             my $rev = $_[1];
             return 1 if $rev > $fromrev; # next
             return 0 if $rev < $torev;   # last
+
+            return 0 if !$limit--; # last
 
             if ($reverse) {
                 unshift @revs, $rev;
