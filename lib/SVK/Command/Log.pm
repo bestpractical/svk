@@ -183,10 +183,21 @@ SVK::Command::Log - Show log messages for revisions
 
  log DEPOTPATH
  log PATH
+ log -r N[:M] [DEPOT]PATH
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] ARG      : ARG (some commands also take ARG1:ARG2 range)
+
+                          A revision argument can be one of:
+
+                          "HEAD"       latest in repository
+                          NUMBER       revision number
+                          NUM1:NUM2    revision range
+
+                          Unlike other commands,  negative NUMBER has no
+                          meaning.
+
  -l [--limit] REV	: stop after displaying REV revisions
  -x [--cross]           : track revisions copied from elsewhere
  -v [--verbose]         : print extra information
