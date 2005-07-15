@@ -1,12 +1,28 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-use Test::More tests => 17;
+use Test::More tests => 18;
 
 our $output;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('mkdir');
 my ($repospath, $path, $repos) = $xd->find_repos ('/test/', 1);
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+@_ = <_>;
+# simulate some editing, for --template test
+s/monkey/gorilla/g for @_;
+s/birdie/parrot/g for @_;
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+
 $svk->checkout ('//', $copath);
 is_output_like ($svk, 'mkdir', [], qr'SYNOPSIS', 'mkdir - help');
 is_output_like ($svk, 'mkdir', ['nonexist'],
@@ -24,8 +40,12 @@ is_output ($svk, 'mkdir', ['-m', 'msg', '//i-newdir/deep'],
 	   [qr'.*',
 	    'Please update checkout first.']);
 
-is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deep'],
-	   ['Committed revision 2.']);
+is_output ($svk, 'mkdir', ['-p', '-m', 'msg monkey foo', '--template', '//i-newdir/deep'],
+	   ['Waiting for editor...',
+	    'Committed revision 2.']);
+
+is_output_like ($svk, 'log', [-r => 2, '//i-newdir/deep'],
+		qr/msg gorilla foo/, 'mkdir template works');
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deeper/file'],
 	   ['Committed revision 3.']);

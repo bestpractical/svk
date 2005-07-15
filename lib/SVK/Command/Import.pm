@@ -147,6 +147,7 @@ SVK::Command::Import - Import directory into depot
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
  -F [--file] FILENAME	: read commit message from FILENAME
+ --template             : prompt for commit message with -m/-F value as default
  -C [--check-only]      : try operation but make no changes
  -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change

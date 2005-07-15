@@ -21,6 +21,7 @@ sub options {
      'import'	  => 'import',
      'encoding=s' => 'encoding',
      'direct'	  => 'direct',
+     'template'	  => 'template',
     );
 }
 
@@ -59,10 +60,15 @@ sub fill_commit_message {
 sub get_commit_message {
     my ($self, $msg) = @_;
     $self->fill_commit_message;
-    unless (defined $self->{message}) {
+
+    if (defined $msg or defined $self->{message}) {
+	$self->{message} = join "\n", grep { defined $_ and length $_ } ($self->{message}, $msg);
+    } 
+
+    if ($self->{template} or not defined $self->{message}) {
 	$self->{message} = get_buffer_from_editor
 	    (loc('log message'), $self->message_prompt,
-	     join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
+	     join ("\n", $self->{message} || '', $self->message_prompt, ''), 'commit');
 	++$self->{save_message};
     }
     $self->decode_commit_message;
@@ -241,11 +247,14 @@ sub get_committable {
     my ($self, $target, $root) = @_;
     my ($fh, $file);
     $self->fill_commit_message;
-    unless (defined $self->{message}) {
+    if ($self->{template} or not defined $self->{message}) {
 	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }
-
-    print $fh "\n", $self->target_prompt, "\n" if $fh;
+    
+    if ($fh) {
+	print $fh $self->{message} if $self->{template} and defined $self->{message};
+	print $fh "\n", $self->target_prompt, "\n";
+    } 
 
     my $targets = [];
     my $encoder = get_encoder;
@@ -461,6 +470,7 @@ SVK::Command::Commit - Commit changes to depot
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
  -F [--file] FILENAME	: read commit message from FILENAME
+ --template             : prompt for commit message with -m/-F value as default
  -C [--check-only]      : try operation but make no changes
  -P [--patch] NAME	: instead of commit, save this change as a patch
  -S [--sign]            : sign this change
