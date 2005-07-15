@@ -123,6 +123,7 @@ SVK::Command::Cmerge - Merge specific changes
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
  -F [--file] FILENAME	: read commit message from FILENAME
+ --template             : prompt for commit message with -m/-F value as default
  -c [--change] REV	: act on comma-separated revisions REV 
  -C [--check-only]      : try operation but make no changes
  -l [--log]             : use logs of merged revisions as commit message

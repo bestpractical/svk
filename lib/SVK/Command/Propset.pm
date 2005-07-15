@@ -135,6 +135,7 @@ SVK::Command::Propset - Set a property on path
 
  -m [--message] MESSAGE	: specify commit message MESSAGE
  -F [--file] FILENAME	: read commit message from FILENAME
+ --template             : prompt for commit message with -m/-F value as default
  -C [--check-only]      : try operation but make no changes
  -S [--sign]            : sign this change
  -R [--recursive]       : descend recursively

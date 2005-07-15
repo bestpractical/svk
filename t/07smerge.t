@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan_svm tests => 29;
+plan_svm tests => 30;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -235,8 +235,21 @@ is_output ($svk, 'smerge', ['-C', '/client2/m-all/A', '/client2/m-all/A-cp'],
 	    'G   Q/qu',
 	    "New merge ticket: $suuid:/A:11"]);
 
-is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '/client2/m-all/A', '/client2/m-all/A-cp'],
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+@_ = ("hate\n", <_>);
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+TMP
+
+is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '--template', '/client2/m-all/A', '/client2/m-all/A-cp'],
 	   ['Auto-merging (10, 12) /m-all/A to /m-all/A-cp (base /m-all/A:10).',
+	    'Waiting for editor...',
 	    "Merging back to mirror source $uri.",
 	    'G   Q/qu',
 	    "New merge ticket: $suuid:/A:11",
@@ -244,6 +257,9 @@ is_output ($svk, 'smerge', ['-m', 'simple text merge for mirrored', '/client2/m-
 	    "Syncing $uri",
 	    'Retrieving log information from 12 to 12',
 	    'Committed revision 13 from revision 12.']);
+is_output_like ($svk, 'log', [-r13 => '/client2/m-all/A-cp'],
+		qr'hate.*simple text's);
+
 overwrite_file ("$copath/Q/qu", "on local\nfirst line in qu\n2nd line in qu\n");
 is_output ($svk, 'commit', ['-m', 'more on local', $copath],
 	   ['Committed revision 12.']);
@@ -266,18 +282,7 @@ is_output ($svk, 'smerge', ['-C', '/client2/m-all/A-cp', '/client2/m-all/A'],
 	    "New merge ticket: $suuid:/A-cp:12"]);
 
 
-set_editor(<< 'TMP');
-$_ = shift;
-open _ or die $!;
-@_ = ("hate\n", <_>);
-close _;
-unlink $_;
-open _, '>', $_ or die $!;
-print _ @_;
-close _;
-TMP
-
-is_output ($svk, 'smerge', ['/client2/m-all/A-cp', '/client2/m-all/A'],
+is_output ($svk, 'smerge', ['-l', '-m', 'some message', '--template', '/client2/m-all/A-cp', '/client2/m-all/A'],
 	   ['Auto-merging (0, 13) /m-all/A-cp to /m-all/A (base /m-all/A:12).',
 	    'Waiting for editor...',
 	    "Merging back to mirror source $uri.",
@@ -289,4 +294,9 @@ is_output ($svk, 'smerge', ['/client2/m-all/A-cp', '/client2/m-all/A'],
 	    'Committed revision 15 from revision 14.']);
 
 is_output_like ($svk, 'log', [-r15 => '/client2/m-all/A'],
-		qr'hate');
+		qr'hate.*
+		   some\ message.*
+		   (orig\ r6).*
+		   branch\ on\ source.*
+		   (orig\ r11).*
+		   commit\ on\ source'sx);

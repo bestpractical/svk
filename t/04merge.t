@@ -1,11 +1,27 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 15;
 use strict;
 require 't/tree.pl';
 
 our $output;
 my ($xd, $svk) = build_test();
 our ($copath, $corpath) = get_copath ('merge');
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+@_ = <_>;
+# simulate some editing, for --template test
+s/monkey/gorilla/g for @_;
+s/birdie/parrot/g for @_;
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+
 is_output_like ($svk, 'merge', [], qr'SYNOPSIS', 'merge - help');
 is_output_like ($svk, 'merge', ['//foo', '//bar', '//foo'], qr'SYNOPSIS',
 		'merge - too many args');
@@ -62,10 +78,13 @@ is_output ($svk, 'merge', ["-r", "3:2", '//', $copath],
 is_file_content (copath ("A/foo"), "late modification...\nfoobar\n",
 		 'basic merge for revert');
 
-$svk->merge (qw/-C -r 4:3/, '//A', '//B');
-is_output ($svk, 'merge', ['-r4:3', '-m', 'merge from //A to //B', '//A', '//B'],
-	   ['G   foo',
+$svk->merge (qw/-C -r HEAD:3/, '//A', '//B');
+is_output ($svk, 'merge', ['-rHEAD:3', '-m', 'merge monkey from //A to //B', '--template', '//A', '//B'],
+	   ['Waiting for editor...',
+	    'G   foo',
 	    'Committed revision 5.']);
+is_output_like ($svk, 'log', [-r => 5, '//'],
+		qr{merge gorilla from //A to //B}, 'merge template works');
 is_output ($svk, 'update', [$copath],
 	   ["Syncing //(/) in $corpath to 5."]);
 
