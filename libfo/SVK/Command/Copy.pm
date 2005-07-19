@@ -7,7 +7,6 @@ use SVK::I18N;
 
 sub options {
     ($_[0]->SUPER::options,
-     'q|quiet'         => 'quiet',
      'r|revision=i' => 'rev');
 }
 
@@ -95,11 +94,10 @@ sub handle_co_item {
 	    unless $info->{'.schedule'};
     }
 
-    my $notify = $self->{quiet} ? SVK::Notify->new(quiet => 1) : undef;
     # if SVK::Merge could take src being copath to do checkout_delta
     # then we have 'svk cp copath... copath' for free.
     SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
-		     report => $report, notify => $notify,
+		     report => $report,
 		     base => $src->new (path => '/', revision => 0),
 		     src => $src, dst => $dst)->run ($self->get_editor ($dst));
 

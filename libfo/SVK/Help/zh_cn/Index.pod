@@ -1,0 +1,12 @@
+=head1 NAME
+
+SVK::Help::Index - SVK 说明索引
+
+=head1 DESCRIPTION
+
+    svk help commands      列出所有指令
+    svk help 指令名称      显示某项指令的说明
+
+L<http://svk.elixus.org/> 有完整的说明文件。
+
+=cut
