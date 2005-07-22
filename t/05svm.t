@@ -219,4 +219,4 @@ is_output ($svk, 'mirror', ['--recover', '//m'],
             'No need to revert; it is already the head revision.',
            ]);
 $svk->mv (-m => 'move on mirror', '//m/Q' => '//m/Q-moved');
-is_ancestor ($svk, '//m/Q-moved', '/m/Q', 24);
+is_ancestor ($svk, '//m/Q-moved', '/m/Q', 6);
