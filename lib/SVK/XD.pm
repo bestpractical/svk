@@ -840,6 +840,10 @@ Don't generate absent_* calls.
 Mimic the behavior like SVN::Repos::dir_delta, lose copy information
 and treat all copied descendents as added too.
 
+=item cb_ignored
+
+Called for ignored items is unknown_verbose is true.
+
 =back
 
 =cut
@@ -1248,7 +1252,11 @@ sub _delta_dir {
 	# If we are not at intermediate path, process ignore
 	# for unknowns, as well as the case of auto_add (import)
 	if (!defined $targets) {
-	    next if (!$add || $arg{auto_add}) && $entry =~ m/$ignore/ ;
+	    if ((!$add || $arg{auto_add}) && $entry =~ m/$ignore/) { 
+		$arg{cb_ignored}->($newpaths{entry}, $newpaths{copath})
+		    if $arg{cb_ignored};
+		next;
+	    }
 	}
 	if ($ccinfo->{'.conflict'}) {
 	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton})

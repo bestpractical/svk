@@ -8,7 +8,9 @@ use SVK::Editor::Status;
 use SVK::Util qw( abs2rel );
 
 sub options {
-    ("q|quiet"    => 'quiet');
+    ("q|quiet"    => 'quiet',
+     "no-ignore"  => 'no_ignore',
+    );
 }
 
 sub parse_arg {
@@ -33,6 +35,16 @@ sub run {
 	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_obstruct => \&SVK::Editor::Status::obstruct,
+	  $self->{no_ignore} ?
+              (cb_ignored =>
+                 sub { my $path = abs2rel($_[1],
+                                          $target->{copath} => 
+                                            length($report) ? $report : undef
+                                         );
+                       print "I   $path\n"
+                 }
+              )              :
+              (),
 	  $self->{quiet} ?
               ()         :
               (cb_unknown =>
@@ -62,6 +74,7 @@ SVK::Command::Status - Display the status of items in the checkout copy
 =head1 OPTIONS
 
  -q [--quiet]           : do not display files not under version control
+ --no-ignore            : disregard default and svn:ignore property ignores
 
 =head1 AUTHORS
 
