@@ -60,7 +60,7 @@ SVK::Command::Info - Display information about a file or directory
 
 =head1 SYNOPSIS
 
- info [PATH | DEPOTPATH]
+ info [PATH | DEPOTPATH]...
 
 =head1 OPTIONS
 

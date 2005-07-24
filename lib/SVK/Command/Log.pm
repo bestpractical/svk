@@ -198,7 +198,7 @@ SVK::Command::Log - Show log messages for revisions
                           Unlike other commands,  negative NUMBER has no
                           meaning.
 
- -l [--limit] REV	: stop after displaying REV revisions
+ -l [--limit] REV       : stop after displaying REV revisions
  -x [--cross]           : track revisions copied from elsewhere
  -v [--verbose]         : print extra information
 
