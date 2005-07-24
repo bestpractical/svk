@@ -10,8 +10,11 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 34;
+plan tests => 35;
 our ($answer, $output);
+
+my $utf8 = SVK::Util::get_encoding;
+ok($utf8 =~ m/utf-?8/);
 
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('i18n');
@@ -42,7 +45,7 @@ my $oldwd = Cwd::getcwd;
 chdir ($copath);
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
-	    "Can't decode commit message as utf-8-strict.", "try --encoding.",
+	    "Can't decode commit message as $utf8.", "try --encoding.",
 	    qr'Commit message saved in (.*)\.',
 	   ]);
 chdir ($oldwd);
@@ -62,17 +65,17 @@ overwrite_file ("$copath/$msgutf8-dir/newfile", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/newfile2", "new file\n");
 overwrite_file ("$copath/$msgutf8-dir/$msg", "new file\n"); # nasty file
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/$msg"],
-	   [__"$msg: Can't decode path as utf-8-strict.",
+	   [__"$msg: Can't decode path as $utf8.",
 	    __"Unknown target: $msg."]);
 is_output ($svk, 'add', ["$copath/$msgutf8-dir/newfile2"],
-	   [__"$msg: Can't decode path as utf-8-strict.",
+	   [__"$msg: Can't decode path as $utf8.",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'st', [$copath],
-	   [__"$msg: Can't decode path as utf-8-strict.",
+	   [__"$msg: Can't decode path as $utf8.",
 	    __"?   $copath/$msgutf8-dir/newfile",
 	    __"A   $copath/$msgutf8-dir/newfile2"]);
 is_output ($svk, 'ci', ['--import', '-m', 'hate', $copath],
-	   [__"$msg: Can't decode path as utf-8-strict."],
+	   [__"$msg: Can't decode path as $utf8."],
 	   'import with bizzare filename is fatal.');
 
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
@@ -80,7 +83,7 @@ is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
 is_output ($svk, 'ls', ["//A"],
 	   ['Q/', 'be', "$msgutf8-dir/"]);
 is_output ($svk, 'ls', ["//A/$msg-dir"],
-	   ["Can't decode path as utf-8-strict."]);
+	   ["Can't decode path as $utf8."]);
 #### BEGIN big5 enivonrment
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5');
 is_output_like ($svk, 'log', [-r4 => '//'],
