@@ -39,6 +39,7 @@ sub do_propset_direct {
         return;
     }
 
+    $target->normalize; # so find_remove_rev is used with right revision.
     my $root = $target->root;
     my $kind = $root->check_path ($target->path);
 
@@ -48,18 +49,21 @@ sub do_propset_direct {
     my $func = $kind == $SVN::Node::dir ? 'change_dir_prop' : 'change_file_prop';
     my $path = abs2rel ($target->path, $anchor => undef, '/');
 
+    my $m = $self->under_mirror ($target);
+    my $rev = $target->{revision};
+    $rev = $m->find_remote_rev ($rev) if $m;
     if ($kind == $SVN::Node::dir) {
 	if ($anchor eq $target->path) {
 	    $editor->change_dir_prop ($editor->{_root_baton}, $propname, $propvalue);
 	}
 	else {
-	    my $baton = $editor->open_directory ($path, 0, $target->{revision});
+	    my $baton = $editor->open_directory ($path, 0, $rev);
 	    $editor->change_dir_prop ($baton, $propname, $propvalue);
 	    $editor->close_directory ($baton);
 	}
     }
     else {
-	my $baton = $editor->open_file ($path, 0, $target->{revision});
+	my $baton = $editor->open_file ($path, 0, $rev);
 	$editor->change_file_prop ($baton, $propname, $propvalue);
 	$editor->close_file ($baton, undef);
     }
