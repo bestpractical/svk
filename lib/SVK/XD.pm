@@ -1033,8 +1033,6 @@ sub _delta_file {
     my $cinfo = $arg{cinfo} ||= $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
     my $modified;
-    $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
-	$schedule eq 'replace';
 
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
 	++$modified;
@@ -1049,13 +1047,22 @@ sub _delta_file {
 	return 1 if $self->_node_deleted_or_absent (%arg,
 						    type => 'link',
 						    pool => $pool);
-	return 1 unless $arg{obstruct_as_replace};
+	if ($arg{obstruct_as_replace}) {
+	    $schedule = 'replace';
+	    $fullprops = $newprops = $self->auto_prop($arg{copath}) || {};
+	}
+	else {
+	    return 1;
+	}
     }
+    $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
+	$schedule eq 'replace';
+
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $fullprops);
     my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
 
-    $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';;
+    $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';
 
     return $modified unless $schedule || $arg{add} ||
 	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
