@@ -121,6 +121,7 @@ sub do_update {
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
+	 auto => 1, # not to print track-rename hint
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  store_path => $update_target->path,
