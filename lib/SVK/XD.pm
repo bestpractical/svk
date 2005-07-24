@@ -461,14 +461,23 @@ sub create_xd_root {
     my $base_rev;
     for (@paths) {
 	my $cinfo = $self->{checkout}->get ($_);
+	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	unless ($root) {
 	    $base_rev = $cinfo->{revision};
 	    $txn = $fs->begin_txn ($base_rev);
 	    $root = $txn->root();
-	    next if $_ eq $copath;
+	    if ($base_rev == 0) {
+		# for interrupted checkout, the anchor will be at rev 0
+		my @path = ();
+		for my $dir (File::Spec::Unix->splitdir($path)) {
+		    push @path, $dir;
+		    next unless length $dir;
+		    $root->make_dir(File::Spec::Unix->catdir(@path));
+		}
+	    }
+	    next;
 	}
 	next if $cinfo->{revision} == $base_rev;
-	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	$root->delete ($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
