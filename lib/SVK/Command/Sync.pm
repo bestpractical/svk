@@ -142,8 +142,8 @@ SVK::Command::Sync - Synchronize a mirrored depotpath
 
  -a [--all]             : synchronize all mirrored paths under
                           the DEPOTNAME/DEPOTPATH(s) provided
- -s [--skipto] REV	: start synchronization at revision REV
- -t [--torev] REV	: stop synchronization at revision REV
+ -s [--skipto] REV      : start synchronization at revision REV
+ -t [--torev] REV       : stop synchronization at revision REV
 
 =head1 AUTHORS
 

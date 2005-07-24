@@ -467,15 +467,15 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- --template             : prompt for commit message with -m/-F value as default
- -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
- -N [--non-recursive]   : operate on single directory only
- --encoding ENC         : treat value as being in charset encoding ENC
  --import               : import mode; automatically add and delete nodes
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ --template             : use the specified message as the template to edit
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ -N [--non-recursive]   : operate on single directory only
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS

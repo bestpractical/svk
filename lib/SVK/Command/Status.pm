@@ -63,6 +63,45 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
  -q [--quiet]           : do not display files not under version control
 
+=head1 DESCRIPTION
+
+Show pending changes in the checkout copy.
+
+The first three columns in the output are each one character wide:
+
+First column, says if item was added, deleted, or otherwise changed:
+
+  ' '  no modifications
+  'A' Added
+  'C' Conflicted
+  'D' Deleted
+  'I' Ignored
+  'M' Modified
+  'R' Replaced
+  '?' item is not under version control
+  '!' item is missing (removed by non-svk command) or incomplete
+  '~' versioned item obstructed by some item of a different kind
+
+Second column, modifications of a file's or directory's properties:
+
+  ' ' no modifications
+  'C' Conflicted
+  'M' Modified
+
+Third column, scheduled commit will contain addition-with-history
+
+  ' ' no history scheduled with commit
+  '+' history scheduled with commit
+
+The working copy path, which starts in the fourth column is always
+the final field, so it can include spaces.
+
+Example output:
+
+  svk status
+   M  bar.c
+  A + qax.c
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

@@ -148,7 +148,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
  -N [--non-recursive]   : do not descend recursively
  -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update
