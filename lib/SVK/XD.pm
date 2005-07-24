@@ -842,7 +842,7 @@ and treat all copied descendents as added too.
 
 =item cb_ignored
 
-Called for ignored items is unknown_verbose is true.
+Called for ignored items if defined.
 
 =back
 

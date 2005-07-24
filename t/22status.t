@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 19;
+use Test::More tests => 20;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -135,4 +135,9 @@ is_output ($svk, 'status', ['--quiet', '--no-ignore'],
 	     'A   A/deeper/deeper/baz',
 	     'I   A/deeper/test',
 	     'I   A/foo~',
+	     '~   A/deep')]);
+is_output ($svk, 'status', ['--non-recursive', 'A'],
+	   [map {__($_)}
+	    ('?   A/bar',
+	     'A   A/deeper',
 	     '~   A/deep')]);

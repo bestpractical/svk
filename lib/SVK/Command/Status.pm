@@ -3,6 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::Editor::Status;
 use SVK::Util qw( abs2rel );
@@ -35,6 +36,7 @@ sub run {
 	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
 	  cb_obstruct => \&SVK::Editor::Status::obstruct,
+	  $self->{recursive} ? () : (depth => 1),
 	  $self->{no_ignore} ?
               (cb_ignored =>
                  sub { my $path = abs2rel($_[1],
@@ -75,6 +77,7 @@ SVK::Command::Status - Display the status of items in the checkout copy
 
  -q [--quiet]           : do not display files not under version control
  --no-ignore            : disregard default and svn:ignore property ignores
+ -N [--non-recursive]   : do not descend recursively
 
 =head1 DESCRIPTION
 
