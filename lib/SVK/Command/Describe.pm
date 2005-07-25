@@ -14,6 +14,10 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
+    # Allow user to type "svk describe r12345", for easy copy-and-paste
+    # from "svk log".
+    $arg[0] =~ s/^r(\d+)$/$1/;
+
     return ($arg[0], $self->arg_depotroot($arg[1]));
 }
 
@@ -42,6 +46,8 @@ SVK::Command::Describe - Describe a change
 
 Displays the change in revision number I<REV> in the specified depot.
 It always shows the entire change even if you specified a particular target.
+(I<REV> can optionally have the prefix C<r>, just like the revisions reported
+from C<svk log>.)
 
 =head1 OPTIONS
 
