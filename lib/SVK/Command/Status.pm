@@ -32,6 +32,7 @@ sub run {
 	  delete_verbose => 1,
 	  editor => SVK::Editor::Status->new (
 	      report => $target->{report},
+              ignore_absent => $self->{quiet},
 	      notify => SVK::Notify->new_with_report ($target->{report}, undef, 1)
 	  ),
 	  cb_conflict => \&SVK::Editor::Status::conflict,
