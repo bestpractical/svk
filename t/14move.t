@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 16;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -46,20 +46,20 @@ is_output ($svk, 'status', [$copath],
 	    __"D   $copath/Q/qz"]);
 
 is_output ($svk, 'mv', ["$copath/be", "$copath/Q-new/"],
-	   [__"D   $copath/be",
-	    __"A   $copath/Q-new/be"]);
+	   [__"A   $copath/Q-new/be",
+	    __"D   $copath/be"]);
 
 is_output ($svk, 'mv', ["$copath/B/fe", "$copath/Q-new/fe"],
-	   [__"D   $copath/B/fe",
-	    __"A   $copath/Q-new/fe"]);
+	   [__"A   $copath/Q-new/fe",
+	    __"D   $copath/B/fe"]);
 $svk->revert ("$copath/B/fe", "$copath/Q-new/fe");
 
 is_output ($svk, 'mv', ["$copath/B/fe", "$copath/Q-new/be"],
 	   [__"Path $copath/Q-new/be already exists."]);
 chdir ("$copath/B");
 is_output ($svk, 'mv', ['fe', 'fe.bz'],
-	   ['D   fe',
-	    'A   fe.bz',
+	   ['A   fe.bz',
+	    'D   fe',
 	   ]);
 overwrite_file ('new_add', "new file\n");
 is_output ($svk, 'add', ['new_add'], ['A   new_add']);
@@ -76,5 +76,16 @@ is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'],
 $svk->commit ('-m', 'commit everything');
 overwrite_file ('new_dir/unknown_file', "unknown file\n");
 is_output ($svk, 'mv', ['new_dir', 'new_dir_mv'], 
-		[__"$corpath/B/new_dir/unknown_file is missing."]);
+		[__"$corpath/B/new_dir/unknown_file is unknown."]);
+unlink('new_dir/unknown_file');
 
+is_output ($svk, 'mv', ['new_dir', 'new_dir_mv/blah'], 
+		[qr'use -p']);
+
+is_output ($svk, 'mv', [-p => 'new_dir', 'new_dir_mv/blah'], 
+		[__('A   new_dir_mv'),
+		 __('A   new_dir_mv/blah'),
+		 __('A   new_dir_mv/blah/new_add'),
+		 __('D   new_dir'),
+		 __('D   new_dir/new_add'),
+		]);
