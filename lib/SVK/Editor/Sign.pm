@@ -49,7 +49,7 @@ sub _sign_gpg {
     };
 
     open D, "$sigfile" or die loc("cannot open %1: %2", $sigfile, $!);
-    undef $/;
+    local $/;
     my $buf = <D>;
     unlink($sigfile);
     return $buf;

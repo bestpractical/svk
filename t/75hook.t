@@ -39,6 +39,7 @@ is_output ($svk, 'ci', ['-m', 'test commit', $copath],
 	   ['Commit into mirrored path: merging back directly.',
 	    "Merging back to mirror source $uri/A.",
 	    "A repository hook failed: 'pre-commit' hook failed with error output:",
+	    '',
 	   ]);
 
 1;

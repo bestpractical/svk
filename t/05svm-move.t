@@ -13,10 +13,10 @@ my ($test_repospath, $test_a_path, $test_repos) = $xd->find_repos ('/mv_test/A',
 
 my $uri = uri($test_repospath);
 $svk->mirror ('//mv/m', $uri.($test_a_path eq '/' ? '' : $test_a_path));
-is_output ($svk, 'propget', ['svm:mirror', '//'], ['/mv/m']);
+is_output ($svk, 'propget', ['svm:mirror', '//'], ['/mv/m', '']);
 
 $svk->move ('-m', 'moving mirrored path', '//mv/m', '//mv/m2');
-is_output ($svk, 'propget', ['svm:mirror', '//'], ['/mv/m2']);
+is_output ($svk, 'propget', ['svm:mirror', '//'], ['/mv/m2', '']);
 
 TODO: {
     local $TODO = "Update the svm:mirror property when moving mirrored paths";
