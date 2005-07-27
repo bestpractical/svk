@@ -76,24 +76,9 @@ sub handle_co_item {
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
     my $entry = $self->{xd}{checkout}->get ($copath);
-    $src->normalize;
-    $src->anchorify; $dst->anchorify;
-    unless (-e $dst->{copath}) {
-	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})
-	    unless $self->{parent};
-	# this sucks
-	make_path($dst->{report});
-	my $add = $self->command('add');
-	$add->run($add->parse_arg($dst->{report}));
-    }
-    unless (-d $dst->{copath}) {
-	die loc ("%1 is not a directory.\n", $dst->{report});
-    }
-    unless ($dst->root($self->{xd})->check_path ($dst->{path})) {
-	my $info = $self->{xd}{checkout}->get($dst->{copath});
-	die loc ("Parent directory %1 is unknown, add first.\n", $dst->{report})
-	    unless $info->{'.schedule'};
-    }
+    $src->normalize; $src->anchorify;
+    $self->ensure_parent($dst);
+    $dst->anchorify;
 
     my $notify = $self->{quiet} ? SVK::Notify->new(quiet => 1) : undef;
     # if SVK::Merge could take src being copath to do checkout_delta
