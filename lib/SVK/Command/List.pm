@@ -27,9 +27,9 @@ sub run {
     my ($self, @arg) = @_;
     my $exception = '';
 
-    for (@arg) {
-        eval { _do_list($self, 0, $_); print "\n" };
-        $exception .= "$@\n" if $@;
+    while (my $arg = shift @arg) {
+        eval { _do_list($self, 0, $arg); print "\n" if @arg };
+        $exception .= "$@" if $@;
     }
 
     die($exception) if($exception);

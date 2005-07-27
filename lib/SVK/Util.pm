@@ -695,7 +695,7 @@ sub make_path {
     require File::Path;
     my $ret = eval { File::Path::mkpath([$path]) };
     if ($@) {
-	$@ =~ s/ at .*/\n/;
+	$@ =~ s/ at .*//;
 	die $@;
     }
     return $ret;

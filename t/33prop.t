@@ -156,7 +156,8 @@ is_output ($svk, 'pe', ['newprop', "$copath/A"],
 is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop2: myvalue2',
-	    '  newprop: prepended_prop']);
+	    '  newprop: prepended_prop',
+	    '']);
 is_output ($svk, 'pe', ['myprop2', "$copath/A"],
 	   ['Waiting for editor...',
 	    __(" M  $copath/A")]);
@@ -164,7 +165,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
-	    '  newprop: prepended_prop']);
+	    '  newprop: prepended_prop',
+	    '']);
 
 $svk->commit ('-m', 'commit after propedit', $copath);
 
@@ -176,7 +178,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
-	    '  newprop: prepended_prop']);
+	    '  newprop: prepended_prop',
+	    '']);
 
 $svk->update ($copath);
 
@@ -185,7 +188,7 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
 	    '  newprop: prepended_prop', '',
-	    '  pedirect: prepended_prop']);
+	    '  pedirect: prepended_prop', '']);
 chdir ("$copath/A");
 
 is_output ($svk, 'pl', ['-v'],
@@ -193,7 +196,8 @@ is_output ($svk, 'pl', ['-v'],
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
 	    '  newprop: prepended_prop', '',
-	    '  pedirect: prepended_prop']);
+	    '  pedirect: prepended_prop',
+	    '']);
 
 is_output ($svk, 'pg', ['myprop2'], ['prepended_prop', 'myvalue2']);
 is_output ($svk, 'pg', ['-r1', 'myprop2'], []);

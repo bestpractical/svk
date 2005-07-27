@@ -184,7 +184,9 @@ sub is_output {
     $svk->$cmd (@$arg);
     my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
 	? \&is_deeply_like : \&is_deeply;
-    @_ = ([split (/\r?\n/, $output)], $expected, $test || join(' ', map { / / ? qq("$_") : $_ } $cmd, @$arg));
+    my $o = $output;
+    chomp $o;
+    @_ = ([split (/\r?\n/, $o, -1)], $expected, $test || join(' ', map { / / ? qq("$_") : $_ } $cmd, @$arg));
     goto &$cmp;
 }
 
