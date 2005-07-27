@@ -19,7 +19,6 @@ sub options {
      'S|sign'	  => 'sign',
      'P|patch=s'  => 'patch',
      'import'	  => 'import',
-     'encoding=s' => 'encoding',
      'direct'	  => 'direct',
      'template'	  => 'template',
     );

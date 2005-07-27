@@ -75,7 +75,9 @@ use constant alias =>
 		ver		version
 	    );
 
-use constant global_options => ( 'h|help|?' => 'help' );
+use constant global_options => ( 'h|help|?' => 'help',
+				 'encoding=s' => 'encoding'
+			       );
 
 my %alias = alias;
 my %cmd2alias = map { $_ => [] } values %alias;
@@ -141,6 +143,9 @@ sub run_command {
 	    $self->usage;
 	}
 	else {
+	    # XXX both needs encoding
+	    $self->{xd}{encoding} = $self->{encoding}
+		if $self->{xd};
 	    $self->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
 	    eval { $self->lock (@args);
 		   $self->{xd}->giant_unlock if $self->{xd} && !$self->{hold_giant};
