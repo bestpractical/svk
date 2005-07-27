@@ -65,7 +65,9 @@ SVK::Command::Push - Move changes into another repository
 
 This command is a wrapper around the C<smerge> subcommand. 
 
-C<svk push> is exactly the same as running C<svk smerge -If .>.
+C<svk push> is exactly the same as running 
+
+   svk smerge -If .
 
 =head1 AUTHORS
 
