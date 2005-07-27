@@ -138,14 +138,14 @@ sub run_command {
 			: $_
 		    } @args;
 	}
+	# XXX: xd needs to know encoding too
+	$self->{xd}{encoding} = $self->{encoding}
+	    if $self->{xd};
 	if ($self->{help} || !(@args = $self->parse_arg(@args))) {
 	    select STDERR unless $self->{output};
 	    $self->usage;
 	}
 	else {
-	    # XXX both needs encoding
-	    $self->{xd}{encoding} = $self->{encoding}
-		if $self->{xd};
 	    $self->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
 	    eval { $self->lock (@args);
 		   $self->{xd}->giant_unlock if $self->{xd} && !$self->{hold_giant};
