@@ -15,11 +15,20 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
     my $target;
-    if ($#arg == 0) {
-	$target = $self->arg_co_maybe ($arg[0]);
-	return $target unless $target->{copath};
+    @arg = map { $self->{xd}->target_from_copath_maybe($_) } @arg;
+
+    # XXX: better check for @target being the same type
+    if (grep {$_->{copath}} @arg) {
+	die loc("Mixed depotpath and checkoutpath not supported.\n")
+	    if grep {!$_->{copath}} @arg;
+
+	return $self->arg_condensed(map {$_->{report} } @arg);
     }
-    return $self->arg_condensed (@arg);
+
+    die loc("Delete for more than one depotpath is not supported yet.\n")
+	if scalar @arg > 1;
+
+    return @arg;
 }
 
 sub lock {
