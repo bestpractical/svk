@@ -133,8 +133,9 @@ use File::Compare ();
 sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
-	     sub { my $path = $anchor.'/'.shift;
-		   return $root->check_path ($path, $_[1]);
+	     sub { my ($path, $pool) = @_;
+		   $path = $anchor.'/'.$path;
+		   return $root->check_path ($path, $pool);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
