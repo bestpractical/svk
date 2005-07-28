@@ -57,7 +57,7 @@ sub run {
 	return ;
     }
 
-    die "Mkdir for more than one depotpath is not supported yet.\n"
+    die loc("Mkdir for more than one depotpath is not supported yet.\n")
 	if scalar @target > 1;
 
     my ($target) = @target;
