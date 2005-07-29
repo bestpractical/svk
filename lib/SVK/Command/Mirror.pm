@@ -6,6 +6,8 @@ use base qw( SVK::Command::Commit );
 use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR is_uri get_prompt traverse_history );
 
+use constant narg => undef;
+
 sub options {
     ('l|list'  => 'list',
      'd|delete|detach'=> 'detach',
@@ -27,8 +29,12 @@ sub parse_arg {
     my $path = shift(@arg);
 
     # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
-    if (is_uri($path)) {
+    if (is_uri($path) && $arg[0]) {
         ($arg[0], $path) = ($path, $arg[0]);
+    }
+
+    if (defined (my $narg = $self->narg)) {
+	return unless $narg == (scalar @arg + 1);
     }
 
     return ($self->arg_depotpath ($path), @arg);
@@ -70,8 +76,10 @@ package SVK::Command::Mirror::detach;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 
+use constant narg => 1;
+
 sub run {
-    my ($self, $target, $source, @options) = @_;
+    my ($self, $target) = @_;
     my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos},
 						$target->{path});
 
@@ -87,6 +95,8 @@ package SVK::Command::Mirror::upgrade;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 
+use constant narg => 1;
+
 sub run {
     my ($self, $target) = @_;
     SVN::Mirror::upgrade ($target->{repos});
@@ -96,6 +106,8 @@ sub run {
 package SVK::Command::Mirror::unlock;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
+
+use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
@@ -123,7 +135,7 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $target, $source, @options) = @_;
+    my ($self, $target) = @_;
     my $fmt = "%-20s\t%-s\n";
     printf $fmt, loc('Path'), loc('Source');
     print '=' x 60, "\n";
@@ -157,6 +169,8 @@ package SVK::Command::Mirror::recover;
 use base qw(SVK::Command::Mirror);
 use SVK::Util qw( traverse_history get_prompt );
 use SVK::I18N;
+
+use constant narg => 1;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
