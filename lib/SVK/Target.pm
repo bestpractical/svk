@@ -245,9 +245,8 @@ sub copy_ancestors {
     my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
     my ($root, $path) = ($t->root, $t->path);
     while (my (undef, $copyfrom_root, $copyfrom_path) = nearest_copy ($root, $path, $new_pool)) {
-	$t->{path} = $copyfrom_path;
-	$t->{revision} = $copyfrom_root->revision_root_revision;
-	push @result, [$copyfrom_path, $copyfrom_root->revision_root_revision];
+	push @result, [$copyfrom_path,
+		       $copyfrom_root->revision_root_revision];
 	($root, $path) = ($copyfrom_root, $copyfrom_path);
 
 	$old_pool->clear;
@@ -256,9 +255,37 @@ sub copy_ancestors {
     return @result;
 }
 
-# given a root object and a path, returns the revision where it's ancestor
-# is from another path.
-sub nearest_copy {
+=item nearest_copy(root, path, [pool])
+
+given a root object (or a target) and a path, returns the revision
+root where it's ancestor is from another path, and ancestor's root and
+path.
+
+=cut
+
+*nearest_copy = SVN::Fs->can('closest_copy')
+  ? *_nearest_copy_svn : *_nearest_copy_svk;
+
+sub _nearest_copy_svn {
+    my ($root, $path, $ppool) = @_;
+    if (ref ($root) eq __PACKAGE__) {
+        ($root, $path) = ($root->root, $root->path);
+    }
+    my ($toroot, $topath) = $root->closest_copy($path, $ppool);
+    return unless $toroot;
+
+    my ($copyfrom_rev, $copyfrom_path) = $toroot->copied_from ($topath);
+    my $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool);
+    $copyfrom_rev = ($copyfrom_root->node_history ($copyfrom_path)->prev(0)->location)[1]
+        unless $copyfrom_rev == $copyfrom_root->node_created_rev ($copyfrom_path);
+    $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool)
+	unless $copyfrom_root->revision_root_revision == $copyfrom_rev;
+    $path =~ s/^\Q$topath\E/$copyfrom_path/;
+
+    return ($toroot, $root->fs->revision_root($copyfrom_rev, $ppool), $path);
+}
+
+sub _nearest_copy_svk {
     my ($root, $path, $ppool) = @_;
     if (ref ($root) eq __PACKAGE__) {
 	($root, $path) = ($root->root, $root->path);
