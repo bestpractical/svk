@@ -22,6 +22,9 @@ sub lock {
 sub run {
     my ($self, $pname, $target) = @_;
 
+    die loc("-r not allowed for propset copath.\n")
+	if $self->{rev} && $target->{copath};
+
     my $pvalue = $self->_proplist ($target)->{$pname};
 
     $pvalue = get_buffer_from_editor (

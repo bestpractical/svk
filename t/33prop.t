@@ -143,11 +143,8 @@ print _ @_;
 close _;
 TMP
 
-TODO: {
-local $TODO = 'forbid ps/pe on depotpath, non-revprop';
 is_output ($svk, 'pe', ['-r2', 'newprop', "$copath/A"],
-	   ['Not allowed.']);
-}
+	   [qr'not allowed']);
 
 is_output ($svk, 'pe', ['newprop', "$copath/A"],
 	   ['Waiting for editor...',
