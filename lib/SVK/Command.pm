@@ -161,7 +161,7 @@ sub invoke {
     eval {
 	$cmd = get_cmd ($pkg, $cmd, $xd);
 	$cmd->{svnconfig} = $xd->{svnconfig} if $xd;
-	$cmd->getopt (\@args, 'h|help|?' => \$help);
+	$cmd->getopt (\@args, 'h|help|?' => \$help, 'encoding=s' => \$cmd->{encoding});
 	$cmd->_subcommand;
 
 	# Fake shell globbing on Win32 if we are called from main
@@ -173,6 +173,9 @@ sub invoke {
 	    } @args;
 	}
 
+	# XXX: xd needs to know encoding too
+	$xd->{encoding} = $cmd->{encoding}
+	    if $xd;
 	if ($help || !(@args = $cmd->parse_arg(@args))) {
 	    select STDERR unless $output;
 	    $cmd->usage;
