@@ -107,7 +107,7 @@ is_output ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A/foo'],
 	   ['Committed revision 5.']);
 #	   [' M  A']);
 is_output_like ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A/non'],
-		qr'not exist');
+		qr'Filesystem has no item');
 is_output ($svk, 'pl', ['-v', "//A"],
 	   ["Properties on //A:",
 	    '  direct: directly',
