@@ -1563,8 +1563,6 @@ sub get_props {
 	$props = $source_root->node_proplist ($source_path);
     }
     elsif ($schedule ne 'add' && $schedule ne 'replace') {
-	die loc("path %1 not found", $path)
-	    if $root->check_path ($path) == $SVN::Node::none;
 	$props = $root->node_proplist ($path);
     }
     return _combine_prop ($props, $entry->{'.newprop'});
