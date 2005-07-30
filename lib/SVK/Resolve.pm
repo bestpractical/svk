@@ -195,6 +195,11 @@ sub yours {
     delete $self->{has_conflict};
 }
 
+sub filename {
+    my $self = shift;
+    $self->SVK::Command::filename;
+}
+
 sub help {
     my $self = shift;
     $self->SVK::Command::usage(1);
