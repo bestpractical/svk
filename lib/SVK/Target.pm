@@ -255,7 +255,7 @@ sub copy_ancestors {
     return @result;
 }
 
-=item nearest_copy(root, path, [pool])
+=head2 nearest_copy(root, path, [pool])
 
 given a root object (or a target) and a path, returns the revision
 root where it's ancestor is from another path, and ancestor's root and
@@ -275,12 +275,12 @@ sub _nearest_copy_svn {
     return unless $toroot;
 
     my ($copyfrom_rev, $copyfrom_path) = $toroot->copied_from ($topath);
+    $path =~ s/^\Q$topath\E/$copyfrom_path/;
     my $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool);
-    $copyfrom_rev = ($copyfrom_root->node_history ($copyfrom_path)->prev(0)->location)[1]
-        unless $copyfrom_rev == $copyfrom_root->node_created_rev ($copyfrom_path);
+    $copyfrom_rev = ($copyfrom_root->node_history ($path)->prev(0)->location)[1]
+        unless $copyfrom_rev == $copyfrom_root->node_created_rev ($path);
     $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool)
 	unless $copyfrom_root->revision_root_revision == $copyfrom_rev;
-    $path =~ s/^\Q$topath\E/$copyfrom_path/;
 
     return ($toroot, $root->fs->revision_root($copyfrom_rev, $ppool), $path);
 }
