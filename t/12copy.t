@@ -23,8 +23,8 @@ is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   [__"$copath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
 	   [__"A   $copath/me-copy"]);
-is_output ($svk, 'copy', ['//V/D/de', "$copath/de-copy"],
-	   [__"A   $copath/de-copy"]);
+is_output ($svk, 'copy', [-q => '//V/D/de', "$copath/de-copy"],
+	   []);
 is_output ($svk, 'copy', ['//V/D', "$copath/D-copy"],
 	   [__"A   $copath/D-copy",
 	    __"A   $copath/D-copy/de"]);
