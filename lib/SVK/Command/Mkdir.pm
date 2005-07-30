@@ -27,9 +27,9 @@ sub ensure_parent {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})
 	    unless $self->{parent};
 	# this sucks
-	make_path($dst->{report});
-	my $add = $self->command('add');
-	$add->run($add->parse_arg($dst->{report}));
+	my ($added_root) = make_path($dst->{report});
+	my $add = $self->command('add', { recursive => 1 });
+	$add->run($add->parse_arg($added_root));
     }
     unless (-d $dst->{copath}) {
 	die loc ("%1 is not a directory.\n", $dst->{report});
