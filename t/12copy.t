@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 61;
+plan_svm tests => 62;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -102,7 +102,7 @@ is_output ($svk, 'status', ["$copath/newdir/A", "$copath/A-prop"],
 	   [status_native ($copath, 'A +', 'A-prop', ' M ', 'A-prop/be',
 			   'A  ', 'newdir', 'A +', 'newdir/A')]);
 
-$svk->status ("$copath/newdir/A");
+
 $svk->revert ('-R', $copath);
 TODO: {
 local $TODO = 'revert removes known nodes copied';
@@ -189,8 +189,15 @@ is_output($svk, 'copy', [-p => "$copath/me", "$copath/me-cocopied/fnord/orz"],
 	  ["mkdir t/checkout/copy/me-cocopied: File exists",
 	  ]);
 
+is_output($svk, 'copy', [-p => "$copath/me", "$copath/nonexist2/fnord2/me"],
+	   [__("A   $copath/nonexist2"),
+	    __("A   $copath/nonexist2/fnord2"),
+	    __("A   $copath/nonexist2/fnord2/me")]
+	  );
+
 $svk->revert('-R', $copath);
 rmtree ["$copath/nonexist"];
+rmtree ["$copath/nonexist2"];
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
 	   ['Committed revision 19.']);

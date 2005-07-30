@@ -32,9 +32,9 @@ sub handle_direct_item {
 }
 
 sub handle_co_item {
-    my ($self) = shift;
-    $self->{xd}->do_delete (%{$_[0]});
-    $self->SUPER::handle_co_item (@_);
+    my ($self, $src, $dst) = @_;
+    $self->SUPER::handle_co_item ($src->new, $dst); # might be modified
+    $self->{xd}->do_delete (%$src);
 }
 
 sub run {

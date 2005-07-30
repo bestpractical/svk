@@ -418,7 +418,6 @@ sub target_from_copath_maybe {
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $depotpath, $copath, $repos);
-    local $@;
     unless (($repospath, $path, $repos) = eval { $self->find_repos ($arg, 1) }) {
 	$arg = File::Spec->canonpath($arg);
 	$copath = abs_path_noexist($arg);
@@ -431,6 +430,7 @@ sub target_from_copath_maybe {
     }
 
     from_native ($path, 'path', $self->{encoding});
+    undef $@;
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
