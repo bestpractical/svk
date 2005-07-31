@@ -1,4 +1,4 @@
-[Changes for 1.01 - 24 Jun, 2005]
+[Changes for 1.01 - 11 Jul, 2005]
 
 * Fix a memory leak when constructing copy cache for revisions
   involving many changed paths.
@@ -14,6 +14,9 @@
 * Fix a bug in svk diff: diffing deeply added directory triggers
   "checkout_delta called with non-dir".
 
+* Fix a bug that when copy destination's basepath does not exist, svk
+  prompts for url initialisation.
+
 * Partially fix a bug that deleting a path containing mirrors will
   result in inconsistent mirror state.
 
@@ -24,7 +27,7 @@
 
 * Fix a crash bug when switch to a branch that has new files with keywords.
 
-* When checkout to existing directory, if the direcotry is from the
+* When checkout to existing directory, if the directory is from the
   very same depotpath, do an update instead of dying.  This resembles
   the svn and cvs behaviour.
 
@@ -51,7 +54,7 @@
 
 * Pull as a lump under all conditions, even depot path. [Norman Nunley]
 
-* Misc documentation and tests fixes and improvements. [jesse,knew,matthewd,Tom Sibley]
+* Misc documentation and tests fixes and improvements. [jesse,knewt,matthewd,Tom Sibley]
 
 * Fix the autouse hack so Devel::DProf works again.
 
