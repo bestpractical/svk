@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 17;
+use Test::More tests => 20;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -115,4 +115,29 @@ is_output ($svk, 'st', [],
 	     'A   A/deeper/deeper',
 	     'A   A/deeper/deeper/baz',
 	     '~   A/deep')]);
-
+overwrite_file ("A/bar.o", "binary stuff\n");
+is_output ($svk, 'status', ['--no-ignore'],
+	   [map {__($_)}
+	    ('?   A/bar',
+	     'I   A/bar.o',
+	     'A   A/deeper',
+	     'A   A/deeper/deeper',
+	     'A   A/deeper/deeper/baz',
+	     'I   A/foo~',
+	     '~   A/deep')]);
+$svk->ps ('svn:ignore', 'test', 'A/deeper');
+overwrite_file ("A/deeper/test", "fnord\nmore");
+is_output ($svk, 'status', ['--quiet', '--no-ignore'],
+	   [map {__($_)}
+	    ('I   A/bar.o',
+	     'A   A/deeper',
+	     'A   A/deeper/deeper',
+	     'A   A/deeper/deeper/baz',
+	     'I   A/deeper/test',
+	     'I   A/foo~',
+	     '~   A/deep')]);
+is_output ($svk, 'status', ['--non-recursive', 'A'],
+	   [map {__($_)}
+	    ('?   A/bar',
+	     'A   A/deeper',
+	     '~   A/deep')]);

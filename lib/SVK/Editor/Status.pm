@@ -63,6 +63,7 @@ sub close_file {
 
 sub absent_file {
     my ($self, $path) = @_;
+    return if $self->{ignore_absent};
     $self->{notify}->node_status ($path, '!');
     $self->{notify}->flush ($path);
 }
@@ -100,6 +101,7 @@ sub close_directory {
 
 sub absent_directory {
     my ($self, $path) = @_;
+    return if $self->{ignore_absent};
     $self->{notify}->node_status ($path, '!');
     $self->{notify}->flush ($path);
 }
