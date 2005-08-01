@@ -185,7 +185,7 @@ sub is_output {
     my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
 	? \&is_deeply_like : \&is_deeply;
     my $o = $output;
-    chomp $o;
+    $o =~ s/\r?\n$//;
     @_ = ([split (/\r?\n/, $o, -1)], $expected, $test || join(' ', map { / / ? qq("$_") : $_ } $cmd, @$arg));
     goto &$cmp;
 }

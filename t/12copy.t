@@ -186,7 +186,7 @@ is_output($svk, 'copy', ["$copath/me", "$copath/me-cocopied/fnord"],
 	  [__"t/checkout/copy/me-cocopied is not a directory."]);
 
 is_output($svk, 'copy', [-p => "$copath/me", "$copath/me-cocopied/fnord/orz"],
-	  ["mkdir t/checkout/copy/me-cocopied: File exists",
+	  [__("mkdir t/checkout/copy/me-cocopied: File exists"),
 	  ]);
 
 is_output($svk, 'copy', [-p => "$copath/me", "$copath/nonexist2/fnord2/me"],
