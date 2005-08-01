@@ -80,12 +80,9 @@ is_output ($svk, 'add', ['-N', 'A/foo'],
 
 overwrite_file ("A/exe", "foobar");
 chmod (0755, "A/exe");
-TODO: {
-local $TODO = 'notify that added file has executable bit';
 is_output($svk, 'add', ['A/exe'],
 	  [__('A   A'),
 	   __('A   A/exe - (bin)')]);
-}
 $svk->commit ('-m', 'test exe bit');
 is_output ($svk, 'add', [qw/-N A/],
 	   ['A already under version control.'],
