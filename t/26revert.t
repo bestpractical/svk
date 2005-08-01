@@ -86,7 +86,7 @@ $svk->cp('A/foo', 'A/foo.cp');
 is_output ($svk, 'revert', ['-R'],
 	   [__("Reverted A/foo.cp")]);
 
-is_output ($svk, 'st', [], ['?   A/foo.cp']);
+is_output ($svk, 'st', [], [__('?   A/foo.cp')]);
 unlink('A/foo.cp');
 
 $svk->cp('A/foo', 'A/foo.cp');
@@ -94,5 +94,5 @@ append_file('A/foo.cp', 'some thing');
 is_output ($svk, 'revert', ['-R'],
 	   [__("Reverted A/foo.cp")]);
 
-is_output ($svk, 'st', [], ['?   A/foo.cp']);
+is_output ($svk, 'st', [], [__('?   A/foo.cp')]);
 unlink('A/foo.cp');
