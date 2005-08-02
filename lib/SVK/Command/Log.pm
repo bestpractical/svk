@@ -68,13 +68,13 @@ sub run {
     my $sep = ('-' x 70)."\n";
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
-	       $self->{quiet}, $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0)} );
+	       $self->{verbose}, $self->{cross},
+	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0, $self->{quiet})} );
     return;
 }
 
 sub _get_logs {
-    my ($root, $limit, $path, $fromrev, $torev, $quiet, $verbose, $cross, $callback) = @_;
+    my ($root, $limit, $path, $fromrev, $torev, $verbose, $cross, $callback) = @_;
     my $fs = $root->fs;
     my $reverse = ($fromrev < $torev);
     my @revs;
@@ -87,7 +87,7 @@ sub _get_logs {
 	$root = $fs->revision_root ($rev);
 	$changed = $root->paths_changed if $verbose;
 	$props = $fs->revision_proplist ($rev);
-	$callback->($rev, $root, $changed, $props, $quiet);
+	$callback->($rev, $root, $changed, $props);
     };
 
     traverse_history (
@@ -124,7 +124,8 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log {
-    my ($rev, $root, $paths, $props, $quiet, $sep, $output, $indent, $print_rev, $use_localtime, $verbatim) = @_;
+    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime,
+	$verbatim, $quiet) = @_;
     $output ||= select;
     $indent = (' ' x $indent);
     my ($author, $date, $message);
@@ -175,7 +176,7 @@ sub do_log {
     my $fs = $arg{repos}->fs;
     my $rev = $arg{fromrev} > $arg{torev} ? $arg{fromrev} : $arg{torev};
     _get_logs ($fs->revision_root ($rev),
-	       @arg{qw/limit path fromrev torev quiet verbose cross cb_log/});
+	       @arg{qw/limit path fromrev torev verbose cross cb_log/});
 }
 
 1;
