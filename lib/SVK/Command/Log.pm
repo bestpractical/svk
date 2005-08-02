@@ -12,6 +12,7 @@ use Date::Format qw(time2str);
 
 sub options {
     ('l|limit=i'	=> 'limit',
+     'q|quiet'		=> 'quiet',
      'r|revision=s@'	=> 'revspec',
      'x|cross'		=> 'cross',
      'v|verbose'	=> 'verbose');
@@ -67,13 +68,13 @@ sub run {
     my $sep = ('-' x 70)."\n";
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
-	       $self->{verbose}, $self->{cross},
+	       $self->{quiet}, $self->{verbose}, $self->{cross},
 	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0)} );
     return;
 }
 
 sub _get_logs {
-    my ($root, $limit, $path, $fromrev, $torev, $verbose, $cross, $callback) = @_;
+    my ($root, $limit, $path, $fromrev, $torev, $quiet, $verbose, $cross, $callback) = @_;
     my $fs = $root->fs;
     my $reverse = ($fromrev < $torev);
     my @revs;
@@ -86,7 +87,7 @@ sub _get_logs {
 	$root = $fs->revision_root ($rev);
 	$changed = $root->paths_changed if $verbose;
 	$props = $fs->revision_proplist ($rev);
-	$callback->($rev, $root, $changed, $props);
+	$callback->($rev, $root, $changed, $props, $quiet);
     };
 
     traverse_history (
@@ -123,15 +124,22 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log {
-    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime, $verbatim) = @_;
+    my ($rev, $root, $paths, $props, $quiet, $sep, $output, $indent, $print_rev, $use_localtime, $verbatim) = @_;
     $output ||= select;
-    my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
+    $indent = (' ' x $indent);
+    my ($author, $date, $message);
+    if ($quiet) {
+      ($author, $date) = @{$props}{qw/svn:author svn:date/};
+      $message = $sep;
+    } else {
+      ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
+	$message = ($indent ? '' : "\n")."$message\n$sep";
+    }
     if (defined $use_localtime) {
 	no warnings 'uninitialized';
 	local $^W; # shut off uninitialized warnings in Time::Local
 	$date = time2str("%Y-%m-%d %T %z", str2time ($date));
     }
-    $indent = (' ' x $indent);
     $author = loc('(no author)') if !defined($author) or !length($author);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
     if ($paths) {
@@ -153,7 +161,6 @@ sub _show_log {
 		    )."\n");
 	}
     }
-    $message = ($indent ? '' : "\n")."$message\n$sep";
 #    $message =~ s/\n\n+/\n/mg;
     $message =~ s/^/$indent/mg if $indent and !$verbatim;
     require Encode;
@@ -168,7 +175,7 @@ sub do_log {
     my $fs = $arg{repos}->fs;
     my $rev = $arg{fromrev} > $arg{torev} ? $arg{fromrev} : $arg{torev};
     _get_logs ($fs->revision_root ($rev),
-	       @arg{qw/limit path fromrev torev verbose cross cb_log/});
+	       @arg{qw/limit path fromrev torev quiet verbose cross cb_log/});
 }
 
 1;
@@ -199,6 +206,7 @@ SVK::Command::Log - Show log messages for revisions
                           meaning.
 
  -l [--limit] REV       : stop after displaying REV revisions
+ -q [--quiet]           : Don't display the actual log message itself
  -x [--cross]           : track revisions copied from elsewhere
  -v [--verbose]         : print extra information
 
