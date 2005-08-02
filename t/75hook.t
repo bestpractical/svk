@@ -19,7 +19,7 @@ my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 
 my $hook = "$srepospath/hooks/pre-commit".($^O eq 'MSWin32' ? '.bat' : '');
 open FH, '>', $hook or die "$hook: $!";
-print FH "#!$^X\nexit 1\n";
+print FH ($^O eq 'MSWin32' ? '@echo off' : "#!$^X") . "\nexit 1\n";
 close FH;
 chmod (0755, $hook);
 
