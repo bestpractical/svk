@@ -356,6 +356,8 @@ sub run {
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
+	      fromurl => 'file://'.$src->{repospath},
+	      notice_copy => $self->{notice_copy},
 	    );
     print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
     print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",

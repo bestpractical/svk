@@ -132,6 +132,7 @@ sub run {
 	     fromrev => $baserev);
     }
 
+    $merge->{notice_copy} = 1;
     if ($merge->{fromrev} == $merge->{src}{revision}) {
 	print loc ("Empty merge.\n");
 	return;

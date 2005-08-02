@@ -55,6 +55,7 @@ lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
+lib/SVK/Editor/Copy.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Merge.pm

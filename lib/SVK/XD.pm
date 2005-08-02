@@ -810,9 +810,21 @@ Don't generate text deltas in C<apply_textdelta> calls.
 sub depot_delta {
     my ($self, %arg) = @_;
     my @root = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} @arg{qw/oldroot newroot/};
+    my $editor = $arg{editor};
+    require SVK::Editor::Copy;
+    if ($arg{notice_copy}) {
+	$editor = SVK::Editor::Copy->new
+	    ( _editor => [$editor],
+	      base_root => $root[0],
+	      base_path => File::Spec::Unix->catdir(@{$arg{oldpath}}),
+	      target_path => $arg{newpath},
+	      target_root => $root[1],
+	      fromurl => $arg{fromurl},
+	    );
+    }
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
-			   $arg{editor}, undef,
+			   $editor, undef,
 			   $arg{no_textdelta} ? 0 : 1,
 			   $arg{no_recurse} ? 0 : 1,
 			   0, # we never need entry props
