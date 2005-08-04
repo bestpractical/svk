@@ -8,6 +8,10 @@ use SVK::XD;
 use SVK::Util qw( slurp_fh is_symlink );
 use SVK::I18N;
 
+sub options {
+    ("q|quiet"    => 'quiet');
+}
+
 sub parse_arg {
     my $self = shift;
     my @arg = @_;
@@ -93,7 +97,8 @@ sub do_unschedule {
     my ($self, $target, $copath) = @_;
     $self->{xd}{checkout}->store ($copath, { $self->_schedule_empty,
 					     '.conflict' => undef });
-    print loc("Reverted %1\n", $target->report_copath ($copath));
+    print loc("Reverted %1\n", $target->report_copath ($copath))
+	unless $self->{quiet};
 
 }
 
@@ -112,6 +117,7 @@ SVK::Command::Revert - Revert changes made in checkout copies
 =head1 OPTIONS
 
  -R [--recursive]       : descend recursively
+ -q [--quiet]           : print as little as possible
 
 =head1 AUTHORS
 
