@@ -1,3 +1,12 @@
+[Changes for 1.?? - ? ???, 2005]
+
+* "svk log" and "svk revert" now accept a --quiet (-q) switch.
+
+* "svk diff" now accepts a --non-recursive (-N) switch.
+
+* "svk add" now displays "- (bin)" if the executable bit of the file
+  being added is set.
+
 [Changes for 1.02 - 2 Aug, 2005]
 
 * "svk mirror" now supports moving mirror points with "svk mv".
