@@ -403,6 +403,44 @@ sub report_copath {
     abs2rel ($copath, $self->{copath} => $report);
 }
 
+sub search_revision {
+    my ($self, %arg) = @_;
+    my $root = $self->root;
+    my @rev = ($arg{start} || 1, $self->{revision});
+    my $id = $root->node_id($self->path);
+    my $pool = SVN::Pool->new_default;
+
+    while ($rev[0] <= $rev[1]) {
+	$pool->clear;
+	my $rev = int(($rev[0]+$rev[1])/2);
+
+	my $search_root = $self->new(revision => $rev)->root;
+	if ($search_root->check_path($self->path) &&
+	    SVN::Fs::check_related($id, $search_root->node_id($self->path))) {
+
+	    # normalise
+	    my $nrev = $rev;
+	    $nrev = ($search_root->node_history($self->path)->prev(0)->location)[1]
+		unless $rev[0] == $rev[1] ||
+		    $nrev == $search_root->node_created_rev ($self->path);
+	    my $cmp = $arg{cmp}->($nrev);
+
+	    return $nrev if $cmp == 0;
+
+	    if ($cmp < 0) {
+		$rev[0] = $rev+1;
+	    }
+	    else {
+		$rev[1] = $rev-1;
+	    }
+	}
+	else {
+	    $rev[0] = $rev+1;
+	}
+    }
+    return;
+}
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

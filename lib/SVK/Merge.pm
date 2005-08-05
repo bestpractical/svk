@@ -364,6 +364,7 @@ sub run {
 	      base_path => $base->path,
 	      target_path => $self->{src}->path,
 	      target_root => $self->{src}->root,
+	      _debug => $main::DEBUG,
 	      cb_resolve_copy => sub {
 		  my ($path, $cp_rev) = @_; # translate to (path, rev) for dst
 		  my $srcpath = $self->{src}->path;
@@ -380,47 +381,30 @@ sub run {
 		  my $src = $self->{src}->universal;
 		  my $srckey = join(':', $src->{uuid}, $src->{path});
 		  if ($info->{$srckey}) {
-		      # between $self->{dst}{revision} and (1 or first created)
-		      my @rev = (1, $self->{dst}{revision});
-		      my $id = $self->{dst}->root->node_id($self->{dst}->path);
-		      my $pool = SVN::Pool->new_default;
-		      while ($rev[0] <= $rev[1]) {
-			  $pool->clear;
-			  my $rev = int(($rev[0]+$rev[1])/2);
-			  my $cpdst = $self->{dst}->new(revision => $rev);
-			  my $root = $cpdst->root;
-			  if ($root->check_path($self->{dst}->path) &&
-			      SVN::Fs::check_related($id, $root->node_id($self->{dst}->path))) {
-			      my $nrev = $rev;
-			      $nrev = ($root->node_history($self->{dst}->path)->prev(0)->location)[1]
-				  unless $rev[0] == $rev[1] || $nrev == $root->node_created_rev ($self->{dst}->path);
+		      my $rev = $self->{dst}->search_revision
+			  ( start => 1,
+			    cmp => sub {
+				my $rev = shift;
+				my $search_dst = $self->{dst}->new(revision=>$rev);
+				my $minfo = $self->merge_info($search_dst);
+				return -1 unless $minfo->{$srckey};
+				if ($minfo->{$srckey}{rev} > $cp_rev) {
+				    return 1;
+				}
+				elsif ($minfo->{$srckey}{rev} < $cp_rev) {
+				    return -1;
+				}
 
-			      my $minfo = $self->merge_info($cpdst);
-			      unless ($minfo->{$srckey}) {
-				  $rev[0] = $rev+1;
-				  next;
-			      }
-			      if ($minfo->{$srckey}{rev} > $cp_rev) {
-				  $rev[1] = $rev-1;
-				  next;
-			      }
-			      elsif ($minfo->{$srckey}{rev} < $cp_rev) {
-				  $rev[0] = $rev+1;
-				  next;
-			      }
+				my $prev = ($search_dst->root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1];
 
-			      my $prev = ($root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1];
+				return 0
+				    if ($self->merge_info($self->{dst}->new(revision => $prev))->{$srckey}{rev} || 0) != $cp_rev;
+				return 1;
+			    } );
 
-			      return $cb{cb_copyfrom}->($path, $rev)
-				  if ($self->merge_info($cpdst->new(revision => $prev))->{$srckey}{rev} || 0) != $cp_rev;
-			      $rev[1] = $rev-1;
-			  }
-			  else {
-			      $rev[0] = $rev+1;
-			  }
-		      }
+		      return $cb{cb_copyfrom}->($path, $rev)
+			  if defined $rev;
 		      return;
-
 		  }
 		  else {
 		      my ($toroot, $fromroot, $frompath) = $self->{dst}->nearest_copy;
@@ -448,6 +432,7 @@ sub run {
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
+	      notice_ancestry => $self->{notice_copy},
 	      notice_copy => $self->{notice_copy},
 	    );
     print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};

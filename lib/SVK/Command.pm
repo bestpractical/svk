@@ -108,7 +108,7 @@ sub invoke {
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
     # if an error handler terminates editor call, there will be stack trace
-    print $@ if $@ && $@ !~ m/\n.+\n.+\n/;
+    print $@ if $@;# && $@ !~ m/\n.+\n.+\n/;
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
 
     undef $pool;

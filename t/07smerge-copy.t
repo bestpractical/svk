@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 3;
+use Test::More tests => 4;
 use strict;
 use File::Path;
 use Cwd;
@@ -32,3 +32,12 @@ is_ancestor($svk, '//local/A-cp-again');
 $svk->cp('//trunk/A-cp-again' => '//trunk/A-cp-more', -m => 'more');
 $svk->pull('//local');
 is_ancestor($svk, '//local/A-cp-more', '/local/A-cp-again', 9);
+
+$svk->up;
+
+$svk->rm('A/be');
+$svk->cp('A/Q/qu', 'A/be');
+$svk->ci(-m => 'replace A/be');
+
+$svk->pull('//local');
+is_ancestor($svk, '//local/A/be', '/local/A/Q/qu', 9);
