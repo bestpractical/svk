@@ -365,26 +365,69 @@ sub run {
 	      target_path => $self->{src}->path,
 	      target_root => $self->{src}->root,
 	      cb_resolve_copy => sub {
-		  my ($path, $rev) = @_; # translate to (path, rev) for dst
+		  my ($path, $cp_rev) = @_; # translate to (path, rev) for dst
 		  my $srcpath = $self->{src}->path;
 		  my $dstpath = $self->{dst}->path;
 		  return unless $path =~ m{^\Q$srcpath/};
+
+		  my $cpsrc = $self->{src}->new( path => $path,
+						 revision => $cp_rev );
 		  $path =~ s/^\Q$srcpath/$dstpath/;
-
+		  $cpsrc->normalize;
+		  $cp_rev = $cpsrc->{revision};
 		  # now the hard part, reoslve the revision
-
-		  # between $self->{dst}{revision} and (1 or first created)
 		  my $info = $self->merge_info($self->{dst}->new);
 		  my $src = $self->{src}->universal;
 		  my $srckey = join(':', $src->{uuid}, $src->{path});
 		  if ($info->{$srckey}) {
-		      warn "has info, do search";
+		      # between $self->{dst}{revision} and (1 or first created)
+		      my @rev = (1, $self->{dst}{revision});
+		      my $id = $self->{dst}->root->node_id($self->{dst}->path);
+		      my $pool = SVN::Pool->new_default;
+		      while ($rev[0] <= $rev[1]) {
+			  $pool->clear;
+			  my $rev = int(($rev[0]+$rev[1])/2);
+			  my $cpdst = $self->{dst}->new(revision => $rev);
+			  my $root = $cpdst->root;
+			  if ($root->check_path($self->{dst}->path) &&
+			      SVN::Fs::check_related($id, $root->node_id($self->{dst}->path))) {
+			      my $nrev = $rev;
+			      $nrev = ($root->node_history($self->{dst}->path)->prev(0)->location)[1]
+				  unless $rev[0] == $rev[1] || $nrev == $root->node_created_rev ($self->{dst}->path);
+
+			      my $minfo = $self->merge_info($cpdst);
+			      unless ($minfo->{$srckey}) {
+				  $rev[0] = $rev+1;
+				  next;
+			      }
+			      if ($minfo->{$srckey}{rev} > $cp_rev) {
+				  $rev[1] = $rev-1;
+				  next;
+			      }
+			      elsif ($minfo->{$srckey}{rev} < $cp_rev) {
+				  $rev[0] = $rev+1;
+				  next;
+			      }
+
+			      my $prev = ($root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1];
+
+			      if ($self->merge_info($cpdst->new(revision => $prev))->{$srckey}{rev} != $cp_rev) {
+				  return ('file://'.$self->{dst}->{repospath}.$path, $rev);
+			      }
+			      $rev[1] = $rev-1;
+			  }
+			  else {
+			      $rev[0] = $rev+1;
+			  }
+		      }
+		      return;
+
 		  }
 		  else {
 		      my ($toroot, $fromroot, $frompath) = $self->{dst}->nearest_copy;
 		      if ($frompath eq $self->{src}->path) {
 			  warn "copied to  ".$toroot->revision_root_revision;
-			  if ($rev > $fromroot->revision_root_revision) {
+			  if ($cp_rev > $fromroot->revision_root_revision) {
 			      return;
 			  }
 			  else {
