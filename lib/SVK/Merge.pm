@@ -411,9 +411,8 @@ sub run {
 
 			      my $prev = ($root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1];
 
-			      if ($self->merge_info($cpdst->new(revision => $prev))->{$srckey}{rev} != $cp_rev) {
-				  return ('file://'.$self->{dst}->{repospath}.$path, $rev);
-			      }
+			      return $cb{cb_copyfrom}->($path, $rev)
+				  if ($self->merge_info($cpdst->new(revision => $prev))->{$srckey}{rev} || 0) != $cp_rev;
 			      $rev[1] = $rev-1;
 			  }
 			  else {
@@ -451,11 +450,11 @@ sub run {
 	      no_recurse => $self->{no_recurse}, editor => $editor,
 	      notice_copy => $self->{notice_copy},
 	    );
-    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
+    print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};
     print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
-	      $editor->{skipped}) if $editor->{skipped} && !$self->{track_rename} && !$self->{auto};
+	      $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
 
-    return $editor->{conflicts};
+    return $meditor->{conflicts};
 }
 
 sub resolver {

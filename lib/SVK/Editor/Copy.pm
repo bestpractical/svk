@@ -17,7 +17,7 @@ sub find_copy {
 	($self->{base_root}, $fromroot, $toroot);
     if ($from <= $base && $base < $to &&
 	$frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
-	warn "==> $path is copied from $base_path:$from";
+	warn "==> $path is copied from $frompath:$from";
 	if (($frompath, $from) = $self->{cb_resolve_copy}->($frompath, $from)) {
 	    push @{$self->{incopy}}, $path;
 	    warn "==> resolved to $frompath:$from";
