@@ -319,7 +319,8 @@ sub run {
 	    my $newpath = $storage->rename_check ($path);
 	    $flush->($path, $st, $path eq $newpath ? undef : $newpath) };
     }
-    my $editor = SVK::Editor::Merge->new
+
+    my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->{path},
 	  base_anchor => $base->{path},
 	  base_root => $base_root,
@@ -351,12 +352,60 @@ sub run {
 			     }),
 	  %cb,
 	);
+
+    my $editor = $meditor;
+    if ($self->{notice_copy}) {
+	# find the dst base root, which is the last change on svk:merge
+	# that brings the current merge ticket from src
+	require SVK::Editor::Copy;
+	$editor = SVK::Editor::Copy->new
+	    ( _editor => [$meditor],
+	      base_root => $base_root,
+	      base_path => $base->path,
+	      target_path => $self->{src}->path,
+	      target_root => $self->{src}->root,
+	      cb_resolve_copy => sub {
+		  my ($path, $rev) = @_; # translate to (path, rev) for dst
+		  my $srcpath = $self->{src}->path;
+		  my $dstpath = $self->{dst}->path;
+		  return unless $path =~ m{^\Q$srcpath/};
+		  $path =~ s/^\Q$srcpath/$dstpath/;
+
+		  # now the hard part, reoslve the revision
+
+		  # between $self->{dst}{revision} and (1 or first created)
+		  my $info = $self->merge_info($self->{dst}->new);
+		  my $src = $self->{src}->universal;
+		  my $srckey = join(':', $src->{uuid}, $src->{path});
+		  if ($info->{$srckey}) {
+		      warn "has info, do search";
+		  }
+		  else {
+		      my ($toroot, $fromroot, $frompath) = $self->{dst}->nearest_copy;
+		      if ($frompath eq $self->{src}->path) {
+			  warn "copied to  ".$toroot->revision_root_revision;
+			  if ($rev > $fromroot->revision_root_revision) {
+			      return;
+			  }
+			  else {
+			      return ('file://'.$self->{dst}->{repospath}.$path,
+				      $toroot->revision_root_revision);
+			  }
+		      }
+		      else {
+			  die 'dunno what to do for now';
+		      }
+		  }
+		  return;
+	      }
+	    );
+    }
+
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
-	      fromurl => 'file://'.$src->{repospath},
 	      notice_copy => $self->{notice_copy},
 	    );
     print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};

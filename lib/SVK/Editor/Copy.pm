@@ -18,8 +18,11 @@ sub find_copy {
     if ($from <= $base && $base < $to &&
 	$frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
 	warn "==> $path is copied from $base_path:$from";
-	push @{$self->{incopy}}, $path;
-	return ($frompath, $from);
+	if (($frompath, $from) = $self->{cb_resolve_copy}->($frompath, $from)) {
+	    push @{$self->{incopy}}, $path;
+	    warn "==> resolved to $frompath:$from";
+	    return ($frompath, $from);
+	}
     }
     return;
 }
@@ -47,7 +50,7 @@ sub add_directory {
     else {
 	if (my @ret = $self->find_copy($path)) {
 	    ($from_path, $from_rev) = @ret;
-	    $from_path = $self->{fromurl}.$from_path;
+	    $from_path = $from_path;
 	}
     }
 
@@ -69,6 +72,12 @@ sub add_file {
     $self->SUPER::add_file($path, $pbaton, @arg);
 }
 
+sub apply_textdelta {
+    my ($self, $path, @arg) = @_;
+    return unless defined $path;
+    return $self->SUPER::apply_textdelta($path, @arg);
+}
+
 sub close_file {
     my ($self, $path, @arg) = @_;
     return unless defined $path;
@@ -76,6 +85,21 @@ sub close_file {
     return $self->SUPER::close_file($path, @arg);
 }
 
+
+sub change_file_prop {
+    my ($self, $path, @arg) = @_;
+    return unless defined $path;
+
+    return $self->SUPER::change_file_prop($path, @arg);
+}
+
+sub change_dir_prop {
+    my ($self, $path, @arg) = @_;
+    return unless defined $path;
+
+    return $self->SUPER::change_dir_prop($path, @arg);
+
+}
 
 sub close_directory {
     my ($self, $path, @arg) = @_;
