@@ -32,8 +32,8 @@ sub lock {
 sub run {
     my ($self, @arg) = @_;
 
-    die loc ("--check-only cannot be used in conjunction with --sync or --merge.\n")
-        if defined $self->{check_only} && ($self->{merge} || $self->{sync});
+    die loc ("--check-only cannot be used in conjunction with --merge.\n")
+        if defined $self->{check_only} && $self->{merge};
 
     die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
