@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 52;
+use Test::More tests => 54;
 use strict;
 use File::Temp;
 require 't/tree.pl';
@@ -41,6 +41,9 @@ is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A/foo"],
 	   [__("$copath/A/foo is already scheduled for delete.")]);
 
 $svk->revert (-R => $copath);
+
+is_output ($svk, 'ps', ['-q', 'myprop', 'myvalue', "$copath/A"],
+	   []);
 
 is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A"],
 	   [__(" M  $copath/A")]);
@@ -88,6 +91,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop: myvalue',
 	    '  myprop2: myvalue2']);
+is_output ($svk, 'propdel', ['--quiet', 'myprop', "$copath/A"],
+	   []);
 is_output ($svk, 'propdel', ['myprop', "$copath/A"],
 	   [__(" M  $copath/A")]);
 is_output ($svk, 'pl', ['-v', "$copath/A"],

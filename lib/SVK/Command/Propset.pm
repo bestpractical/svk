@@ -11,6 +11,7 @@ sub options {
     ($_[0]->SUPER::options,
      'r|revision=i' => 'rev',
      'revprop' => 'revprop',
+     'q|quiet' => 'quiet',
     );
 }
 
@@ -35,7 +36,15 @@ sub do_propset_direct {
 	my $fs = $target->{repos}->fs;
         my $rev = (defined($self->{rev}) ? $self->{rev} : $target->{revision});
         $fs->change_rev_prop ($rev, $propname => $propvalue);
-        print loc("Property '%1' set on repository revision %2.\n", $propname, $rev);
+	unless ($self->{quiet}) {
+	    if (defined $propvalue) {
+		print loc("Property '%1' set on repository revision %2.\n",
+		    $propname, $rev);
+	    } else {
+		print loc("Property '%1' deleted from repository revision %2.\n",
+		    $propname, $rev);
+	    }
+	}
         return;
     }
 
@@ -101,6 +110,7 @@ sub do_propset {
 	    ( %$target,
 	      propname => $pname,
 	      propvalue => $pvalue,
+	      quiet => $self->{quiet},
 	    );
     }
     else {
@@ -142,6 +152,7 @@ SVK::Command::Propset - Set a property on path
  -P [--patch] NAME      : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
+ -q [--quiet]           : print as little as possible
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
