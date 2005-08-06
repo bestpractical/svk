@@ -47,6 +47,7 @@ SVK::Command::Propdel - Delete a property on files or dirs
  -P [--patch] NAME      : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
+ -q [--quiet]           : print as little as possible
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
