@@ -77,13 +77,7 @@ sub lock {
 sub get_commit_message {
     my ($self, $log) = @_;
     return if $self->{check_only} || $self->{incremental};
-    if (defined $self->{message}) {
-	$self->{message} = join ("\n", grep {length $_} ($self->{message}, $log));
-	$self->decode_commit_message;
-    }
-    else {
-	$self->SUPER::get_commit_message ($log);
-    }
+    $self->SUPER::get_commit_message ($log);
 }
 
 sub run {
@@ -143,7 +137,7 @@ sub run {
 	return;
     }
 
-    $self->get_commit_message ($self->{log} ? $merge->log(1) : '')
+    $self->get_commit_message ($self->{log} ? $merge->log(1) : undef)
 	unless $dst->{copath};
 
     if ($self->{incremental} && !$self->{check_only}) {
@@ -214,18 +208,23 @@ SVK::Command::Merge - Apply differences between two sources
 
  -r [--revision] N:M    : act on revisions between N and M
  -c [--change] N        : act on change N (between revisions N-1 and N)
- -C [--check-only]      : try operation but make no changes
  -I [--incremental]     : apply each change individually
  -a [--auto]            : merge from the previous merge point
  -l [--log]             : use logs of merged revisions as commit message
- -s [--sync]            : synchronize mirrored sources before update
+ -s [--sync]            : synchronize mirrored sources before operation
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

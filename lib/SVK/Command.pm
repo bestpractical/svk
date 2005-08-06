@@ -75,7 +75,9 @@ use constant alias =>
 		ver		version
 	    );
 
-use constant global_options => ( 'h|help|?' => 'help' );
+use constant global_options => ( 'h|help|?' => 'help',
+				 'encoding=s' => 'encoding'
+			       );
 
 my %alias = alias;
 my %cmd2alias = map { $_ => [] } values %alias;
@@ -105,8 +107,15 @@ sub invoke {
 				 output => $output) };
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
-    # if an error handler terminates editor call, there will be stack trace
-    print $@ if $@ && $@ !~ m/\n.+\n.+\n/;
+    unless (ref($@)) {
+	if ($SVN::Core::VERSION gt '1.2.2') {
+	    print $@ if $@;
+	}
+	else {
+	    # if an error handler terminates editor call, there will be stack trace
+	    print $@ if $@ && $@ !~ m/\n.+\n.+\n/
+	}
+    }
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
 
     undef $pool;
@@ -122,7 +131,9 @@ sub run_command {
 	my $error = $_[0];
 	my $error_message = $error->expanded_message();
 	$error->clear();
-	$self->handle_error ($error);
+	if ($self->handle_error ($error)) {
+	    die \'error handled';
+        }
 	die $error_message."\n";
     };
 
@@ -136,6 +147,9 @@ sub run_command {
 			: $_
 		    } @args;
 	}
+	# XXX: xd needs to know encoding too
+	$self->{xd}{encoding} = $self->{encoding}
+	    if $self->{xd};
 	if ($self->{help} || !(@args = $self->parse_arg(@args))) {
 	    select STDERR unless $self->{output};
 	    $self->usage;
@@ -635,15 +649,27 @@ could be given to extract the usage from the POD.
 
 sub brief_usage {
     my ($self, $file) = @_;
-    my $fname = ref($self);
-    $fname =~ s|::|/|g;
-    open my ($podfh), '<', ($file || $INC{"$fname.pm"}) or return;
+    open my ($podfh), '<', ($file || $self->filename) or return;
     local $/=undef;
     my $buf = <$podfh>;
     if($buf =~ /^=head1\s+NAME\s*SVK::Command::(\w+ - .+)$/m) {
 	print "   ",loc(lcfirst($1)),"\n";
     }
     close $podfh;
+}
+
+=head3 filename
+
+Return the filename for the command module.
+
+=cut
+
+sub filename {
+    my $self = shift;
+    my $fname = ref($self);
+    $fname =~ s{::[a-z]+}{}; # subcommand
+    $fname =~ s{::}{/}g;
+    $INC{"$fname.pm"}
 }
 
 =head3 usage ($want_detail)
@@ -655,16 +681,12 @@ section is displayed as well.
 
 sub usage {
     my ($self, $want_detail) = @_;
-    # XXX: the order from selected is not preserved.
-    my $fname = ref($self);
-    $fname =~ s|::|/|g;
-
-    my($cmd) = $fname =~ m{\W(\w+)$};
-
+    my $fname = $self->filename;
+    my($cmd) = $fname =~ m{\W(\w+)\.pm$};
     my $parser = Pod::Simple::Text->new;
     my $buf;
     $parser->output_string(\$buf);
-    $parser->parse_file($INC{"$fname.pm"});
+    $parser->parse_file($fname);
 
     $buf =~ s/SVK::Command::(\w+)/\l$1/g;
     $buf =~ s/^AUTHORS.*//sm;

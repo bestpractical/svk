@@ -5,7 +5,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 use SVK::I18N;
-use SVK::Util qw( get_anchor abs_path abs2rel splitdir catdir splitpath $SEP
+use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
 		  from_native to_native get_encoder get_depot_anchor );
@@ -412,6 +412,37 @@ sub condense {
 	    : map { abs2rel($_, $anchor) } @targets);
 }
 
+# simliar to command::arg_copath, but still return a target when
+# basepath doesn't exist, arg_copath shuold be gradually deprecated
+sub target_from_copath_maybe {
+    my ($self, $arg) = @_;
+
+    my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
+    my ($repospath, $path, $depotpath, $copath, $repos);
+    unless (($repospath, $path, $repos) = eval { $self->find_repos ($arg, 1) }) {
+	$arg = File::Spec->canonpath($arg);
+	$copath = abs_path_noexist($arg);
+	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
+	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
+	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
+	$path = abs2rel ($copath, $coroot => $path, '/');
+	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
+	$depotpath = "/$depotpath$path";
+    }
+
+    from_native ($path, 'path', $self->{encoding});
+    undef $@;
+    return SVK::Target->new
+	( repos => $repos,
+	  repospath => $repospath,
+	  depotpath => $depotpath || $arg,
+	  copath => $copath,
+	  report => $arg,
+	  path => $path,
+	  revision => $rev,
+	);
+}
+
 sub xdroot {
     SVK::XD::Root->new (create_xd_root (@_));
 }
@@ -431,14 +462,23 @@ sub create_xd_root {
     my $base_rev;
     for (@paths) {
 	my $cinfo = $self->{checkout}->get ($_);
+	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	unless ($root) {
 	    $base_rev = $cinfo->{revision};
 	    $txn = $fs->begin_txn ($base_rev);
 	    $root = $txn->root();
-	    next if $_ eq $copath;
+	    if ($base_rev == 0) {
+		# for interrupted checkout, the anchor will be at rev 0
+		my @path = ();
+		for my $dir (File::Spec::Unix->splitdir($path)) {
+		    push @path, $dir;
+		    next unless length $dir;
+		    $root->make_dir(File::Spec::Unix->catdir(@path));
+		}
+	    }
+	    next;
 	}
 	next if $cinfo->{revision} == $base_rev;
-	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	$root->delete ($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
@@ -810,6 +850,10 @@ Don't generate absent_* calls.
 Mimic the behavior like SVN::Repos::dir_delta, lose copy information
 and treat all copied descendents as added too.
 
+=item cb_ignored
+
+Called for ignored items if defined.
+
 =back
 
 =cut
@@ -1003,8 +1047,6 @@ sub _delta_file {
     my $cinfo = $arg{cinfo} ||= $self->{checkout}->get ($arg{copath});
     my $schedule = $cinfo->{'.schedule'} || '';
     my $modified;
-    $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
-	$schedule eq 'replace';
 
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
 	++$modified;
@@ -1019,13 +1061,22 @@ sub _delta_file {
 	return 1 if $self->_node_deleted_or_absent (%arg,
 						    type => 'link',
 						    pool => $pool);
-	return 1 unless $arg{obstruct_as_replace};
+	if ($arg{obstruct_as_replace}) {
+	    $schedule = 'replace';
+	    $fullprops = $newprops = $self->auto_prop($arg{copath}) || {};
+	}
+	else {
+	    return 1;
+	}
     }
+    $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
+	$schedule eq 'replace';
+
     my $fh = get_fh ($arg{xdroot}, '<', $arg{path}, $arg{copath}, $fullprops);
     my $mymd5 = md5_fh ($fh);
     my ($baton, $md5);
 
-    $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';;
+    $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';
 
     return $modified unless $schedule || $arg{add} ||
 	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
@@ -1218,7 +1269,11 @@ sub _delta_dir {
 	# If we are not at intermediate path, process ignore
 	# for unknowns, as well as the case of auto_add (import)
 	if (!defined $targets) {
-	    next if (!$add || $arg{auto_add}) && $entry =~ m/$ignore/ ;
+	    if ((!$add || $arg{auto_add}) && $entry =~ m/$ignore/) { 
+		$arg{cb_ignored}->($newpaths{entry}, $newpaths{copath})
+		    if $arg{cb_ignored};
+		next;
+	    }
 	}
 	if ($ccinfo->{'.conflict'}) {
 	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton})
@@ -1509,8 +1564,6 @@ sub get_props {
 	$props = $source_root->node_proplist ($source_path);
     }
     elsif ($schedule ne 'add' && $schedule ne 'replace') {
-	die loc("path %1 not found", $path)
-	    if $root->check_path ($path) == $SVN::Node::none;
 	$props = $root->node_proplist ($path);
     }
     return _combine_prop ($props, $entry->{'.newprop'});

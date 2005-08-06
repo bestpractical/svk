@@ -34,23 +34,26 @@ SVK::Command::Smerge - Automatically merge all changes between branches
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- -C [--check-only]      : try operation but make no changes
  -I [--incremental]     : apply each change individually
  -l [--log]             : use logs of merged revisions as commit message
  -B [--baseless]        : use the earliest revision as the merge point
- -b [--base] REV	: use revision REV of SOURCE as the merge base
+ -b [--base] REV        : use revision REV of SOURCE as the merge base
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
- --host HOST		: use HOST as the hostname shown in merge log
+ --host HOST            : use HOST as the hostname shown in merge log
  --remoterev            : use remote revision numbers in merge log
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

@@ -8,6 +8,10 @@ use SVK::XD;
 use SVK::Util qw( slurp_fh is_symlink );
 use SVK::I18N;
 
+sub options {
+    ("q|quiet"    => 'quiet');
+}
+
 sub parse_arg {
     my $self = shift;
     my @arg = @_;
@@ -50,7 +54,7 @@ sub run {
                       if ($st =~ /[DMRC!]/) {
 			  # conflicted items do not necessarily exist
 			  return $self->do_unschedule ($target, $copath)
-			      if $st eq 'C' && !$xdroot->check_path ($dpath);
+			      if ($st eq 'C' || $status->[2]) && !$xdroot->check_path ($dpath);
                           return $self->do_revert($target, $copath, $dpath, $xdroot);
                       }
 
@@ -93,7 +97,8 @@ sub do_unschedule {
     my ($self, $target, $copath) = @_;
     $self->{xd}{checkout}->store ($copath, { $self->_schedule_empty,
 					     '.conflict' => undef });
-    print loc("Reverted %1\n", $target->report_copath ($copath));
+    print loc("Reverted %1\n", $target->report_copath ($copath))
+	unless $self->{quiet};
 
 }
 
@@ -112,6 +117,7 @@ SVK::Command::Revert - Revert changes made in checkout copies
 =head1 OPTIONS
 
  -R [--recursive]       : descend recursively
+ -q [--quiet]           : print as little as possible
 
 =head1 AUTHORS
 

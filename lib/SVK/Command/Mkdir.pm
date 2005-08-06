@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( abs2rel get_anchor );
+use SVK::Util qw( abs2rel get_anchor make_path );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -14,60 +14,53 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    # XXX: support multiple
-    #return if $#arg != 0;
-    my @paths;
-    my @targets;
-    my $parent = $self->{parent};
-    for my $path (@arg) {
-	my ($addtargets, $addpaths) = $self->create($path);
-	push @paths, @$addpaths;
-	push @targets, @$addtargets;
-	$self->{parent} = $parent;
-    }
-    if (scalar @paths) {
-	return $self->rebless (
-	    add => {
-		recursive => 1
-	    }
-	)->parse_arg (@paths);
-    }
-    return @targets;
+    return map { $self->{xd}->target_from_copath_maybe($_) } @arg;
 }
 
-sub create {
-    my $self = shift;
-    my $path = shift;
-    my @paths;
-    my @targets;
-    # parsing all of the folder we need to add.
-    until (@targets = eval { ($self->arg_co_maybe ($path)) }) {
-	my ($parent, $target) = get_anchor(1, $path);
-	unless ($parent and $self->{parent}) {
-	    # non a copath or something wrong
-	    # XXX: better check for error types
-	    # should tell the user about parent not exist
-            return ($self->arg_depotpath($path));
-        }
-        my ($subtargets, $subpaths) = $self->create($parent);
-	push @paths, @$subpaths;
-	push @targets, @$subtargets;
-	undef $self->{parent};
+sub ensure_parent {
+    my ($self, $target) = @_;
+    my $dst = $target->new;
+    $dst->anchorify;
+    die loc("Path %1 is not a checkout path.\n", $dst->{report})
+	unless defined $dst->{copath};
+    unless (-e $dst->{copath}) {
+	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})
+	    unless $self->{parent};
+	# this sucks
+	my ($added_root) = make_path($dst->{report});
+	my $add = $self->command('add', { recursive => 1 });
+	$add->run($add->parse_arg($added_root));
     }
-    # execute the mkdir
-    if ($@ || grep {$_->{copath}} @targets) {
-        my $target = $self->arg_condensed ($path);
-        foreach (@{$target->{targets}}) {
-            my $copath = $target->copath ($_);
-	    mkdir ($copath) or die "$copath: $!";
-        }
-	push @paths, $path;
+    unless (-d $dst->{copath}) {
+	die loc ("%1 is not a directory.\n", $dst->{report});
     }
-    return (\@targets, \@paths);
+    unless ($dst->root($self->{xd})->check_path ($dst->{path})) {
+	my $info = $self->{xd}{checkout}->get($dst->{copath});
+	die loc ("Parent directory %1 is unknown, add first.\n", $dst->{report})
+	    unless $info->{'.schedule'};
+    }
 }
 
 sub run {
-    my ($self, $target) = @_;
+    my ($self, @target) = @_;
+
+    # XXX: better check for @target being the same type
+    if (grep {$_->{copath}} @target) {
+	$self->ensure_parent($_) for @target;
+	for (@target) {
+	    make_path($_->{report}) or die $!;
+	}
+	for (@target) {
+	    my $add = $self->command('add');
+	    $add->run($add->parse_arg($_->{report}));
+	}
+	return ;
+    }
+
+    die loc("Mkdir for more than one depotpath is not supported yet.\n")
+	if scalar @target > 1;
+
+    my ($target) = @target;
     $self->get_commit_message ();
     my ($anchor, $editor) = $self->get_dynamic_editor ($target);
     $editor->close_directory
@@ -89,16 +82,19 @@ SVK::Command::Mkdir - Create a versioned directory
 =head1 SYNOPSIS
 
  mkdir DEPOTPATH
- mkdir PATH
+ mkdir PATH...
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
  -p [--parent]          : create intermediate directories as required
- -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

@@ -9,7 +9,6 @@ use SVK::I18N;
 
 sub options {
     ($_[0]->SUPER::options,
-     'K|keep-local' => 'keep',
      'r|revision=i' => 'rev',
      'revprop' => 'revprop',
     );
@@ -40,6 +39,7 @@ sub do_propset_direct {
         return;
     }
 
+    $target->normalize; # so find_remove_rev is used with right revision.
     my $root = $target->root;
     my $kind = $root->check_path ($target->path);
 
@@ -49,18 +49,21 @@ sub do_propset_direct {
     my $func = $kind == $SVN::Node::dir ? 'change_dir_prop' : 'change_file_prop';
     my $path = abs2rel ($target->path, $anchor => undef, '/');
 
+    my $m = $self->under_mirror ($target);
+    my $rev = $target->{revision};
+    $rev = $m->find_remote_rev ($rev) if $m;
     if ($kind == $SVN::Node::dir) {
 	if ($anchor eq $target->path) {
 	    $editor->change_dir_prop ($editor->{_root_baton}, $propname, $propvalue);
 	}
 	else {
-	    my $baton = $editor->open_directory ($path, 0, $target->{revision});
+	    my $baton = $editor->open_directory ($path, 0, $rev);
 	    $editor->change_dir_prop ($baton, $propname, $propvalue);
 	    $editor->close_directory ($baton);
 	}
     }
     else {
-	my $baton = $editor->open_file ($path, 0, $target->{revision});
+	my $baton = $editor->open_file ($path, 0, $rev);
 	$editor->change_file_prop ($baton, $propname, $propvalue);
 	$editor->close_file ($baton, undef);
     }
@@ -74,6 +77,8 @@ sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
     if ($target->{copath}) {
+	die loc("-r not allowed for propset copath.\n")
+	    if $self->{rev};
 	# verify the content is not with mixed line endings.
 	if ($pname eq 'svn:eol-style') {
 	    my $xdroot = $target->root ($self->{xd});
@@ -127,15 +132,16 @@ SVK::Command::Propset - Set a property on path
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- -C [--check-only]      : try operation but make no changes
- -S [--sign]            : sign this change
  -R [--recursive]       : descend recursively
- -r [--revision] REV	: act on revision REV instead of the head revision
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
+ -r [--revision] REV    : act on revision REV instead of the head revision
  --revprop              : operate on a revision property (use with -r)
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS

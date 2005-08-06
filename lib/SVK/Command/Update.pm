@@ -32,8 +32,8 @@ sub lock {
 sub run {
     my ($self, @arg) = @_;
 
-    die loc ("--check-only cannot be used in conjunction with --sync or --merge.\n")
-        if defined $self->{check_only} && ($self->{merge} || $self->{sync});
+    die loc ("--check-only cannot be used in conjunction with --merge.\n")
+        if defined $self->{check_only} && $self->{merge};
 
     die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
@@ -121,6 +121,7 @@ sub do_update {
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
+	 auto => 1, # not to print track-rename hint
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
 					  store_path => $update_target->path,
@@ -147,7 +148,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
  -N [--non-recursive]   : do not descend recursively
  -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update

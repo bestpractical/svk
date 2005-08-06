@@ -22,6 +22,9 @@ sub lock {
 sub run {
     my ($self, $pname, $target) = @_;
 
+    die loc("-r not allowed for propset copath.\n")
+	if $self->{rev} && $target->{copath};
+
     my $pvalue = $self->_proplist ($target)->{$pname};
 
     $pvalue = get_buffer_from_editor (
@@ -50,14 +53,16 @@ SVK::Command::Propedit - Edit a property on path
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- -C [--check-only]      : try operation but make no changes
  -R [--recursive]       : descend recursively
- -r [--revision] REV	: act on revision REV instead of the head revision
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
+ -r [--revision] REV    : act on revision REV instead of the head revision
  --revprop              : operate on a revision property (use with -r)
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS

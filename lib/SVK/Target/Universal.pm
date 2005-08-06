@@ -42,7 +42,10 @@ sub local {
 	find_local_mirror ($repos, @{$self}{qw/uuid path rev/}) :
 	@{$self}{qw/path rev/};
 
-    return unless $path;
+    # $rev can be undefined even if $path is defined.  This is the case
+    # that you have a out-of-date mirror of something with a newer merge
+    # ticket
+    return unless defined $path && defined $rev;
 
     SVK::Target->new
 	( repos => $repos,

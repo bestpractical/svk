@@ -27,9 +27,9 @@ sub run {
     my ($self, @arg) = @_;
     my $exception = '';
 
-    for (@arg) {
-        eval { _do_list($self, 0, $_); print "\n" };
-        $exception .= "$@\n" if $@;
+    while (my $arg = shift @arg) {
+        eval { _do_list($self, 0, $arg); print "\n" if @arg };
+        $exception .= "$@" if $@;
     }
 
     die($exception) if($exception);
@@ -104,9 +104,9 @@ SVK::Command::List - List entries in a directory from depot
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
  -R [--recursive]       : descend recursively
- -d [--depth] LEVEL	: recurse at most LEVEL levels deep; use with -R
+ -d [--depth] LEVEL     : recurse at most LEVEL levels deep; use with -R
  -f [--full-path]       : show pathname for each entry, instead of a tree
  -v [--verbose]         : print extra information
 

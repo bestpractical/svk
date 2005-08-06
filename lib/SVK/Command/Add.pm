@@ -71,11 +71,15 @@ my %sch = (A => 'add', 'R' => 'replace');
 
 sub _do_add {
     my ($self, $st, $copath, $report, $autoprop) = @_;
+    my $newprop;
+    $newprop = $self->{xd}->auto_prop($copath) if $autoprop;
+
     $self->{xd}{checkout}->store ($copath,
 				  { '.schedule' => $sch{$st},
 				    $autoprop ?
-				    ('.newprop'  => $self->{xd}->auto_prop ($copath)) : ()});
-    print "$st   $report\n" unless $self->{quiet};
+				    ('.newprop'  => $newprop) : ()});
+    my $exec = ($newprop && ref $newprop && $newprop->{'svn:executable'}) ? ' - (bin)' : '';
+    print "$st   $report$exec\n" unless $self->{quiet};
 
 }
 

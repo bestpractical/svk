@@ -54,10 +54,10 @@ SVK::Command::Push - Move changes into another repository
 
 =head1 OPTIONS
 
- -f [--from] PATH	: push from the specified path
+ -f [--from] PATH       : push from the specified path
  -l [--lump]            : merge everything into a single commit log
  -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
+ -P [--patch] NAME      : instead of commit, save this change as a patch
  -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
 
@@ -65,7 +65,9 @@ SVK::Command::Push - Move changes into another repository
 
 This command is a wrapper around the C<smerge> subcommand. 
 
-C<svk push> is exactly the same as running C<svk smerge -If .>.
+C<svk push> is exactly the same as running 
+
+   svk smerge -If .
 
 =head1 AUTHORS
 

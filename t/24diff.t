@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 27;
+use Test::More tests => 29;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -35,7 +35,8 @@ is_output ($svk, 'diff', [],
             'Property changes on: A/binary',
             '___________________________________________________________________',
             'Name: svn:mime-type',
-            ' +image/png']);
+            ' +image/png',
+	    '']);
 overwrite_file ("A/foo", "foobar\nnewline\nfnord\n");
 overwrite_file ("A/bar", "foobar\nnewline\n");
 overwrite_file ("A/baz", "foobar\n");
@@ -187,7 +188,8 @@ is_output ($svk, 'diff', ['-r1'],
             'Property changes on: A/binary',
             '___________________________________________________________________',
             'Name: svn:mime-type',
-            ' +image/png',], 'diff - rN copath (changed)');
+            ' +image/png',
+	    '',], 'diff - rN copath (changed)');
 is_sorted_output ($svk, 'diff', ['-sr1:2', '//A', $corpath],
 	   ['A   A',
 	    'A   A/foo',
@@ -248,7 +250,8 @@ is_output ($svk, 'diff', ['-r1'],
             'Property changes on: A/binary',
             '___________________________________________________________________',
             'Name: svn:mime-type',
-            ' +image/png'], 'diff - rN copath (unchanged)');
+            ' +image/png',
+	    ''], 'diff - rN copath (unchanged)');
 $svk->update ('-r1', 'A');
 overwrite_file ("A/coonly", "foobar\n");
 $svk->add ('A/coonly');
@@ -331,7 +334,8 @@ is_output ($svk, 'diff', [],
             '___________________________________________________________________',
             'Name: svn:mime-type',
             ' -image/png',
-            ' +image/jpg']);
+            ' +image/jpg',
+	    '']);
 $svk->commit('-m', 'Property changes for A/binary.');
 is_output ($svk, 'diff', ['-r4:3'],
            ['',
@@ -339,7 +343,8 @@ is_output ($svk, 'diff', ['-r4:3'],
             '___________________________________________________________________',
             'Name: svn:mime-type',
             ' -image/jpg',
-            ' +image/png']);
+            ' +image/png',
+	    '']);
 
 # test with expanding copies
 $svk->cp ('-m', 'blah', '//B', '//A/B-cp');
@@ -398,6 +403,39 @@ is_output ($svk, 'diff', ['C'],
 	    '+fnord',
 	    '+copied and modified on C']);
 
+is_output ($svk, 'diff', ['--non-recursive', 'C'],
+	   ['=== C/bar',
+	    '==================================================================',
+	    '--- C/bar  (revision 4)',
+	    '+++ C/bar  (local)',
+	    '@@ -0,0 +1,2 @@',
+	    '+foobar',
+	    '+newline',
+	    '=== C/baz',
+	    '==================================================================',
+	    '--- C/baz  (revision 4)',
+	    '+++ C/baz  (local)',
+	    '@@ -0,0 +1 @@',
+	    '+foobar',
+            '=== C/binary',
+            '==================================================================',
+            'Cannot display: file marked as a binary type.',
+            '',
+            'Property changes on: C/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' +image/jpg',
+            '',
+	    '=== C/foo',
+	    '==================================================================',
+	    '--- C/foo  (revision 4)',
+	    '+++ C/foo  (local)',
+	    '@@ -0,0 +1,4 @@',
+	    '+foobar',
+	    '+newline',
+	    '+fnord',
+	    '+copied and modified on C']);
+
 $svk->revert ('-R', '.');
 $svk->resolved ('-R', '.');
 $svk->update;
@@ -407,7 +445,7 @@ $svk->add ('A/newfile');
 $svk->ps ('anewprop', 'value', 'A');
 $svk->ps ('anewprop', 'value', 'A/newfile');
 $svk->commit ('-m', 'some props'); # r6
-is_output ($svk, 'diff', ['-r5'],
+my $r6diffs =
 	   ['=== A/newfile',
 	    '==================================================================',
 	    '--- A/newfile  (revision 5)',
@@ -425,8 +463,11 @@ is_output ($svk, 'diff', ['-r5'],
 	    'Property changes on: A',
 	    '___________________________________________________________________',
 	    'Name: anewprop',
-	    ' +value'
-	   ]);
+	    ' +value',
+	    '',
+	   ];
+is_output ($svk, 'diff', ['-r5'],
+	   $r6diffs);
 
 overwrite_file ("A/newfile", "");
 $svk->st;
@@ -446,3 +487,12 @@ is_output ($svk, 'diff', ['A/newfile'],
 unlink ('A/newfile');
 is_output ($svk, 'diff', ['A/newfile'],
 	   [  ]);
+
+for (@$r6diffs)
+{
+	s{A/?}{};
+	s{revision 5}{revision 4};
+	s{local}{revision 6};
+}
+is_output ($svk, 'diff', ['-N', '--revision', '4:6', '//A'],
+	   $r6diffs);

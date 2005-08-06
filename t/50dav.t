@@ -2,6 +2,8 @@
 use strict;
 # XXX: apache::test seems to alter inc to use blib
 require SVK::Command::Merge;
+use POSIX qw(setlocale LC_CTYPE);
+
 
 # XXX: apache::TestConfig assumes lib.pm is compiled.
 require lib;
@@ -17,6 +19,8 @@ BEGIN {
 	or plan (skip_all => "Apache::Test 1.18 required for testing dav");
     plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
 }
+setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
+    or plan skip_all => 'cannot set locale to en_US.UTF-8';
 
 use Apache::TestConfig;
 use File::Spec::Functions qw(rel2abs catdir);
@@ -31,7 +35,8 @@ my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 
 my $apache_root = rel2abs (catdir ('t', 'apache_svn'));
 my $apxs = $ENV{APXS} || can_run('apxs2') || can_run ('apxs');
-die unless $apxs;
+plan skip_all => "Can't find apxs utility. Use APXS env to specify path" unless $apxs;
+
 my $cfg = Apache::TestConfig->new
     ( top_dir => $apache_root,
       t_dir => $apache_root,
@@ -44,6 +49,8 @@ unless ($cfg->can('find_and_load_module') and
 }
 
 plan_svm tests => 11;
+
+my $utf8 = SVK::Util::get_encoding;
 
 $cfg->postamble (Location => "/svn",
 		 qq{DAV svn\n    SVNPath $srepospath\n});
@@ -72,7 +79,7 @@ append_file ("$copath/Q/qu", "some changes\n");
 append_file ("$copath/be", "changes\n");
 
 is_output ($svk, 'commit', [-m => "L\x{e9}on is a nice guy.", $copath],
-	   ["Can't decode commit message as utf-8-strict.", "try --encoding."]);
+	   ["Can't decode commit message as $utf8.", "try --encoding."]);
 is_output ($svk, 'commit', [-m => "L\x{e9}on is a nice guy.", '--encoding', 'iso-8859-1', $copath],
 	   ["Committed revision 5."]);
 $svk->smerge (-Cm => 'foo', -f => '//local/');
@@ -93,7 +100,7 @@ $svk->switch ('//remote', $copath);
 append_file ("$copath/Q/qu", "More changes in iso-8859-1\n");
 is_output ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", $copath],
 	   ["Commit into mirrored path: merging back directly.",
-	    "Can't decode commit message as utf-8-strict.", "try --encoding."]);
+	    "Can't decode commit message as $utf8.", "try --encoding."]);
 is_output_like ($svk, 'commit', [-m => "L\x{e9}on has a nice name.", '--encoding', 'iso-8859-1', $copath],
 		qr'Committed revision');
 

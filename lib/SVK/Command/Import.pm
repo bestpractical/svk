@@ -145,13 +145,17 @@ SVK::Command::Import - Import directory into depot
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  -f [--from-checkout]   : import from a checkout path
  -t [--to-checkout]     : turn the source into a checkout path
+ -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME	: instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ -N [--non-recursive]   : operate on single directory only
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

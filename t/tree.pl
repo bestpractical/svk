@@ -8,23 +8,23 @@ END {
 }
 
 use strict;
+use SVK;
 require Data::Hierarchy;
-require SVN::Core;
-require SVN::Repos;
-require SVN::Fs;
 use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
 use Test::More;
 
 # Fake standard input
-our $answer = 's'; # skip
+our $answer = [];
 BEGIN {
     no warnings 'redefine';
     # override get_prompt in XD so devel::cover is happy for
     # already-exported symbols being overridden
     *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
-        ref($answer) ? shift(@$answer) : $answer
+	return $answer unless ref($answer); # compat
+	die 'expecting input' unless @$answer;
+	shift @$answer;
     } unless $ENV{DEBUG_INTERACTIVE};
 
     chdir catdir(abs_path(dirname(__FILE__)), '..' );
@@ -57,6 +57,7 @@ for (qw/SVKRESOLVE SVKMERGE SVKDIFF SVKPGP LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
 }
 $ENV{LANGUAGE} = $ENV{LANGUAGES} = 'i-default';
 
+$ENV{SVKRESOLVE} = 's'; # default for test
 $ENV{HOME} ||= (
     $ENV{HOMEDRIVE} ? catdir(@ENV{qw( HOMEDRIVE HOMEPATH )}) : ''
 ) || (getpwuid($<))[7];
@@ -181,7 +182,9 @@ sub is_output {
     $svk->$cmd (@$arg);
     my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
 	? \&is_deeply_like : \&is_deeply;
-    @_ = ([split (/\r?\n/, $output)], $expected, $test || join(' ', map { / / ? qq("$_") : $_ } $cmd, @$arg));
+    my $o = $output;
+    $o =~ s/\r?\n$//;
+    @_ = ([split (/\r?\n/, $o, -1)], $expected, $test || join(' ', map { / / ? qq("$_") : $_ } $cmd, @$arg));
     goto &$cmp;
 }
 

@@ -1,16 +1,32 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-use Test::More tests => 17;
+use Test::More tests => 21;
 
 our $output;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('mkdir');
 my ($repospath, $path, $repos) = $xd->find_repos ('/test/', 1);
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+@_ = <_>;
+# simulate some editing, for --template test
+s/monkey/gorilla/g for @_;
+s/birdie/parrot/g for @_;
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+
 $svk->checkout ('//', $copath);
 is_output_like ($svk, 'mkdir', [], qr'SYNOPSIS', 'mkdir - help');
 is_output_like ($svk, 'mkdir', ['nonexist'],
-		qr'not a depot path');
+		qr'not a checkout path');
 
 # XXX: fix the strange suggestion in message
 is_output ($svk, 'mkdir', ['-m', 'msg', '//'],
@@ -24,8 +40,12 @@ is_output ($svk, 'mkdir', ['-m', 'msg', '//i-newdir/deep'],
 	   [qr'.*',
 	    'Please update checkout first.']);
 
-is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deep'],
-	   ['Committed revision 2.']);
+is_output ($svk, 'mkdir', ['-p', '-m', 'msg monkey foo', '--template', '//i-newdir/deep'],
+	   ['Waiting for editor...',
+	    'Committed revision 2.']);
+
+is_output_like ($svk, 'log', [-r => 2, '//i-newdir/deep'],
+		qr/msg gorilla foo/, 'mkdir template works');
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//i-newdir/deeper/file'],
 	   ['Committed revision 3.']);
@@ -34,15 +54,15 @@ is_output ($svk, 'mkdir', ["$copath/c-newfile"],
       [__"A   $copath/c-newfile"]);
 
 is_output ($svk, 'mkdir', ["$copath/c-newdir/deeper"],
-      ["$copath/c-newdir/deeper is not a depot path."]);
+      [qr"use -p."]);
 
 is_output ($svk, 'mkdir', ['-p', "$copath/c-newdir/deeper"],
       [__"A   $copath/c-newdir",
        __"A   $copath/c-newdir/deeper"]);
 
 is_output ($svk, 'mkdir', ['-p', "$copath/foo", "$copath/bar"],
-     [__"A   $copath/bar",
-      __"A   $copath/foo"]);
+     [__"A   $copath/foo",
+      __"A   $copath/bar"]);
 
 is_output ($svk, 'mkdir', ['-p', "$copath/d-newdir/foo", "$copath/e-newdir"],
      [__"A   $copath/d-newdir",
@@ -83,10 +103,20 @@ is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//m/source/deep'],
 	    'Please sync mirrored path /m first.']);
 }
 
-TODO: {
-local $TODO = "mkdir the multi directories, it should be broken if any one of the directory is broken";
-is_output ($svk, 'mkdir', ["$copath/f-newdir/foo $copath/g-newdir"],
-     [__"A   $copath/f-newdir",
-      __"A   $copath/f-newdir/foo",
-      __"A   $copath/g-newdir"]);
-}
+is_output ($svk, 'mkdir', ["$copath/f-newdir/foo", "$copath/g-newdir"],
+     [qr"use -p."]);
+
+
+is_output ($svk, 'mkdir', ["$copath/f-newdir", "//g-newdir/orz"],
+	   ['Path //g-newdir is not a checkout path.']);
+
+is_output ($svk, 'mkdir', [-m => 'more than one',
+			   "//m/f-newdir", "//m/orz"],
+	   [qr'not supported']);
+
+# different mirror
+is_output ($svk, 'mkdir', [-m => 'more than one',
+			   "//m/f-newdir", "//uorz"],
+	   [qr'not supported']);
+
+

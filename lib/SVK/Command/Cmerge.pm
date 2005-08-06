@@ -124,17 +124,20 @@ SVK::Command::Cmerge - Merge specific changes
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- -c [--change] REV	: act on comma-separated revisions REV 
- -C [--check-only]      : try operation but make no changes
+ -c [--change] REV      : act on comma-separated revisions REV 
  -l [--log]             : use logs of merged revisions as commit message
  -r [--revision] N:M    : act on revisions between N and M
  -a [--auto]            : merge from the previous merge point
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 56;
+plan_svm tests => 62;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -23,8 +23,8 @@ is_output ($svk, 'copy', ['//V/me', '//V/D/de', "$copath/me"],
 	   [__"$copath/me is not a directory."], 'multi to nondir');
 is_output ($svk, 'copy', ['//V/me', "$copath/me-copy"],
 	   [__"A   $copath/me-copy"]);
-is_output ($svk, 'copy', ['//V/D/de', "$copath/de-copy"],
-	   [__"A   $copath/de-copy"]);
+is_output ($svk, 'copy', [-q => '//V/D/de', "$copath/de-copy"],
+	   []);
 is_output ($svk, 'copy', ['//V/D', "$copath/D-copy"],
 	   [__"A   $copath/D-copy",
 	    __"A   $copath/D-copy/de"]);
@@ -102,7 +102,7 @@ is_output ($svk, 'status', ["$copath/newdir/A", "$copath/A-prop"],
 	   [status_native ($copath, 'A +', 'A-prop', ' M ', 'A-prop/be',
 			   'A  ', 'newdir', 'A +', 'newdir/A')]);
 
-$svk->status ("$copath/newdir/A");
+
 $svk->revert ('-R', $copath);
 TODO: {
 local $TODO = 'revert removes known nodes copied';
@@ -168,6 +168,36 @@ is_output ($svk, 'cp', ["$copath/me", "$copath/me-cocopied"], [__("Path $copath/
 
 $svk->commit ('-m', 'commit copied file in mirrored path', $copath);
 is_copied_from ("/foo/me-cocopied", '/me', 2);
+
+is_output($svk, 'copy', ["$copath/me", "$copath/nonexist/fnord"],
+	  [__"Parent directory t/checkout/copy/nonexist doesn't exist, use -p."]);
+
+is_output($svk, 'copy', [-p => "$copath/me", "$copath/nonexist/fnord"],
+	   [__("A   $copath/nonexist"),
+	    __("A   $copath/nonexist/fnord")]
+	  );
+
+is_output ($svk, 'status', [$copath],
+	   [__("A   $copath/nonexist"),
+	    __("A + $copath/nonexist/fnord")]
+	  );
+
+is_output($svk, 'copy', ["$copath/me", "$copath/me-cocopied/fnord"],
+	  [__"t/checkout/copy/me-cocopied is not a directory."]);
+
+is_output($svk, 'copy', [-p => "$copath/me", "$copath/me-cocopied/fnord/orz"],
+	  [__("mkdir t/checkout/copy/me-cocopied: File exists"),
+	  ]);
+
+is_output($svk, 'copy', [-p => "$copath/me", "$copath/nonexist2/fnord2/me"],
+	   [__("A   $copath/nonexist2"),
+	    __("A   $copath/nonexist2/fnord2"),
+	    __("A   $copath/nonexist2/fnord2/me")]
+	  );
+
+$svk->revert('-R', $copath);
+rmtree ["$copath/nonexist"];
+rmtree ["$copath/nonexist2"];
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/A/Q/'],
 	   ['Committed revision 19.']);

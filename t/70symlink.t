@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 51;
+use Test::More tests => 54;
 BEGIN { require 't/tree.pl' };
 
 use SVK::Util qw( HAS_SYMLINK is_symlink);
@@ -215,23 +215,34 @@ unlink ("$copath/non.lnk.cp");
 overwrite_file ("$copath/non.lnk.cp", "hate\n");
 
 SKIP: {
-skip 'no real symlinks', 5 unless HAS_SYMLINK;
+skip 'no real symlinks', 8 unless HAS_SYMLINK;
+
 is_output ($svk, 'status', [$copath],
 	   ["~   $copath/non.lnk.cp"], 'overwrite symlink with normal file');
+is_output($svk, 'ci', [-m => 'bzz', '--import', $copath],
+	  ['Committed revision 11.']);
+
+is_output ($svk, 'status', [$copath], []);
+
+unlink ("$copath/non.lnk.cp");
+_symlink ('non', "$copath/non.lnk.cp");
+_fix_symlinks();
+
 is_output ($svk, 'status', [$copath],
 	   ["~   $copath/non.lnk.cp"], 'change file back to symlink');
-TODO: {
-local $TODO = 'revert overwritten symlink from file';
+
+is_output($svk, 'ci', [-m => 'back to symlink with --import', '--import', $copath],
+	  ['Committed revision 12.']);
+
 $svk->revert ($copath);
 is_output ($svk, 'status', [$copath], []);
-}
+
 
 # the first part of _check_symlinks currently passes but the second part fails.
 # once both parts are passing revert back to a single call like the rest of the file.
 
 _check_symlinks1 ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
-TODO: {
-local $TODO = 'revert overwritten symlink from file';
+
 _check_symlinks2 ("$copath/non.lnk.cp", "$copath/B/dir.lnk");
-}
+
 }

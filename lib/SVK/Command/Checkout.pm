@@ -251,7 +251,8 @@ SVK::Command::Checkout - Checkout the depotpath
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
+ -N [--non-recursive]   : do not descend recursively
  -l [--list]            : list checkout paths
  -d [--detach]          : mark a path as no longer checked out
  -q [--quiet]           : quiet mode

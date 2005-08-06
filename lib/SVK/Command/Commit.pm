@@ -19,8 +19,8 @@ sub options {
      'S|sign'	  => 'sign',
      'P|patch=s'  => 'patch',
      'import'	  => 'import',
-     'encoding=s' => 'encoding',
      'direct'	  => 'direct',
+     'template'	  => 'template',
     );
 }
 
@@ -59,10 +59,15 @@ sub fill_commit_message {
 sub get_commit_message {
     my ($self, $msg) = @_;
     $self->fill_commit_message;
-    unless (defined $self->{message}) {
+
+    if (defined $msg or defined $self->{message}) {
+	$self->{message} = join "\n", grep { defined $_ and length $_ } ($self->{message}, $msg);
+    } 
+
+    if ($self->{template} or not defined $self->{message}) {
 	$self->{message} = get_buffer_from_editor
 	    (loc('log message'), $self->message_prompt,
-	     join ("\n", $msg || '', $self->message_prompt, ''), 'commit');
+	     join ("\n", $self->{message} || '', $self->message_prompt, ''), 'commit');
 	++$self->{save_message};
     }
     $self->decode_commit_message;
@@ -210,7 +215,7 @@ sub get_editor {
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY,
-	     $SVN::Error::RA_DAV_REQUEST_FAILED,
+            $SVN::Error::RA_DAV_REQUEST_FAILED,
 	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
@@ -219,6 +224,8 @@ sub get_editor {
 				       : "Please update checkout first.");
 	    $self->add_handler ($_, sub { $editor->abort_edit });
 	}
+	$self->clear_handler ($SVN::Error::REPOS_HOOK_FAILURE);
+	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
     return ($editor, %cb, mirror => $m, callback => \$callback,
@@ -239,11 +246,14 @@ sub get_committable {
     my ($self, $target, $root) = @_;
     my ($fh, $file);
     $self->fill_commit_message;
-    unless (defined $self->{message}) {
+    if ($self->{template} or not defined $self->{message}) {
 	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }
-
-    print $fh "\n", $self->target_prompt, "\n" if $fh;
+    
+    if ($fh) {
+	print $fh $self->{message} if $self->{template} and defined $self->{message};
+	print $fh "\n", $self->target_prompt, "\n";
+    } 
 
     my $targets = [];
     my $encoder = get_encoder;
@@ -457,14 +467,15 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -F [--file] FILENAME	: read commit message from FILENAME
- -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
- -N [--non-recursive]   : operate on single directory only
- --encoding ENC         : treat value as being in charset encoding ENC
  --import               : import mode; automatically add and delete nodes
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ --template             : use the specified message as the template to edit
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ -N [--non-recursive]   : operate on single directory only
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
