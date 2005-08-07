@@ -91,7 +91,7 @@ sub handle_co_item {
     $self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
 							'.newprop' => undef});
     # XXX: can the scheudle be something other than delete ?
-    $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule' ? 'replace' : 'add',
+    $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
 					    '.copyfrom_rev' => $src->{revision}});
