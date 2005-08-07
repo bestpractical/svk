@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 62;
+plan_svm tests => 65;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -238,12 +238,29 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    'Retrieving log information from 6 to 6',
 	    'Committed revision 22 from revision 6.']);
 
+is_output($svk, 'rm', ["$copath/B/fe"],
+	  [__("D   $copath/B/fe")]);
+
+TODO: {
+local $TODO = 'replaced item should be reported as R';
+is_output($svk, 'mv', ["$copath/A/Q/qu", "$copath/B/fe"],
+	  [__("R   $copath/B/fe"),
+	   __("D   $copath/A/Q/qu")]);
+}
+
+is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath],
+	   ['Commit into mirrored path: merging back directly.',
+	    "Merging back to mirror source $uri.",
+	    'Merge back committed as revision 7.',
+	    "Syncing $uri",
+	    'Retrieving log information from 7 to 7',
+	    'Committed revision 23 from revision 7.']);
+
 mkdir "$copath/foo";
 is_output ($svk, 'cp', ['//foo-remote', "$copath/foo"],
 	   [__"$copath/foo is not a versioned directory."]);
 is_output ($svk, 'cp', ['//foo-remote/A/be', "$copath/me"],
 	   [__"Path $copath/me already exists."]);
-$svk->st ($copath);
 
 sub is_copied_from {
     unshift @_, $svk;
