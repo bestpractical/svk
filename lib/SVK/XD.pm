@@ -949,13 +949,15 @@ sub _node_deleted_or_absent {
     }
 
     if ($arg{type}) {
-	if ($arg{kind} && (($arg{type} eq 'file') xor ($arg{kind} == $SVN::Node::file))) {
+	if ($arg{kind} && !$schedule &&
+	    (($arg{type} eq 'file') xor ($arg{kind} == $SVN::Node::file))) {
 	    if ($arg{obstruct_as_replace}) {
 		$self->_node_deleted (%arg);
 	    }
 	    else {
 		$arg{cb_obstruct}->($arg{editor}, $arg{entry}, $arg{baton})
 		    if $arg{cb_obstruct};
+		return 1;
 	    }
 	}
     }
@@ -1141,7 +1143,7 @@ sub _delta_dir {
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
 	if $thisdir && $arg{cb_conflict} && $cinfo->{'.conflict'};
 
-    return if $self->_node_deleted_or_absent (%arg, pool => $pool);
+    return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
     # if a node is replaced, it has no base, unless it was replaced with history.
     $arg{base} = 0 if $schedule eq 'replace' && $arg{path} eq $arg{base_path};
     my ($entries, $baton) = ({});
@@ -1199,6 +1201,8 @@ sub _delta_dir {
 	                  : $kind == $SVN::Node::file ? \&_delta_file : \&_delta_dir;
 	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
 	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
+	# if the sub-delta returns 1 it means the node is modified. invlidate
+	# the signature cache
 	$self->$delta ( %arg,
 			add => $arg{in_copy} || ($obs && $arg{obstruct_as_replace}),
 			type => $type,

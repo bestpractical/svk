@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 20;
+use Test::More tests => 22;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -84,12 +84,30 @@ is_output ($svk, 'status', ['A/deep'],
 $svk->revert ('-R', '.');
 rmtree (['A/deep']);
 overwrite_file ("A/deep", "dir replaced with file.\n");
+unlink('A/another');
+mkdir('A/another');
+
 is_output ($svk, 'status', [],
 	   [map __($_),
 	    '?   A/bar',
+	    '~   A/another',
 	    '~   A/deep'], 'obstructure');
 
+is_output ($svk, 'status', [],
+	   [map __($_),
+	    '?   A/bar',
+	    '~   A/another',
+	    '~   A/deep'], 'obstructure - make sure it is not signatured');
+
+# XXX: revert should hint about moving away obstructed entries
 $svk->revert ('-R', '.');
+# fixup
+rmtree (['A/another']);
+$svk->revert ('-R', '.');
+
+is_output($svk, 'st', [], [__('?   A/bar'),
+			   __('~   A/deep')]);
+
 $svk->mkdir ('-p', '-m', ' ', '//A/deeper/deeper');
 $svk->up;
 append_file ("A/deeper/deeper/baz", "baz");
