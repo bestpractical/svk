@@ -523,6 +523,7 @@ sub open_directory {
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
 	unless ($self->{cb_exist}->($path, $pool) || $self->{open_nonexist}) {
+	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}
