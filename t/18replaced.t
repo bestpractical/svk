@@ -56,13 +56,11 @@ overwrite_file ("$copath/A", "dir replaced as file\n");
 $svk->status ($copath);
 is_output ($svk, 'add', ["$copath/A"],
 	   [__"R   $copath/A"]);
-TODO: {
-local $TODO = 'file replacing dir';
+
 is_output ($svk, 'status', [$copath],
 	   [__"R   $copath/A",
 	    __"D   $copath/A/be",
 	    __"D   $copath/A/neu"], 'file replacing dir');
-}
 $svk->commit ('-m', 'commit the replace', $copath);
 
 mkdir ("$copath/T1");
