@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 17;
+use Test::More tests => 19;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -102,3 +102,17 @@ $svk->commit ('-m', 'commit', $copath);
 
 is_ancestor ($svk, '//V/T1',
 	     '/V/T2', 7);
+
+$svk->cp('//V@5' => '//Y', -m => 'branch pre-replace');
+is_output($svk, 'sm', ['//V@6' => '//Y', -m => 'merge dir->file replace'],
+	  ['Auto-merging (5, 6) /V to /Y (base /V:5).',
+	   'R   A',
+	   qr'New merge ticket: .*:/V:6',
+	   'Committed revision 11.']);
+
+is_output($svk, 'merge', [-c => -11, '//Y' => '//Y',
+			  -m => 'revert merge dir->file replace'],
+	  ['R   A',
+	   'A   A/be',
+	   'A   A/neu',
+	   'Committed revision 12.']);
