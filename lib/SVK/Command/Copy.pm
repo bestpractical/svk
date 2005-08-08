@@ -75,7 +75,7 @@ sub handle_co_item {
     my ($copath, $report) = @{$dst}{qw/copath report/};
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
-    my $entry = $self->{xd}{checkout}->get ($copath);
+    my ($entry, $schedule) = $self->{xd}->get_entry($copath);
     $src->normalize; $src->anchorify;
     $self->ensure_parent($dst);
     $dst->anchorify;
@@ -91,7 +91,7 @@ sub handle_co_item {
     $self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
 							'.newprop' => undef});
     # XXX: can the scheudle be something other than delete ?
-    $self->{xd}{checkout}->store ($copath, {'.schedule' => $entry->{'.schedule'} ? 'replace' : 'add',
+    $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
 					    '.copyfrom_rev' => $src->{revision}});

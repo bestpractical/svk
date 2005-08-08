@@ -435,11 +435,17 @@ sub run_delta {
 	  cb_copyfrom => $cb{cb_copyfrom},
 	  $cb{mirror} ?
 	  (cb_rev => sub {
+		# XXX: the non-mirror cb_rev should be the same as
+		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);
 		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
-		my $entry = $self->{xd}{checkout}->get($cotarget);
-		my ($source_path, $source_rev) = $self->{xd}->_copy_source ($entry, $cotarget);
+		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
+		# lookup the copy source rev for the case of
+		# open_directory inside add_directotry that has
+		# history.  but shouldn't do that for replaced item,
+		# because the rev is used for delete_entry
+		my ($source_path, $source_rev) = $schedule ne 'replace' ? $self->{xd}->_copy_source ($entry, $cotarget) : ();
 		($source_path, $source_rev) = ($revtarget, $entry->{revision})
 		    unless defined $source_path;
 		return $revcache{$source_rev} if exists $revcache{$source_rev};

@@ -35,6 +35,7 @@ requires(
 	'Getopt::Long'		=> '2.34',
 	'App::CLI'		=> '0',
 	'Encode'		=> '2.10',
+	'List::MoreUtils'	=> '0',
 );
 features(
     'Localized messages' => [

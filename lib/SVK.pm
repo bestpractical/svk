@@ -7,8 +7,18 @@ use Class::Autouse qw(:superloader);
 
 use SVN::Core;
 BEGIN {
-    if (my $init = SVN::Core->can('utf_initialize')) {
-	$init->();
+    # autouse hates Devel::DProf. If we're running with DProf,
+    # we need to emasculate autouse by blowing a new import sub into its
+    # package at runtime.
+    if($main::INC{'Devel/DProf.pm'})  {
+	$main::INC{'autouse.pm'} = __FILE__;
+	*{'autouse::import'} = sub {
+	    require UNIVERSAL::require;
+	    shift; # get rid of $CLASS
+	    my $class = shift;
+	    $class->require or die $!;
+	    $class->export_to_level(1, undef, @_);
+        }
     }
 }
 

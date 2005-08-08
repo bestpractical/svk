@@ -396,15 +396,13 @@ sub condense {
 	    $anchor = $copath;
 	    $report = $_[0];
 	}
-	my $cinfo = $self->{checkout}->get ($anchor);
-	my $schedule = $cinfo->{'.schedule'} || '';
+	my ($cinfo, $schedule) = $self->get_entry($anchor);
 	while (!-d $anchor || $cinfo->{scheduleanchor} ||
 	       $schedule eq 'add' || $schedule eq 'delete' || $schedule eq 'replace' ||
 	       ($anchor ne $copath && $anchor.$SEP ne substr ($copath, 0, length($anchor)+1))) {
 	    ($anchor, $report) = get_anchor (0, $anchor, $report);
 	    # XXX: put .. to report if it's anchorified beyond
-	    $cinfo = $self->{checkout}->get ($anchor);
-	    $schedule = $cinfo->{'.schedule'} || '';
+	    ($cinfo, $schedule) = $self->get_entry($anchor);
 	}
     }
     return ($report, $anchor, $#targets == 0 && $targets[0] eq $anchor ? ()
@@ -739,11 +737,10 @@ sub do_proplist {
 sub do_propset {
     my ($self, %arg) = @_;
     my ($xdroot, %values);
-    my $entry = $self->{checkout}->get ($arg{copath});
-    $entry->{'.schedule'} ||= '';
+    my ($entry, $schedule) = $self->get_entry($arg{copath});
     $entry->{'.newprop'} ||= {};
 
-    unless ($entry->{'.schedule'} eq 'add' || !$arg{repos}) {
+    unless ($schedule eq 'add' || !$arg{repos}) {
 	$xdroot = $self->xdroot (%arg);
 	my ($source_path, $source_root) = $self->_copy_source ($entry, $arg{copath}, $xdroot);
 	$source_path ||= $arg{path}; $source_root ||= $xdroot;
@@ -753,13 +750,13 @@ sub do_propset {
 
     #XXX: support working on multiple paths and recursive
     die loc("%1 is already scheduled for delete.\n", $arg{report})
-	if $entry->{'.schedule'} eq 'delete';
+	if $schedule eq 'delete';
     %values = %{$entry->{'.newprop'}}
 	if exists $entry->{'.schedule'};
     my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
 
     $self->{checkout}->store ($arg{copath},
-			      { '.schedule' => $entry->{'.schedule'} || 'prop',
+			      { '.schedule' => $schedule || 'prop',
 				'.newprop' => {%values,
 					    $arg{propname} => $pvalue
 					      }});
@@ -953,13 +950,15 @@ sub _node_deleted_or_absent {
     }
 
     if ($arg{type}) {
-	if ($arg{kind} && (($arg{type} eq 'file') xor ($arg{kind} == $SVN::Node::file))) {
+	if ($arg{kind} && !$schedule &&
+	    (($arg{type} eq 'file') xor ($arg{kind} == $SVN::Node::file))) {
 	    if ($arg{obstruct_as_replace}) {
 		$self->_node_deleted (%arg);
 	    }
 	    else {
 		$arg{cb_obstruct}->($arg{editor}, $arg{entry}, $arg{baton})
 		    if $arg{cb_obstruct};
+		return 1;
 	    }
 	}
     }
@@ -1145,7 +1144,7 @@ sub _delta_dir {
     $arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton})
 	if $thisdir && $arg{cb_conflict} && $cinfo->{'.conflict'};
 
-    return if $self->_node_deleted_or_absent (%arg, pool => $pool);
+    return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
     # if a node is replaced, it has no base, unless it was replaced with history.
     $arg{base} = 0 if $schedule eq 'replace' && $arg{path} eq $arg{base_path};
     my ($entries, $baton) = ({});
@@ -1189,21 +1188,22 @@ sub _delta_dir {
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	$copath = SVK::Target->copath ($arg{copath}, $copath);
-	my $ccinfo = $self->{checkout}->get ($copath);
+	my ($ccinfo, $ccschedule) = $self->get_entry($copath);
 	# a replace with history node requires handling the copy anchor in the
 	# latter direntries loop.  we should really merge the two.
-	if ($ccinfo->{'.schedule'} && $ccinfo->{'.schedule'} eq 'replace'
-	    && $ccinfo->{'.copyfrom'}) {
+	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
 	    delete $entries->{$entry};
 	    next;
 	}
-	next if $unchanged && !$ccinfo->{'.schedule'} && !$ccinfo->{'.conflict'};
+	next if $unchanged && !$ccschedule && !$ccinfo->{'.conflict'};
 	my ($type, $st) = _node_type ($copath);
 	next unless defined $type;
 	my $delta = $type ? $type eq 'directory' ? \&_delta_dir : \&_delta_file
 	                  : $kind == $SVN::Node::file ? \&_delta_file : \&_delta_dir;
 	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
 	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
+	# if the sub-delta returns 1 it means the node is modified. invlidate
+	# the signature cache
 	$self->$delta ( %arg,
 			add => $arg{in_copy} || ($obs && $arg{obstruct_as_replace}),
 			type => $type,
@@ -1263,8 +1263,7 @@ sub _delta_dir {
 			 targets => $newtarget, base_kind => $SVN::Node::none);
 	$newpaths{kind} = $arg{xdroot} eq $arg{base_root} ? $SVN::Node::none :
 	    $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none;
-	my $ccinfo = $self->{checkout}->get ($newpaths{copath});
-	my $sche = $ccinfo->{'.schedule'} || '';
+	my ($ccinfo, $sche) = $self->get_entry($newpaths{copath});
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	# If we are not at intermediate path, process ignore
 	# for unknowns, as well as the case of auto_add (import)
@@ -1352,6 +1351,18 @@ sub checkout_delta {
     $self->_delta_dir (%arg, baton => $baton, root => 1, base => 1, type => 'directory');
     $arg{editor}->close_directory ($baton);
     $arg{editor}->close_edit ();
+}
+
+=item get_entry($copath)
+
+Returns the L<Data::Hierarchy> entry and the schedule of the entry.
+
+=cut
+
+sub get_entry {
+    my ($self, $copath) = @_;
+    my $entry = $self->{checkout}->get($copath);
+    return ($entry, $entry->{'.schedule'} || '');
 }
 
 sub resolved_entry {

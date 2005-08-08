@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 12;
+plan_svm tests => 14;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -21,6 +21,8 @@ $svk->ps ('mmm', 'xxx', 'A/foo');
 $svk->commit ('-m', 'cp and ps');
 is_output_like ($svk, 'log', [],
 		qr|r2.*cp and ps.*r1.*init|s);
+is_output ($svk, 'log', ['--quiet'],
+	   [qr|-+|, qr|r2:.*|, qr|-+|, qr|r1:.*|, qr|-+|]);
 $svk->pd ('--revprop', '-r' => 2 , 'svn:author');
 
 is_output_like ($svk, 'log', ['-v'],
@@ -40,6 +42,12 @@ is_output_like ($svk, 'log', ['-v', '-l1', '/test/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
 is_output_like ($svk, 'log', ['-v', '-l1', '/test/A/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
+is_output ($svk, 'log', ['-q', '--verbose', '--limit', '1' ,'/test/A/'],
+	   [qr|-+|,
+	    qr|\Qr3 (orig r2):  (no author)\E|,
+	    'Changed paths:',
+	    '   M /A/foo',
+	    qr|-+|]);
 is_output_like ($svk, 'log', ['-v', '-r2@', '/test/A/'],
 		qr/\Qr3 (orig r2):  (no author)\E/);
 

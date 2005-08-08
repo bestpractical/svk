@@ -45,7 +45,7 @@ is_output ($svk, 'merge', ['-C', '-r7:8', '//trunk', '//local'],
             'U   A/normal',
 	    '    A/foo.new - skipped',
 	    '    test.pl - skipped',
-	    '4 files skipped, you might want to rerun merge with --track-rename.']);
+	    '5 files skipped, you might want to rerun merge with --track-rename.']);
 is_output ($svk, 'merge', ['-C', '--track-rename', '-r7:8', '//trunk', '//local'],
 	   ['Collecting renames, this might take a while.',
 	    'U   A/deep.new/foo - A/deep/foo',
@@ -84,7 +84,7 @@ is_output ($svk, 'merge', ['-C', '-r8:9', '//local', '//trunk'],
 	   ['    A/deep - skipped',
 	    '    A/deep/test.pl - skipped',
 	    'Empty merge.',
-	    '1 file skipped, you might want to rerun merge with --track-rename.']);
+	    '2 files skipped, you might want to rerun merge with --track-rename.']);
 is_output ($svk, 'merge', ['-C', '--track-rename', '-r8:9', '//local', '//trunk'],
 	   ['Collecting renames, this might take a while.',
 	    'G   A/deep/test.pl - test.pl']);

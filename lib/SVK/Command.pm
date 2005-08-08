@@ -107,8 +107,15 @@ sub invoke {
 				 output => $output) };
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
-    # if an error handler terminates editor call, there will be stack trace
-    print $@ if $@ && $@ !~ m/\n.+\n.+\n/;
+    unless (ref($@)) {
+	if ($SVN::Core::VERSION gt '1.2.2') {
+	    print $@ if $@;
+	}
+	else {
+	    # if an error handler terminates editor call, there will be stack trace
+	    print $@ if $@ && $@ !~ m/\n.+\n.+\n/
+	}
+    }
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
 
     undef $pool;
@@ -124,7 +131,9 @@ sub run_command {
 	my $error = $_[0];
 	my $error_message = $error->expanded_message();
 	$error->clear();
-	$self->handle_error ($error);
+	if ($self->handle_error ($error)) {
+	    die \'error handled';
+        }
 	die $error_message."\n";
     };
 
