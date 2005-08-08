@@ -324,8 +324,8 @@ sub run {
 	# if there's notify_target, the translation is done by svk::notify
 	$notify->notify_translate ($translate) unless length $notify_target;
     }
-#    $storage = SVK::Editor::Delay->new ($storage)
-#	unless $self->{nodelay};
+    $storage = SVK::Editor::Delay->new ($storage)
+	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
     if ($storage->can ('rename_check')) {
@@ -380,7 +380,7 @@ sub run {
 	    ( _editor => [$meditor],
 	      base_root => $base_root,
 	      base_path => $base->path,
-	      target_path => $self->{src}->path,
+	      target_path => $self->{src}{path},
 	      target_root => $self->{src}->root,
 	      cb_resolve_copy => sub {
 		  my ($path, $cp_rev) = @_; # translate to (path, rev) for dst
