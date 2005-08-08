@@ -18,6 +18,7 @@ chdir($copath);
 $svk->cp('A' => 'A-cp');
 $svk->ci(-m => 'copy A');
 $svk->pull('//local');
+
 is_ancestor($svk, '//local/A-cp', '/local/A', 4, '/trunk/A', 3);
 
 $svk->mkdir('//trunk/A/new', -m => 'new dir');
@@ -35,9 +36,13 @@ is_ancestor($svk, '//local/A-cp-more', '/local/A-cp-again', 9);
 
 $svk->up;
 
+# replace with history.  this is very tricky, because we have to use
+# ignore_ancestry in dir_delta, and this makes the replace an
+# modification, rather than an add.
+
 $svk->rm('A/be');
 $svk->cp('A/Q/qu', 'A/be');
 $svk->ci(-m => 'replace A/be');
-
+our $DEBUG=1;
 $svk->pull('//local');
 is_ancestor($svk, '//local/A/be', '/local/A/Q/qu', 9);

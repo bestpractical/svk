@@ -161,6 +161,22 @@ sub merge_info {
 	   $target->copath ($target->{copath_target}))->{'svk:merge'} );
 }
 
+sub merge_info_with_copy {
+    my ($self, $target) = @_;
+    my $minfo = $self->merge_info($target);
+
+    for (reverse $target->copy_ancestors) {
+	my ($path, $rev) = @$_;
+	my $uuid;
+	($uuid, $path, $rev) = find_svm_source($target->{repos}, $path, $rev);
+	my $entry = "$uuid:$path";
+	$minfo->{$entry} = SVK::Target::Universal->new($uuid, $path, $rev)
+	    unless $minfo->{$entry} && $minfo->{$entry} > $rev;
+    }
+
+    return $minfo;
+}
+
 sub find_merge_sources {
     my ($self, $target, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
@@ -308,8 +324,8 @@ sub run {
 	# if there's notify_target, the translation is done by svk::notify
 	$notify->notify_translate ($translate) unless length $notify_target;
     }
-    $storage = SVK::Editor::Delay->new ($storage)
-	unless $self->{nodelay};
+#    $storage = SVK::Editor::Delay->new ($storage)
+#	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
     if ($storage->can ('rename_check')) {
@@ -353,6 +369,8 @@ sub run {
 	  %cb,
 	);
 
+    $storage->{_debug}++ if $main::DEBUG;
+
     my $editor = $meditor;
     if ($self->{notice_copy}) {
 	# find the dst base root, which is the last change on svk:merge
@@ -364,7 +382,6 @@ sub run {
 	      base_path => $base->path,
 	      target_path => $self->{src}->path,
 	      target_root => $self->{src}->root,
-	      _debug => $main::DEBUG,
 	      cb_resolve_copy => sub {
 		  my ($path, $cp_rev) = @_; # translate to (path, rev) for dst
 		  my $srcpath = $self->{src}->path;
@@ -377,51 +394,36 @@ sub run {
 		  $cpsrc->normalize;
 		  $cp_rev = $cpsrc->{revision};
 		  # now the hard part, reoslve the revision
-		  my $info = $self->merge_info($self->{dst}->new);
+		  my $info = $self->merge_info_with_copy($self->{dst}->new);
 		  my $src = $self->{src}->universal;
 		  my $srckey = join(':', $src->{uuid}, $src->{path});
-		  if ($info->{$srckey}) {
-		      my $rev = $self->{dst}->search_revision
-			  ( start => 1,
-			    cmp => sub {
-				my $rev = shift;
-				my $search_dst = $self->{dst}->new(revision=>$rev);
-				my $minfo = $self->merge_info($search_dst);
-				return -1 unless $minfo->{$srckey};
-				if ($minfo->{$srckey}{rev} > $cp_rev) {
-				    return 1;
-				}
-				elsif ($minfo->{$srckey}{rev} < $cp_rev) {
-				    return -1;
-				}
-
-				my $prev = ($search_dst->root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1];
-
-				return 0
-				    if ($self->merge_info($self->{dst}->new(revision => $prev))->{$srckey}{rev} || 0) != $cp_rev;
+		  warn "==> to resolve $cp_rev";
+		  die 'foo' unless $info->{$srckey};
+		  my $rev = $self->{dst}->search_revision
+		      ( start => 1,
+			cmp => sub {
+			    my $rev = shift;
+			    warn "==> look at $rev" if $main::DEBUG;
+			    my $search_dst = $self->{dst}->new(revision=>$rev);
+			    my $minfo = $self->merge_info_with_copy($search_dst);
+			    return -1 unless $minfo->{$srckey};
+			    if ($minfo->{$srckey}{rev} > $cp_rev) {
 				return 1;
-			    } );
+			    }
+			    elsif ($minfo->{$srckey}{rev} < $cp_rev) {
+				return -1;
+			    }
 
-		      return $cb{cb_copyfrom}->($path, $rev)
-			  if defined $rev;
-		      return;
-		  }
-		  else {
-		      my ($toroot, $fromroot, $frompath) = $self->{dst}->nearest_copy;
-		      if ($frompath eq $self->{src}->path) {
-			  warn "copied to  ".$toroot->revision_root_revision;
-			  if ($cp_rev > $fromroot->revision_root_revision) {
-			      return;
-			  }
-			  else {
-			      return ('file://'.$self->{dst}->{repospath}.$path,
-				      $toroot->revision_root_revision);
-			  }
-		      }
-		      else {
-			  die 'dunno what to do for now';
-		      }
-		  }
+			    warn "==> finally" if $main::DEBUG;
+			    my $prev = eval { ($search_dst->root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1] } or return 0;
+
+			    return 0
+				if ($self->merge_info_with_copy($self->{dst}->new(revision => $prev))->{$srckey}{rev} || 0) != $cp_rev;
+			    return 1;
+			} );
+
+		  return $cb{cb_copyfrom}->($path, $rev)
+		      if defined $rev;
 		  return;
 	      }
 	    );
@@ -432,7 +434,7 @@ sub run {
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
-	      notice_ancestry => $self->{notice_copy},
+#	      notice_ancestry => $self->{notice_copy},
 	      notice_copy => $self->{notice_copy},
 	    );
     print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};

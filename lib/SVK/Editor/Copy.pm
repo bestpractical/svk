@@ -3,6 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
+use SVK::Editor::Composite;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub find_copy {
@@ -17,10 +18,10 @@ sub find_copy {
 	($self->{base_root}, $fromroot, $toroot);
     if ($from <= $base && $base < $to &&
 	$frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
-	warn "==> $path is copied from $frompath:$from";
+	warn "==> $path is copied from $frompath:$from" if $main::DEBUG;
 	if (($frompath, $from) = $self->{cb_resolve_copy}->($frompath, $from)) {
 	    push @{$self->{incopy}}, $path;
-	    warn "==> resolved to $frompath:$from";
+	    warn "==> resolved to $frompath:$from" if $main::DEBUG;
 	    return ($frompath, $from);
 	}
     }
@@ -49,11 +50,15 @@ sub add_directory {
     }
     else {
 	if (my @ret = $self->find_copy($path)) {
-	    ($from_path, $from_rev) = @ret;
-	    $from_path = $from_path;
+	    my $anchor_baton = $self->SUPER::add_directory($path, $pbaton, @ret, $pool);
+
+
+	    return $anchor_baton;
+	    # maybe just close_directory here and
+	    # return undef. so others can just check pbaton being
+	    # undef
 	}
     }
-
 
     $self->SUPER::add_directory($path, $pbaton, $from_path, $from_rev, $pool);
 }
@@ -67,6 +72,29 @@ sub add_file {
     }
     else {
 	$self->find_copy($path);
+    }
+
+    $self->SUPER::add_file($path, $pbaton, @arg);
+}
+
+sub open_file {
+    my ($self, $path, $pbaton, @arg) = @_;
+    return undef unless defined $pbaton;
+
+    if ($self->incopy($path)) {
+	return undef;
+    }
+    else {
+	warn "==> might be evil" if $main::DEBUG;
+	if (my @ret = $self->find_copy($path)) {
+	    # turn into replace
+	    warn "==> evil! $path" if $main::DEBUG;
+	    $self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
+	    my $anchor_baton = $self->SUPER::add_file($path, $pbaton, @ret, $arg[1]);
+
+
+	    return $anchor_baton;
+	}
     }
 
     $self->SUPER::add_file($path, $pbaton, @arg);
