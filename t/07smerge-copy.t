@@ -17,7 +17,12 @@ chdir($copath);
 # simple case
 $svk->cp('A' => 'A-cp');
 $svk->ci(-m => 'copy A');
-$svk->pull('//local');
+is_output($svk, 'pull', ['//local'],
+	  ['Auto-merging (3, 5) /trunk to /local (base /trunk:3).',
+	   'A   A-cp',
+	   qr'New merge ticket: .*:/trunk:5',
+	   'Committed revision 6.'
+	  ]);
 
 is_ancestor($svk, '//local/A-cp', '/local/A', 4, '/trunk/A', 3);
 

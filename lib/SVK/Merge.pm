@@ -383,7 +383,8 @@ sub run {
 	      target_path => $self->{src}{path},
 	      target_root => $self->{src}->root,
 	      cb_resolve_copy => sub {
-		  my ($path, $cp_rev) = @_; # translate to (path, rev) for dst
+		  my ($cp_path, $cp_rev) = @_; # translate to (path, rev) for dst
+		  my $path = $cp_path;
 		  my $srcpath = $self->{src}->path;
 		  my $dstpath = $self->{dst}->path;
 		  return unless $path =~ m{^\Q$srcpath/};
@@ -407,14 +408,20 @@ sub run {
 			    my $search_dst = $self->{dst}->new(revision=>$rev);
 			    my $minfo = $self->merge_info_with_copy($search_dst);
 			    return -1 unless $minfo->{$srckey};
-			    if ($minfo->{$srckey}{rev} > $cp_rev) {
+			    # get the actual revision of the copy
+			    # source on the merge target, and compare
+			    my $cpdst = $self->{dst}->new
+				(path => $cp_path,
+				 revision => $minfo->{$srckey}{rev});
+			    $cpdst->normalize;
+
+			    if ($cpdst->{revision} > $cp_rev) {
 				return 1;
 			    }
-			    elsif ($minfo->{$srckey}{rev} < $cp_rev) {
+			    elsif ($cpdst->{revision} < $cp_rev) {
 				return -1;
 			    }
 
-			    warn "==> finally" if $main::DEBUG;
 			    my $prev = eval { ($search_dst->root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1] } or return 0;
 
 			    return 0
