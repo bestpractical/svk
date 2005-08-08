@@ -96,7 +96,7 @@ sub notify_translate {
 sub node_status {
     my ($self, $path, $s) = @_;
     $self->{status}{$path}[0] = $s if defined $s;
-    return $self->{status}{$path}[0];
+    return exists $self->{status}{$path} ? $self->{status}{$path}[0] : undef;
 }
 
 my %prop = ( 'U' => 0, 'g' => 1, 'G' => 2, 'M' => 3, 'C' => 4);
