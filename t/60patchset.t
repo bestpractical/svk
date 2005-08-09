@@ -35,9 +35,7 @@ $svk->commit ('-m', 'modify A/qu', $copath);
 use SVK::Patchset;
 
 my $fs = $repos->fs;
-my $ps = bless { xd => $xd,
-		 target => $xd->target_from_copath_maybe('//A/Q/qu')
-	       }, 'SVK::Patchset';
+my $ps = bless { xd => $xd }, 'SVK::Patchset';
 
 is_deeply ($ps->all_dependencies ($repos, 6), [1], 'r6 depends on r1');
 is_deeply (deptree($fs->youngest_rev),
@@ -48,9 +46,6 @@ is_deeply (deptree($fs->youngest_rev),
 	    '4: modify D/de',
 	    '5: modify A/be and D/de',
 	   ], 'lazy computation');
-diag join("\n", @{deptree($fs->youngest_rev)},'');
-
-$ps->{target} = $xd->target_from_copath_maybe('//');
 
 $ps->recalculate ($repos);
 is_deeply (deptree($fs->youngest_rev),
@@ -65,11 +60,6 @@ is_deeply (deptree($fs->youngest_rev),
 diag join("\n", @{deptree($fs->youngest_rev)},'');
 
 
-$svk->mkdir('//A/dir', -m => 'create a dir');
-$svk->mkdir(-p => '//A/dir/deep/verydeep', -m => 'create deep dir');
-
-$ps->recalculate ($repos);
-diag join("\n", @{deptree($fs->youngest_rev)},'');
 
 sub node {
     my $rev = shift;

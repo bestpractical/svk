@@ -80,11 +80,11 @@ sub dependencies {
 	# outside the current domain.
 	my $leaf = $rev;
 	my %parents = ($rev => 1);
-	my $anchor = $self->{target}->path;
+	my $anchor;
 	my $spool = SVN::Pool->new_default;
 	while ($leaf > 1) {
 	    my $root = $fs->revision_root ($leaf);
-	    $anchor = anchor_of ($anchor,
+	    $anchor = anchor_of (defined $anchor ? $anchor : (),
 				 anchor_in_change ($fs, $root));
 	    $root->check_path($anchor) or last; # XXX: might be Deleted
 	    my $hist = $root->node_history ($anchor)->prev(0)->prev(0) or last;
