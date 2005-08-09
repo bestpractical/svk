@@ -21,6 +21,9 @@ sub should_ignore {
 	return 1;
     }
 
+    if (ref($pbaton) eq 'SVK::Editor::Copy::copied_directory') {
+	return 1;
+    }
 #    if (defined($path) && $self->incopy($path)) {
 #	Carp::cluck "should ignore $path $pbaton";
 #	return 1;
@@ -33,18 +36,21 @@ sub find_copy {
     my ($self, $path) = @_;
     my $base_path = File::Spec::Unix->catdir($self->{base_path}, $path);
     my $target_path = File::Spec::Unix->catdir($self->{src}{path}, $path);
-    my ($toroot, $fromroot, $frompath) =
+    my ($toroot, $fromroot, $src_frompath) =
 	SVK::Target::nearest_copy($self->{src}->root, $target_path);
 
-    return unless defined $frompath;
-    my ($base, $from, $to) = map {$_->revision_root_revision}
+    return unless defined $src_frompath;
+    my ($base, $src_from, $to) = map {$_->revision_root_revision}
 	($self->{base_root}, $fromroot, $toroot);
-    if ($from <= $base && $base < $to &&
-	$frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
-	warn "==> $path is copied from $frompath:$from" if $main::DEBUG;
-	if (($frompath, $from) = $self->{cb_resolve_copy}->($frompath, $from)) {
-	    push @{$self->{incopy}}, { path => $path, frompath => $frompath };
-	    warn "==> resolved to $frompath:$from" if $main::DEBUG;
+    if ($src_from <= $base && $base < $to &&
+	$src_frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
+	warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
+	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
+	    push @{$self->{incopy}}, { path => $path,
+				       fromrev => $src_from,
+				       frompath => $src_frompath };
+	    warn "==> resolved to $frompath:$from"
+		if $main::DEBUG;
 	    return $self->{cb_copyfrom}->($frompath, $from);
 	}
     }
@@ -69,26 +75,23 @@ sub add_directory {
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
 
     if (my @ret = $self->find_copy($path)) {
-	my $anchor_baton = $self->SUPER::add_directory($path, $pbaton, @ret, $pool);
-	
-	# XXX
-	$self->{incopy}[-1]{baton} = $anchor_baton;
-	return $self->{ignore_baton}
-	# maybe just close_directory here and
-	# return undef. so others can just check pbaton being
-	# undef
+	return $self->replay_add_history('directory', $path, $pbaton,
+					 @ret, $pool);
     }
 
     $self->SUPER::add_directory($path, $pbaton, $from_path, $from_rev, $pool);
 }
 
 sub add_file {
-    my ($self, $path, $pbaton, @arg) = @_;
+    my ($self, $path, $pbaton, $from_path, $from_rev, $pool) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
 
-    $self->find_copy($path);
+    if (my @ret = $self->find_copy($path)) {
+	return $self->replay_add_history('file', $path, $pbaton,
+					 @ret, $pool);
+    }
 
-    $self->SUPER::add_file($path, $pbaton, @arg);
+    $self->SUPER::add_file($path, $pbaton, $from_path, $from_rev, $pool);
 }
 
 sub open_file {
@@ -98,33 +101,7 @@ sub open_file {
     if (my @ret = $self->find_copy($path)) {
 	# turn into replace
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
-	warn "==> to add with history ".join(',', $self, $path, $pbaton, @ret, $arg[1]) if $main::DEBUG;
-
-	my ($anchor, $target) = get_depot_anchor(1, $path);
-	my $file_baton = $self->SUPER::add_file($path, $pbaton, @ret, $arg[1]);
-	my ($src_anchor, $src_target) = get_depot_anchor(1, $self->{incopy}[-1]{frompath});
-	# it's probably easier to just generate the textdelta ourselves
-	# but it should be reused in add_directory copy as well
-	my $editor = SVK::Editor::Composite->new
-	    ( target => $target, target_baton => $file_baton,
-	      anchor => $anchor, anchor_baton => $pbaton,
-	      master_editor => $self,
-	    );
-
-	my ($src_path, $src_rev) = @ret;
-	SVK::XD->depot_delta
-		( oldroot => $self->{base_root}->fs->revision_root($src_rev),
-		  newroot => $self->{dst}->root,
-		  oldpath => [$src_anchor, $src_target],
-		  newpath => File::Spec::Unix->catdir($self->{dst}{path}, $path),
-		  editor =>
-		  SVK::Editor::Translate->new
-		  (_editor => [$editor],
-		   translate => sub { $_[0] =~ s/^\Q$src_target/$target/ },
-		  )
-		);
-	# close file is done by the delta;
-	return $self->{ignore_baton};
+	return $self->replay_add_history('file', $path, $pbaton, @ret, $arg[1])
     }
 
     $self->SUPER::open_file($path, $pbaton, @arg);
@@ -137,10 +114,16 @@ sub apply_textdelta {
 }
 
 sub close_file {
-    my ($self, $path, @arg) = @_;
-    return if $self->should_ignore(undef, $path);
-    $self->outcopy($path);
-    return $self->SUPER::close_file($path, @arg);
+    my ($self, $baton, @arg) = @_;
+    warn "==> should tryto close $baton" if $main::DEBUG;
+    if (ref($baton) eq 'SVK::Editor::Copy::copied_directory') {
+	$self->outcopy($baton->{path});
+	return $self->SUPER::close_file($baton->{baton}, @arg);
+
+    }
+    return if $self->should_ignore(undef, $baton);
+
+    return $self->SUPER::close_file($baton, @arg);
 }
 
 
@@ -154,7 +137,6 @@ sub change_file_prop {
 sub change_dir_prop {
     my ($self, $path, @arg) = @_;
     return if $self->should_ignore(undef, $path);
-
     return $self->SUPER::change_dir_prop($path, @arg);
 
 }
@@ -166,10 +148,55 @@ sub delete_entry {
 }
 
 sub close_directory {
-    my ($self, $path, @arg) = @_;
-    return if $self->should_ignore(undef, $path);
-    $self->outcopy($path);
-    $self->SUPER::close_directory($path, @arg);
+    my ($self, $baton, @arg) = @_;
+    if (ref($baton) eq 'SVK::Editor::Copy::copied_directory') {
+	$self->outcopy($baton->{path});
+	return $self->SUPER::close_directory($baton->{baton}, @arg);
+    }
+    return if $self->should_ignore(undef, $baton);
+
+    $self->SUPER::close_directory($baton, @arg);
 }
+
+sub replay_add_history {
+    my ($self, $type, $path, $pbaton, $src_path, $src_rev, $pool) = @_;
+    my $func = "SUPER::add_$type";
+    my $baton = $self->$func($path, $pbaton, $src_path, $src_rev, $pool);
+
+    my ($anchor, $target) = ($path, '');
+    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{frompath}, '');
+    my %arg = ( anchor => $anchor, anchor_baton => $baton );
+    if ($type eq 'file') {
+	($anchor, $target) = get_depot_anchor(1, $anchor);
+	($src_anchor, $src_target) = get_depot_anchor(1, $src_anchor);
+	%arg = ( anchor => $anchor, anchor_baton => $pbaton,
+		 target => $target, target_baton => $baton );
+    }
+
+    my $editor = SVK::Editor::Composite->new
+	( master_editor => $self, %arg );
+
+    $editor = SVK::Editor::Translate->new
+	(_editor => [$editor],
+	 translate => sub { $_[0] =~ s/^\Q$src_target/$target/ })
+	    if $type eq 'file';
+
+    warn "****==> to delta $src_anchor / $src_target vs $self->{src}{path} / $path" if $main::DEBUG;;
+    SVK::XD->depot_delta
+	    ( oldroot => $self->{base_root}->fs->revision_root($self->{incopy}[-1]{fromrev}),
+	      newroot => $self->{src}->root,
+	      oldpath => [$src_anchor, $src_target],
+	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
+	      editor => $editor);
+
+    warn "==> DONE" if $main::DEBUG;
+    # close file is done by the delta;
+    return bless { path => $path,
+		   baton => $baton,
+		 }, __PACKAGE__.'::copied_directory';
+
+$self->{ignore_baton};
+}
+
 
 1;

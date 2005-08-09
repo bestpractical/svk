@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 7;
+use Test::More tests => 9;
 use strict;
 use File::Path;
 use Cwd;
@@ -18,19 +18,23 @@ chdir($copath);
 # simple case
 $svk->cp('A' => 'A-cp');
 $svk->ci(-m => 'copy A');
+
 is_output($svk, 'pull', ['//local'],
 	  ['Auto-merging (3, 5) /trunk to /local (base /trunk:3).',
 	   'A + A-cp',
 	   qr'New merge ticket: .*:/trunk:5',
 	   'Committed revision 6.'
 	  ]);
+
 is_ancestor($svk, '//local/A-cp', '/local/A', 4, '/trunk/A', 3);
-$svk->mkdir('//trunk/A/new', -m => 'new dir');
-$svk->cp('//trunk/A' => '//trunk/A-cp-again', -m => 'more');
 
 # expanded, because copy source is within the merge as well.
 # or should be be more aggressive to copy from closer source
 # then apply the delta by ourself?
+
+$svk->mkdir('//trunk/A/new', -m => 'new dir');
+$svk->cp('//trunk/A' => '//trunk/A-cp-again', -m => 'more');
+
 $svk->pull('//local');
 is_ancestor($svk, '//local/A-cp-again');
 
@@ -59,10 +63,23 @@ is_output($svk, 'pull', ['//local'],
 	   qr'New merge ticket: .*:/trunk:12',
 	   'Committed revision 13.']);
 
-
 # note that it's copied from 6, not 4.  should be normalised when
 # trying to copy
 is_ancestor($svk, '//local/A/be',
 	    '/local/A/Q/qu', 4,
 	    '/trunk/A/Q/qu', 2);
 
+
+$svk->mv('A/Q/qu', 'A/quz');
+$svk->ci(-m => 'move A/Q/qu');
+
+is_output($svk, 'pull', ['//local'],
+	  ['Auto-merging (12, 14) /trunk to /local (base /trunk:12).',
+	   'A + A/quz',
+	   'D   A/Q/qu',
+	   qr'New merge ticket: .*:/trunk:14',
+	   'Committed revision 15.']);
+
+is_ancestor($svk, '//local/A/quz',
+	    '/local/A/Q/qu', 4,
+	    '/trunk/A/Q/qu', 2);

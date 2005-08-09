@@ -28,13 +28,15 @@ sub AUTOLOAD {
 
     if ($func =~ m/^(?:add|open)/) {
 	return $self->{target_baton}
-	    if defined $self->{target} && $arg[0] eq $self->{target};
+	    if length $self->{target} && $arg[0] eq $self->{target};
 	$arg[0] = length $arg[0] ?
 	    "$self->{anchor}/$arg[0]" : $self->{anchor};
     }
 
     $self->{master_editor}->$func(@arg);
 }
+
+sub set_target_revision {}
 
 sub open_root {
     my ($self, $base_revision) = @_;
