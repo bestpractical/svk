@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 15;
 use strict;
 use File::Path;
 use Cwd;
@@ -119,12 +119,14 @@ is_output($svk, 'pull', ['//local'],
 	   'A   B-mod/S/new',
 	   qr'New merge ticket: .*:/trunk:18',
 	   'Committed revision 19.']);
+is_output ($svk, 'sw', ['//local'],
+	   ['Syncing //trunk(/trunk) in /Users/clkao/work/svk-smcp/t/checkout/smerge-copy to 19.'], 'should be no differences.');
+
 }
 
 $svk->mv('//trunk/B', '//trunk/B-tmp', -m => 'B -> tmp');
 $svk->mv('//trunk/A', '//trunk/B', -m => 'A -> B');
 $svk->mv('//trunk/B-tmp', '//trunk/A', -m => 'B-tmp -> A');
-$svk->up;
 
 is_output($svk, 'pull', ['//local'],
 	  ['Auto-merging (18, 22) /trunk to /local (base /trunk:18).',
@@ -132,3 +134,23 @@ is_output($svk, 'pull', ['//local'],
 	   'R + B',
 	   qr'New merge ticket: .*:/trunk:22',
 	   'Committed revision 23.']);
+
+$svk->cp('//trunk' => '//local-new', -m => 'new branch');
+$svk->sw('//local-new');
+$svk->cp('B' => 'B-fromlocal');
+$svk->ci(-m => 'a copy at local');
+
+TODO: {
+local $TODO = 'base ne src merge should resolve copy properly.';
+
+is_output($svk, 'push', [],
+	  ['Auto-merging (0, 25) /local-new to /trunk (base /trunk:22).',
+	   '===> Auto-merging (0, 24) /local-new to /trunk (base /trunk:22).',
+	   'Empty merge.',
+	   '===> Auto-merging (24, 25) /local-new to /trunk (base /trunk:22).',
+	   'A + B-fromlocal',
+	   qr'New merge ticket: .*:/local-new:25',
+	   'Committed revision 26.']);
+
+}
+

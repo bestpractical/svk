@@ -35,6 +35,15 @@ sub find_copy {
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
 
+    my $base;
+    if ($self->{base_path} eq $self->{src}{path}) {
+	$base = $self->{base_root}->revision_root_revision;
+    }
+    else {
+	# XXXX: get the last merged-to one.
+	$base = $self->{src}->root->revision_root_revision;
+    }
+
     # XXX: pool! clear!
     my $ppool = SVN::Pool->new;
     while (1) {
@@ -46,14 +55,13 @@ sub find_copy {
 	my ($actual_cpanchor) = $toroot->copied_from($cur_path);
 	return if $actual_cpanchor == -1;
 
-	my ($base, $src_from, $to) = map {$_->revision_root_revision}
-	    ($self->{base_root}, $fromroot, $toroot);
+	my ($src_from, $to) = map {$_->revision_root_revision}
+	    ($fromroot, $toroot);
+
+	# XXX: Document this condition
 	if ($src_from <= $base && $base < $to &&
-	    $src_frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
+	    $src_frompath =~ m{^\Q$self->{src}{path}/}) { # within the anchor
 	    warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
-	    if ($main::DEBUG) {
-		warn join(',',$toroot->copied_from($target_path));
-	    }
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 		push @{$self->{incopy}}, { path => $path,
 					   fromrev => $src_from,

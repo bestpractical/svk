@@ -385,6 +385,7 @@ sub run {
 	      cb_copyfrom => $cb{cb_copyfrom},
 	      cb_resolve_copy => sub {
 		  my ($cp_path, $cp_rev) = @_; # translate to (path, rev) for dst
+		  warn "==> to resolve $cp_path $cp_rev".YAML::Dump($self->{dst}) if $main::DEBUG;
 		  my $path = $cp_path;
 		  my $srcpath = $self->{src}->path;
 		  my $dstpath = $self->{dst}->path;
@@ -399,7 +400,13 @@ sub run {
 		  my $info = $self->merge_info_with_copy($self->{dst}->new);
 		  my $usrc = $src->universal;
 		  my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
-		  die 'foo' unless $info->{$srckey};
+		  unless ($info->{$srckey}) {
+		      my $info = $self->merge_info_with_copy($self->{src}->new);
+		      my $udst = $self->{dst}->universal;
+		      my $dstkey = join(':', $udst->{uuid}, $udst->{path});
+		      return $info->{$dstkey}{rev} ?
+			  ($path, $info->{$dstkey}{rev}) : ();
+		  }
 		  my $rev = $self->{dst}->search_revision
 		      ( start => 1,
 			cmp => sub {
@@ -430,8 +437,6 @@ sub run {
 			} );
 
 		  return ($path, $rev) if defined $rev;
-#		  return $cb{cb_copyfrom}->($path, $rev)
-#		      if defined $rev;
 		  return;
 	      }
 	    );
