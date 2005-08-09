@@ -24,10 +24,6 @@ sub should_ignore {
     if (ref($pbaton) eq 'SVK::Editor::Copy::copied_directory') {
 	return 1;
     }
-#    if (defined($path) && $self->incopy($path)) {
-#	Carp::cluck "should ignore $path $pbaton";
-#	return 1;
-#    }
 
     return;
 }
@@ -36,31 +32,39 @@ sub find_copy {
     my ($self, $path) = @_;
     my $base_path = File::Spec::Unix->catdir($self->{base_path}, $path);
     my $target_path = File::Spec::Unix->catdir($self->{src}{path}, $path);
-    my ($toroot, $fromroot, $src_frompath) =
-	SVK::Target::nearest_copy($self->{src}->root, $target_path);
 
-    return unless defined $src_frompath;
-    # don't use the copy unless it's the actual copy point
-    my ($actual_cpanchor) = $toroot->copied_from($target_path);
-    return if $actual_cpanchor == -1;
+    my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
 
-    my ($base, $src_from, $to) = map {$_->revision_root_revision}
-	($self->{base_root}, $fromroot, $toroot);
-    warn "$src_from <= $base && $base < $to && $src_frompath / $self->{base_path}";
-    if ($src_from <= $base && $base < $to &&
-	$src_frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
-	warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
-	if ($main::DEBUG) {
-	    warn join(',',$toroot->copied_from($target_path));
+    # XXX: pool! clear!
+    my $ppool = SVN::Pool->new;
+    while (1) {
+	my ($toroot, $fromroot, $src_frompath) =
+	    SVK::Target::nearest_copy($cur_root, $cur_path, $ppool);
+
+	return unless defined $src_frompath;
+	# don't use the copy unless it's the actual copy point
+	my ($actual_cpanchor) = $toroot->copied_from($cur_path);
+	return if $actual_cpanchor == -1;
+
+	my ($base, $src_from, $to) = map {$_->revision_root_revision}
+	    ($self->{base_root}, $fromroot, $toroot);
+	if ($src_from <= $base && $base < $to &&
+	    $src_frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
+	    warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
+	    if ($main::DEBUG) {
+		warn join(',',$toroot->copied_from($target_path));
+	    }
+	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
+		push @{$self->{incopy}}, { path => $path,
+					   fromrev => $src_from,
+					   frompath => $src_frompath };
+		warn "==> resolved to $frompath:$from"
+		    if $main::DEBUG;
+		return $self->{cb_copyfrom}->($frompath, $from);
+	    }
+	    return;
 	}
-	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
-	    push @{$self->{incopy}}, { path => $path,
-				       fromrev => $src_from,
-				       frompath => $src_frompath };
-	    warn "==> resolved to $frompath:$from"
-		if $main::DEBUG;
-	    return $self->{cb_copyfrom}->($frompath, $from);
-	}
+	($cur_root, $cur_path) = ($fromroot, $src_frompath);
     }
     return;
 }

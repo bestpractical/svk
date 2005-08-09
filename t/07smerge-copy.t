@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 12;
+use Test::More tests => 13;
 use strict;
 use File::Path;
 use Cwd;
@@ -126,11 +126,9 @@ $svk->mv('//trunk/A', '//trunk/B', -m => 'A -> B');
 $svk->mv('//trunk/B-tmp', '//trunk/A', -m => 'B-tmp -> A');
 $svk->up;
 
-our $DEBUG=1;
 is_output($svk, 'pull', ['//local'],
 	  ['Auto-merging (18, 22) /trunk to /local (base /trunk:18).',
 	   'R + A',
 	   'R + B',
 	   qr'New merge ticket: .*:/trunk:22',
-	   'Committed revision 13.']);
-warn $output;
+	   'Committed revision 23.']);
