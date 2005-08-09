@@ -275,7 +275,8 @@ sub nearest_copy {
     while ($hist = $hist->prev(1, $new_pool)) {
 	# Find history_prev revision, if the path is different, bingo.
 	my ($hppath, $hprev) = $hist->location;
-	return ($root, $fs->revision_root ($hprev, $ppool), $hppath)
+	return ($fs->revision_root($root->revision_root_revision, $ppool),
+		$fs->revision_root ($hprev, $ppool), $hppath)
 	    if $hppath ne $path; # got it
 
 	# Find nearest copy of the current revision (up to but *not*
@@ -287,7 +288,8 @@ sub nearest_copy {
 	    # there were copy, but the descendent might not exist there
 	    my $proot = $fs->revision_root ($fromrev, $ppool);
 	    last unless $proot->check_path ($frompath);
-	    return ($root, $proot, $frompath);
+	    return ($fs->revision_root($root->revision_root_revision, $ppool),
+		    $proot, $frompath);
 	}
 
 	if ($rev < $hprev) {
