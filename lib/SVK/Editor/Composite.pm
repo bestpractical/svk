@@ -28,7 +28,7 @@ sub AUTOLOAD {
 
     if ($func =~ m/^(?:add|open)/) {
 	return $self->{target_baton}
-	    if length $self->{target} && $arg[0] eq $self->{target};
+	    if defined $self->{target} && $arg[0] eq $self->{target};
 	$arg[0] = length $arg[0] ?
 	    "$self->{anchor}/$arg[0]" : $self->{anchor};
     }
@@ -45,7 +45,7 @@ sub open_root {
 
 sub close_directory {
     my ($self, $baton, @arg) = @_;
-    return if $baton eq $self->{anchor_baton};
+    return if defined $baton && $baton eq $self->{anchor_baton};
 
     $self->{master_editor}->close_directory($baton, @arg);
 }

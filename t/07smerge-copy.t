@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 12;
 use strict;
 use File::Path;
 use Cwd;
@@ -83,3 +83,54 @@ is_output($svk, 'pull', ['//local'],
 is_ancestor($svk, '//local/A/quz',
 	    '/local/A/Q/qu', 4,
 	    '/trunk/A/Q/qu', 2);
+
+
+# copy and modify
+$svk->cp('A/quz', 'A/quz-mod');
+append_file('A/quz-mod', "modified after copy\n");
+
+$svk->ci(-m => 'copy file with modification');
+
+is_output($svk, 'pull', ['//local'],
+	  ['Auto-merging (14, 16) /trunk to /local (base /trunk:14).',
+	   'A + A/quz-mod',
+	   qr'New merge ticket: .*:/trunk:16',
+	   'Committed revision 17.']);
+
+is_file_content('A/quz-mod',
+		"first line in qu\n2nd line in qu\nmodified after copy\n");
+
+# copy directory and modify
+$svk->cp('B', 'B-mod');
+
+append_file('B-mod/fe', "modified after copy\n");
+append_file('B-mod/S/P/pe', "modified after copy\n");
+overwrite_file('B-mod/S/new', "new file\n");
+$svk->add('B-mod/S/new');
+$svk->ci(-m => 'copy file with modification');
+
+TODO: {
+local $TODO = 'copy+mod inside directoy reqires merge editor cb to use txn or to resolve to cp source.';
+is_output($svk, 'pull', ['//local'],
+	  ['Auto-merging (16, 18) /trunk to /local (base /trunk:16).',
+	   'A + B-mod',
+	   'M   B-mod/fe',
+	   'M   B-mod/S/pe',
+	   'A   B-mod/S/new',
+	   qr'New merge ticket: .*:/trunk:18',
+	   'Committed revision 19.']);
+}
+
+$svk->mv('//trunk/B', '//trunk/B-tmp', -m => 'B -> tmp');
+$svk->mv('//trunk/A', '//trunk/B', -m => 'A -> B');
+$svk->mv('//trunk/B-tmp', '//trunk/A', -m => 'B-tmp -> A');
+$svk->up;
+
+our $DEBUG=1;
+is_output($svk, 'pull', ['//local'],
+	  ['Auto-merging (18, 22) /trunk to /local (base /trunk:18).',
+	   'R + A',
+	   'R + B',
+	   qr'New merge ticket: .*:/trunk:22',
+	   'Committed revision 13.']);
+warn $output;

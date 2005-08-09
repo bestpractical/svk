@@ -40,11 +40,19 @@ sub find_copy {
 	SVK::Target::nearest_copy($self->{src}->root, $target_path);
 
     return unless defined $src_frompath;
+    # don't use the copy unless it's the actual copy point
+    my ($actual_cpanchor) = $toroot->copied_from($target_path);
+    return if $actual_cpanchor == -1;
+
     my ($base, $src_from, $to) = map {$_->revision_root_revision}
 	($self->{base_root}, $fromroot, $toroot);
+    warn "$src_from <= $base && $base < $to && $src_frompath / $self->{base_path}";
     if ($src_from <= $base && $base < $to &&
 	$src_frompath =~ m{^\Q$self->{base_path}/}) { # within the anchor
 	warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
+	if ($main::DEBUG) {
+	    warn join(',',$toroot->copied_from($target_path));
+	}
 	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
@@ -73,7 +81,6 @@ sub outcopy {
 sub add_directory {
     my ($self, $path, $pbaton, $from_path, $from_rev, $pool) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
-
     if (my @ret = $self->find_copy($path)) {
 	return $self->replay_add_history('directory', $path, $pbaton,
 					 @ret, $pool);
@@ -94,10 +101,20 @@ sub add_file {
     $self->SUPER::add_file($path, $pbaton, $from_path, $from_rev, $pool);
 }
 
+sub open_directory {
+    my ($self, $path, $pbaton, @arg) = @_;
+    if (my @ret = $self->find_copy($path)) {
+	# turn into replace
+	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
+	return $self->replay_add_history('directory', $path, $pbaton, @ret, $arg[1])
+    }
+
+    $self->SUPER::open_directory($path, $pbaton, @arg);
+}
+
 sub open_file {
     my ($self, $path, $pbaton, @arg) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
-
     if (my @ret = $self->find_copy($path)) {
 	# turn into replace
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
@@ -181,7 +198,7 @@ sub replay_add_history {
 	 translate => sub { $_[0] =~ s/^\Q$src_target/$target/ })
 	    if $type eq 'file';
 
-    warn "****==> to delta $src_anchor / $src_target vs $self->{src}{path} / $path" if $main::DEBUG;;
+    Carp::cluck "****==> to delta $src_anchor / $src_target vs $self->{src}{path} / $path" if $main::DEBUG;;
     SVK::XD->depot_delta
 	    ( oldroot => $self->{base_root}->fs->revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
