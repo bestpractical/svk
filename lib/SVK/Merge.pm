@@ -380,8 +380,9 @@ sub run {
 	    ( _editor => [$meditor],
 	      base_root => $base_root,
 	      base_path => $base->path,
-	      target_path => $self->{src}{path},
-	      target_root => $self->{src}->root,
+	      src => $src,
+	      dst => $self->{dst},
+	      cb_copyfrom => $cb{cb_copyfrom},
 	      cb_resolve_copy => sub {
 		  my ($cp_path, $cp_rev) = @_; # translate to (path, rev) for dst
 		  my $path = $cp_path;
@@ -389,16 +390,15 @@ sub run {
 		  my $dstpath = $self->{dst}->path;
 		  return unless $path =~ m{^\Q$srcpath/};
 
-		  my $cpsrc = $self->{src}->new( path => $path,
-						 revision => $cp_rev );
+		  my $cpsrc = $src->new( path => $path,
+					 revision => $cp_rev );
 		  $path =~ s/^\Q$srcpath/$dstpath/;
 		  $cpsrc->normalize;
 		  $cp_rev = $cpsrc->{revision};
 		  # now the hard part, reoslve the revision
 		  my $info = $self->merge_info_with_copy($self->{dst}->new);
-		  my $src = $self->{src}->universal;
-		  my $srckey = join(':', $src->{uuid}, $src->{path});
-		  warn "==> to resolve $cp_rev";
+		  my $usrc = $src->universal;
+		  my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 		  die 'foo' unless $info->{$srckey};
 		  my $rev = $self->{dst}->search_revision
 		      ( start => 1,
@@ -413,7 +413,7 @@ sub run {
 			    my $cpdst = $self->{dst}->new
 				(path => $cp_path,
 				 revision => $minfo->{$srckey}{rev});
-			    $cpdst->normalize;
+			    eval { $cpdst->normalize } or return -1;
 
 			    if ($cpdst->{revision} > $cp_rev) {
 				return 1;
@@ -429,8 +429,9 @@ sub run {
 			    return 1;
 			} );
 
-		  return $cb{cb_copyfrom}->($path, $rev)
-		      if defined $rev;
+		  return ($path, $rev) if defined $rev;
+#		  return $cb{cb_copyfrom}->($path, $rev)
+#		      if defined $rev;
 		  return;
 	      }
 	    );
@@ -441,8 +442,6 @@ sub run {
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
-#	      notice_ancestry => $self->{notice_copy},
-	      notice_copy => $self->{notice_copy},
 	    );
     print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};
     print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",

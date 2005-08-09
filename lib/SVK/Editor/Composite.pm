@@ -1,5 +1,9 @@
 package SVK::Editor::Composite;
 use strict;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+require SVN::Delta;
+our @ISA = qw(SVN::Delta::Editor);
 
 =head1 NAME
 
@@ -23,11 +27,13 @@ sub AUTOLOAD {
     $func =~ s/^.*:://;
 
     if ($func =~ m/^(?:add|open)/) {
-	$arg[0] = length $arg[0] ? "$self->{anchor}/$arg[0]" : $self->{anchor};
+	return $self->{target_baton}
+	    if defined $self->{target} && $arg[0] eq $self->{target};
+	$arg[0] = length $arg[0] ?
+	    "$self->{anchor}/$arg[0]" : $self->{anchor};
     }
 
-    $self->{master_editor}->can($func)->
-	($self->{master_editor}, @_);
+    $self->{master_editor}->$func(@arg);
 }
 
 sub open_root {
@@ -41,5 +47,7 @@ sub close_directory {
 
     $self->{master_editor}->close_directory($baton, @arg);
 }
+
+sub close_edit {}
 
 1;

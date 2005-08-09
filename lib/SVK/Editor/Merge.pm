@@ -226,6 +226,8 @@ sub add_file {
 	++$self->{changes};
 	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
+	$self->{notify}->hist_status ($path, '+')
+	    if defined $arg[0];
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
 	$pool->default if $pool && $pool->can ('default');
@@ -511,6 +513,8 @@ sub add_directory {
 	$self->{storage_baton}{$path} = $baton;
 	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
+	$self->{notify}->hist_status ($path, '+')
+	    if defined $arg[0];
 	$self->{notify}->flush ($path, 1);
     }
     ++$self->{changes};
