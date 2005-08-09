@@ -106,20 +106,16 @@ is_output ($svk, 'log', ['-r14', '//'],
 
 # XXX: may lose something if we do "local -> fix merge" first
 
-TODO: {
-local $TODO = 'sm -l without -m or --template should invoke editor';
-
 set_editor(<< 'TMP');
 $_ = shift;
 open _ or die $!;
 # "manually" enter a commit message
-unshift @_, 'Second merge from fix to local';
+@_ = ("Second merge from fix to local\n", <_>);
 close _;
 unlink $_;
 open _, '>', $_ or die $!;
 print _ @_;
 close _;
-print @_;
 TMP
 
 append_file (copath ('fix/fileb.txt'), "even more fileb fixes on branch\n");
@@ -132,6 +128,6 @@ is_output ($svk, 'log', ['-r17', '//'],
           'Second merge from fix to local',
           qr' r16@editor-fix: .*',
           ' modify fileb on fix again',
+	  '',
           '-' x 70]);
-}
 
