@@ -435,6 +435,7 @@ sub run {
 		  return;
 	      }
 	    );
+	$editor = SVK::Editor::Delay->new ($editor);
     }
 
     SVK::XD->depot_delta
