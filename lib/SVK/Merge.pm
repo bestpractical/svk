@@ -380,6 +380,8 @@ sub run {
 	    ( _editor => [$meditor],
 	      base_root => $base_root,
 	      base_path => $base->path,
+	      merge => $self,
+	      base => $base,
 	      src => $src,
 	      dst => $self->{dst},
 	      cb_copyfrom => $cb{cb_copyfrom},
@@ -407,34 +409,11 @@ sub run {
 		      return $info->{$dstkey}{rev} ?
 			  ($path, $info->{$dstkey}{rev}) : ();
 		  }
-		  my $rev = $self->{dst}->search_revision
-		      ( start => 1,
-			cmp => sub {
-			    my $rev = shift;
-			    warn "==> look at $rev" if $main::DEBUG;
-			    my $search_dst = $self->{dst}->new(revision=>$rev);
-			    my $minfo = $self->merge_info_with_copy($search_dst);
-			    return -1 unless $minfo->{$srckey};
-			    # get the actual revision of the copy
-			    # source on the merge target, and compare
-			    my $cpdst = $self->{dst}->new
-				(path => $cp_path,
-				 revision => $minfo->{$srckey}{rev});
-			    eval { $cpdst->normalize } or return -1;
-
-			    if ($cpdst->{revision} > $cp_rev) {
-				return 1;
-			    }
-			    elsif ($cpdst->{revision} < $cp_rev) {
-				return -1;
-			    }
-
-			    my $prev = eval { ($search_dst->root->node_history($self->{dst}->path)->prev(0)->prev(0)->location)[1] } or return 0;
-
-			    return 0
-				if ($self->merge_info_with_copy($self->{dst}->new(revision => $prev))->{$srckey}{rev} || 0) != $cp_rev;
-			    return 1;
-			} );
+		  # XXX: get rid of the merge context needed for
+		  # last-merged_from, actually what it needs is XD
+		  my $rev = $self->{dst}->
+		      merged_from($src->new(revision => $cp_rev),
+				  $self, $cp_path);
 
 		  return ($path, $rev) if defined $rev;
 		  return;

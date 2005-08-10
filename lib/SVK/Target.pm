@@ -443,6 +443,41 @@ sub search_revision {
     return;
 }
 
+# $path is the actul path we use to normalise
+sub merged_from {
+    my ($self, $src, $merge, $path) = @_;
+    my $usrc = $src->universal;
+    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    $self->search_revision
+	( start => 1,
+	  cmp => sub {
+	      my $rev = shift;
+	      warn "==> look at $rev" if $main::DEBUG;
+	      my $search = $self->new(revision => $rev);
+	      my $minfo = $merge->merge_info_with_copy($search);
+	      return -1 unless $minfo->{$srckey};
+	      # get the actual revision of the on the merge target,
+	      # and compare
+	      my $msrc = $self->new
+		  ( path => $path,
+		    revision => $minfo->{$srckey}{rev});
+	      eval { $msrc->normalize } or return -1;
+	      if ($msrc->{revision} > $src->{revision}) {
+		  return 1;
+	      }
+	      elsif ($msrc->{revision} < $src->{revision}) {
+		  return -1;
+	      }
+
+	      my $prev = eval { ($search->root->node_history($self->path)->prev(0)->prev(0)->location)[1] } or return 0;
+
+	      return 0
+		  if ($merge->merge_info_with_copy($self->new(revision => $prev))->{$srckey}{rev} || 0) != $self->{revision};
+	      return 1;
+	  } );
+}
+
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

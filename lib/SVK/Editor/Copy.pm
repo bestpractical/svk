@@ -1,5 +1,6 @@
 package SVK::Editor::Copy;
 use strict;
+use warnings;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
@@ -40,8 +41,10 @@ sub find_copy {
 	$base = $self->{base_root}->revision_root_revision;
     }
     else {
-	# XXXX: get the last merged-to one.
-	$base = $self->{src}->root->revision_root_revision;
+	return;
+	$base = $self->{src}->merged_from
+	    ($self->{base}, $self->{merge}, $self->{base}{path})
+		or return;
     }
 
     # XXX: pool! clear!

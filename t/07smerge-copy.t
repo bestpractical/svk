@@ -142,7 +142,6 @@ $svk->ci(-m => 'a copy at local');
 
 TODO: {
 local $TODO = 'base ne src merge should resolve copy properly.';
-
 is_output($svk, 'push', [],
 	  ['Auto-merging (0, 25) /local-new to /trunk (base /trunk:22).',
 	   '===> Auto-merging (0, 24) /local-new to /trunk (base /trunk:22).',
