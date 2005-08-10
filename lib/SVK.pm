@@ -11,6 +11,7 @@ BEGIN {
     # we need to emasculate autouse by blowing a new import sub into its
     # package at runtime.
     if($main::INC{'Devel/DProf.pm'})  {
+	no strict 'refs';
 	$main::INC{'autouse.pm'} = __FILE__;
 	*{'autouse::import'} = sub {
 	    require UNIVERSAL::require;
