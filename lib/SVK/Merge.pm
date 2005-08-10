@@ -373,24 +373,27 @@ sub run {
 
     my $editor = $meditor;
     if ($self->{notice_copy}) {
+	my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
 	my $base_rev;
 	if ($self->{base}->path eq $self->{src}->path) {
 	    $base_rev = $self->{base}{revision};
 	}
 	else {
-	    $base_rev = $src->merged_from
-		($self->{base}, $self, $self->{base}{path});
-	    if (!$base_rev) {
+	    my $usrc = $src->universal;
+	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+	    if ($dstinfo->{$srckey}) {
+		$base_rev = $src->merged_from
+		    ($self->{base}, $self, $self->{base}{path});
+#		$base_rev = $dstinfo->{$srckey}->local($self->{dst}{repos})->{revision};
+	    }
+	    else {
 		# when did the branch first got created?
-		local $main::DEBUG=1;
 		$base_rev = $src->search_revision
 		    ( cmp => sub {
 			  my $rev = shift;
 			  warn "==> LOOK $rev" if $main::DEBUG;
 			  my $root = $src->new(revision => $rev)->root;
-			  my $foo = $root->node_history($src->path)->prev(0)->prev(0);
-			  warn join(',',$foo->location) if $foo;
-			  return $foo ? 1 : 0;
+			  return $root->node_history($src->path)->prev(0)->prev(0) ? 1 : 0;
 		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
 	    }
 	}
@@ -404,6 +407,8 @@ sub run {
 	      base_root => $base_root,
 	      base_path => $base->path,
 	      base_rev => $base_rev,
+	      copyboundry_rev => $base_rev,
+	      copyboundry_root => $self->{repos}->fs->revision_root($base_rev),
 	      merge => $self,
 	      base => $base,
 	      src => $src,
@@ -411,7 +416,7 @@ sub run {
 	      cb_copyfrom => $cb{cb_copyfrom},
 	      cb_resolve_copy => sub {
 		  my ($cp_path, $cp_rev) = @_; # translate to (path, rev) for dst
-		  warn "==> to resolve $cp_path $cp_rev".YAML::Dump($self->{dst}) if $main::DEBUG;
+		  warn "==> to resolve $cp_path $cp_rev" if $main::DEBUG;
 		  my $path = $cp_path;
 		  my $srcpath = $self->{src}->path;
 		  my $dstpath = $self->{dst}->path;
@@ -423,17 +428,17 @@ sub run {
 		  $cpsrc->normalize;
 		  $cp_rev = $cpsrc->{revision};
 		  # now the hard part, reoslve the revision
-		  my $info = $self->merge_info_with_copy($self->{dst}->new);
+		  my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
 		  my $usrc = $src->universal;
 		  my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
-		  unless ($info->{$srckey}) {
+		  unless ($dstinfo->{$srckey}) {
 		      my $info = $self->merge_info_with_copy($self->{src}->new);
 		      my $udst = $self->{dst}->universal;
 		      my $dstkey = join(':', $udst->{uuid}, $udst->{path});
 		      return $info->{$dstkey}{rev} ?
 			  ($path, $info->{$dstkey}{rev}) : ();
 		  }
-		  if ($info->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
+		  if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
 		      # same as re-base in editor::copy
 		      my $rev = $self->{src}->merged_from
 			  ($self->{base}, $self, $self->{base}{path});

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict;
 use File::Path;
 use Cwd;
@@ -28,15 +28,12 @@ is_output($svk, 'pull', ['//local'],
 
 is_ancestor($svk, '//local/A-cp', '/local/A', 4, '/trunk/A', 3);
 
-# expanded, because copy source is within the merge as well.
-# or should be be more aggressive to copy from closer source
-# then apply the delta by ourself?
-
+# partially expand, still retain the history structure
 $svk->mkdir('//trunk/A/new', -m => 'new dir');
 $svk->cp('//trunk/A' => '//trunk/A-cp-again', -m => 'more');
 
 $svk->pull('//local');
-is_ancestor($svk, '//local/A-cp-again');
+is_ancestor($svk, '//local/A-cp-again', '/local/A', 4, '/trunk/A', 3);
 
 $svk->cp('//trunk/A-cp-again' => '//trunk/A-cp-more', -m => 'more');
 
@@ -46,7 +43,8 @@ is_output($svk, 'pull', ['//local'],
 	   qr'New merge ticket: .*:/trunk:10',
 	   'Committed revision 11.']);
 
-is_ancestor($svk, '//local/A-cp-more', '/local/A-cp-again', 9);
+is_ancestor($svk, '//local/A-cp-more',
+	    '/local/A-cp-again', 9, '/local/A', 4, '/trunk/A', 3);
 $svk->up;
 
 # replace with history.  this is very tricky, because we have to use
@@ -171,3 +169,45 @@ is_ancestor($svk, '//local-new/B-orztrunk',
 	    '/local-new/B', 24,
 	    '/trunk/B', 21,
 	    '/trunk/A', 16);
+
+
+# a bunch of modification and then merge back
+$svk->cp ('-m', 'branch', '//trunk@3', '//local-many');
+
+$svk->sw('//local-many');
+$svk->cp('B/S' => 'b-s');
+$svk->ci(-m => 'rename B/S');
+
+append_file('D/de', 'modify');
+$svk->ci(-m => 'change de');
+
+$svk->cp('D/de' => 'b-s/de');
+$svk->ci(-m => 'cp de under b-s');
+
+$svk->mv('D/de' => 'B/de');
+$svk->ci(-m => 'move de to B');
+
+append_file('B/de', 'modify on B/de');
+$svk->ci(-m => 'change de');
+
+overwrite_file('new-in-local', 'new file on local');
+$svk->add('new-in-local');
+$svk->ci(-m => 'new file');
+
+$svk->mv('new-in-local' => 'D');
+$svk->ci(-m => 'move new file to D');
+
+
+TODO: {
+local $TODO = 'copy+mod merge status code';
+
+is_output($svk, 'push', ['-l'],
+	  ['Auto-merging (0, 37) /local-many to /trunk (base /trunk:3).',
+	   'U + B/de',
+	   'A + b-s',
+	   'U + b-s/de',
+	   'A   D/new-in-local',
+	   'D   D/de',
+	   qr'New merge ticket: .*:/local-many:37',
+	   'Committed revision 38.']);
+}

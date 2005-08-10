@@ -36,38 +36,55 @@ sub find_copy {
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
 
-    my $base = $self->{base_rev} or return;
-
+    my $copyboundry_rev = $self->{copyboundry_rev};
     # XXX: pool! clear!
     my $ppool = SVN::Pool->new;
+    local $main::DEBUG=1 if $path =~ m/API/;
     while (1) {
 	my ($toroot, $fromroot, $src_frompath) =
 	    SVK::Target::nearest_copy($cur_root, $cur_path, $ppool);
 
+	warn "===> $cur_path => $src_frompath" if $main::DEBUG;
 	return unless defined $src_frompath;
 	# don't use the copy unless it's the actual copy point
 	my ($actual_cpanchor) = $toroot->copied_from($cur_path);
 	return if $actual_cpanchor == -1;
 
+	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
 	my ($src_from, $to) = map {$_->revision_root_revision}
 	    ($fromroot, $toroot);
 	warn 
-	"$cur_path, $src_frompath: if ($src_from <= $base && $base < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
+	"$cur_path, $src_frompath: if ($src_from <= $copyboundry_rev && $copyboundry_rev < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
+	return unless $copyboundry_rev < $to; # don't care, too early
 	# XXX: Document this condition
-	if ($src_from <= $base && $base < $to &&
-	    $src_frompath =~ m{^\Q$self->{src}{path}/}) { # within the anchor
-	    warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
-	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
-		push @{$self->{incopy}}, { path => $path,
-					   fromrev => $src_from,
-					   frompath => $src_frompath };
-		warn "==> resolved to $frompath:$from"
-		    if $main::DEBUG;
-		return $self->{cb_copyfrom}->($frompath, $from);
+
+	if ($src_from > $copyboundry_rev) {
+	    my $id = $fromroot->node_id($src_frompath);
+	    if ($self->{copyboundry_root}->check_path($src_frompath) &&
+		SVN::Fs::check_related($id, $self->{copyboundry_root}->node_id($src_frompath))) {
+#		warn "===>> ooooh can use this ($copyboundry_rev)";
+		my $src = $self->{src}->new(revision => $copyboundry_rev, path => $src_frompath);
+		$src->normalize;
+		$src_from = $src->{revision};
+#		warn "==> now $src_from";
 	    }
-	    return;
+	    else {
+		($cur_root, $cur_path) = ($fromroot, $src_frompath);
+		next;
+	    }
+
 	}
-	($cur_root, $cur_path) = ($fromroot, $src_frompath);
+
+	warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
+	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
+	    push @{$self->{incopy}}, { path => $path,
+				       fromrev => $src_from,
+				       frompath => $src_frompath };
+	    warn "==> resolved to $frompath:$from"
+		if $main::DEBUG;
+	    return $self->{cb_copyfrom}->($frompath, $from);
+	}
+
     }
     return;
 }
@@ -205,9 +222,9 @@ sub replay_add_history {
 	 translate => sub { $_[0] =~ s/^\Q$src_target/$target/ })
 	    if $type eq 'file';
 
-    Carp::cluck "****==> to delta $src_anchor / $src_target vs $self->{src}{path} / $path" if $main::DEBUG;;
+    Carp::cluck "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
     SVK::XD->depot_delta
-	    ( oldroot => $self->{base_root}->fs->revision_root($self->{incopy}[-1]{fromrev}),
+	    ( oldroot => $self->{copyboundry_root}->fs->revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
@@ -219,7 +236,7 @@ sub replay_add_history {
 		   baton => $baton,
 		 }, __PACKAGE__.'::copied_directory';
 
-$self->{ignore_baton};
+    $self->{ignore_baton};
 }
 
 
