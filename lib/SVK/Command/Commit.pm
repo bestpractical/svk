@@ -188,7 +188,7 @@ sub get_editor {
 	    if $source;
 	$patch->{log} = $self->{message};
 	my $fname = $self->{xd}->patch_file ($self->{patch});
-	if (-e $fname) {
+	if ($fname ne '-' && -e $fname) {
 	    die loc ("file %1 already exists.\n", $fname).
 		($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
 	}
