@@ -415,7 +415,6 @@ sub search_revision {
     while ($rev[0] <= $rev[1]) {
 	$pool->clear;
 	my $rev = int(($rev[0]+$rev[1])/2);
-
 	my $search_root = $self->new(revision => $rev)->root;
 	if ($search_root->check_path($self->path) &&
 	    SVN::Fs::check_related($id, $search_root->node_id($self->path))) {
@@ -448,6 +447,8 @@ sub merged_from {
     my ($self, $src, $merge, $path) = @_;
     my $usrc = $src->universal;
     my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
+
     $self->search_revision
 	( start => 1,
 	  cmp => sub {
@@ -461,6 +462,7 @@ sub merged_from {
 	      my $msrc = $self->new
 		  ( path => $path,
 		    revision => $minfo->{$srckey}{rev});
+	      local $@;
 	      eval { $msrc->normalize } or return -1;
 	      if ($msrc->{revision} > $src->{revision}) {
 		  return 1;
@@ -471,8 +473,9 @@ sub merged_from {
 
 	      my $prev = eval { ($search->root->node_history($self->path)->prev(0)->prev(0)->location)[1] } or return 0;
 
+	      warn "==> to compare with $prev" if $main::DEBUG;
 	      return 0
-		  if ($merge->merge_info_with_copy($self->new(revision => $prev))->{$srckey}{rev} || 0) != $self->{revision};
+		  if ($merge->merge_info_with_copy($self->new(revision => $prev))->{$srckey}{rev} || 0) != $src->{revision};
 	      return 1;
 	  } );
 }

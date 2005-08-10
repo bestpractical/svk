@@ -41,10 +41,10 @@ sub find_copy {
 	$base = $self->{base_root}->revision_root_revision;
     }
     else {
-	return;
 	$base = $self->{src}->merged_from
 	    ($self->{base}, $self->{merge}, $self->{base}{path})
 		or return;
+	warn "==> re-based to $base" if $main::DEBUG;
     }
 
     # XXX: pool! clear!
@@ -60,7 +60,8 @@ sub find_copy {
 
 	my ($src_from, $to) = map {$_->revision_root_revision}
 	    ($fromroot, $toroot);
-
+	warn 
+	"$cur_path, $src_frompath: if ($src_from <= $base && $base < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
 	# XXX: Document this condition
 	if ($src_from <= $base && $base < $to &&
 	    $src_frompath =~ m{^\Q$self->{src}{path}/}) { # within the anchor

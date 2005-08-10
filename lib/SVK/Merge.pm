@@ -409,6 +409,14 @@ sub run {
 		      return $info->{$dstkey}{rev} ?
 			  ($path, $info->{$dstkey}{rev}) : ();
 		  }
+		  if ($info->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
+		      # same as re-base in editor::copy
+		      my $rev = $self->{src}->merged_from
+			  ($self->{base}, $self, $self->{base}{path});
+		      # XXX: compare rev and cp_rev
+		      return ($path, $rev) if defined $rev;
+		      return;
+		  }
 		  # XXX: get rid of the merge context needed for
 		  # last-merged_from, actually what it needs is XD
 		  my $rev = $self->{dst}->

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 15;
+use Test::More tests => 18;
 use strict;
 use File::Path;
 use Cwd;
@@ -140,8 +140,6 @@ $svk->sw('//local-new');
 $svk->cp('B' => 'B-fromlocal');
 $svk->ci(-m => 'a copy at local');
 
-TODO: {
-local $TODO = 'base ne src merge should resolve copy properly.';
 is_output($svk, 'push', [],
 	  ['Auto-merging (0, 25) /local-new to /trunk (base /trunk:22).',
 	   '===> Auto-merging (0, 24) /local-new to /trunk (base /trunk:22).',
@@ -151,5 +149,25 @@ is_output($svk, 'push', [],
 	   qr'New merge ticket: .*:/local-new:25',
 	   'Committed revision 26.']);
 
-}
+$svk->cp('//trunk/B' => '//trunk/B-orztrunk',
+	 -m => 'copy to orztrunk');
+$svk->cp('//trunk/B-fromlocal' => '//trunk/B-totrunk',
+	 -m => 'copy to trunk new directory');
 
+is_output($svk, 'pull', ['//local-new'],
+	  ['Auto-merging (22, 28) /trunk to /local-new (base /local-new:25).',
+	   'A + B-totrunk',
+	   'A + B-orztrunk',
+	   qr'New merge ticket: .*:/trunk:28',
+	   'Committed revision 29.',
+	  ]);
+
+is_ancestor($svk, '//local-new/B-totrunk',
+	    '/local-new/B-fromlocal', 25,
+	    '/local-new/B', 24,
+	    '/trunk/B', 21,
+	    '/trunk/A', 16);
+is_ancestor($svk, '//local-new/B-orztrunk',
+	    '/local-new/B', 24,
+	    '/trunk/B', 21,
+	    '/trunk/A', 16);
