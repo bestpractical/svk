@@ -450,8 +450,7 @@ sub merged_from {
     warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
 
     $self->search_revision
-	( start => 1,
-	  cmp => sub {
+	( cmp => sub {
 	      my $rev = shift;
 	      warn "==> look at $rev" if $main::DEBUG;
 	      my $search = $self->new(revision => $rev);

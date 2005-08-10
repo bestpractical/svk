@@ -380,9 +380,21 @@ sub run {
 	else {
 	    $base_rev = $src->merged_from
 		($self->{base}, $self, $self->{base}{path});
-	    warn "==> re-based to $base_rev" if $main::DEBUG;
-	    die unless $base_rev;
+	    if (!$base_rev) {
+		# when did the branch first got created?
+		local $main::DEBUG=1;
+		$base_rev = $src->search_revision
+		    ( cmp => sub {
+			  my $rev = shift;
+			  warn "==> LOOK $rev" if $main::DEBUG;
+			  my $root = $src->new(revision => $rev)->root;
+			  my $foo = $root->node_history($src->path)->prev(0)->prev(0);
+			  warn join(',',$foo->location) if $foo;
+			  return $foo ? 1 : 0;
+		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
+	    }
 	}
+	warn "==> got $base_rev as copyboundry" if $main::DEBUG;
 
 	# find the dst base root, which is the last change on svk:merge
 	# that brings the current merge ticket from src
