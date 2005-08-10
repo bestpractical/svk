@@ -36,16 +36,7 @@ sub find_copy {
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
 
-    my $base;
-    if ($self->{base_path} eq $self->{src}{path}) {
-	$base = $self->{base_root}->revision_root_revision;
-    }
-    else {
-	$base = $self->{src}->merged_from
-	    ($self->{base}, $self->{merge}, $self->{base}{path})
-		or return;
-	warn "==> re-based to $base" if $main::DEBUG;
-    }
+    my $base = $self->{base_rev} or return;
 
     # XXX: pool! clear!
     my $ppool = SVN::Pool->new;

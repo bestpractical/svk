@@ -461,7 +461,8 @@ sub merged_from {
 	      # and compare
 	      my $msrc = $self->new
 		  ( path => $path,
-		    revision => $minfo->{$srckey}{rev});
+		    revision => $minfo->{$srckey}->
+		    local($self->{repos})->{revision} );
 	      local $@;
 	      eval { $msrc->normalize } or return -1;
 	      if ($msrc->{revision} > $src->{revision}) {

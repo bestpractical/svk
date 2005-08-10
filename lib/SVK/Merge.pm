@@ -373,6 +373,17 @@ sub run {
 
     my $editor = $meditor;
     if ($self->{notice_copy}) {
+	my $base_rev;
+	if ($self->{base}->path eq $self->{src}->path) {
+	    $base_rev = $self->{base}{revision};
+	}
+	else {
+	    $base_rev = $src->merged_from
+		($self->{base}, $self, $self->{base}{path});
+	    warn "==> re-based to $base_rev" if $main::DEBUG;
+	    die unless $base_rev;
+	}
+
 	# find the dst base root, which is the last change on svk:merge
 	# that brings the current merge ticket from src
 	require SVK::Editor::Copy;
@@ -380,6 +391,7 @@ sub run {
 	    ( _editor => [$meditor],
 	      base_root => $base_root,
 	      base_path => $base->path,
+	      base_rev => $base_rev,
 	      merge => $self,
 	      base => $base,
 	      src => $src,
