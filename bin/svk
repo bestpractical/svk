@@ -5,7 +5,7 @@ our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
-#our $DEBUG=1;
+
 =head1 NAME
 
 svk - A Distributed Version Control System
