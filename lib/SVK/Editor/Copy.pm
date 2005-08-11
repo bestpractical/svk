@@ -39,7 +39,6 @@ sub find_copy {
     my $copyboundry_rev = $self->{copyboundry_rev};
     # XXX: pool! clear!
     my $ppool = SVN::Pool->new;
-    local $main::DEBUG=1 if $path =~ m/API/;
     while (1) {
 	my ($toroot, $fromroot, $src_frompath) =
 	    SVK::Target::nearest_copy($cur_root, $cur_path, $ppool);
@@ -50,9 +49,21 @@ sub find_copy {
 	my ($actual_cpanchor) = $toroot->copied_from($cur_path);
 	return if $actual_cpanchor == -1;
 
-	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
 	my ($src_from, $to) = map {$_->revision_root_revision}
 	    ($fromroot, $toroot);
+
+	# XXX: copy from 3rd party branch directly within the same mirror
+	# copy from the other branch directly
+	if ($src_frompath =~ m{^\Q$self->{dst}{path}}) {
+	    push @{$self->{incopy}}, { path => $path,
+				       fromrev => $src_from,
+				       frompath => $src_frompath,
+				       dst_fromrev => $src_from,
+				       dst_frompath => $src_frompath };
+	    return $self->{cb_copyfrom}->($src_frompath, $src_from);
+	}
+
+	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
 	warn 
 	"$cur_path, $src_frompath: if ($src_from <= $copyboundry_rev && $copyboundry_rev < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
 	return unless $copyboundry_rev < $to; # don't care, too early
@@ -62,11 +73,9 @@ sub find_copy {
 	    my $id = $fromroot->node_id($src_frompath);
 	    if ($self->{copyboundry_root}->check_path($src_frompath) &&
 		SVN::Fs::check_related($id, $self->{copyboundry_root}->node_id($src_frompath))) {
-#		warn "===>> ooooh can use this ($copyboundry_rev)";
 		my $src = $self->{src}->new(revision => $copyboundry_rev, path => $src_frompath);
 		$src->normalize;
 		$src_from = $src->{revision};
-#		warn "==> now $src_from";
 	    }
 	    else {
 		($cur_root, $cur_path) = ($fromroot, $src_frompath);
@@ -79,7 +88,10 @@ sub find_copy {
 	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
-				       frompath => $src_frompath };
+				       frompath => $src_frompath,
+				       dst_frompath => $frompath,
+				       dst_fromrev => $from
+				     };
 	    warn "==> resolved to $frompath:$from"
 		if $main::DEBUG;
 	    return $self->{cb_copyfrom}->($frompath, $from);
@@ -156,7 +168,6 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $baton, @arg) = @_;
-    warn "==> should tryto close $baton" if $main::DEBUG;
     if (ref($baton) eq 'SVK::Editor::Copy::copied_directory') {
 	$self->outcopy($baton->{path});
 	return $self->SUPER::close_file($baton->{baton}, @arg);
@@ -205,7 +216,12 @@ sub replay_add_history {
     my $baton = $self->$func($path, $pbaton, $src_path, $src_rev, $pool);
 
     my ($anchor, $target) = ($path, '');
-    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{frompath}, '');
+    if ($#{$self->{incopy}} == -1) {
+	Carp::cluck $path;
+    }
+#    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{frompath}, '');
+    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{dst_frompath}, '');
+
     my %arg = ( anchor => $anchor, anchor_baton => $baton );
     if ($type eq 'file') {
 	($anchor, $target) = get_depot_anchor(1, $anchor);
@@ -222,15 +238,16 @@ sub replay_add_history {
 	 translate => sub { $_[0] =~ s/^\Q$src_target/$target/ })
 	    if $type eq 'file';
 
-    Carp::cluck "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
+    warn "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{dst_fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
     SVK::XD->depot_delta
-	    ( oldroot => $self->{copyboundry_root}->fs->revision_root($self->{incopy}[-1]{fromrev}),
+	    ( oldroot => $self->{copyboundry_root}->fs->
+	      revision_root($self->{incopy}[-1]{dst_fromrev}),
+#			    $self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
-	      editor => $editor);
+	      editor => SVK::Editor::Delay->new(_editor => [$editor]));
 
-    warn "==> DONE" if $main::DEBUG;
     # close file is done by the delta;
     return bless { path => $path,
 		   baton => $baton,

@@ -5,7 +5,8 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( slurp_fh md5_fh get_anchor tmpfile devnull );
+use autouse 'SVK::Util'
+    => qw( slurp_fh md5_fh get_anchor tmpfile devnull abs2rel );
 
 use constant FH => 0;
 use constant FILENAME => 1;
@@ -134,13 +135,13 @@ sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my ($path, $pool) = @_;
-		   $path = $anchor.'/'.$path;
+		   $path = $anchor.'/'.$path unless $path =~ m{^/};
 		   return $root->check_path ($path, $pool);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
 	     sub { my ($path, $checksum, $pool) = @_;
-		   $path = "$anchor/$path";
+		   $path = "$anchor/$path" unless $path =~ m{^/};
 		   my $md5 = $root->file_md5_checksum ($path, $pool);
 		   return if $md5 eq $checksum;
 		   return [$root->file_contents ($path, $pool),
@@ -148,7 +149,7 @@ sub cb_for_root {
 	       },
 	     cb_localprop =>
 	     sub { my ($path, $propname, $pool) = @_;
-		   $path = "$anchor/$path";
+		   $path = "$anchor/$path" unless $path =~ m{^/};
 		   local $@;
 		   return eval { $root->node_prop ($path, $propname, $pool) };
 	       },
@@ -197,6 +198,7 @@ sub open_root {
     $self->{notify}->node_status ('', '');
 
     my $ticket = $self->{ticket};
+    $self->{dh} = Data::Hierarchy->new;
     $self->{cb_merged} =
 	sub { my ($editor, $baton, $type, $pool) = @_;
 	      my $func = "change_${type}_prop";
@@ -226,8 +228,10 @@ sub add_file {
 	++$self->{changes};
 	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
-	$self->{notify}->hist_status ($path, '+')
-	    if defined $arg[0];
+	if (defined $arg[0]) {
+	    $self->{notify}->hist_status ($path, '+');
+	    $self->record_copy($path, @arg);
+	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
 	$pool->default if $pool && $pool->can ('default');
@@ -238,10 +242,24 @@ sub add_file {
     return $path;
 }
 
+sub _resolve_base {
+    my ($self, $path) = @_;
+    my ($entry) = $self->{dh}->get("/$path");
+    return unless $entry->{copyanchor};
+    $entry = $self->{dh}->get($entry->{copyanchor})
+	unless $entry->{copyanchor} eq "/$path";
+    return (abs2rel("/$path",
+		    $entry->{copyanchor} => $entry->{'.copyfrom'}, '/'),
+	    $entry->{'.copyfrom_rev'});
+}
+
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    if ($self->{cb_exist}->($path, $pool)) {
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
+    if ($self->{cb_exist}->($basepath, $pool)) {
+	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev];
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
@@ -326,8 +344,13 @@ sub _retrieve_base
 {
     my ($self, $path, $pool) = @_;
     my @base = tmpfile('base-');
-    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
-    slurp_fh ($self->{base_root}->file_contents ($path, $pool), $base[FH]);
+
+    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ? @{$self->{info}{$path}{baseinfo}} : ($path);
+    my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
+	: $self->{base_root};
+    $basepath = "$self->{base_anchor}/$path"
+	if $basepath !~ m{^/} && $self->{base_anchor};
+    slurp_fh ($root->file_contents ($basepath, $pool), $base[FH]);
     seek $base[FH], 0, 0;
     return @base;
 }
@@ -337,9 +360,10 @@ sub apply_textdelta {
     return unless $path;
 
     my $info = $self->{info}{$path};
+    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
     my $fh = $info->{fh} = {};
     if (($pool = $info->{fpool}) &&
-	($fh->{local} = $self->{cb_localmod}->($path, $checksum || '', $pool))) {
+	($fh->{local} = $self->{cb_localmod}->($basepath, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
 	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
@@ -352,8 +376,10 @@ sub apply_textdelta {
 	unless $self->{notify}->node_status ($path);
 
     $self->ensure_open ($path);
+
     my $handle = $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
 						    $checksum, $pool);
+
     if ($self->{storage_has_unwritable} && !$handle) {
 	delete $self->{notify}{status}{$path};
 	$self->{notify}->flush ($path);
@@ -513,20 +539,36 @@ sub add_directory {
 	$self->{storage_baton}{$path} = $baton;
 	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
-	$self->{notify}->hist_status ($path, '+')
-	    if defined $arg[0];
+	if (defined $arg[0]) {
+	    $self->{notify}->hist_status ($path, '+');
+	    $self->record_copy($path, @arg);
+	}
 	$self->{notify}->flush ($path, 1);
     }
     ++$self->{changes};
     return $path;
 }
 
+sub record_copy {
+    my ($self, $path, @arg) = @_;
+    my ($from, $rev) = $self->{localcopy}->(@arg);
+    $self->{dh}->store("/$path", { copyanchor => "/$path",
+				   '.copyfrom' => $from,
+				   '.copyfrom_rev' => $rev,
+				 });
+}
+
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
     my $pool = $arg[-1];
+
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
-	unless ($self->{cb_exist}->($path, $pool) || $self->{open_nonexist}) {
+
+	my ($basepath, $fromrev) = $self->_resolve_base($path);
+	$basepath = $path unless defined $basepath;
+
+	unless ($self->{cb_exist}->($basepath, $pool) || $self->{open_nonexist}) {
 	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;

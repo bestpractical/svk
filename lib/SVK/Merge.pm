@@ -338,6 +338,7 @@ sub run {
 
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->{path},
+	  repospath => $src->{repospath}, # for stupid copyfrom url
 	  base_anchor => $base->{path},
 	  base_root => $base_root,
 	  target => $target,
@@ -350,6 +351,19 @@ sub run {
 	  allow_conflicts => $is_copath,
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},
+	  # XXX: turning things into URL:rev to translate back is just stupid
+	  localcopy => sub { # for merge only
+	      my ($from, $rev) = @_;
+	      my $m = $cb{mirror};
+	      my ($copybase) = $cb{cb_copyfrom}->($m ? $m->{target_path} : '',
+						  0);
+	      $from =~ s{^\Q$copybase}{};
+	      if ($m) {
+		  $from = $m->{target_path}.$from;
+		  $rev = $m->find_local_rev($rev);
+	      }
+	      return ($from, $rev);
+	  },
 	  # XXX: make the prop resolver more pluggable
 	  $self->{ticket} ?
 	  ( prop_resolver => { 'svk:merge' =>
@@ -374,6 +388,8 @@ sub run {
     my $editor = $meditor;
     if ($self->{notice_copy}) {
 	my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
+	my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
+
 	my $base_rev;
 	if ($self->{base}->path eq $self->{src}->path) {
 	    $base_rev = $self->{base}{revision};
@@ -391,7 +407,6 @@ sub run {
 		$base_rev = $src->search_revision
 		    ( cmp => sub {
 			  my $rev = shift;
-			  warn "==> LOOK $rev" if $main::DEBUG;
 			  my $root = $src->new(revision => $rev)->root;
 			  return $root->node_history($src->path)->prev(0)->prev(0) ? 1 : 0;
 		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
@@ -428,15 +443,14 @@ sub run {
 		  $cpsrc->normalize;
 		  $cp_rev = $cpsrc->{revision};
 		  # now the hard part, reoslve the revision
-		  my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
+		  my $dstinfo;
 		  my $usrc = $src->universal;
 		  my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 		  unless ($dstinfo->{$srckey}) {
-		      my $info = $self->merge_info_with_copy($self->{src}->new);
 		      my $udst = $self->{dst}->universal;
 		      my $dstkey = join(':', $udst->{uuid}, $udst->{path});
-		      return $info->{$dstkey}{rev} ?
-			  ($path, $info->{$dstkey}{rev}) : ();
+		      return $srcinfo->{$dstkey}{rev} ?
+			  ($path, $srcinfo->{$dstkey}{rev}) : ();
 		  }
 		  if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
 		      # same as re-base in editor::copy
@@ -447,7 +461,8 @@ sub run {
 		      return;
 		  }
 		  # XXX: get rid of the merge context needed for
-		  # last-merged_from, actually what it needs is XD
+		  # merged_from(); actually what the function needs is
+		  # just XD
 		  my $rev = $self->{dst}->
 		      merged_from($src->new(revision => $cp_rev),
 				  $self, $cp_path);
