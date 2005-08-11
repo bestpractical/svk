@@ -447,7 +447,7 @@ sub run {
 		      my $udst = $self->{dst}->universal;
 		      my $dstkey = join(':', $udst->{uuid}, $udst->{path});
 		      return $srcinfo->{$dstkey}{rev} ?
-			  ($path, $srcinfo->{$dstkey}{rev}) : ();
+			  ($path, $srcinfo->{$dstkey}->local($self->{dst}{repos})->{revision}) : ();
 		  }
 		  if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
 		      # same as re-base in editor::copy

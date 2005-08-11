@@ -54,7 +54,7 @@ sub find_copy {
 
 	# XXX: copy from 3rd party branch directly within the same mirror
 	# copy from the other branch directly
-	if ($src_frompath =~ m{^\Q$self->{dst}{path}}) {
+	if ($src_frompath =~ m{^\Q$self->{dst}{path}/}) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
 				       frompath => $src_frompath,
@@ -216,10 +216,6 @@ sub replay_add_history {
     my $baton = $self->$func($path, $pbaton, $src_path, $src_rev, $pool);
 
     my ($anchor, $target) = ($path, '');
-    if ($#{$self->{incopy}} == -1) {
-	Carp::cluck $path;
-    }
-#    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{frompath}, '');
     my ($src_anchor, $src_target) = ($self->{incopy}[-1]{dst_frompath}, '');
 
     my %arg = ( anchor => $anchor, anchor_baton => $baton );
@@ -242,7 +238,6 @@ sub replay_add_history {
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
 	      revision_root($self->{incopy}[-1]{dst_fromrev}),
-#			    $self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
