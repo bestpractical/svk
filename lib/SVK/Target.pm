@@ -475,7 +475,10 @@ sub merged_from {
 
 	      warn "==> to compare with $prev" if $main::DEBUG;
 	      return 0
-		  if ($merge->merge_info_with_copy($self->new(revision => $prev))->{$srckey}{rev} || 0) != $src->{revision};
+		  if ($merge->merge_info_with_copy($self->new(revision => $prev))->{$srckey}
+{rev}
+#->local($self->{repos})->{revision}
+ || 0) != $src->{revision};
 	      return 1;
 	  } );
 }

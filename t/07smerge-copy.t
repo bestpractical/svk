@@ -117,7 +117,8 @@ is_output($svk, 'pull', ['//local'],
 	   'Committed revision 19.']);
 
 is_output ($svk, 'sw', ['//local'],
-	   ['Syncing //trunk(/trunk) in /Users/clkao/work/svk-smcp/t/checkout/smerge-copy to 19.'], 'should be no differences.');
+	   ["Syncing //trunk(/trunk) in $corpath to 19."],
+	   'should be no differences.');
 
 $svk->mv('//trunk/B', '//trunk/B-tmp', -m => 'B -> tmp');
 $svk->mv('//trunk/A', '//trunk/B', -m => 'A -> B');
