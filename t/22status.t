@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 22;
+use Test::More tests => 25;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -133,6 +133,21 @@ is_output ($svk, 'st', [],
 	     'A   A/deeper/deeper',
 	     'A   A/deeper/deeper/baz',
 	     '~   A/deep')]);
+my $cowner = $ENV{USER};
+$svk->ps ('-r2', '--revprop', 'svn:author', 'user2');
+$svk->ps ('-r3', '--revprop', 'svn:author', 'user3');
+$svk->ps ('-r5', '--revprop', 'svn:author', 'user5');
+is_output ($svk, 'st', ['--verbose'],
+	   [map {__($_)}
+	    ('           5        2 user2        A/another',
+	     '           5        3 user3        A/foo',
+	     '?                                  A/bar',
+	     'A          0       ?   ?           A/deeper',
+	     'A          0       ?   ?           A/deeper/deeper',
+	     'A          0       ?   ?           A/deeper/deeper/baz',
+	     '~         ?        ?   ?           A/deep',
+	     '           5        5 user5        A',
+	     '           5        5 user5        .')]);
 overwrite_file ("A/bar.o", "binary stuff\n");
 is_output ($svk, 'status', ['--no-ignore'],
 	   [map {__($_)}
@@ -159,3 +174,35 @@ is_output ($svk, 'status', ['--non-recursive', 'A'],
 	    ('?   A/bar',
 	     'A   A/deeper',
 	     '~   A/deep')]);
+$svk->ci ('A/deeper', '-m', 'added deeper');
+$svk->ps ('-r6', '--revprop', 'svn:author', 'user6');
+$svk->cp ('A/deeper', 'A/deeper-copy');
+is_output ($svk, 'st', ['--verbose'],
+	   [map {__($_)}
+	    ('           6        2 user2        A/another',
+	     '           6        6 user6        A/deeper/deeper/baz',
+	     '           6        6 user6        A/deeper/deeper',
+	     '           6        6 user6        A/deeper',
+	     '           6        3 user3        A/foo',
+	     '?                                  A/bar',
+	     'A +        -        6 user6        A/deeper-copy',
+	     '  +        -        6 user6        A/deeper-copy/deeper/baz',
+	     '  +        -        6 user6        A/deeper-copy/deeper',
+	     '~         ?        ?   ?           A/deep',
+	     '           6        6 user6        A',
+	     '           6        6 user6        .')]);
+append_file ("A/deeper-copy/deeper/baz", "more baz");
+is_output ($svk, 'st', ['--verbose'],
+	   [map {__($_)}
+	    ('           6        2 user2        A/another',
+	     '           6        6 user6        A/deeper/deeper/baz',
+	     '           6        6 user6        A/deeper/deeper',
+	     '           6        6 user6        A/deeper',
+	     '           6        3 user3        A/foo',
+	     '?                                  A/bar',
+	     'A +        -        6 user6        A/deeper-copy',
+	     'M +        -        6 user6        A/deeper-copy/deeper/baz',
+	     '  +        -        6 user6        A/deeper-copy/deeper',
+	     '~         ?        ?   ?           A/deep',
+	     '           6        6 user6        A',
+	     '           6        6 user6        .')]);

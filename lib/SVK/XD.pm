@@ -850,6 +850,10 @@ and treat all copied descendents as added too.
 
 Called for ignored items if defined.
 
+=item cb_unchanged
+
+Called for unchanged files if defined.
+
 =back
 
 =cut
@@ -1076,8 +1080,13 @@ sub _delta_file {
 
     $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';
 
-    return $modified unless $schedule || $arg{add} ||
-	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
+    unless ($schedule || $arg{add} ||
+	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})))) {
+	$arg{cb_unchanged}->($arg{editor}, $arg{entry}, $arg{baton},
+			     $arg{cb_rev}->($arg{entry})
+			    ) if ($arg{cb_unchanged} && !$modified);
+	return $modified;
+    }
 
     $baton = $arg{editor}->add_file ($arg{entry}, $arg{baton},
 				     $cinfo->{'.copyfrom'} ?
@@ -1194,7 +1203,13 @@ sub _delta_dir {
 	    delete $entries->{$entry};
 	    next;
 	}
-	next if $unchanged && !$ccschedule && !$ccinfo->{'.conflict'};
+	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
+	if ($unchanged && !$ccschedule && !$ccinfo->{'.conflict'}) {
+	    $arg{cb_unchanged}->($arg{editor}, $newentry, $baton,
+				 $arg{cb_rev}->($newentry)
+				) if $arg{cb_unchanged};
+	    next;
+	}
 	my ($type, $st) = _node_type ($copath);
 	next unless defined $type;
 	my $delta = $type ? $type eq 'directory' ? \&_delta_dir : \&_delta_file
@@ -1209,7 +1224,7 @@ sub _delta_dir {
 			# if copath exist, we have base only if they are of the same type
 			base => !$obs,
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
-			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
+			entry => $newentry,
 			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($newpath),
 			base_kind => $kind,
 			targets => $newtarget,
