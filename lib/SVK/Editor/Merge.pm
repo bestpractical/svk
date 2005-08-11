@@ -261,7 +261,8 @@ sub open_file {
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
     if ($self->{cb_exist}->($basepath, $pool)) {
-	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev];
+	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
+	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
