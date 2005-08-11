@@ -32,6 +32,10 @@ sub AUTOLOAD {
 	$arg[0] = length $arg[0] ?
 	    "$self->{anchor}/$arg[0]" : $self->{anchor};
     }
+    elsif ($func =~ m/^close_(?:file|directory)/) {
+	return if defined $arg[0] &&
+	    ($arg[0] eq $self->{anchor_baton} || $arg[0] eq $self->{target_baton});
+    }
 
     $self->{master_editor}->$func(@arg);
 }
@@ -41,13 +45,6 @@ sub set_target_revision {}
 sub open_root {
     my ($self, $base_revision) = @_;
     return $self->{anchor_baton};
-}
-
-sub close_directory {
-    my ($self, $baton, @arg) = @_;
-    return if defined $baton && $baton eq $self->{anchor_baton};
-
-    $self->{master_editor}->close_directory($baton, @arg);
 }
 
 sub close_edit {}
