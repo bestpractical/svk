@@ -462,8 +462,10 @@ sub merged_from {
 		  ( path => $path,
 		    revision => $minfo->{$srckey}->
 		    local($self->{repos})->{revision} );
-	      local $@;
-	      eval { $msrc->normalize } or return -1;
+	      { local $@;
+	        eval { $msrc->normalize } or return -1;
+	      }
+
 	      if ($msrc->{revision} > $src->{revision}) {
 		  return 1;
 	      }
@@ -471,15 +473,19 @@ sub merged_from {
 		  return -1;
 	      }
 
-	      my $prev = eval { ($search->root->node_history($self->path)->prev(0)->prev(0)->location)[1] } or return 0;
+	      my $prev;
+	      { local $@; 
+	        $prev = eval { ($search->root->node_history($self->path)->prev(0)->prev(0)->location)[1] } or return 0;
+	      }
 
+	      # see if prev got different merge info about srckey.
 	      warn "==> to compare with $prev" if $main::DEBUG;
-	      return 0
-		  if ($merge->merge_info_with_copy($self->new(revision => $prev))->{$srckey}
-{rev}
-#->local($self->{repos})->{revision}
- || 0) != $src->{revision};
-	      return 1;
+	      my $uret = $merge->merge_info_with_copy
+		  ($self->new(revision => $prev))->{$srckey}
+		      or return 0;
+
+	      return ($uret->local($self->{repos})->{revision} == $src->{revision})
+		? 1 : 0;
 	  } );
 }
 
