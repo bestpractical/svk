@@ -107,20 +107,17 @@ overwrite_file('B-mod/S/new', "new file\n");
 $svk->add('B-mod/S/new');
 $svk->ci(-m => 'copy file with modification');
 
-TODO: {
-local $TODO = 'copy+mod inside directoy reqires merge editor cb to use txn or to resolve to cp source.';
 is_output($svk, 'pull', ['//local'],
 	  ['Auto-merging (16, 18) /trunk to /local (base /trunk:16).',
 	   'A + B-mod',
-	   'M   B-mod/fe',
-	   'M   B-mod/S/pe',
+	   'U   B-mod/S/P/pe',
 	   'A   B-mod/S/new',
+	   'U   B-mod/fe',
 	   qr'New merge ticket: .*:/trunk:18',
 	   'Committed revision 19.']);
+
 is_output ($svk, 'sw', ['//local'],
 	   ['Syncing //trunk(/trunk) in /Users/clkao/work/svk-smcp/t/checkout/smerge-copy to 19.'], 'should be no differences.');
-
-}
 
 $svk->mv('//trunk/B', '//trunk/B-tmp', -m => 'B -> tmp');
 $svk->mv('//trunk/A', '//trunk/B', -m => 'A -> B');
@@ -174,6 +171,10 @@ is_ancestor($svk, '//local-new/B-orztrunk',
 # a bunch of modification and then merge back
 $svk->cp ('-m', 'branch', '//trunk@3', '//local-many');
 
+$svk->sw ('//trunk');
+append_file('D/de', 'modify this on trunk');
+$svk->ci(-m => 'modify D/de, which is to be moved from //local-many');
+
 $svk->sw('//local-many');
 $svk->cp('B/S' => 'b-s');
 $svk->ci(-m => 'rename B/S');
@@ -200,12 +201,13 @@ $svk->ci(-m => 'move new file to D');
 
 TODO: {
 local $TODO = 'copy+mod merge status code';
-
+$ENV{SVKRESOLVE} = 't';
+our $answer = ['t'];
 is_output($svk, 'push', ['-l'],
 	  ['Auto-merging (0, 37) /local-many to /trunk (base /trunk:3).',
-	   'U + B/de',
+	   'G + B/de',
 	   'A + b-s',
-	   'U + b-s/de',
+	   'G + b-s/de',
 	   'A   D/new-in-local',
 	   'D   D/de',
 	   qr'New merge ticket: .*:/local-many:37',

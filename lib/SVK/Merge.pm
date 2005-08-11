@@ -443,7 +443,6 @@ sub run {
 		  $cpsrc->normalize;
 		  $cp_rev = $cpsrc->{revision};
 		  # now the hard part, reoslve the revision
-		  my $dstinfo;
 		  my $usrc = $src->universal;
 		  my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 		  unless ($dstinfo->{$srckey}) {
