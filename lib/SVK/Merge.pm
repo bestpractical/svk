@@ -383,8 +383,6 @@ sub run {
 	  %cb,
 	);
 
-    $storage->{_debug}++ if $main::DEBUG;
-
     my $editor = $meditor;
     if ($self->{notice_copy}) {
 	my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
