@@ -216,7 +216,7 @@ sub replay_add_history {
     my $baton = $self->$func($path, $pbaton, $src_path, $src_rev, $pool);
 
     my ($anchor, $target) = ($path, '');
-    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{dst_frompath}, '');
+    my ($src_anchor, $src_target) = ($self->{incopy}[-1]{frompath}, '');
 
     my %arg = ( anchor => $anchor, anchor_baton => $baton );
     if ($type eq 'file') {
@@ -234,14 +234,14 @@ sub replay_add_history {
 	 translate => sub { $_[0] =~ s/^\Q$src_target/$target/ })
 	    if $type eq 'file';
 
-    warn "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{dst_fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
+    warn "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
-	      revision_root($self->{incopy}[-1]{dst_fromrev}),
+	      revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
-	      editor => SVK::Editor::Delay->new(_editor => [$editor]));
+	      editor => SVK::Editor::Delay->new(_editor => [$editor]) );
 
     # close file is done by the delta;
     return bless { path => $path,

@@ -507,9 +507,9 @@ sub close_file {
 	}
 	$self->cleanup_fh ($fh);
     }
-    elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
-	if (!$self->{info}{$path}{baseinfo}) {
-	    # open but prop edit only, load local checksum
+    elsif ($info->{fpool}) {
+	if (!$self->{notify}->node_status($path) || !exists $fh->{local} ) {
+	    # open but without text edit, load local checksum
 	    if (my $local = $self->{cb_localmod}->($basepath, $checksum, $pool)) {
 		$checksum = $local->[CHECKSUM];
 		close $local->[FH];
