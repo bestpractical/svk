@@ -33,8 +33,11 @@ sub AUTOLOAD {
 	    "$self->{anchor}/$arg[0]" : $self->{anchor};
     }
     elsif ($func =~ m/^close_(?:file|directory)/) {
-	return if defined $arg[0] &&
-	    ($arg[0] eq $self->{anchor_baton} || $arg[0] eq $self->{target_baton});
+	if (defined $arg[0]) {
+	    return if $arg[0] eq $self->{anchor_baton};
+	    return if defined $self->{target_baton} &&
+		$arg[0] eq $self->{target_baton};
+	}
     }
 
     $self->{master_editor}->$func(@arg);
