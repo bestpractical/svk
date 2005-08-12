@@ -449,12 +449,14 @@ sub merged_from {
     my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
     warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
 
+    my $searchcp = $merge->merge_info_with_copy($self);
     $self->search_revision
 	( cmp => sub {
 	      my $rev = shift;
 	      warn "==> look at $rev" if $main::DEBUG;
 	      my $search = $self->new(revision => $rev);
-	      my $minfo = $merge->merge_info_with_copy($search);
+	      my $minfo = { %$searchcp,
+			    %{$merge->merge_info($search)} };
 	      return -1 unless $minfo->{$srckey};
 	      # get the actual revision of the on the merge target,
 	      # and compare
