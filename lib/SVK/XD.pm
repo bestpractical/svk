@@ -1196,6 +1196,7 @@ sub _delta_dir {
 	# latter direntries loop.  we should really merge the two.
 	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
 	    delete $entries->{$entry};
+	    $targets->{$entry} = $newtarget if defined $targets;
 	    next;
 	}
 	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
