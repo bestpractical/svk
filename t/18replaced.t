@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 19;
+use Test::More tests => 20;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -79,6 +79,8 @@ $svk->rm ("$copath/T1/T1");
 is_output ($svk, 'cp', ["$copath/T2/T2", "$copath/T1/T1"],
            [__"A   $copath/T1/T1"], 'replace with history');
 is_output ($svk, 'st', [$copath],
+	   [__"R + $copath/T1/T1"]);
+is_output ($svk, 'st', ["$copath/T1/T1"],
 	   [__"R + $copath/T1/T1"]);
 
 $svk->commit ('-m', 'commit', $copath);
