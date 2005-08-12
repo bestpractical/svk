@@ -130,11 +130,22 @@ sub obstruct {
     $self->{notify}->node_status ($path, '~');
 }
 
+sub unknown {
+    my ($self, $path) = @_;
+    $self->{notify}->node_status ($path, '?');
+    $self->{notify}->flush ($path);
+}
+
+sub ignored {
+    my ($self, $path) = @_;
+    $self->{notify}->node_status ($path, 'I');
+    $self->{notify}->flush ($path);
+}
+
 sub unchanged {
     my ($self, $path, @args) = @_;
-    my $baton = $self->open_node($path, @args);
+    $self->open_node($path, @args);
     $self->{notify}->flush ($path);
-    return $baton;
 }
 
 1;

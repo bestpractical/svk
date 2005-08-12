@@ -145,7 +145,7 @@ sub _unmodified {
 	      })),
 	  # need tests: only useful for move killing the src with unknown entries
 	  cb_unknown => sub {
-	      die loc ("%1 is unknown.\n", $target->copath ($_[0]))});
+	      die loc ("%1 is unknown.\n", $target->copath ($_[1]))});
 }
 
 sub check_src {

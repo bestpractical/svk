@@ -59,10 +59,11 @@ sub run {
 		      if -e _;
 	      })),
 	  cb_unknown => sub {
-	      lstat ($_[1]);
-	      to_native ($_[0]);
-	      $self->_do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
-			     !-d _);
+	      my ($editor, $path) = @_;
+	      my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
+	          @{$target}{qw/copath report/};
+	      lstat ($copath);
+	      $self->_do_add ('A', $copath, $report, !-d _);
 	  },
 	);
 }
