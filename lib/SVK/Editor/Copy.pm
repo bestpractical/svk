@@ -3,8 +3,37 @@ use strict;
 use warnings;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
+
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
+
+=head1 NAME
+
+SVK::Editor::Copy - Turn editor calls to calls with history
+
+=head1 SYNOPSIS
+
+  $editor = SVK::Editor::Copy->new
+    ( _editor => [$next_editor],
+      copyboundry_root => $anchor,
+      copyboundry_rev => $base_anchor,
+      src => $src,
+      dst => $dst,
+      cb_resolve_copy => sub {},
+    );
+
+
+=head1 DESCRIPTION
+
+This is the magic editor that turns a series of history-unaware editor
+calls into history-aware ones.  The main Subversion tree delta API
+C<SVN::Repos::dir_delta> generates "expanded" editor calls, mainly to
+be used for editors for writing to checkout or showing diff.  However,
+it's desired to have history-aware editor calls for the purpose of
+replaying revisions which have copies, or displaying diff for
+copy-then-modified files.
+
+=cut
 
 use SVK::Editor::Composite;
 use SVK::Util qw( get_depot_anchor );
@@ -22,7 +51,7 @@ sub should_ignore {
 	return 1;
     }
 
-    if (ref($pbaton) eq 'SVK::Editor::Copy::copied_directory') {
+    if (ref($pbaton) eq 'SVK::Editor::Copy::copied') {
 	return 1;
     }
 
@@ -31,7 +60,6 @@ sub should_ignore {
 
 sub find_copy {
     my ($self, $path) = @_;
-    my $base_path = File::Spec::Unix->catdir($self->{base_path}, $path);
     my $target_path = File::Spec::Unix->catdir($self->{src}{path}, $path);
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
@@ -57,10 +85,8 @@ sub find_copy {
 	if ($src_frompath =~ m{^\Q$self->{dst}{path}/}) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
-				       frompath => $src_frompath,
-				       dst_fromrev => $src_from,
-				       dst_frompath => $src_frompath };
-	    return $self->{cb_copyfrom}->($src_frompath, $src_from);
+				       frompath => $src_frompath };
+	    return $self->copy_source($src_frompath, $src_from);
 	}
 
 	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
@@ -88,17 +114,21 @@ sub find_copy {
 	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
-				       frompath => $src_frompath,
-				       dst_frompath => $frompath,
-				       dst_fromrev => $from
-				     };
+				       frompath => $src_frompath };
 	    warn "==> resolved to $frompath:$from"
 		if $main::DEBUG;
-	    return $self->{cb_copyfrom}->($frompath, $from);
+	    return $self->copy_source($src_frompath, $src_from);
 	}
 
     }
     return;
+}
+
+sub copy_source {
+    my ($self, @arg) = @_;
+    my $cb = $self->{cb_copyfrom};
+    @arg = $cb->(@arg) if $cb;
+    return @arg;
 }
 
 sub incopy {
@@ -168,7 +198,7 @@ sub apply_textdelta {
 
 sub close_file {
     my ($self, $baton, @arg) = @_;
-    if (ref($baton) eq 'SVK::Editor::Copy::copied_directory') {
+    if (ref($baton) eq 'SVK::Editor::Copy::copied') {
 	$self->outcopy($baton->{path});
 	return $self->SUPER::close_file($baton->{baton}, @arg);
 
@@ -201,7 +231,7 @@ sub delete_entry {
 
 sub close_directory {
     my ($self, $baton, @arg) = @_;
-    if (ref($baton) eq 'SVK::Editor::Copy::copied_directory') {
+    if (ref($baton) eq 'SVK::Editor::Copy::copied') {
 	$self->outcopy($baton->{path});
 	return $self->SUPER::close_directory($baton->{baton}, @arg);
     }
@@ -246,10 +276,24 @@ sub replay_add_history {
     # close file is done by the delta;
     return bless { path => $path,
 		   baton => $baton,
-		 }, __PACKAGE__.'::copied_directory';
+		 }, __PACKAGE__.'::copied';
 
     $self->{ignore_baton};
 }
 
+=head1 AUTHORS
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
+=cut
 
 1;

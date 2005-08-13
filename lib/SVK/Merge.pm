@@ -351,19 +351,6 @@ sub run {
 	  allow_conflicts => $is_copath,
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},
-	  # XXX: turning things into URL:rev to translate back is just stupid
-	  localcopy => sub { # for merge only
-	      my ($from, $rev) = @_;
-	      my $m = $cb{mirror};
-	      my ($copybase) = $cb{cb_copyfrom}->($m ? $m->{target_path} : '',
-						  0);
-	      $from =~ s{^\Q$copybase}{};
-	      if ($m) {
-		  $from = $m->{target_path}.$from;
-		  $rev = $m->find_local_rev($rev);
-	      }
-	      return ($from, $rev);
-	  },
 	  # XXX: make the prop resolver more pluggable
 	  $self->{ticket} ?
 	  ( prop_resolver => { 'svk:merge' =>
@@ -417,57 +404,21 @@ sub run {
 	require SVK::Editor::Copy;
 	$editor = SVK::Editor::Copy->new
 	    ( _editor => [$meditor],
-	      base_root => $base_root,
-	      base_path => $base->path,
-	      base_rev => $base_rev,
 	      copyboundry_rev => $base_rev,
 	      copyboundry_root => $self->{repos}->fs->revision_root($base_rev),
-	      merge => $self,
-	      base => $base,
 	      src => $src,
 	      dst => $self->{dst},
-	      cb_copyfrom => $cb{cb_copyfrom},
 	      cb_resolve_copy => sub {
-		  my ($cp_path, $cp_rev) = @_; # translate to (path, rev) for dst
-		  warn "==> to resolve $cp_path $cp_rev" if $main::DEBUG;
-		  my $path = $cp_path;
-		  my $srcpath = $self->{src}->path;
-		  my $dstpath = $self->{dst}->path;
-		  return unless $path =~ m{^\Q$srcpath/};
+		  my ($src_from, $src_fromrev) = @_;
+		  my ($dst_from, $dst_fromrev) =
+		      $self->resolve_copy($srcinfo, $dstinfo, @_);
+		  return unless defined $dst_from;
 
-		  my $cpsrc = $src->new( path => $path,
-					 revision => $cp_rev );
-		  $path =~ s/^\Q$srcpath/$dstpath/;
-		  $cpsrc->normalize;
-		  $cp_rev = $cpsrc->{revision};
-		  # now the hard part, reoslve the revision
-		  my $usrc = $src->universal;
-		  my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
-		  unless ($dstinfo->{$srckey}) {
-		      my $udst = $self->{dst}->universal;
-		      my $dstkey = join(':', $udst->{uuid}, $udst->{path});
-		      return $srcinfo->{$dstkey}{rev} ?
-			  ($path, $srcinfo->{$dstkey}->local($self->{dst}{repos})->{revision}) : ();
-		  }
-		  if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
-		      # same as re-base in editor::copy
-		      my $rev = $self->{src}->merged_from
-			  ($self->{base}, $self, $self->{base}{path});
-		      # XXX: compare rev and cp_rev
-		      return ($path, $rev) if defined $rev;
-		      return;
-		  }
-		  # XXX: get rid of the merge context needed for
-		  # merged_from(); actually what the function needs is
-		  # just XD
-		  my $rev = $self->{dst}->
-		      merged_from($src->new(revision => $cp_rev),
-				  $self, $cp_path);
+		  $meditor->copy_info($src_from, $src_fromrev,
+				     $dst_from, $dst_fromrev);
 
-		  return ($path, $rev) if defined $rev;
-		  return;
-	      }
-	    );
+		  return ($src_from, $src_fromrev);
+	      } );
 	$editor = SVK::Editor::Delay->new ($editor);
     }
 
@@ -482,6 +433,48 @@ sub run {
 	      $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
 
     return $meditor->{conflicts};
+}
+
+ # translate to (path, rev) for dst
+sub resolve_copy {
+    my ($self, $srcinfo, $dstinfo, $cp_path, $cp_rev) = @_;
+    warn "==> to resolve $cp_path $cp_rev" if $main::DEBUG;
+    my $path = $cp_path;
+    my $src = $self->{src};
+    my $srcpath = $src->path;
+    my $dstpath = $self->{dst}->path;
+    return unless $path =~ m{^\Q$srcpath/};
+
+    my $cpsrc = $src->new( path => $path,
+			   revision => $cp_rev );
+    $path =~ s/^\Q$srcpath/$dstpath/;
+    $cpsrc->normalize;
+    $cp_rev = $cpsrc->{revision};
+    # now the hard part, reoslve the revision
+    my $usrc = $src->universal;
+    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    unless ($dstinfo->{$srckey}) {
+	my $udst = $self->{dst}->universal;
+	my $dstkey = join(':', $udst->{uuid}, $udst->{path});
+	return $srcinfo->{$dstkey}{rev} ?
+	    ($path, $srcinfo->{$dstkey}->local($self->{dst}{repos})->{revision}) : ();
+    }
+    if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
+	# same as re-base in editor::copy
+	my $rev = $self->{src}->merged_from
+	    ($self->{base}, $self, $self->{base}{path});
+	# XXX: compare rev and cp_rev
+	return ($path, $rev) if defined $rev;
+	return;
+    }
+    # XXX: get rid of the merge context needed for
+    # merged_from(); actually what the function needs is
+    # just XD
+    my $rev = $self->{dst}->
+	merged_from($src->new(revision => $cp_rev),
+		    $self, $cp_path);
+
+    return ($path, $rev) if defined $rev;
 }
 
 sub resolver {

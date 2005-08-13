@@ -82,7 +82,6 @@ is_ancestor($svk, '//local/A/quz',
 	    '/local/A/Q/qu', 4,
 	    '/trunk/A/Q/qu', 2);
 
-
 # copy and modify
 $svk->cp('A/quz', 'A/quz-mod');
 append_file('A/quz-mod', "modified after copy\n");
@@ -170,9 +169,10 @@ is_ancestor($svk, '//local-new/B-orztrunk',
 
 
 # a bunch of modification and then merge back
-$svk->cp ('-m', 'branch', '//trunk@3', '//local-many');
+$svk->cp ('-m', 'branch', '//trunk@3', '//trunk-3');
+$svk->cp ('-m', 'branch', '//trunk-3', '//local-many');
 
-$svk->sw ('//trunk');
+$svk->sw ('//trunk-3');
 append_file('D/de', 'modify this on trunk');
 $svk->ci(-m => 'modify D/de, which is to be moved from //local-many');
 
@@ -180,7 +180,7 @@ $svk->sw('//local-many');
 $svk->cp('B/S' => 'b-s');
 $svk->ci(-m => 'rename B/S');
 
-append_file('D/de', 'modify');
+overwrite_file('D/de', "modify on D/de\nfile de added later\n");
 $svk->ci(-m => 'change de');
 
 $svk->cp('D/de' => 'b-s/de');
@@ -189,7 +189,7 @@ $svk->ci(-m => 'cp de under b-s');
 $svk->mv('D/de' => 'B/de');
 $svk->ci(-m => 'move de to B');
 
-append_file('B/de', 'modify on B/de');
+overwrite_file('B/de', "modify on D/de\nmodify on B/de\nfile de added later\n");
 $svk->ci(-m => 'change de');
 
 overwrite_file('new-in-local', 'new file on local');
@@ -199,18 +199,15 @@ $svk->ci(-m => 'new file');
 $svk->mv('new-in-local' => 'D');
 $svk->ci(-m => 'move new file to D');
 
-
-TODO: {
-local $TODO = 'copy+mod merge status code';
 $ENV{SVKRESOLVE} = 't';
-our $answer = ['t'];
+#our $answer = ['t'];
 is_output($svk, 'push', ['-l'],
-	  ['Auto-merging (0, 37) /local-many to /trunk (base /trunk:3).',
+	  ['Auto-merging (0, 39) /local-many to /trunk-3 (base /trunk-3:30).',
 	   'G + B/de',
 	   'A + b-s',
 	   'G + b-s/de',
 	   'A   D/new-in-local',
 	   'D   D/de',
-	   qr'New merge ticket: .*:/local-many:37',
-	   'Committed revision 38.']);
-}
+	   qr'New merge ticket: .*:/local-many:39',
+	   'Committed revision 40.']);
+

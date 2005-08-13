@@ -183,6 +183,11 @@ sub cb_translate {
     }
 }
 
+sub copy_info {
+    my ($self, $src_from, $src_fromrev, $dst_from, $dst_fromrev) = @_;
+    $self->{copy_info}{$src_from}{$src_fromrev} = [$dst_from, $dst_fromrev];
+}
+
 sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;
@@ -230,7 +235,7 @@ sub add_file {
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
 	if (defined $arg[0]) {
 	    $self->{notify}->hist_status ($path, '+');
-	    $self->record_copy($path, @arg);
+	    @arg = $self->resolve_copy($path, @arg);
 	    $self->{info}{$path}{baseinfo} = [$self->_resolve_base($path)];
 	    $self->{info}{$path}{fpool} = $pool;
 	}
@@ -245,14 +250,15 @@ sub add_file {
 }
 
 sub _resolve_base {
-    my ($self, $path) = @_;
+    my ($self, $path, $orig) = @_;
     my ($entry) = $self->{dh}->get("/$path");
     return unless $entry->{copyanchor};
     $entry = $self->{dh}->get($entry->{copyanchor})
 	unless $entry->{copyanchor} eq "/$path";
+    my $key = $orig ? 'orig_copyfrom' : 'copyfrom';
     return (abs2rel("/$path",
-		    $entry->{copyanchor} => $entry->{'.copyfrom'}, '/'),
-	    $entry->{'.copyfrom_rev'});
+		    $entry->{copyanchor} => $entry->{".$key"}, '/'),
+	    $entry->{".${key}_rev"});
 }
 
 sub open_file {
@@ -348,7 +354,9 @@ sub _retrieve_base
     my ($self, $path, $pool) = @_;
     my @base = tmpfile('base-');
 
-    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ? @{$self->{info}{$path}{baseinfo}} : ($path);
+    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ?
+	$self->_resolve_base($path, 1)
+      : ($path);
     my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
 	: $self->{base_root};
     $basepath = "$self->{base_anchor}/$path"
@@ -524,7 +532,7 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
-    my $pool = $arg[-1];
+    my $pool = pop @arg;
     my $touched = $self->{notify}->node_status($path);
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
@@ -536,37 +544,42 @@ sub add_directory {
 	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
-					      $self->{cb_rev}->($path), $arg[2]);
+					      $self->{cb_rev}->($path), $pool);
 	$self->{notify}->node_status ($path, 'G');
     }
     else {
+	if (defined $arg[0]) {
+	    @arg = $self->resolve_copy($path, @arg);
+	}
 	my $baton =
 	    $self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
-					     @arg);
+					     @arg, $pool);
 	unless (defined $baton) {
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}
 	$self->{storage_baton}{$path} = $baton;
 	$self->{added}{$path} = 1;
+	$self->{notify}->hist_status ($path, '+')
+	    if defined $arg[0];
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
-	if (defined $arg[0]) {
-	    $self->{notify}->hist_status ($path, '+');
-	    $self->record_copy($path, @arg);
-	}
 	$self->{notify}->flush ($path, 1);
     }
     ++$self->{changes};
     return $path;
 }
 
-sub record_copy {
-    my ($self, $path, @arg) = @_;
-    my ($from, $rev) = $self->{localcopy}->(@arg);
+sub resolve_copy {
+    my ($self, $path, $from, $rev) = @_;
+    die unless exists $self->{copy_info}{$from}{$rev};
+    my ($dstfrom, $dstrev) = @{$self->{copy_info}{$from}{$rev}};
     $self->{dh}->store("/$path", { copyanchor => "/$path",
-				   '.copyfrom' => $from,
-				   '.copyfrom_rev' => $rev,
+				   '.copyfrom' => $dstfrom,
+				   '.copyfrom_rev' => $dstrev,
+				   '.orig_copyfrom' => $from,
+				   '.orig_copyfrom_rev' => $rev,
 				 });
+    $self->{cb_copyfrom}->($dstfrom, $dstrev);
 }
 
 sub open_directory {
