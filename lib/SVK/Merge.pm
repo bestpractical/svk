@@ -165,16 +165,23 @@ sub merge_info_with_copy {
     my ($self, $target) = @_;
     my $minfo = $self->merge_info($target);
 
-    for (reverse $target->copy_ancestors) {
-	my ($path, $rev) = @$_;
-	my $uuid;
-	($uuid, $path, $rev) = find_svm_source($target->{repos}, $path, $rev);
-	my $entry = "$uuid:$path";
-	$minfo->{$entry} = SVK::Target::Universal->new($uuid, $path, $rev)
-	    unless $minfo->{$entry} && $minfo->{$entry} > $rev;
+    for ($self->copy_ancestors($target)) {
+	my $srckey = join(':', $_->{uuid}, $_->{path});
+	$minfo->{$srckey} = $_
+	    unless $minfo->{$srckey} && $minfo->{$srckey} > $_->{rev};
     }
 
     return $minfo;
+}
+
+sub copy_ancestors {
+    my ($self, $target) = @_;
+
+    return map { $target->new
+		     ( path => $_->[0],
+		       targets => undef,
+		       revision => $_->[1])->universal;
+		   } $target->copy_ancestors;
 }
 
 sub find_merge_sources {
@@ -375,21 +382,20 @@ sub run {
 	my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
 	my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
 
-	my $base_rev;
+	my $boundry_rev;
 	if ($self->{base}->path eq $self->{src}->path) {
-	    $base_rev = $self->{base}{revision};
+	    $boundry_rev = $self->{base}{revision};
 	}
 	else {
 	    my $usrc = $src->universal;
 	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 	    if ($dstinfo->{$srckey}) {
-		$base_rev = $src->merged_from
+		$boundry_rev = $src->merged_from
 		    ($self->{base}, $self, $self->{base}{path});
-#		$base_rev = $dstinfo->{$srckey}->local($self->{dst}{repos})->{revision};
 	    }
 	    else {
 		# when did the branch first got created?
-		$base_rev = $src->search_revision
+		$boundry_rev = $src->search_revision
 		    ( cmp => sub {
 			  my $rev = shift;
 			  my $root = $src->new(revision => $rev)->root;
@@ -397,15 +403,14 @@ sub run {
 		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
 	    }
 	}
-	warn "==> got $base_rev as copyboundry" if $main::DEBUG;
+	warn "==> got $boundry_rev as copyboundry" if $main::DEBUG;
 
-	# find the dst base root, which is the last change on svk:merge
-	# that brings the current merge ticket from src
 	require SVK::Editor::Copy;
 	$editor = SVK::Editor::Copy->new
 	    ( _editor => [$meditor],
-	      copyboundry_rev => $base_rev,
-	      copyboundry_root => $self->{repos}->fs->revision_root($base_rev),
+	      copyboundry_rev => $boundry_rev,
+	      copyboundry_root => $self->{repos}->fs->revision_root($boundry_rev
+),
 	      src => $src,
 	      dst => $self->{dst},
 	      cb_resolve_copy => sub {

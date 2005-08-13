@@ -47,6 +47,7 @@ sub clone {
 sub root {
     my ($self, $xd) = @_;
     if ($self->{copath}) {
+	die "xdroot requires xd. ".join(',',(caller(1))[0..3]) unless $xd;
 	$xd->xdroot (%$self);
     }
     else {
@@ -238,6 +239,12 @@ sub depotname {
 # previous copy happens.
 
 sub copy_ancestors {
+    my $self = shift;
+    @{ $self->{copy_ancesotrs}{$self->path}{$self->{revision}} ||=
+	   [$self->_copy_ancestors] };
+}
+
+sub _copy_ancestors {
     my $self = shift;
     my $fs = $self->{repos}->fs;
     my $t = $self->new->as_depotpath;
@@ -445,16 +452,23 @@ sub search_revision {
 # $path is the actul path we use to normalise
 sub merged_from {
     my ($self, $src, $merge, $path) = @_;
+    $self = $self->new->as_depotpath;
     my $usrc = $src->universal;
     my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
     warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
+
+    my %copies = map { join(':', $_->{uuid}, $_->{path}) => $_ }
+	$merge->copy_ancestors($self);
 
     $self->search_revision
 	( cmp => sub {
 	      my $rev = shift;
 	      warn "==> look at $rev" if $main::DEBUG;
 	      my $search = $self->new(revision => $rev);
-	      my $minfo = $merge->merge_info_with_copy($search);
+	      my $minfo = { %copies,
+			    %{$merge->merge_info($search)} };
+
+#$merge->merge_info_with_copy($search);
 	      return -1 unless $minfo->{$srckey};
 	      # get the actual revision of the on the merge target,
 	      # and compare
@@ -506,3 +520,4 @@ See L<http://www.perl.com/perl/misc/Artistic.html>
 =cut
 
 1;
+

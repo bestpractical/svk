@@ -579,7 +579,9 @@ sub resolve_copy {
 				   '.orig_copyfrom' => $from,
 				   '.orig_copyfrom_rev' => $rev,
 				 });
-    $self->{cb_copyfrom}->($dstfrom, $dstrev);
+    return $self->{cb_copyfrom}->($dstfrom, $dstrev)
+	if $self->{cb_copyfrom};
+    return ($dstfrom, $dstrev);
 }
 
 sub open_directory {
