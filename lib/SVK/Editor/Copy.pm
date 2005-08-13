@@ -83,10 +83,13 @@ sub find_copy {
 	# XXX: copy from 3rd party branch directly within the same mirror
 	# copy from the other branch directly
 	if ($src_frompath =~ m{^\Q$self->{dst}{path}/}) {
-	    push @{$self->{incopy}}, { path => $path,
-				       fromrev => $src_from,
-				       frompath => $src_frompath };
-	    return $self->copy_source($src_frompath, $src_from);
+	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
+		push @{$self->{incopy}}, { path => $path,
+					   fromrev => $src_from,
+					   frompath => $src_frompath };
+		return $self->copy_source($src_frompath, $src_from);
+	    }
+	    return;
 	}
 
 	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};

@@ -571,7 +571,8 @@ sub add_directory {
 
 sub resolve_copy {
     my ($self, $path, $from, $rev) = @_;
-    die unless exists $self->{copy_info}{$from}{$rev};
+    die "unknown copy $from $rev for $path"
+	unless exists $self->{copy_info}{$from}{$rev};
     my ($dstfrom, $dstrev) = @{$self->{copy_info}{$from}{$rev}};
     $self->{dh}->store("/$path", { copyanchor => "/$path",
 				   '.copyfrom' => $dstfrom,

@@ -448,6 +448,7 @@ sub resolve_copy {
     my $src = $self->{src};
     my $srcpath = $src->path;
     my $dstpath = $self->{dst}->path;
+    return ($cp_path, $cp_rev) if $path =~ m{^\Q$dstpath/};
     return unless $path =~ m{^\Q$srcpath/};
 
     my $cpsrc = $src->new( path => $path,
