@@ -103,17 +103,15 @@ is_output ($svk, 'revert', ['-R'],
 is_output ($svk, 'st', [], [__('?   A/foo.cp')]);
 unlink('A/foo.cp');
 
-TODO: {
-    local $TODO = 'Status and reverting modified local copy';
-    mkdir('A/dir1');
-    overwrite_file ("A/dir1/foo", "foobarbaz");
-    $svk->add('A/dir1');
-    $svk->commit ('-m', 'added A/dir1');
-    $svk->cp('A/dir1', 'A/dir1-copy');
-    append_file('A/dir1-copy/foo', 'some thing');
-    is_output ($svk, 'st', [], [
-	__('A + A/dir1-copy'),
-	__('M + A/dir1-copy/foo')]);
-    is_output ($svk, 'revert', ['-R', 'A/dir1-copy'],
-	       [__("Reverted A/dir1-copy")]);
-}
+mkdir('A/dir1');
+overwrite_file ("A/dir1/foo", "foobarbaz");
+$svk->add('A/dir1');
+$svk->commit ('-m', 'added A/dir1');
+$svk->cp('A/dir1', 'A/dir1-copy');
+append_file('A/dir1-copy/foo', 'some thing');
+is_output ($svk, 'st', [], [
+    __('A + A/dir1-copy'),
+    __('M + A/dir1-copy/foo')]);
+is_output ($svk, 'revert', ['-R', 'A/dir1-copy'], [
+    __('Reverted A/dir1-copy'),
+    __('Reverted A/dir1-copy/foo')]);

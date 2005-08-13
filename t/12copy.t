@@ -39,7 +39,7 @@ is_output ($svk, 'status', [$copath],
 	   [__('A + t/checkout/copy/D-copy'),
 	    __('A + t/checkout/copy/V-copy'),
 	    __('D   t/checkout/copy/V-copy/B/fe'),
-	    __('M   t/checkout/copy/V-copy/D/de'),
+	    __('M + t/checkout/copy/V-copy/D/de'),
 	    __('A + t/checkout/copy/de'),
 	    __('A + t/checkout/copy/de-copy'),
 	    __('A + t/checkout/copy/me'),
@@ -99,7 +99,7 @@ my $status = [status_native ($copath, 'A  ', 'newdir/A',
 is_output ($svk, 'copy', ['//V/A', "$copath/newdir"],
 	   $status);
 is_output ($svk, 'status', ["$copath/newdir/A", "$copath/A-prop"],
-	   [status_native ($copath, 'A +', 'A-prop', ' M ', 'A-prop/be',
+	   [status_native ($copath, 'A +', 'A-prop', ' M+', 'A-prop/be',
 			   'A  ', 'newdir', 'A +', 'newdir/A')]);
 
 

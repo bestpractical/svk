@@ -565,11 +565,7 @@ sub xd_storage_cb {
 				     depth => 1,
 				     editor => $editor,
 				     absent_as_delete => 1,
-				     cb_unknown =>
-				     sub {
-					 my $unknown = abs2rel($_[0], $path);
-					 $modified->{$unknown} = '?';
-				     },
+				     cb_unknown => \&SVK::Editor::Status::unknown,
 				   );
 			       return $modified;
 			   },
@@ -697,8 +693,7 @@ sub do_delete {
 				})),
 			    cb_unknown => sub {
 				die loc("%1 is not under version control.\n",
-					abs2rel($_[1], $arg{copath} => $arg{report}));
-
+					SVK::Target->copath ($arg{report}, $_[1]));
 			    }
 			  );
 
@@ -851,6 +846,10 @@ and treat all copied descendents as added too.
 
 Called for ignored items if defined.
 
+=item cb_unchanged
+
+Called for unchanged files if defined.
+
 =back
 
 =cut
@@ -901,7 +900,7 @@ sub _unknown_verbose {
 		$now .= $now ? "/$dir" : $dir;
 		my $copath = SVK::Target->copath ($arg{copath}, $now);
 		next if $seen{$copath};
-		$arg{cb_unknown}->(catdir($arg{entry}, $now), $copath);
+		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
 		$seen{$copath} = 1;
 	    }
 	}
@@ -915,7 +914,7 @@ sub _unknown_verbose {
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
 		my $dpath = abs2rel($copath, $arg{copath} => $arg{entry}, '/');
-		$arg{cb_unknown}->($dpath, $copath);
+		$arg{cb_unknown}->($arg{editor}, $dpath, $arg{baton});
 	  }}, defined $arg{targets} ?
 	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
 }
@@ -1077,8 +1076,13 @@ sub _delta_file {
 
     $arg{base} = 0 if $arg{in_copy} || $schedule eq 'replace';
 
-    return $modified unless $schedule || $arg{add} ||
-	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})));
+    unless ($schedule || $arg{add} ||
+	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})))) {
+	$arg{cb_unchanged}->($arg{editor}, $arg{entry}, $arg{baton},
+			     $arg{cb_rev}->($arg{entry})
+			    ) if ($arg{cb_unchanged} && !$modified);
+	return $modified;
+    }
 
     $baton = $arg{editor}->add_file ($arg{entry}, $arg{baton},
 				     $cinfo->{'.copyfrom'} ?
@@ -1193,9 +1197,16 @@ sub _delta_dir {
 	# latter direntries loop.  we should really merge the two.
 	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
 	    delete $entries->{$entry};
+	    $targets->{$entry} = $newtarget if defined $targets;
 	    next;
 	}
-	next if $unchanged && !$ccschedule && !$ccinfo->{'.conflict'};
+	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
+	if ($unchanged && !$ccschedule && !$ccinfo->{'.conflict'}) {
+	    $arg{cb_unchanged}->($arg{editor}, $newentry, $baton,
+				 $arg{cb_rev}->($newentry)
+				) if $arg{cb_unchanged};
+	    next;
+	}
 	my ($type, $st) = _node_type ($copath);
 	next unless defined $type;
 	my $delta = $type ? $type eq 'directory' ? \&_delta_dir : \&_delta_file
@@ -1210,7 +1221,7 @@ sub _delta_dir {
 			# if copath exist, we have base only if they are of the same type
 			base => !$obs,
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
-			entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
+			entry => $newentry,
 			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($newpath),
 			base_kind => $kind,
 			targets => $newtarget,
@@ -1269,7 +1280,7 @@ sub _delta_dir {
 	# for unknowns, as well as the case of auto_add (import)
 	if (!defined $targets) {
 	    if ((!$add || $arg{auto_add}) && $entry =~ m/$ignore/) { 
-		$arg{cb_ignored}->($newpaths{entry}, $newpaths{copath})
+		$arg{cb_ignored}->($arg{editor}, $newpaths{entry}, $arg{baton})
 		    if $arg{cb_ignored};
 		next;
 	    }
@@ -1280,7 +1291,7 @@ sub _delta_dir {
 	}
 	unless ($add || $ccinfo->{'.conflict'}) {
 	    if ($arg{cb_unknown}) {
-		$arg{cb_unknown}->($newpaths{entry}, $newpaths{copath});
+		$arg{cb_unknown}->($arg{editor}, $newpaths{entry}, $arg{baton});
 		$self->_unknown_verbose (%arg, %newpaths)
 		    if $arg{unknown_verbose};
 	    }

@@ -9,12 +9,14 @@ sub new {
     my $self = $class->SUPER::new (@arg);
     $self->{report} ||= '';
     $self->{notify} ||= SVK::Notify->new_with_report ($self->{report});
+    $self->{tree} ||= Data::Hierarchy->new ();
     return $self;
 }
 
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{notify}->node_status ('', '');
+    $self->{notify}->node_baserev ('', $baserev);
     return '';
 }
 
@@ -30,17 +32,16 @@ sub add_or_replace {
 }
 
 sub add_file {
-    my ($self, $path, $pdir, @arg) = @_;
+    my ($self, $path, $pdir, $from_path, $from_rev) = @_;
     $self->add_or_replace ($path);
-    $self->{notify}->hist_status ($path, '+') if $arg[0];
+    $self->{notify}->hist_status ($path, '+', $from_path, $from_rev)
+	if $from_path;
     return $path;
 }
 
 sub open_file {
-    my ($self, $path, $pdir, $rev, $pool) = @_;
-    $self->{notify}->node_status ($path, '')
-	unless $self->{notify}->node_status ($path);
-    return $path;
+    my $self = shift;
+    return $self->open_node(@_);
 }
 
 sub apply_textdelta {
@@ -75,18 +76,20 @@ sub delete_entry {
 }
 
 sub add_directory {
-    my ($self, $path, $pdir, @arg) = @_;
+    my ($self, $path, $pdir, $from_path, $from_rev) = @_;
     $self->add_or_replace ($path);
-    $self->{notify}->hist_status ($path, '+') if $arg[0];
+    if ($from_path) {
+	$self->{notify}->hist_status ($path, '+', $from_path, $from_rev);
+	$self->{tree}->store ($path, {frompath => $from_path,
+				      fromrev => $from_rev});
+    }
     $self->{notify}->flush ($path, 1);
     return $path;
 }
 
 sub open_directory {
-    my ($self, $path, $pdir, $rev, $pool) = @_;
-    $self->{notify}->node_status ($path, '')
-	unless $self->{notify}->node_status ($path);
-    return $path;
+    my $self = shift;
+    return $self->open_node(@_);
 }
 
 sub change_dir_prop {
@@ -97,6 +100,17 @@ sub change_dir_prop {
 sub close_directory {
     my ($self, $path) = @_;
     $self->{notify}->flush_dir ($path);
+}
+
+sub open_node {
+    my ($self, $path, $pdir, $baserev, $pool) = @_;
+    $self->{notify}->node_status ($path, '')
+	unless $self->{notify}->node_status ($path);
+    $self->{notify}->node_baserev ($path, $baserev);
+    my $info = $self->{tree}->get ($path);
+    $self->{notify}->hist_status ($path, '+', $info->{frompath},
+	$info->{fromrev}) if $info->{frompath};
+    return $path;
 }
 
 sub absent_directory {
@@ -114,6 +128,24 @@ sub conflict {
 sub obstruct {
     my ($self, $path) = @_;
     $self->{notify}->node_status ($path, '~');
+}
+
+sub unknown {
+    my ($self, $path) = @_;
+    $self->{notify}->node_status ($path, '?');
+    $self->{notify}->flush ($path);
+}
+
+sub ignored {
+    my ($self, $path) = @_;
+    $self->{notify}->node_status ($path, 'I');
+    $self->{notify}->flush ($path);
+}
+
+sub unchanged {
+    my ($self, $path, @args) = @_;
+    $self->open_node($path, @args);
+    $self->{notify}->flush ($path);
 }
 
 1;

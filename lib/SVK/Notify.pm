@@ -12,6 +12,9 @@ SVK::Notify - svk entry status notification
     $notify = SVK::Notify->new;
     $notify->node_status ('foo/bar', 'M');
     $notify->prop_status ('foo/bar', 'M');
+    $notify->hist_status ('foo/bar', '+',
+	'file://home/foo/.svk/local/trunk/bar', 13);
+    $notify->node_baserev ('foo/bar', 42);
     $notify->flush ('foo/bar');
     $notify->flush_dir ('foo');
 
@@ -113,17 +116,29 @@ sub prop_status {
 }
 
 sub hist_status {
-    my ($self, $path, $s) = @_;
-    $self->{status}{$path}[2] = $s if defined $s;
+    my ($self, $path, $s, $from_path, $from_rev) = @_;
+    if (defined $s) {
+	$self->{status}{$path}[2] = $s;
+	$self->{copyfrom}{$path} = [$from_path, $from_rev]
+	    if $self->{flush_baserev};
+    }
     return $self->{status}{$path}[2];
+}
+
+sub node_baserev {
+    my ($self, $path, $baserev) = @_;
+    return unless $self->{flush_baserev};
+    $self->{baserev}{$path} = $baserev if defined $baserev;
 }
 
 sub flush {
     my ($self, $path, $anchor) = @_;
     return if $self->{quiet};
     my $status = $self->{status}{$path};
-    if ($status && grep {$_} @{$status}[0..2]) {
-	$self->{cb_flush}->($path, $status) if $self->{cb_flush};
+    if ($status && ($self->{flush_unchanged} || grep {$_} @{$status}[0..1])) {
+	$self->{cb_flush}->($path, $status, $self->{flush_baserev} ?
+		($self->{baserev}{$path}, $self->{copyfrom}{$path}[0], $self->{copyfrom}{$path}[1]) : undef)
+	    if $self->{cb_flush};
     }
     elsif (!$status && !$anchor) {
 	$self->{cb_skip}->($path) if $self->{cb_skip};

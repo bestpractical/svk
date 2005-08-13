@@ -36,13 +36,7 @@ sub run {
 	      absent_verbose => 1,
 	      nodelay => 1,
 	      cb_conflict => \&SVK::Editor::Status::conflict,
-	      cb_unknown => sub {
-		  my ($path, $copath) = @_;
-		  return unless $target->contains_copath ($copath);
-		  print loc("%1 is not versioned; ignored.\n",
-			    $target->report_copath ($copath));
-		  return;
-	      },
+	      cb_unknown => \&SVK::Editor::Status::unknown,
 	      editor => SVK::Editor::Status->new
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
@@ -56,7 +50,12 @@ sub run {
 			  return $self->do_unschedule ($target, $copath)
 			      if ($st eq 'C' || $status->[2]) && !$xdroot->check_path ($dpath);
                           return $self->do_revert($target, $copath, $dpath, $xdroot);
-                      }
+                      } elsif ($st eq '?') {
+			  return unless $target->contains_copath ($copath);
+			  print loc("%1 is not versioned; ignored.\n",
+			      $target->report_copath ($copath));
+			  return;
+		      }
 
                       if ($target->{targets}) {
                           # Check that we are not reverting parents
