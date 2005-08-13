@@ -60,6 +60,7 @@ sub run {
 	      })),
 	  cb_unknown => sub {
 	      my ($editor, $path) = @_;
+	      to_native ($path);
 	      my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
 	          @{$target}{qw/copath report/};
 	      lstat ($copath);
