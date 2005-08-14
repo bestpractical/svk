@@ -58,6 +58,8 @@ sub should_ignore {
     return;
 }
 
+# XXX: This should call a callback to decide if a copy candidate is
+# wanted or not
 sub find_copy {
     my ($self, $path) = @_;
     my $target_path = File::Spec::Unix->catdir($self->{src}{path}, $path);
@@ -93,8 +95,16 @@ sub find_copy {
 	}
 
 	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
+
+	if ($self->{merge}->_is_merge_from
+	    ($self->{src}->path, $self->{dst}, $to)) {
+	    ($cur_root, $cur_path) = ($fromroot, $src_frompath);
+	    next;
+	}
+
+
 	warn 
-	"$cur_path, $src_frompath: if ($src_from <= $copyboundry_rev && $copyboundry_rev < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
+	"$cur_path, $src_frompath: if ($src_from > $copyboundry_rev && $copyboundry_rev < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
 	return unless $copyboundry_rev < $to; # don't care, too early
 	# XXX: Document this condition
 
@@ -113,7 +123,7 @@ sub find_copy {
 
 	}
 
-	warn "==> $path is copied from $src_frompath:$src_from" if $main::DEBUG;
+	warn "==> $path(:$to) is copied from $src_frompath:$src_from" if $main::DEBUG;
 	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
@@ -173,7 +183,7 @@ sub add_file {
 sub open_directory {
     my ($self, $path, $pbaton, @arg) = @_;
     if (my @ret = $self->find_copy($path)) {
-	# turn into replace
+	warn "==> turn $path into replace" if $main::DEBUG;
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
 	return $self->replay_add_history('directory', $path, $pbaton, @ret, $arg[1])
     }
@@ -185,7 +195,7 @@ sub open_file {
     my ($self, $path, $pbaton, @arg) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
     if (my @ret = $self->find_copy($path)) {
-	# turn into replace
+	warn "==> turn file $path into replace" if $main::DEBUG;
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
 	return $self->replay_add_history('file', $path, $pbaton, @ret, $arg[1])
     }
@@ -275,7 +285,7 @@ sub replay_add_history {
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
 	      editor => SVK::Editor::Delay->new(_editor => [$editor]) );
-
+    warn "***=>done delta" if $main::DEBUG;
     # close file is done by the delta;
     return bless { path => $path,
 		   baton => $baton,

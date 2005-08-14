@@ -518,7 +518,10 @@ sub close_file {
     elsif ($info->{fpool}) {
 	if (!$self->{notify}->node_status($path) || !exists $fh->{local} ) {
 	    # open but without text edit, load local checksum
-	    if (my $local = $self->{cb_localmod}->($basepath, $checksum, $pool)) {
+	    if ($basepath ne $path) {
+		$checksum = $self->{base_root}->fs->revision_root($fromrev, $pool)->file_md5_checksum($basepath, $pool);
+	    }
+	    elsif (my $local = $self->{cb_localmod}->($basepath, $checksum, $pool)) {
 		$checksum = $local->[CHECKSUM];
 		close $local->[FH];
 	    }
@@ -534,6 +537,7 @@ sub add_directory {
     return undef unless defined $pdir;
     my $pool = pop @arg;
     my $touched = $self->{notify}->node_status($path);
+    undef $touched if $touched && $touched eq 'C';
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
     if (!$self->{added}{$pdir} && !$touched &&
@@ -627,7 +631,9 @@ sub close_directory {
 
 sub _merge_file_delete {
     my ($self, $path, $rpath, $pdir, $pool) = @_;
-    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ? @{$self->{info}{$path}{baseinfo}} : ($path);
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
+
     return undef unless $self->{cb_localmod}->(
 		$basepath,
 		$self->{base_root}->file_md5_checksum ($rpath, $pool),
@@ -746,11 +752,14 @@ sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
     my $pool = $arg[-1];
-    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ? @{$self->{info}{$path}{baseinfo}} : ($path);
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
 
     return unless defined $pdir && $self->{cb_exist}->($basepath, $pool);
-
-    my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
+    my $rpath = $basepath =~ m{^/} ? $basepath :
+	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
+    # XXX: this is evil
+    local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
     my $torm = $self->_check_delete_conflict ($path, $rpath,
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
 

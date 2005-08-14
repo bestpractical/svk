@@ -408,6 +408,7 @@ sub run {
 	require SVK::Editor::Copy;
 	$editor = SVK::Editor::Copy->new
 	    ( _editor => [$meditor],
+	      merge => $self, # XXX: just for merge_from, move it out
 	      copyboundry_rev => $boundry_rev,
 	      copyboundry_root => $self->{repos}->fs->revision_root($boundry_rev
 ),
