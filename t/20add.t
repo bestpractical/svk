@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 32;
+use Test::More tests => 33;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -82,7 +82,10 @@ overwrite_file ("A/exe", "foobar");
 chmod (0755, "A/exe");
 is_output($svk, 'add', ['A/exe'],
 	  [__('A   A'),
-	   __('A   A/exe - (bin)')]);
+	   __('A   A/exe')]);
+is_output($svk, 'pl', ['-v', 'A/exe'],
+	  [__('Properties on A/exe:'),
+	   '  svn:executable: *']);
 $svk->commit ('-m', 'test exe bit');
 is_output ($svk, 'add', [qw/-N A/],
 	   ['A already under version control.'],
@@ -114,10 +117,10 @@ overwrite_file ("A/mime/foo.c", "/*\tHello World\t*/");
 
 is_output ($svk, 'add', ['A/mime'],
 	   [__('A   A/mime'),
-	    __('A   A/mime/foo.bin'),
+	    __('A   A/mime/foo.bin - (bin)'),
 	    __('A   A/mime/foo.c'),
 	    __('A   A/mime/foo.html'),
-	    __('A   A/mime/foo.jpg'),
+	    __('A   A/mime/foo.jpg - (bin)'),
 	    __('A   A/mime/foo.pl'),
 	    __('A   A/mime/foo.txt'),
 	   ]);
