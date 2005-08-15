@@ -26,7 +26,7 @@ sub AUTOLOAD {
     my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
 
-    if ($func =~ m/^(?:add|open)/) {
+    if ($func =~ m/^(?:add|open|delete)/) {
 	return $self->{target_baton}
 	    if defined $self->{target} && $arg[0] eq $self->{target};
 	$arg[0] = length $arg[0] ?
