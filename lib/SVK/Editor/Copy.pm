@@ -291,7 +291,7 @@ sub replay_add_history {
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
 	      editor => SVN::Delta::Editor->new(_debug => 1)) if $main::DEBUG;
-    warn "==> done samepl" if $main::DEBUG;
+    warn "==> done sample" if $main::DEBUG;
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
 	      revision_root($self->{incopy}[-1]{fromrev}),

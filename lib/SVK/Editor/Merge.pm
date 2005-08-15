@@ -436,7 +436,16 @@ sub _merge_text_change {
 sub _overwrite_local_file {
     my ($self, $fh, $path, $nfh, $pool) = @_;
     # XXX: document why this is like this
-    my $storagebase = $self->{info}{$path}{baseinfo} ? $fh->{base} : $fh->{local};
+    my $storagebase = $fh->{local};
+    my $info = $self->{info}{$path};
+    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
+
+    if ($fromrev) {
+	my $sbroot = $self->{base_root}->fs->revision_root($fromrev, $pool);
+	$storagebase->[FH] = $sbroot->file_contents($basepath, $pool);
+	$storagebase->[CHECKSUM] = $sbroot->file_md5_checksum($basepath, $pool);
+    }
+
     my $handle = $self->{storage}->
 	apply_textdelta ($self->{storage_baton}{$path},
 			 $storagebase->[CHECKSUM], $pool);
@@ -446,8 +455,8 @@ sub _overwrite_local_file {
 	    SVN::TxDelta::send_stream ($nfh, @$handle, $pool);
 	}
 	else {
-	    seek $storagebase->[FH], 0, 0;
-	    my $txstream = SVN::TxDelta::new($storagebase->[FH], $nfh, $pool);
+	    seek $storagebase->[FH], 0, 0 unless $fromrev; # don't seek for sb
+	    my $txstream = SVN::TxDelta::new($fh->{local}[FH], $nfh, $pool);
 	    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	}
 	return 1;
@@ -478,14 +487,17 @@ sub close_file {
 
     my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
     no warnings 'uninitialized';
-    my $storagebase = $self->{info}{$path}{baseinfo} ?
-	$fh->{base} : $fh->{local};
+    my $storagebase_checksum = $fh->{local}[CHECKSUM];
+    if ($fromrev) {
+	$storagebase_checksum = $self->{base_root}->fs->revision_root
+	    ($fromrev, $pool)->file_md5_checksum($basepath, $pool);
+    }
 
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
 
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
-	    if $checksum eq $storagebase->[CHECKSUM];
+	    if $checksum eq $storagebase_checksum;
 
 	my $eol = $self->{cb_localprop}->($basepath, 'svn:eol-style', $pool);
 	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
