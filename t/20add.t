@@ -83,9 +83,12 @@ chmod (0755, "A/exe");
 is_output($svk, 'add', ['A/exe'],
 	  [__('A   A'),
 	   __('A   A/exe')]);
+SKIP: {
+skip 'No execute bit on win32', 1 if $^O eq 'MSWin32';
 is_output($svk, 'pl', ['-v', 'A/exe'],
 	  [__('Properties on A/exe:'),
 	   '  svn:executable: *']);
+}
 $svk->commit ('-m', 'test exe bit');
 is_output ($svk, 'add', [qw/-N A/],
 	   ['A already under version control.'],
