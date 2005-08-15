@@ -678,6 +678,8 @@ sub _check_delete_conflict {
 
     return $self->_merge_file_delete($path, $rpath, $pdir, $pool) if $kind == $SVN::Node::file;
 
+    my ($basepath, $fromrev) = $self->_resolve_base($path, 1);
+    $basepath = $path unless defined $basepath;
     my $dirmodified = $self->{cb_dirdelta}->($path, $self->{base_root}, $rpath);
     my $entries = $self->{base_root}->dir_entries ($rpath);
     my ($torm, $modified, $merged);
@@ -758,10 +760,15 @@ sub delete_entry {
     return unless defined $pdir && $self->{cb_exist}->($basepath, $pool);
     my $rpath = $basepath =~ m{^/} ? $basepath :
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
-    # XXX: this is evil
-    local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
-    my $torm = $self->_check_delete_conflict ($path, $rpath,
+    my $torm;
+    # XXX: need txn-aware cb_*! for the case current path is from a
+    # copy and to be deleted
+    if ($self->{cb_exist}->($path, $pool)) {
+	# XXX: this is evil
+	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
+	$torm = $self->_check_delete_conflict ($path, $rpath,
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
+    }
 
     if (ref($torm)) {
 	$self->node_conflict ($path);
