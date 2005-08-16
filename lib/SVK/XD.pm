@@ -222,8 +222,7 @@ sub store {
 	my @paths = $info->{checkout}->find ('/', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
-        # XXX This looks like it might actively lose data. That's _BAD_. $info is thrown away.
-	$self->_store_config ($self, $info);
+	$self->_store_config ($info);
     }
     $self->giant_unlock ();
 }
