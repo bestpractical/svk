@@ -75,7 +75,7 @@ sub handle_co_item {
     my ($copath, $report) = @{$dst}{qw/copath report/};
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
-    my $entry = $self->{xd}{checkout}->get ($copath);
+    my ($entry, $schedule) = $self->{xd}->get_entry($copath);
     $src->normalize; $src->anchorify;
     $self->ensure_parent($dst);
     $dst->anchorify;
@@ -83,15 +83,27 @@ sub handle_co_item {
     my $notify = $self->{quiet} ? SVK::Notify->new(quiet => 1) : undef;
     # if SVK::Merge could take src being copath to do checkout_delta
     # then we have 'svk cp copath... copath' for free.
+    # XXX: use editor::file when svkup branch is merged
     SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
 		     report => $report, notify => $notify,
 		     base => $src->new (path => '/', revision => 0),
-		     src => $src, dst => $dst)->run ($self->get_editor ($dst));
+		     src => $src, dst => $dst)->run
+			 ($self->{xd}->get_editor
+			  ( %$dst,
+			    ignore_checksum => 1,
+			    targets => undef,
+			    quiet => 1,
+			    oldroot => $dst->root($self->{xd}),
+			    newroot => $dst->root($self->{xd}),
+			    target => $dst->{targets}[0] || '',
+			    update => 1,
+			    ignore_keywords => 1,
+			    check_only => $self->{check_only}));
 
-    $self->{xd}{checkout}->store_recursively ($copath, {'.schedule' => undef,
-							'.newprop' => undef});
+    $self->{xd}{checkout}->store_recursively
+	($copath, { revision => undef });
     # XXX: can the scheudle be something other than delete ?
-    $self->{xd}{checkout}->store ($copath, {'.schedule' => $entry->{'.schedule'} ? 'replace' : 'add',
+    $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
 					    '.copyfrom_rev' => $src->{revision}});
@@ -133,7 +145,7 @@ sub _unmodified {
 	      })),
 	  # need tests: only useful for move killing the src with unknown entries
 	  cb_unknown => sub {
-	      die loc ("%1 is unknown.\n", $target->copath ($_[0]))});
+	      die loc ("%1 is unknown.\n", $target->copath ($_[1]))});
 }
 
 sub check_src {

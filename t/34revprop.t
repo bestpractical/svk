@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 10;
+use Test::More tests => 12;
 use strict;
 use File::Temp;
 BEGIN { require 't/tree.pl' };
@@ -31,6 +31,10 @@ is_output(
 );
 
 is_output(
+    $svk, 'propset', ['--quiet', '-r2', '--revprop', 'svn:log', 'log2.new'],
+    [   ]
+);
+is_output(
     $svk, 'propset', ['-r2', '--revprop', 'svn:log', 'log2.new'],
     ["Property 'svn:log' set on repository revision 2."]
 );
@@ -40,8 +44,12 @@ is_output(
 );
 
 is_output(
+    $svk, 'propdel', ['-q', '-r2', '--revprop', 'svn:log'],
+    [   ]
+);
+is_output(
     $svk, 'propdel', ['-r2', '--revprop', 'svn:log'],
-    ["Property 'svn:log' set on repository revision 2."]
+    ["Property 'svn:log' deleted from repository revision 2."]
 );
 is_output_like(
     $svk, 'proplist', ['-r2', '--revprop'],

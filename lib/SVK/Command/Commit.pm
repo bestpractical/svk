@@ -57,14 +57,21 @@ sub fill_commit_message {
 }
 
 sub get_commit_message {
-    my ($self, $msg) = @_;
-    $self->fill_commit_message;
+    my ($self, $extra_message) = @_;
+    # The existence of $extra_message (the logs from a sm -l, say) should *not*
+    # prevent the editor from being opened, if there is no -m/-F
+    
+    $self->fill_commit_message; # from -F to -m
 
-    if (defined $msg or defined $self->{message}) {
-	$self->{message} = join "\n", grep { defined $_ and length $_ } ($self->{message}, $msg);
+    # We have to decide whether or not to launch the editor *before* we append
+    # $extra_message to the -m/-F message
+    my $should_launch_editor = ($self->{template} or not defined $self->{message});
+
+    if (defined $extra_message or defined $self->{message}) {
+	$self->{message} = join "\n", grep { defined $_ and length $_ } ($self->{message}, $extra_message);
     } 
 
-    if ($self->{template} or not defined $self->{message}) {
+    if ($should_launch_editor) {
 	$self->{message} = get_buffer_from_editor
 	    (loc('log message'), $self->message_prompt,
 	     join ("\n", $self->{message} || '', $self->message_prompt, ''), 'commit');
@@ -181,7 +188,7 @@ sub get_editor {
 	    if $source;
 	$patch->{log} = $self->{message};
 	my $fname = $self->{xd}->patch_file ($self->{patch});
-	if (-e $fname) {
+	if ($fname ne '-' && -e $fname) {
 	    die loc ("file %1 already exists.\n", $fname).
 		($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
 	}
@@ -434,11 +441,17 @@ sub run_delta {
 		return ($path, scalar $cb{mirror}->find_remote_rev ($rev));
 	    },
 	    cb_rev => sub {
+		# XXX: the non-mirror cb_rev should be the same as
+		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);
 		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
-		my $entry = $self->{xd}{checkout}->get($cotarget);
-		my ($source_path, $source_rev) = $self->{xd}->_copy_source ($entry, $cotarget);
+		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
+		# lookup the copy source rev for the case of
+		# open_directory inside add_directotry that has
+		# history.  but shouldn't do that for replaced item,
+		# because the rev is used for delete_entry
+		my ($source_path, $source_rev) = $schedule ne 'replace' ? $self->{xd}->_copy_source ($entry, $cotarget) : ();
 		($source_path, $source_rev) = ($revtarget, $entry->{revision})
 		    unless defined $source_path;
 		return $revcache{$source_rev} if exists $revcache{$source_rev};

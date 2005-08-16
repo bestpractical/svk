@@ -44,7 +44,8 @@ In addition to the paramters to L<SVK::Editor::Checkout>:
 
 =item target
 
-The target path of the editor calls.
+The target path of the editor calls.  Used for deciding if the root's
+meta data needs to be updated in update mode.
 
 =item xd
 
@@ -65,6 +66,10 @@ Working in update mode.
 =item get_path
 
 A callback to translate paths in editor calls to path in depot.
+
+=item ignore_keywords
+
+Don't do keyword translations.
 
 =back
 
@@ -104,7 +109,8 @@ sub get_fh {
     $self->{get_path}->($dpath);
     $self->{get_store_path}->($spath);
     # XXX: should test merge to co with keywords
-    delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
+    delete $self->{props}{$path}{'svn:keywords'}
+	if !$self->{update} or $self->{ignore_keywords};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $spath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
 	or warn "can't open $path: $!", return;
@@ -113,8 +119,8 @@ sub get_fh {
 
 sub close_file {
     my $self = shift;
-    $self->SUPER::close_file (@_);
     my $path = shift;
+    $self->SUPER::close_file($path, @_);
     return unless defined $path;
     my $copath = $path;
     $self->{get_copath}($copath);
@@ -132,8 +138,8 @@ sub close_file {
 	    if exists $self->{exe}{$path};
     }
     else {
-	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
-	    if !$self->{base}{$path} &&  !$self->{check_only};
+	$self->_schedule_entry($copath)
+	    if $self->{added}{$path} && !$self->{check_only};
     }
     delete $self->{props}{$path};
     delete $self->{added}{$path};
@@ -146,8 +152,9 @@ sub add_directory {
     return undef unless defined $ret;
     my $copath = $path;
     $self->{get_copath}($copath);
-    $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
-	if !$self->{update} && !$self->{check_only};
+    if (!$self->{update} && !$self->{check_only}) {
+	$self->_schedule_entry($copath);
+    }
     $self->{added}{$path} = 1;
     push @{$self->{cursignature}}, $self->{signature}->load ($copath)
 	if $self->{update};
@@ -234,6 +241,14 @@ sub close_edit {
 
 sub abort_edit {
     my ($self) = @_;
+}
+
+sub _schedule_entry {
+    my ($self, $copath) = @_;
+    my (undef, $schedule) = $self->{xd}->get_entry($copath);
+    warn "==> was $schedule" if $schedule;
+    $self->{xd}{checkout}->store_fast
+	($copath, { '.schedule' => $schedule ? 'replace' : 'add' });
 }
 
 =head1 AUTHORS

@@ -6,7 +6,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( $SEP is_symlink to_native);
+use SVK::Util qw( $SEP is_symlink mimetype_is_text to_native);
 
 sub options {
     ('q|quiet'		=> 'quiet');
@@ -46,6 +46,7 @@ sub run {
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
 		  my ($path, $status) = @_;
+	          to_native ($path);
 		  my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
 		      @{$target}{qw/copath report/};
 
@@ -59,10 +60,12 @@ sub run {
 		      if -e _;
 	      })),
 	  cb_unknown => sub {
-	      lstat ($_[1]);
-	      to_native ($_[0]);
-	      $self->_do_add ('A', $_[1], SVK::Target->copath ($target->{report}, $_[0]),
-			     !-d _);
+	      my ($editor, $path) = @_;
+	      to_native ($path);
+	      my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
+	          @{$target}{qw/copath report/};
+	      lstat ($copath);
+	      $self->_do_add ('A', $copath, $report, !-d _);
 	  },
 	);
 }
@@ -78,9 +81,10 @@ sub _do_add {
 				  { '.schedule' => $sch{$st},
 				    $autoprop ?
 				    ('.newprop'  => $newprop) : ()});
-    my $exec = ($newprop && ref $newprop && $newprop->{'svn:executable'}) ? ' - (bin)' : '';
-    print "$st   $report$exec\n" unless $self->{quiet};
-
+    return if $self->{quiet};
+    my $mtype = $newprop && ref $newprop ? $newprop->{'svn:mime-type'} : undef;
+    my $bin = $mtype && !mimetype_is_text ($mtype) ? ' - (bin)' : '';
+    print "$st   $report$bin\n";
 }
 
 1;

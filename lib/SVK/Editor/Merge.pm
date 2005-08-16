@@ -210,7 +210,10 @@ sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     return unless defined $pdir;
     my $pool = pop @arg;
-    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path, $pool))) {
+    # a replaced node shouldn't be checked with cb_exist
+    my $touched = $self->{notify}->node_status($path);
+    if (!$self->{added}{$pdir} && !$touched &&
+	(my $kind = $self->{cb_exist}->($path, $pool))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -222,7 +225,7 @@ sub add_file {
     else {
 	++$self->{changes};
 	$self->{added}{$path} = 1;
-	$self->{notify}->node_status ($path, 'A');
+	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
 	$pool->default if $pool && $pool->can ('default');
@@ -483,9 +486,11 @@ sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
     my $pool = $arg[-1];
+    my $touched = $self->{notify}->node_status($path);
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
-    if (!$self->{added}{$pdir} && (my $kind = $self->{cb_exist}->($path, $pool))) {
+    if (!$self->{added}{$pdir} && !$touched &&
+	(my $kind = $self->{cb_exist}->($path, $pool))) {
 	unless ($kind == $SVN::Node::dir) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -505,7 +510,7 @@ sub add_directory {
 	}
 	$self->{storage_baton}{$path} = $baton;
 	$self->{added}{$path} = 1;
-	$self->{notify}->node_status ($path, 'A');
+	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
 	$self->{notify}->flush ($path, 1);
     }
     ++$self->{changes};
@@ -518,6 +523,7 @@ sub open_directory {
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
 	unless ($self->{cb_exist}->($path, $pool) || $self->{open_nonexist}) {
+	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}

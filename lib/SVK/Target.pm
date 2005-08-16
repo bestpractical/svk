@@ -302,8 +302,12 @@ sub _nearest_copy_svk {
     while ($hist = $hist->prev(1, $new_pool)) {
 	# Find history_prev revision, if the path is different, bingo.
 	my ($hppath, $hprev) = $hist->location;
-	return ($root, $fs->revision_root ($hprev, $ppool), $hppath)
-	    if $hppath ne $path; # got it
+	if ($hppath ne $path) {
+	    $hist = $root->node_history ($path, $new_pool)->prev(0);
+	    my $rev = ($hist->location($new_pool))[1];
+	    $root = $fs->revision_root ($rev, $ppool);
+	    return ($root, $fs->revision_root ($hprev, $ppool), $hppath);
+	}
 
 	# Find nearest copy of the current revision (up to but *not*
 	# including the revision itself). If the copy contains us, bingo.
@@ -313,14 +317,15 @@ sub _nearest_copy_svk {
 	if (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path)) {
 	    # there were copy, but the descendent might not exist there
 	    my $proot = $fs->revision_root ($fromrev, $ppool);
-	    last unless $proot->check_path ($frompath);
-	    return ($root, $proot, $frompath);
+	    last unless $proot->check_path ($frompath, $old_pool);
+	    return ($fs->revision_root($root->revision_root_revision, $ppool),
+		    $proot, $frompath);
 	}
 
 	if ($rev < $hprev) {
 	    # Reset the hprev root to this earlier revision to avoid infinite looping
 	    local $@;
-	    $hist = eval { $root->node_history ($path)->prev(0, $new_pool) } or last;
+	    $hist = eval { $root->node_history ($path, $new_pool)->prev(0, $new_pool) } or last;
 	}
         $old_pool->clear;
 	$spool->clear;
