@@ -175,14 +175,37 @@ giant is unlocked.
 
 sub _store_self {
     my ($self, $hash) = @_;
-    local $SIG{INT};
+    local $SIG{INT} = sub { warn loc("Please hold on a moment. we're writing out a critical configuration file.\n")};
+
     my $file = $self->{statefile};
     my $tmpfile = $file."-$$";
+    my $oldfile = "$file~";
+    my $ancient_backup = $file.".bak.".$$;
+
+
     DumpFile ($tmpfile,
 	      { map { $_ => $hash->{$_}} qw/checkout depotmap/ });
-    unlink ("$file~");
-    rename ($file => "$file~");
-    rename ($tmpfile => $file);
+
+    if (not -f $tmpfile ) {
+        die loc("Couldn't write your new configuration file to %1. Please try again.", $tmpfile);
+    }
+
+    if (-f $oldfile ) { 
+      rename ( $oldfile => $ancient_backup ) ||
+	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $oldfile);
+    }
+    if (-f $file ) {
+        rename ($file => $oldfile) ||
+        	die loc("Couldn't remove your old configuration file %1 while writing the new one.", $file);
+    }
+    rename ($tmpfile => $file) ||
+	die loc("Couldn't write your new configuration file %1. A backup has been stored in %2. Please replace %1 with %2 immediately.", $file, $tmpfile);
+
+    if (-f $ancient_backup ) {
+      unlink ($ancient_backup) ||
+	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $oldfile);
+
+    }
 }
 
 sub store {
