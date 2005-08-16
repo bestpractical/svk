@@ -53,6 +53,7 @@ lib/SVK/Command/Switch.pm
 lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
+lib/SVK/Editor/Checkout.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
 lib/SVK/Editor/Composite.pm
