@@ -175,7 +175,7 @@ giant is unlocked.
 
 sub _store_self {
     my ($self, $hash) = @_;
-    local $SIG{INT} = sub { warn loc("Please hold on a moment. we're writing out a critical configuration file.\n")};
+    local $SIG{INT} = sub { warn loc("Please hold on a moment. SVK is writing out a critical configuration file.\n")};
 
     my $file = $self->{statefile};
     my $tmpfile = $file."-$$";
