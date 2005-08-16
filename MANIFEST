@@ -127,6 +127,8 @@ t/06keyword.t
 t/07smerge-anchor-replace.t
 t/07smerge-anchor.t
 t/07smerge-baseless.t
+t/07smerge-copy.t
+t/07smerge-copy-co.t
 t/07smerge-delete.t
 t/07smerge-external.t
 t/07smerge-file.t
