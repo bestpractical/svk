@@ -173,7 +173,7 @@ giant is unlocked.
 
 =cut
 
-sub _store_self {
+sub _store_config {
     my ($self, $hash) = @_;
     local $SIG{INT} = sub { warn loc("Please hold on a moment. SVK is writing out a critical configuration file.\n")};
 
@@ -214,7 +214,7 @@ sub store {
     return unless $self->{statefile};
     local $@;
     if ($self->{giantlocked}) {
-	$self->_store_self ($self, $self);
+	$self->_store_config ($self);
     }
     elsif ($self->{modified}) {
 	$self->giant_lock ();
@@ -222,7 +222,8 @@ sub store {
 	my @paths = $info->{checkout}->find ('/', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
-	$self->_store_self ($self, $info);
+        # XXX This looks like it might actively lose data. That's _BAD_. $info is thrown away.
+	$self->_store_config ($self, $info);
     }
     $self->giant_unlock ();
 }
@@ -242,10 +243,7 @@ sub lock {
     }
     $self->{checkout}->store ($path, {lock => $$});
     $self->{modified} = 1;
-    DumpFile ($self->{statefile}, { checkout => $self->{checkout},
-				    depotmap => $self->{depotmap}} )
-	if $self->{statefile};
-
+    $self->_store_config($self) if $self->{statefile};
     $self->giant_unlock ();
 }
 
