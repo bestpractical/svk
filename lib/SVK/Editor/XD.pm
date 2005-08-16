@@ -162,7 +162,7 @@ sub close_file {
 	delete $self->{base}{$path};
     }
     elsif (!$self->{update} && !$self->{check_only}) {
-	$self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' });
+	$self->_schedule_entry($copath);
     }
     if ($self->{update}) {
 	my (undef, $file) = get_anchor (1, $copath);
@@ -194,8 +194,9 @@ sub add_directory {
 	    return undef;
 	}
     }
-    $self->{xd}{checkout}->store_fast ($copath, { '.schedule' => 'add' })
-	if !$self->{update} && !$self->{check_only};
+    if (!$self->{update} && !$self->{check_only}) {
+	$self->_schedule_entry($copath);
+    }
     $self->{added}{$path} = 1;
     push @{$self->{cursignature}}, $self->{signature}->load ($copath)
 	if $self->{update};
@@ -285,6 +286,13 @@ sub close_edit {
 
 sub abort_edit {
     my ($self) = @_;
+}
+
+sub _schedule_entry {
+    my ($self, $copath) = @_;
+    my (undef, $schedule) = $self->{xd}->get_entry($copath);
+    $self->{xd}{checkout}->store_fast
+	($copath, { '.schedule' => $schedule ? 'replace' : 'add' });
 }
 
 =head1 AUTHORS

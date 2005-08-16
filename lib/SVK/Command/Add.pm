@@ -46,6 +46,7 @@ sub run {
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
 		  my ($path, $status) = @_;
+	          to_native ($path);
 		  my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
 		      @{$target}{qw/copath report/};
 
