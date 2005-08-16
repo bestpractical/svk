@@ -138,24 +138,43 @@ sub close_file {
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
-    else {
-	$self->_schedule_entry($copath)
-	    if $added && !$self->{check_only};
-    }
+
     delete $self->{props}{$path};
+}
+
+sub add_file {
+    my $self = shift;
+    my ($path, $pdir, @arg) = @_;
+    my $ret = $self->SUPER::add_file(@_);
+    return undef unless defined $ret;
+    my $copath = $path;
+    $self->{get_copath}->($copath);
+    if (!$self->{update} && !$self->{check_only}) {
+	my ($anchor, $target, $editor);
+	if (defined $arg[0]) {
+	    ($anchor, $target) = get_depot_anchor(1, $path);
+	    $editor = SVK::Editor::Composite->new
+		( anchor => $anchor, anchor_baton => $pdir,
+		  target => $target, target_baton => $ret );
+	}
+	$self->_schedule_entry($copath, $editor, @arg);
+    }
+    return $ret;
 }
 
 sub add_directory {
     my $self = shift;
-    my ($path, $pdir) = @_;
+    my ($path, $pdir, @arg) = @_;
     my $ret = $self->SUPER::add_directory (@_);
     return undef unless defined $ret;
     my $copath = $path;
-    $self->{get_copath}($copath);
+    $self->{get_copath}->($copath);
     if (!$self->{update} && !$self->{check_only}) {
-	$self->_schedule_entry($copath);
+	my $editor = SVK::Editor::Composite->new
+	    ( anchor => $path, anchor_baton => $pdir );
+	$self->_schedule_entry($copath, $editor, @arg);
     }
-    $self->{added}{$path} = 1;
+
     push @{$self->{cursignature}}, $self->{signature}->load ($copath)
 	if $self->{update};
     return $ret;
@@ -205,8 +224,6 @@ sub close_directory {
 	    pop @{$self->{cursignature}};
 	}
     }
-
-    delete $self->{added}{$path};
 }
 
 sub change_file_prop {
@@ -244,10 +261,25 @@ sub abort_edit {
 }
 
 sub _schedule_entry {
-    my ($self, $copath) = @_;
+    my ($self, $copath, $editor, $copyfrom, $copyfrom_rev) = @_;
+    my %copy;
+    if (defined $copyfrom) {
+	my $fs = $self->{oldroot}->fs;
+	$editor->{master_editor} = SVK::Editor::Checkout->new(%$self);
+	$self->{xd}->depot_delta
+	    ( oldroot => $fs->revision_root(0),
+	      newroot => $fs->revision_root($copyfrom_rev),
+	      oldpath => ['/', ''],
+	      newpath => $copyfrom,
+	      editor => $editor );
+	%copy = ( scheduleanchor => $copath,
+		  '.copyfrom' => $copyfrom,
+		  '.copyfrom_rev' => $copyfrom_rev );
+    }
+
     my (undef, $schedule) = $self->{xd}->get_entry($copath);
     $self->{xd}{checkout}->store_fast
-	($copath, { '.schedule' => $schedule ? 'replace' : 'add' });
+	($copath, { %copy, '.schedule' => $schedule ? 'replace' : 'add' });
 }
 
 =head1 AUTHORS

@@ -201,6 +201,7 @@ $svk->ci(-m => 'move new file to D');
 
 $ENV{SVKRESOLVE} = 't';
 #our $answer = ['t'];
+
 is_output($svk, 'push', ['-l'],
 	  ['Auto-merging (0, 39) /local-many to /trunk-3 (base /trunk-3:30).',
 	   'G + B/de',
@@ -210,7 +211,6 @@ is_output($svk, 'push', ['-l'],
 	   'D   D/de',
 	   qr'New merge ticket: .*:/local-many:39',
 	   'Committed revision 40.']);
-
 $svk->cp(-m => 'cross branch', '//local-many/b-s', '//trunk-3/b-s-cp');
 
 is_output($svk, 'pull', ['//local-many'],
