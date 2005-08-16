@@ -120,6 +120,7 @@ sub get_fh {
 sub close_file {
     my $self = shift;
     my $path = shift;
+    my $added = $self->{added}{$path};
     $self->SUPER::close_file($path, @_);
     return unless defined $path;
     my $copath = $path;
@@ -139,10 +140,9 @@ sub close_file {
     }
     else {
 	$self->_schedule_entry($copath)
-	    if $self->{added}{$path} && !$self->{check_only};
+	    if $added && !$self->{check_only};
     }
     delete $self->{props}{$path};
-    delete $self->{added}{$path};
 }
 
 sub add_directory {
