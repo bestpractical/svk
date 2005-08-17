@@ -44,7 +44,8 @@ The anchor of the editor calls.
 
 =item target
 
-The target path of the editor calls.  Used only for path reporting translation.
+The target path of the editor calls.  Used for deciding if the root's
+meta data needs to be updated in update mode.
 
 =item xd
 
@@ -73,6 +74,10 @@ Path for reporting modifications.
 =item ignore_checksum
 
 Don't do checksum verification.
+
+=item ignore_keywords
+
+Don't do keyword translations.
 
 =back
 
@@ -135,7 +140,8 @@ sub apply_textdelta {
 				-l $basename ? () : [stat($base)]];
     }
     # XXX: should test merge to co with keywords
-    delete $self->{props}{$path}{'svn:keywords'} unless $self->{update};
+    delete $self->{props}{$path}{'svn:keywords'}
+	if !$self->{update} or $self->{ignore_keywords};
     my $fh = SVK::XD::get_fh ($self->{newroot}, '>', $spath, $copath,
 			      $self->{added}{$path} ? $self->{props}{$path} || {}: undef)
 	or return undef;

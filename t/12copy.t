@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 65;
+plan_svm tests => 67;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -255,6 +255,16 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    "Syncing $uri",
 	    'Retrieving log information from 7 to 7',
 	    'Committed revision 23 from revision 7.']);
+
+
+is_output($svk, 'rm', ["$copath/B/fe"],
+	  [__("D   $copath/B/fe")]);
+
+TODO: {
+local $TODO = 'replaced item should be reported as R';
+is_output($svk, 'cp', ["$copath/A/be", "$copath/B/fe"],
+	  [__("R   $copath/B/fe")]);
+}
 
 mkdir "$copath/foo";
 is_output ($svk, 'cp', ['//foo-remote', "$copath/foo"],
