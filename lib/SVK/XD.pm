@@ -222,7 +222,9 @@ sub store {
 	my @paths = $info->{checkout}->find ('/', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
-	$self->_store_config ($info);
+        # XXX TODO, $info isn't the right thing. (merging appears broken)
+        $self->_store_config($self); 
+            #$self->_store_config ($info);
     }
     $self->giant_unlock ();
 }
