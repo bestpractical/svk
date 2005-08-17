@@ -97,7 +97,7 @@ is_output ($svk, 'st', [$copath],
 append_file ("$copath/T1/T2", "hate\n");
 is_output ($svk, 'st', [$copath],
 	   [__"R + $copath/T1",
-	    __"M   $copath/T1/T2"]);
+	    __"M + $copath/T1/T2"]);
 $svk->commit ('-m', 'commit', $copath);
 
 is_ancestor ($svk, '//V/T1',
