@@ -30,13 +30,17 @@ sub flush_print {
         $crev = $fs->revision_root ($from_rev)->node_created_rev ($from_path);
 	$author = $fs->revision_prop ($crev, 'svn:author');
 	$baserev = '-';
-    } elsif (${$status}[0] !~ '[A!~]') {
+    } elsif ($status->[0] =~ '[I?]') {
+	$baserev = '';
+	$crev = '';
+	$author = ' ';
+    } elsif ($status->[0] eq 'A') {
+	$baserev = 0;
+    } elsif ($status->[0] !~ '[!~]') {
         my $p = $target->{path};
 	my $path = $p eq '/' ? "/$entry" : (length $entry ? "$p/$entry" : $p);
 	$crev = $root->node_created_rev ($path);
 	$author = $fs->revision_prop ($crev, 'svn:author');
-    } else {
-	$baserev = 0 if ${$status}[0] eq 'A';
     }
 
     my $report = $target->{report};
@@ -56,7 +60,6 @@ sub run {
     my $xdroot = $self->{xd}->xdroot (%$target);
     my $report = $target->{report};
     $report .= '/' if $report;
-    my $space = $self->{verbose} ? '                               ' : '';
     my $editor = SVK::Editor::Status->new (
 	  report => $target->{report},
 	  ignore_absent => $self->{quiet},
@@ -85,25 +88,12 @@ sub run {
 	      (),
 	  $self->{recursive} ? () : (depth => 1),
 	  $self->{no_ignore} ?
-              (cb_ignored =>
-                 sub { my $path = abs2rel($_[1],
-                                          $target->{copath} => 
-                                            length($report) ? $report : undef
-                                         );
-                       print "I   $space$path\n"
-                 }
+              (cb_ignored => \&SVK::Editor::Status::ignored
               )              :
               (),
 	  $self->{quiet} ?
               ()         :
-              (cb_unknown =>
-                 sub { my $path = abs2rel($_[1],
-                                          $target->{copath} => 
-                                            length($report) ? $report : undef
-                                         );
-                       print "?   $space$path\n"
-                 }
-              )
+              (cb_unknown => \&SVK::Editor::Status::unknown)
 	);
     return;
 }

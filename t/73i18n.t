@@ -10,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 35;
+plan tests => 38;
 our ($answer, $output);
 
 my $utf8 = SVK::Util::get_encoding;
@@ -120,9 +120,17 @@ is_output ($svk, 'st', ["$copath/$msg-dir"],
 	   [], 'clean checkout after commit');
 is_output ($svk, 'rm', ["$copath/$msg-dir/$msg"],
 	   [__"D   $copath/$msg-dir/$msg"]);
+overwrite_file ("$copath/$msg-dir/$msg", "with big5 filename, replaced\n");
+is_output ($svk, 'add', ["$copath/$msg-dir/$msg"],
+	   [__"R   $copath/$msg-dir/$msg"]);
 is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	   ['Waiting for editor...',
 	    'Committed revision 7.']);
+is_output ($svk, 'rm', ["$copath/$msg-dir/$msg"],
+	   [__"D   $copath/$msg-dir/$msg"]);
+is_output ($svk, 'commit', ["$copath/$msg-dir"],
+	   ['Waiting for editor...',
+	    'Committed revision 8.']);
 
 $svk->cp (-m => "$msg hate", -r6 => '//A' => '//A-cp2');
 $svk->smerge ('-I', '//A' => '//A-cp2');
