@@ -8,10 +8,8 @@ END {
 }
 
 use strict;
+use SVK;
 require Data::Hierarchy;
-require SVN::Core;
-require SVN::Repos;
-require SVN::Fs;
 use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
