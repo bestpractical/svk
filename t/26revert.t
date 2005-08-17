@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 18;
+use Test::More tests => 21;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -17,6 +17,8 @@ $svk->add('A');
 is_output ($svk, 'revert', ['A/foo'],
 	   [__("Reverted A/foo")], 'revert an added file');
 is_output ($svk, 'revert', ['A/foo'],
+	   [__("A/foo is not versioned; ignored.")], 'do it again');
+is_output ($svk, 'revert', ['-q', 'A/foo'],
 	   [__("A/foo is not versioned; ignored.")], 'do it again');
 is_output ($svk, 'revert', ['-R', 'A/deep'],
 	   [__("Reverted A/deep"),
@@ -79,6 +81,10 @@ is_output ($svk, 'st', [],
 	  [__('C   A/foo')]);
 is_output ($svk, 'revert', ['-R'],
 	   [__("Reverted A/foo")]);
+is_output ($svk, 'st', [], []);
+
+overwrite_file ("A/foo", "foobarbaz");
+is_output ($svk, 'revert', ['--quiet', '-R'], []);
 is_output ($svk, 'st', [], []);
 
 $svk->cp('A/foo', 'A/foo.cp');

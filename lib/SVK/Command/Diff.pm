@@ -3,6 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 1;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw(get_anchor);
 
@@ -119,6 +120,7 @@ sub run {
 	      base_path => $target->{path},
 	      xdroot => $newroot,
 	      editor => $editor,
+	      $self->{recursive} ? () : (depth => 1),
 	    );
     }
     else {
@@ -138,6 +140,7 @@ sub run {
 	      newroot => $newroot,
 	      newpath => $target2->{path},
 	      editor => $editor,
+	      $self->{recursive} ? () : (no_recurse => 1),
 	    );
     }
 
@@ -174,6 +177,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
  -s [--summarize]       : show summary only
  -v [--verbose]         : print extra information
+ -N [--non-recursive]   : do not descend recursively
 
 =head1 AUTHORS
 
