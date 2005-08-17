@@ -208,7 +208,7 @@ sub log {
     my $sep = $verbatim || $self->{verbatim} ? '' : ('-' x 70)."\n";
     my $cb_log = sub {
 	SVK::Command::Log::_show_log
-		(@_, $sep, $buf, 1, $print_rev, 0, $self->{verbatim} ? 1 : 0)
+		(@_, $sep, $buf, 1, $print_rev, 0, $self->{verbatim} ? 1 : 0, 0)
 		    unless $self->_is_merge_from ($self->{src}->path, $self->{dst}, $_[0]);
     };
 
