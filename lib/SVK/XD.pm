@@ -131,7 +131,7 @@ sub load {
     $info ||= { depotmap => {'' => catdir($self->{svkpath}, 'local') },
 	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
-
+    $self->{updated} = 0;
     $self->create_depots('');
 }
 
@@ -222,9 +222,7 @@ sub store {
 	my @paths = $info->{checkout}->find ('/', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
-        # XXX TODO, $info isn't the right thing. (merging appears broken)
-        $self->_store_config($self); 
-            #$self->_store_config ($info);
+        $self->_store_config($info);
     }
     $self->giant_unlock ();
 }
