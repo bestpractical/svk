@@ -131,7 +131,7 @@ sub load {
     $info ||= { depotmap => {'' => catdir($self->{svkpath}, 'local') },
 	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
-
+    $self->{updated} = 0;
     $self->create_depots('');
 }
 
@@ -173,16 +173,39 @@ giant is unlocked.
 
 =cut
 
-sub _store_self {
+sub _store_config {
     my ($self, $hash) = @_;
-    local $SIG{INT};
+    local $SIG{INT} = sub { warn loc("Please hold on a moment. SVK is writing out a critical configuration file.\n")};
+
     my $file = $self->{statefile};
     my $tmpfile = $file."-$$";
+    my $oldfile = "$file~";
+    my $ancient_backup = $file.".bak.".$$;
+
+
     DumpFile ($tmpfile,
 	      { map { $_ => $hash->{$_}} qw/checkout depotmap/ });
-    unlink ("$file~");
-    rename ($file => "$file~");
-    rename ($tmpfile => $file);
+
+    if (not -f $tmpfile ) {
+        die loc("Couldn't write your new configuration file to %1. Please try again.", $tmpfile);
+    }
+
+    if (-f $oldfile ) { 
+      rename ( $oldfile => $ancient_backup ) ||
+	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $oldfile);
+    }
+    if (-f $file ) {
+        rename ($file => $oldfile) ||
+        	die loc("Couldn't remove your old configuration file %1 while writing the new one.", $file);
+    }
+    rename ($tmpfile => $file) ||
+	die loc("Couldn't write your new configuration file %1. A backup has been stored in %2. Please replace %1 with %2 immediately.", $file, $tmpfile);
+
+    if (-f $ancient_backup ) {
+      unlink ($ancient_backup) ||
+	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $oldfile);
+
+    }
 }
 
 sub store {
@@ -191,7 +214,7 @@ sub store {
     return unless $self->{statefile};
     local $@;
     if ($self->{giantlocked}) {
-	$self->_store_self ($self, $self);
+	$self->_store_config ($self);
     }
     elsif ($self->{modified}) {
 	$self->giant_lock ();
@@ -199,7 +222,7 @@ sub store {
 	my @paths = $info->{checkout}->find ('/', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
-	$self->_store_self ($self, $info);
+        $self->_store_config($info);
     }
     $self->giant_unlock ();
 }
@@ -219,10 +242,7 @@ sub lock {
     }
     $self->{checkout}->store ($path, {lock => $$});
     $self->{modified} = 1;
-    DumpFile ($self->{statefile}, { checkout => $self->{checkout},
-				    depotmap => $self->{depotmap}} )
-	if $self->{statefile};
-
+    $self->_store_config($self) if $self->{statefile};
     $self->giant_unlock ();
 }
 
