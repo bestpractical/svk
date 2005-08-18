@@ -74,5 +74,5 @@ $xd->giant_unlock;
 $xd2->load;
 $xd2->giant_unlock;
 
-is($xd->{checkout}->get("$corpath/B")->{revision}, 1);
-is($xd2->{checkout}->get("$corpath/A")->{revision}, 1);
+is($xd->{checkout}->get(__("$corpath/B"))->{revision}, 1);
+is($xd2->{checkout}->get(__("$corpath/A"))->{revision}, 1);
