@@ -1,3 +1,47 @@
+[Changes for 1.03 - 18 Aug, 2005]
+
+* "svk status" now accepts a --verbose (-v) switch which functions
+  just like the svn clients switch of the same name.
+
+* "svk log" and "svk revert" now accept a --quiet (-q) switch.
+
+* "svk diff" now accepts a --non-recursive (-N) switch.
+
+* Support --quiet in svk propdel and svk propset.
+
+* Fix message when doing svk propdel --revprop.
+
+* Allow svk update --sync --check-only to sync and then check what
+  would be updated in your working copy.
+
+* Fix a bug that that status and revert won't work on explicit
+  command line targets that are replaced with history.
+
+* Fix path encoding for replaced item in "svk add".
+
+* Fix a bug that svk cp A B would die if A has properties.
+
+* Fix a bug in cb_rev for mirrored path, that was using wrong base
+  revision for delete_entry when a node was replaced with history.
+
+* Fix a bug in merge editor for replaced items being deleted but not
+  replaced.
+
+* Fix merging replaced item to checkout.
+
+* Fix a bug when a file is obstructed by a stalled directory, it would
+  cause checkout_delta to cache its signature, and thus not reported
+  as obstructed for the second time.
+
+* Reduce memory leak in nearest_copy().
+
+* Fix a regression that svk sm -l (without -m or --template) should
+  prompt for log message.
+
+* Be more carefull handling failures when writing out statefile.
+
+* Fix an issue with concurrent svk storing their own state.
+
 [Changes for 1.02 - 2 Aug, 2005]
 
 * "svk mirror" now supports moving mirror points with "svk mv".
