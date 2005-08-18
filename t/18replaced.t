@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 20;
+use Test::More tests => 28;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -118,3 +118,30 @@ is_output($svk, 'merge', [-c => -11, '//Y' => '//Y',
 	   'A   A/be',
 	   'A   A/neu',
 	   'Committed revision 12.']);
+chdir($copath);
+$svk->sw('//Y');
+
+is_output($svk, 'merge', [-c => 11, '//Y'],
+	  ['R   A']);
+
+is_output($svk, 'st', [],
+	  ['R   A',
+	   __('D   A/be'),
+	   __('D   A/neu'),
+	  ]);
+ok(-f 'A');
+is_output($svk, 'ci', [-m => 'message'],
+	  ['Committed revision 13.']);
+
+is_output($svk, 'merge', [-c => -11, '//Y'],
+	  ['R   A',
+	   __('A   A/be'),
+	   __('A   A/neu')]);
+ok(-d 'A');
+
+is_output($svk, 'st', [],
+	  ['R   A',
+	   __('A   A/be'),
+	   __('A   A/neu')]);
+is_output($svk, 'ci', [-m => 'message'],
+	  ['Committed revision 14.']);
