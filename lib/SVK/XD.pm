@@ -219,7 +219,7 @@ sub store {
     elsif ($self->{modified}) {
 	$self->giant_lock ();
 	my $info = LoadFile ($self->{statefile});
-	my @paths = $info->{checkout}->find ('/', {lock => $$});
+	my @paths = $info->{checkout}->find ('', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
         $self->_store_config($info);
