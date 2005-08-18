@@ -5,7 +5,8 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( slurp_fh md5_fh get_anchor tmpfile devnull );
+use autouse 'SVK::Util'
+    => qw( slurp_fh md5_fh get_anchor tmpfile devnull abs2rel );
 
 use constant FH => 0;
 use constant FILENAME => 1;
@@ -134,13 +135,13 @@ sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     return ( cb_exist =>
 	     sub { my ($path, $pool) = @_;
-		   $path = $anchor.'/'.$path;
+		   $path = $anchor.'/'.$path unless $path =~ m{^/};
 		   return $root->check_path ($path, $pool);
 	       },
 	     cb_rev => sub { $base_rev; },
 	     cb_localmod =>
 	     sub { my ($path, $checksum, $pool) = @_;
-		   $path = "$anchor/$path";
+		   $path = "$anchor/$path" unless $path =~ m{^/};
 		   my $md5 = $root->file_md5_checksum ($path, $pool);
 		   return if $md5 eq $checksum;
 		   return [$root->file_contents ($path, $pool),
@@ -148,7 +149,7 @@ sub cb_for_root {
 	       },
 	     cb_localprop =>
 	     sub { my ($path, $propname, $pool) = @_;
-		   $path = "$anchor/$path";
+		   $path = "$anchor/$path" unless $path =~ m{^/};
 		   local $@;
 		   return eval { $root->node_prop ($path, $propname, $pool) };
 	       },
@@ -182,6 +183,11 @@ sub cb_translate {
     }
 }
 
+sub copy_info {
+    my ($self, $src_from, $src_fromrev, $dst_from, $dst_fromrev) = @_;
+    $self->{copy_info}{$src_from}{$src_fromrev} = [$dst_from, $dst_fromrev];
+}
+
 sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;
@@ -197,6 +203,7 @@ sub open_root {
     $self->{notify}->node_status ('', '');
 
     my $ticket = $self->{ticket};
+    $self->{dh} = Data::Hierarchy->new;
     $self->{cb_merged} =
 	sub { my ($editor, $baton, $type, $pool) = @_;
 	      my $func = "change_${type}_prop";
@@ -226,6 +233,12 @@ sub add_file {
 	++$self->{changes};
 	$self->{added}{$path} = 1;
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
+	if (defined $arg[0]) {
+	    $self->{notify}->hist_status ($path, '+');
+	    @arg = $self->resolve_copy($path, @arg);
+	    $self->{info}{$path}{baseinfo} = [$self->_resolve_base($path)];
+	    $self->{info}{$path}{fpool} = $pool;
+	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
 	$pool->default if $pool && $pool->can ('default');
@@ -236,10 +249,26 @@ sub add_file {
     return $path;
 }
 
+sub _resolve_base {
+    my ($self, $path, $orig) = @_;
+    my ($entry) = $self->{dh}->get("/$path");
+    return unless $entry->{copyanchor};
+    $entry = $self->{dh}->get($entry->{copyanchor})
+	unless $entry->{copyanchor} eq "/$path";
+    my $key = $orig ? 'orig_copyfrom' : 'copyfrom';
+    return (abs2rel("/$path",
+		    $entry->{copyanchor} => $entry->{".$key"}, '/'),
+	    $entry->{".${key}_rev"});
+}
+
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    if ($self->{cb_exist}->($path, $pool)) {
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
+    if ($self->{cb_exist}->($basepath, $pool)) {
+	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
+	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
 	$self->{notify}->node_status ($path, '');
@@ -324,8 +353,15 @@ sub _retrieve_base
 {
     my ($self, $path, $pool) = @_;
     my @base = tmpfile('base-');
-    $path = "$self->{base_anchor}/$path" if $self->{base_anchor};
-    slurp_fh ($self->{base_root}->file_contents ($path, $pool), $base[FH]);
+
+    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ?
+	$self->_resolve_base($path, 1)
+      : ($path);
+    my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
+	: $self->{base_root};
+    $basepath = "$self->{base_anchor}/$path"
+	if $basepath !~ m{^/} && $self->{base_anchor};
+    slurp_fh ($root->file_contents ($basepath, $pool), $base[FH]);
     seek $base[FH], 0, 0;
     return @base;
 }
@@ -335,9 +371,10 @@ sub apply_textdelta {
     return unless $path;
 
     my $info = $self->{info}{$path};
+    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
     my $fh = $info->{fh} = {};
     if (($pool = $info->{fpool}) &&
-	($fh->{local} = $self->{cb_localmod}->($path, $checksum || '', $pool))) {
+	($fh->{local} = $self->{cb_localmod}->($basepath, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
 	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
@@ -350,8 +387,10 @@ sub apply_textdelta {
 	unless $self->{notify}->node_status ($path);
 
     $self->ensure_open ($path);
+
     my $handle = $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
 						    $checksum, $pool);
+
     if ($self->{storage_has_unwritable} && !$handle) {
 	delete $self->{notify}{status}{$path};
 	$self->{notify}->flush ($path);
@@ -396,16 +435,27 @@ sub _merge_text_change {
 
 sub _overwrite_local_file {
     my ($self, $fh, $path, $nfh, $pool) = @_;
+    # XXX: document why this is like this
+    my $storagebase = $fh->{local};
+    my $info = $self->{info}{$path};
+    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
+
+    if ($fromrev) {
+	my $sbroot = $self->{base_root}->fs->revision_root($fromrev, $pool);
+	$storagebase->[FH] = $sbroot->file_contents($basepath, $pool);
+	$storagebase->[CHECKSUM] = $sbroot->file_md5_checksum($basepath, $pool);
+    }
+
     my $handle = $self->{storage}->
-	apply_textdelta ($self->{storage_baton}{$path}, $fh->{local}[CHECKSUM],
-			 $pool);
+	apply_textdelta ($self->{storage_baton}{$path},
+			 $storagebase->[CHECKSUM], $pool);
 
     if ($handle && $#{$handle} >= 0) {
 	if ($self->{send_fulltext}) {
 	    SVN::TxDelta::send_stream ($nfh, @$handle, $pool);
 	}
 	else {
-	    seek $fh->{local}[FH], 0, 0;
+	    seek $storagebase->[FH], 0, 0 unless $fromrev; # don't seek for sb
 	    my $txstream = SVN::TxDelta::new($fh->{local}[FH], $nfh, $pool);
 	    SVN::TxDelta::send_txstream ($txstream, @$handle, $pool);
 	}
@@ -435,21 +485,28 @@ sub close_file {
     my $fh = $info->{fh};
     my $iod;
 
+    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
     no warnings 'uninitialized';
+    my $storagebase_checksum = $fh->{local}[CHECKSUM];
+    if ($fromrev) {
+	$storagebase_checksum = $self->{base_root}->fs->revision_root
+	    ($fromrev, $pool)->file_md5_checksum($basepath, $pool);
+    }
+
     # let close_directory reports about its children
     if ($info->{fh}{new}) {
 
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
-	    if $checksum eq $fh->{local}[CHECKSUM];
+	    if $checksum eq $storagebase_checksum;
 
-	my $eol = $self->{cb_localprop}->($path, 'svn:eol-style', $pool);
+	my $eol = $self->{cb_localprop}->($basepath, 'svn:eol-style', $pool);
 	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
 	$eol_layer = '' if $eol_layer eq ':raw';
 	$self->prepare_fh ($fh, $eol_layer);
 	# XXX: There used be a case that this explicit comparison is
 	# needed, but i'm not sure anymore.
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
-	    if File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}[FILENAME]) == 0;
+	    if File::Compare::compare ($fh->{new}[FILENAME], $fh->{local}->[FILENAME]) == 0;
 
 	$self->ensure_open ($path);
         if ($info->{addmerge}) {
@@ -470,11 +527,16 @@ sub close_file {
 	}
 	$self->cleanup_fh ($fh);
     }
-    elsif ($info->{fpool} && !$self->{notify}->node_status ($path)) {
-	# open but prop edit only, load local checksum
-	if (my $local = $self->{cb_localmod}->($path, $checksum, $pool)) {
-	    $checksum = $local->[CHECKSUM];
-	    close $local->[FH];
+    elsif ($info->{fpool}) {
+	if (!$self->{notify}->node_status($path) || !exists $fh->{local} ) {
+	    # open but without text edit, load local checksum
+	    if ($basepath ne $path) {
+		$checksum = $self->{base_root}->fs->revision_root($fromrev, $pool)->file_md5_checksum($basepath, $pool);
+	    }
+	    elsif (my $local = $self->{cb_localmod}->($basepath, $checksum, $pool)) {
+		$checksum = $local->[CHECKSUM];
+		close $local->[FH];
+	    }
 	}
     }
 
@@ -485,8 +547,9 @@ sub close_file {
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
     return undef unless defined $pdir;
-    my $pool = $arg[-1];
+    my $pool = pop @arg;
     my $touched = $self->{notify}->node_status($path);
+    undef $touched if $touched && $touched eq 'C';
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
     if (!$self->{added}{$pdir} && !$touched &&
@@ -497,19 +560,24 @@ sub add_directory {
 	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
-					      $self->{cb_rev}->($path), $arg[2]);
+					      $self->{cb_rev}->($path), $pool);
 	$self->{notify}->node_status ($path, 'G');
     }
     else {
+	if (defined $arg[0]) {
+	    @arg = $self->resolve_copy($path, @arg);
+	}
 	my $baton =
 	    $self->{storage}->add_directory ($path, $self->{storage_baton}{$pdir},
-					     @arg);
+					     @arg, $pool);
 	unless (defined $baton) {
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}
 	$self->{storage_baton}{$path} = $baton;
 	$self->{added}{$path} = 1;
+	$self->{notify}->hist_status ($path, '+')
+	    if defined $arg[0];
 	$self->{notify}->node_status ($path, $touched ? 'R' : 'A');
 	$self->{notify}->flush ($path, 1);
     }
@@ -517,12 +585,33 @@ sub add_directory {
     return $path;
 }
 
+sub resolve_copy {
+    my ($self, $path, $from, $rev) = @_;
+    die "unknown copy $from $rev for $path"
+	unless exists $self->{copy_info}{$from}{$rev};
+    my ($dstfrom, $dstrev) = @{$self->{copy_info}{$from}{$rev}};
+    $self->{dh}->store("/$path", { copyanchor => "/$path",
+				   '.copyfrom' => $dstfrom,
+				   '.copyfrom_rev' => $dstrev,
+				   '.orig_copyfrom' => $from,
+				   '.orig_copyfrom_rev' => $rev,
+				 });
+    return $self->{cb_copyfrom}->($dstfrom, $dstrev)
+	if $self->{cb_copyfrom};
+    return ($dstfrom, $dstrev);
+}
+
 sub open_directory {
     my ($self, $path, $pdir, $rev, @arg) = @_;
     my $pool = $arg[-1];
+
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
-	unless ($self->{cb_exist}->($path, $pool) || $self->{open_nonexist}) {
+
+	my ($basepath, $fromrev) = $self->_resolve_base($path);
+	$basepath = $path unless defined $basepath;
+
+	unless ($self->{cb_exist}->($basepath, $pool) || $self->{open_nonexist}) {
 	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;
@@ -554,8 +643,11 @@ sub close_directory {
 
 sub _merge_file_delete {
     my ($self, $path, $rpath, $pdir, $pool) = @_;
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
+
     return undef unless $self->{cb_localmod}->(
-		$path,
+		$basepath,
 		$self->{base_root}->file_md5_checksum ($rpath, $pool),
 		$pool);
     return {} unless $self->{resolve};
@@ -564,7 +656,7 @@ sub _merge_file_delete {
     $fh->{base} ||= [$self->_retrieve_base($path, $pool)];
     $fh->{new} = [tmpfile('new-')];
     $fh->{local} = [tmpfile('local-')];
-    my ($tmp) = $self->{cb_localmod}->($path, '', $pool);
+    my ($tmp) = $self->{cb_localmod}->($basepath, '', $pool);
     slurp_fh ( $tmp->[FH], $fh->{local}[FH]);
     seek $fh->{local}[FH], 0, 0;
     $fh->{local}[CHECKSUM] = $tmp->[CHECKSUM];
@@ -598,6 +690,8 @@ sub _check_delete_conflict {
 
     return $self->_merge_file_delete($path, $rpath, $pdir, $pool) if $kind == $SVN::Node::file;
 
+    my ($basepath, $fromrev) = $self->_resolve_base($path, 1);
+    $basepath = $path unless defined $basepath;
     my $dirmodified = $self->{cb_dirdelta}->($path, $self->{base_root}, $rpath);
     my $entries = $self->{base_root}->dir_entries ($rpath);
     my ($torm, $modified, $merged);
@@ -672,11 +766,21 @@ sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
     my $pool = $arg[-1];
-    return unless defined $pdir && $self->{cb_exist}->($path, $pool);
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
 
-    my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
-    my $torm = $self->_check_delete_conflict ($path, $rpath,
+    return unless defined $pdir && $self->{cb_exist}->($basepath, $pool);
+    my $rpath = $basepath =~ m{^/} ? $basepath :
+	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
+    my $torm;
+    # XXX: need txn-aware cb_*! for the case current path is from a
+    # copy and to be deleted
+    if ($self->{cb_exist}->($path, $pool)) {
+	# XXX: this is evil
+	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
+	$torm = $self->_check_delete_conflict ($path, $rpath,
 					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
+    }
 
     if (ref($torm)) {
 	$self->node_conflict ($path);
@@ -742,11 +846,12 @@ sub _merge_prop_change {
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
     my $prop;
     $prop->{new} = $_[1];
+    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ? @{$self->{info}{$path}{baseinfo}} : ($path);
     {
 	local $@;
 	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0], $pool) };
-	$prop->{local} = $self->{cb_exist}->($path, $pool)
-	    ? $self->{cb_localprop}->($path, $_[0], $pool) : undef;
+	$prop->{local} = $self->{cb_exist}->($basepath, $pool)
+	    ? $self->{cb_localprop}->($basepath, $_[0], $pool) : undef;
     }
     # XXX: only known props should be auto-merged with default resolver
     $pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;

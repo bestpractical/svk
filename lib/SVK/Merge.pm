@@ -161,6 +161,29 @@ sub merge_info {
 	   $target->copath ($target->{copath_target}))->{'svk:merge'} );
 }
 
+sub merge_info_with_copy {
+    my ($self, $target) = @_;
+    my $minfo = $self->merge_info($target);
+
+    for ($self->copy_ancestors($target)) {
+	my $srckey = join(':', $_->{uuid}, $_->{path});
+	$minfo->{$srckey} = $_
+	    unless $minfo->{$srckey} && $minfo->{$srckey} > $_->{rev};
+    }
+
+    return $minfo;
+}
+
+sub copy_ancestors {
+    my ($self, $target) = @_;
+
+    return map { $target->new
+		     ( path => $_->[0],
+		       targets => undef,
+		       revision => $_->[1])->universal;
+		   } $target->copy_ancestors;
+}
+
 sub find_merge_sources {
     my ($self, $target, $verbatim, $noself) = @_;
     my $pool = SVN::Pool->new_default;
@@ -319,8 +342,10 @@ sub run {
 	    my $newpath = $storage->rename_check ($path);
 	    $flush->($path, $st, $path eq $newpath ? undef : $newpath) };
     }
-    my $editor = SVK::Editor::Merge->new
+
+    my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->{path},
+	  repospath => $src->{repospath}, # for stupid copyfrom url
 	  base_anchor => $base->{path},
 	  base_root => $base_root,
 	  target => $target,
@@ -351,17 +376,112 @@ sub run {
 			     }),
 	  %cb,
 	);
+
+    my $editor = $meditor;
+    if ($self->{notice_copy}) {
+	my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
+	my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
+
+	my $boundry_rev;
+	if ($self->{base}->path eq $self->{src}->path) {
+	    $boundry_rev = $self->{base}{revision};
+	}
+	else {
+	    my $usrc = $src->universal;
+	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+	    if ($dstinfo->{$srckey}) {
+		$boundry_rev = $src->merged_from
+		    ($self->{base}, $self, $self->{base}{path});
+	    }
+	    else {
+		# when did the branch first got created?
+		$boundry_rev = $src->search_revision
+		    ( cmp => sub {
+			  my $rev = shift;
+			  my $root = $src->new(revision => $rev)->root;
+			  return $root->node_history($src->path)->prev(0)->prev(0) ? 1 : 0;
+		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
+	    }
+	}
+	warn "==> got $boundry_rev as copyboundry" if $main::DEBUG;
+
+	require SVK::Editor::Copy;
+	$editor = SVK::Editor::Copy->new
+	    ( _editor => [$meditor],
+	      merge => $self, # XXX: just for merge_from, move it out
+	      copyboundry_rev => $boundry_rev,
+	      copyboundry_root => $self->{repos}->fs->revision_root($boundry_rev
+),
+	      src => $src,
+	      dst => $self->{dst},
+	      cb_resolve_copy => sub {
+		  my ($src_from, $src_fromrev) = @_;
+		  my ($dst_from, $dst_fromrev) =
+		      $self->resolve_copy($srcinfo, $dstinfo, @_);
+		  return unless defined $dst_from;
+
+		  $meditor->copy_info($src_from, $src_fromrev,
+				     $dst_from, $dst_fromrev);
+
+		  return ($src_from, $src_fromrev);
+	      } );
+	$editor = SVK::Editor::Delay->new ($editor);
+    }
+
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
 	    );
-    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
+    print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};
     print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
-	      $editor->{skipped}) if $editor->{skipped} && !$self->{track_rename} && !$self->{auto};
+	      $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
 
-    return $editor->{conflicts};
+    return $meditor->{conflicts};
+}
+
+ # translate to (path, rev) for dst
+sub resolve_copy {
+    my ($self, $srcinfo, $dstinfo, $cp_path, $cp_rev) = @_;
+    warn "==> to resolve $cp_path $cp_rev" if $main::DEBUG;
+    my $path = $cp_path;
+    my $src = $self->{src};
+    my $srcpath = $src->path;
+    my $dstpath = $self->{dst}->path;
+    return ($cp_path, $cp_rev) if $path =~ m{^\Q$dstpath/};
+    return unless $path =~ m{^\Q$srcpath/};
+
+    my $cpsrc = $src->new( path => $path,
+			   revision => $cp_rev );
+    $path =~ s/^\Q$srcpath/$dstpath/;
+    $cpsrc->normalize;
+    $cp_rev = $cpsrc->{revision};
+    # now the hard part, reoslve the revision
+    my $usrc = $src->universal;
+    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    unless ($dstinfo->{$srckey}) {
+	my $udst = $self->{dst}->universal;
+	my $dstkey = join(':', $udst->{uuid}, $udst->{path});
+	return $srcinfo->{$dstkey}{rev} ?
+	    ($path, $srcinfo->{$dstkey}->local($self->{dst}{repos})->{revision}) : ();
+    }
+    if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
+	# same as re-base in editor::copy
+	my $rev = $self->{src}->merged_from
+	    ($self->{base}, $self, $self->{base}{path});
+	# XXX: compare rev and cp_rev
+	return ($path, $rev) if defined $rev;
+	return;
+    }
+    # XXX: get rid of the merge context needed for
+    # merged_from(); actually what the function needs is
+    # just XD
+    my $rev = $self->{dst}->
+	merged_from($src->new(revision => $cp_rev),
+		    $self, $cp_path);
+
+    return ($path, $rev) if defined $rev;
 }
 
 sub resolver {

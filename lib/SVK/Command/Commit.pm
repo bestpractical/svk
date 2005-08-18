@@ -236,6 +236,11 @@ sub get_editor {
     }
 
     return ($editor, %cb, mirror => $m, callback => \$callback,
+	    cb_copyfrom => $m ?
+	      sub { my ($path, $rev) = @_;
+		    $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
+		    return ($path, scalar $m->find_remote_rev($rev)); }
+	    : sub { ('file://'.$target->{repospath}.$_[0], $_[1]) },
 	    send_fulltext => !$m);
 }
 
@@ -434,13 +439,9 @@ sub run_delta {
 	    obstruct_as_replace => 1,
 	    absent_as_delete => 1) :
 	  ( absent_ignore => 1),
+	  cb_copyfrom => $cb{cb_copyfrom},
 	  $cb{mirror} ?
-	  ( cb_copyfrom => sub {
-		my ($path, $rev) = @_;
-		$path =~ s|^\Q$cb{mirror}{target_path}\E|$cb{mirror}{source}|;
-		return ($path, scalar $cb{mirror}->find_remote_rev ($rev));
-	    },
-	    cb_rev => sub {
+	  (cb_rev => sub {
 		# XXX: the non-mirror cb_rev should be the same as
 		# this one, so codepaths are shared.
 		my $revtarget = shift;

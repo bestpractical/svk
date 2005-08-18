@@ -56,6 +56,8 @@ lib/SVK/Command/Verify.pm
 lib/SVK/Editor/Checkout.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
+lib/SVK/Editor/Composite.pm
+lib/SVK/Editor/Copy.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Merge.pm
@@ -125,6 +127,8 @@ t/06keyword.t
 t/07smerge-anchor-replace.t
 t/07smerge-anchor.t
 t/07smerge-baseless.t
+t/07smerge-copy.t
+t/07smerge-copy-co.t
 t/07smerge-delete.t
 t/07smerge-external.t
 t/07smerge-file.t

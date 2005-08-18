@@ -47,6 +47,7 @@ sub clone {
 sub root {
     my ($self, $xd) = @_;
     if ($self->{copath}) {
+	die "xdroot requires xd. ".join(',',(caller(1))[0..3]) unless $xd;
 	$xd->xdroot (%$self);
     }
     else {
@@ -239,6 +240,12 @@ sub depotname {
 
 sub copy_ancestors {
     my $self = shift;
+    @{ $self->{copy_ancesotrs}{$self->path}{$self->{revision}} ||=
+	   [$self->_copy_ancestors] };
+}
+
+sub _copy_ancestors {
+    my $self = shift;
     my $fs = $self->{repos}->fs;
     my $t = $self->new->as_depotpath;
     my @result;
@@ -408,6 +415,98 @@ sub report_copath {
     abs2rel ($copath, $self->{copath} => $report);
 }
 
+sub search_revision {
+    my ($self, %arg) = @_;
+    my $root = $self->root;
+    my @rev = ($arg{start} || 1, $self->{revision});
+    my $id = $root->node_id($self->path);
+    my $pool = SVN::Pool->new_default;
+
+    while ($rev[0] <= $rev[1]) {
+	$pool->clear;
+	my $rev = int(($rev[0]+$rev[1])/2);
+	my $search_root = $self->new(revision => $rev)->root;
+	if ($search_root->check_path($self->path) &&
+	    SVN::Fs::check_related($id, $search_root->node_id($self->path))) {
+
+	    # normalise
+	    my $nrev = $rev;
+	    $nrev = ($search_root->node_history($self->path)->prev(0)->location)[1]
+		unless $rev[0] == $rev[1] ||
+		    $nrev == $search_root->node_created_rev ($self->path);
+	    my $cmp = $arg{cmp}->($nrev);
+
+	    return $nrev if $cmp == 0;
+
+	    if ($cmp < 0) {
+		$rev[0] = $rev+1;
+	    }
+	    else {
+		$rev[1] = $rev-1;
+	    }
+	}
+	else {
+	    $rev[0] = $rev+1;
+	}
+    }
+    return;
+}
+
+# $path is the actul path we use to normalise
+sub merged_from {
+    my ($self, $src, $merge, $path) = @_;
+    $self = $self->new->as_depotpath;
+    my $usrc = $src->universal;
+    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
+
+    my %copies = map { join(':', $_->{uuid}, $_->{path}) => $_ }
+	$merge->copy_ancestors($self);
+
+    $self->search_revision
+	( cmp => sub {
+	      my $rev = shift;
+	      warn "==> look at $rev" if $main::DEBUG;
+	      my $search = $self->new(revision => $rev);
+	      my $minfo = { %copies,
+			    %{$merge->merge_info($search)} };
+
+#$merge->merge_info_with_copy($search);
+	      return -1 unless $minfo->{$srckey};
+	      # get the actual revision of the on the merge target,
+	      # and compare
+	      my $msrc = $self->new
+		  ( path => $path,
+		    revision => $minfo->{$srckey}->
+		    local($self->{repos})->{revision} );
+	      { local $@;
+	        eval { $msrc->normalize } or return -1;
+	      }
+
+	      if ($msrc->{revision} > $src->{revision}) {
+		  return 1;
+	      }
+	      elsif ($msrc->{revision} < $src->{revision}) {
+		  return -1;
+	      }
+
+	      my $prev;
+	      { local $@; 
+	        $prev = eval { ($search->root->node_history($self->path)->prev(0)->prev(0)->location)[1] } or return 0;
+	      }
+
+	      # see if prev got different merge info about srckey.
+	      warn "==> to compare with $prev" if $main::DEBUG;
+	      my $uret = $merge->merge_info_with_copy
+		  ($self->new(revision => $prev))->{$srckey}
+		      or return 0;
+
+	      return ($uret->local($self->{repos})->{revision} == $src->{revision})
+		? 1 : 0;
+	  } );
+}
+
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
@@ -424,3 +523,4 @@ See L<http://www.perl.com/perl/misc/Artistic.html>
 =cut
 
 1;
+
