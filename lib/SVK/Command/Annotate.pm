@@ -100,6 +100,7 @@ SVK::Command::Annotate - Display per-line revision and author info
 
  -r [--revision] REV    : annotate up to revision
  -x [--cross]           : track revisions copied from elsewhere
+ --remoterev            : display remote revision numbers (on mirrors only)
 
 =head1 NOTES
 
