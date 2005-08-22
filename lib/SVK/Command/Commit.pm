@@ -31,7 +31,7 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
-sub lock { $_[0]->lock_target ($_[1]) }
+sub lock { $_[0]->lock_coroot($_[1]) }
 
 sub target_prompt {
     loc('=== Targets to commit (you may delete items from it) ===');

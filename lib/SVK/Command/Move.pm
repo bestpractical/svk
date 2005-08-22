@@ -7,7 +7,7 @@ use SVK::I18N;
 
 sub lock {
     my $self = shift;
-    $self->lock_target (@_);
+    $self->lock_coroot(@_);
 }
 
 sub handle_direct_item {
