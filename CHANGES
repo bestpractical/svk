@@ -1,12 +1,5 @@
 [Changes for 1.?? - ? ???, 2005]
 
-* "svk status" now accepts a --verbose (-v) switch which functions
-  just like the svn clients switch of the same name.
-
-* "svk log" and "svk revert" now accept a --quiet (-q) switch.
-
-* "svk diff" now accepts a --non-recursive (-N) switch.
-
 * "svk add" now displays "- (bin)" if the svn:mime-type of the file
   being added is a non text type.
 
