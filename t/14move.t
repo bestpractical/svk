@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 16;
+use Test::More tests => 20;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -89,3 +89,22 @@ is_output ($svk, 'mv', [-p => 'new_dir', 'new_dir_mv/blah'],
 		 __('D   new_dir'),
 		 __('D   new_dir/new_add'),
 		]);
+
+is_output ($svk, 'st', [],
+		[__('A   new_dir_mv'),
+		 __('A + new_dir_mv/blah'),
+		 __('D   new_dir'),
+		 __('D   new_dir/new_add'),
+		]);
+
+$svk->commit('-m', 'committed mv -p');
+
+is_output($svk, 'st', [], []);
+
+is_output($svk, 'mv', ['fe.bz' => 'them'],
+	  ['A   them',
+	   'D   fe.bz']);
+
+is_output($svk, 'st', [],
+	  ['A + them',
+	   'D   fe.bz']);

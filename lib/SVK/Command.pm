@@ -693,6 +693,26 @@ sub lock_target {
     }
 }
 
+=head3 lock_coroot ($target)
+
+XXX Undocumented
+
+=cut
+
+sub lock_coroot {
+    my $self = shift;
+    my @tgt = map { $_->{copath} }
+	grep { defined $_->{copath} } @_;
+    return unless @tgt;
+    my %roots;
+    for (@tgt) {
+	my (undef, $coroot) = $self->{xd}{checkout}->get($_);
+	$roots{$coroot}++;
+    }
+    $self->{xd}->lock($_)
+	for keys %roots;
+}
+
 =head3 brief_usage ($file)
 
 Display an one-line brief usage of the command object.  Optionally, a file

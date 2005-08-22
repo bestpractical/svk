@@ -17,6 +17,11 @@ sub parse_arg {
     return map { $self->{xd}->target_from_copath_maybe($_) } @arg;
 }
 
+sub lock {
+    my $self = shift;
+    $self->lock_coroot(@_);
+}
+
 sub ensure_parent {
     my ($self, $target) = @_;
     my $dst = $target->new;

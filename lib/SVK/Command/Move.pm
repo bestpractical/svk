@@ -5,6 +5,11 @@ use base qw( SVK::Command::Copy );
 use SVK::Util qw ( abs2rel );
 use SVK::I18N;
 
+sub lock {
+    my $self = shift;
+    $self->lock_coroot(@_);
+}
+
 sub handle_direct_item {
     my $self = shift;
     my ($editor, $anchor, $m, $src, $dst) = @_;

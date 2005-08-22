@@ -177,9 +177,42 @@ sub is_file_content_raw {
     goto &is;
 }
 
+sub _do_run {
+    my ($svk, $cmd, $arg) = @_;
+    my $unlock = SVK::XD->can('unlock');
+    my $giant_unlock = SVK::XD->can('giant_unlock');
+    no warnings 'redefine';
+    my $origxd = Clone::clone($svk->{xd}->{checkout});
+    require SVK::Command::Checkout;
+    my $giant_locked = 1;
+    local *SVK::XD::giant_unlock = sub {
+	$giant_locked = 0;
+	goto $giant_unlock;
+    };
+    local *SVK::XD::unlock = sub {
+	my $self = shift;
+	unless ($giant_locked) {
+	    my $newxd = Clone::clone($self->{checkout});
+	    my @paths = $self->{checkout}->find ('', {lock => $$});
+	    my %empty = (lock => undef, '.conflict' => undef,
+			 '.deleted' => undef,
+			  SVK::Command::Checkout::detach->_remove_entry,
+			  SVK::Command->_schedule_empty);
+	    for (@paths) {
+		$origxd->store_recursively($_, \%empty);
+		$newxd->store_recursively($_, \%empty);
+	    }
+	    diag Carp::longmess.YAML::Dump({orig => $origxd, new => $newxd, paths => \@paths})
+		unless eq_hash($origxd, $newxd);
+	}
+	$unlock->($self, @_);
+    };
+    $svk->$cmd (@$arg);
+}
+
 sub is_output {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
-    $svk->$cmd (@$arg);
+    _do_run($svk, $cmd, $arg);
     my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
 	? \&is_deeply_like : \&is_deeply;
     my $o = $output;
@@ -190,7 +223,7 @@ sub is_output {
 
 sub is_sorted_output {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
-    $svk->$cmd (@$arg);
+    _do_run($svk, $cmd, $arg);
     my $cmp = (grep {ref ($_) eq 'Regexp'} @$expected)
 	? \&is_deeply_like : \&is_deeply;
     @_ = ([sort split (/\r?\n/, $output)], [sort @$expected], $test || join(' ', $cmd, @$arg));
@@ -225,14 +258,14 @@ sub is_deeply_like {
 
 sub is_output_like {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
-    $svk->$cmd (@$arg);
+    _do_run($svk, $cmd, $arg);
     @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
     goto &like;
 }
 
 sub is_output_unlike {
     my ($svk, $cmd, $arg, $expected, $test) = @_;
-    $svk->$cmd (@$arg);
+    _do_run($svk, $cmd, $arg);
     @_ = ($output, $expected, $test || join(' ', $cmd, @$arg));
     goto &unlike;
 }

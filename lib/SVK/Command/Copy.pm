@@ -63,7 +63,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $self->lock_target ($_[-1]);
+    $self->lock_coroot($_[-1]);
 }
 
 sub handle_co_item {
