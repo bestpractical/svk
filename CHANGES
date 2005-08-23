@@ -1,3 +1,14 @@
+[Changes for 1.04 - 24 Aug, 2005]
+
+* Fix various locking bugs exposed by the concurrency fix introduced
+  in 1.03.  This includes "svk mv A B" not scheduling A for deletion,
+  "svk cp -p" not scheduling newly created parent directories for
+  addition.
+
+* Use tab characters as the separators between path, depot path and
+  label in diff output.  This behaviour conforms to the output of
+  Subversion and GNU diff.
+
 [Changes for 1.03 - 18 Aug, 2005]
 
 * "svk status" now accepts a --verbose (-v) switch which functions
