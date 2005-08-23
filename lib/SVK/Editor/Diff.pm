@@ -130,7 +130,14 @@ sub close_file {
 
 sub _full_label {
     my ($path, $mypath, $label) = @_;
-    return "$path ".($mypath ? "  ($mypath)  " : '')." ($label)";
+
+    my $full_label = "$path\t";
+    if ($mypath) {
+        $full_label .= "($mypath)\t";
+    }
+    $full_label .= "($label)";
+
+    return $full_label;
 }
 
 sub output_diff {

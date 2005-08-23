@@ -54,8 +54,8 @@ my $log1 = ['Log:',
 my $patch1 = ['',
 	      '=== B/fe',
 	      '==================================================================',
-	      '--- B/fe  (revision 3)',
-	      '+++ B/fe  (patch test-1 level 1)',
+	      "--- B/fe\t(revision 3)",
+	      "+++ B/fe\t(patch test-1 level 1)",
 	      '@@ -1 +1,2 @@',
 	      ' file fe added later',
 	      '+fnord'];
@@ -122,13 +122,13 @@ is_output ($svk2, 'patch', ['--view', 'test-1'],
 is_output ($svk2, 'patch', ['--update', 'test-1'],
 	   ['G   B/fe']);
 
-my $patch2 = [split ("\n", << 'END_OF_DIFF')];
+my $patch2 = [split ("\n", << "END_OF_DIFF")];
 
 === B/fe
 ==================================================================
---- B/fe  (revision 4)
-+++ B/fe  (patch test-1 level 1)
-@@ -1,2 +1,3 @@
+--- B/fe\t(revision 4)
++++ B/fe\t(patch test-1 level 1)
+\@\@ -1,2 +1,3 \@\@
  on trunk
  file fe added later
 +fnord
@@ -200,8 +200,8 @@ is_output ($svk2, 'patch', ['--view', 'test-1'],
 	    '',
 	    '=== B/fe',
 	    '==================================================================',
-	    '--- B/fe  (revision 4)',
-	    '+++ B/fe  (patch test-1 level 2)',
+	    "--- B/fe\t(revision 4)",
+	    "+++ B/fe\t(patch test-1 level 2)",
 	    '@@ -1,2 +1,4 @@',
 	    ' on trunk',
 	    ' file fe added later',
@@ -220,8 +220,8 @@ is_output ($svk2, 'patch', ['--view', 'test-1'],
 	    '',
 	    '=== B/fe',
 	    '==================================================================',
-	    '--- B/fe  (revision 4)',
-	    '+++ B/fe  (patch test-1 level 2)',
+	    "--- B/fe\t(revision 4)",
+	    "+++ B/fe\t(patch test-1 level 2)",
 	    '@@ -1,2 +1,4 @@',
 	    ' on trunk',
 	    ' file fe added later',
