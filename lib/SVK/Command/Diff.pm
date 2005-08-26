@@ -25,7 +25,7 @@ sub run {
     my ($self, $target, $target2) = @_;
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
-    my ($oldroot, $newroot, $cb_llabel, $report);
+    my ($cb_llabel, $report);
     my ($r1, $r2) = $self->resolve_revspec($target,$target2);
 
     # translate to target and target2
@@ -37,45 +37,34 @@ sub run {
 	}
 	if ($target2->{copath}) {
 	    die loc("Invalid arguments.\n") if $target->{copath};
-	    # prevent oldroot being xdroot below
-	    $r1 ||= $yrev;
+	    $target->{revision} = $r1 if $r1;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
 	    die loc("path %1 does not exist.\n", $target->{report})
-		if $fs->revision_root ($r1)->check_path ($target->{path}) == $SVN::Node::none;
+		if $target->root->check_path ($target->{path}) == $SVN::Node::none;
 	}
     }
     else {
-	$target->as_depotpath if $r1 && $r2;
+	$target->as_depotpath($r1) if $r1 && $r2;
 	if ($target->{copath}) {
 	    $target = $self->arg_condensed($target->{report});
 	    $target2 = $target->new;
-	    $target->as_depotpath;
+	    $target->as_depotpath($r1) if $r1;;
 	    $report = $target->{report};
+	    $cb_llabel =
+		sub { my ($rpath) = @_;
+		      'revision '.($self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision}) } unless $r1;
 	}
 	else {
-	    # XXX: require revspec;
-	    $target2 = $target->new;
+	    die loc("Revision required.\n") unless $r1 && $r2;
+	    $target2 = $target->new(revision => $r2);
 	}
     }
 
-    if ($target2->{copath}) {
-	$newroot = $target2->root ($self->{xd});
-	$oldroot = $newroot unless $r1;
-	my $lrev = $r1; # for the closure
-	$cb_llabel =
-	    sub { my ($rpath) = @_;
-		  'revision '.($lrev ||
-			       $self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision});
-	      },
-    }
-
-    $r1 ||= $yrev, $r2 ||= $yrev;
-    $oldroot ||= $fs->revision_root ($r1);
-    $newroot ||= $fs->revision_root ($r2);
+    my ($oldroot, $newroot) = map { $_->root($self->{xd}) } ($target, $target2);
 
     unless ($target2->{copath}) {
 	die loc("path %1 does not exist.\n", $target2->{report})
-	    if $fs->revision_root ($r2)->check_path ($target2->{path}) == $SVN::Node::none;
+	    if $target2->root->check_path($target2->{path}) == $SVN::Node::none;
     }
 
     my $editor = $self->{summarize} ?
@@ -92,8 +81,8 @@ sub run {
 		return $oldroot->check_path ($path, $pool) == $SVN::Node::none ?
 		    undef : $oldroot->node_prop ($path, $pname, $pool);
 	    },
-	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision $r1"),
-	  rlabel => $target2->{copath} ? 'local' : "revision $r2",
+	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision ".($target->{revision})),
+	  rlabel => $target2->{copath} ? 'local' : "revision ".($target2->{revision}),
 	  external => $ENV{SVKDIFF},
 	  $target->{path} ne $target2->{path} ?
 	  ( lpath  => $target->{path},
@@ -134,6 +123,28 @@ sub run {
 	    ($report) = get_anchor (0, $report) if defined $report;
 	}
 	$editor->{report} = $report;
+
+	require SVK::Editor::Copy;
+#	warn YAML::Dump({target => $target, target2 => $target2});
+#	$editor =
+ SVK::Editor::Copy->new
+	    ( _editor => [$editor],
+	      base_root => $target->root,
+	      base_path => $target->path,
+	      base_rev => $target->{revision},
+	      copyboundry_rev => $target->{revision},
+	      copyboundry_root => $target->root,
+	      merge => bless ({ xd => $self->{xd} }, 'SVK::Merge'),
+	      base => $target,
+	      src => $target2,
+	      dst => $target2,
+	      cb_copyfrom => 
+sub { ('file://'.$target->{repospath}.$_[0], $_[1]) },
+	      cb_resolve_copy => sub {
+		  my ($cp_path, $cp_rev) = @_;
+		  warn "==> $cp_path, $cp_rev";
+		  return ($cp_path, $cp_rev);
+	      });
 	$self->{xd}->depot_delta
 	    ( oldroot => $oldroot,
 	      oldpath => [$target->{path}, $tgt],

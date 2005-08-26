@@ -20,7 +20,7 @@ overwrite_file ("A/binary", "foobar\nfnord\n");
 $svk->add ('A/binary');
 $svk->propset ('svn:mime-type', 'image/png', 'A/binary');
 is_output ($svk, 'diff', ['//asdf-non'],
-	   ['path //asdf-non does not exist.']);
+	   ['Revision required.']);
 is_output ($svk, 'diff', ['//asdf-non', 'A/binary'],
 	   ['path //asdf-non does not exist.']);
 is_output ($svk, 'diff', ['A/binary', '//asdf-non'],
@@ -114,6 +114,7 @@ is_output ($svk, 'diff', ['-r1:2', '//A/foo'],
 	    '+newline',
 	    ' fnord'], 'diff - rN:M depotfile');
 $svk->cp ('-m', 'copy', '-r1', '//A', '//B');
+
 is_output ($svk, 'diff', ['//A', '//B'],
 	   ['=== foo',
 	    '==================================================================',
