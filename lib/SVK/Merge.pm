@@ -450,10 +450,12 @@ sub resolve_copy {
     my $srcpath = $src->path;
     my $dstpath = $self->{dst}->path;
     return ($cp_path, $cp_rev) if $path =~ m{^\Q$dstpath/};
-    return unless $path =~ m{^\Q$srcpath/};
-
     my $cpsrc = $src->new( path => $path,
 			   revision => $cp_rev );
+    if ($path !~ m{^\Q$srcpath/}) {
+	return $src->same_source($cpsrc) ? ($cp_path, $cp_rev) : ();
+    }
+
     $path =~ s/^\Q$srcpath/$dstpath/;
     $cpsrc->normalize;
     $cp_rev = $cpsrc->{revision};

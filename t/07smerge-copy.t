@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 21;
+use Test::More tests => 23;
 use strict;
 use File::Path;
 use Cwd;
@@ -234,6 +234,20 @@ is_output($svk, 'pull', ['//local-many'],
 	   qr'New merge ticket: .*:/trunk-3:45',
 	   'Committed revision 46.'
 	  ]);
+$svk->mkdir(-m => 'outside', '//outside');
+$svk->cp(-m => 'outside -> trunk', '//outside' => '//trunk-3/outside');
+
+is_output($svk, 'pull', ['//local-many'],
+	  ['Auto-merging (45, 48) /trunk-3 to /local-many (base /trunk-3:45).',
+	   'A + outside',
+	   qr'New merge ticket: .*:/trunk-3:48',
+	   'Committed revision 49.'
+	  ]);
+
+is_ancestor($svk, '//local-many/outside',
+	    '/outside', 47);
+
+
 # check if prop change only
 #$svk->diff('//trunk-3', '//local-many');
 
