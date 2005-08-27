@@ -420,6 +420,9 @@ sub run {
 		      $self->resolve_copy($srcinfo, $dstinfo, @_);
 		  return unless defined $dst_from;
 
+		  # Because the delta still need to carry the copy
+		  # information of the source, make merge editor note
+		  # the mapping so it can do the translation
 		  $meditor->copy_info($src_from, $src_fromrev,
 				     $dst_from, $dst_fromrev);
 

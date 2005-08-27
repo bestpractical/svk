@@ -10,6 +10,7 @@ use autouse 'SVK::Util' => qw(get_anchor);
 sub options {
     ("v|verbose"    => 'verbose',
      "s|summarize"  => 'summarize',
+     "X|expand"     => 'expand',
      "r|revision=s@" => 'revspec');
 }
 
@@ -70,12 +71,7 @@ sub run {
     my $editor = $self->{summarize} ?
 	SVK::Editor::Status->new
 	: SVK::Editor::Diff->new
-	( cb_basecontent =>
-	  sub { my ($rpath, $pool) = @_;
-		my $base = $oldroot->file_contents ("$target->{path}/$rpath", $pool);
-		return $base;
-	    },
-	  cb_baseprop =>
+	( cb_baseprop =>
 	  sub { my ($rpath, $pname, $pool) = @_;
 		my $path = "$target->{path}/$rpath";
 		return $oldroot->check_path ($path, $pool) == $SVN::Node::none ?
@@ -87,8 +83,7 @@ sub run {
 	  $target->{path} ne $target2->{path} ?
 	  ( lpath  => $target->{path},
 	    rpath  => $target2->{path} ) : (),
-	  # XXX: for delete_entry, clean up these
-	  oldtarget => $target, oldroot => $oldroot,
+	  base_root => $oldroot, base_target => $target,
 	);
 
     my $kind = $oldroot->check_path ($target->{path});
@@ -104,7 +99,9 @@ sub run {
 	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
 	    ( %$target2,
-	      expand_copy => 1,
+	      $self->{expand}
+	      ? ( expand_copy => 1 )
+	      : ( cb_copyfrom => sub { @_ } ),
 	      base_root => $oldroot,
 	      base_path => $target->{path},
 	      xdroot => $newroot,
@@ -113,21 +110,18 @@ sub run {
 	    );
     }
     else {
-	my $tgt = '';
 	die loc("path %1 does not exist.\n", $target->{report})
 	    if $kind == $SVN::Node::none;
 
 	if ($kind != $SVN::Node::dir) {
-	    ($target->{path}, $tgt) =
-		get_anchor (1, $target->{path});
+	    $target->anchorify;
 	    ($report) = get_anchor (0, $report) if defined $report;
+	    $target2->anchorify;
 	}
 	$editor->{report} = $report;
 
 	require SVK::Editor::Copy;
-#	warn YAML::Dump({target => $target, target2 => $target2});
-#	$editor =
- SVK::Editor::Copy->new
+	$editor = SVK::Editor::Copy->new
 	    ( _editor => [$editor],
 	      base_root => $target->root,
 	      base_path => $target->path,
@@ -138,18 +132,16 @@ sub run {
 	      base => $target,
 	      src => $target2,
 	      dst => $target2,
-	      cb_copyfrom => 
-sub { ('file://'.$target->{repospath}.$_[0], $_[1]) },
 	      cb_resolve_copy => sub {
 		  my ($cp_path, $cp_rev) = @_;
-		  warn "==> $cp_path, $cp_rev";
 		  return ($cp_path, $cp_rev);
-	      });
+	      }) unless $self->{expand};
+
 	$self->{xd}->depot_delta
 	    ( oldroot => $oldroot,
-	      oldpath => [$target->{path}, $tgt],
+	      oldpath => [$target->{path}, $target->{targets}[0] || ''],
 	      newroot => $newroot,
-	      newpath => $target2->{path},
+	      newpath => $target2->path,
 	      editor => $editor,
 	      $self->{recursive} ? () : (no_recurse => 1),
 	    );
@@ -188,6 +180,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
  -s [--summarize]       : show summary only
  -v [--verbose]         : print extra information
+ -X [--expand]          : expand files copied as new files
  -N [--non-recursive]   : do not descend recursively
 
 =head1 AUTHORS

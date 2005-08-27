@@ -6,7 +6,7 @@ require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( slurp_fh tmpfile mimetype_is_text catfile );
+use autouse 'SVK::Util' => qw( slurp_fh tmpfile mimetype_is_text catfile abs2rel );
 
 =head1 NAME
 
@@ -15,7 +15,8 @@ SVK::Editor::Diff - An editor for producing textual diffs
 =head1 SYNOPSIS
 
  $editor = SVK::Editor::Diff->new
-    ( cb_basecontent => sub { ... },
+    ( base_root   => $root,
+      base_target => $target,
       cb_baseprop    => sub { ... },
       cb_llabel      => sub { ... },
       # or llabel => 'revision <left>',
@@ -33,18 +34,22 @@ sub set_target_revision {
 
 sub open_root {
     my ($self, $baserev) = @_;
+    $self->{dh} = Data::Hierarchy->new;
     return '';
 }
 
 sub add_file {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
     if (defined $from_path) {
-	$self->_print
-	    ( "=== $path\n",
-	      loc ("== copy with modification can't be displayed, use svk patch --apply.\n" ));
-	return;
+	$self->{info}{$path}{baseinfo} = [$from_path, $from_rev];
+	$self->{dh}->store("/$path", { copyanchor => "/$path",
+				       '.copyfrom' => $from_path,
+				       '.copyfrom_rev' => $from_rev,
+				     });
     }
-    $self->{info}{$path}{added} = 1;
+    else {
+	$self->{info}{$path}{added} = 1;
+    }
     $self->{info}{$path}{fpool} = $pool;
     return $path;
 }
@@ -52,14 +57,45 @@ sub add_file {
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     $self->{info}{$path}{fpool} = $pool;
+
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
+	if defined $fromrev;
+
     return $path;
+}
+
+sub _resolve_base {
+    my ($self, $path) = @_;
+    my ($entry) = $self->{dh}->get("/$path");
+    return unless $entry->{copyanchor};
+    $entry = $self->{dh}->get($entry->{copyanchor})
+	unless $entry->{copyanchor} eq "/$path";
+    my $key = 'copyfrom';
+    return (abs2rel("/$path",
+		    $entry->{copyanchor} => $entry->{".$key"}, '/'),
+	    $entry->{".${key}_rev"});
+}
+
+sub retrieve_base {
+    my ($self, $path, $pool) = @_;
+    my ($basepath, $fromrev) = $self->{info}{$path}{baseinfo} ?
+	$self->_resolve_base($path) : ($path);
+
+    my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
+	: $self->{base_root};
+
+    $basepath = "$self->{base_target}{path}/$path"
+	if $basepath !~ m{^/};
+
+    return $root->file_contents("$basepath", $pool);
 }
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
     my $info = $self->{info}{$path};
-    $info->{base} = $self->{cb_basecontent} ($path, $info->{fpool})
+    $info->{base} = $self->retrieve_base($path, $info->{fpool})
 	unless $info->{added};
 
     unless ($self->{external}) {
@@ -103,7 +139,7 @@ sub close_file {
 	no warnings 'uninitialized';
 	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
 	my $base = $self->{info}{$path}{added} ?
-	    \'' : $self->{cb_basecontent} ($path, $self->{info}{$path}{fpool});
+	    \'' : $self->retrieve_base($path, $self->{info}{$path}{fpool});
 	my @label = map { $self->{$_} || $self->{"cb_$_"}->($path) } qw/llabel rlabel/;
 	my $showpath = ($self->{lpath} ne $self->{rpath});
 	my @showpath = map { $showpath ? $self->{$_} : undef } qw/lpath rpath/;
@@ -204,7 +240,14 @@ sub output_prop_diff {
 }
 
 sub add_directory {
-    my ($self, $path, $pdir, @arg) = @_;
+    my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
+    if (defined $from_path) {
+	# XXX: print some garbage about this copy
+	$self->{dh}->store("/$path", { copyanchor => "/$path",
+				       '.copyfrom' => $from_path,
+				       '.copyfrom_rev' => $from_rev,
+				     });
+    }
     return $path;
 }
 
@@ -224,10 +267,10 @@ sub delete_entry {
     my $spool = SVN::Pool->new_default;
     # generate delta between empty root and oldroot of $path, then reverse in output
     SVK::XD->depot_delta
-	( oldroot => $self->{oldtarget}{repos}->fs->revision_root (0),
-	  oldpath => [$self->{oldtarget}{path}, $path],
-	  newroot => $self->{oldroot},
-	  newpath => $self->{oldtarget}{path} eq '/' ? "/$path" : "$self->{oldtarget}{path}/$path",
+	( oldroot => $self->{base_target}{repos}->fs->revision_root (0),
+	  oldpath => [$self->{base_target}{path}, $path],
+	  newroot => $self->{base_root},
+	  newpath => $self->{base_target}{path} eq '/' ? "/$path" : "$self->{base_target}{path}/$path",
 	  editor => __PACKAGE__->new (%$self, reverse => 1),
 	);
 

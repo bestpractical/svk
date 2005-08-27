@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 29;
+use Test::More tests => 30;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -354,8 +354,18 @@ is_output ($svk, 'diff', ['-r4:3'],
 $svk->cp ('-m', 'blah', '//B', '//A/B-cp');
 $svk->cp ('//A', 'C');
 append_file ("C/foo", "copied and modified on C\n");
-
-is_output ($svk, 'diff', ['C'],
+is_output($svk, 'diff', ['C'],
+	  ["=== C/foo",
+	   '==================================================================',
+	   __("--- C/foo\t(revision 4)"),
+	   __("+++ C/foo\t(local)"),
+	   '@@ -1,3 +1,4 @@',
+	   ' foobar',
+	   ' newline',
+	   ' fnord',
+	   '+copied and modified on C',
+	  ]);
+is_output ($svk, 'diff', [-X => 'C'],
 	   ['=== C/B-cp/bar',
 	    '==================================================================',
 	    "--- C/B-cp/bar\t(revision 4)",
@@ -407,7 +417,7 @@ is_output ($svk, 'diff', ['C'],
 	    '+fnord',
 	    '+copied and modified on C']);
 
-is_output ($svk, 'diff', ['--non-recursive', 'C'],
+is_output ($svk, 'diff', ['--non-recursive', '-X', 'C'],
 	   ['=== C/bar',
 	    '==================================================================',
 	    "--- C/bar\t(revision 4)",

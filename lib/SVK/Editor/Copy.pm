@@ -86,6 +86,9 @@ sub find_copy {
 	my ($src_from, $to) = map {$_->revision_root_revision}
 	    ($fromroot, $toroot);
 
+	warn 
+	"$cur_path, $src_frompath: if ($src_from <= $copyboundry_rev && $copyboundry_rev < $to" if $main::DEBUG;
+
 	return unless $copyboundry_rev < $to; # don't care, too early
 	if ($src_frompath !~ m{^\Q$self->{src}{path}/}) {
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
@@ -106,8 +109,6 @@ sub find_copy {
 	}
 
 
-	warn 
-	"$cur_path, $src_frompath: if ($src_from <= $copyboundry_rev && $copyboundry_rev < $to &&  $src_frompath =~ m{^\Q$self->{src}{path}/})" if $main::DEBUG;
 	# XXX: Document this condition
 
 	my $id = $fromroot->node_id($src_frompath);
