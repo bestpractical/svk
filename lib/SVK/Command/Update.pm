@@ -153,7 +153,7 @@ SVK::Command::Update - Bring changes from repository to checkout copies
  -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
- -q [--quiet]           : quiet mode
+ -q [--quiet]           : print as little as possible
 
 =head1 DESCRIPTION
 

@@ -231,6 +231,7 @@ SVK::Command::Copy - Make a versioned copy
 
  -r [--revision] REV    : act on revision REV instead of the head revision
  -p [--parent]          : create intermediate directories as required
+ -q [--quiet]           : print as little as possible
  -m [--message] MESSAGE : specify commit message MESSAGE
  -F [--file] FILENAME   : read commit message from FILENAME
  --template             : use the specified message as the template to edit
