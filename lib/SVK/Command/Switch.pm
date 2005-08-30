@@ -69,6 +69,7 @@ SVK::Command::Switch - Switch to another branch and keep local changes
 
  -r [--revision] REV    : act on revision REV instead of the head revision
  -d [--detach]          : mark a path as no longer checked out
+ -q [--quiet]           : print as little as possible
 
 =head1 AUTHORS
 

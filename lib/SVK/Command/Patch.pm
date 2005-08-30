@@ -206,7 +206,7 @@ SVK::Command::Patch - Manage patches
 
 =head1 OPTIONS
 
- None
+ --depot DEPOTNAME      : operate on a depot other than the default one
 
 =head1 DESCRIPTION
 

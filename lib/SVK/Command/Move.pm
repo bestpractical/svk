@@ -75,8 +75,9 @@ SVK::Command::Move - Move a file or directory
 =head1 OPTIONS
 
  -r [--revision] REV    : act on revision REV instead of the head revision
- -m [--message] MESSAGE : specify commit message MESSAGE
  -p [--parent]          : create intermediate directories as required
+ -q [--quiet]           : print as little as possible
+ -m [--message] MESSAGE : specify commit message MESSAGE
  -F [--file] FILENAME   : read commit message from FILENAME
  --template             : use the specified message as the template to edit
  --encoding ENC         : treat -m/-F value as being in charset encoding ENC
