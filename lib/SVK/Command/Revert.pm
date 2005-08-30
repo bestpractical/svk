@@ -75,13 +75,15 @@ sub do_revert {
     # XXX: need to respect copied resources
     my $kind = $xdroot->check_path ($dpath);
     if ($kind == $SVN::Node::dir) {
-	mkdir $copath unless -e $copath;
+        unless (-e $copath) {
+	    mkdir $copath or die loc("Can't create directory while trying to revert %1.\n", $copath);
+        }
     }
     else {
 	# XXX: PerlIO::via::symlink should take care of this.
 	# It doesn't overwrite existing file or close.
 	unlink $copath;
-	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath);
+	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath) or die loc("Can't create file while trying to revert %1.\n", $copath);
 	my $content = $xdroot->file_contents ($dpath);
 	slurp_fh ($content, $fh);
 	close $fh or die $!;
