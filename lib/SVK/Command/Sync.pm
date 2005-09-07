@@ -47,79 +47,100 @@ If the mirror lock is stalled, please interrupt this process and run:
 }
 
 sub run {
-    my ($self, @arg) = @_;
+    my ( $self, @arg ) = @_;
     die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
 
     die loc("argument skipto not allowed when multiple target specified")
-	if $self->{skip_to} && ($self->{sync_all} || $#arg > 0);
+        if $self->{skip_to} && ( $self->{sync_all} || $#arg > 0 );
 
-    if ($self->{sync_all}) {
-	local $@;
-	my %arg = (!defined($arg[0]) ? () : map {$_ => 1} @arg);
-	@arg = (defined($arg[0]) ? @arg : sort keys %{$self->{xd}{depotmap}});
+    if ( $self->{sync_all} ) {
+        local $@;
+        my %arg = ( !defined( $arg[0] ) ? () : map { $_ => 1 } @arg );
+        @arg = (
+            defined( $arg[0] )
+            ? @arg
+            : sort keys %{ $self->{xd}{depotmap} } );
         my @newarg;
         foreach my $arg (@arg) {
             my $orig_arg = $arg;
             $arg = "/$arg/" if $arg !~ m{/};
             $arg = "$arg/" unless $arg =~ m{/$};
 
-	    my ($depot) = eval { $self->arg_depotname ($arg) };
-	    unless (defined $depot) {
-		if ($arg =~ m{^/[^/]+/$}) {
-		    print loc("%1 is not a valid depotname\n", $arg);
-		} else {
-		    print loc("%1 does not contain a valid depotname\n", $arg);
-		}
-		next;
-	    }
+            my ($depot) = eval { $self->arg_depotname($arg) };
+            unless ( defined $depot ) {
+                if ( $arg =~ m{^/[^/]+/$} ) {
+                    print loc( "%1 is not a valid depotname\n", $arg );
+                }
+                else {
+                    print loc( "%1 does not contain a valid depotname\n",
+                        $arg );
+                }
+                next;
+            }
 
-	    my $target = eval { $self->arg_depotpath ($arg) };
-	    unless ($target) {
-		print $@;
-		next;
-	    }
+            my $target = eval { $self->arg_depotpath($arg) };
+            unless ($target) {
+                print $@;
+                next;
+            }
 
-	    my $arg_re = qr/^\Q$arg\E/;
-	    my @tempnewarg = 
-		map {"/$depot$_/" =~ /$arg_re/ ? $self->arg_depotpath("/$depot$_") : ()}
-		    SVN::Mirror::list_mirror ($target->{repos});
+            my $arg_re     = qr/^\Q$arg\E/;
+            my @tempnewarg =
+                map {
+                "/$depot$_/" =~ /$arg_re/
+                    ? $self->arg_depotpath("/$depot$_")
+                    : ()
+                } SVN::Mirror::list_mirror( $target->{repos} );
 
-	    unless (@tempnewarg || !exists $arg{$orig_arg} || $arg =~ m{^/[^/]*/$}) {
-		print loc("no mirrors found underneath %1\n", $arg);
-		next;
-	    }
-	    push @newarg, @tempnewarg;
-	}
+            unless ( @tempnewarg
+                || !exists $arg{$orig_arg}
+                || $arg =~ m{^/[^/]*/$} )
+            {
+                print loc( "no mirrors found underneath %1\n", $arg );
+                next;
+            }
+            push @newarg, @tempnewarg;
+        }
         @arg = @newarg;
     }
 
     for my $target (@arg) {
-	my $repos = $target->{repos};
-	my $fs = $repos->fs;
-	my $m = SVN::Mirror->new (target_path => $target->{path},
-				  target => $target->{repospath},
-				  repos => $repos,
-				  pool => SVN::Pool->new,
-				  config => $self->{svnconfig},
-				  cb_copy_notify => sub { $self->copy_notify (@_) },
-				  lock_message => lock_message($target),
-				  revprop => ['svk:signature'],
-				  get_source => 1, skip_to => $self->{skip_to});
-	$m->init ();
+        my $repos = $target->{repos};
+        my $fs    = $repos->fs;
+        my $m     = SVN::Mirror->new(
+            target_path    => $target->{path},
+            target         => $target->{repospath},
+            repos          => $repos,
+            pool           => SVN::Pool->new,
+            config         => $self->{svnconfig},
+            cb_copy_notify => sub { $self->copy_notify(@_) },
+            lock_message   => lock_message($target),
+            revprop        => ['svk:signature'],
+            get_source     => 1,
+            skip_to        => $self->{skip_to}
+        );
+        $m->init();
 
-        if ($self->{sync_all}) {
-            print loc("Starting to synchronize %1\n", $target->{depotpath});
-            eval { $m->run ($self->{torev});
-		   find_prev_copy ($fs, $fs->youngest_rev);
-		   1 } or warn $@;
+        if ( $self->{sync_all} ) {
+            print loc( "Starting to synchronize %1\n", $target->{depotpath} );
+            eval {
+                $m->run( $self->{torev} );
+                find_prev_copy( $fs, $fs->youngest_rev );
+                1;
+            };
+            if ($@) {
+                warn $@;
+                last if ( $@ =~ /^Interrupted\.$/m );
+            }
             next;
         }
         else {
-            $m->run ($self->{torev});
-	    # build the copy cache after sync.
-	    # we should do this in svn::mirror::committed, with a
-	    # hook provided here.
-	    find_prev_copy ($fs, $fs->youngest_rev);
+            $m->run( $self->{torev} );
+
+            # build the copy cache after sync.
+            # we should do this in svn::mirror::committed, with a
+            # hook provided here.
+            find_prev_copy( $fs, $fs->youngest_rev );
         }
     }
     return;
