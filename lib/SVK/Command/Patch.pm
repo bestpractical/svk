@@ -282,8 +282,12 @@ To see the current version of a specific patch, run:
     svk patch --view Foo
 
 When you're done with a patch and don't want it hanging around anymore,
-run
+run:
     svk patch --delete Foo
+
+To apply a patch to the repository that someone else has sent you, run:
+
+    svk patch --apply - < contributed_feature.patch
 
 =head1 AUTHORS
 
