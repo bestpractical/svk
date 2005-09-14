@@ -405,8 +405,9 @@ sub run {
 	}
 	warn "==> got $boundry_rev as copyboundry" if $main::DEBUG;
 
-	require SVK::Editor::Copy;
-	$editor = SVK::Editor::Copy->new
+	if (defined $boundry_rev) {
+	  require SVK::Editor::Copy;
+	  $editor = SVK::Editor::Copy->new
 	    ( _editor => [$meditor],
 	      merge => $self, # XXX: just for merge_from, move it out
 	      copyboundry_rev => $boundry_rev,
@@ -428,7 +429,8 @@ sub run {
 
 		  return ($src_from, $src_fromrev);
 	      } );
-	$editor = SVK::Editor::Delay->new ($editor);
+	  $editor = SVK::Editor::Delay->new ($editor);
+	}
     }
 
     SVK::XD->depot_delta
