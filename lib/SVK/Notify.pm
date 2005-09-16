@@ -1,6 +1,6 @@
 package SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( abs2rel $SEP to_native get_encoding);
+use SVK::Util qw( abs2rel $SEP to_native from_native get_encoding);
 use strict;
 
 =head1 NAME
@@ -43,10 +43,11 @@ sub print_report {
     # XXX: $report should already be in native encoding, so this is wrong
     my $print_native = $enc->name eq 'utf8'
 	? $print
-	: sub { to_native ($_[0]);
+	: sub { to_native($_[0], 'path', $enc);
 		goto \&$print;
 	    };
     return $print_native unless defined $report;
+    from_native($report, 'path', $enc);
     sub {
 	my $path = shift;
 	if ($target) {
