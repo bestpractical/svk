@@ -6,7 +6,7 @@ use base 'SVK::Path';
 
 __PACKAGE__->mk_accessors(qw(xd report));
 
-use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel );
+use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel get_encoder to_native );
 
 =head1 NAME
 
@@ -51,7 +51,7 @@ path component.
 =cut
 
 my $_copath_catsplit = $^O eq 'MSWin32' ? \&catfile :
-sub { defined $_[0] && length $_[0] ? "$_[0]/$_[1]" : $_[1] };
+sub { defined $_[0] && length $_[0] ? "$_[0]/$_[1]" : "$_[1]" };
 
 sub copath {
     my $self = shift;
@@ -69,10 +69,19 @@ sub report_copath {
     abs2rel( $copath, $self->{copath} => $report );
 }
 
+sub copath_targets {
+    my $self = shift;
+    return $self->copath unless exists $self->{targets}[0];
+    my $enc = get_encoder;
+    return map { $self->copath($_) }
+        map {my $t = $_; to_native($t, 'path', $enc); $t }
+            @{$self->{targets}};
+}
+
 sub contains_copath {
     my ($self, $copath) = @_;
-    foreach my $base (@{$self->{targets} || []}) {
-	if ($copath ne abs2rel( $copath, $self->copath($base)) ) {
+    foreach my $base ($self->copath_targets) {
+	if ($copath ne abs2rel( $copath, $base) ) {
 	    return 1;
 	}
     }

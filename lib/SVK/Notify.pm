@@ -47,7 +47,8 @@ sub print_report {
 		goto \&$print;
 	    };
     return $print_native unless defined $report;
-    from_native("$report", 'path', $enc);
+    $report = "$report";
+    from_native($report, 'path', $enc);
     sub {
 	my $path = shift;
 	if ($target) {

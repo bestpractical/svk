@@ -711,9 +711,8 @@ sub do_delete {
 			  );
 
     # actually remove it from checkout path
-    my @paths = grep {is_symlink($_) || -e $_} (exists $target->{targets}[0] ?
-			      map { $target->copath($_) } @{$target->{targets}}
-			      : $target->copath);
+    my @paths = grep {is_symlink($_) || -e $_} $target->copath_targets;
+
     my $ignore = $self->ignore;
     find(sub {
 	     return if m/$ignore/;
@@ -1197,11 +1196,11 @@ sub _delta_dir {
     for my $entry (sort keys %$entries) {
 	my $newtarget;
 	my $copath = $entry;
-	to_native ($copath, 'path', $arg{encoder});
 	if (defined $targets) {
 	    next unless exists $targets->{$copath};
 	    $newtarget = delete $targets->{$copath};
 	}
+	to_native ($copath, 'path', $arg{encoder});
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	$copath = SVK::Path::Checkout->copath ($arg{copath}, $copath);
@@ -1274,12 +1273,12 @@ sub _delta_dir {
 
     for my $copath (@direntries) {
 	my $entry = $copath;
-	to_native ($copath, 'path', $arg{encoder});
 	my $newtarget;
 	if (defined $targets) {
 	    next unless exists $targets->{$copath};
 	    $newtarget = delete $targets->{$copath};
 	}
+	to_native ($copath, 'path', $arg{encoder});
 	my %newpaths = ( copath => SVK::Path::Checkout->copath ($arg{copath}, $copath),
 			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",

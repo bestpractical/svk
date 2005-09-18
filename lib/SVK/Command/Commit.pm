@@ -366,6 +366,7 @@ sub committed_commit {
 	    next if $action eq 'D' || -d $copath;
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
+	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
 	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
