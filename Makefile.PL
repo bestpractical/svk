@@ -37,7 +37,7 @@ requires(
 	'Encode'		=> '2.10',
 	'List::MoreUtils'	=> '0',
 	'Class::Accessor::Fast'	=> '0',
-	'Path::Class'		=> '0.12',
+	'Path::Class'		=> '0.13',
 );
 features(
     'Localized messages' => [
