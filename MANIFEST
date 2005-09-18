@@ -80,6 +80,8 @@ lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Patchset.pm
+lib/SVK/Path.pm
+lib/SVK/Path/Checkout.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
@@ -94,7 +96,6 @@ lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
-lib/SVK/Target.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
 lib/SVK/Version.pm

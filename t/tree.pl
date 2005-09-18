@@ -111,7 +111,7 @@ sub build_test {
 
 sub get_copath {
     my ($name) = @_;
-    my $copath = SVK::Target->copath ('t', "checkout/$name");
+    my $copath = SVK::Path::Checkout->copath ('t', "checkout/$name");
     mkpath [$copath] unless -d $copath;
     rmtree [$copath] if -e $copath;
     return ($copath, File::Spec->rel2abs($copath));
@@ -279,7 +279,7 @@ sub is_ancestor {
 }
 
 sub copath {
-    SVK::Target->copath ($copath, @_);
+    SVK::Path::Checkout->copath ($copath, @_);
 }
 
 sub status_native {

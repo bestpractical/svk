@@ -40,14 +40,14 @@ sub run {
 	    die loc("Invalid arguments.\n") if $target->{copath};
 	    $target->{revision} = $r1 if $r1;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
-	    die loc("path %1 does not exist.\n", $target->{report})
+	    die loc("path %1 does not exist.\n", $target->report)
 		if $target->root->check_path ($target->{path}) == $SVN::Node::none;
 	}
     }
     else {
 	$target->as_depotpath($r1) if $r1 && $r2;
 	if ($target->{copath}) {
-	    $target = $self->arg_condensed($target->{report});
+	    $target = $self->{xd}->target_condensed($target); # find anchor
 	    $target2 = $target->new;
 	    $target->as_depotpath($r1) if $r1;;
 	    $report = $target->{report};
@@ -64,7 +64,7 @@ sub run {
     my ($oldroot, $newroot) = map { $_->root($self->{xd}) } ($target, $target2);
 
     unless ($target2->{copath}) {
-	die loc("path %1 does not exist.\n", $target2->{report})
+	die loc("path %1 does not exist.\n", $target2->report)
 	    if $target2->root->check_path($target2->{path}) == $SVN::Node::none;
     }
 
@@ -110,7 +110,7 @@ sub run {
 	    );
     }
     else {
-	die loc("path %1 does not exist.\n", $target->{report})
+	die loc("path %1 does not exist.\n", $target->report)
 	    if $kind == $SVN::Node::none;
 
 	if ($kind != $SVN::Node::dir) {

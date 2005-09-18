@@ -1,14 +1,15 @@
-package SVK::Target;
+package SVK::Path;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
-
+use base 'Class::Accessor::Fast';
+__PACKAGE__->mk_accessors(qw(repos path depotname revision));
 
 =head1 NAME
 
-SVK::Target - SVK targets
+SVK::Path - SVK path class
 
 =head1 SYNOPSIS
 
@@ -16,45 +17,47 @@ SVK::Target - SVK targets
 
 =head1 DESCRIPTION
 
-For a target given in command line, the class is about locating the
-path in the depot, the checkout path, and others.
+The class represents a node in svk depot.
 
 =cut
 
 sub new {
     my ($class, @arg) = @_;
-    my $self = ref $class ? clone ($class) :
+    my $self = ref $class ? $class->_clone :
 	bless {}, $class;
     %$self = (%$self, @arg);
-    $self->refresh_revision unless defined $self->{revision};
+    $self->refresh_revision unless defined $self->revision;
+    if (defined $self->{copath}) {
+	require SVK::Path::Checkout;
+	bless $self, 'SVK::Path::Checkout';
+    }
+    if (my $depotpath = delete $self->{depotpath}) {
+	$self->depotname($depotpath =~ m!^/([^/]*)!);
+    }
     return $self;
 }
 
 sub refresh_revision {
     my ($self) = @_;
-    $self->{revision} = $self->{repos}->fs->youngest_rev;
+    $self->revision($self->repos->fs->youngest_rev);
 }
 
-sub clone {
+sub _clone {
     my ($self) = @_;
 
     require Clone;
     my $cloned = Clone::clone ($self);
-    $cloned->{repos} = $self->{repos};
+    $cloned->repos($self->repos);
     return $cloned;
 }
 
 sub root {
-    my ($self, $xd) = @_;
-    if ($self->{copath}) {
-	die "xdroot requires xd. ".join(',',(caller(1))[0..3]) unless $xd;
-	$xd->xdroot (%$self);
-    }
-    else {
-	SVK::XD::Root->new ($self->{repos}->fs->revision_root
-			    ($self->{revision}));
-    }
+    my $self = shift;
+    return SVK::XD::Root->new($self->repos->fs->revision_root
+			      ($self->revision));
 }
+
+sub report { Carp::cluck if defined $_[1]; $_[0]->depotpath }
 
 =head2 same_repos
 
@@ -65,7 +68,7 @@ Returns true if all C<@other> targets are from the same repository
 sub same_repos {
     my ($self, @other) = @_;
     for (@other) {
-	return 0 if $self->{repos} ne $_->{repos};
+	return 0 if $self->repos ne $_->repos;
     }
     return 1;
 }
@@ -80,34 +83,27 @@ sub same_source {
     my ($self, @other) = @_;
     return 0 unless HAS_SVN_MIRROR;
     return 0 unless $self->same_repos (@other);
-    my $mself = SVN::Mirror::is_mirrored ($self->{repos}, $self->{path});
+    my $mself = SVN::Mirror::is_mirrored ($self->repos, $self->path);
     for (@other) {
-	my $m = SVN::Mirror::is_mirrored ($_->{repos}, $_->{path});
+	my $m = SVN::Mirror::is_mirrored ($_->repos, $_->path);
 	return 0 if $m xor $mself;
 	return 0 if $m && $m->{target_path} ne $m->{target_path};
     }
     return 1;
 }
 
+sub _to_pclass {
+    my ($self, $path, $what) = @_;
+    $what = 'Unix' if !defined $what && !$self->isa('SVK::Path::Checkout');
+    return $what ? Path::Class::foreign_dir($what, $path) : Path::Class::dir($path);
+}
+
 sub anchorify {
     my ($self) = @_;
-    die "anchorify $self->{depotpath} already with targets: ".join(',', @{$self->{targets}})
-	if exists $self->{targets}[0];
-    ($self->{path}, $self->{targets}[0]) = get_anchor (1, $self->{path});
-    ($self->{depotpath}) = get_depot_anchor (0, $self->{depotpath});
-    ($self->{copath}, $self->{copath_target}) = get_anchor (1, $self->{copath})
-	if $self->{copath};
-    # XXX: prepend .. if exceeded report?
-    if ($self->{report}) {
-	# XXX: This logic is flawed; whether this is target has a copath
-	# doesn't actually tell us whether the report is a copath or depot
-	# path. (See also SVK::XD::do_delete)
-	if ($self->{copath}) {
-	    ($self->{report}) = get_anchor (0, $self->{report});
-	} else {
-	    ($self->{report}) = get_depot_anchor (0, $self->{report});
-	}
-    }
+    my $targets = delete $self->{targets};
+    ($self->{path}, $self->{targets}[0]) = get_depot_anchor(1, $self->{path});
+    $self->{targets} = [map {"$self->{targets}[0]/$_"} @$targets]
+	if $targets && @$targets;
 }
 
 =head2 normalize
@@ -118,10 +114,10 @@ Normalize the revision to the last changed one.
 
 sub normalize {
     my ($self) = @_;
-    my $fs = $self->{repos}->fs;
-    my $root = $fs->revision_root ($self->{revision});
-    $self->{revision} = ($root->node_history ($self->path)->prev(0)->location)[1]
-	unless $self->{revision} == $root->node_created_rev ($self->path);
+    my $fs = $self->repos->fs;
+    my $root = $fs->revision_root($self->revision);
+    $self->revision( ($root->node_history ($self->path)->prev(0)->location)[1] )
+	unless $self->revision == $root->node_created_rev ($self->path);
 }
 
 =head2 as_depotpath
@@ -133,7 +129,8 @@ Makes target depotpath. Takes C<$revision> number optionally.
 sub as_depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
-    $self->{revision} = $revision if defined $revision;
+    $self->revision($revision) if defined $revision;
+    bless $self, 'SVK::Path';
     return $self;
 }
 
@@ -145,26 +142,8 @@ Returns the full path of the target even if anchorified.
 
 sub path {
     my ($self) = @_;
-    $self->{targets}[0]
-	? "$self->{path}/$self->{targets}[0]" : $self->{path};
-}
-
-=head2 copath
-
-Return the checkout path of the target, optionally with additional
-path component.
-
-=cut
-
-my $_copath_catsplit = $^O eq 'MSWin32' ? \&catfile :
-sub { defined $_[0] && length $_[0] ? "$_[0]/$_[1]" : $_[1] };
-
-sub copath {
-    my $self = shift;
-    my $copath = ref ($self) ? $self->{copath} : shift;
-    my $paths = shift;
-    return $copath unless defined $paths && length ($paths);
-    return $_copath_catsplit->($copath, $paths);
+    (exists $self->{targets} && defined $self->{targets}[0])
+	? $self->_to_pclass($self->{path}, 'Unix')->subdir($self->{targets}[0]) : $self->{path};
 }
 
 =head2 descend
@@ -175,16 +154,8 @@ Makes target descend into C<$entry>
 
 sub descend {
     my ($self, $entry) = @_;
-    $self->{depotpath} .= "/$entry";
     $self->{path} .= "/$entry";
-
-    if (defined $self->{copath}) {
-	$self->{report} = catfile ($self->{report}, $entry);
-	$self->{copath} = catfile ($self->{copath}, $entry);
-    }
-    else {
-	$self->{report} = "$self->{report}/$entry";
-    }
+    return $self;
 }
 
 =head2 universal
@@ -197,38 +168,25 @@ sub universal {
     SVK::Target::Universal->new ($_[0]);
 }
 
-sub contains_copath {
-    my ($self, $copath) = @_;
-    foreach my $base (@{$self->{targets} || []}) {
-	if ($copath ne abs2rel ($copath, $self->copath ($base))) {
-	    return 1;
-	}
-    }
-    return 0;
-}
-
 sub contains_mirror {
     require SVN::Mirror;
     my ($self) = @_;
     my $path = $self->{path};
     $path .= '/' unless $path eq '/';
     return map { substr ("$_/", 0, length($path)) eq $path ? $_ : () }
-	SVN::Mirror::list_mirror ($self->{repos});
+	SVN::Mirror::list_mirror ($self->repos);
 }
 
-=head2 depotname
+=head2 depotpath
 
-Returns depotname of the target
+Returns depotpath of the target
 
 =cut
 
-sub depotname {
+sub depotpath {
     my $self = shift;
 
-    $self->{depotpath} =~ m!^/([^/]*)!
-      or die loc("'%1' does not contain a depot name.\n", $self->{depotpath});
-
-    return $1;
+    return '/'.$self->depotname.$self->{path};
 }
 
 # depotpath only for now
@@ -240,13 +198,13 @@ sub depotname {
 
 sub copy_ancestors {
     my $self = shift;
-    @{ $self->{copy_ancesotrs}{$self->path}{$self->{revision}} ||=
+    @{ $self->{copy_ancesotrs}{$self->path}{$self->revision} ||=
 	   [$self->_copy_ancestors] };
 }
 
 sub _copy_ancestors {
     my $self = shift;
-    my $fs = $self->{repos}->fs;
+    my $fs = $self->repos->fs;
     my $t = $self->new->as_depotpath;
     my @result;
     my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
@@ -275,7 +233,7 @@ path.
 
 sub _nearest_copy_svn {
     my ($root, $path, $ppool) = @_;
-    if (ref ($root) eq __PACKAGE__) {
+    if ($root->isa(__PACKAGE__)) {
         ($root, $path) = ($root->root, $root->path);
     }
     my ($toroot, $topath) = $root->closest_copy($path, $ppool);
@@ -382,7 +340,7 @@ sub copied_from {
     my $root = $target->root;
     my $fromroot;
     while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
-	$target->{revision} = $fromroot->revision_root_revision;
+	$target->revision($fromroot->revision_root_revision);
 	# Check for existence.
 	if ($root->check_path ($target->{path}) == $SVN::Node::none) {
 	    next;
@@ -391,14 +349,13 @@ sub copied_from {
 	# Check for mirroredness.
 	if ($want_mirror and HAS_SVN_MIRROR) {
 	    my ($m, $mpath) = SVN::Mirror::is_mirrored (
-		$target->{repos}, $target->{path}
+		$target->repos, $target->{path}
 	    );
 	    $m->{source} or next;
 	}
 
 	# It works!  Let's update it to the latest revision and return
 	# it as a fresh depot path.
-	$target->{depotpath} = '/' . $target->depotname . $target->path;
 	$target->refresh_revision;
 	$target->as_depotpath;
 
@@ -409,16 +366,10 @@ sub copied_from {
     return undef;
 }
 
-sub report_copath {
-    my ($self, $copath) = @_;
-    my $report = length ($self->{report}) ? $self->{report} : undef;
-    abs2rel ($copath, $self->{copath} => $report);
-}
-
 sub search_revision {
     my ($self, %arg) = @_;
     my $root = $self->root;
-    my @rev = ($arg{start} || 1, $self->{revision});
+    my @rev = ($arg{start} || 1, $self->revision);
     my $id = $root->node_id($self->path);
     my $pool = SVN::Pool->new_default;
 
@@ -478,15 +429,15 @@ sub merged_from {
 	      my $msrc = $self->new
 		  ( path => $path,
 		    revision => $minfo->{$srckey}->
-		    local($self->{repos})->{revision} );
+		    local($self->repos)->revision );
 	      { local $@;
 	        eval { $msrc->normalize } or return -1;
 	      }
 
-	      if ($msrc->{revision} > $src->{revision}) {
+	      if ($msrc->revision > $src->revision) {
 		  return 1;
 	      }
-	      elsif ($msrc->{revision} < $src->{revision}) {
+	      elsif ($msrc->revision < $src->revision) {
 		  return -1;
 	      }
 
@@ -501,11 +452,14 @@ sub merged_from {
 		  ($self->new(revision => $prev))->{$srckey}
 		      or return 0;
 
-	      return ($uret->local($self->{repos})->{revision} == $src->{revision})
+	      return ($uret->local($self->repos)->revision == $src->revision)
 		? 1 : 0;
 	  } );
 }
 
+=head1 SEE ALSO
+
+L<SVK::Path::Checkout>
 
 =head1 AUTHORS
 
@@ -523,4 +477,3 @@ See L<http://www.perl.com/perl/misc/Artistic.html>
 =cut
 
 1;
-

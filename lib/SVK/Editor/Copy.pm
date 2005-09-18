@@ -71,7 +71,7 @@ sub find_copy {
     my $ppool = SVN::Pool->new;
     while (1) {
 	my ($toroot, $fromroot, $src_frompath) =
-	    SVK::Target::nearest_copy($cur_root, $cur_path, $ppool);
+	    SVK::Path::nearest_copy($cur_root, $cur_path, $ppool);
 	warn "===> $cur_path => $src_frompath" if $main::DEBUG;
 	return unless defined $src_frompath;
 

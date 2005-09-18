@@ -33,10 +33,11 @@ $svk->sync ('//m');
 $svk->smerge ('-m', 'simple smerge from source', '//m/A', '//l');
 my ($suuid, $srev) = ($srepos->fs->get_uuid, $srepos->fs->youngest_rev);
 $svk->update ($copath);
-is_deeply ($xd->do_proplist (SVK::Target->new
+is_deeply ($xd->do_proplist (SVK::Path::Checkout->new
 			     ( repos => $repos,
 			       copath => $corpath,
 			       path => '/l',
+			       xd => $xd,
 			       revision => $repos->fs->youngest_rev,
 			     )),
 	   {'svk:merge' => "$suuid:/A:$srev"},
@@ -51,7 +52,7 @@ is_output_like ($svk, 'smerge', ['-m', 'simple smerge from source again', '//m/A
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
 is_output_like ($svk, 'smerge', ['-m', 'simple smerge from local', '//l', '//m/A'],
 		qr|base /m/A:8|);
-is_deeply ($xd->do_proplist (SVK::Target->new
+is_deeply ($xd->do_proplist (SVK::Path->new
 			     ( repos => $repos,
 			       path => '/m/A',
 			       revision => $repos->fs->youngest_rev,

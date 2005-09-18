@@ -17,7 +17,7 @@ sub parse_arg {
     my @arg = @_;
     @arg = ('') if $#arg < 0;
 
-    return $self->arg_condensed (@arg);
+    return $self->arg_condensed(@arg);
 }
 
 sub lock {
@@ -26,7 +26,7 @@ sub lock {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $self->{xd}->xdroot (%$target);
+    my $xdroot = $target->root;
 
 	$self->{xd}->checkout_delta
 	    ( %$target,

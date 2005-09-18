@@ -2,6 +2,9 @@ package SVK::Target::Universal;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::Util qw(find_svm_source find_local_mirror);
+use base 'Class::Accessor::Fast';
+
+__PACKAGE__->mk_accessors(qw(uuid path rev));
 
 =head1 NAME
 
@@ -47,7 +50,7 @@ sub local {
     # ticket
     return unless defined $path && defined $rev;
 
-    SVK::Target->new
+    SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  path => $path,
@@ -58,7 +61,12 @@ sub local {
 
 sub same_resource {
     my ($self, $other) = @_;
-    return ($self->{uuid} eq $other->{uuid} && $self->{path} eq $other->{path});
+    return ($self->uuid eq $other->uuid && $self->path eq $other->path);
+}
+
+sub ukey {
+    my $self = shift;
+    return join(':', $self->uuid, $self->path);
 }
 
 =head1 AUTHORS

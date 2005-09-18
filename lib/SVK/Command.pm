@@ -267,7 +267,7 @@ sub run {
 =head2 Utility Methods
 
 Except for C<arg_depotname>, all C<arg_*> methods below returns a
-L<SVK::Target> object, which consists of a hash with the following keys:
+L<SVK::Path> object, which consists of a hash with the following keys:
 
 =over
 
@@ -298,41 +298,22 @@ Argument is a number of checkout paths.
 =cut
 
 sub arg_condensed {
-    my ($self, @arg) = @_;
-    return if $#arg < 0;
-
-    s{[/\Q$SEP\E]$}{}o for @arg; # XXX band-aid
-
-    my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
-
+    my $self = shift;
+    my @args = map { $self->arg_copath($_) } @_;
     if ($self->{recursive}) {
 	# remove redundant targets when doing recurisve
 	# if have '' in targets then it means everything
-	my @newtarget = @targets;
-	for my $anchor (sort {length $a <=> length $b} @targets) {
-	    @newtarget = grep { length $anchor ? $_ eq $anchor || index ($_, "$anchor/") != 0
-				               : 0} @newtarget;
+	my @newtarget = @args;
+	for my $anchor (sort {length $a->copath <=> length $b->copath} @args) {
+	    local $SIG{__WARN__} = sub {};# path::class bug on /foo/bar vs /foo
+	    @newtarget = grep {
+		$anchor->copath eq $_->copath ||
+		!Path::Class::dir($anchor->copath)->subsumes($_->copath) } @newtarget;
 	}
-	@targets = @newtarget;
+	@args = @newtarget;
     }
 
-    my ($repospath, $path, undef, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
-    my $target = SVK::Target->new
-	( repos => $repos,
-	  repospath => $repospath,
-	  depotpath => $cinfo->{depotpath},
-	  copath => $copath,
-	  path => $path,
-	  report => $report,
-	  targets => @targets ? \@targets : undef );
-    my $root = $target->root ($self->{xd});
-    until ($root->check_path ($target->{path}) == $SVN::Node::dir) {
-	my $targets = delete $target->{targets};
-	$target->anchorify;
-	$target->{targets} = [map {"$target->{targets}[0]/$_"} @$targets]
-	    if $targets;
-    }
-    return $target;
+    return $self->{xd}->target_condensed(@args);
 }
 
 =head3 arg_uri_maybe ($arg, $no_new_mirror)
@@ -480,7 +461,7 @@ break history-sensitive merging within the mirrored path.
         }
     )->run ($target);
 
-    my $depotpath = length ($rel_uri) ? "$target->{depotpath}/$rel_uri" : $target->{depotpath};
+    my $depotpath = length ($rel_uri) ? $target->{depotpath}."/$rel_uri" : $target->depotpath;
     return $self->arg_depotpath($depotpath);
 }
 
@@ -494,22 +475,25 @@ handles it via C<arg_uri_maybe>.
 sub arg_co_maybe {
     my ($self, $arg, $no_new_mirror) = @_;
 
-    $arg = $self->arg_uri_maybe($arg, $no_new_mirror)->{depotpath}
+    $arg = $self->arg_uri_maybe($arg, $no_new_mirror)->depotpath
 	if is_uri($arg);
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    my $ret = SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
 	  copath => $copath,
 	  report => $copath ? File::Spec->canonpath ($arg) : $arg,
 	  path => $path,
+	  xd => $self->{xd},
 	  revision => $rev,
 	);
+    $ret->as_depotpath unless defined $copath;
+    return $ret;
 }
 
 =head3 arg_copath ($arg)
@@ -522,13 +506,14 @@ sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    return SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  report => File::Spec->canonpath ($arg),
 	  copath => $copath,
 	  path => $path,
 	  cinfo => $cinfo,
+	  xd => $self->{xd},
 	  depotpath => $cinfo->{depotpath},
 	);
 }
@@ -545,7 +530,7 @@ sub arg_depotpath {
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    return SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  path => $path,

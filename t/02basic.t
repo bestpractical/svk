@@ -66,8 +66,9 @@ $svk->commit ('-m', 'commit message here', "$copath/A");
 $svk->ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');
 $svk->update ($copath);
 
-ok (eq_hash ($xd->do_proplist ( SVK::Target->new
+ok (eq_hash ($xd->do_proplist ( SVK::Path::Checkout->new
 			      ( repos => $repos,
+				xd => $xd,
 				copath => $corpath,
 				path => '/A',
 				revision => $repos->fs->youngest_rev,

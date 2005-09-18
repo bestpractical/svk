@@ -201,10 +201,10 @@ sub do_delete {
 
     my ($path, $copath) = @_;
     $self->{get_path}($path);
-    $self->{xd}->do_delete (%$self,
-			    path => $path,
-			    copath => $copath,
-			    quiet => 1);
+    $self->{xd}->do_delete( SVK::Path::Checkout->new
+			    (repos => $self->{repos}, xd => $self->{xd},
+			     path => $path, copath => $copath),
+			    quiet => 1 );
 }
 
 sub close_directory {

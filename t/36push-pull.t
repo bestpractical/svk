@@ -183,7 +183,7 @@ is_output ($svk, "pull", ["sub"], [
 	__("U   xd"),
 	"New merge ticket: $test_uuid:/A/T:10",
 	"Committed revision 24.",
-	"Syncing //l-sub(/l-sub/sub) in ".__("$corpath_subdir/sub to 24."),
+	"Syncing //l-sub/sub(/l-sub/sub) in ".__("$corpath_subdir/sub to 24."),
        __("U   sub/xd")]);
 
 overwrite_file ("$corpath_second/Q/qz", "asfd orz\n");

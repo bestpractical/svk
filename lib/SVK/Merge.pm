@@ -23,7 +23,7 @@ The C<SVK::Merge> class is for representing merge contexts, mainly
 including what delta is used for this merge, and what target the delta
 applies to.
 
-Given the 3 L<SVK::Target> objects:
+Given the 3 L<SVK::Path> objects:
 
 =over
 
@@ -158,7 +158,8 @@ sub merge_info {
     return SVK::Merge::Info->new
 	( $self->{xd}->get_props
 	  ($target->root ($self->{xd}), $target->path,
-	   $target->copath ($target->{copath_target}))->{'svk:merge'} );
+	   $target->isa('SVK::Path::Checkout') ? # XXX: use path access
+	   $target->copath ($target->{copath_target}) : undef)->{'svk:merge'} );
 }
 
 sub merge_info_with_copy {
@@ -315,8 +316,10 @@ the merge to the storage editor. Returns the number of conflicts.
 sub run {
     my ($self, $storage, %cb) = @_;
     my ($base, $src) = @{$self}{qw/base src/};
-    my $base_root = $self->{base_root} || $base->root ($self->{xd});
-    # XXX: for merge editor; this should really be in SVK::Target
+    warn "===> base being ".YAML::Dump($base) if $main::DEBUG;
+    warn "===> src being ".YAML::Dump($src) if $main::DEBUG;
+    my $base_root = $self->{base_root} || $base->root;
+    # XXX: for merge editor; this should really be in SVK::Path
     my ($report, $target) = ($self->{report}, $src->{targets}[0] || '');
     my $dsttarget = $self->{dst}{targets}[0];
     my $is_copath = defined($self->{dst}{copath});
@@ -512,16 +515,16 @@ sub new {
 sub add_target {
     my ($self, $target) = @_;
     $target = $target->universal
-	if UNIVERSAL::isa ($target, 'SVK::Target');
-    $self->{join(':', $target->{uuid}, $target->{path})} = $target;
+	if $target->isa('SVK::Path');
+    $self->{$target->ukey} = $target;
     return $self;
 }
 
 sub del_target {
     my ($self, $target) = @_;
     $target = $target->universal
-	if UNIVERSAL::isa ($target, 'SVK::Target');
-    delete $self->{join(':', $target->{uuid}, $target->{path})};
+	if $target->isa('SVK::Path');
+    delete $self->{$target->ukey};
     return $self;
 }
 

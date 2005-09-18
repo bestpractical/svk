@@ -6,7 +6,7 @@ require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
 use autouse 'SVK::Util'
-    => qw( slurp_fh md5_fh get_anchor tmpfile devnull abs2rel );
+    => qw( slurp_fh md5_fh tmpfile devnull abs2rel );
 
 use constant FH => 0;
 use constant FILENAME => 1;

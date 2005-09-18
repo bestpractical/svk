@@ -16,7 +16,7 @@ use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
-
+use Path::Class ();
 
 =head1 NAME
 
@@ -398,39 +398,41 @@ sub find_depotname {
     return ($target =~ m|^/(.*?)/|);
 }
 
-=item condense
-
 =back
 
 =cut
 
-sub condense {
-    my $self = shift;
-    my @targets = map {abs_path($_)} @_;
-    my ($anchor, $report);
-    for my $path (@_) {
-	my $copath = abs_path ($path);
-	die loc("path %1 is not a checkout path.\n", $path)
-	    unless $copath;
-	if (!$anchor) {
-	    $anchor = $copath;
-	    $report = $_[0];
+sub target_condensed {
+    my ($self, @paths) = @_;
+    return unless @paths;
+    my $anchor;
+    for my $path (@paths) {
+	unless (defined $anchor) {
+	    $anchor = $path->new;
+	    $anchor->{copath} = Path::Class::dir($anchor->{copath});
 	}
-	my ($cinfo, $schedule) = $self->get_entry($anchor);
-	while (!-d $anchor || $cinfo->{scheduleanchor} ||
+	my ($cinfo, $schedule) = $self->get_entry($anchor->{copath});
+	while ($cinfo->{scheduleanchor} || !-d $anchor->{copath} ||
 	       $schedule eq 'add' || $schedule eq 'delete' || $schedule eq 'replace' ||
-	       ($anchor ne $copath && $anchor.$SEP ne substr ($copath, 0, length($anchor)+1))) {
-	    ($anchor, $report) = get_anchor (0, $anchor, $report);
-	    # XXX: put .. to report if it's anchorified beyond
-	    ($cinfo, $schedule) = $self->get_entry($anchor);
+	       !( $anchor->{copath}->subsumes($path->{copath})) ) {
+	    $anchor->anchorify;
+	    $anchor->{copath} = Path::Class::dir($anchor->{copath});
+	    ($cinfo, $schedule) = $self->get_entry($anchor->{copath});
 	}
+	push @{$anchor->{targets}}, abs2rel($path->copath, $anchor->copath => undef, '/') unless $anchor->path eq $path->path;
     }
-    return ($report, $anchor, $#targets == 0 && $targets[0] eq $anchor ? ()
-	    : map { abs2rel($_, $anchor) } @targets);
+
+    my $root = $anchor->root;
+    until ($root->check_path($anchor->{path}) == $SVN::Node::dir) {
+	$anchor->anchorify;
+    }
+
+    delete $anchor->{cinfo};
+    return $anchor;
 }
 
 # simliar to command::arg_copath, but still return a target when
-# basepath doesn't exist, arg_copath shuold be gradually deprecated
+# basepath doesn't exist, arg_copath should be gradually deprecated
 sub target_from_copath_maybe {
     my ($self, $arg) = @_;
 
@@ -449,15 +451,18 @@ sub target_from_copath_maybe {
 
     from_native ($path, 'path', $self->{encoding});
     undef $@;
-    return SVK::Target->new
+    my $ret = SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $depotpath || $arg,
 	  copath => $copath,
 	  report => $arg,
 	  path => $path,
+	  xd => $self,
 	  revision => $rev,
 	);
+    $ret->as_depotpath unless defined $copath;
+    return $ret;
 }
 
 sub xdroot {
@@ -609,7 +614,7 @@ sub get_editor {
     $spath = '' if $spath eq '/';
     $encoding = Encode::find_encoding($encoding) if $encoding;
     $arg{get_copath} = sub { to_native ($_[0], 'path', $encoding) if $encoding;
-			     $_[0] = SVK::Target->copath ($copath,  $_[0]) };
+			     $_[0] = SVK::Path::Checkout->copath ($copath,  $_[0]) };
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg, xd => $self);
@@ -667,27 +672,15 @@ sub auto_prop {
 }
 
 sub do_delete {
-    my ($self, %arg) = @_;
-    my $xdroot = $self->xdroot (%arg);
+    my ($self, $target, %arg) = @_;
+    my $xdroot = $target->root;
     my @deleted;
 
-    # check for if the file/dir is modified.
-    unless ($arg{targets}) {
-	my $target;
-	($arg{path}, $target, $arg{copath}) =
-	    get_anchor (1, @arg{qw/path copath/});
-	# XXX: This logic is flawed; whether this is target has a copath
-	# doesn't actually tell us whether the report is a copath or depot
-	# path. (See also SVK::Target::anchorify.)
-	if ($arg{copath}) {
-	    ($arg{report}) = get_anchor (0, $arg{report});
-	} else {
-	    ($arg{report}) = get_depot_anchor (0, $arg{report});
-	}
-	$arg{targets} = [$target];
-    }
+    $target->anchorify unless $target->{targets};
 
-    $self->checkout_delta ( %arg,
+    # check for if the file/dir is modified.
+    $self->checkout_delta ( %$target,
+			    %arg,
 			    xdroot => $xdroot,
 			    absent_as_delete => 1,
 			    delete_verbose => 1,
@@ -696,8 +689,8 @@ sub do_delete {
 			    ( notify => SVK::Notify->new
 			      ( cb_flush => sub {
 				    my ($path, $status) = @_;
-				    my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
-					@arg{qw/copath report/};
+				    my $copath = $target->copath($path);
+				    my $report = $target->report->subdir($path);
 				    my $st = $status->[0];
 				    if ($st eq 'M') {
 					die loc("%1 is modified, use 'svk revert' first.\n", $report);
@@ -713,15 +706,15 @@ sub do_delete {
 				})),
 			    cb_unknown => sub {
 				die loc("%1 is not under version control.\n",
-					SVK::Target->copath ($arg{report}, $_[1]));
+					$target->report->subdir($_[1]));
 			    }
 			  );
 
     # actually remove it from checkout path
-    my @paths = grep {is_symlink($_) || -e $_} (exists $arg{targets}[0] ?
-			      map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}}
-			      : $arg{copath});
-    my $ignore = $self->ignore ();
+    my @paths = grep {is_symlink($_) || -e $_} (exists $target->{targets}[0] ?
+			      map { $target->copath($_) } @{$target->{targets}}
+			      : $target->copath);
+    my $ignore = $self->ignore;
     find(sub {
 	     return if m/$ignore/;
 	     my $cpath = catdir($File::Find::dir, $_);
@@ -732,9 +725,9 @@ sub do_delete {
 	 }, @paths) if @paths;
 
     # need to use undef to avoid the $SEP at the beginning on empty report.
-    my $report = length ($arg{report}) ? $arg{report} : undef;
+    my $report = (defined $target->report && length $target->report) ? $target->report : undef;
     for (@deleted) {
-	print "D   ".abs2rel($_, $arg{copath} => $report)."\n"
+	print "D   ".abs2rel($_, $target->copath => $report)."\n"
 	    unless $arg{quiet};
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
     }
@@ -746,7 +739,7 @@ sub do_delete {
 sub do_proplist {
     my ($self, $target) = @_;
 
-    return $self->get_props ($target->root ($self), $target->{path}, $target->{copath});
+    return $self->get_props ($target->root, $target->{path}, $target->{copath});
 }
 
 sub do_propset {
@@ -918,7 +911,7 @@ sub _unknown_verbose {
 	    my $now = '';
 	    for my $dir (splitdir ($entry)) {
 		$now .= $now ? "/$dir" : $dir;
-		my $copath = SVK::Target->copath ($arg{copath}, $now);
+		my $copath = SVK::Path::Checkout->copath ($arg{copath}, $now);
 		next if $seen{$copath};
 		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
 		$seen{$copath} = 1;
@@ -936,7 +929,7 @@ sub _unknown_verbose {
 		my $dpath = abs2rel($copath, $arg{copath} => $arg{entry}, '/');
 		$arg{cb_unknown}->($arg{editor}, $dpath, $arg{baton});
 	  }}, defined $arg{targets} ?
-	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
+	  map { SVK::Path::Checkout->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
 }
 
 sub _node_deleted {
@@ -1211,7 +1204,7 @@ sub _delta_dir {
 	}
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
-	$copath = SVK::Target->copath ($arg{copath}, $copath);
+	$copath = SVK::Path::Checkout->copath ($arg{copath}, $copath);
 	my ($ccinfo, $ccschedule) = $self->get_entry($copath);
 	# a replace with history node requires handling the copy anchor in the
 	# latter direntries loop.  we should really merge the two.
@@ -1264,7 +1257,7 @@ sub _delta_dir {
     my @direntries;
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
-	opendir my ($dir), $arg{copath} or die "$arg{copath}: $!";
+	opendir my ($dir), $arg{copath} or Carp::confess "$arg{copath}: $!";
 	for (readdir($dir)) {
 	    if (eval {from_native($_, 'path', $arg{encoder}); 1}) {
 		push @direntries, $_;
@@ -1287,7 +1280,7 @@ sub _delta_dir {
 	    next unless exists $targets->{$copath};
 	    $newtarget = delete $targets->{$copath};
 	}
-	my %newpaths = ( copath => SVK::Target->copath ($arg{copath}, $copath),
+	my %newpaths = ( copath => SVK::Path::Checkout->copath ($arg{copath}, $copath),
 			 entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			 base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
@@ -1368,7 +1361,7 @@ sub checkout_delta {
 	if $arg{debug};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	unless $arg{nodelay};
-    $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Target->copath ($copath, $_[0])) };
+    $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Path::Checkout->copath ($copath, $_[0])) };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
 	: sub { ("file://$repospath$_[0]", $_[1]) };

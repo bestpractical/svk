@@ -31,7 +31,7 @@ sub lock_message {
     my $i = 0;
     sub {
 	my ($mirror, $what, $who) = @_;
-	print loc("Waiting for %1 lock on %2: %3.\n", $what, $target->{depotpath}, $who);
+	print loc("Waiting for %1 lock on %2: %3.\n", $what, $target->depotpath, $who);
 	if (++$i % 3 == 0) {
 	    print loc ("
 The mirror is currently locked. This might be because the mirror is
@@ -41,7 +41,7 @@ if $who is a running, valid process
 
 If the mirror lock is stalled, please interrupt this process and run:
     svk mirror --unlock %1
-", $target->{depotpath});
+", $target->depotpath);
 	}
     }
 }
@@ -122,7 +122,7 @@ sub run {
         $m->init();
 
         if ( $self->{sync_all} ) {
-            print loc( "Starting to synchronize %1\n", $target->{depotpath} );
+            print loc( "Starting to synchronize %1\n", $target->depotpath );
             eval {
                 $m->run( $self->{torev} );
                 find_prev_copy( $fs, $fs->youngest_rev );

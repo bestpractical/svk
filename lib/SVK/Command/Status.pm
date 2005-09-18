@@ -43,10 +43,10 @@ sub flush_print {
 	$author = $fs->revision_prop ($crev, 'svn:author');
     }
 
-    my $report = $target->{report};
+    my $report = $target->report;
     my $newentry = length $entry
-	? SVK::Target->copath ($report, $entry)
-	: SVK::Target->copath ('', length $report ? $report : '.');
+	? SVK::Path::Checkout->copath ($report, $entry)
+	: SVK::Path::Checkout->copath ('', length $report ? $report : '.');
     no warnings 'uninitialized';
     print sprintf ("%1s%1s%1s %8s %8s %-12.12s \%s\n", @{$status}[0..2],
                    defined $baserev ? $baserev : '? ',
@@ -57,7 +57,7 @@ sub flush_print {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $self->{xd}->xdroot (%$target);
+    my $xdroot = $target->root;
     my $report = $target->{report};
     $report .= '/' if $report;
     my $editor = SVK::Editor::Status->new (

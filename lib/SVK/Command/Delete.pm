@@ -22,7 +22,7 @@ sub parse_arg {
 	die loc("Mixed depotpath and checkoutpath not supported.\n")
 	    if grep {!$_->{copath}} @arg;
 
-	return $self->arg_condensed(map {$_->{report} } @arg);
+	return $self->{xd}->target_condensed(@arg);
     }
 
     die loc("Delete for more than one depotpath is not supported yet.\n")
@@ -71,7 +71,7 @@ sub run {
     $self->_ensure_mirror($target);
 
     if ($target->{copath}) {
-	$self->{xd}->do_delete ( %$target, no_rm => $self->{keep} );
+	$self->{xd}->do_delete( $target, no_rm => $self->{keep} );
     }
     else {
 	$self->do_delete_direct ( $target );

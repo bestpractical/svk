@@ -128,7 +128,7 @@ sub get_editor {
 
     # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->{copath}) {
-	my $xdroot = $target->root ($self->{xd});
+	my $xdroot = $target->root;
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
 	      # assuming the editor returned here are used with Editor::Merge
@@ -183,7 +183,7 @@ sub get_editor {
 	die loc ("Illegal patch name: %1.\n", $self->{patch})
 	    if $self->{patch} =~ m!/!;
 	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
-				     $target->depotname, $source, $target->new (targets => undef));
+				     $target->depotname, $source, $target->new(targets => undef)->as_depotpath);
 	$patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
 	    if $source;
 	$patch->{log} = $self->{message};
@@ -402,7 +402,7 @@ sub run {
 
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
-    my $xdroot = $target->root ($self->{xd});
+    my $xdroot = $target->root;
     my $committed;
     if ($self->{import}) {
 	$self->get_commit_message () unless $self->{check_only};

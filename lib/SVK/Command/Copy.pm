@@ -30,7 +30,7 @@ sub parse_arg {
 	# don't allow new uri in source when target is copath
 	@src = (map {$self->arg_co_maybe
 			 ($_, $dst->{copath}
-			  ? loc ("path '%1' is already a checkout", $dst->{report})
+			  ? loc ("path '%1' is already a checkout", $dst->report)
 			  : undef)} @arg);
     }
     else {
@@ -69,10 +69,10 @@ sub lock {
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
     $src->as_depotpath;
-    my $xdroot = $dst->root ($self->{xd});
+    my $xdroot = $dst->root;
     die loc ("Path %1 does not exist.\n", $src->{path})
 	if $src->root->check_path ($src->{path}) == $SVN::Node::none;
-    my ($copath, $report) = @{$dst}{qw/copath report/};
+    my ($copath, $report) = ($dst->copath, $dst->report);
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
     my ($entry, $schedule) = $self->{xd}->get_entry($copath);
@@ -114,7 +114,7 @@ sub handle_direct_item {
     $src->normalize;
     # if we have targets, ->{path} must exist
     if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->{path})) {
-	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report});
+	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->report);
     }
     my ($path, $rev) = @{$src}{qw/path revision/};
     if ($m) {
@@ -133,8 +133,7 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
-    # Use condensed to do proper anchorification.
-    $target = $self->arg_condensed ($target->copath);
+    $target = $self->{xd}->target_condensed($target); # anchor
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),
@@ -161,6 +160,7 @@ sub check_src {
 sub run {
     my ($self, @src) = @_;
     my $dst = pop @src;
+
     return loc("Different depots.\n") unless $dst->same_repos (@src);
     my $m = $self->under_mirror ($dst);
     return "Different sources.\n"
@@ -169,27 +169,26 @@ sub run {
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
     if ($dst->{copath}) {
-	return loc("%1 is not a directory.\n", $dst->{report})
+	return loc("%1 is not a directory.\n", $dst->report)
 	    if $#src > 0 && !-d $dst->{copath};
-	return loc("%1 is not a versioned directory.\n", $dst->{report})
-	    if -d $dst->{copath} &&
+	return loc("%1 is not a versioned directory.\n", $dst->report)
+	    if -d $dst->copath &&
 		!($dst->root($self->{xd})->check_path ($dst->path) ||
-		  $self->{xd}{checkout}->get ($dst->{copath})->{'.schedule'});
+		  $self->{xd}{checkout}->get ($dst->copath)->{'.schedule'});
 	my @cpdst;
 	for (@src) {
 	    my $cpdst = $dst->new;
 	    $cpdst->descend ($_->{path} =~ m|/([^/]+)/?$|)
 		if -d $cpdst->{copath};
-	    die loc ("Path %1 already exists.\n", $cpdst->{report})
+	    die loc ("Path %1 already exists.\n", $cpdst->report)
 		if -e $cpdst->{copath};
 	    push @cpdst, $cpdst;
 	}
 	$self->handle_co_item ($_, shift @cpdst) for @src;
     }
     else {
-	my $root = $dst->root;
-	if ($root->check_path ($dst->{path}) != $SVN::Node::dir) {
-	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->{report})
+	if ($dst->root->check_path($dst->{path}) != $SVN::Node::dir) {
+	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->report)
 		if $#src > 0;
 	    $dst->anchorify;
 	}
@@ -206,7 +205,7 @@ sub run {
     if (defined( my $copath = $self->{_checkout_path} )) {
         my $checkout = $self->command ('checkout');
 	$checkout->getopt ([]);
-        my @arg = $checkout->parse_arg ($dst->{report}, $copath);
+        my @arg = $checkout->parse_arg ('/'.$dst->depotname.$dst->path, $copath);
         $checkout->lock (@arg);
         $checkout->run (@arg);
     }

@@ -96,7 +96,7 @@ sub run {
 	$self->{message} = $oldmessage;
     }
 
-    my ($depot) = $self->{xd}->find_depotname ($src->{depotpath});
+    my ($depot) = $src->depotname;
     ++$self->{auto};
     $self->SUPER::run ($src->new (path => $tmpbranch,
 				  depotpath => "/$depot$tmpbranch",

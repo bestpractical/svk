@@ -145,7 +145,7 @@ is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], 
         'U   T/xd',
         "New merge ticket: $suuid:/A-99:30",
         'Committed revision 18.',
-        "Syncing //m-99-copy(/m-99-copy/T) in ".__("$corpath2/T to 18."),
+        "Syncing //m-99-copy/T(/m-99-copy/T) in ".__("$corpath2/T to 18."),
         __("U   $copath2/T/xd"),
         ]);
 

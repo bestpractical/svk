@@ -212,16 +212,15 @@ is_copied_from ("//V/A/Q/me", '/V/me', 3);
 
 require Cwd;
 my $cwd = Cwd::cwd();
-mkdir "$corpath-some";
-chdir "$corpath-some";
+our (undef, $corpath_some) = get_copath ('copy-some');
+mkdir($corpath_some);
+chdir($corpath_some);
 $answer = 'somepath';
 is_output ($svk, 'cp', ['-m', '', '//V/me'],
 	   ['Committed revision 21.',
-            'Syncing //somepath(/somepath) in '.__("$corpath-some/somepath to 21."),
+            'Syncing //somepath(/somepath) in '.__("$corpath_some/somepath to 21."),
             'A   somepath']);
 is_copied_from ("//somepath", '/V/me', 3);
-unlink "$corpath-some/somepath";
-rmdir "$corpath-some";
 chdir $cwd;
 
 $svk->copy ("$copath/A", "$copath/B/A-cp-in-B");

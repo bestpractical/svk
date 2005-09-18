@@ -26,7 +26,7 @@ sub ensure_parent {
     my ($self, $target) = @_;
     my $dst = $target->new;
     $dst->anchorify;
-    die loc("Path %1 is not a checkout path.\n", $dst->{report})
+    die loc("Path %1 is not a checkout path.\n", $dst->report)
 	unless defined $dst->{copath};
     unless (-e $dst->{copath}) {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})

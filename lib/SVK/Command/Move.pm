@@ -39,7 +39,7 @@ sub handle_direct_item {
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
     $self->SUPER::handle_co_item ($src->new, $dst); # might be modified
-    $self->{xd}->do_delete (%$src);
+    $self->{xd}->do_delete($src);
 }
 
 sub run {
