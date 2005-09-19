@@ -27,21 +27,21 @@ sub ensure_parent {
     my $dst = $target->new;
     $dst->anchorify;
     die loc("Path %1 is not a checkout path.\n", $dst->report)
-	unless defined $dst->{copath};
-    unless (-e $dst->{copath}) {
+	unless defined $dst->copath;
+    unless (-e $dst->copath) {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})
 	    unless $self->{parent};
 	# this sucks
-	my ($added_root) = make_path($dst->{report});
+	my ($added_root) = make_path($dst->report);
 	my $add = $self->command('add', { recursive => 1 });
-	$add->run($add->parse_arg($added_root));
+	$add->run($add->parse_arg("$added_root"));
     }
-    unless (-d $dst->{copath}) {
-	die loc ("%1 is not a directory.\n", $dst->{report});
+    unless (-d $dst->copath) {
+	die loc ("%1 is not a directory.\n", $dst->report);
     }
     unless ($dst->root($self->{xd})->check_path ($dst->{path})) {
-	my $info = $self->{xd}{checkout}->get($dst->{copath});
-	die loc ("Parent directory %1 is unknown, add first.\n", $dst->{report})
+	my $info = $self->{xd}{checkout}->get($dst->copath);
+	die loc ("Parent directory %1 is unknown, add first.\n", $dst->report)
 	    unless $info->{'.schedule'};
     }
 }
@@ -57,7 +57,7 @@ sub run {
 	}
 	for (@target) {
 	    my $add = $self->command('add');
-	    $add->run($add->parse_arg($_->{report}));
+	    $add->run($add->parse_arg("$_->{report}"));
 	}
 	return ;
     }
