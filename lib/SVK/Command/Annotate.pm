@@ -28,49 +28,49 @@ sub run {
         $target->as_depotpath($r);
     }
     if (HAS_SVN_MIRROR) {
-	($m) = SVN::Mirror::is_mirrored ($target->{repos}, $target->path);
+	($m) = SVN::Mirror::is_mirrored($target->repos, $target->path);
     }
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $ann = Algorithm::Annotate->new;
-    my @revs;
+    my @paths;
 
     traverse_history (
-        root     => $fs->revision_root ($target->{revision}),
-        path     => $target->{path},
+        root     => $target->new->as_depotpath->root,
+        path     => $target->path,
         cross    => $self->{cross},
         callback => sub {
             my ($path, $rev) = @_;
-            unshift @revs, [ $path, $rev ];
+            unshift @paths,
+		$target->new(path => $path)->as_depotpath($rev);
             1;
         }
     );
 
-    print loc("Annotations for %1 (%2 active revisions):\n", $target->{path}, scalar @revs);
+    print loc("Annotations for %1 (%2 active revisions):\n", $target->path, scalar @paths);
     print '*' x 16;
     print "\n";
-    for (@revs) {
+    for my $t (@paths) {
 	local $/;
-	my ($path, $rev) = @$_;
-	my $content = $fs->revision_root ($rev)->file_contents ($path);
+	my $content = $t->root->file_contents($t->path);
 	$content = [split /\015?\012|\015/, <$content>];
 	no warnings 'uninitialized';
-	my $rrev = ($m && $self->{remoterev}) ? $m->find_remote_rev($rev) : $rev;
+	my $rrev = ($m && $self->{remoterev}) ? $m->find_remote_rev($t->revision) : $t->revision;
 	$ann->add ( sprintf("%6s\t(%8s %10s):\t\t", $rrev,
-			    $fs->revision_prop ($rev, 'svn:author'),
-			    substr($fs->revision_prop ($rev, 'svn:date'),0,10)),
+			    $fs->revision_prop($t->revision, 'svn:author'),
+			    substr($fs->revision_prop ($t->revision, 'svn:date'),0,10)),
 		    $content);
     }
 
     my $final;
-    if ($target->{copath}) {
-	$final = SVK::XD::get_fh ($target->root ($self->{xd}), '<', $target->{path}, $target->{copath});
+    if ($target->isa('SVK::Path::Checkout')) {
+	$final = SVK::XD::get_fh($target->root, '<', $target->path, $target->copath);
 	local $/;
 	$final = [split /\015?\012|\015/, <$final>];
 	$ann->add ( "\t(working copy): \t\t", $final );
     }
     else {
 	local $/;
-	$final = $fs->revision_root($revs[-1][1])->file_contents($revs[-1][0]);
+	$final = $paths[-1]->root->file_contents($paths[-1]->path);
 	$final = [split /\015?\012|\015/, <$final>];
     }
 
