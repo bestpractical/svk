@@ -27,7 +27,7 @@ sub ensure_parent {
     my $dst = $target->new;
     $dst->anchorify;
     die loc("Path %1 is not a checkout path.\n", $dst->report)
-	unless defined $dst->copath;
+	unless $dst->isa('SVK::Path::Checkout');
     unless (-e $dst->copath) {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report})
 	    unless $self->{parent};
@@ -50,7 +50,7 @@ sub run {
     my ($self, @target) = @_;
 
     # XXX: better check for @target being the same type
-    if (grep {$_->{copath}} @target) {
+    if (grep {$_->isa('SVK::Path::Checkout')} @target) {
 	$self->ensure_parent($_) for @target;
 	for (@target) {
 	    make_path($_->{report}) or die $!;
