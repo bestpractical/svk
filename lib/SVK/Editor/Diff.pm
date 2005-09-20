@@ -106,9 +106,8 @@ sub apply_textdelta {
 	    $is_text = !$basetype || mimetype_is_text ($basetype);
 	}
 	unless ($is_text) {
+	    $self->output_diff_header ($self->_report_path ($path));
 	    $self->_print (
-                "=== $path\n",
-                '=' x 66, "\n",
                 loc("Cannot display: file marked as a binary type.\n")
             );
 	    return undef;
@@ -132,12 +131,18 @@ sub apply_textdelta {
 				 undef, undef, $pool)];
 }
 
+sub _report_path {
+    my ($self, $path) = @_;
+
+    return $self->{report} ? catfile($self->{report}, $path) : $path;
+}
+
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
     if (exists $self->{info}{$path}{new}) {
 	no warnings 'uninitialized';
-	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
+	my $rpath = $self->_report_path ($path);
 	my $base = $self->{info}{$path}{added} ?
 	    \'' : $self->retrieve_base($path, $self->{info}{$path}{fpool});
 	my @label = map { $self->{$_} || $self->{"cb_$_"}->($path) } qw/llabel rlabel/;
@@ -176,14 +181,20 @@ sub _full_label {
     return $full_label;
 }
 
+sub output_diff_header {
+    my ($self, $path) = @_;
+
+    $self->_print (
+        "=== $path\n",
+        '=' x 66, "\n",
+    );
+}
+
 sub output_diff {
     my ($self, $path, $llabel, $rlabel, $lpath, $rpath) = splice(@_, 0, 6);
     my $fh = $self->_output_fh;
 
-    print $fh (
-        "=== $path\n",
-        '=' x 66, "\n",
-    );
+    $self->output_diff_header ($path);
 
     unshift @_, $self->_output_fh;
     push @_, _full_label ($path, $lpath, $llabel),
@@ -214,7 +225,7 @@ sub _output_diff_content {
 sub output_prop_diff {
     my ($self, $path, $pool) = @_;
     if ($self->{info}{$path}{prop}) {
-	my $rpath = $self->{report} ? catfile($self->{report}, $path) : $path;
+	my $rpath = $self->_report_path ($path);
 	$self->_print("\n", loc("Property changes on: %1\n", $rpath), ('_' x 67), "\n");
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    $self->_print(loc("Name: %1\n", $_));
