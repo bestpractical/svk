@@ -134,7 +134,8 @@ sub apply_textdelta {
 sub _report_path {
     my ($self, $path) = @_;
 
-    return $self->{report} ? catfile($self->{report}, $path) : $path;
+    return (defined $self->{report} && length $self->{report})
+	? catfile($self->{report}, $path) : $path;
 }
 
 sub close_file {
