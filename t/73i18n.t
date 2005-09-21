@@ -10,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 41;
+plan tests => 42;
 our ($answer, $output);
 
 my $utf8 = SVK::Util::get_encoding;
@@ -135,8 +135,17 @@ is_output ($svk, 'commit', ["$copath/$msg-dir"],
 is_output ($svk, 'mv', ["$copath/be" => "$copath/be-$msg"],
 	   [__("A   $copath/be-$msg"),
 	    __("D   $copath/be")]);
+mkdir("$copath/sto");
+overwrite_file ("$copath/sto/$msg", "with big5 filename\n");
+
+is_output ($svk, 'add', ["$copath/sto"],
+	   [__("A   $copath/sto"),
+	    __("A   $copath/sto/$msg")]);
+
 is_output ($svk, 'revert', [-R => "$copath"],
 	   [__("Reverted $copath/be-$msg"),
+	    __("Reverted $copath/sto"),
+	    __("Reverted $copath/sto/$msg"),
 	    __("Reverted $copath/be")]);
 
 $svk->cp (-m => "$msg hate", -r6 => '//A' => '//A-cp2');
