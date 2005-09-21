@@ -145,7 +145,7 @@ Returns the full path of the target even if anchorified.
 sub path {
     my ($self) = @_;
     (exists $self->{targets} && defined $self->{targets}[0])
-	? $self->_to_pclass($self->{path}, 'Unix')->subdir($self->{targets}[0]) : $self->{path};
+	? $self->_to_pclass($self->{path}, 'Unix')->subdir($self->{targets}[0])->stringify : $self->{path};
 }
 
 =head2 descend
