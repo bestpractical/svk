@@ -10,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 48;
+plan tests => 51;
 our ($answer, $output);
 
 my $utf8 = SVK::Util::get_encoding;
@@ -159,6 +159,18 @@ is_output ($svk, 'revert', [-R => "$copath"],
 	   [__("Reverted $copath/orz"),
 	    __("Reverted $copath/be")]);
 rmtree ["$copath/orz"];
+is_output($svk, 'rm', ["$copath/sto"],
+	   [__("D   $copath/sto"),
+	    __("D   $copath/sto/$msg")]);
+
+is_output($svk, 'st', ["$copath/sto"],
+	   [__("D   $copath/sto"),
+	    __("D   $copath/sto/$msg")]);
+
+is_output($svk, 'revert', [-R => "$copath/sto"],
+	   [__("Reverted $copath/sto"),
+	    __("Reverted $copath/sto/$msg")]);
+
 append_file("$copath/be-$msg", 'fooo');
 is_output ($svk, 'ps', [foo => 'bar', "$copath/be-$msg"],
 	   [__(" M  $copath/be-$msg")]);

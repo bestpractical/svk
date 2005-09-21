@@ -943,6 +943,7 @@ sub _node_deleted {
 	foreach my $file (sort $self->{checkout}->find
 			  ($arg{copath}, {'.schedule' => 'delete'})) {
 	    $file = abs2rel($file, $arg{copath} => undef, '/');
+	    from_native($file, 'path', $arg{encoder});
 	    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
 		if $file;
 	}
