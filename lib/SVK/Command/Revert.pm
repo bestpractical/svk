@@ -41,9 +41,9 @@ sub run {
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
+		      my $dpath = length $path ? "$target->{path}/$path" : $target->{path};
 	              to_native($path);
 		      my $st = $status->[0];
-		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
 		      my $copath = $target->copath ($path);
 
                       if ($st =~ /[DMRC!]/) {
