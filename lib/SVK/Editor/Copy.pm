@@ -78,8 +78,12 @@ sub find_copy {
 	# don't use the same copy twice
 	if (exists $self->{incopy}[-1]) {
 	    if ($src_frompath =~ m{^\Q$self->{incopy}[-1]{frompath}/}) {
-		($cur_root, $cur_path) = ($fromroot, $src_frompath);
-		next;
+		return;
+		# XXX: It doesn't seem right to fallback to previous
+		# copies from the one we don't want.  But make sure
+		# this is the case.
+#		($cur_root, $cur_path) = ($fromroot, $src_frompath);
+#		next;
 	    }
 	}
 
@@ -186,6 +190,7 @@ sub add_file {
 
 sub open_directory {
     my ($self, $path, $pbaton, @arg) = @_;
+    return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
     if (my @ret = $self->find_copy($path)) {
 	warn "==> turn $path into replace: ".join(',',@ret) if $main::DEBUG;
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
