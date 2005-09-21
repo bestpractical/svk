@@ -46,8 +46,10 @@ sub _clone {
     my ($self) = @_;
 
     require Clone;
+    my $xd = delete $self->{xd};
     my $cloned = Clone::clone ($self);
     $cloned->repos($self->repos);
+    $self->{xd} = $cloned->{xd} = $xd if $xd;
     return $cloned;
 }
 
