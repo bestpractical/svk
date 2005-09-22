@@ -10,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 38;
+plan tests => 51;
 our ($answer, $output);
 
 my $utf8 = SVK::Util::get_encoding;
@@ -77,7 +77,9 @@ is_output ($svk, 'st', [$copath],
 is_output ($svk, 'ci', ['--import', '-m', 'hate', $copath],
 	   [__"$msg: Can't decode path as $utf8."],
 	   'import with bizzare filename is fatal.');
-
+is_output ($svk, 'add', ["$copath/$msgutf8-dir"],
+	   [__"$msg: Can't decode path as $utf8.",
+	    __"A   $copath/$msgutf8-dir/newfile"]);
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
 	   []);
 is_output ($svk, 'ls', ["//A"],
@@ -131,12 +133,57 @@ is_output ($svk, 'rm', ["$copath/$msg-dir/$msg"],
 is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	   ['Waiting for editor...',
 	    'Committed revision 8.']);
+is_output ($svk, 'mv', ["$copath/be" => "$copath/be-$msg"],
+	   [__("A   $copath/be-$msg"),
+	    __("D   $copath/be")]);
+mkdir("$copath/sto");
+overwrite_file ("$copath/sto/$msg", "with big5 filename\n");
+
+is_output ($svk, 'commit', [-m => 'commit it', "$copath/be-$msg"],
+	   ['Committed revision 9.']);
+
+is_output ($svk, 'add', ["$copath/sto"],
+	   [__("A   $copath/sto"),
+	    __("A   $copath/sto/$msg")]);
+
+is_output ($svk, 'commit', [-m => 'commit it', "$copath/sto"],
+	   ['Committed revision 10.']);
+
+is_output ($svk, 'cp', ["$copath/sto", "$copath/orz"],
+	   [__("A   $copath/orz"),
+	    __("A   $copath/orz/$msg")]);
+is_output($svk, 'st', [$copath],
+	   [__("A + $copath/orz"),
+	    __("D   $copath/be")]);
+
+is_output ($svk, 'revert', [-R => "$copath"],
+	   [__("Reverted $copath/orz"),
+	    __("Reverted $copath/be")]);
+rmtree ["$copath/orz"];
+is_output($svk, 'rm', ["$copath/sto"],
+	   [__("D   $copath/sto"),
+	    __("D   $copath/sto/$msg")]);
+
+is_output($svk, 'st', ["$copath/sto"],
+	   [__("D   $copath/sto"),
+	    __("D   $copath/sto/$msg")]);
+
+is_output($svk, 'revert', [-R => "$copath/sto"],
+	   [__("Reverted $copath/sto"),
+	    __("Reverted $copath/sto/$msg")]);
+
+append_file("$copath/be-$msg", 'fooo');
+is_output ($svk, 'ps', [foo => 'bar', "$copath/be-$msg"],
+	   [__(" M  $copath/be-$msg")]);
+
+is_output ($svk, 'revert', [-R => "$copath"],
+	   [__("Reverted $copath/be-$msg")]);
 
 $svk->cp (-m => "$msg hate", -r6 => '//A' => '//A-cp2');
 $svk->smerge ('-I', '//A' => '//A-cp2');
-is_output_like ($svk, 'log', [-r8 => '//'],
+is_output_like ($svk, 'log', [-r11 => '//'],
 		qr/\Q$msg\E/);
-is_output_like ($svk, 'log', [-r9 => '//'],
+is_output_like ($svk, 'log', [-r12 => '//'],
 		qr/\Q$msg\E/);
 
 is_output ($svk, 'st', ["$copath/$msg-dir"],
@@ -144,7 +191,7 @@ is_output ($svk, 'st', ["$copath/$msg-dir"],
 is_output ($svk, 'ls', ["//A/$msgutf8-dir"],
 	   ["Can't decode path as big5-eten."]);
 is_output ($svk, 'ls', ["//A"],
-	   ['Q/', 'be', "$msg-dir/"]);
+	   ['Q/', 'be', "be-$msg", "sto/", "$msg-dir/"]);
 is_output ($svk, 'ls', ["//A/$msg-dir"],
 	   []);
 

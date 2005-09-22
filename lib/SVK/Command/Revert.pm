@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use constant opt_recursive => 0;
 use SVK::XD;
-use SVK::Util qw( slurp_fh is_symlink );
+use SVK::Util qw( slurp_fh is_symlink to_native );
 use SVK::I18N;
 
 sub options {
@@ -41,8 +41,9 @@ sub run {
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
+		      my $dpath = length $path ? "$target->{path}/$path" : $target->{path};
+	              to_native($path);
 		      my $st = $status->[0];
-		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
 		      my $copath = $target->copath ($path);
 
                       if ($st =~ /[DMRC!]/) {

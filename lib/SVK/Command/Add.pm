@@ -46,7 +46,7 @@ sub run {
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
 		  my ($path, $status) = @_;
-	          to_native ($path);
+	          to_native($path, 'path');
 		  my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
 		      @{$target}{qw/copath report/};
 
@@ -61,13 +61,14 @@ sub run {
 	      })),
 	  cb_unknown => sub {
 	      my ($editor, $path) = @_;
-	      to_native ($path);
+	      to_native($path, 'path');
 	      my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
 	          @{$target}{qw/copath report/};
 	      lstat ($copath);
 	      $self->_do_add ('A', $copath, $report, !-d _);
 	  },
 	);
+    return;
 }
 
 my %sch = (A => 'add', 'R' => 'replace');

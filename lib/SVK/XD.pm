@@ -924,6 +924,8 @@ sub _unknown_verbose {
 	    }
 	}
     }
+    my $nentry = $arg{entry};
+    to_native($nentry, 'path', $arg{encoder});
     find ({ preprocess => sub { sort @_ },
 	    wanted =>
 	    sub {
@@ -932,7 +934,8 @@ sub _unknown_verbose {
 		return if $seen{$copath};
 		my $schedule = $self->{checkout}->get ($copath)->{'.schedule'} || '';
 		return if $schedule eq 'delete';
-		my $dpath = abs2rel($copath, $arg{copath} => $arg{entry}, '/');
+		my $dpath = abs2rel($copath, $arg{copath} => $nentry, '/');
+		from_native($dpath, 'path');
 		$arg{cb_unknown}->($arg{editor}, $dpath, $arg{baton});
 	  }}, defined $arg{targets} ?
 	  map { SVK::Target->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
@@ -947,6 +950,7 @@ sub _node_deleted {
 	foreach my $file (sort $self->{checkout}->find
 			  ($arg{copath}, {'.schedule' => 'delete'})) {
 	    $file = abs2rel($file, $arg{copath} => undef, '/');
+	    from_native($file, 'path', $arg{encoder});
 	    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
 		if $file;
 	}
