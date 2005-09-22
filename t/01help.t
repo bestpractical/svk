@@ -13,7 +13,7 @@ my ($xd, $svk) = build_test();
 
 plan tests => ( 10 + ( 2 * @cmd ) );
 
-is_output_like ($svk, 'help', [], qr'topics');
+is_output_like ($svk, 'help', [], qr'Main index');
 is_output_like ($svk, 'help', ['commands'], qr'Available commands:');
 is_output ($svk, 'nosuchcommand', [], ["Command not recognized, try $0 help."]);
 is_output ($svk, 'bad:command/', [], ["Command not recognized, try $0 help."]);
