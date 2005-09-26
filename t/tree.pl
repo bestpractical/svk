@@ -17,11 +17,13 @@ use Test::More;
 
 # Fake standard input
 our $answer = [];
+our $show_prompt = 0;
 BEGIN {
     no warnings 'redefine';
     # override get_prompt in XD so devel::cover is happy for
     # already-exported symbols being overridden
     *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
+	print "$_[0]\n" if $show_prompt;
 	return $answer unless ref($answer); # compat
 	die 'expecting input' unless @$answer;
 	shift @$answer;

@@ -1,5 +1,7 @@
 [Changes for 1.?? - ? ???, 2005]
 
+* "svk commit" now has additional option --interactive
+
 * "svk add" now displays "- (bin)" if the svn:mime-type of the file
   being added is a non text type.
 

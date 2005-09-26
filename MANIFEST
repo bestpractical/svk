@@ -60,6 +60,7 @@ lib/SVK/Editor/Composite.pm
 lib/SVK/Editor/Copy.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
+lib/SVK/Editor/InteractiveCommitter.pm
 lib/SVK/Editor/Merge.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
@@ -157,6 +158,8 @@ t/19cleanup.t
 t/20add.t
 t/21delete.t
 t/22status.t
+t/23commit-inter-nav.t
+t/23commit-inter-output.t
 t/23commit-mirror.t
 t/23commit-multi.t
 t/23commit.t
