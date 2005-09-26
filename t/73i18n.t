@@ -10,7 +10,7 @@ setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'en_US.UTF-8')
     or plan skip_all => 'cannot set locale to en_US.UTF-8';;
 plan skip_all => "darwin wants all filename in utf8." if $^O eq 'darwin';
 
-plan tests => 51;
+plan tests => 54;
 our ($answer, $output);
 
 my $utf8 = SVK::Util::get_encoding;
@@ -177,7 +177,16 @@ is_output ($svk, 'ps', [foo => 'bar', "$copath/be-$msg"],
 
 is_output ($svk, 'revert', [-R => "$copath"],
 	   [__("Reverted $copath/be-$msg")]);
-
+is_output ($svk, 'mv', ["$copath/be-$msg", "$copath/$msg-dir"],
+	   [__("A   $copath/$msg-dir/be-$msg"),
+	    __("D   $copath/be-$msg")]);
+is_output( $svk, 'st', [$copath],
+	   [__("A + $copath/$msg-dir/be-$msg"),
+	    __("D   $copath/be-$msg")]);
+is_output ($svk, 'revert', [-R => "$copath"],
+	   [__("Reverted $copath/$msg-dir/be-$msg"),
+	    __("Reverted $copath/be-$msg")]);
+unlink("$copath/$msg-dir/be-$msg");
 $svk->cp (-m => "$msg hate", -r6 => '//A' => '//A-cp2');
 $svk->smerge ('-I', '//A' => '//A-cp2');
 is_output_like ($svk, 'log', [-r11 => '//'],

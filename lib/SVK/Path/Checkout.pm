@@ -91,6 +91,7 @@ sub contains_copath {
 sub descend {
     my ($self, $entry) = @_;
     $self->SUPER::descend($entry);
+    to_native($entry, 'path');
     $self->{copath} = catfile($self->{copath}, $entry);
 
     $self->report( catfile($self->report, $entry) );
