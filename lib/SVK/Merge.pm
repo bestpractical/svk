@@ -316,8 +316,6 @@ the merge to the storage editor. Returns the number of conflicts.
 sub run {
     my ($self, $storage, %cb) = @_;
     my ($base, $src) = @{$self}{qw/base src/};
-    warn "===> base being ".YAML::Dump($base) if $main::DEBUG;
-    warn "===> src being ".YAML::Dump($src) if $main::DEBUG;
     my $base_root = $self->{base_root} || $base->root;
     # XXX: for merge editor; this should really be in SVK::Path
     my ($report, $target) = ($self->{report}, $src->{targets}[0] || '');
