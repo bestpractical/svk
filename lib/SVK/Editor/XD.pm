@@ -196,10 +196,15 @@ sub open_directory {
 
 sub do_delete {
     my $self = shift;
-    return $self->SUPER::do_delete (@_)
-	if $self->{update};
-
     my ($path, $copath) = @_;
+    if ($self->{update}) {
+	$self->{xd}{checkout}->store_fast
+	    ($copath,
+	     {revision => $self->{revision},
+	      '.deleted' => 1});
+	return $self->SUPER::do_delete (@_)
+    }
+
     $self->{get_path}($path);
     $self->{xd}->do_delete( SVK::Path::Checkout->new
 			    (repos => $self->{repos}, xd => $self->{xd},

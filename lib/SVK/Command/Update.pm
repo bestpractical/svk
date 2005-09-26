@@ -85,19 +85,26 @@ sub do_update {
     my ($self, $cotarget, $update_target) = @_;
     my ($xdroot, $newroot) = map { $_->root } ($cotarget, $update_target);
     # unanchorified
-    my ($path, $copath) = @{$cotarget}{qw/path copath/};
     my $report = $cotarget->{report};
-    my $kind = $newroot->check_path ($update_target->{path});
+    my $kind = $newroot->check_path ($update_target->path);
+    if ($kind == $SVN::Node::none) {
+	$cotarget->anchorify;
+	$update_target->anchorify;
+	# still in the checkout
+	if ($self->{xd}{checkout}->get($cotarget->copath)->{depotpath}) {
+	    $kind = $newroot->check_path($update_target->{path});
+	}
+    }
     die loc("path %1 does not exist.\n", $update_target->{path})
 	if $kind == $SVN::Node::none;
 
     print loc("Syncing %1(%2) in %3 to %4.\n", $cotarget->depotpath, @{$cotarget}{qw( path copath )},
 	      $update_target->{revision});
+
     if ($kind == $SVN::Node::file ) {
 	$cotarget->anchorify;
 	$update_target->anchorify;
 	# can't use $cotarget->{path} directly since the (rev0, /) hack
-	($path, $copath) = @{$cotarget}{qw/path copath/};
 	$cotarget->{targets}[0] = $cotarget->{copath_target};
     }
     my $base = $cotarget;
@@ -120,7 +127,8 @@ sub do_update {
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 auto => 1, # not to print track-rename hint
 	 xd => $self->{xd});
-    $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
+    $merge->run ($self->{xd}->get_editor (copath => $cotarget->{copath},
+					  path => $cotarget->{path},
 					  store_path => $update_target->path,
 					  check_only => $self->{check_only},
 					  ignore_checksum => 1,
