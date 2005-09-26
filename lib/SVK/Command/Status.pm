@@ -40,7 +40,7 @@ sub flush_print {
         my $p = $target->{path};
 	my $path = $p eq '/' ? "/$entry" : (length $entry ? "$p/$entry" : $p);
 	$crev = $root->node_created_rev ($path);
-	$author = $fs->revision_prop ($crev, 'svn:author');
+	$author = $fs->revision_prop($crev, 'svn:author') unless $crev == -1;
     }
 
     my $report = $target->{report};
