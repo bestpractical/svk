@@ -223,6 +223,10 @@ sub delete_entry {
     $self->{get_copath}($copath);
     return if $self->{check_only};
     if ($self->{update}) {
+	$self->{xd}{checkout}->store_fast
+	    ($copath,
+	     {revision => $self->{revision},
+	      '.deleted' => 1});
 	-d $copath ? rmtree ([$copath]) : unlink($copath);
     }
     else {
