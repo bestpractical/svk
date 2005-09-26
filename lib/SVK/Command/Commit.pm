@@ -328,9 +328,10 @@ sub committed_commit {
 	for my $copath ($self->{xd}{checkout}->find ($dataroot, {revision => qr/.*/})) {
 	    my $coinfo = $self->{xd}{checkout}->get ($copath);
 	    next if $coinfo->{'.deleted'};
-	    my $corev = $coinfo->{revision};
+	    my $orev = eval { $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/')) };
+	    defined $orev or next;
 	    # XXX: cache the node_created_rev for entries within $target->path
-	    next if $corev < $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/'));
+	    next if $coinfo->{revision} < $orev;
 	    $self->{xd}{checkout}->store_override ($copath, {revision => $rev});
 	}
 	# update checkout map with new revision
