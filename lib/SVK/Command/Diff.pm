@@ -71,13 +71,7 @@ sub run {
     my $editor = $self->{summarize} ?
 	SVK::Editor::Status->new
 	: SVK::Editor::Diff->new
-	( cb_baseprop =>
-	  sub { my ($rpath, $pname, $pool) = @_;
-		my $path = "$target->{path}/$rpath";
-		return $oldroot->check_path ($path, $pool) == $SVN::Node::none ?
-		    undef : $oldroot->node_prop ($path, $pname, $pool);
-	    },
-	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision ".($target->{revision})),
+	( $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision ".($target->{revision})),
 	  rlabel => $target2->{copath} ? 'local' : "revision ".($target2->{revision}),
 	  external => $ENV{SVKDIFF},
 	  $target->{path} ne $target2->{path} ?

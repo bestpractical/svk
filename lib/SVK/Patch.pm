@@ -212,10 +212,7 @@ sub view {
     my $anchor = $self->{_target}->path;
     $self->editor->drive
 	( SVK::Editor::Diff->new
-	  ( cb_baseprop => sub { my ($path, $pname, $pool) = @_;
-				 return $baseroot->node_prop ("$anchor/$path", $pname, $pool);
-			     },
-	    base_target => $self->{_target}, base_root => $baseroot,
+	  ( base_target => $self->{_target}, base_root => $baseroot,
 	    llabel => "revision $self->{target}{rev}",
 	    rlabel => "patch $self->{name} level $self->{level}",
 	    external => $ENV{SVKDIFF},

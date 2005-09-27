@@ -17,7 +17,6 @@ SVK::Editor::Diff - An editor for producing textual diffs
  $editor = SVK::Editor::Diff->new
     ( base_root   => $root,
       base_target => $target,
-      cb_baseprop    => sub { ... },
       cb_llabel      => sub { ... },
       # or llabel => 'revision <left>',
       cb_rlabel      => sub { ... },
@@ -91,6 +90,22 @@ sub retrieve_base {
     return $root->file_contents("$basepath", $pool);
 }
 
+# XXX: cleanup
+sub retrieve_base_prop {
+    my ($self, $path, $prop, $pool) = @_;
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
+
+    my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
+	: $self->{base_root};
+
+    $basepath = "$self->{base_target}{path}/$path"
+	if $basepath !~ m{^/};
+
+    return $root->check_path($path, $pool) == $SVN::Node::none ?
+	undef : $root->node_prop($path, $prop, $pool);
+}
+
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
@@ -102,7 +117,7 @@ sub apply_textdelta {
 	my $newtype = $info->{prop} && $info->{prop}{'svn:mime-type'};
 	my $is_text = !$newtype || mimetype_is_text ($newtype);
 	if ($is_text && !$info->{added}) {
-	    my $basetype = $self->{cb_baseprop}->($path, 'svn:mime-type', $pool);
+	    my $basetype = $self->retrieve_base_prop($path, 'svn:mime-type', $pool);
 	    $is_text = !$basetype || mimetype_is_text ($basetype);
 	}
 	unless ($is_text) {
@@ -231,7 +246,7 @@ sub output_prop_diff {
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    $self->_print(loc("Name: %1\n", $_));
 	    my $baseprop;
-	    $baseprop = $self->{cb_baseprop}->($path, $_, $pool)
+	    $baseprop = $self->retrieve_base_prop($path, $_, $pool)
 		unless $self->{info}{$path}{added};
             my @args =
                 map \$_,
