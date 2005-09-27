@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 33;
+use Test::More tests => 35;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -45,6 +45,19 @@ is_output ($svk, 'add', ['A/deep/baz'],
 	   [map __($_), 'A   A', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - deep descendent target only');
 $svk->revert ('-R', '.');
+chdir('A');
+is_output ($svk, 'add', ['deep'],
+	   [map __($_), 'A   ../A', 'A   ../A/deep', 'A   ../A/deep/baz'],
+	   'add - deep descendent target only');
+is_output ($svk, 'st', [],
+	   [map __($_),
+	    'A   ../A',
+	    '?   ../A/bar',
+	    'A   ../A/deep', 'A   ../A/deep/baz',
+	    '?   ../A/foo'],
+	   'add - deep descendent target only');
+$svk->revert ('-R', '.');
+chdir('..');
 
 is_output ($svk, 'add', ['A'],
 	   [map __($_), 'A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],

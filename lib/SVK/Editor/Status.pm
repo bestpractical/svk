@@ -7,8 +7,8 @@ our @ISA = qw(SVN::Delta::Editor);
 sub new {
     my ($class, @arg) = @_;
     my $self = $class->SUPER::new (@arg);
-    $self->{report} ||= '';
-    $self->{notify} ||= SVK::Notify->new_with_report ($self->{report});
+    $self->{notify} ||= SVK::Notify->new_with_report
+	(defined $self->{report} ? $self->{report} : '');
     $self->{tree} ||= Data::Hierarchy->new ();
     return $self;
 }

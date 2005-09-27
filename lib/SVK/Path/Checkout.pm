@@ -104,6 +104,8 @@ sub anchorify {
     ($self->{copath}, $self->{copath_target}) = get_anchor(1, $self->{copath});
 
     if (defined $self->report) {
+	# path::class thinks '' is '/'!
+	$self->report('.') unless length $self->report;
 	$self->report($self->_to_pclass($self->report))
 	    unless ref($self->report);
 	$self->report($self->report->parent);

@@ -58,10 +58,7 @@ sub flush_print {
 sub run {
     my ($self, $target) = @_;
     my $xdroot = $target->root;
-    my $report = $target->{report};
-    $report .= '/' if $report;
     my $editor = SVK::Editor::Status->new (
-	  report => $target->{report},
 	  ignore_absent => $self->{quiet},
 	  $self->{verbose} ?
 	  (notify => SVK::Notify->new (
@@ -70,7 +67,7 @@ sub run {
 	       cb_flush => sub { flush_print ($xdroot, $target, @_); }
 	   )
 	  )                :
-	  (notify => SVK::Notify->new_with_report ($target->{report},
+	  (notify => SVK::Notify->new_with_report ($target->report,
 		undef, 1)
 	  )
       );
