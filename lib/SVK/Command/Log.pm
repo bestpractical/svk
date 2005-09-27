@@ -201,6 +201,7 @@ SVK::Command::Log - Show log messages for revisions
 
                           "HEAD"       latest in repository
                           NUMBER       revision number
+                          NUMBER@      interpret as remote revision number
                           NUM1:NUM2    revision range
 
                           Unlike other commands,  negative NUMBER has no
