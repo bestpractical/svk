@@ -205,6 +205,7 @@ SVK::Command::Merge - Apply differences between two sources
 
  -r [--revision] N:M    : act on revisions between N and M
  -c [--change] N        : act on change N (between revisions N-1 and N)
+                          using -N reverses the changes made in revision N
  -I [--incremental]     : apply each change individually
  -a [--auto]            : merge from the previous merge point
  -l [--log]             : use logs of merged revisions as commit message

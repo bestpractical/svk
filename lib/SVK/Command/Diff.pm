@@ -170,6 +170,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
                           "HEAD"       latest in repository
                           NUMBER       revision number
+                          NUMBER@      interpret as remote revision number
                           NUM1:NUM2    revision range
 
                           Given negative NUMBER means "HEAD"+NUMBER.
