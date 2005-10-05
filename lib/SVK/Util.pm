@@ -926,8 +926,7 @@ sub _has_local {
 				  repos => $repos,
 				  pool => SVN::Pool->new,
 				  get_source => 1);
-	local $@;
-	eval { $m->init () };
+	$m->init;
 	$mpath = '' if $mpath eq '/';
 	return ($m, $mpath);
     }
