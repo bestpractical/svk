@@ -1,4 +1,30 @@
-[Changes for 1.04 - 24 Aug, 2005]
+[Changes for 1.05 - 6 Oct 2005]
+* Documentation update on "mv -p", switches "--parent", "--quiet" etc.
+
+* Stream is properly closed to avoid svn-trunk segfault
+
+* Now tells the user if a file/directory creation is impossible by reverting
+
+* "svk sync -a" now aborts all sync if one repository sync is aborted
+
+* Make use of the new svn API (fs_closest_copy) when available. This boosts performance.
+
+* Fixes in path encodings and other i18n related issues
+
+* Failsafe for the case with node_created_rev on '/'
+
+* Performance boost by re-implementation of SVN::Mirror::has_local
+
+* a command line completion script is added into contrib/
+
+* Fixed the case that "svk up" doesn't do the right thing when
+  running for a subdirectory of a checkout that has gone in
+  the target revision.
+
+* a script available in contrib/svkopendiff enables svk diff to use FileMerge
+  to display output
+
+[Changes for 1.04 - 24 Aug 2005]
 
 * Fix various locking bugs exposed by the concurrency fix introduced
   in 1.03.  This includes "svk mv A B" not scheduling A for deletion,
@@ -9,7 +35,7 @@
   label in diff output.  This behaviour conforms to the output of
   Subversion and GNU diff.
 
-[Changes for 1.03 - 18 Aug, 2005]
+[Changes for 1.03 - 18 Aug 2005]
 
 * "svk status" now accepts a --verbose (-v) switch which functions
   just like the svn clients switch of the same name.
@@ -53,7 +79,7 @@
 
 * Fix an issue with concurrent svk storing their own state.
 
-[Changes for 1.02 - 2 Aug, 2005]
+[Changes for 1.02 - 2 Aug 2005]
 
 * "svk mirror" now supports moving mirror points with "svk mv".
 
@@ -117,7 +143,7 @@
 
 * UTF-8 workarounds for buggy versions of Encode.pm.
 
-[Changes for 1.01 - 11 Jul, 2005]
+[Changes for 1.01 - 11 Jul 2005]
 
 * Fix a memory leak when constructing copy cache for revisions
   involving many changed paths.
@@ -177,7 +203,7 @@
 
 * Fix the autouse hack so Devel::DProf works again.
 
-[Changes for 1.00 - 9 May, 2005]
+[Changes for 1.00 - 9 May 2005]
 
 * Fix backspace in prompt function for certain terminals.
   [Martijn van Beers <martijn@eekeek.org>]
@@ -191,7 +217,7 @@
 * Support 'vim -d' and 'gvim -df' for conflict resolution.
   [Derrick Daugherty <derrick@blinky-lights.org>]
 
-[Changes for 0.994 - 29 Apr, 2005]
+[Changes for 0.994 - 29 Apr 2005]
 
 * Fix the warning "Revision too large" when doing svk log -l1 on a
   checkout which is not HEAD.
@@ -211,7 +237,7 @@
 
 * Fix svk diff on 0-length file on checkout.
 
-[Changes for 0.993 - 25 Apr, 2005]
+[Changes for 0.993 - 25 Apr 2005]
 
 * Save commit message from editor in a tmpfile if commit fails. [#8336]
 
@@ -227,7 +253,7 @@
 
 * Added examples to the intro. [jesse]
 
-[Changes for 0.992 - 18 Apr, 2005]
+[Changes for 0.992 - 18 Apr 2005]
 
 * Fix keyword translation for undesired characters. [matthewd]
 
@@ -244,7 +270,7 @@
 
 * Various pool usage fixes.
 
-[Changes for 0.991 - 29 Mar, 2005]
+[Changes for 0.991 - 29 Mar 2005]
 
 * Fix a regression for smerge supplying message from editor.
 
@@ -320,7 +346,7 @@
 * Fix a bug that interactive merge dies out horribly when you
   edit the merged file, exit with saving and answer a)bort.
 
-[Changes for 0.30 - 2 Mar, 2005]
+[Changes for 0.30 - 2 Mar 2005]
 
 * Support native encodings for pathnames and log messages handling.
 
@@ -365,7 +391,7 @@
 
 * Many more tests, with contribution from matthewd.
 
-[Changes for 0.29 - 1 Feb, 2005]
+[Changes for 0.29 - 1 Feb 2005]
 
 * New copy_ancestors implementation for speeding up merge base lookup
   and svk info.
@@ -402,7 +428,7 @@
 
 * General code cleanups.
 
-[Changes for 0.28 - 9 Jan, 2005]
+[Changes for 0.28 - 9 Jan 2005]
 
 * Support -r in blame.
 
