@@ -335,7 +335,7 @@ sub find_local_mirror {
     my ($repos, $uuid, $path, $rev) = @_;
     my $myuuid = $repos->fs->get_uuid;
     return unless HAS_SVN_MIRROR && $uuid ne $myuuid;
-    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
     return ("$m->{target_path}$mpath",
 	    $rev ? $m->find_local_rev ($rev) : $rev) if $m;
 }
@@ -386,7 +386,7 @@ sub resolve_svm_source {
     my $myuuid = $repos->fs->get_uuid;
     return ($path) if ($uuid eq $myuuid);
     return unless HAS_SVN_MIRROR;
-    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
     return unless $m;
     return ("$m->{target_path}$mpath", $m);
 }
@@ -888,6 +888,49 @@ sub find_prev_copy {
 	for $startrev..$endrev;
     return unless $rev;
     return ($root, $copy);
+}
+
+
+# this is the cached and faster version of svn::mirror::has_local,
+# which should be deprecated eventually.
+my %mirror_cached;
+
+sub _list_mirror_cached {
+    my $repos = shift;
+    my $rev = $repos->fs->youngest_rev;
+    delete $mirror_cached{$repos}
+	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
+    return %{$mirror_cached{$repos}{hash}}
+	if exists $mirror_cached{$repos};
+    my %mirrored = map {
+	my $m = SVN::Mirror->new( target_path => $_,
+				  repos => $repos,
+				  pool => SVN::Pool->new,
+				  get_source => 1 );
+	local $@;
+	eval { $m->init };
+	$@ ? () : ($_ => join(':', $m->{source_uuid}, $m->{source_path}))
+    } SVN::Mirror::list_mirror($repos);
+
+    $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
+    return %mirrored;
+}
+
+sub _has_local {
+    my ($repos, $spec) = @_;
+    my %mirrored = _list_mirror_cached($repos);
+    while (my ($path, $mspec) = each(%mirrored)) {
+	my $mpath = $spec;
+	next unless $mpath =~ s/^\Q$mspec\E//;
+	my $m = SVN::Mirror->new (target_path => $path,
+				  repos => $repos,
+				  pool => SVN::Pool->new,
+				  get_source => 1);
+	$m->init;
+	$mpath = '' if $mpath eq '/';
+	return ($m, $mpath);
+    }
+    return;
 }
 
 1;
