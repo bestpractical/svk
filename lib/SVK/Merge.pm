@@ -118,6 +118,13 @@ sub find_merge_base {
 	my ($path) = m/:(.*)$/;
 	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
 	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
+
+	if ($path eq $dst->path &&
+	    $self->_is_merge_from($src->path,
+				  $src->new(path => $path, revision => $rev), $src->{revision})) {
+	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
+	    last;
+	}
 	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
 	    if !$basepath || $rev > $baserev;
     }

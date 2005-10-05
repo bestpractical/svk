@@ -122,5 +122,9 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    'Merge back committed as revision 6.',
 	    "Syncing $uri/A",
 	    'Retrieving log information from 6 to 6',
-	    'Committed revision 18 from revision 6.']);
+	    'Committed revision 18 from revision 6.',
+	    '===> Auto-merging (15, 17) /l to /m (base /m:16).',
+	    "Merging back to mirror source $uri/A.",
+	    'g   Q/qu',
+	    'Empty merge.']);
 
