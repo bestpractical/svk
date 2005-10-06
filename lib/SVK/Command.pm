@@ -943,9 +943,9 @@ sub resolve_revision {
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
-    if($revstr =~ /^HEAD$/) {
+    if($revstr =~ /^HEAD$/i) {
         $rev = $self->find_head_rev($target);
-    } elsif ($revstr =~ /^BASE$/) {
+    } elsif ($revstr =~ /^BASE$/i) {
         $rev = $self->find_base_rev($target);
     } elsif ($revstr =~ /\{(\d\d\d\d-\d\d-\d\d)\}/) { 
         my $date = $1; $date =~ s/-//g;

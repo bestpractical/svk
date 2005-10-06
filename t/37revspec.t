@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 11;
+plan_svm tests => 13;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -20,8 +20,10 @@ overwrite_file ("foo-cp", "foobar\nfnord\nnewline");
 $svk->commit ('-m', 'cp and ps');
 
 is_output_like($svk,'log',['-r','HEAD'],qr|cp and ps|);
+is_output_like($svk,'log',['-r','head'],qr|cp and ps|);
 is_output_like($svk,'log',['-r','HEAD','//'],qr|cp and ps|);
 is_output_like($svk,'log',['-r','BASE'],qr|cp and ps|);
+is_output_like($svk,'log',['-r','base'],qr|cp and ps|);
 is_output_like($svk,'log',['-r','BASE','//A'],qr|BASE can only be issued with a check-out path|);
 
 $svk->cp('//A/foo','//A/foo-cp2','-m','cp issued directly to depotpath');
