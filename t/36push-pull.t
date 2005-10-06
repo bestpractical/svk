@@ -5,7 +5,7 @@ use Cwd;
 use File::Path;
 
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 13;
+plan_svm tests => 15;
 
 my $initial_cwd = getcwd;
 
@@ -204,6 +204,55 @@ is_output ($svk, 'push', [],
 	    "Merging back to mirror source $uri/A.",
 	    qr"Transaction is out of date: Out of date: '/A/Q/qz' in transaction '.*'",
 	    'Please sync mirrored path /m first.']);
+
+overwrite_file ("$corpath_test/push-newfile", "sync and not merged immediately\n");
+$svk->add("$corpath_test/push-newfile");
+$svk->commit (-m => 'add a file', $corpath_test);
+
+$svk->sync('//m');
+append_file ("$corpath_second/be", "asfd orz\n");
+$svk->commit (-m => 'randome changes between sync and merge', $corpath_second);
+is_output($svk, 'pull', [],
+	  ["Syncing $uri/A",
+	   'Auto-merging (16, 27) /m to /l2 (base /m:16).',
+	   'g   Q/qz',
+	   'U   T/xd',
+	   'U   new-file',
+	   'A   push-newfile',
+	   qr'New merge ticket: .*:/A:12',
+	   'Committed revision 29.',
+	   "Syncing //l2(/l2) in $corpath_second to 29.",
+	   'U   T/xd',
+	   'U   new-file',
+	   'A   push-newfile']);
+
+$svk->up($corpath_test);
+append_file("$corpath_test/new-file", "more modification that will get overwritten if using wrong merge base\n");
+$svk->commit (-m => 'change something', $corpath_test);
+
+is_output($svk, 'push', [],
+	  ['Auto-merging (0, 29) /l2 to /m (base /m:27).',
+	   '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
+	   "Merging back to mirror source $uri/A.",
+	   'Empty merge.',
+	   '===> Auto-merging (18, 25) /l2 to /m (base /m:16).',
+	   "Merging back to mirror source $uri/A.",
+	   'g   Q/qz',
+	   'Empty merge.',
+	   '===> Auto-merging (25, 28) /l2 to /m (base /m:16).',
+	   "Merging back to mirror source $uri/A.",
+	   'g   Q/qz',
+	   'U   be',
+	   qr'New merge ticket: .*:/l2:28',
+	   'Merge back committed as revision 14.',
+	   "Syncing $uri/A",
+	   'Retrieving log information from 13 to 14',
+	   'Committed revision 30 from revision 13.',
+	   'Committed revision 31 from revision 14.',
+	   '===> Auto-merging (28, 29) /l2 to /m (base /m:27).',
+	   "Merging back to mirror source $uri/A.",
+	   'g   be',
+	   'Empty merge.']);
 
 chdir ($initial_cwd);
 $svk->cp (-m => 'copy', '/test/A' => '/test/A-cp');
