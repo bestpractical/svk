@@ -674,7 +674,7 @@ sub do_delete {
     # check for if the file/dir is modified.
     unless ($arg{targets}) {
 	my $target;
-	($arg{path}, $target, $arg{copath}) =
+	($arg{path}, undef, $arg{copath}, $target) =
 	    get_anchor (1, @arg{qw/path copath/});
 	# XXX: This logic is flawed; whether this is target has a copath
 	# doesn't actually tell us whether the report is a copath or depot
