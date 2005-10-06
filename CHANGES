@@ -1,5 +1,17 @@
 [Changes for 1.05 - 6 Oct 2005]
 
+* Make use of the new svn API (fs_closest_copy) when available. This
+  boosts performance for smerge, switch and info.
+
+* Performance boost by re-implementation of SVN::Mirror::has_local.
+
+* Fixed the case that "svk up" doesn't do the right thing when running
+  for a subdirectory of a checkout that has gone in the target
+  revision.
+
+* Fix merge base lookup so merged-from takes precedence as base when
+  doing push.
+
 * Documentation update on "mv -p", switches "--parent", "--quiet" etc.
 
 * Stream is properly closed to avoid svn-trunk segfault.
@@ -9,22 +21,13 @@
 
 * "svk sync -a" now aborts all sync if one repository sync is aborted.
 
-* Make use of the new svn API (fs_closest_copy) when available. This
-  boosts performance.
-
 * Fixes in path encodings and other i18n related issues.
 
 * Failsafe for the case with node_created_rev on '/'.
 
-* Performance boost by re-implementation of SVN::Mirror::has_local.
+* A command line completion script is added into contrib/.
 
-* a command line completion script is added into contrib/.
-
-* Fixed the case that "svk up" doesn't do the right thing when running
-  for a subdirectory of a checkout that has gone in the target
-  revision.
-
-* a script available in contrib/svkopendiff enables svk diff to use
+* A script available in contrib/svkopendiff enables svk diff to use
   FileMerge to display output.
 
 [Changes for 1.04 - 24 Aug 2005]
