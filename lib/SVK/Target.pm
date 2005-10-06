@@ -178,6 +178,7 @@ sub descend {
     $self->{path} .= "/$entry";
 
     if (defined $self->{copath}) {
+	to_native($entry, 'path');
 	$self->{report} = catfile ($self->{report}, $entry);
 	$self->{copath} = catfile ($self->{copath}, $entry);
     }
