@@ -129,7 +129,7 @@ sub do_update {
 	 xd => $self->{xd});
     $merge->run ($self->{xd}->get_editor (copath => $cotarget->{copath},
 					  path => $cotarget->{path},
-					  store_path => $update_target->path,
+					  store_path => $update_target->{path},
 					  check_only => $self->{check_only},
 					  ignore_checksum => 1,
 					  oldroot => $xdroot, newroot => $newroot,
