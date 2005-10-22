@@ -21,6 +21,7 @@ sub options {
      'import'	  => 'import',
      'direct'	  => 'direct',
      'template'	  => 'template',
+     'set-revprop=s@' => 'setrevprop',
     );
 }
 
@@ -145,6 +146,11 @@ sub get_editor {
     my ($base_rev, $m, $mpath);
     if (!$self->{direct} and HAS_SVN_MIRROR and
 	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
+
+	if ($self->{setrevprop}) {
+	    die loc("Can't use set-revprop with remote repository.\n");
+	}
+
 	if ($self->{patch}) {
 	    print loc("Patching locally against mirror source %1.\n", $m->{source});
 	    $base_rev = $m->{fromrev};
@@ -196,19 +202,30 @@ sub get_editor {
 		send_fulltext => 0);
     }
 
-    $editor ||= $self->{check_only} ? SVN::Delta::Editor->new :
-	SVN::Delta::Editor->new
-	( $target->{repos}->get_commit_editor
-	  ( "file://$target->{repospath}",
-	    $target->{path}, $ENV{USER}, $self->{message},
-	    sub { print loc("Committed revision %1.\n", $_[0]);
-		  $fs->change_rev_prop ($_[0], 'svk:signature',
-					$self->{signeditor}{sig})
-		      if $self->{sign};
-		  # build the copy cache as early as possible
-		  find_prev_copy ($fs, $_[0]);
-		  $callback->(@_) if $callback; }
-	  ));
+    unless ($editor) {
+	if ($self->{check_only}) {
+	    $editor = SVN::Delta::Editor->new;
+	}
+	else {
+	    # XXX: cleanup the txn if not committed
+	    my $txn = $fs->begin_txn($yrev);
+	    for (@{$self->{setrevprop} || []}) {
+		$txn->change_prop( split(/=/, $_) );
+	    }
+	    $editor = SVN::Delta::Editor->new
+		( $target->{repos}->get_commit_editor2
+		  ( $txn, "file://$target->{repospath}",
+		    $target->{path}, $ENV{USER}, $self->{message},
+		    sub { print loc("Committed revision %1.\n", $_[0]);
+			  $fs->change_rev_prop ($_[0], 'svk:signature',
+						$self->{signeditor}{sig})
+			      if $self->{sign};
+			  # build the copy cache as early as possible
+			  find_prev_copy ($fs, $_[0]);
+			  $callback->(@_) if $callback; }
+		  ));
+	}
+    }
 
     if ($self->{sign}) {
 	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
@@ -492,6 +509,7 @@ SVK::Command::Commit - Commit changes to depot
  -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
  -N [--non-recursive]   : operate on single directory only
+ --set-revprop P=V      : set revision property on the commit
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
