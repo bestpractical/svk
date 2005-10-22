@@ -75,8 +75,9 @@ use constant alias =>
 		ver		version
 	    );
 
-use constant global_options => ( 'h|help|?' => 'help',
-				 'encoding=s' => 'encoding'
+use constant global_options => ( 'h|help|?'   => 'help',
+				 'encoding=s' => 'encoding',
+				 'ignore=s@'  => 'ignore',
 			       );
 
 my %alias = alias;
@@ -147,9 +148,11 @@ sub run_command {
 			: $_
 		    } @args;
 	}
-	# XXX: xd needs to know encoding too
+	# XXX: xd needs to know encoding and ignore too
 	$self->{xd}{encoding} = $self->{encoding}
 	    if $self->{xd};
+	$self->{xd}{ignore} = $self->{ignore}
+	    if $self->{ignore};
 	if ($self->{help} || !(@args = $self->parse_arg(@args))) {
 	    select STDERR unless $self->{output};
 	    $self->usage;

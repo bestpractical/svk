@@ -878,6 +878,8 @@ sub ignore {
     my @ignore = split / /,
 	($ignore || "*.o *.lo *.la #*# .*.rej *.rej .*~ *~ .#* .DS_Store");
     push @ignore, 'svk-commit*.tmp';
+    push @ignore, @{$self->{ignore}}
+	if $self->{ignore};
 
     return join('|', map {$ignore_cache{$_} ||= compile_shellish $_} (@ignore, @_));
 }
