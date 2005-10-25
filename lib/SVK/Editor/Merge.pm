@@ -2,6 +2,8 @@ package SVK::Editor::Merge;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
+use SVK::Path::Accessor;
+
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 use SVK::I18N;
@@ -133,43 +135,8 @@ use File::Compare ();
 
 sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
-    return ( cb_exist =>
-	     sub { my ($path, $pool) = @_;
-		   $path = $anchor.'/'.$path unless $path =~ m{^/};
-		   return $root->check_path ($path, $pool);
-	       },
-	     cb_rev => sub { $base_rev; },
-	     cb_localmod =>
-	     sub { my ($path, $checksum, $pool) = @_;
-		   $path = "$anchor/$path" unless $path =~ m{^/};
-		   my $md5 = $root->file_md5_checksum ($path, $pool);
-		   return if $md5 eq $checksum;
-		   return [$root->file_contents ($path, $pool),
-			   undef, $md5];
-	       },
-	     cb_localprop =>
-	     sub { my ($path, $propname, $pool) = @_;
-		   $path = "$anchor/$path" unless $path =~ m{^/};
-		   local $@;
-		   return eval { $root->node_prop ($path, $propname, $pool) };
-	       },
-	     cb_dirdelta =>
-	     sub { my ($path, $base_root, $base_path, $pool) = @_;
-		   my $modified;
-		   my $editor =  SVK::Editor::Status->new
-		       ( notify => SVK::Notify->new
-			 ( cb_flush => sub {
-			       my ($path, $status) = @_;
-			       $modified->{$path} = $status->[0];
-			   }));
-		   SVK::XD->depot_delta (oldroot => $base_root, newroot => $root,
-					 oldpath => [$base_path, ''],
-					 newpath => "$anchor/$path",
-					 editor => $editor,
-					 no_textdelta => 1, no_recurse => 1);
-		   return $modified;
-	       },
-	   );
+    # XXX $root and $anchor are actually SVK::Path
+    return SVK::Path::Accessor->new( $root, $anchor, $base_rev )->compat_cb
 }
 
 # translate the path before passing to cb_*
