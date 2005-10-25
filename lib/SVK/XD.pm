@@ -1479,15 +1479,9 @@ Returns a file handle with keyword translation and line-ending layers attached.
 sub get_fh {
     my ($root, $mode, $path, $fname, $prop, $layer, $eol, $checkle) = @_;
     {
+        # don't care about nonexisting path, for new file with keywords
         local $@;
-        # setting $prop to a string on eval failure seems wrong.
-        eval {
-            $prop ||= $root->node_proplist($path);
-        };
-        unless (ref $prop eq 'HASH') {
-            warn $@;
-            $prop = {};
-        }
+        $prop ||= eval { $root->node_proplist($path) } || {};
     }
     use Carp; Carp::cluck unless ref $prop eq 'HASH';
     return _fh_symlink ($mode, $fname)
