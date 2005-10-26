@@ -525,8 +525,37 @@ sub create_xd_root {
 sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
+    my $inspector = SVK::Inspector::XD->new($self, \%arg);
     
-    return SVK::Inspector::XD->new($self, \%arg)->compat_cb;
+    return (
+        $inspector->compat_cb,
+          
+        cb_conflict => sub { 
+            my ($path) = @_;
+            my $copath = $path;
+            
+            $inspector->get_copath($copath);
+            $self->{checkout}->store ($copath, {'.conflict' => 1})
+                unless $inspector->check_only;
+        },
+  
+        cb_prop_merged => sub { 
+            return if $inspector->check_only;
+        
+            my ($copath, $name) = @_;
+                        
+            $inspector->get_copath ($copath);
+            
+            my $entry = $self->{checkout}->get ($copath);
+            warn $entry unless ref $entry eq 'HASH';
+            my $prop = $entry->{'.newprop'};
+            delete $prop->{$name};
+            
+            $self->{checkout}->store ($copath, {'.newprop' => $prop,
+                         keys %$prop ? () :
+                         ('.schedule' => undef)}
+                        );
+        });
 }
 
 =item get_editor

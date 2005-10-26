@@ -17,14 +17,6 @@ use SVK::Util qw( is_symlink md5_fh );
 
 __PACKAGE__->mk_accessors(qw(xd arg check_only));
 
-sub compat_cb {
-    my $self = shift;
-    return map { my $name = $_;  "cb_$name" => sub { $self->$name(@_) } }
-           qw{exist rev localmod localprop dirdelta 
-              conflict prop_merged}; #XXX These shouldn't be part of this object.
-}
-
-
 sub new {
     my $class = shift;
     my ($xd, $arg) = @_;
@@ -78,38 +70,6 @@ sub rev {
     $self->get_copath($copath);
     $self->xd->{checkout}->get($copath)->{revision} 
 }
-  
-sub conflict { 
-    my ($self, $path) = @_;
-    my $copath = $path;
-    
-    $self->get_copath($copath);
-    $self->xd->{checkout}->store ($copath, {'.conflict' => 1})
-        unless $self->check_only;
-}
-  
-sub prop_merged { 
-    my $self = shift;
-    return if $self->check_only;
-
-    my ($path, $name) = @_;
-    
-    
-    my $copath = $path;
-    
-    $self->get_copath ($copath);
-    
-    my $entry = $self->xd->{checkout}->get ($copath);
-    warn $entry unless ref $entry eq 'HASH';
-    my $prop = $entry->{'.newprop'};
-    delete $prop->{$name};
-    
-    $self->xd->{checkout}->store ($copath, {'.newprop' => $prop,
-                 keys %$prop ? () :
-                 ('.schedule' => undef)}
-                );
-}
-           
 sub localmod { 
     my ($self, $path, $checksum) = @_;
     my $copath = $path;
