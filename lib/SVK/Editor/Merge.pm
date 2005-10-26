@@ -2,7 +2,7 @@ package SVK::Editor::Merge;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use SVK::Path::Accessor;
+use SVK::Inspector::Root;
 
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
@@ -136,7 +136,7 @@ use File::Compare ();
 sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     # XXX $root and $anchor are actually SVK::Path
-    return SVK::Path::Accessor->new( $root, $anchor, $base_rev )->compat_cb
+    return SVK::Inspector::Root->new( $root, $anchor, $base_rev )->compat_cb
 }
 
 # translate the path before passing to cb_*

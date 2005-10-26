@@ -1,20 +1,21 @@
-package SVK::Path::AccessorXD;
+package SVK::Inspector::XD;
 
 use strict;
 use warnings;
 
-use base 'Class::Accessor';
+use base qw {
+	Class::Accessor
+	SVK::Inspector
+};
+
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 
-use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir splitpath $SEP
-		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
-		  md5_fh get_prompt traverse_history make_path dirname
-		  from_native to_native get_encoder get_depot_anchor );
+use SVK::Util qw( is_symlink md5_fh );
 
 
-__PACKAGE__->mk_accessors(qw(xd arg check_only ));
+__PACKAGE__->mk_accessors(qw(xd arg check_only));
 
 sub compat_cb {
     my $self = shift;
@@ -112,12 +113,10 @@ sub prop_merged {
 sub localmod { 
     my ($self, $path, $checksum) = @_;
     my $copath = $path;
-    # XXX: make use of the signature here too
     $self->get_copath($copath);
     $self->get_path  ($path);
-    my $base = SVK::XD::get_fh($self->oldroot, '<',
-          $path, $copath);
-    my $md5 = SVK::XD::md5_fh ($base);
+    my $base = SVK::XD::get_fh($self->oldroot, '<', $path, $copath);
+    my $md5 = md5_fh ($base);
     return undef if $md5 eq $checksum;
     seek $base, 0, 0;
     return [$base, undef, $md5];

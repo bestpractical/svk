@@ -1,4 +1,4 @@
-package SVK::Path::AccessorTransform;
+package SVK::Inspector;
 
 use strict;
 use warnings;

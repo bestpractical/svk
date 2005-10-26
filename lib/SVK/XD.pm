@@ -5,7 +5,7 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 
-use SVK::Path::AccessorXD;
+use SVK::Inspector::XD;
 
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir splitpath $SEP
@@ -526,7 +526,7 @@ sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
     
-    return SVK::Path::AccessorXD->new($self, \%arg)->compat_cb;
+    return SVK::Inspector::XD->new($self, \%arg)->compat_cb;
 }
 
 =item get_editor

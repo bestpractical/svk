@@ -1,4 +1,4 @@
-package SVK::Path::Accessor;
+package SVK::Inspector::Root;
 
 use strict;
 use warnings;
@@ -40,7 +40,10 @@ changed paths being the keys and change types being the values.
 
 =cut
 
-use base 'Class::Accessor';
+use base qw {
+	Class::Accessor
+	SVK::Inspector
+};
 
 sub new {
     my ($class, $root, $anchor, $base_rev) = @_;
