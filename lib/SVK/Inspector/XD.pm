@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use base qw {
-	Class::Accessor
 	SVK::Inspector
 };
 
@@ -14,50 +13,51 @@ require SVN::Fs;
 
 use SVK::Util qw( is_symlink md5_fh );
 
+=head1 NAME
 
-__PACKAGE__->mk_accessors(qw(xd arg check_only));
+SVK::Inspector::XD - checkout inspector
 
-sub new {
-    my $class = shift;
-    my ($xd, $arg) = @_;
-    
-    return $class->SUPER::new({ 
-        xd => $xd, 
-        arg => $arg,
-        check_only => $arg->{check_only},
-    });
-}
+=head1 SYNOPSIS
 
-# Convenience functions
-sub get_copath {
-    my $self = shift;
-   # use Carp; Carp::cluck;
-    $self->arg->{get_copath}->(@_);
-}
+use SVK::XD;
+use SVK::Inspector::XD;
 
-sub get_path {
-    my $self = shift;
-    $self->arg->{get_path}->(@_);
-}
+my $xd = SVK::XD->new(...);
+
+my %editor_extras = (
+    check_only => 1,
+    get_copath => sub { ... },
+    get_path => sub { ... },
+    oldroot => ... #the parent of the current checkout
+    get_fh => sub { ... }
+    ... 
+);
+
+my $inspector = SVK::Inspector::XD->new($xd, \%editor_extras); 
+
+=cut 
+
+
+__PACKAGE__->mk_accessors(qw(xd args check_only get_copath get_path));
 
 sub oldroot {
     my $self = shift;
-    $self->arg->{oldroot};
+    $self->args->{oldroot};
 }
 
 sub get_fh {
     my $self = shift;
-    $self->arg->{get_fh}->(@_);
+    $self->args->{get_fh}->(@_);
 }
 
 sub exist { 
-    my ($self, $copath, $pool) = @_;
-    my $path = $copath;
-    $self->get_copath ($copath);
+    my ($self, $path, $pool) = @_;
+    my $copath;
+    ($path,$copath) = $self->get_paths($path);
+    
     lstat ($copath);
     return $SVN::Node::none unless -e _;
     
-    $self->get_path ($path);
     return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
     if $self->xd->{checkout}->get ($copath)->{'.schedule'} or
         $self->oldroot->check_path ($path, $pool);
@@ -65,16 +65,20 @@ sub exist {
 }
   
 sub rev { 
+    
     my ($self, $path) = @_;
-    my $copath = $path;
-    $self->get_copath($copath);
-    $self->xd->{checkout}->get($copath)->{revision} 
+    my $copath;
+    ($path,$copath) = $self->get_paths($path);
+    
+    return $self->xd->{checkout}->get($copath)->{revision}     
 }
 sub localmod { 
     my ($self, $path, $checksum) = @_;
-    my $copath = $path;
-    $self->get_copath($copath);
-    $self->get_path  ($path);
+    
+    my $copath;
+    ($path,$copath) = $self->get_paths($path);
+    
+    # XXX: really want something that returns the file.
     my $base = SVK::XD::get_fh($self->oldroot, '<', $path, $copath);
     my $md5 = md5_fh ($base);
     return undef if $md5 eq $checksum;
@@ -84,18 +88,18 @@ sub localmod {
            
 sub localprop { 
     my ($self, $path, $propname) = @_;
-    my $copath = $path;
-    $self->get_copath ($copath);
-    $self->get_path   ($path);
+    my $copath;
+    ($path,$copath) = $self->get_paths($path);
+    
     return $self->xd->get_props ($self->oldroot, $path, $copath)->{$propname};
 }
            
   
 sub dirdelta { 
     my ($self, $path, $base_root, $base_path, $pool) = @_;
-    my $copath = $path;
-    $self->get_copath ($copath);
-    $self->get_path   ($path);
+    my $copath;
+    ($path,$copath) = $self->get_paths($path);
+    
     my $modified;
     my $editor =  SVK::Editor::Status->new( 
         notify => SVK::Notify->new( 
@@ -103,7 +107,7 @@ sub dirdelta {
                                my ($path, $status) = @_;
                                $modified->{$path} = $status->[0];
                             }));
-    $self->xd->checkout_delta( %{$self->arg},
+    $self->xd->checkout_delta( %{$self->args},
          # XXX: proper anchor handling
          path => $path,
          copath => $copath,
@@ -117,6 +121,20 @@ sub dirdelta {
          cb_unknown => \&SVK::Editor::Status::unknown,
     );
     return $modified;
+}
+
+sub get_paths {
+    my ($self, $path) = @_;
+    
+    # XXX: No translation for XD
+    $path = $self->translate($path);
+    
+    my $copath = $path;
+    
+    $self->args->{get_copath}->($copath);
+    $self->args->{get_path}->($path);
+    
+    return ($path, $copath);
 }
            
 1;

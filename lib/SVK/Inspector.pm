@@ -3,9 +3,18 @@ package SVK::Inspector;
 use strict;
 use warnings;
 
-use base 'Class::Accessor';
+use base qw{ Class::Accessor };
 
-__PACKAGE__->mk_accessors(qw(path_transforms));
+__PACKAGE__->mk_accessors(qw(path_translations));
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    
+    $self->path_translations([]) unless $self->path_translations; 
+
+    return $self;
+}
 
 =head1 NAME
 
@@ -63,24 +72,26 @@ sub compat_cb {
 }
 
 
-sub push_path_transform {
+sub push_translation {
     my $self = shift;
     my $transform = shift;
     unless (ref $transform eq 'CODE') {
         die "Path transformations must be code refs";
     }
-    unshift @{$self->path_transforms}, $transform;
+   
+    push @{$self->path_translations}, $transform;
 }
 
-sub path_transform {
+sub translate {
     my $self = shift;
     my $path = shift;
     
-    return $path unless $self->path_transforms;
-    
-    for (@$self->path_tranasforms) {
-        $path = $_->($path);
-    }
+    return $path unless @{$self->path_translations};
+
+    my $ret = "";
+    for (@{$self->path_translations}) {
+        $_->($path);
+    }    
     
     return $path;
 }

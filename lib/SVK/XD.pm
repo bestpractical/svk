@@ -525,16 +525,22 @@ sub create_xd_root {
 sub xd_storage_cb {
     my ($self, %arg) = @_;
     # translate to abs path before any check
-    my $inspector = SVK::Inspector::XD->new($self, \%arg);
+    my $inspector = SVK::Inspector::XD->new({ xd => $self, 
+                                              args => \%arg,
+                                              check_only => $arg{check_only}
+                                             });
     
     return (
         $inspector->compat_cb,
-          
+        
+        inspector => $inspector,
+        
         cb_conflict => sub { 
-            my ($path) = @_;
-            my $copath = $path;
             
-            $inspector->get_copath($copath);
+            my ($path) = @_;
+            my $copath;
+            ($path, $copath) = $inspector->get_paths($path);
+            
             $self->{checkout}->store ($copath, {'.conflict' => 1})
                 unless $inspector->check_only;
         },
@@ -542,10 +548,11 @@ sub xd_storage_cb {
         cb_prop_merged => sub { 
             return if $inspector->check_only;
         
-            my ($copath, $name) = @_;
-                        
-            $inspector->get_copath ($copath);
+            my ($path, $name) = @_;
             
+            my $copath;
+            ($path, $copath) = $inspector->get_paths($path);
+                       
             my $entry = $self->{checkout}->get ($copath);
             warn $entry unless ref $entry eq 'HASH';
             my $prop = $entry->{'.newprop'};
@@ -1321,12 +1328,14 @@ sub checkout_delta {
     my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
     $arg{kind} = $arg{base_root} eq $arg{xdroot} ? $kind : $arg{xdroot}->check_path ($arg{path});
     die "checkout_delta called with non-dir node"
-	unless $kind == $SVN::Node::dir;
+	   unless $kind == $SVN::Node::dir;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
     $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
 	if $arg{debug};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
-	unless $arg{nodelay};
+	   unless $arg{nodelay};
+	
+	# XXX: Another bit of cb_rev evil.
     $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Path::Checkout->copath ($copath, $_[0])) };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }

@@ -5,14 +5,8 @@ use warnings;
 
 
 use base qw {
-	Class::Accessor
 	SVK::Inspector
 };
-
-sub new {
-    my ($class, $root, $anchor, $base_rev) = @_;
-    $class->SUPER::new( { root => $root, anchor => $anchor, base_rev => $base_rev });
-}
 
 __PACKAGE__->mk_accessors(qw{root anchor base_rev});
 
@@ -60,7 +54,7 @@ sub dirdelta {
 
 sub _anchor_path {
     my ($self, $path) = @_;
-    my $anchor = $self->anchor;
+    $path = $self->translate($path);
     return $path if $path =~ m{^/};
     return $self->anchor."/$path";
 }

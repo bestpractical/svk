@@ -96,7 +96,7 @@ sub get_dynamic_editor {
     my $editor = SVK::Editor::Rename->new
 	( editor => $storage,
 	  cb_exist => $self->{parent} ? $cb{cb_exist} : undef);
-    $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
+     $editor->{_root_baton} = $editor->open_root ($cb{inspector}->rev(''));
     return ($anchor, $editor);
 }
 
@@ -461,7 +461,7 @@ sub run_delta {
 	  cb_copyfrom => $cb{cb_copyfrom},
 	  $cb{mirror} ?
 	  (cb_rev => sub {
-		# XXX: the non-mirror cb_rev should be the same as
+	    # XXX: the non-mirror cb_rev should be the same as
 		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);

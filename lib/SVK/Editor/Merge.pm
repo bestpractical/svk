@@ -136,17 +136,27 @@ use File::Compare ();
 sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     # XXX $root and $anchor are actually SVK::Path
-    return SVK::Inspector::Root->new( $root, $anchor, $base_rev )->compat_cb
+    my $inspector = SVK::Inspector::Root->new({
+        root => $root, 
+        anchor => $anchor, 
+        base_rev => $base_rev 
+    });
+
+    return (
+        inspector => $inspector,
+        $inspector->compat_cb
+    );
 }
 
 # translate the path before passing to cb_*
 sub cb_translate {
     my ($cb, $translate) = @_;
-    for (qw/cb_exist cb_rev cb_conflict cb_localmod cb_localprop cb_dirdelta/) {
-	my $sub = $cb->{$_};
-	next unless $sub;
-	$cb->{$_} = sub { my $path = shift; $translate->($path);
-			  unshift @_, $path; goto &$sub };
+    $cb->{inspector}->push_translation($translate);
+    for (qw/cb_conflict/) {
+        my $sub = $cb->{$_};
+        next unless $sub;
+        $cb->{$_} = sub { my $path = shift; $translate->($path);
+                  unshift @_, $path; goto &$sub };
     }
 }
 
