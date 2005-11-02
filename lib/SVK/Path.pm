@@ -241,9 +241,13 @@ sub _nearest_copy_svn {
     my ($toroot, $topath) = $root->closest_copy($path, $ppool);
     return unless $toroot;
 
+    my $pool = SVN::Pool->new_default;
     my ($copyfrom_rev, $copyfrom_path) = $toroot->copied_from ($topath);
     $path =~ s/^\Q$topath\E/$copyfrom_path/;
-    my $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool);
+    my $copyfrom_root = $root->fs->revision_root( $copyfrom_rev );
+    # If the path doesn't exist in copyfrom_root, it's newly created one in toroot
+    return unless $copyfrom_root->check_path( $path );
+
     $copyfrom_rev = ($copyfrom_root->node_history ($path)->prev(0)->location)[1]
         unless $copyfrom_rev == $copyfrom_root->node_created_rev ($path);
     $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool)
