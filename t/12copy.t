@@ -38,7 +38,7 @@ $svk->rm ("$copath/V-copy/B/fe");
 is_output ($svk, 'status', [$copath],
 	   [__('A + t/checkout/copy/D-copy'),
 	    __('A + t/checkout/copy/V-copy'),
-	    __('D   t/checkout/copy/V-copy/B/fe'),
+	    __('D + t/checkout/copy/V-copy/B/fe'),
 	    __('M + t/checkout/copy/V-copy/D/de'),
 	    __('A + t/checkout/copy/de'),
 	    __('A + t/checkout/copy/de-copy'),
