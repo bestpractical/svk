@@ -123,12 +123,47 @@ sub save_message {
 
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
+sub _editor_for_patch {
+    my ($self, $target, $source) = @_;
+    require SVK::Patch;
+    my ($m);
+    if (HAS_SVN_MIRROR and
+	(($m) = SVN::Mirror::is_mirrored($target->{repos}, $target->{path}))) {
+	print loc("Patching locally against mirror source %1.\n", $m->{source});
+    }
+    die loc ("Illegal patch name: %1.\n", $self->{patch})
+	if $self->{patch} =~ m!/!;
+    my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
+				 $target->depotname, $source,
+				 $target->new(targets => undef)->as_depotpath);
+    $patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
+	if $source;
+    $patch->{log} = $self->{message};
+    my $fname = $self->{xd}->patch_file ($self->{patch});
+    if ($fname ne '-' && -e $fname) {
+	die loc ("file %1 already exists.\n", $fname).
+	    ($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
+    }
+
+    $target = $target->new->as_depotpath;
+    $target->refresh_revision;
+    my %cb = SVK::Editor::Merge->cb_for_root
+	($target->root, $target->{path},
+	 $m ? $m->{fromrev} : $target->revision);
+    return ($patch->commit_editor ($fname),
+	    %cb, send_fulltext => 0);
+}
+
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
     my ($editor, %cb);
 
-    # XXX: the case that the target is an xd is actually only used in merge.
-    if ($target->{copath}) {
+    # Commit as patch
+    return $self->_editor_for_patch($target, $source)
+	if defined $self->{patch};
+
+    # Editor for checkout, only in the case for merging to checkout
+    if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
 	my ($editor, $inspector, %cb) = $target->get_editor
 	    ( ignore_checksum => 1,
@@ -146,10 +181,6 @@ sub get_editor {
 	    die loc("Can't use set-revprop with remote repository.\n");
 	}
 
-	if ($self->{patch}) {
-	    print loc("Patching locally against mirror source %1.\n", $m->{source});
-	    $base_rev = $m->{fromrev};
-	}
 	elsif ($self->{check_only}) {
 	    print loc("Checking locally against mirror source %1.\n", $m->{source});
 	}
@@ -178,24 +209,6 @@ sub get_editor {
 
     %cb = SVK::Editor::Merge->cb_for_root
 	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
-
-    if ($self->{patch}) {
-	require SVK::Patch;
-	die loc ("Illegal patch name: %1.\n", $self->{patch})
-	    if $self->{patch} =~ m!/!;
-	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
-				     $target->depotname, $source, $target->new(targets => undef)->as_depotpath);
-	$patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
-	    if $source;
-	$patch->{log} = $self->{message};
-	my $fname = $self->{xd}->patch_file ($self->{patch});
-	if ($fname ne '-' && -e $fname) {
-	    die loc ("file %1 already exists.\n", $fname).
-		($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
-	}
-	return ($patch->commit_editor ($fname), %cb, callback => \$callback,
-		send_fulltext => 0);
-    }
 
     unless ($editor) {
 	if ($self->{check_only}) {
@@ -247,7 +260,7 @@ sub get_editor {
 	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
-    return ($editor, %cb, mirror => $m, callback => \$callback,
+    return ($editor, %cb, mirror => $m,
 	    cb_copyfrom => $m ?
 	      sub { my ($path, $rev) = @_;
 		    $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
@@ -426,7 +439,8 @@ sub run {
 	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
-    my ($editor, %cb) = $self->get_editor ($target->new (copath => undef), $committed);
+    my ($editor, %cb) = $self->get_editor
+	($target->new->as_depotpath, $committed);
 
     die loc("unexpected error: commit to mirrored path but no mirror object")
 	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
