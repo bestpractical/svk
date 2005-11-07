@@ -25,7 +25,6 @@ use SVK::Inspector::XD;
 my $xd = SVK::XD->new(...);
 
 my %editor_extras = (
-    check_only => 1,
     get_copath => sub { ... },
     get_path => sub { ... },
     oldroot => ... #the parent of the current checkout
@@ -38,7 +37,7 @@ my $inspector = SVK::Inspector::XD->new($xd, \%editor_extras);
 =cut 
 
 
-__PACKAGE__->mk_accessors(qw(xd args check_only get_copath get_path));
+__PACKAGE__->mk_accessors(qw(xd args get_copath get_path));
 
 sub oldroot {
     my $self = shift;
@@ -99,7 +98,6 @@ sub dirdelta {
     my ($self, $path, $base_root, $base_path, $pool) = @_;
     my $copath;
     ($path,$copath) = $self->get_paths($path);
-    
     my $modified;
     my $editor =  SVK::Editor::Status->new( 
         notify => SVK::Notify->new( 

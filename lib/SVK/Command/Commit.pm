@@ -130,17 +130,12 @@ sub get_editor {
     # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->{copath}) {
 	my $xdroot = $target->root;
-	($editor, %cb) = $self->{xd}->get_editor
-	    ( %$target,
-	      # assuming the editor returned here are used with Editor::Merge
-	      ignore_checksum => 1,
-	      targets => undef,
-	      quiet => 1,
-	      oldroot => $xdroot,
-	      newroot => $xdroot,
-	      target => '',
-	      check_only => $self->{check_only});
-	return ($editor, %cb);
+	my ($editor, $inspector, %cb) = $target->get_editor
+	    ( ignore_checksum => 1,
+	      check_only => $self->{check_only},
+	      oldroot => $xdroot, newroot => $xdroot,
+	    );
+	return ($editor, %cb, inspector => $inspector, $inspector->compat_cb);
     }
 
     my ($base_rev, $m, $mpath);

@@ -84,21 +84,18 @@ sub handle_co_item {
     # if SVK::Merge could take src being copath to do checkout_delta
     # then we have 'svk cp copath... copath' for free.
     # XXX: use editor::file when svkup branch is merged
+    my ($editor, $inspector, %cb) = $dst->get_editor
+	( ignore_checksum => 1, quiet => 1,
+	  check_only => $self->{check_only},
+	  oldroot => $xdroot, newroot => $xdroot,
+	  update => 1, ignore_keywords => 1,
+	);
     SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
 		     report => $report, notify => $notify,
 		     base => $src->new (path => '/', revision => 0),
-		     src => $src, dst => $dst)->run
-			 ($self->{xd}->get_editor
-			  ( %$dst,
-			    ignore_checksum => 1,
-			    targets => undef,
-			    quiet => 1,
-			    oldroot => $dst->root($self->{xd}),
-			    newroot => $dst->root($self->{xd}),
-			    target => $dst->{targets}[0] || '',
-			    update => 1,
-			    ignore_keywords => 1,
-			    check_only => $self->{check_only}));
+		     src => $src, dst => $dst)
+	    ->run
+		($editor, %cb, inspector => $inspector, $inspector->compat_cb);
 
     $self->{xd}{checkout}->store_recursively
 	($copath, { revision => undef });

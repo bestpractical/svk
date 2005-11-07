@@ -113,6 +113,60 @@ sub anchorify {
 
 }
 
+=head2 get_editor
+
+Returns the L<SVK::Editor::XD> object and L<SVK::Inspector::XD>.  Also
+returns the callback hash used by L<SVK::Editor::Merge> when called in
+array context.
+
+=cut
+
+sub get_editor {
+    my ($self, %arg) = @_;
+    my ($copath, $path, $spath) = ($self->{copath}, $self->{path}, $arg{store_path});
+    $spath = $path unless defined $spath;
+    my $encoding = $self->xd->{checkout}->get($copath)->{encoding};
+    $path = '' if $path eq '/';
+    $spath = '' if $spath eq '/';
+    $encoding = Encode::find_encoding($encoding) if $encoding;
+    $arg{get_copath} = sub { $_[0] = $self->copath($_[0]) };
+    $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
+    $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
+    my $storage = SVK::Editor::XD->new (%arg,
+					repos => $self->{repos},
+					target => $self->{targets}[0] || '',
+					xd => $self->xd);
+
+    $arg{anchor} = $self->{path};
+    $arg{target} = $self->{targets}[0] || '';
+    my $inspector = SVK::Inspector::XD->new({ xd => $self->xd,
+                                              args => \%arg,
+                                             });
+    return ($storage, $inspector,
+        cb_conflict => sub {
+            my ($path) = @_;
+            my $copath;
+            ($path, $copath) = $inspector->get_paths($path);
+            $self->xd->{checkout}->store ($copath, {'.conflict' => 1})
+                unless $arg{check_only};
+        },
+        cb_prop_merged => sub { 
+            return if $arg{check_only};
+            my ($path, $name) = @_;
+            my $copath;
+            ($path, $copath) = $inspector->get_paths($path);
+            my $entry = $self->xd->{checkout}->get ($copath);
+            warn $entry unless ref $entry eq 'HASH';
+            my $prop = $entry->{'.newprop'};
+            delete $prop->{$name};
+            $self->xd->{checkout}->store ($copath, {'.newprop' => $prop,
+                         keys %$prop ? () :
+                         ('.schedule' => undef)}
+                        );
+        });
+
+}
+
 =head1 SEE ALSO
 
 L<SVK::Path>

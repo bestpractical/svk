@@ -127,16 +127,16 @@ sub do_update {
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 auto => 1, # not to print track-rename hint
 	 xd => $self->{xd});
-    $merge->run ($self->{xd}->get_editor (copath => $cotarget->{copath},
-					  path => $cotarget->{path},
-					  store_path => $update_target->{path},
-					  check_only => $self->{check_only},
-					  ignore_checksum => 1,
-					  oldroot => $xdroot, newroot => $newroot,
-					  revision => $update_target->{revision},
-					  anchor => $cotarget->{path},
-					  target => $cotarget->{targets}[0] || '',
-					  update => $self->{check_only} ? 0 : 1));
+    my ($editor, $inspector, %cb) = $cotarget->get_editor
+	( ignore_checksum => 1,
+	  check_only => $self->{check_only},
+	  store_path => $update_target->{path},
+	  update => $self->{check_only} ? 0 : 1,
+	  oldroot => $xdroot, newroot => $newroot,
+	  revision => $update_target->{revision},
+	);
+    $merge->run($editor, %cb, inspector => $inspector, $inspector->compat_cb);
+
 }
 
 1;
