@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 46;
+use Test::More tests => 48;
 use strict;
 use File::Path;
 BEGIN { require 't/tree.pl' };
@@ -163,6 +163,30 @@ is_output ($svk, 'delete', ['B'], [
 ], 'delete file again');
 
 $svk->revert ('-R', '.');
+
+# now try copying directory and deleting the copy
+$svk->copy('A/bar', 'A/deep');
+overwrite_file ('A/deep/baz', "modified.\n");
+overwrite_file ('A/deep/quux', "created.\n");
+overwrite_file ('A/deep/quux2', "created.\n");
+$svk->add('A/deep/quux2');
+is_output ($svk, 'rm', ['A'], [
+	__("A/deep/quux is not under version control,"),
+	__("A/deep/baz is modified,"),
+	__("A/deep/bar is scheduled,"),
+	__("A/deep/quux2 is scheduled; use '--force' to go ahead.")]);
+is_output ($svk, 'rm', ['--force', 'A'], [
+	__('D   A'),
+	__('D   A/bar'),
+	__('D   A/foo'),
+	__('D   A/deep'),
+	__('D   A/deep/bar'),
+	__('D   A/deep/baz'),
+	__('D   A/deep/quux'),
+	__('D   A/deep/quux2'),
+], 'delete - file');
+$svk->revert ('-R', '.');
+
 
 unlink ('A/foo');
 is_output ($svk, 'delete', ['A/foo'],

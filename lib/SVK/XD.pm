@@ -716,14 +716,13 @@ sub do_delete {
     
     # use Data::Dumper; warn Dumper \@unknown, \@modified, \@scheduled;
     unless ($arg{force_delete}) {
-	die loc("%1 is not under version control; use '--force' to go ahead.\n", $rpath->($unknown[0]))
-	    if @unknown;
-    
-	die loc("%1 is modified; use '--force' to go ahead.\n", $rpath->($modified[0]))
-	    if @modified;
-    
-	die loc("%1 is scheduled; use '--force' to go ahead.\n", $rpath->($scheduled[0]))
-	    if @scheduled;
+    	my @reports;
+	push @reports, map { loc("%1 is not under version control", $rpath->($_)) } @unknown;
+	push @reports, map { loc("%1 is modified", $rpath->($_)) } @modified;
+	push @reports, map { loc("%1 is scheduled", $rpath->($_)) } @scheduled;
+
+	die join(",\n", @reports) . "; use '--force' to go ahead.\n"
+	    if @reports;
     }
 
     # actually remove it from checkout path
