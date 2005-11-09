@@ -127,8 +127,7 @@ sub _editor_for_patch {
     my ($self, $target, $source) = @_;
     require SVK::Patch;
     my ($m);
-    if (HAS_SVN_MIRROR and
-	(($m) = SVN::Mirror::is_mirrored($target->{repos}, $target->{path}))) {
+    if (($m) = $target->is_mirrored) {
 	print loc("Patching locally against mirror source %1.\n", $m->{source});
     }
     die loc ("Illegal patch name: %1.\n", $self->{patch})
@@ -156,7 +155,6 @@ sub _editor_for_patch {
 
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
-    my ($editor, %cb);
 
     # Commit as patch
     return $self->_editor_for_patch($target, $source)
@@ -173,73 +171,40 @@ sub get_editor {
 	return ($editor, %cb, inspector => $inspector, $inspector->compat_cb);
     }
 
-    my ($base_rev, $m, $mpath);
-    if (!$self->{direct} and HAS_SVN_MIRROR and
-	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
+    # XXX: unify the get_editor args so we can combine them
+    my ($editor, $inspector, %cb) = $target->get_editor
+	( ignore_mirror => $self->{direct},
+	  check_only => $self->{check_only},
+	  callback => $callback,
+	  message => $self->{message},
+	  author => $ENV{USER} );
 
-	if ($self->{setrevprop}) {
+    if ($self->{setrevprop}) {
+	my $txn = $cb{txn} or
 	    die loc("Can't use set-revprop with remote repository.\n");
-	}
-
-	elsif ($self->{check_only}) {
-	    print loc("Checking locally against mirror source %1.\n", $m->{source});
-	}
-	else {
-	    print loc("Merging back to mirror source %1.\n", $m->{source});
-	    $m->{lock_message} = SVK::Command::Sync::lock_message ();
-	    $m->{config} = $self->{svnconfig};
-	    $m->{revprop} = ['svk:signature'];
-	    ($base_rev, $editor) = $m->get_merge_back_editor
-		($mpath, $self->{message},
-		 sub { print loc("Merge back committed as revision %1.\n", $_[0]);
-		       my $rev = shift;
-		       $m->_new_ra->change_rev_prop ($rev, 'svk:signature',
-						     $self->{signeditor}{sig})
-			   if $self->{sign};
-		       $m->run ($rev);
-		       $callback->($m->find_local_rev ($rev), @_)
-			   if $callback }
-		);
-	}
-    }
-
-    my $fs = $target->{repos}->fs;
-    my $yrev = $fs->youngest_rev;
-    my $root = $fs->revision_root ($yrev);
-
-    %cb = SVK::Editor::Merge->cb_for_root
-	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
-
-    unless ($editor) {
-	if ($self->{check_only}) {
-	    $editor = SVN::Delta::Editor->new;
-	}
-	else {
-	    # XXX: cleanup the txn if not committed
-	    my $txn = $fs->begin_txn($yrev);
-	    for (@{$self->{setrevprop} || []}) {
-		$txn->change_prop( split(/=/, $_) );
-	    }
-	    $editor = SVN::Delta::Editor->new
-		( $target->{repos}->get_commit_editor2
-		  ( $txn, "file://$target->{repospath}",
-		    $target->{path}, $ENV{USER}, $self->{message},
-		    sub { print loc("Committed revision %1.\n", $_[0]);
-			  $fs->change_rev_prop ($_[0], 'svk:signature',
-						$self->{signeditor}{sig})
-			      if $self->{sign};
-			  # build the copy cache as early as possible
-			  find_prev_copy ($fs, $_[0]);
-			  $callback->(@_) if $callback; }
-		  ));
+	for (@{$self->{setrevprop}}) {
+	    $txn->change_prop( split(/=/, $_) );
 	}
     }
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
-	$self->{signeditor} = $editor = SVK::Editor::Sign->new (_editor => [$editor],
-								anchor => "$uuid:$dst"
-							       );
+	my ($uuid, $dst) = find_svm_source ($target->repos, $target->{path});
+	$editor = SVK::Editor::Sign->new
+	    ( _editor => [$editor],
+	      anchor => "$uuid:$dst" );
+	my $post_handler = $cb{post_handler};
+	if (my $m = $cb{mirror}) {
+	    $$post_handler = sub {
+		$m->_new_ra->change_rev_prop($_[0], 'svk:signature',
+					     $editor->{sig});
+	    }
+	}
+	else {
+	    my $fs = $target->repos->fs;
+	    $$post_handler = sub {
+		$fs->change_rev_prop($_[0], 'svk:signature', $editor->{sig});
+	    }
+	}
     }
 
     unless ($self->{check_only}) {
@@ -252,7 +217,7 @@ sub get_editor {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
-	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
+	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");
 	    $self->add_handler ($_, sub { $editor->abort_edit });
 	}
@@ -260,13 +225,7 @@ sub get_editor {
 	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
-    return ($editor, %cb, mirror => $m,
-	    cb_copyfrom => $m ?
-	      sub { my ($path, $rev) = @_;
-		    $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
-		    return ($path, scalar $m->find_remote_rev($rev)); }
-	    : sub { ('file://'.$target->{repospath}.$_[0], $_[1]) },
-	    send_fulltext => !$m);
+    return ($editor, inspector => $inspector, $inspector->compat_cb, %cb);
 }
 
 sub exclude_mirror {
@@ -423,7 +382,7 @@ sub committed_import {
 sub run {
     my ($self, $target) = @_;
 
-    my $is_mirrored = $self->under_mirror ($target) && !$self->{direct};
+    my $is_mirrored = $self->under_mirror($target);
     print loc("Commit into mirrored path: merging back directly.\n")
 	if $is_mirrored and !$self->{patch};
 
