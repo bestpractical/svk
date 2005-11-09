@@ -583,7 +583,7 @@ sub arg_depotpath {
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    my $target = SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  path => $path,
@@ -591,6 +591,8 @@ sub arg_depotpath {
 	  revision => $rev,
 	  depotpath => $arg,
 	);
+    $target->{depotpath} = '/'.$target->depotname.$path;
+    return $target;
 }
 
 =head3 arg_depotroot ($arg)
