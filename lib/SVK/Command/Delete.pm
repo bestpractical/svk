@@ -8,6 +8,7 @@ use SVK::Util qw( abs2rel );
 
 sub options {
     ($_[0]->SUPER::options,
+     'force'	=> 'force',
      'K|keep-local'	=> 'keep');
 }
 
@@ -71,7 +72,8 @@ sub run {
     $self->_ensure_mirror($target);
 
     if ($target->{copath}) {
-	$self->{xd}->do_delete( $target, no_rm => $self->{keep} );
+	$self->{xd}->do_delete( $target, no_rm => $self->{keep}, 
+		'force_delete' => $self->{force} );
     }
     else {
 	$self->do_delete_direct ( $target );
@@ -104,6 +106,7 @@ SVK::Command::Delete - Remove versioned item
  -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
  --direct               : commit directly even if the path is mirrored
+ --force                : delete the file/directory even if modified
 
 =head1 AUTHORS
 

@@ -93,7 +93,7 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
 	    __(' U  ../checkout/just-q'),
 	   ], 'checkout report');
 
-is_output ($svk, 'checkout', ['//V-3.1/A/Q/', "../checkout/just-q-slash"],
+is_output ($svk, 'checkout', ['//V-3.1//A/Q/', "../checkout/just-q-slash"],
 	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/just-q-slash to 6.",
 	    __('A   ../checkout/just-q-slash/qu'),
 	    __('A   ../checkout/just-q-slash/qz'),

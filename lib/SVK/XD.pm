@@ -341,6 +341,7 @@ sub find_repos {
     my ($depot, $path) = $depotpath =~ m|^/([^/]*)(/.*?)/?$|
 	or die loc("%1 is not a depot path.\n", $depotpath);
 
+    $path = Path::Class::foreign_dir('Unix', $path)->stringify;
     my $repospath = $self->{depotmap}{$depot} or die loc("No such depot: %1.\n", $depot);
 
     return ($repospath, $path, $open && _open_repos ($repospath));
@@ -572,7 +573,7 @@ sub auto_prop {
 sub do_delete {
     my ($self, $target, %arg) = @_;
     my $xdroot = $target->root;
-    my @deleted;
+    my (@deleted, @modified, @unknown, @scheduled);
 
     $target->anchorify unless $target->{targets};
 
@@ -588,29 +589,44 @@ sub do_delete {
 			      ( cb_flush => sub {
 				    my ($path, $status) = @_;
 				    my $copath = $target->copath($path);
-				    my $report = $target->report->subdir($path);
+				    $target->contains_copath($copath) or return;
+
 				    my $st = $status->[0];
 				    if ($st eq 'M') {
-					die loc("%1 is modified, use 'svk revert' first.\n", $report);
+				    	push @modified, $copath;
 				    }
 				    elsif ($st eq 'D') {
 					push @deleted, $copath;
 				    }
 				    else {
-					lstat ($copath);
-					die loc("%1 is scheduled, use 'svk revert'.\n", $report)
-					    if -e _ && !-d _;
+					push @scheduled, $copath;
 				    }
 				})),
 			    cb_unknown => sub {
-				die loc("%1 is not under version control.\n",
-					$target->report->subdir($_[1]));
+			    	push @unknown, $target->copath($_[1]);
 			    }
-			  );
+    );
+
+    # need to use undef to avoid the $SEP at the beginning on empty report.    
+    my $report = (defined $target->report && length $target->report) ? $target->report : undef;
+    my $rpath = sub {
+    	abs2rel( shift, $target->copath => $report );
+    };
+    
+    # use Data::Dumper; warn Dumper \@unknown, \@modified, \@scheduled;
+    unless ($arg{force_delete}) {
+    	my @reports;
+	push @reports, map { loc("%1 is not under version control", $rpath->($_)) } @unknown;
+	push @reports, map { loc("%1 is modified", $rpath->($_)) } @modified;
+	push @reports, map { loc("%1 is scheduled", $rpath->($_)) } @scheduled;
+
+	die join(",\n", @reports) . "; use '--force' to go ahead.\n"
+	    if @reports;
+    }
 
     # actually remove it from checkout path
     my @paths = grep {is_symlink($_) || -e $_} $target->copath_targets;
-
+    
     my $ignore = $self->ignore;
     find(sub {
 	     return if m/$ignore/;
@@ -618,17 +634,28 @@ sub do_delete {
 	     no warnings 'uninitialized';
 	     return if $self->{checkout}->get ($cpath)->{'.schedule'}
 		 eq 'delete';
-	     push @deleted, $cpath;
+
+	     push @deleted, $cpath; 
 	 }, @paths) if @paths;
 
-    # need to use undef to avoid the $SEP at the beginning on empty report.
-    my $report = (defined $target->report && length $target->report) ? $target->report : undef;
-    for (@deleted) {
-	print "D   ".abs2rel($_, $target->copath => $report)."\n"
-	    unless $arg{quiet};
-	$self->{checkout}->store ($_, {'.schedule' => 'delete'});
-    }
 
+    my %noschedule = map { $_ => 1 } (@unknown, @scheduled);
+    for (@deleted) {
+	print "D   ".$rpath->($_)."\n"
+	    unless $arg{quiet};
+	
+	# don't schedule unknown/added files for deletion as this confuses revert.    
+	$self->{checkout}->store ($_, {'.schedule' => 'delete'})
+	    unless $noschedule{$_};
+    }
+   
+    if (@scheduled) {
+    	# XXX - should we report something?
+	require SVK::Command;
+	$self->{checkout}->store ($_, { SVK::Command->_schedule_empty })
+	    for @scheduled;
+    }
+    
     return if $arg{no_rm};
     rmtree (\@paths) if @paths;
 }

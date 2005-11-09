@@ -72,7 +72,9 @@ sub absent_file {
 sub delete_entry {
     my ($self, $path) = @_;
     $self->{notify}->node_status ($path, 'D');
-#    $self->{notify}->flush ($path);
+    my $info = $self->{tree}->get ($path);
+    $self->{notify}->hist_status ($path, '+', $info->{frompath},
+	$info->{fromrev}) if $info->{frompath};
 }
 
 sub add_directory {
