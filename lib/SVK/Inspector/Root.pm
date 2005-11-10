@@ -15,7 +15,7 @@ sub exist {
     my ($self, $path, $pool) = @_;
     $path = $self->_anchor_path($path);
     return $self->root->check_path ($path, $pool);
-}	       
+}
 
 sub rev { shift->base_rev; }
 
@@ -34,7 +34,7 @@ sub localprop {
     local $@;
     return eval { $self->root->node_prop ($path, $propname, $pool) };
 }
-	       
+
 sub dirdelta { 
     my ($self, $path, $base_root, $base_path, $pool) = @_;
     my $modified;

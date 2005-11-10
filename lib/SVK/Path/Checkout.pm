@@ -140,7 +140,8 @@ sub get_editor {
     $arg{anchor} = $self->{path};
     $arg{target} = $self->{targets}[0] || '';
     my $inspector = SVK::Inspector::XD->new({ xd => $self->xd,
-                                              args => \%arg,
+					      path => $self->new,
+					      oldroot => $arg{oldroot},
                                              });
     return ($storage, $inspector,
         cb_conflict => sub {
