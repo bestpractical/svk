@@ -140,11 +140,11 @@ sub _unmodified {
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
-		  die loc ("%1 is modified.\n", $target->copath ($_[0]));
+		  die loc ("%1 is modified.\n", $target->report_copath ($_[0]))
 	      })),
 	  # need tests: only useful for move killing the src with unknown entries
 	  cb_unknown => sub {
-	      die loc ("%1 is unknown.\n", $target->copath ($_[1]))});
+	      die loc ("%1 is unknown.\n", $target->report_copath ($_[1]))});
 }
 
 sub check_src {

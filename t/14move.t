@@ -64,19 +64,19 @@ is_output ($svk, 'mv', ['fe', 'fe.bz'],
 overwrite_file ('new_add', "new file\n");
 is_output ($svk, 'add', ['new_add'], ['A   new_add']);
 is_output ($svk, 'mv', ['new_add', 'new_add.bz'],
-	   [__"$corpath/B/new_add is modified."]);
+	   [__"new_add is modified."]);
 mkdir ('new_dir');
 overwrite_file ('new_dir/new_add', "new file\n");
 is_output ($svk, 'add', ['new_dir'],
 	   [__('A   new_dir'),
 	    __('A   new_dir/new_add')]);
 is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'],
-	   [__"$corpath/B/new_dir is modified."]);
+	   [__"new_dir is modified."]);
 
 $svk->commit ('-m', 'commit everything');
 overwrite_file ('new_dir/unknown_file', "unknown file\n");
 is_output ($svk, 'mv', ['new_dir', 'new_dir_mv'], 
-		[__"$corpath/B/new_dir/unknown_file is unknown."]);
+		[__"unknown_file is unknown."]);
 unlink('new_dir/unknown_file');
 
 is_output ($svk, 'mv', ['new_dir', 'new_dir_mv/blah'], 
