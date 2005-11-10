@@ -76,24 +76,18 @@ sub dirdelta {
     my ($self, $path, $base_root, $base_path, $pool) = @_;
     my $copath;
     ($path,$copath) = $self->get_paths($path);
-    my $modified;
-    my $editor =  SVK::Editor::Status->new( 
-        notify => SVK::Notify->new( 
-            cb_flush => sub {
-                               my ($path, $status) = @_;
-                               $modified->{$path} = $status->[0];
-                            }));
+    my $modified = {};
     $self->xd->checkout_delta(
          # XXX: proper anchor handling
          path => $path,
-	 target => defined $self->{targets}[0] ? $self->{targets}[0] : '',
+	 target => defined $self->path->{targets}[0] ? $self->path->{targets}[0] : '',
          copath => $copath,
          base_root => $base_root,
          base_path => $base_path,
          xdroot => $self->oldroot,
          nodelay => 1,
          depth => 1,
-         editor => $editor,
+         editor => $self->dirdelta_status_editor($modified),
          absent_as_delete => 1,
          cb_unknown => \&SVK::Editor::Status::unknown,
     );

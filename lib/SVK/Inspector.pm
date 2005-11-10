@@ -96,6 +96,16 @@ sub translate {
     return $path;
 }
 
+sub dirdelta_status_editor {
+    my ($self, $modified) = @_;
+    return SVK::Editor::Status->new
+	( notify => SVK::Notify->new
+	  ( cb_flush => sub {
+		my ($path, $status) = @_;
+		$modified->{$path} = $status->[0];
+	    }));
+}
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

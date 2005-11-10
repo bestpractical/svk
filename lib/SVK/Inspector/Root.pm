@@ -24,8 +24,7 @@ sub localmod {
     $path = $self->_anchor_path($path);
     my $md5 = $self->root->file_md5_checksum ($path, $pool);
     return if $md5 eq $checksum;
-    return [$self->root->file_contents ($path, $pool),
-        undef, $md5];
+    return [$self->root->file_contents ($path, $pool), undef, $md5];
 }
 
 sub localprop {
@@ -37,17 +36,11 @@ sub localprop {
 
 sub dirdelta { 
     my ($self, $path, $base_root, $base_path, $pool) = @_;
-    my $modified;
-    my $editor =  SVK::Editor::Status->new
-       ( notify => SVK::Notify->new
-                                 ( cb_flush => sub {
-                                       my ($path, $status) = @_;
-                                       $modified->{$path} = $status->[0];
-                                   }));
+    my $modified = {};
     SVK::XD->depot_delta (oldroot => $base_root, newroot => $self->root,
              oldpath => [$base_path, ''],
              newpath => $self->_anchor_path($path),
-             editor => $editor,
+             editor => $self->dirdelta_status_editor($modified),
              no_textdelta => 1, no_recurse => 1);
     return $modified;
 }
