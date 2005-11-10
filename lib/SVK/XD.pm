@@ -718,9 +718,9 @@ sub do_delete {
     # use Data::Dumper; warn Dumper \@unknown, \@modified, \@scheduled;
     unless ($arg{force_delete}) {
     	my @reports;
-	push @reports, map { loc("%1 is not under version control", $rpath->($_)) } @unknown;
-	push @reports, map { loc("%1 is modified", $rpath->($_)) } @modified;
-	push @reports, map { loc("%1 is scheduled", $rpath->($_)) } @scheduled;
+	push @reports, sort map { loc("%1 is not under version control", $rpath->($_)) } @unknown;
+	push @reports, sort map { loc("%1 is modified", $rpath->($_)) } @modified;
+	push @reports, sort map { loc("%1 is scheduled", $rpath->($_)) } @scheduled;
 
 	die join(",\n", @reports) . "; use '--force' to go ahead.\n"
 	    if @reports;
