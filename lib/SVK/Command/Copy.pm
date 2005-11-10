@@ -133,18 +133,21 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
+    my (@modified, @unknown);
     $target = $self->{xd}->target_condensed($target); # anchor
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
-	    ( cb_flush => sub {
-		  die loc ("%1 is modified.\n", $target->report_copath ($_[0]))
-	      })),
-	  # need tests: only useful for move killing the src with unknown entries
-	  cb_unknown => sub {
-	      die loc ("%1 is unknown.\n", $target->report_copath ($_[1]))});
+	    ( cb_flush => sub { push @modified, $_[0] })),
+	  cb_unknown => sub { push @unknown, $_[1] } );
+
+    if (@modified || @unknown) {
+	my @reports = sort map { loc ("%1 is modified.\n", $target->report_copath ($_)) } @modified;
+	push @reports, sort map { loc ("%1 is unknown.\n", $target->report_copath ($_)) } @unknown;
+	die join("", @reports);
+    }
 }
 
 sub check_src {

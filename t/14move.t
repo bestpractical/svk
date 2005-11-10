@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 20;
+use Test::More tests => 21;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -70,14 +70,21 @@ overwrite_file ('new_dir/new_add', "new file\n");
 is_output ($svk, 'add', ['new_dir'],
 	   [__('A   new_dir'),
 	    __('A   new_dir/new_add')]);
-is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'],
-	   [__"new_dir is modified."]);
+is_output ($svk, 'mv', ['new_dir/new_add', 'new_dir/new_add.bz'], [
+	__"new_dir is modified.",
+	__"new_dir/new_add is modified.",
+	]);
 
 $svk->commit ('-m', 'commit everything');
 overwrite_file ('new_dir/unknown_file', "unknown file\n");
 is_output ($svk, 'mv', ['new_dir', 'new_dir_mv'], 
 		[__"unknown_file is unknown."]);
+overwrite_file ('new_dir/unknown_file2', "unknown file\n");
+is_output ($svk, 'mv', ['new_dir', 'new_dir_mv'], [
+		__"unknown_file is unknown.",
+		__"unknown_file2 is unknown."]);
 unlink('new_dir/unknown_file');
+unlink('new_dir/unknown_file2');
 
 is_output ($svk, 'mv', ['new_dir', 'new_dir_mv/blah'], 
 		[qr'use -p']);
