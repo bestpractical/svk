@@ -84,8 +84,6 @@ sub run {
     my ($self, $src, $dst) = @_;
     my $merge;
     my $repos = $src->{repos};
-    my $fs = $repos->fs;
-    my $yrev = $fs->youngest_rev;
 
     if (my @mirrors = $dst->contains_mirror) {
 	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->{report})
@@ -173,7 +171,7 @@ sub run {
 
 	    last if $merge->run ($self->get_editor ($dst));
 	    # refresh dst
-	    $dst->{revision} = $fs->youngest_rev;
+	    $dst->refresh_revision;
 	    $previous_base = $rev;
 	    $spool->clear;
 	}

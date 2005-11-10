@@ -146,11 +146,16 @@ sub get_editor {
     }
 
     # XXX: cleanup the txn if not committed
-    my $txn = $fs->begin_txn($yrev);
+    my $txn = $self->repos->fs_begin_txn_for_commit
+	($yrev, $arg{author}, $arg{message});
+    $inspector = SVK::Inspector::Root->new
+	({ root => $txn->root,
+	   anchor => $self->{path},
+	   base_rev => $yrev });
     my $editor = SVN::Delta::Editor->new
 	( $self->repos->get_commit_editor2
 	  ( $txn, "file://".$self->repospath,
-	    $self->{path}, $arg{author}, $arg{message},
+	    $self->{path}, undef, undef, # author and log already set
 	    sub { print loc("Committed revision %1.\n", $_[0]);
 		  # build the copy cache as early as possible
 		  # XXX: don't need this when there's fs_closest_copy
