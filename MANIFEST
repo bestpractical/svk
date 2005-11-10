@@ -76,12 +76,16 @@ lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
 lib/SVK/I18N/zh_cn.po
 lib/SVK/I18N/zh_tw.po
+lib/SVK/Inspector.pm
+lib/SVK/Inspector/Root.pm
+lib/SVK/Inspector/XD.pm
 lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Patchset.pm
 lib/SVK/Path.pm
 lib/SVK/Path/Checkout.pm
+lib/SVK/Path/Txn.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm

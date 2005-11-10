@@ -101,13 +101,30 @@ sub is_mirrored {
     return SVN::Mirror::is_mirrored($self->repos, $self->{path});
 }
 
+sub _commit_editor {
+    my ($self, $txn, $callback, $pool) = @_;
+    my $post_handler;
+    my $editor = SVN::Delta::Editor->new
+	( $self->repos->get_commit_editor2
+	  ( $txn, "file://".$self->repospath,
+	    $self->{path}, undef, undef, # author and log already set
+	    sub { print loc("Committed revision %1.\n", $_[0]);
+		  # build the copy cache as early as possible
+		  # XXX: don't need this when there's fs_closest_copy
+		  $post_handler->($_[0]) if $post_handler;
+		  find_prev_copy ($self->repos->fs, $_[0]);
+		  $callback->(@_) if $callback; }, $pool
+	  ));
+
+    return ($editor, \$post_handler);
+}
+
 sub get_editor {
     my ($self, %arg) = @_;
 
     my ($m, $mpath) = $arg{ignore_mirror} ? () : $self->is_mirrored;
     my $fs = $self->repos->fs;
     my $yrev = $fs->youngest_rev;
-
 
     my $inspector = SVK::Inspector::Root->new
 	({ root => $fs->revision_root($yrev),
@@ -148,25 +165,14 @@ sub get_editor {
     # XXX: cleanup the txn if not committed
     my $txn = $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
-    $inspector = SVK::Inspector::Root->new
-	({ root => $txn->root,
-	   anchor => $self->{path},
-	   base_rev => $yrev });
-    my $editor = SVN::Delta::Editor->new
-	( $self->repos->get_commit_editor2
-	  ( $txn, "file://".$self->repospath,
-	    $self->{path}, undef, undef, # author and log already set
-	    sub { print loc("Committed revision %1.\n", $_[0]);
-		  # build the copy cache as early as possible
-		  # XXX: don't need this when there's fs_closest_copy
-		  $post_handler->($_[0]) if $post_handler;
-		  find_prev_copy ($fs, $_[0]);
-		  $callback->(@_) if $callback; }
-	  ));
+
+    my $editor;
+    ($editor, $post_handler) =
+	$self->_commit_editor($txn, $callback);
 
     return ($editor, $inspector,
 	    send_fulltext => 1,
-	    post_handler => \$post_handler,
+	    post_handler => $post_handler, # inconsistent!
 	    txn => $txn,
 	    cb_copyfrom =>
 	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });

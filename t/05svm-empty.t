@@ -39,17 +39,17 @@ $svk->co ('//test', $copath);
 chdir ($copath);
 is_output ($svk, 'push', [],
 	   ["Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
-	    "===> Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
 	    "Merging back to mirror source $uri.",
+	    "===> Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
 	    'Empty merge.']);
 $svk->mkdir ('-m', 'Added trunk', '//test/trunk');
 is_output ($svk, 'push', [],
           ["Auto-merging (0, 11) /test to /mirror/empty (base /:0).",
+	   "Merging back to mirror source $uri.",
 	   "===> Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
-	   "Merging back to mirror source $uri.",
 	   "Empty merge.",
-	   "===> Auto-merging (10, 11) /test to /mirror/empty (base /:0).",
 	   "Merging back to mirror source $uri.",
+	   "===> Auto-merging (10, 11) /test to /mirror/empty (base /:0).",
 	   "A   trunk",
 	   "New merge ticket: $uuid:/test:11",
 	   "Merge back committed as revision 1.",
