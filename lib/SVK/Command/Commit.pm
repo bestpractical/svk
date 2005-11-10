@@ -208,18 +208,23 @@ sub get_editor {
     }
 
     unless ($self->{check_only}) {
+	my $txn = $cb{txn};
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY,
-            $SVN::Error::RA_DAV_REQUEST_FAILED,
+	     $SVN::Error::RA_DAV_REQUEST_FAILED,
 	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
 	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");
-	    $self->add_handler ($_, sub { $editor->abort_edit });
+	    $self->add_handler( $_,
+				sub {
+				    $editor->abort_edit;
+				    $txn->abort if $txn;
+				} );
 	}
 	$self->clear_handler ($SVN::Error::REPOS_HOOK_FAILURE);
 	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
