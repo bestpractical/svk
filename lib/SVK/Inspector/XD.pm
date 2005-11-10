@@ -28,7 +28,6 @@ my %editor_extras = (
     get_copath => sub { ... },
     get_path => sub { ... },
     oldroot => ... #the parent of the current checkout
-    get_fh => sub { ... }
     ... 
 );
 
@@ -44,11 +43,6 @@ sub oldroot {
     $self->args->{oldroot};
 }
 
-sub get_fh {
-    my $self = shift;
-    $self->args->{get_fh}->(@_);
-}
-
 sub exist { 
     my ($self, $path, $pool) = @_;
     my $copath;
@@ -62,15 +56,15 @@ sub exist {
         $self->oldroot->check_path ($path, $pool);
     return $SVN::Node::unknown;
 }
-  
-sub rev { 
-    
+
+sub rev {
     my ($self, $path) = @_;
     my $copath;
     ($path,$copath) = $self->get_paths($path);
-    
-    return $self->xd->{checkout}->get($copath)->{revision}     
+
+    return $self->xd->{checkout}->get($copath)->{revision};
 }
+
 sub localmod { 
     my ($self, $path, $checksum) = @_;
     

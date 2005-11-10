@@ -129,8 +129,9 @@ sub rm_test {
 sub cleanup_test {
     my ($xd, $svk) = @{+shift};
     for my $depot (sort keys %{$xd->{depotmap}}) {
-	my (undef, undef, $repos) = $xd->find_repos ("/$depot/", 1);
-	diag "uncleaned txn" if @{$repos->fs->list_transactions};
+	my (undef, undef, $repos) = eval { $xd->find_repos("/$depot/", 1) };
+	diag "uncleaned txn on /$depot/"
+	    if $repos && @{$repos->fs->list_transactions};
     }
     return unless $ENV{TEST_VERBOSE};
     use YAML;
