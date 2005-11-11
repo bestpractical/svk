@@ -93,9 +93,10 @@ sub get_dynamic_editor {
     my $m = $self->under_mirror ($target);
     my $anchor = $m ? $m->{target_path} : '/';
     my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
+    
     my $editor = SVK::Editor::Rename->new
 	( editor => $storage,
-	  cb_exist => $self->{parent} ? $cb{cb_exist} : undef);
+	  inspector => $self->{parent} ? $cb{inspector} : undef);
      $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
     return ($anchor, $editor);
 }

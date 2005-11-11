@@ -171,6 +171,11 @@ sub set_target_revision {
     $self->{storage}->set_target_revision ($revision);
 }
 
+sub inspector {
+    my $self = shift;
+    return $self->{inspector};
+}
+
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{baserev} = $baserev;
@@ -197,7 +202,7 @@ sub add_file {
     # a replaced node shouldn't be checked with cb_exist
     my $touched = $self->{notify}->node_status($path);
     if (!$self->{added}{$pdir} && !$touched &&
-	(my $kind = $self->{cb_exist}->($path, $pool))) {
+	(my $kind = $self->inspector->exist($path, $pool))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -243,7 +248,7 @@ sub open_file {
     # modified but rm locally - tag for conflict?
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
-    if ($self->{cb_exist}->($basepath, $pool)) {
+    if ($self->inspector->exist($basepath, $pool)) {
 	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
 	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
@@ -530,7 +535,7 @@ sub add_directory {
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
     if (!$self->{added}{$pdir} && !$touched &&
-	(my $kind = $self->{cb_exist}->($path, $pool))) {
+	(my $kind = $self->inspector->exist($path, $pool))) {
 	unless ($kind == $SVN::Node::dir) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -588,7 +593,7 @@ sub open_directory {
 	my ($basepath, $fromrev) = $self->_resolve_base($path);
 	$basepath = $path unless defined $basepath;
 
-	unless ($self->{cb_exist}->($basepath, $pool) || $self->{open_nonexist}) {
+	unless ($self->inspector->exist($basepath, $pool) || $self->{open_nonexist}) {
 	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;
@@ -690,7 +695,7 @@ sub _check_delete_conflict {
 	    $torm->{$name} = undef, next
 		if $entry->kind == $SVN::Node::file;
 
-	    if ($self->{cb_exist}->($cpath, $pool)) {
+	    if ($self->inspector->exist($cpath, $pool)) {
 		$torm->{$name} = $self->_check_delete_conflict
 		    ($cpath, $crpath, $SVN::Node::dir, $pdir, $pool);
 		if (ref ($torm->{$name})) {
@@ -731,7 +736,7 @@ sub _partial_delete {
 	    $self->_partial_delete ($torm->{$_}, $cpath, $baton,
 				    SVN::Pool->new ($pool));
 	}
-	elsif ($self->{cb_exist}->($cpath, $pool)) {
+	elsif ($self->inspector->exist($cpath, $pool)) {
 	    $self->{storage}->delete_entry ($cpath, $self->{cb_rev}->($cpath),
 					    $baton, $pool);
 	}
@@ -746,13 +751,13 @@ sub delete_entry {
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
 
-    return unless defined $pdir && $self->{cb_exist}->($basepath, $pool);
+    return unless defined $pdir && $self->inspector->exist($basepath, $pool);
     my $rpath = $basepath =~ m{^/} ? $basepath :
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
     my $torm;
     # XXX: need txn-aware cb_*! for the case current path is from a
     # copy and to be deleted
-    if ($self->{cb_exist}->($path, $pool)) {
+    if ($self->inspector->exist($path, $pool)) {
 	# XXX: this is evil
 	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
 	$torm = $self->_check_delete_conflict ($path, $rpath,
@@ -827,7 +832,7 @@ sub _merge_prop_change {
     {
 	local $@;
 	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0], $pool) };
-	$prop->{local} = $self->{cb_exist}->($basepath, $pool)
+	$prop->{local} = $self->inspector->exist($basepath, $pool)
 	    ? $self->{cb_localprop}->($basepath, $_[0], $pool) : undef;
     }
     # XXX: only known props should be auto-merged with default resolver
