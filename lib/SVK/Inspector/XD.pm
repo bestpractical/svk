@@ -27,7 +27,7 @@ SVK::Inspector::XD - checkout inspector
 
 =cut
 
-__PACKAGE__->mk_accessors(qw(xd path oldroot));
+__PACKAGE__->mk_accessors(qw(xd path xdroot));
 
 sub exist { 
     my ($self, $path, $pool) = @_;
@@ -39,7 +39,7 @@ sub exist {
 
     return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
     if $self->xd->{checkout}->get ($copath)->{'.schedule'} or
-        $self->oldroot->check_path ($path, $pool);
+        $self->xdroot->check_path ($path, $pool);
     return $SVN::Node::unknown;
 }
 
@@ -49,7 +49,7 @@ sub localmod {
     ($path,$copath) = $self->get_paths($path);
 
     # XXX: really want something that returns the file.
-    my $base = SVK::XD::get_fh($self->oldroot, '<', $path, $copath);
+    my $base = SVK::XD::get_fh($self->xdroot, '<', $path, $copath);
     my $md5 = md5_fh ($base);
     return undef if $md5 eq $checksum;
     seek $base, 0, 0;
@@ -61,7 +61,7 @@ sub localprop {
     my $copath;
     ($path,$copath) = $self->get_paths($path);
 
-    return $self->xd->get_props ($self->oldroot, $path, $copath)->{$propname};
+    return $self->xd->get_props ($self->xdroot, $path, $copath)->{$propname};
 }
 
 sub dirdelta { 
@@ -76,7 +76,7 @@ sub dirdelta {
          copath => $copath,
          base_root => $base_root,
          base_path => $base_path,
-         xdroot => $self->oldroot,
+         xdroot => $self->xdroot,
          nodelay => 1,
          depth => 1,
          editor => $self->dirdelta_status_editor($modified),
