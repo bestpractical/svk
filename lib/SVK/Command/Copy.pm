@@ -95,7 +95,7 @@ sub handle_co_item {
 		     base => $src->new (path => '/', revision => 0),
 		     src => $src, dst => $dst)
 	    ->run
-		($editor, %cb, inspector => $inspector, $inspector->compat_cb);
+		($editor, %cb, inspector => $inspector);
 
     $self->{xd}{checkout}->store_recursively
 	($copath, { revision => undef });

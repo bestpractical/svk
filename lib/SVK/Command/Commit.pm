@@ -169,7 +169,7 @@ sub get_editor {
 	      check_only => $self->{check_only},
 	      oldroot => $xdroot, newroot => $xdroot,
 	    );
-	return ($editor, %cb, inspector => $inspector, $inspector->compat_cb);
+	return ($editor, %cb, inspector => $inspector);
     }
 
     # XXX: unify the get_editor args so we can combine them
@@ -231,7 +231,7 @@ sub get_editor {
 	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
-    return ($editor, inspector => $inspector, $inspector->compat_cb, %cb);
+    return ($editor, inspector => $inspector, %cb);
 }
 
 sub exclude_mirror {

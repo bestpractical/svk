@@ -144,7 +144,6 @@ sub cb_for_root {
     return (
         inspector => $inspector,
         cb_rev => sub { $base_rev },
-        $inspector->compat_cb
     );
 }
 
@@ -356,7 +355,7 @@ sub apply_textdelta {
     my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
     my $fh = $info->{fh} = {};
     if (($pool = $info->{fpool}) &&
-	($fh->{local} = $self->{cb_localmod}->($basepath, $checksum || '', $pool))) {
+	($fh->{local} = $self->inspector->localmod($basepath, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
 	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
@@ -481,7 +480,7 @@ sub close_file {
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
 	    if $checksum eq $storagebase_checksum;
 
-	my $eol = $self->{cb_localprop}->($basepath, 'svn:eol-style', $pool);
+	my $eol = $self->inspector->localprop($basepath, 'svn:eol-style', $pool);
 	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
 	$eol_layer = '' if $eol_layer eq ':raw';
 	$self->prepare_fh ($fh, $eol_layer);
@@ -515,7 +514,7 @@ sub close_file {
 	    if ($basepath ne $path) {
 		$checksum = $self->{base_root}->fs->revision_root($fromrev, $pool)->file_md5_checksum($basepath, $pool);
 	    }
-	    elsif (my $local = $self->{cb_localmod}->($basepath, $checksum, $pool)) {
+	    elsif (my $local = $self->inspector->localmod($basepath, $checksum, $pool)) {
 		$checksum = $local->[CHECKSUM];
 		close $local->[FH];
 	    }
@@ -628,7 +627,7 @@ sub _merge_file_delete {
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
 
-    return undef unless $self->{cb_localmod}->(
+    return undef unless $self->inspector->localmod(
 		$basepath,
 		$self->{base_root}->file_md5_checksum ($rpath, $pool),
 		$pool);
@@ -638,7 +637,7 @@ sub _merge_file_delete {
     $fh->{base} ||= [$self->_retrieve_base($path, $pool)];
     $fh->{new} = [tmpfile('new-')];
     $fh->{local} = [tmpfile('local-')];
-    my ($tmp) = $self->{cb_localmod}->($basepath, '', $pool);
+    my ($tmp) = $self->inspector->localmod($basepath, '', $pool);
     slurp_fh ( $tmp->[FH], $fh->{local}[FH]);
     seek $fh->{local}[FH], 0, 0;
     $fh->{local}[CHECKSUM] = $tmp->[CHECKSUM];
@@ -674,7 +673,7 @@ sub _check_delete_conflict {
 
     my ($basepath, $fromrev) = $self->_resolve_base($path, 1);
     $basepath = $path unless defined $basepath;
-    my $dirmodified = $self->{cb_dirdelta}->($path, $self->{base_root}, $rpath);
+    my $dirmodified = $self->inspector->dirdelta($path, $self->{base_root}, $rpath);
     my $entries = $self->{base_root}->dir_entries ($rpath);
     my ($torm, $modified, $merged);
     for my $name (sort keys %$entries) {
@@ -833,7 +832,7 @@ sub _merge_prop_change {
 	local $@;
 	$prop->{base} = eval { $self->{base_root}->node_prop ($rpath, $_[0], $pool) };
 	$prop->{local} = $self->inspector->exist($basepath, $pool)
-	    ? $self->{cb_localprop}->($basepath, $_[0], $pool) : undef;
+	    ? $self->inspector->localprop($basepath, $_[0], $pool) : undef;
     }
     # XXX: only known props should be auto-merged with default resolver
     $pool = pop @_ if ref ($_[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;

@@ -135,7 +135,7 @@ sub do_update {
 	  oldroot => $xdroot, newroot => $newroot,
 	  revision => $update_target->{revision},
 	);
-    $merge->run($editor, %cb, inspector => $inspector, $inspector->compat_cb);
+    $merge->run($editor, %cb, inspector => $inspector);
 
 }
 
