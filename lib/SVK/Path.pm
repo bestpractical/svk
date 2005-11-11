@@ -130,8 +130,7 @@ sub get_editor {
 
     my $inspector = SVK::Inspector::Root->new
 	({ root => $fs->revision_root($yrev),
-	   anchor => $self->{path},
-	   base_rev => $root_baserev });
+	   anchor => $self->{path} });
 
     if ($arg{check_only}) {
 	print loc("Checking locally against mirror source %1.\n", $m->{source})

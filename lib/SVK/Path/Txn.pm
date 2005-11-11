@@ -13,8 +13,7 @@ sub get_editor {
 
     my $inspector = SVK::Inspector::Root->new
 	({ root => $self->txn->root,
-	   anchor => $self->{path},
-	   base_rev => $yrev });
+	   anchor => $self->{path} });
 
     my ($editor, $post_handler) =
 	$self->_commit_editor($self->txn, $callback, $self->pool);

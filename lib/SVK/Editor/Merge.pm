@@ -139,7 +139,6 @@ sub cb_for_root {
     my $inspector = SVK::Inspector::Root->new({
         root => $root, 
         anchor => $anchor, 
-        base_rev => $base_rev 
     });
 
     return (

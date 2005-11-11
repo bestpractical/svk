@@ -8,7 +8,7 @@ use base qw {
 	SVK::Inspector
 };
 
-__PACKAGE__->mk_accessors(qw{root anchor base_rev});
+__PACKAGE__->mk_accessors(qw{root anchor});
 
 
 sub exist {
