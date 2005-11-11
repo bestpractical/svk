@@ -68,7 +68,7 @@ changed paths being the keys and change types being the values.
 sub compat_cb {
     my $self = shift;
     return map { my $name = $_;  "cb_$name" => sub { $self->$name(@_) } }
-           qw(exist localmod localprop dirdelta);
+           qw(localmod localprop dirdelta);
 }
 
 
