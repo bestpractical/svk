@@ -5,8 +5,6 @@ require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
 
-use SVK::Inspector::XD;
-
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text

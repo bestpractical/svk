@@ -43,14 +43,6 @@ sub exist {
     return $SVN::Node::unknown;
 }
 
-sub rev {
-    my ($self, $path) = @_;
-    my $copath;
-    ($path,$copath) = $self->get_paths($path);
-
-    return $self->xd->{checkout}->get($copath)->{revision};
-}
-
 sub localmod { 
     my ($self, $path, $checksum) = @_;
     my $copath;

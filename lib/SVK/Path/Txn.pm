@@ -24,6 +24,7 @@ sub get_editor {
 	    $inspector,
 	    txn => $txn,
 	    post_handler => $post_handler,
+	    cb_rev => sub { $yrev },
 	    cb_copyfrom =>
 	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
 }

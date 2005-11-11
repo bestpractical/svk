@@ -17,8 +17,6 @@ sub exist {
     return $self->root->check_path ($path, $pool);
 }
 
-sub rev { shift->base_rev; }
-
 sub localmod {
     my ($self, $path, $checksum, $pool) = @_;
     $path = $self->_anchor_path($path);

@@ -96,7 +96,7 @@ sub get_dynamic_editor {
     my $editor = SVK::Editor::Rename->new
 	( editor => $storage,
 	  cb_exist => $self->{parent} ? $cb{cb_exist} : undef);
-     $editor->{_root_baton} = $editor->open_root ($cb{inspector}->rev(''));
+     $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
     return ($anchor, $editor);
 }
 

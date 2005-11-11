@@ -125,16 +125,20 @@ sub get_editor {
     my ($m, $mpath) = $arg{ignore_mirror} ? () : $self->is_mirrored;
     my $fs = $self->repos->fs;
     my $yrev = $fs->youngest_rev;
+    
+    my $root_baserev = $m ? $m->{fromrev} : $yrev;
 
     my $inspector = SVK::Inspector::Root->new
 	({ root => $fs->revision_root($yrev),
 	   anchor => $self->{path},
-	   base_rev => $m ? $m->{fromrev} : $yrev });
+	   base_rev => $root_baserev });
 
     if ($arg{check_only}) {
 	print loc("Checking locally against mirror source %1.\n", $m->{source})
 	    if $m;
-	return (SVN::Delta::Editor->new, $inspector, mirror => $m);
+	return (SVN::Delta::Editor->new, $inspector, 
+	        cb_rev => sub { $root_baserev },
+	        mirror => $m);
     }
 
     my $callback = $arg{callback};
@@ -156,6 +160,7 @@ sub get_editor {
 	return ($editor, $inspector,
 		mirror => $m,
 		post_handler => \$post_handler,
+		cb_rev => sub { $root_baserev }, #This is the inspector baserev
 		cb_copyfrom =>
 		sub { my ($path, $rev) = @_;
 		      $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
@@ -174,6 +179,7 @@ sub get_editor {
 	    send_fulltext => 1,
 	    post_handler => $post_handler, # inconsistent!
 	    txn => $txn,
+	    cb_rev => sub { $root_baserev },
 	    cb_copyfrom =>
 	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
 }

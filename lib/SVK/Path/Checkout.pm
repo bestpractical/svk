@@ -115,9 +115,8 @@ sub anchorify {
 
 =head2 get_editor
 
-Returns the L<SVK::Editor::XD> object and L<SVK::Inspector::XD>.  Also
-returns the callback hash used by L<SVK::Editor::Merge> when called in
-array context.
+Returns the L<SVK::Editor::XD> object, L<SVK::Inspector::XD>, and the callback 
+hash used by L<SVK::Editor::Merge>
 
 =cut
 
@@ -144,6 +143,14 @@ sub get_editor {
 					      oldroot => $arg{oldroot},
                                              });
     return ($storage, $inspector,
+        cb_rev => sub {
+            my ($path) = @_;
+            my $copath;
+            ($path,$copath) = $inspector->get_paths($path);
+        
+            return $self->xd->{checkout}->get($copath)->{revision};
+        },
+
         cb_conflict => sub {
             my ($path) = @_;
             my $copath;

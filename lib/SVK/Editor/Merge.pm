@@ -144,6 +144,7 @@ sub cb_for_root {
 
     return (
         inspector => $inspector,
+        cb_rev => sub { $base_rev },
         $inspector->compat_cb
     );
 }
