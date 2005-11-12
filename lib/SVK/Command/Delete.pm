@@ -19,9 +19,9 @@ sub parse_arg {
     @arg = map { $self->{xd}->target_from_copath_maybe($_) } @arg;
 
     # XXX: better check for @target being the same type
-    if (grep {$_->{copath}} @arg) {
+    if (grep {$_->isa('SVK::Path::Checkout')} @arg) {
 	die loc("Mixed depotpath and checkoutpath not supported.\n")
-	    if grep {!$_->{copath}} @arg;
+	    if grep {!$_->isa('SVK::Path::Checkout')} @arg;
 
 	return $self->{xd}->target_condensed(@arg);
     }
@@ -59,7 +59,7 @@ sub do_delete_direct {
 sub _ensure_mirror {
     my ($self, $target) = @_;
     my @m = $target->contains_mirror or return;
-    return if !$target->{copath} && $#m == 0 && $m[0] eq $target->path;
+    return if !$target->isa('SVK::Path::Checkout') && $#m == 0 && $m[0] eq $target->path;
 
     my $depotname = $target->depotname;
     die loc("%1 contains mirror, remove explicitly: ", "/$depotname".$target->path).
@@ -71,7 +71,7 @@ sub run {
 
     $self->_ensure_mirror($target);
 
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	$self->{xd}->do_delete( $target, no_rm => $self->{keep}, 
 		'force_delete' => $self->{force} );
     }

@@ -85,7 +85,7 @@ sub do_propset_direct {
 sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	die loc("-r not allowed for propset copath.\n")
 	    if $self->{rev};
 	# verify the content is not with mixed line endings.

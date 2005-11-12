@@ -128,7 +128,7 @@ sub get_editor {
     my ($editor, %cb);
 
     # XXX: the case that the target is an xd is actually only used in merge.
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
 	($editor, %cb) = $self->{xd}->get_editor
 	    ( %$target,
@@ -431,7 +431,7 @@ sub run {
 	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
-    my ($editor, %cb) = $self->get_editor ($target->new (copath => undef), $committed);
+    my ($editor, %cb) = $self->get_editor ($target->new->as_depotpath, $committed);
 
     die loc("unexpected error: commit to mirrored path but no mirror object")
 	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});

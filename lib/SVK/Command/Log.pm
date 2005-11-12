@@ -52,7 +52,7 @@ sub run {
 	$torev ||= $fromrev;
     }
     $target->as_depotpath($self->find_base_rev($target))
-	if defined $target->{copath};
+	if $target->isa('SVK::Path::Checkout');
 
     $fromrev ||= $target->{revision};
     $torev ||= 0;

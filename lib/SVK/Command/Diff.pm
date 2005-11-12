@@ -31,13 +31,15 @@ sub run {
 
     # translate to target and target2
     if ($target2) {
-	if ($target->{copath}) {
-	    die loc("Invalid arguments.\n") if !$target2->{copath};
+	if ($target->isa('SVK::Path::Checkout')) {
+	    die loc("Invalid arguments.\n")
+		unless $target2->isa('SVK::Path::Checkout');
             $self->run($_) foreach @_[1..$#_];
             return;
 	}
-	if ($target2->{copath}) {
-	    die loc("Invalid arguments.\n") if $target->{copath};
+	if ($target2->isa('SVK::Path::Checkout')) {
+	    die loc("Invalid arguments.\n")
+		if $target->isa('SVK::Path::Checkout');
 	    $target->{revision} = $r1 if $r1;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
 	    die loc("path %1 does not exist.\n", $target->report)
@@ -46,7 +48,7 @@ sub run {
     }
     else {
 	$target->as_depotpath($r1) if $r1 && $r2;
-	if ($target->{copath}) {
+	if ($target->isa('SVK::Path::Checkout')) {
 	    $target = $self->{xd}->target_condensed($target); # find anchor
 	    $target2 = $target->new;
 	    $target->as_depotpath($r1) if $r1;;
@@ -63,7 +65,7 @@ sub run {
 
     my ($oldroot, $newroot) = map { $_->root($self->{xd}) } ($target, $target2);
 
-    unless ($target2->{copath}) {
+    unless ($target2->isa('SVK::Path::Checkout')) {
 	die loc("path %1 does not exist.\n", $target2->report)
 	    if $target2->root->check_path($target2->{path}) == $SVN::Node::none;
     }
@@ -72,7 +74,8 @@ sub run {
 	SVK::Editor::Status->new
 	: SVK::Editor::Diff->new
 	( $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision ".($target->{revision})),
-	  rlabel => $target2->{copath} ? 'local' : "revision ".($target2->{revision}),
+	  rlabel => $target2->isa('SVK::Path::Checkout')
+	           ? 'local' : "revision ".($target2->{revision}),
 	  external => $ENV{SVKDIFF},
 	  $target->{path} ne $target2->{path} ?
 	  ( lpath  => $target->{path},
@@ -81,7 +84,7 @@ sub run {
 	);
 
     my $kind = $oldroot->check_path ($target->{path});
-    if ($target2->{copath}) {
+    if ($target2->isa('SVK::Path::Checkout')) {
 	if ($kind != $SVN::Node::dir) {
 	    my $tgt;
 	    ($target2->{path}, $tgt) = get_anchor (1, $target2->{path});

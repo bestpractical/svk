@@ -155,7 +155,7 @@ sub check_src {
     for my $src (@src) {
 	# XXX: respect copath rev
 	$src->{revision} = $self->{rev} if defined $self->{rev};
-	next unless $src->{copath};
+	next unless $src->isa('SVK::Path::Checkout');
 	$self->_unmodified ($src->new);
     }
 }
@@ -171,7 +171,7 @@ sub run {
     $self->check_src (@src);
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
-    if ($dst->{copath}) {
+    if ($dst->isa('SVK::Path::Checkout')) {
 	return loc("%1 is not a directory.\n", $dst->report)
 	    if $#src > 0 && !-d $dst->{copath};
 	return loc("%1 is not a versioned directory.\n", $dst->report)

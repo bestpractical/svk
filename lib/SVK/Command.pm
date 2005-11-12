@@ -106,6 +106,7 @@ sub invoke {
     $ofh = select $output if $output;
     $ret = eval {$pkg->dispatch ($xd ? (xd => $xd, svnconfig => $xd->{svnconfig}) : (),
 				 output => $output) };
+
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
     unless (ref($@)) {
@@ -624,7 +625,7 @@ sub lock_target {
     my $self = shift;
     for my $target (@_) {
 	$self->{xd}->lock ($target->{copath})
-	    if $target->{copath};
+	    if $target->isa('SVK::Path::Checkout');
     }
 }
 
@@ -637,7 +638,7 @@ XXX Undocumented
 sub lock_coroot {
     my $self = shift;
     my @tgt = map { $_->copath($_->{copath_target}) }
-	grep { defined $_->{copath} } @_;
+	grep { $_->isa('SVK::Path::Checkout') } @_;
     return unless @tgt;
     my %roots;
     for (@tgt) {
@@ -998,7 +999,7 @@ sub find_date_rev {
 sub find_base_rev {
     my ($self,$target) = @_;
     die(loc("BASE can only be issued with a check-out path\n"))
-        unless(defined($target->{copath}));
+        unless $target->isa('SVK::Path::Checkout');
     my $rev = $self->{xd}{checkout}->get($target->copath)->{revision};
     return $rev;
 }
