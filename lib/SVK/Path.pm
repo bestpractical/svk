@@ -96,8 +96,10 @@ sub same_source {
 
 sub _to_pclass {
     my ($self, $path, $what) = @_;
+    # path::class only thinks empty list being .
+    my @path = length $path ? ($path) : ();
     $what = 'Unix' if !defined $what && !$self->isa('SVK::Path::Checkout');
-    return $what ? Path::Class::foreign_dir($what, $path) : Path::Class::dir($path);
+    return $what ? Path::Class::foreign_dir($what, @path) : Path::Class::dir(@path);
 }
 
 sub anchorify {
