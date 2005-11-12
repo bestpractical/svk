@@ -343,7 +343,7 @@ sub committed_commit {
     my $fs = $target->{repos}->fs;
     sub {
 	my $rev = shift;
-	my ($entry, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
+	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
 	my (undef, $coanchor) = $self->{xd}->find_repos ($entry->{depotpath});
 	my $oldroot = $fs->revision_root ($rev-1);
 	# optimize checkout map

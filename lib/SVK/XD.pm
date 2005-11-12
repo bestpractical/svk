@@ -473,6 +473,8 @@ sub xdroot {
 sub create_xd_root {
     my ($self, %arg) = @_;
     my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
+    $copath = File::Spec::Unix->catdir($copath, $arg{copath_target})
+	if defined $arg{copath_target};
     my ($txn, $root);
 
     my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});

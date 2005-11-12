@@ -636,7 +636,7 @@ XXX Undocumented
 
 sub lock_coroot {
     my $self = shift;
-    my @tgt = map { $_->{copath} }
+    my @tgt = map { $_->copath($_->{copath_target}) }
 	grep { defined $_->{copath} } @_;
     return unless @tgt;
     my %roots;
