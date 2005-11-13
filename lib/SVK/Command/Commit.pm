@@ -156,7 +156,10 @@ sub _editor_for_patch {
 
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
-
+    # Commit as patch
+    return $self->_editor_for_patch($target, $source)
+	if defined $self->{patch};
+ 
     # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
