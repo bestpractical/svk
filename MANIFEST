@@ -161,6 +161,7 @@ t/19cleanup.t
 t/20add.t
 t/21delete.t
 t/22status.t
+t/23commit-file.t
 t/23commit-mirror.t
 t/23commit-multi.t
 t/23commit.t

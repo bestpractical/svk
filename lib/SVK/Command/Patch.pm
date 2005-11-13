@@ -174,9 +174,10 @@ sub run {
     my $mergecmd = $self->command ('merge');
     $mergecmd->getopt (\@args);
     my $dst = $self->arg_co_maybe ($args[0] || '');
-    $self->lock_target ($dst) if $dst->{copath};
+    $self->lock_target ($dst) if $dst->isa('SVK::Path::Checkout');
     my $ticket;
-    $mergecmd->get_commit_message ($patch->{log}) unless $dst->{copath};
+    $mergecmd->get_commit_message ($patch->{log})
+	unless $dst->isa('SVK::Path::Checkout');
     my $merge = SVK::Merge->new (%$mergecmd, dst => $dst, repos => $dst->{repos});
     $ticket = sub { $merge->get_new_ticket (SVK::Merge::Info->new ($patch->{ticket})) }
 	if $patch->{ticket} && $dst->universal->same_resource ($patch->{target});

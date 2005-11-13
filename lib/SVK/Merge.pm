@@ -206,7 +206,7 @@ sub find_merge_sources {
     my $info = $self->merge_info ($target->new);
 
     $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath)->{revision})
-	if defined $target->{copath};
+	if $target->isa('SVK::Path::Checkout');
     $info->add_target ($target, $self->{xd}) unless $noself;
 
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});

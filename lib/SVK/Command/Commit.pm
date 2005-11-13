@@ -157,11 +157,7 @@ sub _editor_for_patch {
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
 
-    # Commit as patch
-    return $self->_editor_for_patch($target, $source)
-	if defined $self->{patch};
-
-    # Editor for checkout, only in the case for merging to checkout
+    # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
 	my ($editor, $inspector, %cb) = $target->get_editor
@@ -316,7 +312,7 @@ sub committed_commit {
     my $fs = $target->{repos}->fs;
     sub {
 	my $rev = shift;
-	my ($entry, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
+	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
 	my (undef, $coanchor) = $self->{xd}->find_repos ($entry->{depotpath});
 	my $oldroot = $fs->revision_root ($rev-1);
 	# optimize checkout map
@@ -404,8 +400,7 @@ sub run {
 	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
-    my ($editor, %cb) = $self->get_editor
-	($target->new->as_depotpath, $committed);
+    my ($editor, %cb) = $self->get_editor ($target->new->as_depotpath, $committed);
 
     die loc("unexpected error: commit to mirrored path but no mirror object")
 	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});

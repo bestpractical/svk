@@ -23,7 +23,7 @@ sub run {
     my ($self, $pname, $target) = @_;
 
     die loc("-r not allowed for propset copath.\n")
-	if $self->{rev} && $target->{copath};
+	if $self->{rev} && $target->isa('SVK::Path::Checkout');
 
     my $pvalue = $self->_proplist ($target)->{$pname};
 

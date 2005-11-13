@@ -29,6 +29,7 @@ sub new {
     $self->refresh_revision unless defined $self->revision;
     if (defined $self->{copath}) {
 	require SVK::Path::Checkout;
+#	Carp::carp "implicit svk::path::checkout creation";
 	bless $self, 'SVK::Path::Checkout';
     }
     if (my $depotpath = delete $self->{depotpath}) {
@@ -185,8 +186,10 @@ sub get_editor {
 
 sub _to_pclass {
     my ($self, $path, $what) = @_;
+    # path::class only thinks empty list being .
+    my @path = length $path ? ($path) : ();
     $what = 'Unix' if !defined $what && !$self->isa('SVK::Path::Checkout');
-    return $what ? Path::Class::foreign_dir($what, $path) : Path::Class::dir($path);
+    return $what ? Path::Class::foreign_dir($what, @path) : Path::Class::dir(@path);
 }
 
 sub anchorify {
@@ -364,8 +367,8 @@ sub _nearest_copy_svk {
 	my ($hppath, $hprev) = $hist->location;
 	if ($hppath ne $path) {
 	    $hist = $root->node_history ($path, $new_pool)->prev(0);
-	    my $rev = ($hist->location($new_pool))[1];
-	    $root = $fs->revision_root ($rev, $ppool);
+	    $root = $fs->revision_root (($hist->location($new_pool))[1],
+					$ppool);
 	    return ($root, $fs->revision_root ($hprev, $ppool), $hppath);
 	}
 

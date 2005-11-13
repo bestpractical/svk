@@ -52,13 +52,13 @@ sub parse_arg {
 
     if ($self->{from}) {
         # When using "from", $target1 must always be a depotpath.
-        if (defined $target1->{copath}) {
+        if ($target1->isa('SVK::Path::Checkout')) {
             # Because merging under the copy anchor is unsafe, we always merge
             # to the most immediate copy anchor under copath root.
             ($target1, $target2) = $self->find_checkout_anchor (
                 $target1, 1, $self->{sync}
                );
-            delete $target1->{copath};
+	    $target1->as_depotpath;
         }
     }
 
@@ -71,7 +71,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $self->lock_target ($_[1]);
+    $self->lock_target($_[1]) if $_[1];
 }
 
 sub get_commit_message {
@@ -137,7 +137,7 @@ sub run {
     }
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : undef)
-	unless $dst->{copath};
+	unless $dst->isa('SVK::Path::Checkout');
 
     if ($self->{incremental}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")

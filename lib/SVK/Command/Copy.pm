@@ -130,18 +130,21 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
+    my (@modified, @unknown);
     $target = $self->{xd}->target_condensed($target); # anchor
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
-	    ( cb_flush => sub {
-		  die loc ("%1 is modified.\n", $target->copath ($_[0]));
-	      })),
-	  # need tests: only useful for move killing the src with unknown entries
-	  cb_unknown => sub {
-	      die loc ("%1 is unknown.\n", $target->copath ($_[1]))});
+	    ( cb_flush => sub { push @modified, $_[0] })),
+	  cb_unknown => sub { push @unknown, $_[1] } );
+
+    if (@modified || @unknown) {
+	my @reports = sort map { loc ("%1 is modified.\n", $target->report_copath ($_)) } @modified;
+	push @reports, sort map { loc ("%1 is unknown.\n", $target->report_copath ($_)) } @unknown;
+	die join("", @reports);
+    }
 }
 
 sub check_src {
@@ -149,7 +152,7 @@ sub check_src {
     for my $src (@src) {
 	# XXX: respect copath rev
 	$src->{revision} = $self->{rev} if defined $self->{rev};
-	next unless $src->{copath};
+	next unless $src->isa('SVK::Path::Checkout');
 	$self->_unmodified ($src->new);
     }
 }
@@ -165,7 +168,7 @@ sub run {
     $self->check_src (@src);
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
-    if ($dst->{copath}) {
+    if ($dst->isa('SVK::Path::Checkout')) {
 	return loc("%1 is not a directory.\n", $dst->report)
 	    if $#src > 0 && !-d $dst->{copath};
 	return loc("%1 is not a versioned directory.\n", $dst->report)

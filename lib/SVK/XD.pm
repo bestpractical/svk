@@ -476,6 +476,8 @@ sub xdroot {
 sub create_xd_root {
     my ($self, %arg) = @_;
     my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
+    $copath = File::Spec::Unix->catdir($copath, $arg{copath_target})
+	if defined $arg{copath_target};
     my ($txn, $root);
 
     my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});
@@ -605,18 +607,12 @@ sub do_delete {
 			    }
     );
 
-    # need to use undef to avoid the $SEP at the beginning on empty report.    
-    my $report = (defined $target->report && length $target->report) ? $target->report : undef;
-    my $rpath = sub {
-    	abs2rel( shift, $target->copath => $report );
-    };
-    
     # use Data::Dumper; warn Dumper \@unknown, \@modified, \@scheduled;
     unless ($arg{force_delete}) {
     	my @reports;
-	push @reports, map { loc("%1 is not under version control", $rpath->($_)) } @unknown;
-	push @reports, map { loc("%1 is modified", $rpath->($_)) } @modified;
-	push @reports, map { loc("%1 is scheduled", $rpath->($_)) } @scheduled;
+	push @reports, sort map { loc("%1 is not under version control", $target->report_copath($_)) } @unknown;
+	push @reports, sort map { loc("%1 is modified", $target->report_copath($_)) } @modified;
+	push @reports, sort map { loc("%1 is scheduled", $target->report_copath($_)) } @scheduled;
 
 	die join(",\n", @reports) . "; use '--force' to go ahead.\n"
 	    if @reports;
@@ -639,7 +635,7 @@ sub do_delete {
 
     my %noschedule = map { $_ => 1 } (@unknown, @scheduled);
     for (@deleted) {
-	print "D   ".$rpath->($_)."\n"
+	print "D   ".$target->report_copath($_)."\n"
 	    unless $arg{quiet};
 	
 	# don't schedule unknown/added files for deletion as this confuses revert.    
