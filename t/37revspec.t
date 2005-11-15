@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 10;
+plan_svm tests => 11;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -23,6 +23,7 @@ is_output_like($svk,'log',['-r','HEAD'],qr|cp and ps|);
 is_output_like($svk,'log',['-r','HEAD','//'],qr|cp and ps|);
 is_output_like($svk,'log',['-r','BASE'],qr|cp and ps|);
 is_output_like($svk,'log',['-r','BASE','//A'],qr|BASE can only be issued with a check-out path|);
+is_output_like($svk,'log',['-r','1','-r','2','-r','3','//A'],qr|Invalid -r.|);
 
 $svk->cp('//A/foo','//A/foo-cp2','-m','cp issued directly to depotpath');
 is_output_like($svk,'log',['-r','HEAD'],qr|cp issued directly to depotpath|);
