@@ -930,7 +930,7 @@ sub resolve_revspec {
     my ($r1,$r2);
     if (my $revspec = $self->{revspec}) {
         if ($#{$revspec} > 1) {
-            die loc ("Invliad -r.\n");
+            die loc ("Invalid -r.\n");
         } else {
             $revspec = [map {split /:/} @$revspec];
             ($r1, $r2) = map {
