@@ -67,7 +67,8 @@ sub run {
 	if exists $entry->{depotpath} && $#where > 0;
 
     $self->{xd}{checkout}->store_recursively ( $copath,
-					       { depotpath => $target->{depotpath},
+					       { depotpath => $target->{depotpath}.
+						 ($target->{_root} ? '@'.$target->{revision} : ''),
 						 encoding => get_encoding,
 						 revision => 0,
 						 '.schedule' => undef,
@@ -75,10 +76,15 @@ sub run {
 						 '.deleted' => undef,
 						 '.conflict' => undef,
 					       });
+    $target->as_depotpath ($self->{rev});
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 
-    $self->SUPER::run ($target->new (report => $report,
-				     copath => $copath));
+    $self->do_update ($target->new (report => $report,
+				    _root => undef,
+				    copath => $copath),
+		      $target
+		     );
+
     $self->rebless ('checkout::detach')->run ($copath)
 	if $self->{export};
 

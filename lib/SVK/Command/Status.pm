@@ -19,12 +19,11 @@ sub parse_arg {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $self->{xd}->xdroot (%$target);
     my $report = $target->{report};
     $report .= '/' if $report;
     $self->{xd}->checkout_delta
 	( %$target,
-	  xdroot => $xdroot,
+	  xdroot => $target->root ($self->{xd}),
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  editor => SVK::Editor::Status->new (

@@ -22,7 +22,7 @@ sub lock {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $self->{xd}->xdroot (%$target);
+    my $xdroot = $target->root ($self->{xd});
 
 	$self->{xd}->checkout_delta
 	    ( %$target,

@@ -39,13 +39,7 @@ sub run {
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
-	my $update_target = SVK::Target->new
-	    ( %$target,
-	      path => $self->{update_target_path} || $target->{path},
-	      revision => defined $self->{rev} ?
-	      $self->{rev} : $target->{repos}->fs->youngest_rev,
-	      copath => undef
-	    );
+	my $update_target = $target->new->as_depotpath ($self->{rev});
 
         # Because merging under the copy anchor is unsafe, we always merge
         # to the most immediate copy anchor under copath root.

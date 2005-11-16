@@ -166,6 +166,7 @@ t/60patchset.t
 t/70symlink.t
 t/71autovivify.t
 t/72sign.t
+t/73view.t
 t/73i18n.t
 t/svk-sec.gpg
 t/svk.gpg

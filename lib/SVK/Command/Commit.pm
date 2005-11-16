@@ -327,6 +327,7 @@ sub committed_commit {
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
+#	    warn "==> from native $dpath $encoder $target->{copath}";
 	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);

@@ -37,15 +37,20 @@ sub refresh_revision {
 
 sub clone {
     my ($self) = @_;
+    my $repos = delete $self->{repos};
+    my $root = delete $self->{_root};
 
     require Clone;
     my $cloned = Clone::clone ($self);
-    $cloned->{repos} = $self->{repos};
+    $cloned->{repos} = $self->{repos} = $repos;
+    $cloned->{_root} = $self->{_root} = $root;
     return $cloned;
 }
 
 sub root {
     my ($self, $xd) = @_;
+    return $self->{_root}
+	if $self->{_root};
     if ($self->{copath}) {
 	$xd->xdroot (%$self);
     }

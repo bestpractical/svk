@@ -35,7 +35,7 @@ sub run {
     die loc("Can only switch checkout root.\n")
 	unless $where[0] eq $cotarget->{copath};
 
-    $self->{update_target_path} = $target->{path};
+    $target->as_depotpath ($self->{rev});
 #    switch to related_to once the api is ready
     # check if the switch has a base at all
     die loc("path %1 does not exist.\n", $target->{report})
@@ -45,8 +45,7 @@ sub run {
 #    die loc ("%1 is not related to %2.\n", $cotarget->{report}, $target->{report})
 #	unless $cotarget->new->as_depotpath->related_to ($target);
 
-    $self->SUPER::run ($cotarget);
-
+    $self->do_update ($cotarget, $target);
     $self->{xd}{checkout}->store ($cotarget->{copath},
 				  {depotpath => $target->{depotpath},
 				   revision => $target->{revision}});

@@ -328,7 +328,6 @@ sub arg_condensed {
     s{[/\Q$SEP\E]$}{}o for @arg; # XXX band-aid
 
     my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
-
     if ($self->{recursive}) {
 	# remove redundant targets when doing recurisve
 	# if have '' in targets then it means everything
@@ -340,15 +339,9 @@ sub arg_condensed {
 	@targets = @newtarget;
     }
 
-    my ($repospath, $path, undef, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
-    my $target = SVK::Target->new
-	( repos => $repos,
-	  repospath => $repospath,
-	  depotpath => $cinfo->{depotpath},
-	  copath => $copath,
-	  path => $path,
-	  report => $report,
-	  targets => @targets ? \@targets : undef );
+    my $target = $self->arg_copath ($copath);
+    $target->{report} = $report;
+    $target->{targets} = \@targets if @targets;
     my $root = $target->root ($self->{xd});
     until ($root->check_path ($target->{path}) == $SVN::Node::dir) {
 	my $targets = delete $target->{targets};
@@ -545,6 +538,12 @@ Argument is a checkout path.
 sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
+    my ($root);
+    my ($view, $rev, $subpath);
+    if (($view, $rev, $subpath) = $path =~ m{^/\^(\w+)\@(\d+)(.*)$}) {
+	($path, $root) = $self->create_view ($repos, $view, $rev, $subpath);
+    }
+
     from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
@@ -552,6 +551,7 @@ sub arg_copath {
 	  report => File::Spec->canonpath ($arg),
 	  copath => $copath,
 	  path => $path,
+	  _root => $root,
 	  cinfo => $cinfo,
 	  depotpath => $cinfo->{depotpath},
 	);
@@ -563,12 +563,45 @@ Argument is a depotpath, including the slashes and depot name.
 
 =cut
 
+sub create_view {
+    my ($self, $repos, $view, $rev, $subpath) = @_;
+    my $fs = $repos->fs;
+    $rev = $fs->youngest_rev unless defined $rev;
+    my $txn = $fs->begin_txn ($rev);
+    my $root = $txn->root;
+    my $content = $root->node_prop ('/', "svk:view:$view");
+    my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
+
+    $fs->revision_root ($rev)->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
+
+    for (@content) {
+	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";
+	my $abspath = ($anchor eq '/' ? '/' : "$anchor/").$path;
+	if ($del) {
+	    die "can't del with target" if $target;
+	    $root->delete ($abspath);
+	}
+	else {
+	    # XXX: mkpdir
+	    SVN::Fs::copy ($fs->revision_root ($rev), $target,
+			   $root, $abspath);
+	}
+    }
+    return (defined $subpath ? $anchor eq '/' ? "/$subpath" : "$anchor/$subpath"
+	    : $anchor,
+	    SVK::XD::Root->new ($txn, $root));
+}
+
 sub arg_depotpath {
     my ($self, $arg) = @_;
-
+    my $root;
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
+    if (my ($view) = $path =~ m{^/\^(\w+)$}) {
+	($path, $root) = $self->create_view ($repos, $view, $rev);
+    }
+
     return SVK::Target->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -576,6 +609,7 @@ sub arg_depotpath {
 	  report => $arg,
 	  revision => $rev,
 	  depotpath => $arg,
+	  _root => $root,
 	);
 }
 

@@ -294,6 +294,7 @@ sub get_encoder {
 sub from_native {
     my $enc = ref $_[2] ? $_[2] : get_encoder ($_[2]);
     my $buf = eval { $enc->decode ($_[0], 1) };
+#    Carp::cluck $@ if $@;
     die loc ("Can't decode %1 as %2.\n", $_[1], $enc->name) if $@;
     $_[0] = $buf;
     Encode::_utf8_off ($_[0]);
