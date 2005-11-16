@@ -440,6 +440,8 @@ sub copied_from {
     while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
 	$target->revision($fromroot->revision_root_revision);
 	# Check for existence.
+        # XXX This treats delete + copy in 2 separate revision as a rename
+        # which may or may not be intended.
 	if ($root->check_path ($target->{path}) == $SVN::Node::none) {
 	    next;
 	}
