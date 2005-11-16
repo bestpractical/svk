@@ -124,7 +124,8 @@ sub open_parent {
 
     ++$self->{batons};
 
-    if ($self->{cb_exist} && !$self->{cb_exist}->($parent)) {
+    # XXX: If inspector is always there, then the first check isn't necessary.
+    if ($self->{inspector} && !$self->{inspector}->exist($parent)) {
 	unshift @{$self->{edit_tree}[$pbaton]},
 	    [$self->{batons}, 'add_directory', $parent, $ppbaton, undef, -1];
     }

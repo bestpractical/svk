@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 23;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -17,6 +17,8 @@ $svk->add('A');
 is_output ($svk, 'revert', ['A/foo'],
 	   [__("Reverted A/foo")], 'revert an added file');
 is_output ($svk, 'revert', ['A/foo'],
+	   [__("A/foo is not versioned; ignored.")], 'do it again');
+is_output ($svk, 'revert', ['-q', 'A/foo'],
 	   [__("A/foo is not versioned; ignored.")], 'do it again');
 is_output ($svk, 'revert', ['-R', 'A/deep'],
 	   [__("Reverted A/deep"),
@@ -80,3 +82,45 @@ is_output ($svk, 'st', [],
 is_output ($svk, 'revert', ['-R'],
 	   [__("Reverted A/foo")]);
 is_output ($svk, 'st', [], []);
+
+overwrite_file ("A/foo", "foobarbaz");
+is_output ($svk, 'revert', ['--quiet', '-R'], []);
+is_output ($svk, 'st', [], []);
+
+$svk->cp('A/foo', 'A/foo.cp');
+
+is_output ($svk, 'revert', ['-R'],
+	   [__("Reverted A/foo.cp")]);
+
+is_output ($svk, 'st', [], [__('?   A/foo.cp')]);
+unlink('A/foo.cp');
+
+$svk->cp('A/foo', 'A/foo.cp');
+append_file('A/foo.cp', 'some thing');
+is_output ($svk, 'revert', ['-R'],
+	   [__("Reverted A/foo.cp")]);
+
+is_output ($svk, 'st', [], [__('?   A/foo.cp')]);
+unlink('A/foo.cp');
+
+mkdir('A/dir1');
+overwrite_file ("A/dir1/foo", "foobarbaz");
+overwrite_file ("A/dir1/bar", "foobarbaz");
+$svk->add('A/dir1');
+$svk->commit ('-m', 'added A/dir1');
+$svk->cp('A/dir1', 'A/dir1-copy');
+append_file('A/dir1-copy/foo', 'some thing');
+overwrite_file ("A/dir1-copy/fnord", "foobarbaz");
+$svk->add("A/dir1-copy/fnord");
+$svk->rm('A/dir1-copy/bar');
+is_output ($svk, 'st', [], [
+    __('A + A/dir1-copy'),
+    __('M + A/dir1-copy/foo'),
+    __('A   A/dir1-copy/fnord'),
+    __('D + A/dir1-copy/bar')]);
+
+is_output ($svk, 'revert', ['-R', 'A/dir1-copy'], [
+    __('Reverted A/dir1-copy'),
+    __('Reverted A/dir1-copy/foo'),
+    __('Reverted A/dir1-copy/fnord'),
+    __('Reverted A/dir1-copy/bar')]);

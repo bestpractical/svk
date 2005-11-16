@@ -40,16 +40,22 @@ my ($repospath, $path, $repos) = $xd->find_repos ('//', 1);
 my $fs = $repos->fs;
 
 $svk->ps(-m=>'mod', 'foo', 'bar', '//baz/S');
-is_copy ([SVK::Target::nearest_copy ($fs->revision_root (208), '/baz/S')],
-	   [205, 204, '/bar/B/S']);
-is_copy ([SVK::Target::nearest_copy ($fs->revision_root (208), '/baz')],
-	   [205, 204, '/bar/B']);
-is_copy ([SVK::Target::nearest_copy ($fs->revision_root (204), '/bar/B/S')],
-	   [204, 3, '/foo/B/S']);
-is_copy ([SVK::Target::nearest_copy ($fs->revision_root (3), '/foo/B/S')],
-	   [3, 2, '/foo/A']);
-is_copy ([SVK::Target::nearest_copy ($fs->revision_root (2), '/foo/A')],
-	   []);
+
+is_copy ([SVK::Path->new(repos => $repos,
+			 revision => 208, path => '/baz/S')->nearest_copy],
+	 [205, 204, '/bar/B/S']);
+is_copy ([SVK::Path->new(repos => $repos,
+			 revision => 208, path => '/baz')->nearest_copy],
+	 [205, 204, '/bar/B']);
+is_copy ([SVK::Path->new(repos => $repos,
+			 revision => 204, path => '/bar/B/S')->nearest_copy],
+	 [204, 3, '/foo/B/S']);
+is_copy ([SVK::Path->new(repos => $repos,
+			 revision => 3, path => '/foo/B/S')->nearest_copy],
+	 [3, 2, '/foo/A']);
+is_copy ([SVK::Path->new(repos => $repos,
+			 revision => 2, path => '/foo/A')->nearest_copy],
+	 []);
 
 sub is_copy {
     if (exists $_[0][0]) {

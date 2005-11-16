@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 17;
+use Test::More tests => 28;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -56,13 +56,11 @@ overwrite_file ("$copath/A", "dir replaced as file\n");
 $svk->status ($copath);
 is_output ($svk, 'add', ["$copath/A"],
 	   [__"R   $copath/A"]);
-TODO: {
-local $TODO = 'file replacing dir';
+
 is_output ($svk, 'status', [$copath],
 	   [__"R   $copath/A",
 	    __"D   $copath/A/be",
 	    __"D   $copath/A/neu"], 'file replacing dir');
-}
 $svk->commit ('-m', 'commit the replace', $copath);
 
 mkdir ("$copath/T1");
@@ -82,6 +80,8 @@ is_output ($svk, 'cp', ["$copath/T2/T2", "$copath/T1/T1"],
            [__"A   $copath/T1/T1"], 'replace with history');
 is_output ($svk, 'st', [$copath],
 	   [__"R + $copath/T1/T1"]);
+is_output ($svk, 'st', ["$copath/T1/T1"],
+	   [__"R + $copath/T1/T1"]);
 
 $svk->commit ('-m', 'commit', $copath);
 
@@ -99,8 +99,49 @@ is_output ($svk, 'st', [$copath],
 append_file ("$copath/T1/T2", "hate\n");
 is_output ($svk, 'st', [$copath],
 	   [__"R + $copath/T1",
-	    __"M   $copath/T1/T2"]);
+	    __"M + $copath/T1/T2"]);
 $svk->commit ('-m', 'commit', $copath);
 
 is_ancestor ($svk, '//V/T1',
 	     '/V/T2', 7);
+
+$svk->cp('//V@5' => '//Y', -m => 'branch pre-replace');
+is_output($svk, 'sm', ['//V@6' => '//Y', -m => 'merge dir->file replace'],
+	  ['Auto-merging (5, 6) /V to /Y (base /V:5).',
+	   'R   A',
+	   qr'New merge ticket: .*:/V:6',
+	   'Committed revision 11.']);
+
+is_output($svk, 'merge', [-c => -11, '//Y' => '//Y',
+			  -m => 'revert merge dir->file replace'],
+	  ['R   A',
+	   'A   A/be',
+	   'A   A/neu',
+	   'Committed revision 12.']);
+chdir($copath);
+$svk->sw('//Y');
+
+is_output($svk, 'merge', [-c => 11, '//Y'],
+	  ['R   A']);
+
+is_output($svk, 'st', [],
+	  ['R   A',
+	   __('D   A/be'),
+	   __('D   A/neu'),
+	  ]);
+ok(-f 'A');
+is_output($svk, 'ci', [-m => 'message'],
+	  ['Committed revision 13.']);
+
+is_output($svk, 'merge', [-c => -11, '//Y'],
+	  ['R   A',
+	   __('A   A/be'),
+	   __('A   A/neu')]);
+ok(-d 'A');
+
+is_output($svk, 'st', [],
+	  ['R   A',
+	   __('A   A/be'),
+	   __('A   A/neu')]);
+is_output($svk, 'ci', [-m => 'message'],
+	  ['Committed revision 14.']);

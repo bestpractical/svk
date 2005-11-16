@@ -30,13 +30,14 @@ $svk->commit ('-m', 'change on local', $copath);
 is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 		qr|1 conflict found.|);
 
+$ENV{SVKRESOLVE} = '';
 $answer = 't'; # yours
 $svk->sm ('//trunk', $copath);
 is_output ($svk, 'diff', ["$copath/test.pl"],
 	   [__"=== $copath/test.pl",
             "==================================================================",
-            __"--- $copath/test.pl  (revision 5)",
-            __"+++ $copath/test.pl  (local)",
+            __"--- $copath/test.pl\t(revision 5)",
+            __"+++ $copath/test.pl\t(local)",
             __('@@ -1,5 +1,5 @@'),
             "-#!/usr/bin/perl -w",
             "-sub { 'this is sub on trunk' }",
@@ -53,8 +54,8 @@ $svk->sm ('-m', 'merge from trunk to local', '//trunk', '//local');
 is_output ($svk, 'diff', ["//trunk/test.pl", "//local/test.pl"],
 	   [__"=== test.pl",
 	    "==================================================================",
-	    "--- test.pl   (/trunk/test.pl)   (revision 6)",
-	    "+++ test.pl   (/local/test.pl)   (revision 6)",
+	    "--- test.pl\t(/trunk/test.pl)\t(revision 6)",
+	    "+++ test.pl\t(/local/test.pl)\t(revision 6)",
 	    __('@@ -6,3 +6,5 @@'),
 	    " #common2",
 	    " ",

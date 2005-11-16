@@ -6,6 +6,8 @@ use base qw( SVK::Command::Commit );
 use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR is_uri get_prompt traverse_history );
 
+use constant narg => undef;
+
 sub options {
     ('l|list'  => 'list',
      'd|delete|detach'=> 'detach',
@@ -27,8 +29,12 @@ sub parse_arg {
     my $path = shift(@arg);
 
     # Allow "svk mi uri://... //depot" to mean "svk mi //depot uri://"
-    if (is_uri($path)) {
+    if (is_uri($path) && $arg[0]) {
         ($arg[0], $path) = ($path, $arg[0]);
+    }
+
+    if (defined (my $narg = $self->narg)) {
+	return unless $narg == (scalar @arg + 1);
     }
 
     return ($self->arg_depotpath ($path), @arg);
@@ -40,7 +46,7 @@ sub run {
 	if $target->root->check_path ($target->path);
     $self->get_mirror_object ($target, $source, @options)->init
 	or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
-		   $target->{depotpath});
+		   $target->depotpath);
     return;
 }
 
@@ -70,22 +76,26 @@ package SVK::Command::Mirror::detach;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 
+use constant narg => 1;
+
 sub run {
-    my ($self, $target, $source, @options) = @_;
+    my ($self, $target) = @_;
     my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos},
 						$target->{path});
 
-    die loc("%1 is not a mirrored path.\n", $target->{depotpath}) if !$m;
-    die loc("%1 is inside a mirrored path.\n", $target->{depotpath}) if $mpath;
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
 
     $m->delete(1); # remove svm:source and svm:uuid too
-    print loc("Mirror path '%1' detached.\n", $target->{depotpath});
+    print loc("Mirror path '%1' detached.\n", $target->depotpath);
     return;
 }
 
 package SVK::Command::Mirror::upgrade;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
+
+use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
@@ -97,11 +107,14 @@ package SVK::Command::Mirror::unlock;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 
+use constant narg => 1;
+
 sub run {
     my ($self, $target) = @_;
     my $m = SVN::Mirror->new
 	( target_path => $target->path,
 	  repos => $target->{repos},
+	  ignore_lock => 1,
 	  get_source => 1
 	);
     $m->init;
@@ -122,7 +135,7 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $target, $source, @options) = @_;
+    my ($self, $target) = @_;
     my $fmt = "%-20s\t%-s\n";
     printf $fmt, loc('Path'), loc('Source');
     print '=' x 60, "\n";
@@ -156,6 +169,8 @@ package SVK::Command::Mirror::recover;
 use base qw(SVK::Command::Mirror);
 use SVK::Util qw( traverse_history get_prompt );
 use SVK::I18N;
+
+use constant narg => 1;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
@@ -215,9 +230,10 @@ sub recover_headrev {
         delete => { direct => 1, message => '' }
     )->run($target);
 
+    $target->refresh_revision;
     $self->command(
-        copy => { rev => $rev, direct  => 1, message => '' },
-    )->run($target => $target);
+        copy => { direct  => 1, message => '' },
+    )->run($target->new(revision => $rev) => $target->new);
 
     # XXX - race condition? should get the last committed rev instead
     $target->refresh_revision;

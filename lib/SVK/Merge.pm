@@ -23,7 +23,7 @@ The C<SVK::Merge> class is for representing merge contexts, mainly
 including what delta is used for this merge, and what target the delta
 applies to.
 
-Given the 3 L<SVK::Target> objects:
+Given the 3 L<SVK::Path> objects:
 
 =over
 
@@ -111,6 +111,8 @@ sub find_merge_base {
     my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
+    # XXX: hack for now
+    local $dst->{inspector} = $self->{inspector} if $self->{inspector};
     my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
@@ -118,6 +120,13 @@ sub find_merge_base {
 	my ($path) = m/:(.*)$/;
 	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
 	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
+
+	if ($path eq $dst->path &&
+	    $self->_is_merge_from($src->path,
+				  $src->new(path => $path, revision => $rev), $src->{revision})) {
+	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
+	    last;
+	}
 	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
 	    if !$basepath || $rev > $baserev;
     }
@@ -155,10 +164,40 @@ sub find_merge_base {
 
 sub merge_info {
     my ($self, $target) = @_;
+
+    if ($target->{inspector}) {
+	return SVK::Merge::Info->new
+	    ( $target->{inspector}->localprop('', 'svk:merge') );
+    }
+
     return SVK::Merge::Info->new
 	( $self->{xd}->get_props
 	  ($target->root ($self->{xd}), $target->path,
-	   $target->copath ($target->{copath_target}))->{'svk:merge'} );
+	   $target->isa('SVK::Path::Checkout') ? # XXX: use path access
+	   $target->copath ($target->{copath_target}) : undef)->{'svk:merge'} );
+}
+
+sub merge_info_with_copy {
+    my ($self, $target) = @_;
+    my $minfo = $self->merge_info($target);
+
+    for ($self->copy_ancestors($target)) {
+	my $srckey = join(':', $_->{uuid}, $_->{path});
+	$minfo->{$srckey} = $_
+	    unless $minfo->{$srckey} && $minfo->{$srckey} > $_->{rev};
+    }
+
+    return $minfo;
+}
+
+sub copy_ancestors {
+    my ($self, $target) = @_;
+
+    return map { $target->new
+		     ( path => $_->[0],
+		       targets => undef,
+		       revision => $_->[1])->universal;
+		   } $target->copy_ancestors;
 }
 
 sub find_merge_sources {
@@ -167,7 +206,7 @@ sub find_merge_sources {
     my $info = $self->merge_info ($target->new);
 
     $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath)->{revision})
-	if defined $target->{copath};
+	if $target->isa('SVK::Path::Checkout');
     $info->add_target ($target, $self->{xd}) unless $noself;
 
     my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->{repos});
@@ -208,7 +247,7 @@ sub log {
     my $sep = $verbatim || $self->{verbatim} ? '' : ('-' x 70)."\n";
     my $cb_log = sub {
 	SVK::Command::Log::_show_log
-		(@_, $sep, $buf, 1, $print_rev, 0, $self->{verbatim} ? 1 : 0)
+		(@_, $sep, $buf, 1, $print_rev, 0, $self->{verbatim} ? 1 : 0, 0)
 		    unless $self->_is_merge_from ($self->{src}->path, $self->{dst}, $_[0]);
     };
 
@@ -292,8 +331,8 @@ the merge to the storage editor. Returns the number of conflicts.
 sub run {
     my ($self, $storage, %cb) = @_;
     my ($base, $src) = @{$self}{qw/base src/};
-    my $base_root = $self->{base_root} || $base->root ($self->{xd});
-    # XXX: for merge editor; this should really be in SVK::Target
+    my $base_root = $self->{base_root} || $base->root;
+    # XXX: for merge editor; this should really be in SVK::Path
     my ($report, $target) = ($self->{report}, $src->{targets}[0] || '');
     my $dsttarget = $self->{dst}{targets}[0];
     my $is_copath = defined($self->{dst}{copath});
@@ -319,8 +358,10 @@ sub run {
 	    my $newpath = $storage->rename_check ($path);
 	    $flush->($path, $st, $path eq $newpath ? undef : $newpath) };
     }
-    my $editor = SVK::Editor::Merge->new
+
+    my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->{path},
+	  repospath => $src->{repospath}, # for stupid copyfrom url
 	  base_anchor => $base->{path},
 	  base_root => $base_root,
 	  target => $target,
@@ -351,17 +392,119 @@ sub run {
 			     }),
 	  %cb,
 	);
+
+    my $editor = $meditor;
+    if ($self->{notice_copy}) {
+	my $dstinfo = $self->merge_info_with_copy($self->{dst}->new);
+	my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
+
+	my $boundry_rev;
+	if ($self->{base}->path eq $self->{src}->path) {
+	    $boundry_rev = $self->{base}{revision};
+	}
+	else {
+	    my $usrc = $src->universal;
+	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+	    if ($dstinfo->{$srckey}) {
+		$boundry_rev = $src->merged_from
+		    ($self->{base}, $self, $self->{base}{path});
+	    }
+	    else {
+		# when did the branch first got created?
+		$boundry_rev = $src->search_revision
+		    ( cmp => sub {
+			  my $rev = shift;
+			  my $root = $src->new(revision => $rev)->root;
+			  return $root->node_history($src->path)->prev(0)->prev(0) ? 1 : 0;
+		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
+	    }
+	}
+	warn "==> got $boundry_rev as copyboundry" if $main::DEBUG;
+
+	if (defined $boundry_rev) {
+	  require SVK::Editor::Copy;
+	  $editor = SVK::Editor::Copy->new
+	    ( _editor => [$meditor],
+	      merge => $self, # XXX: just for merge_from, move it out
+	      copyboundry_rev => $boundry_rev,
+	      copyboundry_root => $self->{repos}->fs->revision_root($boundry_rev
+),
+	      src => $src,
+	      dst => $self->{dst},
+	      cb_resolve_copy => sub {
+		  my ($src_from, $src_fromrev) = @_;
+		  my ($dst_from, $dst_fromrev) =
+		      $self->resolve_copy($srcinfo, $dstinfo, @_);
+		  return unless defined $dst_from;
+
+		  # Because the delta still need to carry the copy
+		  # information of the source, make merge editor note
+		  # the mapping so it can do the translation
+		  $meditor->copy_info($src_from, $src_fromrev,
+				     $dst_from, $dst_fromrev);
+
+		  return ($src_from, $src_fromrev);
+	      } );
+	  $editor = SVK::Editor::Delay->new ($editor);
+	}
+    }
+
     SVK::XD->depot_delta
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
 	    );
-    print loc("%*(%1,conflict) found.\n", $editor->{conflicts}) if $editor->{conflicts};
+    print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};
     print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
-	      $editor->{skipped}) if $editor->{skipped} && !$self->{track_rename} && !$self->{auto};
+	      $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
 
-    return $editor->{conflicts};
+    return $meditor->{conflicts};
+}
+
+ # translate to (path, rev) for dst
+sub resolve_copy {
+    my ($self, $srcinfo, $dstinfo, $cp_path, $cp_rev) = @_;
+    warn "==> to resolve $cp_path $cp_rev" if $main::DEBUG;
+    my $path = $cp_path;
+    my $src = $self->{src};
+    my $srcpath = $src->path;
+    my $dstpath = $self->{dst}->path;
+    return ($cp_path, $cp_rev) if $path =~ m{^\Q$dstpath/};
+    my $cpsrc = $src->new( path => $path,
+			   revision => $cp_rev );
+    if ($path !~ m{^\Q$srcpath/}) {
+	return $src->same_source($cpsrc) ? ($cp_path, $cp_rev) : ();
+    }
+
+    $path =~ s/^\Q$srcpath/$dstpath/;
+    $cpsrc->normalize;
+    $cp_rev = $cpsrc->{revision};
+    # now the hard part, reoslve the revision
+    my $usrc = $src->universal;
+    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    unless ($dstinfo->{$srckey}) {
+	my $udst = $self->{dst}->universal;
+	my $dstkey = join(':', $udst->{uuid}, $udst->{path});
+	return $srcinfo->{$dstkey}{rev} ?
+	    ($path, $srcinfo->{$dstkey}->local($self->{dst}{repos})->{revision}) : ();
+    }
+    if ($dstinfo->{$srckey}->local($self->{dst}{repos})->{revision} < $cp_rev) {
+	# same as re-base in editor::copy
+	my $rev = $self->{src}->merged_from
+	    ($self->{base}, $self, $self->{base}{path});
+	# XXX: compare rev and cp_rev
+	return ($path, $rev) if defined $rev;
+	return;
+    }
+    # XXX: get rid of the merge context needed for
+    # merged_from(); actually what the function needs is
+    # just XD
+    my $rev = $self->{dst}->
+	merged_from($src->new(revision => $cp_rev),
+		    $self, $cp_path);
+
+    return ($path, $rev) if defined $rev;
 }
 
 sub resolver {
@@ -375,7 +518,6 @@ package SVK::Merge::Info;
 
 sub new {
     my ($class, $merge) = @_;
-
     my $minfo = { map { my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
 			("$uuid:$path" => SVK::Target::Universal->new ($uuid, $path, $rev))
 		    } grep { length $_ } split (/\n/, $merge || '') };
@@ -386,16 +528,16 @@ sub new {
 sub add_target {
     my ($self, $target) = @_;
     $target = $target->universal
-	if UNIVERSAL::isa ($target, 'SVK::Target');
-    $self->{join(':', $target->{uuid}, $target->{path})} = $target;
+	if $target->isa('SVK::Path');
+    $self->{$target->ukey} = $target;
     return $self;
 }
 
 sub del_target {
     my ($self, $target) = @_;
     $target = $target->universal
-	if UNIVERSAL::isa ($target, 'SVK::Target');
-    delete $self->{join(':', $target->{uuid}, $target->{path})};
+	if $target->isa('SVK::Path');
+    delete $self->{$target->ukey};
     return $self;
 }
 

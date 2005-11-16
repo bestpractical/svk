@@ -19,8 +19,9 @@ sub options {
      'S|sign'	  => 'sign',
      'P|patch=s'  => 'patch',
      'import'	  => 'import',
-     'encoding=s' => 'encoding',
      'direct'	  => 'direct',
+     'template'	  => 'template',
+     'set-revprop=s@' => 'setrevprop',
     );
 }
 
@@ -31,7 +32,7 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
-sub lock { $_[0]->lock_target ($_[1]) }
+sub lock { $_[0]->lock_coroot($_[1]) }
 
 sub target_prompt {
     loc('=== Targets to commit (you may delete items from it) ===');
@@ -57,12 +58,26 @@ sub fill_commit_message {
 }
 
 sub get_commit_message {
-    my ($self, $msg) = @_;
-    $self->fill_commit_message;
-    $self->{message} = get_buffer_from_editor
-	(loc('log message'), $self->message_prompt,
-	 join ("\n", $msg || '', $self->message_prompt, ''), 'commit')
-	    unless defined $self->{message};
+    my ($self, $extra_message) = @_;
+    # The existence of $extra_message (the logs from a sm -l, say) should *not*
+    # prevent the editor from being opened, if there is no -m/-F
+    
+    $self->fill_commit_message; # from -F to -m
+
+    # We have to decide whether or not to launch the editor *before* we append
+    # $extra_message to the -m/-F message
+    my $should_launch_editor = ($self->{template} or not defined $self->{message});
+
+    if (defined $extra_message or defined $self->{message}) {
+	$self->{message} = join "\n", grep { defined $_ and length $_ } ($self->{message}, $extra_message);
+    } 
+
+    if ($should_launch_editor) {
+	$self->{message} = get_buffer_from_editor
+	    (loc('log message'), $self->message_prompt,
+	     join ("\n", $self->{message} || '', $self->message_prompt, ''), 'commit');
+	++$self->{save_message};
+    }
     $self->decode_commit_message;
 }
 
@@ -78,10 +93,11 @@ sub get_dynamic_editor {
     my $m = $self->under_mirror ($target);
     my $anchor = $m ? $m->{target_path} : '/';
     my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
+    
     my $editor = SVK::Editor::Rename->new
 	( editor => $storage,
-	  cb_exist => $self->{parent} ? $cb{cb_exist} : undef);
-    $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
+	  inspector => $self->{parent} ? $cb{inspector} : undef);
+     $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
     return ($anchor, $editor);
 }
 
@@ -89,6 +105,7 @@ sub finalize_dynamic_editor {
     my ($self, $editor) = @_;
     $editor->close_directory ($editor->{_root_baton});
     $editor->close_edit;
+    delete $self->{save_message};
 }
 
 sub adjust_anchor {
@@ -96,119 +113,124 @@ sub adjust_anchor {
     $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
 }
 
+sub save_message {
+    my $self = shift;
+    return unless $self->{save_message};
+    local $@;
+    my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
+    print $fh $self->{message};
+    print loc ("Commit message saved in %1.\n", $file);
+}
+
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
+sub _editor_for_patch {
+    my ($self, $target, $source) = @_;
+    require SVK::Patch;
+    my ($m);
+    if (($m) = $target->is_mirrored) {
+	print loc("Patching locally against mirror source %1.\n", $m->{source});
+    }
+    die loc ("Illegal patch name: %1.\n", $self->{patch})
+	if $self->{patch} =~ m!/!;
+    my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
+				 $target->depotname, $source,
+				 $target->new(targets => undef)->as_depotpath);
+    $patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
+	if $source;
+    $patch->{log} = $self->{message};
+    my $fname = $self->{xd}->patch_file ($self->{patch});
+    if ($fname ne '-' && -e $fname) {
+	die loc ("file %1 already exists.\n", $fname).
+	    ($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
+    }
+
+    $target = $target->new->as_depotpath;
+    $target->refresh_revision;
+    my %cb = SVK::Editor::Merge->cb_for_root
+	($target->root, $target->{path},
+	 $m ? $m->{fromrev} : $target->revision);
+    return ($patch->commit_editor ($fname),
+	    %cb, send_fulltext => 0);
+}
+
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
-    my ($editor, %cb);
-
+    # Commit as patch
+    return $self->_editor_for_patch($target, $source)
+	if defined $self->{patch};
+ 
     # XXX: the case that the target is an xd is actually only used in merge.
-    if ($target->{copath}) {
-	my $xdroot = $target->root ($self->{xd});
-	($editor, %cb) = $self->{xd}->get_editor
-	    ( %$target,
-	      # assuming the editor returned here are used with Editor::Merge
-	      ignore_checksum => 1,
-	      targets => undef,
-	      quiet => 1,
-	      oldroot => $xdroot,
-	      newroot => $xdroot,
-	      target => '',
-	      check_only => $self->{check_only});
-	return ($editor, %cb);
+    if ($target->isa('SVK::Path::Checkout')) {
+	my $xdroot = $target->root;
+	my ($editor, $inspector, %cb) = $target->get_editor
+	    ( ignore_checksum => 1,
+	      check_only => $self->{check_only},
+	      oldroot => $xdroot, newroot => $xdroot,
+	    );
+	return ($editor, %cb, inspector => $inspector);
     }
 
-    my ($base_rev, $m, $mpath);
-    if (!$self->{direct} and HAS_SVN_MIRROR and
-	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
-	if ($self->{patch}) {
-	    print loc("Patching locally against mirror source %1.\n", $m->{source});
-	    $base_rev = $m->{fromrev};
-	}
-	elsif ($self->{check_only}) {
-	    print loc("Checking locally against mirror source %1.\n", $m->{source});
-	}
-	else {
-	    print loc("Merging back to mirror source %1.\n", $m->{source});
-	    $m->{lock_message} = SVK::Command::Sync::lock_message ();
-	    $m->{config} = $self->{svnconfig};
-	    $m->{revprop} = ['svk:signature'];
-	    ($base_rev, $editor) = $m->get_merge_back_editor
-		($mpath, $self->{message},
-		 sub { print loc("Merge back committed as revision %1.\n", $_[0]);
-		       my $rev = shift;
-		       $m->_new_ra->change_rev_prop ($rev, 'svk:signature',
-						     $self->{signeditor}{sig})
-			   if $self->{sign};
-		       $m->run ($rev);
-		       $callback->($m->find_local_rev ($rev), @_)
-			   if $callback }
-		);
+    # XXX: unify the get_editor args so we can combine them
+    my ($editor, $inspector, %cb) = $target->get_editor
+	( ignore_mirror => $self->{direct},
+	  check_only => $self->{check_only},
+	  callback => $callback,
+	  message => $self->{message},
+	  author => $ENV{USER} );
+
+    if ($self->{setrevprop}) {
+	my $txn = $cb{txn} or
+	    die loc("Can't use set-revprop with remote repository.\n");
+	for (@{$self->{setrevprop}}) {
+	    $txn->change_prop( split(/=/, $_) );
 	}
     }
-
-    my $fs = $target->{repos}->fs;
-    my $yrev = $fs->youngest_rev;
-    my $root = $fs->revision_root ($yrev);
-
-    %cb = SVK::Editor::Merge->cb_for_root
-	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
-
-    if ($self->{patch}) {
-	require SVK::Patch;
-	die loc ("Illegal patch name: %1.\n", $self->{patch})
-	    if $self->{patch} =~ m!/!;
-	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
-				     $target->depotname, $source, $target->new (targets => undef));
-	$patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
-	    if $source;
-	$patch->{log} = $self->{message};
-	my $fname = $self->{xd}->patch_file ($self->{patch});
-	if (-e $fname) {
-	    die loc ("file %1 already exists.\n", $fname).
-		($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
-	}
-	return ($patch->commit_editor ($fname), %cb, callback => \$callback,
-		send_fulltext => 0);
-    }
-
-    $editor ||= $self->{check_only} ? SVN::Delta::Editor->new :
-	SVN::Delta::Editor->new
-	( $target->{repos}->get_commit_editor
-	  ( "file://$target->{repospath}",
-	    $target->{path}, $ENV{USER}, $self->{message},
-	    sub { print loc("Committed revision %1.\n", $_[0]);
-		  $fs->change_rev_prop ($_[0], 'svk:signature',
-					$self->{signeditor}{sig})
-		      if $self->{sign};
-		  # build the copy cache as early as possible
-		  find_prev_copy ($fs, $_[0]);
-		  $callback->(@_) if $callback; }
-	  ));
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
-	$self->{signeditor} = $editor = SVK::Editor::Sign->new (_editor => [$editor],
-								anchor => "$uuid:$dst"
-							       );
+	my ($uuid, $dst) = find_svm_source ($target->repos, $target->{path});
+	$editor = SVK::Editor::Sign->new
+	    ( _editor => [$editor],
+	      anchor => "$uuid:$dst" );
+	my $post_handler = $cb{post_handler};
+	if (my $m = $cb{mirror}) {
+	    $$post_handler = sub {
+		$m->_new_ra->change_rev_prop($_[0], 'svk:signature',
+					     $editor->{sig});
+	    }
+	}
+	else {
+	    my $fs = $target->repos->fs;
+	    $$post_handler = sub {
+		$fs->change_rev_prop($_[0], 'svk:signature', $editor->{sig});
+	    }
+	}
     }
 
     unless ($self->{check_only}) {
+	my $txn = $cb{txn};
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
-	     $SVN::Error::FS_NOT_DIRECTORY) {
+	     $SVN::Error::FS_NOT_DIRECTORY,
+	     $SVN::Error::RA_DAV_REQUEST_FAILED,
+	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
-	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
+	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path $target->{path} first."
 				       : "Please update checkout first.");
-	    $self->add_handler ($_, sub { $editor->abort_edit });
+	    $self->add_handler( $_,
+				sub {
+				    $editor->abort_edit;
+				    $txn->abort if $txn;
+				} );
 	}
+	$self->clear_handler ($SVN::Error::REPOS_HOOK_FAILURE);
+	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
-    return ($editor, %cb, mirror => $m, callback => \$callback,
-	    send_fulltext => !$m);
+    return ($editor, inspector => $inspector, %cb);
 }
 
 sub exclude_mirror {
@@ -225,11 +247,14 @@ sub get_committable {
     my ($self, $target, $root) = @_;
     my ($fh, $file);
     $self->fill_commit_message;
-    unless (defined $self->{message}) {
+    if ($self->{template} or not defined $self->{message}) {
 	($fh, $file) = tmpfile ('commit', TEXT => 1, UNLINK => 0);
     }
-
-    print $fh "\n", $self->target_prompt, "\n" if $fh;
+    
+    if ($fh) {
+	print $fh $self->{message} if $self->{template} and defined $self->{message};
+	print $fh "\n", $self->target_prompt, "\n";
+    } 
 
     my $targets = [];
     my $encoder = get_encoder;
@@ -263,6 +288,7 @@ sub get_committable {
 	    close $fh;
 	    unlink $file;
 	}
+
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	die loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
     }
@@ -277,6 +303,7 @@ sub get_committable {
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->{copath}, $target->{targets});
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
+	++$self->{save_message};
 	unlink $file;
     }
     $self->decode_commit_message;
@@ -288,14 +315,17 @@ sub committed_commit {
     my $fs = $target->{repos}->fs;
     sub {
 	my $rev = shift;
-	my ($entry, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
+	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
 	my (undef, $coanchor) = $self->{xd}->find_repos ($entry->{depotpath});
 	my $oldroot = $fs->revision_root ($rev-1);
 	# optimize checkout map
 	for my $copath ($self->{xd}{checkout}->find ($dataroot, {revision => qr/.*/})) {
-	    my $corev = $self->{xd}{checkout}->get ($copath)->{revision};
+	    my $coinfo = $self->{xd}{checkout}->get ($copath);
+	    next if $coinfo->{'.deleted'};
+	    my $orev = eval { $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/')) };
+	    defined $orev or next;
 	    # XXX: cache the node_created_rev for entries within $target->path
-	    next if $corev < $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/'));
+	    next if $coinfo->{revision} < $orev;
 	    $self->{xd}{checkout}->store_override ($copath, {revision => $rev});
 	}
 	# update checkout map with new revision
@@ -326,6 +356,7 @@ sub committed_commit {
 	    next if $action eq 'D' || -d $copath;
 	    my $path = $target->{path};
 	    $path = '' if $path eq '/';
+	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
 #	    warn "==> from native $dpath $encoder $target->{copath}";
 	    from_native ($dpath, 'path', $encoder);
@@ -357,13 +388,13 @@ sub committed_import {
 sub run {
     my ($self, $target) = @_;
 
-    my $is_mirrored = $self->under_mirror ($target) && !$self->{direct};
+    my $is_mirrored = $self->under_mirror($target);
     print loc("Commit into mirrored path: merging back directly.\n")
 	if $is_mirrored and !$self->{patch};
 
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
-    my $xdroot = $target->root ($self->{xd});
+    my $xdroot = $target->root;
     my $committed;
     if ($self->{import}) {
 	$self->get_commit_message () unless $self->{check_only};
@@ -373,7 +404,7 @@ sub run {
 	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
-    my ($editor, %cb) = $self->get_editor ($target->new (copath => undef), $committed);
+    my ($editor, %cb) = $self->get_editor ($target->new->as_depotpath, $committed);
 
     die loc("unexpected error: commit to mirrored path but no mirror object")
 	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
@@ -400,25 +431,32 @@ sub run_delta {
 	    obstruct_as_replace => 1,
 	    absent_as_delete => 1) :
 	  ( absent_ignore => 1),
+	  cb_copyfrom => $cb{cb_copyfrom},
 	  $cb{mirror} ?
-	  ( cb_copyfrom => sub {
-		my ($path, $rev) = @_;
-		$path =~ s|^\Q$cb{mirror}{target_path}\E|$cb{mirror}{source}|;
-		return ($path, scalar $cb{mirror}->find_remote_rev ($rev));
-	    },
-	    cb_rev => sub {
+	  (cb_rev => sub {
+	    # XXX: the non-mirror cb_rev should be the same as
+		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);
 		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
-		my $entry = $self->{xd}{checkout}->get($cotarget);
-		my ($source_path, $source_rev) = $self->{xd}->_copy_source ($entry, $cotarget);
+		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
+		# lookup the copy source rev for the case of
+		# open_directory inside add_directotry that has
+		# history.  but shouldn't do that for replaced item,
+		# because the rev is used for delete_entry
+		my ($source_path, $source_rev) = $schedule ne 'replace' ? $self->{xd}->_copy_source ($entry, $cotarget) : ();
 		($source_path, $source_rev) = ($revtarget, $entry->{revision})
 		    unless defined $source_path;
 		return $revcache{$source_rev} if exists $revcache{$source_rev};
 		my $rev = ($fs->revision_root ($source_rev)->node_history ($source_path)->prev (0)->location)[1];
 		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());
+    delete $self->{save_message};
     return;
+}
+
+sub DESTROY {
+    $_[0]->save_message;
 }
 
 1;
@@ -435,13 +473,16 @@ SVK::Command::Commit - Commit changes to depot
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
- -N [--non-recursive]   : operate on single directory only
- --encoding ENC         : treat value as being in charset encoding ENC
  --import               : import mode; automatically add and delete nodes
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ --template             : use the specified message as the template to edit
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ -N [--non-recursive]   : operate on single directory only
+ --set-revprop P=V      : set revision property on the commit
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS

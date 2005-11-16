@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 49;
+use Test::More tests => 69;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -35,6 +35,13 @@ foreach my $depot ('','bob') {
 	       ["/$depot/A/B/","/$depot/A/foo"]);
     is_output ($svk, 'ls', ['-f','-R',"/$depot/A/"], ["/$depot/A/B/","/$depot/A/B/foo", "/$depot/A/foo"]);
     is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap is not a versioned directory']);
+    ok ($svk->ls ('-f', "/$depot/crap/") == 1, "ls -f /$depot/crap/ [exit status]");
+    is_output ($svk, 'ls', ['-f',"/$depot/", "/$depot/A"],
+               ["/$depot/A/", '', "/$depot/A/B/","/$depot/A/foo"]);
+    ok ($svk->ls ('-f', "/$depot/", "/$depot/A") == 0, "ls -f /$depot/ /$depot/A [exit status]");
+    is_output ($svk, 'ls', ['-f',"/$depot/A", "/$depot/crap/"],
+               ["/$depot/A/B/","/$depot/A/foo", '', 'Path /crap is not a versioned directory']);
+    ok ($svk->ls ('-f', "/$depot/A", "/$depot/crap/") == 1, "ls -f /$depot/A /$depot/crap/ [exit status]");
 
     my $re_date = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{2} \\d{2}:\\d{2}";
     my $re_user = "(?:\\S*\\s+)";
@@ -69,6 +76,19 @@ foreach my $depot ('','bob') {
                 qr"      1 $re_user        $size $re_date /$depot/A/foo"]);
     is_output ($svk, 'ls', ['-v', '-f',"/$depot/crap/"],
                ['Path /crap is not a versioned directory']);
+    ok ($svk->ls ('-v', '-f', "/$depot/crap/") == 1, "ls -v -f /$depot/crap/ [exit status]");
+    is_output ($svk, 'ls', ['-v', '-f', "/$depot/", "/$depot/A/"],
+               [qr"      2 $re_user          $re_date /$depot/A/",
+                  '',
+                qr"      2 $re_user          $re_date /$depot/A/B/",
+                qr"      1 $re_user        $size $re_date /$depot/A/foo"]);
+    ok ($svk->ls ('-v', '-f', "/$depot/", "/$depot/A") == 0, "ls -v -f /$depot/ /$depot/A [exit status]");
+    is_output ($svk, 'ls', ['-v', '-f', "/$depot/A/", "/$depot/crap/"],
+               [qr"      2 $re_user          $re_date /$depot/A/B/",
+                qr"      1 $re_user        $size $re_date /$depot/A/foo",
+                  '',
+                  'Path /crap is not a versioned directory']);
+    ok ($svk->ls ('-v', '-f', "/$depot/A", "/$depot/crap/") == 1, "ls -f /$depot/A /$depot/crap/ [exit status]");
 
     chdir("..");
 }

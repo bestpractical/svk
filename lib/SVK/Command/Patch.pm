@@ -59,7 +59,7 @@ sub parse_arg {
 
 	die loc ("Filename required.\n")
 	    unless $arg[0];
-	$arg[0] = $self->_load ($arg[0]);
+	splice @arg, 0, 1, $self->_load ($arg[0]);
     return @arg;
 }
 
@@ -87,8 +87,9 @@ use base qw/SVK::Command::Patch::FileRequired/;
 use SVK::I18N;
 
 sub run {
-    my ($self, $patch) = @_;
+    my ($self, $patch, $not_applicable) = @_;
 
+    return $not_applicable if $not_applicable;
     if (my $conflicts = $patch->apply (1)) {
 	print loc("%*(%1,conflict) found.\n", $conflicts);
 	print loc("Please do a merge to resolve conflicts and regen the patch.\n");
@@ -103,7 +104,8 @@ use SVK::I18N;
 use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
-    my ($self, $patch) = @_;
+    my ($self, $patch, $not_applicable) = @_;
+    return $not_applicable if $not_applicable;
     if (my $conflicts = $patch->regen) {
 	# XXX: check empty too? probably already applied.
 	return loc("%*(%1,conflict) found, patch aborted.\n", $conflicts)
@@ -119,7 +121,8 @@ use SVK::I18N;
 use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
-    my ($self, $patch) = @_;
+    my ($self, $patch, $not_applicable) = @_;
+    return $not_applicable if $not_applicable;
     if (my $conflicts = $patch->update) {
 	# XXX: check empty too? probably already applied.
 	return loc("%*(%1,conflict) found, update aborted.\n", $conflicts)
@@ -131,12 +134,11 @@ sub run {
 
 package SVK::Command::Patch::delete;
 
-use base qw/SVK::Command::Patch/;
-sub parse_arg { undef }
+use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
-    my ($self, $name) = @_;
-    unlink $self->{xd}->patch_file ($name);
+    my ($self, $patch) = @_;
+    unlink $self->{xd}->patch_file ($patch->{name});
     return;
 }
 
@@ -152,8 +154,11 @@ sub run {
     foreach my $file (readdir ($dir)) {
 	next if $file =~ /^\./;
 	$file =~ s/\.patch$// or next;
-	my $patch = $self->_load ($file);
-	print "$patch->{name}\@$patch->{level}: \n";
+	my ($patch, $not_applicable) = $self->_load ($file);
+	print "$patch->{name}\@$patch->{level}: ";
+	print "[n/a]"
+	    if $not_applicable;
+	print "\n";
     }
     return;
 }
@@ -164,19 +169,22 @@ use SVK::I18N;
 use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
-    my ($self, $patch, @args) = @_;
+    my ($self, $patch, $not_applicable, @args) = @_;
+    return $not_applicable if $not_applicable;
     my $mergecmd = $self->command ('merge');
     $mergecmd->getopt (\@args);
     my $dst = $self->arg_co_maybe ($args[0] || '');
-    $self->lock_target ($dst) if $dst->{copath};
+    $self->lock_target ($dst) if $dst->isa('SVK::Path::Checkout');
     my $ticket;
-    $mergecmd->get_commit_message ($patch->{log}) unless $dst->{copath};
+    $mergecmd->get_commit_message ($patch->{log})
+	unless $dst->isa('SVK::Path::Checkout');
     my $merge = SVK::Merge->new (%$mergecmd, dst => $dst, repos => $dst->{repos});
     $ticket = sub { $merge->get_new_ticket (SVK::Merge::Info->new ($patch->{ticket})) }
 	if $patch->{ticket} && $dst->universal->same_resource ($patch->{target});
     $patch->apply_to ($dst, $mergecmd->get_editor ($dst),
 		      resolve => $merge->resolver,
 		      ticket => $ticket);
+    delete $mergecmd->{save_message};
     return;
 }
 
@@ -199,7 +207,7 @@ SVK::Command::Patch - Manage patches
 
 =head1 OPTIONS
 
- None
+ --depot DEPOTNAME      : operate on a depot other than the default one
 
 =head1 DESCRIPTION
 
@@ -275,8 +283,12 @@ To see the current version of a specific patch, run:
     svk patch --view Foo
 
 When you're done with a patch and don't want it hanging around anymore,
-run
+run:
     svk patch --delete Foo
+
+To apply a patch to the repository that someone else has sent you, run:
+
+    svk patch --apply - < contributed_feature.patch
 
 =head1 AUTHORS
 

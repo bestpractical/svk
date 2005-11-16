@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 32;
+use Test::More tests => 35;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -45,6 +45,19 @@ is_output ($svk, 'add', ['A/deep/baz'],
 	   [map __($_), 'A   A', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - deep descendent target only');
 $svk->revert ('-R', '.');
+chdir('A');
+is_output ($svk, 'add', ['deep'],
+	   [map __($_), 'A   ../A', 'A   ../A/deep', 'A   ../A/deep/baz'],
+	   'add - deep descendent target only');
+is_output ($svk, 'st', [],
+	   [map __($_),
+	    'A   ../A',
+	    '?   ../A/bar',
+	    'A   ../A/deep', 'A   ../A/deep/baz',
+	    '?   ../A/foo'],
+	   'add - deep descendent target only');
+$svk->revert ('-R', '.');
+chdir('..');
 
 is_output ($svk, 'add', ['A'],
 	   [map __($_), 'A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
@@ -80,11 +93,14 @@ is_output ($svk, 'add', ['-N', 'A/foo'],
 
 overwrite_file ("A/exe", "foobar");
 chmod (0755, "A/exe");
-TODO: {
-local $TODO = 'notify that added file has executable bit';
 is_output($svk, 'add', ['A/exe'],
 	  [__('A   A'),
-	   __('A   A/exe - (bin)')]);
+	   __('A   A/exe')]);
+SKIP: {
+skip 'No execute bit on win32', 1 if $^O eq 'MSWin32';
+is_output($svk, 'pl', ['-v', 'A/exe'],
+	  [__('Properties on A/exe:'),
+	   '  svn:executable: *']);
 }
 $svk->commit ('-m', 'test exe bit');
 is_output ($svk, 'add', [qw/-N A/],
@@ -117,10 +133,10 @@ overwrite_file ("A/mime/foo.c", "/*\tHello World\t*/");
 
 is_output ($svk, 'add', ['A/mime'],
 	   [__('A   A/mime'),
-	    __('A   A/mime/foo.bin'),
+	    __('A   A/mime/foo.bin - (bin)'),
 	    __('A   A/mime/foo.c'),
 	    __('A   A/mime/foo.html'),
-	    __('A   A/mime/foo.jpg'),
+	    __('A   A/mime/foo.jpg - (bin)'),
 	    __('A   A/mime/foo.pl'),
 	    __('A   A/mime/foo.txt'),
 	   ]);

@@ -54,27 +54,34 @@ sub _mkpdir {
         mkdir => { message => "Directory for svk import.", parent => 1 },
     )->run ($target);
 
-    print loc("Import path %1 initialized.\n", $target->{path});
+    print loc("Import path %1 initialized.\n", $target->depotpath);
 }
 
 sub run {
     my ($self, $target, $copath) = @_;
     lstat ($copath);
-    die loc ("Path %1 does not exist.\n", $copath) unless -e $copath;
+    die loc ("Path %1 does not exist.\n", $copath) unless -e _;
     my $root = $target->root;
-    my $kind = $root->check_path ($target->{path});
+    my $kind = $root->check_path ($target->path);
 
     die loc("import destination cannot be a file") if $kind == $SVN::Node::file;
 
+    my $basetarget = $target;
     if ($kind == $SVN::Node::none) {
-	$self->_mkpdir ($target);
-	$target->refresh_revision;
-	$root = $target->root;
+	if ($self->{check_only}) {
+	    print loc("Import path %1 will be created.\n", $target->depotpath);
+	    $basetarget = $target->new (revision => 0, path => '/');
+	}
+	else {
+	    $self->_mkpdir ($target);
+	    $target->refresh_revision;
+	    $root = $target->root;
+	}
     }
 
     unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{xd}{checkout}->store
-	    ($copath, {depotpath => $target->{depotpath},
+	    ($copath, {depotpath => '/'.$target->depotname.$target->{path},
 		       '.newprop' => undef,
 		       '.conflict' => undef,
 		       revision => $target->{revision}});
@@ -85,12 +92,12 @@ sub run {
     my $committed =
 	sub { my $yrev = $_[0];
 	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
-			$copath, $target->{depotpath}, $yrev);
+			$copath, $target->depotpath, $yrev);
 
 	      if ($self->{to_checkout}) {
                   $self->{xd}{checkout}->store_recursively (
                       $copath, {
-                          depotpath => $target->{depotpath},
+                          depotpath => $target->depotpath,
                           revision => $yrev,
                           $self->_schedule_empty,
                       }
@@ -106,10 +113,20 @@ sub run {
 				 '.schedule' => undef});
 	      }
 	  };
-    my ($editor, %cb) = $self->get_editor ($target, $committed);
+    my ($editor, %cb) = $self->get_editor ($basetarget, $committed);
 
     $self->{import} = 1;
-    $self->run_delta ($target->new (copath => $copath), $root, $editor, %cb);
+    $self->run_delta ($basetarget->new(copath => $copath), $root, $editor, %cb);
+
+    if ($self->{check_only}) {
+	print loc("Directory %1 will be imported to depotpath %2.\n",
+		  $copath, $target->depotpath);
+	$self->{xd}{checkout}->store
+	    ($copath, {depotpath => undef,
+		       revision => undef,
+		       '.schedule' => undef});
+    }
+    return;
 }
 
 1;
@@ -129,12 +146,17 @@ SVK::Command::Import - Import directory into depot
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -C [--check-only]      : try operation but make no changes
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  -f [--from-checkout]   : import from a checkout path
  -t [--to-checkout]     : turn the source into a checkout path
+ -m [--message] MESSAGE	: specify commit message MESSAGE
+ -F [--file] FILENAME	: read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME	: instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ -N [--non-recursive]   : operate on single directory only
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

@@ -23,7 +23,6 @@ sub parse_arg {
 
 sub run {
     my ($self, @arg) = @_;
-
     die loc ("Revision required.\n")
 	if $self->{revprop} && !defined $self->{rev};
 
@@ -53,7 +52,7 @@ sub _show_props {
         print loc("Unversioned properties on revision %1:\n", $rev);
     }
     else {
-        print loc("Properties on %1:\n", $target->{report} || '.');
+        print loc("Properties on %1:\n", length $target->report ? $target->report : '.');
     }
 
     for my $key (sort keys %$props) {
@@ -96,9 +95,8 @@ SVK::Command::Proplist - List all properties on files or dirs
 
  -R [--recursive]       : descend recursively
  -v [--verbose]         : print extra information
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
  --revprop              : operate on a revision property (use with -r)
- --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

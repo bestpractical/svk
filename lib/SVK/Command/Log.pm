@@ -12,6 +12,7 @@ use Date::Format qw(time2str);
 
 sub options {
     ('l|limit=i'	=> 'limit',
+     'q|quiet'		=> 'quiet',
      'r|revision=s@'	=> 'revspec',
      'x|cross'		=> 'cross',
      'v|verbose'	=> 'verbose');
@@ -50,13 +51,12 @@ sub run {
         ($fromrev, $torev) = $self->resolve_revspec($target);
 	$torev ||= $fromrev;
     }
+    $target->as_depotpath($self->find_base_rev($target))
+	if $target->isa('SVK::Path::Checkout');
+
     $fromrev ||= $target->{revision};
     $torev ||= 0;
     $self->{cross} ||= 0;
-
-    $target->as_depotpath($self->find_base_rev($target))
-	if defined $target->{copath};
-    my $fs = $target->{repos}->fs;
 
     my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
 
@@ -69,7 +69,7 @@ sub run {
     print $sep;
     _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0)} );
+	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0, $self->{quiet})} );
     return;
 }
 
@@ -95,11 +95,11 @@ sub _get_logs {
         path        => $path,
         cross       => $cross,
         callback    => sub {
-            return 0 if !$limit--; # last
-
             my $rev = $_[1];
             return 1 if $rev > $fromrev; # next
             return 0 if $rev < $torev;   # last
+
+            return 0 if !$limit--; # last
 
             if ($reverse) {
                 unshift @revs, $rev;
@@ -124,15 +124,23 @@ $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub _show_log {
-    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime, $verbatim) = @_;
+    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime,
+	$verbatim, $quiet) = @_;
     $output ||= select;
-    my ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
+    $indent = (' ' x $indent);
+    my ($author, $date, $message);
+    if ($quiet) {
+      ($author, $date) = @{$props}{qw/svn:author svn:date/};
+      $message = $sep;
+    } else {
+      ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
+	$message = ($indent ? '' : "\n")."$message\n$sep";
+    }
     if (defined $use_localtime) {
 	no warnings 'uninitialized';
 	local $^W; # shut off uninitialized warnings in Time::Local
 	$date = time2str("%Y-%m-%d %T %z", str2time ($date));
     }
-    $indent = (' ' x $indent);
     $author = loc('(no author)') if !defined($author) or !length($author);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
     if ($paths) {
@@ -154,7 +162,6 @@ sub _show_log {
 		    )."\n");
 	}
     }
-    $message = ($indent ? '' : "\n")."$message\n$sep";
 #    $message =~ s/\n\n+/\n/mg;
     $message =~ s/^/$indent/mg if $indent and !$verbatim;
     require Encode;
@@ -184,11 +191,24 @@ SVK::Command::Log - Show log messages for revisions
 
  log DEPOTPATH
  log PATH
+ log -r N[:M] [DEPOT]PATH
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
- -l [--limit] REV	: stop after displaying REV revisions
+ -r [--revision] ARG      : ARG (some commands also take ARG1:ARG2 range)
+
+                          A revision argument can be one of:
+
+                          "HEAD"       latest in repository
+                          NUMBER       revision number
+                          NUMBER@      interpret as remote revision number
+                          NUM1:NUM2    revision range
+
+                          Unlike other commands,  negative NUMBER has no
+                          meaning.
+
+ -l [--limit] REV       : stop after displaying REV revisions
+ -q [--quiet]           : Don't display the actual log message itself
  -x [--cross]           : track revisions copied from elsewhere
  -v [--verbose]         : print extra information
 

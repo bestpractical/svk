@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 9;
 BEGIN { require 't/tree.pl' };
 our $output;
 
@@ -105,3 +105,29 @@ is_output ($svk, 'log', ['-r14', '//'],
             ]);
 
 # XXX: may lose something if we do "local -> fix merge" first
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+# "manually" enter a commit message
+@_ = ("Second merge from fix to local\n", <_>);
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+TMP
+
+append_file (copath ('fix/fileb.txt'), "even more fileb fixes on branch\n");
+$svk->commit ('-m', 'modify fileb on fix again', $copath);
+$svk->smerge ('-l', '--host', 'editor-fix', '-f', '//fix');
+
+is_output ($svk, 'log', ['-r17', '//'],
+         ['-' x 70,
+          qr'r17: .*', '',
+          'Second merge from fix to local',
+          qr' r16@editor-fix: .*',
+          ' modify fileb on fix again',
+	  '',
+          '-' x 70]);
+

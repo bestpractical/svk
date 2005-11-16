@@ -66,8 +66,9 @@ $svk->commit ('-m', 'commit message here', "$copath/A");
 $svk->ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');
 $svk->update ($copath);
 
-ok (eq_hash ($xd->do_proplist ( SVK::Target->new
+ok (eq_hash ($xd->do_proplist ( SVK::Path::Checkout->new
 			      ( repos => $repos,
+				xd => $xd,
 				copath => $corpath,
 				path => '/A',
 				revision => $repos->fs->youngest_rev,
@@ -90,9 +91,12 @@ is_output($svk, 'update', ['-C', $copath], [
         "Syncing //(/) in $corpath to 7.",
         __("A   $copath/A/update-check-only"), ]);
 
-for (['-s'], ['-m'], ['-s', '-m']) {
+is_output($svk, 'update', ['-C', '-s', $copath], [
+        "Syncing //(/) in $corpath to 7.",
+        __("A   $copath/A/update-check-only"), ]);
+for (['-m'], ['-s', '-m']) {
     is_output($svk, 'update', ['-C', @$_, $copath], [
-            '--check-only cannot be used in conjunction with --sync or --merge.', ]);
+            '--check-only cannot be used in conjunction with --merge.', ]);
 }
 
 for (['-s'], ['-m'], ['-s', '-m']) {

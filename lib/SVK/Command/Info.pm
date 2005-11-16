@@ -26,10 +26,10 @@ sub run {
 	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
 
 	$target->{revision} = $rev;
-	my (undef,$m) = eval'resolve_svm_source($repos, find_svm_source($repos,$path,$rev))';
-        if($@) { print "$@\n"; $exception .= "$@\n" ; next }
+	my (undef,$m) = eval { resolve_svm_source($repos, find_svm_source($repos,$path,$rev)) };
+	if($@) { $exception .= "$@\n" ; next }
 	print loc("Checkout Path: %1\n",$copath) if($copath);
-	print loc("Depot Path: %1\n", $depotpath);
+	print loc("Depot Path: %1\n","/".$target->depotname.${path});
 	print loc("Revision: %1\n", $rev);
 	print loc(
 	    "Last Changed Rev.: %1\n",
@@ -60,7 +60,7 @@ SVK::Command::Info - Display information about a file or directory
 
 =head1 SYNOPSIS
 
- info [PATH | DEPOTPATH]
+ info [PATH | DEPOTPATH]...
 
 =head1 OPTIONS
 

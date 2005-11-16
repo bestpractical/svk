@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 52;
+use Test::More tests => 54;
 use strict;
 use File::Temp;
 require 't/tree.pl';
@@ -41,6 +41,9 @@ is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A/foo"],
 	   [__("$copath/A/foo is already scheduled for delete.")]);
 
 $svk->revert (-R => $copath);
+
+is_output ($svk, 'ps', ['-q', 'myprop', 'myvalue', "$copath/A"],
+	   []);
 
 is_output ($svk, 'ps', ['myprop', 'myvalue', "$copath/A"],
 	   [__(" M  $copath/A")]);
@@ -88,6 +91,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop: myvalue',
 	    '  myprop2: myvalue2']);
+is_output ($svk, 'propdel', ['--quiet', 'myprop', "$copath/A"],
+	   []);
 is_output ($svk, 'propdel', ['myprop', "$copath/A"],
 	   [__(" M  $copath/A")]);
 is_output ($svk, 'pl', ['-v', "$copath/A"],
@@ -107,7 +112,7 @@ is_output ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A/foo'],
 	   ['Committed revision 5.']);
 #	   [' M  A']);
 is_output_like ($svk, 'ps', ['-m', 'direct', 'direct', 'directly', '//A/non'],
-		qr'not exist');
+		qr'Filesystem has no item');
 is_output ($svk, 'pl', ['-v', "//A"],
 	   ["Properties on //A:",
 	    '  direct: directly',
@@ -129,7 +134,7 @@ is_output ($svk, 'pl', ['-v', '-r2', '//A'],
 	   ["Properties on //A:",
 	    '  myprop: myvalue']);
 is_output ($svk, 'pl', ['-v', '-r2', "$copath/A"],
-	   [__("Properties on $copath/A:"),
+	   ["Properties on //A:",
 	    '  myprop: myvalue']);
 
 set_editor(<< 'TMP');
@@ -143,11 +148,8 @@ print _ @_;
 close _;
 TMP
 
-TODO: {
-local $TODO = 'forbid ps/pe on depotpath, non-revprop';
 is_output ($svk, 'pe', ['-r2', 'newprop', "$copath/A"],
-	   ['Not allowed.']);
-}
+	   [qr'not allowed']);
 
 is_output ($svk, 'pe', ['newprop', "$copath/A"],
 	   ['Waiting for editor...',
@@ -156,7 +158,8 @@ is_output ($svk, 'pe', ['newprop', "$copath/A"],
 is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop2: myvalue2',
-	    '  newprop: prepended_prop']);
+	    '  newprop: prepended_prop',
+	    '']);
 is_output ($svk, 'pe', ['myprop2', "$copath/A"],
 	   ['Waiting for editor...',
 	    __(" M  $copath/A")]);
@@ -164,7 +167,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
-	    '  newprop: prepended_prop']);
+	    '  newprop: prepended_prop',
+	    '']);
 
 $svk->commit ('-m', 'commit after propedit', $copath);
 
@@ -176,7 +180,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	   [__("Properties on $copath/A:"),
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
-	    '  newprop: prepended_prop']);
+	    '  newprop: prepended_prop',
+	    '']);
 
 $svk->update ($copath);
 
@@ -185,7 +190,7 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
 	    '  newprop: prepended_prop', '',
-	    '  pedirect: prepended_prop']);
+	    '  pedirect: prepended_prop', '']);
 chdir ("$copath/A");
 
 is_output ($svk, 'pl', ['-v'],
@@ -193,7 +198,8 @@ is_output ($svk, 'pl', ['-v'],
 	    '  myprop2: prepended_prop',
 	    'myvalue2',
 	    '  newprop: prepended_prop', '',
-	    '  pedirect: prepended_prop']);
+	    '  pedirect: prepended_prop',
+	    '']);
 
 is_output ($svk, 'pg', ['myprop2'], ['prepended_prop', 'myvalue2']);
 is_output ($svk, 'pg', ['-r1', 'myprop2'], []);

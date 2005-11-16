@@ -11,7 +11,7 @@ use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
 
 sub options {
-    ('r|revision=i'  => 'rev',
+    ('r|revision=s'  => 'rev',
      'v|verbose'	   => 'verbose',
      'f|full-path'      => 'fullpath',
      'd|depth=i'      => 'depth');
@@ -25,23 +25,27 @@ sub parse_arg {
 
 sub run {
     my ($self, @arg) = @_;
-    _do_list($self, 0, $_) for @arg;
-    return;
+    my $exception = '';
+
+    while (my $arg = shift @arg) {
+        eval { _do_list($self, 0, $arg); print "\n" if @arg };
+        $exception .= "$@" if $@;
+    }
+
+    die($exception) if($exception);
 }
 
 sub _do_list {
     my ($self, $level, $target) = @_;
     my $pool = SVN::Pool->new_default;
-    $target->as_depotpath ($self->{rev});
+    $target->as_depotpath ($self->resolve_revision($target,$self->{rev}));
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
-       print loc("Path %1 is not a versioned directory\n", $target->{path})
+       die loc("Path %1 is not a versioned directory\n", $target->{path})
            unless $kind == $SVN::Node::file;
        return;
     }
 
-    # XXX: SVK::Target should take care of this.
-    $target->{depotpath} =~ s|/$||;
     my $entries = $root->dir_entries ($target->{path});
     my $enc = get_encoder;
     for (sort keys %$entries) {
@@ -65,9 +69,10 @@ sub _do_list {
         }
 
         if ($self->{'fullpath'}) {
-	    my $dpath = $target->{depotpath};
+	    my $dpath = $target->{path};
 	    to_native ($dpath, 'path', $enc);
-            print $dpath.'/';
+	    $dpath .= '/' unless $dpath eq '/';
+            print '/'.$target->depotname.$dpath;
         } else {
             print " " x ($level);
         }
@@ -77,8 +82,7 @@ sub _do_list {
 
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
-	    _do_list($self, $level+1, $target->new (path => "$target->{path}/$_",
-						    depotpath => "$target->{depotpath}/$_"));
+	    _do_list($self, $level+1, $target->new->descend($_));
 	}
     }
 }
@@ -97,9 +101,9 @@ SVK::Command::List - List entries in a directory from depot
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
  -R [--recursive]       : descend recursively
- -d [--depth] LEVEL	: recurse at most LEVEL levels deep; use with -R
+ -d [--depth] LEVEL     : recurse at most LEVEL levels deep; use with -R
  -f [--full-path]       : show pathname for each entry, instead of a tree
  -v [--verbose]         : print extra information
 

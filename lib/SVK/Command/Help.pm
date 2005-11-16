@@ -30,7 +30,7 @@ sub run {
             );
             $self->brief_usage ($_) for sort @cmd;
         }
-        elsif (my $cmd = eval { $self->get_cmd ($topic) }) {
+        elsif (my $cmd = eval { SVK::Command->get_cmd ($topic) }) {
             $cmd->usage(1);
         }
         elsif (my $file = $self->_find_topic($topic)) {

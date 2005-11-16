@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-my $required_svn = '1.0.7';
-my $required_svm = '0.58';
+my $required_svn = '1.2.0';
+my $required_svm = '0.66';
 
 use strict;
 use inc::Module::Install;
@@ -33,6 +33,11 @@ requires(
         'PerlIO::eol'           => '0.13',
 	'Class::Autouse'	=> '1.15',
 	'Getopt::Long'		=> '2.34',
+	'App::CLI'		=> '0',
+	'Encode'		=> '2.10',
+	'List::MoreUtils'	=> '0',
+	'Class::Accessor::Fast'	=> '0',
+	'Path::Class'		=> '0.13',
 );
 features(
     'Localized messages' => [

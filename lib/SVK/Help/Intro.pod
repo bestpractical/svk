@@ -37,9 +37,18 @@ day operation.
 
 =over
 
+
 =item svk mirror
 
-First, you'll need to Using svk, you can I<mirror> a remote repository.
+First, you'll need to I<mirror> a remote repository. This sets up a local
+copy of that repository for you to branch from, merge to and otherwise 
+poke at. The local path is sometimes called a "depot path."
+  
+    # This command sets up the mirror directory for your local
+    # mirrors of remote repositories
+    svk mkdir //mirror
+
+    svk mirror svn://svn.example.com/project_x //mirror/project_x
 
 =item svk sync
 
@@ -47,21 +56,38 @@ When you've set up a new mirror or want to get some work done without
 a network connection, I<sync> your local repository with upstream
 repositories.
 
+    svk sync //mirror/project_x
+
 =item svk copy
 
 After that, it's easy to I<copy> remote branches to create local
 branches. (svk branches are simply directories, just like Subversion
 branches.)
 
+    # This command sets up a directory for your local branches.
+    # Local branches can't live inside mirrored paths
+    svk mkdir //local
+
+    svk copy //mirror/project_x //local/project_x
+
 =item svk checkout
 
 When you want to get some work done, you can I<checkout> a working copy
 to make local changes.
 
+    cd ~/svk-checkouts
+    svk co //local/project_x
+
 =item svk add, svk delete and svk move
 
 As you work on the files in your working copy, feel free to I<add>
 new files, I<delete> existing files and I<move> files around.
+
+    cd ~/svk-checkouts/project_x
+
+    svk add Changelog 
+    svk move badly_named_file.c well_named_file.c
+    svk delete .README.swp
 
 =item svk commit
 
@@ -71,17 +97,22 @@ rather than a local branch, you'll need to be able to access the path's
 upstream subversion server, but the commit will be sent to the server
 instantly.
 
+    svk commit 
+
 =item svk pull
 
 Life doesn't stop when you make a local branch.  From time to time,
 I<pull> down changes from the upstream repository.
 
+    svk pull //local/project_x
 
 =item svk push
 
 
 When you're ready to share your changes with the world, I<push> them to
 the upstream repository.
+
+    svk push //local/project_x
 
 =back
 

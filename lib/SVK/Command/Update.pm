@@ -9,7 +9,7 @@ use SVK::I18N;
 use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
-    ('r|revision=i'    => 'rev',
+    ('r|revision=s'    => 'rev',
      's|sync'          => 'sync',
      'm|merge'         => 'merge',
      'q|quiet'         => 'quiet',
@@ -32,15 +32,17 @@ sub lock {
 sub run {
     my ($self, @arg) = @_;
 
-    die loc ("--check-only cannot be used in conjunction with --sync or --merge.\n")
-        if defined $self->{check_only} && ($self->{merge} || $self->{sync});
+    die loc ("--check-only cannot be used in conjunction with --merge.\n")
+        if defined $self->{check_only} && $self->{merge};
 
     die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
-	my $update_target = $target->new->as_depotpath ($self->{rev});
-
+	my $update_target = $target->new
+	    ->as_depotpath(defined $self->{rev} ? $self->resolve_revision($target->new,$self->{rev}) : $target->{repos}->fs->youngest_rev);
+	$update_target->{path} = $self->{update_target_path}
+	    if defined $self->{update_target_path};
         # Because merging under the copy anchor is unsafe, we always merge
         # to the most immediate copy anchor under copath root.
         my ($merge_target, $copied_from) = $self->find_checkout_anchor (
@@ -81,21 +83,28 @@ sub run {
 
 sub do_update {
     my ($self, $cotarget, $update_target) = @_;
-    my ($xdroot, $newroot) = map { $_->root ($self->{xd}) } ($cotarget, $update_target);
+    my ($xdroot, $newroot) = map { $_->root } ($cotarget, $update_target);
     # unanchorified
-    my ($path, $copath) = @{$cotarget}{qw/path copath/};
     my $report = $cotarget->{report};
-    my $kind = $newroot->check_path ($update_target->{path});
+    my $kind = $newroot->check_path ($update_target->path);
+    if ($kind == $SVN::Node::none) {
+	$cotarget->anchorify;
+	$update_target->anchorify;
+	# still in the checkout
+	if ($self->{xd}{checkout}->get($cotarget->copath)->{depotpath}) {
+	    $kind = $newroot->check_path($update_target->{path});
+	}
+    }
     die loc("path %1 does not exist.\n", $update_target->{path})
 	if $kind == $SVN::Node::none;
 
-    print loc("Syncing %1(%2) in %3 to %4.\n", @{$cotarget}{qw( depotpath path copath )},
+    print loc("Syncing %1(%2) in %3 to %4.\n", $cotarget->depotpath, @{$cotarget}{qw( path copath )},
 	      $update_target->{revision});
+
     if ($kind == $SVN::Node::file ) {
 	$cotarget->anchorify;
 	$update_target->anchorify;
 	# can't use $cotarget->{path} directly since the (rev0, /) hack
-	($path, $copath) = @{$cotarget}{qw/path copath/};
 	$cotarget->{targets}[0] = $cotarget->{copath_target};
     }
     my $base = $cotarget;
@@ -103,7 +112,7 @@ sub do_update {
 	if $xdroot->check_path ($base->path) == $SVN::Node::none;
     unless (-e $cotarget->{copath}) {
 	die loc ("Checkout directory gone. Use 'checkout %1 %2' instead.\n",
-		 $update_target->{depotpath}, $cotarget->{report})
+		 $update_target->depotpath, $cotarget->{report})
 	    unless $base->{path} eq '/';
 	mkdir ($cotarget->{copath}) or
 	    die loc ("Can't create directory %1 for checkout: %2.\n", $cotarget->{report}, $!);
@@ -116,15 +125,18 @@ sub do_update {
 	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
+	 auto => 1, # not to print track-rename hint
 	 xd => $self->{xd});
-    $merge->run ($self->{xd}->get_editor (copath => $copath, path => $path,
-					  check_only => $self->{check_only},
-					  ignore_checksum => 1,
-					  oldroot => $xdroot, newroot => $newroot,
-					  revision => $update_target->{revision},
-					  anchor => $cotarget->{path},
-					  target => $cotarget->{targets}[0] || '',
-					  update => $self->{check_only} ? 0 : 1));
+    my ($editor, $inspector, %cb) = $cotarget->get_editor
+	( ignore_checksum => 1,
+	  check_only => $self->{check_only},
+	  store_path => $update_target->{path},
+	  update => $self->{check_only} ? 0 : 1,
+	  oldroot => $xdroot, newroot => $newroot,
+	  revision => $update_target->{revision},
+	);
+    $merge->run($editor, %cb, inspector => $inspector);
+
 }
 
 1;
@@ -141,12 +153,12 @@ SVK::Command::Update - Bring changes from repository to checkout copies
 
 =head1 OPTIONS
 
- -r [--revision] REV	: act on revision REV instead of the head revision
+ -r [--revision] REV    : act on revision REV instead of the head revision
  -N [--non-recursive]   : do not descend recursively
  -C [--check-only]      : try operation but make no changes
  -s [--sync]            : synchronize mirrored sources before update
  -m [--merge]           : smerge from copied sources before update
- -q [--quiet]           : quiet mode
+ -q [--quiet]           : print as little as possible
 
 =head1 DESCRIPTION
 

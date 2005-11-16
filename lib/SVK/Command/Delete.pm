@@ -8,6 +8,7 @@ use SVK::Util qw( abs2rel );
 
 sub options {
     ($_[0]->SUPER::options,
+     'force'	=> 'force',
      'K|keep-local'	=> 'keep');
 }
 
@@ -15,11 +16,20 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
     my $target;
-    if ($#arg == 0) {
-	$target = $self->arg_co_maybe ($arg[0]);
-	return $target unless $target->{copath};
+    @arg = map { $self->{xd}->target_from_copath_maybe($_) } @arg;
+
+    # XXX: better check for @target being the same type
+    if (grep {$_->isa('SVK::Path::Checkout')} @arg) {
+	die loc("Mixed depotpath and checkoutpath not supported.\n")
+	    if grep {!$_->isa('SVK::Path::Checkout')} @arg;
+
+	return $self->{xd}->target_condensed(@arg);
     }
-    return $self->arg_condensed (@arg);
+
+    die loc("Delete for more than one depotpath is not supported yet.\n")
+	if scalar @arg > 1;
+
+    return @arg;
 }
 
 sub lock {
@@ -46,11 +56,24 @@ sub do_delete_direct {
     $self->finalize_dynamic_editor ($editor);
 }
 
+sub _ensure_mirror {
+    my ($self, $target) = @_;
+    my @m = $target->contains_mirror or return;
+    return if !$target->isa('SVK::Path::Checkout') && $#m == 0 && $m[0] eq $target->path;
+
+    my $depotname = $target->depotname;
+    die loc("%1 contains mirror, remove explicitly: ", "/$depotname".$target->path).
+	join(',', map { "/$depotname$_" } @m)."\n"
+}
+
 sub run {
     my ($self, $target) = @_;
 
-    if ($target->{copath}) {
-	$self->{xd}->do_delete ( %$target, no_rm => $self->{keep} );
+    $self->_ensure_mirror($target);
+
+    if ($target->isa('SVK::Path::Checkout')) {
+	$self->{xd}->do_delete( $target, no_rm => $self->{keep}, 
+		'force_delete' => $self->{force} );
     }
     else {
 	$self->do_delete_direct ( $target );
@@ -74,8 +97,16 @@ SVK::Command::Delete - Remove versioned item
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
  -K [--keep-local]      : do not remove the local file
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ --direct               : commit directly even if the path is mirrored
+ --force                : delete the file/directory even if modified
 
 =head1 AUTHORS
 

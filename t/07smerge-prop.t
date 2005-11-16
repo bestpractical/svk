@@ -44,7 +44,7 @@ is_output ($svk, 'smerge', ['-m', 'merge down', '-t', '//local'],
 	    'Empty merge.',
 	    '1 conflict found.']);
 
-$answer = 't';
+$ENV{SVKRESOLVE} = ''; $answer = 't';
 is_output ($svk, 'smerge', ['-m', 'merge down', '-t', '//local'],
 	   ['Auto-merging (3, 5) /trunk to /local (base /trunk:3).',
 	    ' G  A/be',

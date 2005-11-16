@@ -16,7 +16,7 @@ our @EXPORT_OK = qw(
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
     move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
-    catdepot
+    catdepot abs_path_noexist 
 
     is_symlink is_executable is_uri can_run
 );
@@ -135,6 +135,11 @@ sub get_prompt { {
     Term::ReadKey::ReadMode(IS_WIN32 ? 'normal' : 'raw');
     my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
+    my $erase;
+    if (!IS_WIN32) {
+       my %keys = Term::ReadKey::GetControlChars();
+       $erase = $keys{ERASE};
+    }
     my $answer = '';
     while (defined(my $key = Term::ReadKey::ReadKey(0))) {
         if ($key =~ /[\012\015]/) {
@@ -149,6 +154,11 @@ sub get_prompt { {
             $msg =~ s{\n\z}{$formfeed\n};
             die $msg;
         }
+       elsif (defined $erase and $key eq $erase) {
+            next unless length $answer;
+            $out->("\cH \cH");
+            chop $answer; next;
+       }
         elsif ($key eq "\cH") {
             next unless length $answer;
             $out->("$key $key");
@@ -326,7 +336,7 @@ sub find_local_mirror {
     my ($repos, $uuid, $path, $rev) = @_;
     my $myuuid = $repos->fs->get_uuid;
     return unless HAS_SVN_MIRROR && $uuid ne $myuuid;
-    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
     return ("$m->{target_path}$mpath",
 	    $rev ? $m->find_local_rev ($rev) : $rev) if $m;
 }
@@ -377,7 +387,7 @@ sub resolve_svm_source {
     my $myuuid = $repos->fs->get_uuid;
     return ($path) if ($uuid eq $myuuid);
     return unless HAS_SVN_MIRROR;
-    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
     return unless $m;
     return ("$m->{target_path}$mpath", $m);
 }
@@ -541,6 +551,28 @@ sub abs_path {
     return undef;
 }
 
+=head3 abs_path_noexist ($path)
+
+Return paths with components in symlink resolved, but keep the final
+path even if it's symlink.  Unlike abs_path(), returns a valid value
+even if the base directory doesn't exist.
+
+=cut
+
+sub abs_path_noexist {
+    my $path = shift;
+
+    my $rest = '';
+    until (abs_path ($path)) {
+	return $rest unless length $path;
+	my $new_path = dirname($path);
+	$rest = substr($path, length($new_path)) . $rest;
+	$path = $new_path;
+    }
+
+    return abs_path ($path) . $rest;
+}
+
 =head3 abs2rel ($pathname, $old_basedir, $new_basedir, $sep)
 
 Replace the base directory in the native pathname to another base directory
@@ -662,7 +694,12 @@ sub make_path {
     return undef if !defined($path) or -d $path;
 
     require File::Path;
-    return File::Path::mkpath([$path]);
+    my @ret = eval { File::Path::mkpath([$path]) };
+    if ($@) {
+	$@ =~ s/ at .*//;
+	die $@;
+    }
+    return @ret;
 }
 
 =head3 splitpath ($path)
@@ -816,7 +853,9 @@ sub _copies_in_root {
     my ($root) = @_;
     my $copies;
     my $changed = $root->paths_changed;
+    my $pool = SVN::Pool->new_default;
     for (keys %$changed) {
+	$pool->clear;
 	next if $changed->{$_}->change_kind == $SVN::Fs::PathChange::delete;
 	my ($copyfrom_rev, $copyfrom_path) = $root->copied_from ($_);
 	$copies->{$_} = [$copyfrom_rev, $copyfrom_path]
@@ -850,6 +889,49 @@ sub find_prev_copy {
 	for $startrev..$endrev;
     return unless $rev;
     return ($root, $copy);
+}
+
+
+# this is the cached and faster version of svn::mirror::has_local,
+# which should be deprecated eventually.
+my %mirror_cached;
+
+sub _list_mirror_cached {
+    my $repos = shift;
+    my $rev = $repos->fs->youngest_rev;
+    delete $mirror_cached{$repos}
+	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
+    return %{$mirror_cached{$repos}{hash}}
+	if exists $mirror_cached{$repos};
+    my %mirrored = map {
+	my $m = SVN::Mirror->new( target_path => $_,
+				  repos => $repos,
+				  pool => SVN::Pool->new,
+				  get_source => 1 );
+	local $@;
+	eval { $m->init };
+	$@ ? () : ($_ => join(':', $m->{source_uuid}, $m->{source_path}))
+    } SVN::Mirror::list_mirror($repos);
+
+    $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
+    return %mirrored;
+}
+
+sub _has_local {
+    my ($repos, $spec) = @_;
+    my %mirrored = _list_mirror_cached($repos);
+    while (my ($path, $mspec) = each(%mirrored)) {
+	my $mpath = $spec;
+	next unless $mpath =~ s/^\Q$mspec\E//;
+	my $m = SVN::Mirror->new (target_path => $path,
+				  repos => $repos,
+				  pool => SVN::Pool->new,
+				  get_source => 1);
+	$m->init;
+	$mpath = '' if $mpath eq '/';
+	return ($m, $mpath);
+    }
+    return;
 }
 
 1;

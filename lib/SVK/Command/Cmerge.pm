@@ -6,6 +6,7 @@ use base qw( SVK::Command::Merge SVK::Command::Copy SVK::Command::Propset );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Combine;
+use SVK::Inspector::Compat;
 
 sub options {
     ($_[0]->SUPER::options);
@@ -57,6 +58,7 @@ sub run {
 					   );
 
     my $spool = SVN::Pool->new_default;
+    my $inspector = SVK::Inspector::Compat->new({$ceditor->callbacks});
     for (@revlist) {
 	my ($fromrev, $torev) = @$_;
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
@@ -65,7 +67,8 @@ sub run {
 	SVK::Merge->new (%$self, repos => $repos,
 			 base => $src->new (revision => $fromrev),
 			 src => $src->new (revision => $torev), dst => $dst,
-			)->run ($ceditor, $ceditor->callbacks,
+			)->run ($ceditor, 
+			        inspector => $inspector,
 				# XXX: should be base_root's rev?
 				cb_rev => sub { $fs->youngest_rev });
 	$spool->clear;
@@ -96,7 +99,7 @@ sub run {
 	$self->{message} = $oldmessage;
     }
 
-    my ($depot) = $self->{xd}->find_depotname ($src->{depotpath});
+    my ($depot) = $src->depotname;
     ++$self->{auto};
     $self->SUPER::run ($src->new (path => $tmpbranch,
 				  depotpath => "/$depot$tmpbranch",
@@ -124,16 +127,20 @@ SVK::Command::Cmerge - Merge specific changes
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -c [--change] REV	: act on comma-separated revisions REV 
- -C [--check-only]      : try operation but make no changes
+ -c [--change] REV      : act on comma-separated revisions REV 
  -l [--log]             : use logs of merged revisions as commit message
  -r [--revision] N:M    : act on revisions between N and M
  -a [--auto]            : merge from the previous merge point
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS
 

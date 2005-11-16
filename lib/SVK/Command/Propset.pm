@@ -9,9 +9,9 @@ use SVK::I18N;
 
 sub options {
     ($_[0]->SUPER::options,
-     'K|keep-local' => 'keep',
      'r|revision=i' => 'rev',
      'revprop' => 'revprop',
+     'q|quiet' => 'quiet',
     );
 }
 
@@ -25,8 +25,8 @@ sub parse_arg {
 sub lock {
     my $self = shift;
     my @paths = @_[2..$#_];
-    return unless grep {$_->copath} @paths;
-    $self->lock_target ($self->arg_condensed (map {$_->{report}} @_[2..$#_]));
+    return unless grep {$_->isa('SVK::Path::Checkout')} @paths;
+    $self->lock_target ($self->{xd}->target_condensed(@_[2..$#_]));
 }
 
 sub do_propset_direct {
@@ -36,10 +36,19 @@ sub do_propset_direct {
 	my $fs = $target->{repos}->fs;
         my $rev = (defined($self->{rev}) ? $self->{rev} : $target->{revision});
         $fs->change_rev_prop ($rev, $propname => $propvalue);
-        print loc("Property '%1' set on repository revision %2.\n", $propname, $rev);
+	unless ($self->{quiet}) {
+	    if (defined $propvalue) {
+		print loc("Property '%1' set on repository revision %2.\n",
+		    $propname, $rev);
+	    } else {
+		print loc("Property '%1' deleted from repository revision %2.\n",
+		    $propname, $rev);
+	    }
+	}
         return;
     }
 
+    $target->normalize; # so find_remove_rev is used with right revision.
     my $root = $target->root;
     my $kind = $root->check_path ($target->path);
 
@@ -49,18 +58,21 @@ sub do_propset_direct {
     my $func = $kind == $SVN::Node::dir ? 'change_dir_prop' : 'change_file_prop';
     my $path = abs2rel ($target->path, $anchor => undef, '/');
 
+    my $m = $self->under_mirror ($target);
+    my $rev = $target->{revision};
+    $rev = $m->find_remote_rev ($rev) if $m;
     if ($kind == $SVN::Node::dir) {
 	if ($anchor eq $target->path) {
 	    $editor->change_dir_prop ($editor->{_root_baton}, $propname, $propvalue);
 	}
 	else {
-	    my $baton = $editor->open_directory ($path, 0, $target->{revision});
+	    my $baton = $editor->open_directory ($path, 0, $rev);
 	    $editor->change_dir_prop ($baton, $propname, $propvalue);
 	    $editor->close_directory ($baton);
 	}
     }
     else {
-	my $baton = $editor->open_file ($path, 0, $target->{revision});
+	my $baton = $editor->open_file ($path, 0, $rev);
 	$editor->change_file_prop ($baton, $propname, $propvalue);
 	$editor->close_file ($baton, undef);
     }
@@ -73,11 +85,12 @@ sub do_propset_direct {
 sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
+	die loc("-r not allowed for propset copath.\n")
+	    if $self->{rev};
 	# verify the content is not with mixed line endings.
 	if ($pname eq 'svn:eol-style') {
-	    my $xdroot = $target->root ($self->{xd});
-	    my $fh = SVK::XD::get_fh ($xdroot, '<', $target->{path}, $target->{copath},
+	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->{path}, $target->{copath},
 				      { 'svn:eol-style' => $pvalue }, '',
 				      undef, 1);
 	    eval {
@@ -96,6 +109,7 @@ sub do_propset {
 	    ( %$target,
 	      propname => $pname,
 	      propvalue => $pvalue,
+	      quiet => $self->{quiet},
 	    );
     }
     else {
@@ -127,14 +141,17 @@ SVK::Command::Propset - Set a property on path
 
 =head1 OPTIONS
 
- -m [--message] MESSAGE	: specify commit message MESSAGE
- -C [--check-only]      : try operation but make no changes
- -S [--sign]            : sign this change
  -R [--recursive]       : descend recursively
- -r [--revision] REV	: act on revision REV instead of the head revision
- -P [--patch] NAME	: instead of commit, save this change as a patch
- -S [--sign]            : sign this change
+ -r [--revision] REV    : act on revision REV instead of the head revision
  --revprop              : operate on a revision property (use with -r)
+ -m [--message] MESSAGE : specify commit message MESSAGE
+ -F [--file] FILENAME   : read commit message from FILENAME
+ --template             : use the specified message as the template to edit
+ --encoding ENC         : treat -m/-F value as being in charset encoding ENC
+ -P [--patch] NAME      : instead of commit, save this change as a patch
+ -S [--sign]            : sign this change
+ -C [--check-only]      : try operation but make no changes
+ -q [--quiet]           : print as little as possible
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS

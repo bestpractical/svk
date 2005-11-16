@@ -7,6 +7,7 @@ use SVK::XD;
 
 sub options {
    ('a|all'		=> 'all',
+    'force-incremental' => 'force_incremental',
     'l|lump'		=> 'lump');
 }
 
@@ -14,6 +15,12 @@ sub parse_arg {
     my ($self, @arg) = @_;
 
     @arg = ('') if $#arg < 0;
+
+    # -- XXX -- will break otherwise -- XXX ---
+    # (Possibly fixed now, so we'll add an undocumented option to override
+    # this, to enable testing.)
+    $self->{lump} = 1 unless $self->{force_incremental};
+    $self->{incremental} = !$self->{lump};
 
     if ($self->{all}) {
         my $checkout = $self->{xd}{checkout}{hash};
@@ -28,16 +35,13 @@ sub parse_arg {
                 to => 1,
                 log => 1,
                 message => '',
-                incremental => !$self->{lump},
             }
         )->parse_arg (@arg);
     }
 
-    $self->{lump} = 1; # -- XXX -- will break otherwise -- XXX ---
 
     $self->{sync}++;
     $self->{merge}++;
-    $self->{incremental} = !$self->{lump};
 
     $self->SUPER::parse_arg (@arg);
 }

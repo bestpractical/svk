@@ -6,6 +6,22 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Class::Autouse qw(:superloader);
 
 use SVN::Core;
+BEGIN {
+    # autouse hates Devel::DProf. If we're running with DProf,
+    # we need to emasculate autouse by blowing a new import sub into its
+    # package at runtime.
+    if($main::INC{'Devel/DProf.pm'})  {
+	no strict 'refs';
+	$main::INC{'autouse.pm'} = __FILE__;
+	*{'autouse::import'} = sub {
+	    require UNIVERSAL::require;
+	    shift; # get rid of $CLASS
+	    my $class = shift;
+	    $class->require or die $!;
+	    $class->export_to_level(1, undef, @_);
+        }
+    }
+}
 
 sub import {
     return unless ref ($_[0]);

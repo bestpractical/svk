@@ -14,7 +14,7 @@ my ($xd, $svk) = build_test();
 
 my $tree = create_basic_tree ($xd, '//');
 
-my ($copath, $corpath) = get_copath ('smerge');
+my ($copath, $corpath) = get_copath ('patchset');
 $svk->checkout ('//', $copath);
 
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
@@ -37,7 +37,7 @@ use SVK::Patchset;
 my $fs = $repos->fs;
 my $ps = bless { xd => $xd }, 'SVK::Patchset';
 
-is ($ps->all_dependencies ($repos, 6), 1, 'r6 depends on r1');
+is_deeply ($ps->all_dependencies ($repos, 6), [1], 'r6 depends on r1');
 is_deeply (deptree($fs->youngest_rev),
 	   ['1: test init tree',
 	    '`->6: modify A/qu',
@@ -57,7 +57,7 @@ is_deeply (deptree($fs->youngest_rev),
 	    '| `->5: modify A/be and D/de',
 	    '`->6: modify A/qu',
 	   ], 'whole tree');
-
+diag join("\n", @{deptree($fs->youngest_rev)},'');
 
 
 

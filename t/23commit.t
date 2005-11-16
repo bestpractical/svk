@@ -1,12 +1,31 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 45;
+plan tests => 56;
 
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('commit');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
+
+our $answer = 'c';
+
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+# remove foo from the targets
+@_ = grep !/foo/, <_>;
+# simulate some editing, for --template test
+s/monkey/gorilla/g for @_;
+s/birdie/parrot/g for @_;
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+
 $svk->checkout ('//', $copath);
 is_output_like ($svk, 'commit', [], qr'not a checkout path');
 chdir ($copath);
@@ -73,13 +92,18 @@ $svk->rm ('A/foo');
 $svk->commit ('-m', 'rm something', 'A/foo');
 is_deeply ([$xd->{checkout}->find ($corpath, {revision => qr/.*/})],
 	   [$corpath, __("$corpath/A/barnew"), __("$corpath/A/foo")]);
+append_file ("A/bar", "this is bad");
+is_output ($svk, 'commit', [-m => 'commit after certain rm', 'A'],
+	   ['Committed revision 6.']);
+is_output ($svk, 'st', [],
+	   [__('?   A/deep/X')]);
 
 SKIP: {
 skip 'SVN::Mirror not installed', 1
     unless HAS_SVN_MIRROR;
 # The '--sync' and '--merge' below would have no effect.
 is_output ($svk, 'update', ['--sync', '--merge', $corpath], [
-            "Syncing //(/) in $corpath to 5.",
+            "Syncing //(/) in $corpath to 6.",
             __"A   $corpath/A/deep/new",
             __"U   $corpath/A/deep/baz",
             __"U   $corpath/A/deep/la/no",
@@ -118,8 +142,12 @@ is_output ($svk, 'commit', ['--import', '-m', 'commit --import',
 is_output ($svk, 'status', [],
 	   [__('?   A/deep/X')]);
 
-is_output ($svk, 'commit', ['--import', '-m', 'commit --import', 'A/deep/X'],
-	   ['Committed revision 9.']);
+is_output ($svk, 'commit', ['--import', '-m', 'commit --import monkey', '--template', 'A/deep/X'],
+	   ['Waiting for editor...',
+	    'Committed revision 9.']);
+
+is_output_like ($svk, 'log', [-r => 9, 'A/deep/X'],
+		qr/commit --import gorilla/, 'template works for commit --import');
 
 is_output ($svk, 'status', [], []);
 unlink ('A/forimport/foo');
@@ -159,21 +187,6 @@ is_output ($svk, 'status', [],
 is_output ($svk, 'pl', ['-v', '.'],
 	   ['Properties on .:',
 	    '  bar: bozo']);
-
-our $answer = 'c';
-
-set_editor(<< 'TMP');
-$_ = shift;
-open _ or die $!;
-# remove foo from the targets
-@_ = grep !/foo/, <_>;
-close _;
-unlink $_;
-open _, '>', $_ or die $!;
-print _ @_;
-close _;
-print @_;
-TMP
 
 append_file ("A/bar", "foobar2");
 $svk->ps ('bar', 'foo', '.');
@@ -245,3 +258,44 @@ is_output ($svk, 'commit', [-F => 'svk-commit'],
 
 is_output_like ($svk, 'log', [-r => 19],
 		qr/my log message/);
+
+append_file ("A/bar", "please be changed");
+is_output($svk, 'commit', [-m => "i like a monkey\nand a birdie", '--template'],
+          ["Waiting for editor...",
+	   "Committed revision 20."], 'commit with -m and --template');
+
+is_output_like ($svk, 'log', [-r => 20],
+		qr/i like a gorilla/, 'first line successfully edited from template');
+
+is_output_like ($svk, 'log', [-r => 20],
+		qr/and a parrot/, 'second line successfully edited from template');
+
+append_file ("A/bar", "changed some more");
+overwrite_file ('svk-commit', "this time it's a birdie\nalso a monkey");
+
+is_output($svk, 'commit', [-F => 'svk-commit', '--template'],
+          ["Waiting for editor...",
+	   "Committed revision 21."], 'commit with -F and --template');
+
+is_output_like ($svk, 'log', [-r => 21],
+		qr/this time it's a parrot/, 'first line successfully edited from template');
+
+is_output_like ($svk, 'log', [-r => 21],
+		qr/also a gorilla/, 'second line successfully edited from template');
+
+overwrite_file("changeme", 'to be committed with revprop');
+$svk->add("changeme");
+
+is_output($svk, 'commit', [-m => 'with revprop', '--set-revprop', 'fnord=baz'],
+          ["Committed revision 22."], 'fnord');
+
+is_output(
+    $svk, 'pl', ['-r' => 22, '--revprop'],
+    ['Unversioned properties on revision 22:',
+     '  fnord',
+     '  svk:copy_cache_prev',
+     '  svn:author',
+     '  svn:date',
+     '  svn:log',
+    ],
+);

@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 24;
+plan tests => 26;
 
 use Cwd;
 use File::Path;
@@ -29,7 +29,15 @@ chmod (0755, "$copath/exe");
 mkdir "$copath/dir";
 overwrite_file ("$copath/dir/filed", "foobarbazz");
 
-$svk->import ('-m', 'test import', $copath, '//import');
+is_output ($svk, 'import', ['-Cm', 'test import', $copath, '//import'],
+	   ['Import path //import will be created.',
+	    "Directory $corpath will be imported to depotpath //import."]);
+is_output ($svk, 'import', ['-m', 'test import', $copath, '//import'],
+	   ['Committed revision 1.',
+	    'Import path //import initialized.',
+	    'Committed revision 2.',
+	    "Directory $corpath imported to depotpath //import as revision 2."]);
+
 is_output_like ($svk, 'status', [$copath], qr'not a checkout path');
 
 overwrite_file ("$copath/filea", "foobarbazzblah");
@@ -113,7 +121,7 @@ is_output ($svk, 'import', ['-m', 'import into mirrored path from noncheckout', 
 	    "Syncing $uri",
 	    "Retrieving log information from 24 to 25",
 	    "Committed revision 11 from revision 25.",
-	    "Import path /m/hate initialized.",
+	    "Import path //m/hate initialized.",
 	    "Merging back to mirror source $uri.",
 	    "Merge back committed as revision 26.",
 	    "Syncing $uri",

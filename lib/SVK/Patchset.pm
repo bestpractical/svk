@@ -34,25 +34,35 @@ sub recalculate {
 }
 
 use List::Util qw(reduce);
+use List::MoreUtils qw(uniq);
 
 # find out all the nodes in tree $rev that is depended on by $leaf
 sub dependencies_in_tree {
     my ($self, $repos, $rev, $leaf) = @_;
 
-    my @pp = $self->dependencies ($repos, $leaf);
+#    Carp::cluck "+ dep in tree $rev vs $leaf";
     if ($self->rev_depends_on ($repos, $rev, $leaf)) {
-	my %filter = map { $_ => 1} @pp;
-	return grep { !$filter{$_} } $leaf;
+	return ($leaf);
     }
-
-    return reduce { $a == $b ? $a : ($a, $b)} sort # uniq
-	map { $self->dependencies_in_tree ($repos, $rev, $_) } @pp;
+    my @pp = $self->dependencies ($repos, $leaf);
+    my @fuck;
+    for my $p (@pp) {
+	if ($self->rev_depends_on ($repos, $rev, $p)) {
+	    push @fuck, $p;
+	}
+    }
+    return @fuck;
 }
 
-# XXX: bad recusion, eliminate duplicated node as early as possible
+our %CACHE;
+
 sub all_dependencies {
     my ($self, $repos, $rev) = @_;
-    return map { ($_, $self->all_dependencies ($repos, $_)) } $self->dependencies ($repos, $rev);
+    my $cache = $CACHE{$repos} ||= {};
+
+    return $cache->{$rev} ||=
+	[uniq map { ($_, @{$self->all_dependencies($repos, $_)} ) }
+	 $self->dependencies ($repos, $rev)];
 }
 
 sub dependencies {
@@ -62,7 +72,7 @@ sub dependencies {
     my $fs = $repos->fs;
     my $parents = $fs->revision_prop ($rev, 'svk:parents');
     if (defined $parents) {
-	$parents = [split /,/, $parents];
+	$parents = [uniq split /,/, $parents];
     }
     else {
 	# Here, we use history traversal and limit the domain of
@@ -76,6 +86,7 @@ sub dependencies {
 	    my $root = $fs->revision_root ($leaf);
 	    $anchor = anchor_of (defined $anchor ? $anchor : (),
 				 anchor_in_change ($fs, $root));
+	    $root->check_path($anchor) or last; # XXX: might be Deleted
 	    my $hist = $root->node_history ($anchor)->prev(0)->prev(0) or last;
 	    $leaf = ($hist->location)[1];
 	    if (defined $fs->revision_prop ($leaf, 'svk:children')) {
@@ -83,18 +94,19 @@ sub dependencies {
 		# marked as our ancestry
 		next if $parents{$leaf};
 	    }
-	    # XXX: make dependencies_in_tree also returns all parents
-	    # so we don't have to do that again for caching %parents
 	    my @parents = $self->dependencies_in_tree ($repos, $rev, $leaf);
-	    for (map { $self->all_dependencies ($repos, $_)} @parents ) {
-		++$parents{$_};
+	    for my $p (@parents) {
+		++$parents{$_}
+		    for @{$self->all_dependencies ($repos, $p)};
 	    }
 
 	    push @$parents, @parents;
 	    $spool->clear;
 	}
 	$parents ||= [];
-	$fs->change_rev_prop ($rev, 'svk:parents', join(',',@$parents));
+	# get rid of non-immediate parents.
+	@$parents = uniq grep { !$parents{$_} } @$parents;
+	$fs->change_rev_prop ($rev, 'svk:parents', join(',', @$parents));
 	for (@$parents) {
 	    $fs->change_rev_prop ($_, 'svk:children',
 				  join(',', $rev, split /,/, ($fs->revision_prop ($_, 'svk:children') || '')));
@@ -104,28 +116,54 @@ sub dependencies {
     return @$parents;
 }
 
+
+my %DEPCACHE;
+
 sub rev_depends_on {
     my ($self, $repos, $rev, $prev) = @_;
     my $pool = SVN::Pool->new_default;
     my $xd = $self->{xd};
     Carp::confess unless $prev;
+
+    my $cache = $DEPCACHE{$repos} ||= {};
+    return $cache->{$rev}{$prev} if exists $cache->{$rev}{$prev};
+    if (defined $repos->fs->revision_prop ($rev, 'svk:parents')) {
+
+	my @fo = grep { $_ == $prev } @{$self->all_dependencies($repos, $rev)};
+	return $cache->{$rev}{$prev} = (@fo ? 1 : 0);
+    }
+
     my $txn = $repos->fs_begin_txn_for_commit ($prev-1, 'svk', 'not for commit');
 
     my $editor = SVK::Editor::Combiner->new
 	($repos->get_commit_editor2 ($txn, '', '/', undef, undef, sub { }));
     my $fs = $repos->fs;
 
-    local $@;
-    eval {
-	$xd->depot_delta ( oldroot => $fs->revision_root ($rev-1),
-			   newroot => $fs->revision_root ($rev),
-			   oldpath => ['/', ''],
-			   newpath => '/',
-			   editor => $editor,
-			 );
-    };
+    require SVK::Editor::Merge;
+    require SVK::Notify;
+    require Encode;
+    require IO::Digest;
+    my $meditor = SVK::Editor::Merge->new
+	( base_anchor => '',
+	  base_root => $fs->revision_root ($rev-1),
+	  notify => SVK::Notify->new(quiet => 1),
+	  storage => $editor,
+	  anchor => '',
+	  target => '',
+	  send_fulltext => 1,
+	  prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} },
+	  SVK::Editor::Merge->cb_for_root
+	  ($fs->revision_root($prev-1), '', $prev-1));
+
+    $xd->depot_delta ( oldroot => $fs->revision_root ($rev-1),
+		       newroot => $fs->revision_root ($rev),
+		       oldpath => ['/', ''],
+		       newpath => '/',
+		       editor => $meditor,
+		     );
     $txn->abort;
-    return $@ ? 1 : 0;
+
+    return $cache->{$rev}{$prev} = ($meditor->{conflicts} || $meditor->{skipped});
 }
 
 sub anchor_of {
