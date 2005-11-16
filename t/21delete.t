@@ -54,12 +54,12 @@ $svk->revert ('-R', '.');
 append_file ('A/foo', "modified.\n");
 is_output ($svk, 'rm', ['A'],
 	   [__"A/foo is modified; use '--force' to go ahead."]);
-is_output ($svk, 'rm', ['--force', 'A'], [
+is_sorted_output ($svk, 'rm', ['--force', 'A'], [
 	__('D   A'),
 	__('D   A/bar'),
-	__('D   A/foo'),
 	__('D   A/deep'),
 	__('D   A/deep/baz'),
+	__('D   A/foo'),
 ], 'delete - file');
 ok (!-e 'A/', 'delete - copath deleted');
 is_output ($svk, 'status', [], [
@@ -84,13 +84,13 @@ $svk->revert ('-R', '.');
 overwrite_file ('A/quux', "modified.\n");
 is_output ($svk, 'rm', ['A'],
 	   [__"A/quux is not under version control; use '--force' to go ahead."]);
-is_output ($svk, 'rm', ['--force', 'A'], [
+is_sorted_output ($svk, 'rm', ['--force', 'A'], [
 	__('D   A'),
 	__('D   A/bar'),
-	__('D   A/foo'),
-	__('D   A/quux'),
 	__('D   A/deep'),
 	__('D   A/deep/baz'),
+	__('D   A/foo'),
+	__('D   A/quux'),
 ], 'delete - file');
 ok (!-e 'A/', 'delete - copath deleted');
 is_output ($svk, 'status', [], [
@@ -116,13 +116,13 @@ overwrite_file ('A/quux', "modified.\n");
 $svk->add('A/quux');
 is_output ($svk, 'rm', ['A'],
 	   [__"A/quux is scheduled; use '--force' to go ahead."]);
-is_output ($svk, 'rm', ['--force', 'A'], [
+is_sorted_output ($svk, 'rm', ['--force', 'A'], [
 	__('D   A'),
 	__('D   A/bar'),
-	__('D   A/foo'),
-	__('D   A/quux'),
 	__('D   A/deep'),
 	__('D   A/deep/baz'),
+	__('D   A/foo'),
+	__('D   A/quux'),
 ], 'delete - file');
 ok (!-e 'A/', 'delete - copath deleted');
 is_output ($svk, 'status', [], [
@@ -147,12 +147,12 @@ $svk->revert ('-R', '.');
 $svk->copy('A', 'B');
 is_output ($svk, 'rm', ['B'],
 	   [__"B is scheduled; use '--force' to go ahead."]);
-is_output ($svk, 'rm', ['--force', 'B'], [
+is_sorted_output ($svk, 'rm', ['--force', 'B'], [
 	__('D   B'),
 	__('D   B/bar'),
-	__('D   B/foo'),
 	__('D   B/deep'),
 	__('D   B/deep/baz'),
+	__('D   B/foo'),
 ], 'delete - file');
 ok (!-e 'B/', 'delete - copath deleted');
 is_output ($svk, 'status', [], [
@@ -175,15 +175,15 @@ is_output ($svk, 'rm', ['A'], [
 	__("A/deep/baz is modified,"),
 	__("A/deep/bar is scheduled,"),
 	__("A/deep/quux2 is scheduled; use '--force' to go ahead.")]);
-is_output ($svk, 'rm', ['--force', 'A'], [
+is_sorted_output ($svk, 'rm', ['--force', 'A'], [
 	__('D   A'),
 	__('D   A/bar'),
-	__('D   A/foo'),
 	__('D   A/deep'),
 	__('D   A/deep/bar'),
 	__('D   A/deep/baz'),
 	__('D   A/deep/quux'),
 	__('D   A/deep/quux2'),
+	__('D   A/foo'),
 ], 'delete - file');
 $svk->revert ('-R', '.');
 
