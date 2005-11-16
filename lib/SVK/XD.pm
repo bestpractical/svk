@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 require SVN::Core;
 require SVN::Repos;
 require SVN::Fs;
+
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir splitpath $SEP
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
@@ -17,6 +18,8 @@ use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Path::Class ();
+
+
 
 =head1 NAME
 
@@ -517,113 +520,6 @@ sub create_xd_root {
 =head2 Checkout handling
 
 =over
-
-=cut
-
-sub xd_storage_cb {
-    my ($self, %arg) = @_;
-    # translate to abs path before any check
-    return
-	( cb_exist => sub { my ($copath, $pool) = @_;
-			    my $path = $copath;
-			    $arg{get_copath} ($copath);
-			    lstat ($copath);
-			    return $SVN::Node::none unless -e _;
-			    $arg{get_path} ($path);
-			    return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
-				if $self->{checkout}->get ($copath)->{'.schedule'} or
-				    $arg{oldroot}->check_path ($path, $pool);
-			    return $SVN::Node::unknown;
-			},
-	  cb_rev => sub { $_ = shift; $arg{get_copath} ($_);
-			  $self->{checkout}->get ($_)->{revision} },
-	  cb_conflict => sub { $_ = shift; $arg{get_copath} ($_);
-			       $self->{checkout}->store ($_, {'.conflict' => 1})
-				   unless $arg{check_only};
-			   },
-	  cb_prop_merged => sub { return if $arg{check_only};
-				  $_ = shift; $arg{get_copath} ($_);
-				  my $name = shift;
-				  my $entry = $self->{checkout}->get ($_);
-				  my $prop = $entry->{'.newprop'};
-				  delete $prop->{$name};
-				  $self->{checkout}->store ($_, {'.newprop' => $prop,
-								 keys %$prop ? () :
-								 ('.schedule' => undef)}
-								);
-			      },
-	  cb_localmod => sub { my ($path, $checksum) = @_;
-			       my $copath = $path;
-			       # XXX: make use of the signature here too
-			       $arg{get_copath} ($copath);
-			       $arg{get_path} ($path);
-			       my $base = get_fh ($arg{oldroot}, '<',
-						  $path, $copath);
-			       my $md5 = md5_fh ($base);
-			       return undef if $md5 eq $checksum;
-			       seek $base, 0, 0;
-			       return [$base, undef, $md5];
-			   },
-	  cb_localprop => sub { my ($path, $propname) = @_;
-				my $copath = $path;
-				$arg{get_copath} ($copath);
-				$arg{get_path} ($path);
-				return $self->get_props ($arg{oldroot}, $path, $copath)->{$propname};
-			   },
-	  cb_dirdelta => sub { my ($path, $base_root, $base_path, $pool) = @_;
-			       my $copath = $path;
-			       $arg{get_copath} ($copath);
-			       $arg{get_path} ($path);
-			       my $modified;
-			       my $editor =  SVK::Editor::Status->new
-				   ( notify => SVK::Notify->new
-				     ( cb_flush => sub {
-					   my ($path, $status) = @_;
-					   $modified->{$path} = $status->[0];
-				       }));
-			       $self->checkout_delta
-				   ( %arg,
-				     # XXX: proper anchor handling
-				     path => $path,
-				     copath => $copath,
-				     base_root => $base_root,
-				     base_path => $base_path,
-				     xdroot => $arg{oldroot},
-				     nodelay => 1,
-				     depth => 1,
-				     editor => $editor,
-				     absent_as_delete => 1,
-				     cb_unknown => \&SVK::Editor::Status::unknown,
-				   );
-			       return $modified;
-			   },
-	);
-}
-
-=item get_editor
-
-Returns the L<SVK::XD::Editor> object. Apply target translation if
-target is given in options. Also returns the callback hash used by
-L<SVK::Editor::Merge> when called in array context.
-
-=cut
-
-sub get_editor {
-    my ($self, %arg) = @_;
-    my ($copath, $path, $spath) = @arg{qw/copath path store_path/};
-    $spath = $path unless defined $spath;
-    my $encoding = $self->{checkout}->get ($copath)->{encoding};
-    $path = '' if $path eq '/';
-    $spath = '' if $spath eq '/';
-    $encoding = Encode::find_encoding($encoding) if $encoding;
-    $arg{get_copath} = sub { to_native ($_[0], 'path', $encoding) if $encoding;
-			     $_[0] = SVK::Path::Checkout->copath ($copath,  $_[0]) };
-    $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
-    $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
-    my $storage = SVK::Editor::XD->new (%arg, xd => $self);
-
-    return wantarray ? ($storage, $self->xd_storage_cb (%arg)) : $storage;
-}
 
 =item auto_prop
 
@@ -1377,18 +1273,20 @@ sub _get_rev {
 
 sub checkout_delta {
     my ($self, %arg) = @_;
-    $arg{base_root} ||= $arg{xdroot};
-    $arg{base_path} ||= $arg{path};
+    $arg{base_root} ||= $arg{xdroot}; # xdroot is the  
+    $arg{base_path} ||= $arg{path};   # path is  ->  string name of file in repo
     $arg{encoder} = get_encoder;
     my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
     $arg{kind} = $arg{base_root} eq $arg{xdroot} ? $kind : $arg{xdroot}->check_path ($arg{path});
     die "checkout_delta called with non-dir node"
-	unless $kind == $SVN::Node::dir;
+	   unless $kind == $SVN::Node::dir;
     my ($copath, $repospath) = @arg{qw/copath repospath/};
     $arg{editor} = SVN::Delta::Editor->new (_debug => 1, _editor => [$arg{editor}])
 	if $arg{debug};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
-	unless $arg{nodelay};
+	   unless $arg{nodelay};
+	
+	# XXX: Another bit of cb_rev evil.
     $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Path::Checkout->copath ($copath, $_[0])) };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
@@ -1549,14 +1447,14 @@ sub _fh_symlink {
     my ($mode, $fname) = @_;
     my $fh;
     if ($mode eq '>') {
-	open $fh, '>:via(symlink)', $fname;
+        open $fh, '>:via(symlink)', $fname;
     }
     elsif ($mode eq '<') {
 	# XXX: make PerlIO::via::symlink also do the reading
-	open $fh, '<', \("link ".readlink($fname));
+        open $fh, '<', \("link ".readlink($fname));
     }
     else {
-	die "unknown mode $mode for symlink fh";
+        die "unknown mode $mode for symlink fh";
     }
     return $fh;
 }
@@ -1570,14 +1468,16 @@ Returns a file handle with keyword translation and line-ending layers attached.
 sub get_fh {
     my ($root, $mode, $path, $fname, $prop, $layer, $eol, $checkle) = @_;
     {
-	local $@;
-	$prop ||= eval { $root->node_proplist ($path) };
+        # don't care about nonexisting path, for new file with keywords
+        local $@;
+        $prop ||= eval { $root->node_proplist($path) } || {};
     }
+    use Carp; Carp::cluck unless ref $prop eq 'HASH';
     return _fh_symlink ($mode, $fname)
-	if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
+	   if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
     if (keys %$prop) {
-	$layer ||= get_keyword_layer ($root, $path, $prop);
-	$eol ||= get_eol_layer($prop, $mode, $checkle);
+        $layer ||= get_keyword_layer ($root, $path, $prop);
+        $eol ||= get_eol_layer($prop, $mode, $checkle);
     }
     $eol ||= ':raw';
     open my ($fh), $mode.$eol, $fname or return undef;

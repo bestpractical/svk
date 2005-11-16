@@ -84,8 +84,6 @@ sub run {
     my ($self, $src, $dst) = @_;
     my $merge;
     my $repos = $src->{repos};
-    my $fs = $repos->fs;
-    my $yrev = $fs->youngest_rev;
 
     if (my @mirrors = $dst->contains_mirror) {
 	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->{report})
@@ -141,7 +139,7 @@ sub run {
     $self->get_commit_message ($self->{log} ? $merge->log(1) : undef)
 	unless $dst->isa('SVK::Path::Checkout');
 
-    if ($self->{incremental} && !$self->{check_only}) {
+    if ($self->{incremental}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")
 	    if $self->{no_ticket};
 	print loc ("-m ignored in incremental merge\n") if $self->{message};
@@ -161,8 +159,15 @@ sub run {
 
 	my $spool = SVN::Pool->new_default;
 	my $previous_base;
+	if ($self->{check_only}) {
+	    require SVK::Path::Txn;
+	    $dst = SVK::Path::Txn->new(%$dst);
+	}
 	foreach my $rev (@rev) {
-	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $rev));
+	    my ($editor, %extra) = $self->get_editor($dst);
+	    $merge = SVK::Merge->auto(%$merge,
+				      inspector => $extra{inspector},
+				      src => $src->new(revision => $rev));
 	    if ($previous_base) {
 		$merge->{fromrev} = $previous_base;
 	    }
@@ -171,16 +176,14 @@ sub run {
 	    $self->{message} = $merge->log (1);
 	    $self->decode_commit_message;
 
-	    last if $merge->run ($self->get_editor ($dst));
+	    last if $merge->run( $editor, %extra );
 	    # refresh dst
-	    $dst->{revision} = $fs->youngest_rev;
+	    $dst->refresh_revision;
 	    $previous_base = $rev;
 	    $spool->clear;
 	}
     }
     else {
-	print loc("Incremental merge not guaranteed even if check is successful\n")
-	    if $self->{incremental};
 	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
 	delete $self->{save_message};
     }

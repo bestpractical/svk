@@ -5,7 +5,7 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos path depotname revision));
+__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision));
 
 =head1 NAME
 
@@ -93,6 +93,95 @@ sub same_source {
 	return 0 if $m && $m->{target_path} ne $m->{target_path};
     }
     return 1;
+}
+
+sub is_mirrored {
+    my ($self) = @_;
+    return unless HAS_SVN_MIRROR;
+    # XXX: improve is_mirrored with util::_list_mirror_cached
+    return SVN::Mirror::is_mirrored($self->repos, $self->{path});
+}
+
+sub _commit_editor {
+    my ($self, $txn, $callback, $pool) = @_;
+    my $post_handler;
+    my $editor = SVN::Delta::Editor->new
+	( $self->repos->get_commit_editor2
+	  ( $txn, "file://".$self->repospath,
+	    $self->{path}, undef, undef, # author and log already set
+	    sub { print loc("Committed revision %1.\n", $_[0]);
+		  # build the copy cache as early as possible
+		  # XXX: don't need this when there's fs_closest_copy
+		  $post_handler->($_[0]) if $post_handler;
+		  find_prev_copy ($self->repos->fs, $_[0]);
+		  $callback->(@_) if $callback; }, $pool
+	  ));
+
+    return ($editor, \$post_handler);
+}
+
+sub get_editor {
+    my ($self, %arg) = @_;
+
+    my ($m, $mpath) = $arg{ignore_mirror} ? () : $self->is_mirrored;
+    my $fs = $self->repos->fs;
+    my $yrev = $fs->youngest_rev;
+    
+    my $root_baserev = $m ? $m->{fromrev} : $yrev;
+
+    my $inspector = SVK::Inspector::Root->new
+	({ root => $fs->revision_root($yrev),
+	   anchor => $self->{path} });
+
+    if ($arg{check_only}) {
+	print loc("Checking locally against mirror source %1.\n", $m->{source})
+	    if $m;
+	return (SVN::Delta::Editor->new, $inspector, 
+	        cb_rev => sub { $root_baserev },
+	        mirror => $m);
+    }
+
+    my $callback = $arg{callback};
+    my $post_handler;
+    if ($m) {
+	print loc("Merging back to mirror source %1.\n", $m->{source});
+	$m->{lock_message} = SVK::Command::Sync::lock_message ();
+	$m->{config} = $self->{svnconfig};
+	$m->{revprop} = ['svk:signature'];
+	my ($base_rev, $editor) = $m->get_merge_back_editor
+	    ($mpath, $arg{message},
+	     sub { my $rev = shift;
+		   print loc("Merge back committed as revision %1.\n", $rev);
+		   $post_handler->($rev) if $post_handler;
+		   $m->run($rev);
+		   $callback->($m->find_local_rev($rev), @_)
+		       if $callback }
+	    );
+	return ($editor, $inspector,
+		mirror => $m,
+		post_handler => \$post_handler,
+		cb_rev => sub { $root_baserev }, #This is the inspector baserev
+		cb_copyfrom =>
+		sub { my ($path, $rev) = @_;
+		      $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
+		      return ($path, scalar $m->find_remote_rev($rev)); });
+    }
+
+    # XXX: cleanup the txn if not committed
+    my $txn = $self->repos->fs_begin_txn_for_commit
+	($yrev, $arg{author}, $arg{message});
+
+    my $editor;
+    ($editor, $post_handler) =
+	$self->_commit_editor($txn, $callback);
+
+    return ($editor, $inspector,
+	    send_fulltext => 1,
+	    post_handler => $post_handler, # inconsistent!
+	    txn => $txn,
+	    cb_rev => sub { $root_baserev },
+	    cb_copyfrom =>
+	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
 }
 
 sub _to_pclass {

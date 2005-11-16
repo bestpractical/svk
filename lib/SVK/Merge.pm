@@ -111,6 +111,8 @@ sub find_merge_base {
     my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
+    # XXX: hack for now
+    local $dst->{inspector} = $self->{inspector} if $self->{inspector};
     my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
@@ -162,6 +164,12 @@ sub find_merge_base {
 
 sub merge_info {
     my ($self, $target) = @_;
+
+    if ($target->{inspector}) {
+	return SVK::Merge::Info->new
+	    ( $target->{inspector}->localprop('', 'svk:merge') );
+    }
+
     return SVK::Merge::Info->new
 	( $self->{xd}->get_props
 	  ($target->root ($self->{xd}), $target->path,
