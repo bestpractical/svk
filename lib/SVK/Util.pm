@@ -880,9 +880,9 @@ sub traverse_history {
             #    $SVN::Node::none;
         }
         ($path, $revision) = $hist->location ($new_pool);
+        $old_pool->clear;
         $rv = $args{callback}->($path, $revision);
         last if !$rv;
-        $old_pool->clear;
         $spool->clear;
         ($old_pool, $new_pool) = ($new_pool, $old_pool);
     }
