@@ -79,6 +79,7 @@ lib/SVK/I18N/zh_tw.po
 lib/SVK/Inspector.pm
 lib/SVK/Inspector/Root.pm
 lib/SVK/Inspector/XD.pm
+lib/SVK/Inspector/Compat.pm
 lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
