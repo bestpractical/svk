@@ -950,10 +950,10 @@ sub _node_deleted {
     if ($arg{kind} == $SVN::Node::dir && $arg{delete_verbose}) {
 	foreach my $file (sort $self->{checkout}->find
 			  ($arg{copath}, {'.schedule' => 'delete'})) {
+	    next if $file eq $arg{copath};
 	    $file = abs2rel($file, $arg{copath} => undef, '/');
 	    from_native($file, 'path', $arg{encoder});
-	    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/})
-		if $file;
+	    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/});
 	}
     }
 }

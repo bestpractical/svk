@@ -601,6 +601,9 @@ sub abs2rel {
         $rel = catdir($new_basedir, $rel);
     }
 
+    # resemble file::spec pre-3.13 behaviour, return empty string.
+    return '' if $rel eq '.';
+
     $rel =~ s/\Q$SEP/$sep/go if $sep and $SEP ne $sep;
     return $rel;
 }
