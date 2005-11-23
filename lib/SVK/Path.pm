@@ -5,7 +5,8 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision));
+__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision
+			     _inspector _pool));
 
 =head1 NAME
 
@@ -40,17 +41,23 @@ sub new {
 
 sub refresh_revision {
     my ($self) = @_;
+    $self->_inspector(undef);
     $self->revision($self->repos->fs->youngest_rev);
+    return $self;
 }
 
 sub _clone {
     my ($self) = @_;
 
-    require Clone;
+    require Storable;
     my $xd = delete $self->{xd};
-    my $cloned = Clone::clone ($self);
+    my $pool = delete $self->{_pool};
+    my $inspector = delete $self->{_inspector};
+    my $cloned = Storable::dclone ($self);
     $cloned->repos($self->repos);
     $self->{xd} = $cloned->{xd} = $xd if $xd;
+    $self->{_pool} = $pool;
+    $self->{_inspector} = $inspector;
     return $cloned;
 }
 
@@ -120,18 +127,41 @@ sub _commit_editor {
     return ($editor, \$post_handler);
 }
 
+sub pool {
+    my $self = shift;
+    $self->_pool( SVN::Pool->new )
+	unless $self->_pool;
+
+    return $self->_pool;
+}
+
+sub inspector {
+    my $self = shift;
+    $self->_inspector( $self->_get_inspector )
+	unless $self->_inspector;
+
+    return $self->_inspector;
+}
+
+sub _get_inspector {
+    my $self = shift;
+    my $fs = $self->repos->fs;
+    return SVK::Inspector::Root->new
+	({ root => $fs->revision_root($self->revision, $self->pool),
+	   _pool => $self->pool,
+	   anchor => $self->{path} });
+}
+
 sub get_editor {
     my ($self, %arg) = @_;
 
     my ($m, $mpath) = $arg{ignore_mirror} ? () : $self->is_mirrored;
     my $fs = $self->repos->fs;
     my $yrev = $fs->youngest_rev;
-    
+
     my $root_baserev = $m ? $m->{fromrev} : $yrev;
 
-    my $inspector = SVK::Inspector::Root->new
-	({ root => $fs->revision_root($yrev),
-	   anchor => $self->{path} });
+    my $inspector = $self->inspector;
 
     if ($arg{check_only}) {
 	print loc("Checking locally against mirror source %1.\n", $m->{source})
@@ -224,6 +254,7 @@ sub as_depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
     $self->revision($revision) if defined $revision;
+    delete $self->{_inspector};
     bless $self, 'SVK::Path';
     return $self;
 }

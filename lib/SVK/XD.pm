@@ -493,8 +493,8 @@ sub create_xd_root {
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	unless ($root) {
 	    $base_rev = $cinfo->{revision};
-	    $txn = $fs->begin_txn ($base_rev);
-	    $root = $txn->root();
+	    $txn = $fs->begin_txn ($base_rev, $arg{pool});
+	    $root = $txn->root($arg{pool});
 	    if ($base_rev == 0) {
 		# for interrupted checkout, the anchor will be at rev 0
 		my @path = ();
@@ -740,7 +740,8 @@ sub depot_delta {
 			   $arg{no_textdelta} ? 0 : 1,
 			   $arg{no_recurse} ? 0 : 1,
 			   0, # we never need entry props
-			   $arg{notice_ancestry} ? 0 : 1);
+			   $arg{notice_ancestry} ? 0 : 1,
+			   $arg{pool});
 }
 
 =item checkout_delta
@@ -1689,7 +1690,8 @@ sub AUTOLOAD {
 sub new {
     my ($class, @arg) = @_;
     unshift @arg, undef if $#arg == 0;
-    bless [@arg], $class;
+    my $self = bless [@arg], $class;
+    return $self;
 }
 
 sub DESTROY {
@@ -1697,8 +1699,7 @@ sub DESTROY {
     # if this destructor is called upon the pool cleanup which holds the
     # txn also, we need to use a new pool, otherwise it segfaults for
     # doing allocation in a pool that is being destroyed.
-    my $pool = SVN::Pool->new_default;
-    $_[0][0]->abort if $_[0][0];
+    $_[0][0]->abort(SVN::Pool->new) if $_[0][0];
 }
 
 =head1 AUTHORS

@@ -3,7 +3,7 @@ package SVK::Inspector;
 use strict;
 use warnings;
 
-use base qw{ Class::Accessor };
+use base qw{ Class::Accessor::Fast };
 
 __PACKAGE__->mk_accessors(qw(path_translations));
 

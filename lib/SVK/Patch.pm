@@ -223,7 +223,7 @@ sub view {
 sub apply {
     my ($self, $check_only) = @_;
     my $commit = SVK::Command->get_cmd ('commit', xd => $self->{_xd});
-    my $target = $self->{_target};
+    my $target = $self->{_target}->new->refresh_revision;
     $commit->{message} = "Apply $self->{name}\@$self->{level}";
     $commit->{check_only} = $check_only;
     $self->apply_to ($target, $commit->get_editor ($target));

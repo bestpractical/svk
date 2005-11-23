@@ -52,11 +52,11 @@ $svk->commit ('-m', 'second local modification from branch', "$corpath_default")
 chdir ($corpath_default);
 is_output ($svk, "push", [], [
         "Auto-merging (0, 6) /l to /m (base /m:3).",
-        "Merging back to mirror source $uri/A.",
         "===> Auto-merging (0, 4) /l to /m (base /m:3).",
-        "Empty merge.",
         "Merging back to mirror source $uri/A.",
+        "Empty merge.",
         "===> Auto-merging (4, 5) /l to /m (base /m:3).",
+        "Merging back to mirror source $uri/A.",
         "D   Q/qu",
         "A   T",
         "A   T/xd",
@@ -66,8 +66,8 @@ is_output ($svk, "push", [], [
         "Syncing $uri/A",
         "Retrieving log information from 3 to 3",
         "Committed revision 7 from revision 3.",
-        "Merging back to mirror source $uri/A.",
         "===> Auto-merging (5, 6) /l to /m (base /l:5).",
+        "Merging back to mirror source $uri/A.",
         "U   T/xd",
         "New merge ticket: $default_uuid:/l:6",
         "Merge back committed as revision 4.",
@@ -112,8 +112,8 @@ chdir ($corpath_default);
 
 is_output ($svk, 'push', [], [
         "Auto-merging (10, 12) /l to /m (base /l:10).",
-        "Merging back to mirror source $uri/A.",
         "===> Auto-merging (10, 12) /l to /m (base /l:10).",
+        "Merging back to mirror source $uri/A.",
         "U   be",
         "New merge ticket: $default_uuid:/l:12",
         "Merge back committed as revision 8.",
@@ -128,8 +128,8 @@ $svk->commit ('-m', 'additional local modification from branch', "$corpath_defau
 
 is_output ($svk, 'push', [], [
         "Auto-merging (12, 16) /l to /m (base /l:12).",
-        "Merging back to mirror source $uri/A.",
         "===> Auto-merging (12, 16) /l to /m (base /l:12).",
+        "Merging back to mirror source $uri/A.",
         "U   be",
         "New merge ticket: $default_uuid:/l:16",
         "Merge back committed as revision 9.",

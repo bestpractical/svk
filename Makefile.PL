@@ -20,7 +20,6 @@ requires(
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
-        'Clone'	                => '0',
         'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.11',

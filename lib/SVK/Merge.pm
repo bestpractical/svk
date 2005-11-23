@@ -111,8 +111,6 @@ sub find_merge_base {
     my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
-    # XXX: hack for now
-    local $dst->{inspector} = $self->{inspector} if $self->{inspector};
     my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
@@ -164,17 +162,9 @@ sub find_merge_base {
 
 sub merge_info {
     my ($self, $target) = @_;
-
-    if ($target->{inspector}) {
-	return SVK::Merge::Info->new
-	    ( $target->{inspector}->localprop('', 'svk:merge') );
-    }
-
+    my $tgt = defined $target->{targets}[0] ? $target->{targets}[0] : '';
     return SVK::Merge::Info->new
-	( $self->{xd}->get_props
-	  ($target->root ($self->{xd}), $target->path,
-	   $target->isa('SVK::Path::Checkout') ? # XXX: use path access
-	   $target->copath ($target->{copath_target}) : undef)->{'svk:merge'} );
+	( $target->inspector->localprop($tgt, 'svk:merge') );
 }
 
 sub merge_info_with_copy {
@@ -315,7 +305,6 @@ sub track_rename {
     return $editor unless @$renamed;
 
     my $rename_editor = SVK::Editor::Rename->new (editor => $editor, rename_map => $renamed);
-    SVK::Editor::Merge::cb_translate ($cb, sub {$_[0] = $rename_editor->rename_check ($_[0])});
     return $rename_editor;
 }
 
@@ -339,26 +328,21 @@ sub run {
     my $notify_target = defined $self->{target} ? $self->{target} : $target;
     my $notify = $self->{notify} || SVK::Notify->new_with_report
 	($report, $notify_target, $is_copath);
+    my $translate_target;
     if ($target && $dsttarget && $target ne $dsttarget) {
-	my $translate = sub { $_[0] =~ s/^\Q$target\E/$dsttarget/ };
+	$translate_target = sub { $_[0] =~ s/^\Q$target\E/$dsttarget/ };
 	$storage = SVK::Editor::Translate->new (_editor => [$storage],
-						translate => $translate);
-	SVK::Editor::Merge::cb_translate (\%cb, $translate);
+						translate => $translate_target);
 	# if there's notify_target, the translation is done by svk::notify
-	$notify->notify_translate ($translate) unless length $notify_target;
+	$notify->notify_translate ($translate_target) unless length $notify_target;
     }
     $storage = SVK::Editor::Delay->new ($storage)
 	unless $self->{nodelay};
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
-    if ($storage->can ('rename_check')) {
-	my $flush = $notify->{cb_flush};
-	$notify->{cb_flush} = sub {
-	    my ($path, $st) = @_;
-	    my $newpath = $storage->rename_check ($path);
-	    $flush->($path, $st, $path eq $newpath ? undef : $newpath) };
-    }
 
+    $cb{inspector} = $self->{dst}->inspector
+	unless ref($cb{inspector}) eq 'SVK::Inspector::Compat' ;
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->{path},
 	  repospath => $src->{repospath}, # for stupid copyfrom url
@@ -392,6 +376,9 @@ sub run {
 			     }),
 	  %cb,
 	);
+
+    $meditor->inspector_translate($translate_target)
+	if $translate_target;
 
     my $editor = $meditor;
     if ($self->{notice_copy}) {
@@ -453,6 +440,7 @@ sub run {
 	    ( oldroot => $base_root, newroot => $src->root,
 	      oldpath => [$base->{path}, $base->{targets}[0] || ''],
 	      newpath => $src->path,
+#	      pool => SVN::Pool->new,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
 	    );
     print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};

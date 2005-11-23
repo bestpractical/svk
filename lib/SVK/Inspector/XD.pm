@@ -91,7 +91,7 @@ sub get_paths {
     # XXX: No translation for XD
     $path = $self->translate($path);
     my $copath = $self->path->copath($path);
-    $path = $self->path->{path}."/$path" if length $path;
+    $path = length $path ? $self->path->{path}."/$path" : $self->path->{path};
 
     return ($path, $copath);
 }
