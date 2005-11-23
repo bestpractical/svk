@@ -139,7 +139,9 @@ sub get_editor {
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg,
-					get_copath => sub { $_[0] = $self->copath($_[0]) },
+					get_copath =>
+            sub { to_native ($_[0], 'path', $encoding) if $encoding;
+                  $_[0] = $self->copath($_[0]) },
 					repos => $self->{repos},
 					target => $self->{targets}[0] || '',
 					xd => $self->xd);
