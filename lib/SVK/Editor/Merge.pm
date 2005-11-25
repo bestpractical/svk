@@ -5,10 +5,12 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::Inspector::Root;
 
 require SVN::Delta;
-our @ISA = qw(SVN::Delta::Editor);
+our @ISA = qw(Class::Accessor::Fast SVN::Delta::Editor);
 use SVK::I18N;
 use autouse 'SVK::Util'
     => qw( slurp_fh md5_fh tmpfile devnull abs2rel );
+
+__PACKAGE__->mk_accessors(qw(inspector notify storage));
 
 use constant FH => 0;
 use constant FILENAME => 1;
@@ -133,6 +135,26 @@ Called after each file close call.
 use Digest::MD5 qw(md5_hex);
 use File::Compare ();
 
+sub new {
+    my $class = shift;
+
+    my $self = $class->SUPER::new(ref $_[0] ? @_ :{@_});
+
+    if ($self->storage->can('rename_check')) {
+	my $editor = $self->storage;
+	$self->inspector_translate
+	    (sub { $_[0] = $editor->rename_check($_[0])});
+
+	my $flush = $self->notify->{cb_flush};
+	$self->notify->{cb_flush} = sub {
+	    my ($path, $st) = @_;
+	    my $newpath = $self->storage->rename_check($path);
+	    $flush->($path, $st, $path eq $newpath ? undef : $newpath) };
+    }
+
+    return $self;
+}
+
 sub cb_for_root {
     my ($class, $root, $anchor, $base_rev) = @_;
     # XXX $root and $anchor are actually SVK::Path
@@ -147,15 +169,17 @@ sub cb_for_root {
     );
 }
 
-# translate the path before passing to cb_*
-sub cb_translate {
-    my ($cb, $translate) = @_;
-    $cb->{inspector}->push_translation($translate);
+sub inspector_translate {
+    my ($self, $translate) = @_;
+    # XXX: should do a real clone and then push
+    $self->inspector($self->inspector->new($self->inspector));
+    $self->inspector->path_translations([]);
+    $self->inspector->push_translation($translate);
     for (qw/cb_conflict/) {
-        my $sub = $cb->{$_};
+        my $sub = $self->{$_};
         next unless $sub;
-        $cb->{$_} = sub { my $path = shift; $translate->($path);
-                  unshift @_, $path; goto &$sub };
+        $self->{$_} = sub { my $path = shift; $translate->($path);
+			    unshift @_, $path; goto &$sub };
     }
 }
 
@@ -168,11 +192,6 @@ sub set_target_revision {
     my ($self, $revision) = @_;
     $self->{revision} = $revision;
     $self->{storage}->set_target_revision ($revision);
-}
-
-sub inspector {
-    my $self = shift;
-    return $self->{inspector};
 }
 
 sub open_root {

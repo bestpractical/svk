@@ -99,7 +99,7 @@ sub handle_co_item {
 
     $self->{xd}{checkout}->store_recursively
 	($copath, { revision => undef });
-    # XXX: can the scheudle be something other than delete ?
+    # XXX: can the schedule be something other than delete ?
     $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
@@ -163,14 +163,14 @@ sub run {
 
     return loc("Different depots.\n") unless $dst->same_repos (@src);
     my $m = $self->under_mirror ($dst);
-    return "Different sources.\n"
+    return loc("Different sources.\n")
 	if $m && !$dst->same_source (@src);
     $self->check_src (@src);
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
     if ($dst->isa('SVK::Path::Checkout')) {
 	return loc("%1 is not a directory.\n", $dst->report)
-	    if $#src > 0 && !-d $dst->{copath};
+	    if $#src > 0 && !-d $dst->copath;
 	return loc("%1 is not a versioned directory.\n", $dst->report)
 	    if -d $dst->copath &&
 		!($dst->root($self->{xd})->check_path ($dst->path) ||
@@ -179,9 +179,9 @@ sub run {
 	for (@src) {
 	    my $cpdst = $dst->new;
 	    $cpdst->descend ($_->{path} =~ m|/([^/]+)/?$|)
-		if -d $cpdst->{copath};
+		if -d $cpdst->copath;
 	    die loc ("Path %1 already exists.\n", $cpdst->report)
-		if -e $cpdst->{copath};
+		if -e $cpdst->copath;
 	    push @cpdst, $cpdst;
 	}
 	$self->handle_co_item ($_, shift @cpdst) for @src;

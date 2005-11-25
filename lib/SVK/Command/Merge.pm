@@ -105,7 +105,6 @@ sub run {
     }
 
     # for svk::merge constructor
-    $self->{dst} = $dst;
     $self->{report} = defined $dst->{copath} ? $dst->{report} : undef;
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
@@ -115,7 +114,7 @@ sub run {
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
-				   src => $src);
+				   src => $src, dst => $dst);
 	print $merge->info;
 	print $merge->log(1) if $self->{summary};
     }
@@ -126,6 +125,7 @@ sub run {
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
+	     dst => $dst,
 	     base => $src->new (revision => $baserev), target => '',
 	     fromrev => $baserev);
     }
@@ -161,12 +161,10 @@ sub run {
 	my $previous_base;
 	if ($self->{check_only}) {
 	    require SVK::Path::Txn;
-	    $dst = SVK::Path::Txn->new(%$dst);
+	    $merge->{dst} = $dst = SVK::Path::Txn->new(%$dst);
 	}
 	foreach my $rev (@rev) {
-	    my ($editor, %extra) = $self->get_editor($dst);
 	    $merge = SVK::Merge->auto(%$merge,
-				      inspector => $extra{inspector},
 				      src => $src->new(revision => $rev));
 	    if ($previous_base) {
 		$merge->{fromrev} = $previous_base;
@@ -176,7 +174,7 @@ sub run {
 	    $self->{message} = $merge->log (1);
 	    $self->decode_commit_message;
 
-	    last if $merge->run( $editor, %extra );
+	    last if $merge->run( $self->get_editor($dst) );
 	    # refresh dst
 	    $dst->refresh_revision;
 	    $previous_base = $rev;

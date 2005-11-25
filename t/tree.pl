@@ -129,6 +129,7 @@ sub rm_test {
 sub cleanup_test {
     my ($xd, $svk) = @{+shift};
     for my $depot (sort keys %{$xd->{depotmap}}) {
+	my $pool = SVN::Pool->new_default;
 	my (undef, undef, $repos) = eval { $xd->find_repos("/$depot/", 1) };
 	diag "uncleaned txn on /$depot/"
 	    if $repos && @{$repos->fs->list_transactions};

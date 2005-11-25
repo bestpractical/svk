@@ -48,11 +48,11 @@ $svk->commit ('-m', 'second local modification from branch', "$corpath_default")
 chdir ($corpath_default);
 is_output ($svk, "push", [], [
         "Auto-merging (0, 6) /l to /m (base /m:3).",
-        "Merging back to mirror source $uri/A.",
         "===> Auto-merging (0, 4) /l to /m (base /m:3).",
-        "Empty merge.",
         "Merging back to mirror source $uri/A.",
+        "Empty merge.",
         "===> Auto-merging (4, 5) /l to /m (base /m:3).",
+        "Merging back to mirror source $uri/A.",
         "D   Q/qu",
         "A   T",
         "A   T/xd",
@@ -62,8 +62,8 @@ is_output ($svk, "push", [], [
         "Syncing $uri/A",
         "Retrieving log information from 3 to 3",
         "Committed revision 7 from revision 3.",
-        "Merging back to mirror source $uri/A.",
         "===> Auto-merging (5, 6) /l to /m (base /l:5).",
+        "Merging back to mirror source $uri/A.",
         "U   T/xd",
         "New merge ticket: $default_uuid:/l:6",
         "Merge back committed as revision 4.",
@@ -122,7 +122,7 @@ $svk->sync ("//m");
 
 is_output ($svk, "push", ['-C', "--from", "//m", "//l"], [
         "Auto-merging (12, 14) /m to /l (base /m:12).",
-        "===> Auto-merging (12, 14) /m to /l (base /m:12).",
+        '===> Auto-merging (12, 14) /m to /l (base /m:12).',
         "U   new-file",
         "New merge ticket: $test_uuid:/A:7"]);
 
@@ -197,11 +197,11 @@ our $output;
 
 is_output ($svk, 'push', [],
 	   ['Auto-merging (0, 25) /l2 to /m (base /m:16).',
-	    "Merging back to mirror source $uri/A.",
 	    '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
-	    'Empty merge.',
 	    "Merging back to mirror source $uri/A.",
+	    'Empty merge.',
 	    '===> Auto-merging (18, 25) /l2 to /m (base /m:16).',
+	    "Merging back to mirror source $uri/A.",
 	    qr"Transaction is out of date: Out of date: '/A/Q/qz' in transaction '.*'",
 	    'Please sync mirrored path /m first.']);
 
@@ -232,15 +232,15 @@ $svk->commit (-m => 'change something', $corpath_test);
 
 is_output($svk, 'push', [],
 	  ['Auto-merging (0, 29) /l2 to /m (base /m:27).',
-	   "Merging back to mirror source $uri/A.",
 	   '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
-	   'Empty merge.',
 	   "Merging back to mirror source $uri/A.",
+	   'Empty merge.',
 	   '===> Auto-merging (18, 25) /l2 to /m (base /m:16).',
+	   "Merging back to mirror source $uri/A.",
 	   'g   Q/qz',
 	   'Empty merge.',
-	   "Merging back to mirror source $uri/A.",
 	   '===> Auto-merging (25, 28) /l2 to /m (base /m:16).',
+	   "Merging back to mirror source $uri/A.",
 	   'g   Q/qz',
 	   'U   be',
 	   qr'New merge ticket: .*:/l2:28',
@@ -249,8 +249,8 @@ is_output($svk, 'push', [],
 	   'Retrieving log information from 13 to 14',
 	   'Committed revision 30 from revision 13.',
 	   'Committed revision 31 from revision 14.',
-	   "Merging back to mirror source $uri/A.",
 	   '===> Auto-merging (28, 29) /l2 to /m (base /m:27).',
+	   "Merging back to mirror source $uri/A.",
 	   'g   be',
 	   'Empty merge.']);
 

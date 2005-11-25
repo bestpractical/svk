@@ -113,6 +113,16 @@ sub anchorify {
 
 }
 
+sub _get_inspector {
+    my $self = shift;
+    return SVK::Inspector::XD->new
+	({ xd => $self->xd,
+	   path => $self->new,
+	   _pool => $self->pool,
+	   xdroot => $self->root(pool => $self->pool),
+	 });
+}
+
 =head2 get_editor
 
 Returns the L<SVK::Editor::XD> object, L<SVK::Inspector::XD>, and the callback 
@@ -128,26 +138,22 @@ sub get_editor {
     $path = '' if $path eq '/';
     $spath = '' if $spath eq '/';
     $encoding = Encode::find_encoding($encoding) if $encoding;
-    $arg{get_copath} = sub { $_[0] = $self->copath($_[0]) };
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
     my $storage = SVK::Editor::XD->new (%arg,
+					get_copath =>
+            sub { to_native ($_[0], 'path', $encoding) if $encoding;
+                  $_[0] = $self->copath($_[0]) },
 					repos => $self->{repos},
 					target => $self->{targets}[0] || '',
 					xd => $self->xd);
+    my $inspector = $self->inspector;
 
-    $arg{anchor} = $self->{path};
-    $arg{target} = $self->{targets}[0] || '';
-    my $inspector = SVK::Inspector::XD->new({ xd => $self->xd,
-					      path => $self->new,
-					      xdroot => $arg{oldroot},
-                                             });
     return ($storage, $inspector,
         cb_rev => sub {
             my ($path) = @_;
             my $copath;
             ($path,$copath) = $inspector->get_paths($path);
-        
             return $self->xd->{checkout}->get($copath)->{revision};
         },
 

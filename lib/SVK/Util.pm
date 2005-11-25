@@ -602,6 +602,9 @@ sub abs2rel {
         $rel = catdir($new_basedir, $rel);
     }
 
+    # resemble file::spec pre-3.13 behaviour, return empty string.
+    return '' if $rel eq '.';
+
     $rel =~ s/\Q$SEP/$sep/go if $sep and $SEP ne $sep;
     return $rel;
 }
@@ -819,6 +822,16 @@ sub move_path {
     );
 }
 
+=head3 traverse_history (root => $fs_root, path => $path,
+    cross => $cross, callback => $cb($path, $revision))
+
+Traverse the history of $path in $fs_root backwards until the first
+copy, unless $cross is true.  We do cross renames regardless of the
+value of $cross.  We invoke $cb for each $path, $revision we
+encounter.  If cb returns a nonzero value we stop traversing as well.
+
+=cut
+
 sub traverse_history {
     my %args = @_;
 
@@ -828,12 +841,50 @@ sub traverse_history {
 
     my $hist = $args{root}->node_history ($args{path}, $old_pool);
     my $rv;
+    my $path;
+    my $revision;
 
-    while ($hist = $hist->prev(($args{cross} || 0), $new_pool)) {
-        $rv = $args{callback}->($hist->location ($new_pool));
-        last if !$rv;
+    while (1) {
+        my $ohist = $hist;
+        $hist = $hist->prev(($args{cross} || 0), $new_pool);
+        if (!$hist) {
+            last if $args{cross};
+            last unless $hist = $ohist->prev((1), $new_pool);
+            # We are not supposed to cross copies, ($path,$revision)
+            # refers to a node in $ohist that is a copy and that has a
+            # prev if we ask svn to traverse copies.
+            # Let's find out if the copy was actually a rename instead
+            # of a copy.
+            my $root = $args{root}->fs->revision_root($revision, $spool);
+            my $frompath;
+            my $fromrev = -1;
+            # We know that $path was a real copy and it that it has a
+            # prev, so find the node from which it was copied.
+            do {
+                ($fromrev, $frompath) = $root->copied_from($path, $spool);
+            } until ($fromrev >= 0 || !($path =~ s{/[^/]*$}{}));
+            die "Assertion failed: $path in $revision isn't a copy."
+                if $fromrev < 0;
+            # Ok, $path in $root was a copy of ($frompath,$fromrev).
+            # If $frompath was deleted in $root then the copy was really
+            # a rename.
+            my $entry = $root->paths_changed($spool)->{$frompath};
+            last unless $entry &&
+                $entry->change_kind == $SVN::Fs::PathChange::delete;
+
+            # XXX Do we need to worry about a parent of $frompath having
+            # been deleted instead?  If so the 2 lines below might work as
+            # an alternative, to the previous 3 lines.  However this also
+            # treats a delete followed by a copy of an older revision in
+            # two separate commits as a rename, which technically it's not.
+            #last unless $root->check_path($frompath, $spool) ==
+            #    $SVN::Node::none;
+        }
+        ($path, $revision) = $hist->location ($new_pool);
         $old_pool->clear;
-	$spool->clear;
+        $rv = $args{callback}->($path, $revision);
+        last if !$rv;
+        $spool->clear;
         ($old_pool, $new_pool) = ($new_pool, $old_pool);
     }
 

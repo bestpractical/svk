@@ -83,6 +83,7 @@ sub run {
 
 sub do_update {
     my ($self, $cotarget, $update_target) = @_;
+    my $pool = SVN::Pool->new_default;
     my ($xdroot, $newroot) = map { $_->root } ($cotarget, $update_target);
     # unanchorified
     my $report = $cotarget->{report};
