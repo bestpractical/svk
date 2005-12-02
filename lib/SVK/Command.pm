@@ -316,7 +316,6 @@ sub arg_condensed {
 	}
 	@args = @newtarget;
     }
-
     return $self->{xd}->target_condensed(@args);
 }
 
@@ -486,6 +485,12 @@ sub arg_co_maybe {
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
+    my ($view, $revision, $subpath);
+    if (($view, $revision, $subpath) = $path =~ m{^/\^(\w+)(?:\@(\d+)(.*))?$}) {
+	$revision ||= $repos->fs->youngest_rev;
+	($path, $view) = SVK::Command->create_view ($repos, $view, $revision, $subpath);
+    }
+
     my $ret = SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -494,6 +499,7 @@ sub arg_co_maybe {
 	  report => $copath ? File::Spec->canonpath ($arg) : $arg,
 	  path => $path,
 	  xd => $self->{xd},
+	  view => $view,
 	  revision => $rev,
 	);
     $ret->as_depotpath unless defined $copath;
@@ -511,8 +517,9 @@ sub arg_copath {
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     my ($root);
     my ($view, $rev, $subpath);
+
     if (($view, $rev, $subpath) = $path =~ m{^/\^(\w+)\@(\d+)(.*)$}) {
-	($path, $root) = $self->create_view ($repos, $view, $rev, $subpath);
+	($path, $view) = $self->create_view ($repos, $view, $rev, $subpath);
     }
 
     from_native ($path, 'path', $self->{encoding});
@@ -522,7 +529,7 @@ sub arg_copath {
 	  report => File::Spec->canonpath ($arg),
 	  copath => $copath,
 	  path => $path,
-	  _root => $root,
+	  view => $view,
 	  cinfo => $cinfo,
 	  xd => $self->{xd},
 	  depotpath => $cinfo->{depotpath},
@@ -539,8 +546,13 @@ sub create_view {
     my ($self, $repos, $view, $rev, $subpath) = @_;
     my $fs = $repos->fs;
     $rev = $fs->youngest_rev unless defined $rev;
-    my $txn = $fs->begin_txn ($rev);
-    my $root = $txn->root;
+    require SVK::View;
+    my $viewobj = SVK::View->new({name => $view, revision => $rev});
+    $viewobj->pool(SVN::Pool->new);
+    my $txn = $fs->begin_txn($rev, $viewobj->pool);
+    $viewobj->txn($txn);
+    $viewobj->root($txn->root($viewobj->pool));
+    my $root = $viewobj->root;
     my $content = $root->node_prop ('/', "svk:view:$view");
     my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
 
@@ -560,8 +572,7 @@ sub create_view {
 	}
     }
     return (defined $subpath ? $anchor eq '/' ? "/$subpath" : "$anchor/$subpath"
-	    : $anchor,
-	    SVK::XD::Root->new ($txn, $root));
+	    : $anchor, $viewobj);
 }
 
 sub arg_depotpath {
@@ -569,9 +580,10 @@ sub arg_depotpath {
     my $root;
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
+    my $view;
     from_native ($path, 'path', $self->{encoding});
-    if (my ($view) = $path =~ m{^/\^(\w+)$}) {
-	($path, $root) = $self->create_view ($repos, $view, $rev);
+    if (($view) = $path =~ m{^/\^(\w+)$}) {
+	($path, $view) = $self->create_view($repos, $view, $rev);
     }
 
     return SVK::Path->new
@@ -581,7 +593,7 @@ sub arg_depotpath {
 	  report => $arg,
 	  revision => $rev,
 	  depotpath => $arg,
-	  _root => $root,
+	  view => $view,
 	);
 }
 

@@ -35,8 +35,8 @@ sub new {
 
 sub root {
     my $self = shift;
-    return $self->{_root}
-	if $self->{_root};
+    return $self->view->root
+	if $self->view;
     unless ($self->xd) {
 	$self->xd(shift);
 	Carp::cluck unless $self->xd;

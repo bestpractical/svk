@@ -103,6 +103,7 @@ lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
+lib/SVK/View.pm
 lib/SVK/Version.pm
 lib/SVK/XD.pm
 Makefile.PL

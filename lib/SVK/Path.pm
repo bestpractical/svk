@@ -5,7 +5,7 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision
+__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision view
 			     _inspector _pool));
 
 =head1 NAME
@@ -53,11 +53,13 @@ sub _clone {
     my $xd = delete $self->{xd};
     my $root = delete $self->{_root};
     my $pool = delete $self->{_pool};
+    my $view = delete $self->{view};
     my $inspector = delete $self->{_inspector};
     my $cloned = Storable::dclone ($self);
     $cloned->repos($self->repos);
     $self->{xd} = $cloned->{xd} = $xd if $xd;
     $cloned->{_root} = $self->{_root} = $root;
+    $cloned->{view} = $self->{view} = $view;
     $self->{_pool} = $pool;
     $self->{_inspector} = $inspector;
     return $cloned;
@@ -65,8 +67,8 @@ sub _clone {
 
 sub root {
     my $self = shift;
-    return $self->{_root}
-	if $self->{_root};
+    return $self->view->root
+	if $self->view;
     return SVK::XD::Root->new($self->repos->fs->revision_root
 			      ($self->revision));
 }
@@ -315,7 +317,8 @@ Returns depotpath of the target
 sub depotpath {
     my $self = shift;
 
-    return '/'.$self->depotname.$self->{path};
+    my $view = $self->view ? $self->view->spec : '';
+    return '/'.$self->depotname.$view.$self->{path};
 }
 
 # depotpath only for now

@@ -436,16 +436,22 @@ sub target_from_copath_maybe {
     my ($self, $arg) = @_;
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
-    my ($repospath, $path, $depotpath, $copath, $repos);
+    my ($repospath, $path, $depotpath, $copath, $repos, $view);
     unless (($repospath, $path, $repos) = eval { $self->find_repos ($arg, 1) }) {
 	$arg = File::Spec->canonpath($arg);
 	$copath = abs_path_noexist($arg);
 	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
 	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
 	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
+	my ($rev, $subpath);
+	if (($view, $rev, $subpath) = $path =~ m{^/\^(\w+)\@(\d+)(.*)$}) {
+	    ($path, $view) = SVK::Command->create_view ($repos, $view, $rev, $subpath);
+	}
+
 	$path = abs2rel ($copath, $coroot => $path, '/');
-	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
-	$depotpath = "/$depotpath$path";
+
+#	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
+#	$depotpath = "/$depotpath$path";
     }
 
     from_native ($path, 'path', $self->{encoding});
@@ -453,11 +459,12 @@ sub target_from_copath_maybe {
     my $ret = SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
-	  depotpath => $depotpath || $arg,
+#	  depotpath => $depotpath || $arg,
 	  copath => $copath,
 	  report => $arg,
 	  path => $path,
 	  xd => $self,
+	  view => $view,
 	  revision => $rev,
 	);
     $ret->as_depotpath unless defined $copath;

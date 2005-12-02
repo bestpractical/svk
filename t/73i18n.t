@@ -115,7 +115,6 @@ is_output ($svk, 'add', ["$copath/$msg-dir/$msg"],
 is_output ($svk, 'commit', ["$copath/$msg-dir"],
 	   ['Waiting for editor...',
 	    'Committed revision 6.']);
-__END__
 is_output ($svk, 'st', [$copath],
 	   [], 'clean checkout after commit');
 is_output ($svk, 'st', ["$copath/$msg-dir"],
