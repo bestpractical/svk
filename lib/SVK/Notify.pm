@@ -1,7 +1,6 @@
 package SVK::Notify;
 use SVK::I18N;
-use SVK::Util qw( abs2rel $SEP to_native get_encoding);
-use Encode;
+use SVK::Util qw( abs2rel $SEP to_native from_native get_encoding);
 use strict;
 
 =head1 NAME
@@ -44,10 +43,12 @@ sub print_report {
     # XXX: $report should already be in native encoding, so this is wrong
     my $print_native = $enc->name eq 'utf8'
 	? $print
-	: sub { to_native ($_[0]);
+	: sub { to_native($_[0], 'path', $enc);
 		goto \&$print;
 	    };
     return $print_native unless defined $report;
+    $report = "$report";
+    from_native($report, 'path', $enc);
     sub {
 	my $path = shift;
 	if ($target) {
@@ -59,12 +60,12 @@ sub print_report {
 	    }
 	}
 	if (length $path) {
-	    $print_native->($is_copath ? SVK::Target->copath ($report, $path)
+	    $print_native->($is_copath ? SVK::Path::Checkout->copath ($report, $path)
 			               : length $report ? "$report/$path" : $path, @_);
 	}
 	else {
 	    my $r = length $report ? $report : '.';
-	    $print_native->($is_copath ? SVK::Target->copath('', $r) : $r,
+	    $print_native->($is_copath ? SVK::Path::Checkout->copath('', $r) : $r,
 			    @_);
 	}
     };
@@ -99,6 +100,7 @@ sub notify_translate {
 
 sub node_status {
     my ($self, $path, $s) = @_;
+    Carp::cluck unless defined $path;
     $self->{status}{$path}[0] = $s if defined $s;
     return exists $self->{status}{$path} ? $self->{status}{$path}[0] : undef;
 }
@@ -144,7 +146,7 @@ sub flush {
     my $status = $self->{status}{$path};
     my $extra = $self->{extra}{$path};
     if ($status && ($self->{flush_unchanged} || grep {$_} @{$status}[0..1])) {
-	$self->{cb_flush}->($path, $status, $self->{flush_baserev} ?
+	$self->{cb_flush}->($path, $status, $extra, $self->{flush_baserev} ?
 		($self->{baserev}{$path}, $self->{copyfrom}{$path}[0], $self->{copyfrom}{$path}[1]) : undef)
 	    if $self->{cb_flush};
     }

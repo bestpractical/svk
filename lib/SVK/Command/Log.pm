@@ -52,7 +52,7 @@ sub run {
 	$torev ||= $fromrev;
     }
     $target->as_depotpath($self->find_base_rev($target))
-	if defined $target->{copath};
+	if $target->isa('SVK::Path::Checkout');
 
     $fromrev ||= $target->{revision};
     $torev ||= 0;
@@ -201,6 +201,7 @@ SVK::Command::Log - Show log messages for revisions
 
                           "HEAD"       latest in repository
                           NUMBER       revision number
+                          NUMBER@      interpret as remote revision number
                           NUM1:NUM2    revision range
 
                           Unlike other commands,  negative NUMBER has no

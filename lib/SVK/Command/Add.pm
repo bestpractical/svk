@@ -14,7 +14,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return $self->arg_condensed (@arg);
+    return $self->arg_condensed(@arg);
 }
 
 sub lock {
@@ -25,7 +25,7 @@ sub run {
     my ($self, $target) = @_;
 
     unless ($self->{recursive}) {
-	die loc ("%1 already under version control.\n", $target->{report})
+	die loc ("%1 already under version control.\n", $target->report)
 	    unless $target->{targets};
 	# check for multi-level targets
 	for (@{$target->{targets}}) {
@@ -39,16 +39,16 @@ sub run {
 
     $self->{xd}->checkout_delta
 	( %$target,
-	  xdroot => $target->root ($self->{xd}),
+	  xdroot => $target->root,
 	  delete_verbose => 1,
 	  unknown_verbose => $self->{recursive},
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub {
 		  my ($path, $status) = @_;
-	          to_native ($path);
-		  my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
-		      @{$target}{qw/copath report/};
+	          to_native($path, 'path');
+		  my $copath = $target->copath($path);
+		  my $report = $target->report->subdir($path);
 
 		  $target->contains_copath ($copath) or return;
 		  die loc ("%1 already added.\n", $report)
@@ -61,13 +61,14 @@ sub run {
 	      })),
 	  cb_unknown => sub {
 	      my ($editor, $path) = @_;
-	      to_native ($path);
-	      my ($copath, $report) = map { SVK::Target->copath ($_, $path) }
-	          @{$target}{qw/copath report/};
+	      to_native($path, 'path');
+	      my $copath = $target->copath($path);
+	      my $report = $target->report->subdir($path);
 	      lstat ($copath);
 	      $self->_do_add ('A', $copath, $report, !-d _);
 	  },
 	);
+    return;
 }
 
 my %sch = (A => 'add', 'R' => 'replace');

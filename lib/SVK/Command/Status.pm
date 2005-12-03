@@ -22,7 +22,7 @@ sub parse_arg {
 }
 
 sub flush_print {
-    my ($root, $target, $entry, $status, $baserev, $from_path, $from_rev) = @_;
+    my ($root, $target, $entry, $status, $extra, $baserev, $from_path, $from_rev) = @_;
     my ($crev, $author);
     my $fs = $root->fs;
     if ($from_path) {
@@ -40,13 +40,13 @@ sub flush_print {
         my $p = $target->{path};
 	my $path = $p eq '/' ? "/$entry" : (length $entry ? "$p/$entry" : $p);
 	$crev = $root->node_created_rev ($path);
-	$author = $fs->revision_prop ($crev, 'svn:author');
+	$author = $fs->revision_prop($crev, 'svn:author') unless $crev == -1;
     }
 
-    my $report = $target->{report};
+    my $report = $target->report;
     my $newentry = length $entry
-	? SVK::Target->copath ($report, $entry)
-	: SVK::Target->copath ('', length $report ? $report : '.');
+	? SVK::Path::Checkout->copath ($report, $entry)
+	: SVK::Path::Checkout->copath ('', length $report ? $report : '.');
     no warnings 'uninitialized';
     print sprintf ("%1s%1s%1s %8s %8s %-12.12s \%s\n", @{$status}[0..2],
                    defined $baserev ? $baserev : '? ',
@@ -57,11 +57,8 @@ sub flush_print {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $self->{xd}->xdroot (%$target);
-    my $report = $target->{report};
-    $report .= '/' if $report;
+    my $xdroot = $target->root;
     my $editor = SVK::Editor::Status->new (
-	  report => $target->{report},
 	  ignore_absent => $self->{quiet},
 	  $self->{verbose} ?
 	  (notify => SVK::Notify->new (
@@ -70,7 +67,7 @@ sub run {
 	       cb_flush => sub { flush_print ($xdroot, $target, @_); }
 	   )
 	  )                :
-	  (notify => SVK::Notify->new_with_report ($target->{report},
+	  (notify => SVK::Notify->new_with_report ($target->report,
 		undef, 1)
 	  )
       );

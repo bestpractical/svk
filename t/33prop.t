@@ -134,7 +134,7 @@ is_output ($svk, 'pl', ['-v', '-r2', '//A'],
 	   ["Properties on //A:",
 	    '  myprop: myvalue']);
 is_output ($svk, 'pl', ['-v', '-r2', "$copath/A"],
-	   [__("Properties on $copath/A:"),
+	   ["Properties on //A:",
 	    '  myprop: myvalue']);
 
 set_editor(<< 'TMP');

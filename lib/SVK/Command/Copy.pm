@@ -30,7 +30,7 @@ sub parse_arg {
 	# don't allow new uri in source when target is copath
 	@src = (map {$self->arg_co_maybe
 			 ($_, $dst->{copath}
-			  ? loc ("path '%1' is already a checkout", $dst->{report})
+			  ? loc ("path '%1' is already a checkout", $dst->report)
 			  : undef)} @arg);
     }
     else {
@@ -63,16 +63,16 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $self->lock_target ($_[-1]);
+    $self->lock_coroot($_[-1]);
 }
 
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
     $src->as_depotpath;
-    my $xdroot = $dst->root ($self->{xd});
+    my $xdroot = $dst->root;
     die loc ("Path %1 does not exist.\n", $src->{path})
 	if $src->root->check_path ($src->{path}) == $SVN::Node::none;
-    my ($copath, $report) = @{$dst}{qw/copath report/};
+    my ($copath, $report) = ($dst->copath, $dst->report);
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
     my ($entry, $schedule) = $self->{xd}->get_entry($copath);
@@ -84,25 +84,22 @@ sub handle_co_item {
     # if SVK::Merge could take src being copath to do checkout_delta
     # then we have 'svk cp copath... copath' for free.
     # XXX: use editor::file when svkup branch is merged
+    my ($editor, $inspector, %cb) = $dst->get_editor
+	( ignore_checksum => 1, quiet => 1,
+	  check_only => $self->{check_only},
+	  oldroot => $xdroot, newroot => $xdroot,
+	  update => 1, ignore_keywords => 1,
+	);
     SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
 		     report => $report, notify => $notify,
 		     base => $src->new (path => '/', revision => 0),
-		     src => $src, dst => $dst)->run
-			 ($self->{xd}->get_editor
-			  ( %$dst,
-			    ignore_checksum => 1,
-			    targets => undef,
-			    quiet => 1,
-			    oldroot => $dst->root($self->{xd}),
-			    newroot => $dst->root($self->{xd}),
-			    target => $dst->{targets}[0] || '',
-			    update => 1,
-			    ignore_keywords => 1,
-			    check_only => $self->{check_only}));
+		     src => $src, dst => $dst)
+	    ->run
+		($editor, %cb, inspector => $inspector);
 
     $self->{xd}{checkout}->store_recursively
 	($copath, { revision => undef });
-    # XXX: can the scheudle be something other than delete ?
+    # XXX: can the schedule be something other than delete ?
     $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
@@ -114,7 +111,7 @@ sub handle_direct_item {
     $src->normalize;
     # if we have targets, ->{path} must exist
     if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->{path})) {
-	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->{report});
+	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->report);
     }
     my ($path, $rev) = @{$src}{qw/path revision/};
     if ($m) {
@@ -133,19 +130,21 @@ sub handle_direct_item {
 
 sub _unmodified {
     my ($self, $target) = @_;
-    # Use condensed to do proper anchorification.
-    $target = $self->arg_condensed ($target->copath);
+    my (@modified, @unknown);
+    $target = $self->{xd}->target_condensed($target); # anchor
     $self->{xd}->checkout_delta
 	( %$target,
 	  xdroot => $target->root ($self->{xd}),
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
-	    ( cb_flush => sub {
-		  die loc ("%1 is modified.\n", $target->copath ($_[0]));
-	      })),
-	  # need tests: only useful for move killing the src with unknown entries
-	  cb_unknown => sub {
-	      die loc ("%1 is unknown.\n", $target->copath ($_[1]))});
+	    ( cb_flush => sub { push @modified, $_[0] })),
+	  cb_unknown => sub { push @unknown, $_[1] } );
+
+    if (@modified || @unknown) {
+	my @reports = sort map { loc ("%1 is modified.\n", $target->report_copath ($_)) } @modified;
+	push @reports, sort map { loc ("%1 is unknown.\n", $target->report_copath ($_)) } @unknown;
+	die join("", @reports);
+    }
 }
 
 sub check_src {
@@ -153,7 +152,7 @@ sub check_src {
     for my $src (@src) {
 	# XXX: respect copath rev
 	$src->{revision} = $self->{rev} if defined $self->{rev};
-	next unless $src->{copath};
+	next unless $src->isa('SVK::Path::Checkout');
 	$self->_unmodified ($src->new);
     }
 }
@@ -161,35 +160,35 @@ sub check_src {
 sub run {
     my ($self, @src) = @_;
     my $dst = pop @src;
+
     return loc("Different depots.\n") unless $dst->same_repos (@src);
     my $m = $self->under_mirror ($dst);
-    return "Different sources.\n"
+    return loc("Different sources.\n")
 	if $m && !$dst->same_source (@src);
     $self->check_src (@src);
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->{repos}->fs;
-    if ($dst->{copath}) {
-	return loc("%1 is not a directory.\n", $dst->{report})
-	    if $#src > 0 && !-d $dst->{copath};
-	return loc("%1 is not a versioned directory.\n", $dst->{report})
-	    if -d $dst->{copath} &&
+    if ($dst->isa('SVK::Path::Checkout')) {
+	return loc("%1 is not a directory.\n", $dst->report)
+	    if $#src > 0 && !-d $dst->copath;
+	return loc("%1 is not a versioned directory.\n", $dst->report)
+	    if -d $dst->copath &&
 		!($dst->root($self->{xd})->check_path ($dst->path) ||
-		  $self->{xd}{checkout}->get ($dst->{copath})->{'.schedule'});
+		  $self->{xd}{checkout}->get ($dst->copath)->{'.schedule'});
 	my @cpdst;
 	for (@src) {
 	    my $cpdst = $dst->new;
 	    $cpdst->descend ($_->{path} =~ m|/([^/]+)/?$|)
-		if -d $cpdst->{copath};
-	    die loc ("Path %1 already exists.\n", $cpdst->{report})
-		if -e $cpdst->{copath};
+		if -d $cpdst->copath;
+	    die loc ("Path %1 already exists.\n", $cpdst->report)
+		if -e $cpdst->copath;
 	    push @cpdst, $cpdst;
 	}
 	$self->handle_co_item ($_, shift @cpdst) for @src;
     }
     else {
-	my $root = $dst->root;
-	if ($root->check_path ($dst->{path}) != $SVN::Node::dir) {
-	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->{report})
+	if ($dst->root->check_path($dst->{path}) != $SVN::Node::dir) {
+	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->report)
 		if $#src > 0;
 	    $dst->anchorify;
 	}
@@ -206,7 +205,7 @@ sub run {
     if (defined( my $copath = $self->{_checkout_path} )) {
         my $checkout = $self->command ('checkout');
 	$checkout->getopt ([]);
-        my @arg = $checkout->parse_arg ($dst->{report}, $copath);
+        my @arg = $checkout->parse_arg ('/'.$dst->depotname.$dst->path, $copath);
         $checkout->lock (@arg);
         $checkout->run (@arg);
     }
@@ -231,6 +230,7 @@ SVK::Command::Copy - Make a versioned copy
 
  -r [--revision] REV    : act on revision REV instead of the head revision
  -p [--parent]          : create intermediate directories as required
+ -q [--quiet]           : print as little as possible
  -m [--message] MESSAGE : specify commit message MESSAGE
  -F [--file] FILENAME   : read commit message from FILENAME
  --template             : use the specified message as the template to edit

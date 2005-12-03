@@ -51,8 +51,8 @@ sub run {
 	my $copath = abs_path($report);
 	my ($entry, @where) = $self->{xd}{checkout}->get($copath);
 
-        return $self->SUPER::run ($target->new(report => $report, copath => $copath))
-	    if exists $entry->{depotpath} && $entry->{depotpath} eq $target->{depotpath};
+        return $self->SUPER::run($target->new(xd => $self->{xd}, report => $report, copath => $copath))
+	    if exists $entry->{depotpath} && $entry->{depotpath} eq $target->depotpath;
 	die loc("Checkout path %1 already exists.\n", $report);
     }
     else {
@@ -74,7 +74,7 @@ sub run {
 	if exists $entry->{depotpath} && $#where > 0;
 
     $self->{xd}{checkout}->store_recursively ( $copath,
-					       { depotpath => $target->{depotpath},
+					       { depotpath => $target->depotpath,
 						 encoding => get_encoding,
 						 revision => 0,
 						 '.schedule' => undef,
@@ -84,7 +84,7 @@ sub run {
 					       });
     $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 
-    $self->SUPER::run ($target->new (report => $report,
+    $self->SUPER::run ($target->new (report => $report, xd => $self->{xd},
 				     copath => $copath));
     $self->rebless ('checkout::detach')->run ($copath)
 	if $self->{export};

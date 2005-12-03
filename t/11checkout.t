@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 57;
+use Test::More tests => 61;
 use strict;
 BEGIN { require 't/tree.pl' };
 our($output, $answer);
@@ -37,6 +37,17 @@ chdir ($copath);
 $svk->checkout('//V-3.1/A', 'foo/bar');
 ok (-e 'foo/bar/Q/qu');
 is_output ($svk, 'update', ['foo/bar'], ["Syncing //V-3.1/A(/V-3.1/A) in ".__"$corpath/foo/bar to 6."]);
+is_output ($svk, 'update', [-r5 => 'foo/bar/P'],
+	   ["Syncing //V-3.1/A/P(/V-3.1/A/P) in ".__"$corpath/foo/bar/P to 5.",
+	    __('A   foo/bar/P/pe'),
+	   ]);
+is_output ($svk, 'update', [-r6 => 'foo/bar/P'],
+	   ["Syncing //V-3.1/A(/V-3.1/A) in ".__"$corpath/foo/bar to 6.",
+	    __('D   foo/bar/P'),
+	   ]);
+is_output ($svk, 'st', ['foo/bar'], []);
+is_output ($svk, 'revert', ['-R', 'foo/bar'], []);
+
 $svk->checkout('-d', 'foo/bar');
 rmtree ['foo'];
 
@@ -82,8 +93,8 @@ is_output ($svk, 'checkout', ['//V-3.1/A/Q', "../checkout/just-q"],
 	    __(' U  ../checkout/just-q'),
 	   ], 'checkout report');
 
-is_output ($svk, 'checkout', ['//V-3.1/A/Q/', "../checkout/just-q-slash"],
-	   ["Syncing //V-3.1/A/Q/(/V-3.1/A/Q) in ".__"$corpath/just-q-slash to 6.",
+is_output ($svk, 'checkout', ['//V-3.1//A/Q/', "../checkout/just-q-slash"],
+	   ["Syncing //V-3.1/A/Q(/V-3.1/A/Q) in ".__"$corpath/just-q-slash to 6.",
 	    __('A   ../checkout/just-q-slash/qu'),
 	    __('A   ../checkout/just-q-slash/qz'),
 	    __(' U  ../checkout/just-q-slash'),
@@ -109,8 +120,8 @@ is_output ($svk, 'checkout', ['--list'], [
             "  //V-3.1                       \t".__("$corpath/V-3.1-r5"),
             "  //V-3.1                       \t".__("$corpath/co-root-v3.1"),
             "  //V-3.1/A/Q                   \t".__("$corpath/just-q"),
+            "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slashco"),
-            "  //V-3.1/A/Q/                  \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q/qu                \t".__("$corpath/boo"),
             "  //V-3.1/A/Q/qu                \t".__("$corpath/qu"),
             "  //V/A                         \t".__("$corpath/co-root-a"),
@@ -255,8 +266,8 @@ is_output ($svk, 'checkout', ['--list'], [
             "  //V-3.1                       \t".__("$corpath/3.1"),
             "  //V-3.1/A/Q                   \t".__("$corpath/Q"),
             "  //V-3.1/A/Q                   \t".__("$corpath/baz"),
+            "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slashco"),
-            "  //V-3.1/A/Q/                  \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q/qu                \t".__("$corpath/qu"),
 	    "  //V/A                         \t".__("$corpath/co-root-deep/there"),
             "? //V-3.1-non                   \t".__("$corpath/bar"),
@@ -275,8 +286,8 @@ is_output ($svk, 'checkout', ['--list'], [
             "  //V-3.1                       \t".__("$corpath/3.1"),
             "  //V-3.1/A/Q                   \t".__("$corpath/Q"),
             "  //V-3.1/A/Q                   \t".__("$corpath/baz"),
+            "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slashco"),
-            "  //V-3.1/A/Q/                  \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q/qu                \t".__("$corpath/qu"),
 	    "  //V/A                         \t".__("$corpath/co-root-deep/there"),
             "? //V-3.1-non                   \t".__("$corpath/bar"),
@@ -297,8 +308,8 @@ is_output ($svk, 'checkout', ['--list'], [
             "  //V-3.1                       \t".__("$corpath/3.1"),
             "  //V-3.1/A/Q                   \t".__("$corpath/Q"),
             "  //V-3.1/A/Q                   \t".__("$corpath/baz"),
+            "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q                   \t".__("$corpath/just-q-slashco"),
-            "  //V-3.1/A/Q/                  \t".__("$corpath/just-q-slash"),
             "  //V-3.1/A/Q/qu                \t".__("$corpath/qu"),
 	    "  //V/A                         \t".__("$corpath/co-root-deep/there"),
             "? //V/A                         \t".__("$corpath/co-root-a"),

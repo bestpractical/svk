@@ -75,8 +75,9 @@ use constant alias =>
 		ver		version
 	    );
 
-use constant global_options => ( 'h|help|?' => 'help',
-				 'encoding=s' => 'encoding'
+use constant global_options => ( 'h|help|?'   => 'help',
+				 'encoding=s' => 'encoding',
+				 'ignore=s@'  => 'ignore',
 			       );
 
 my %alias = alias;
@@ -105,6 +106,7 @@ sub invoke {
     $ofh = select $output if $output;
     $ret = eval {$pkg->dispatch ($xd ? (xd => $xd, svnconfig => $xd->{svnconfig}) : (),
 				 output => $output) };
+
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
     unless (ref($@)) {
@@ -147,9 +149,11 @@ sub run_command {
 			: $_
 		    } @args;
 	}
-	# XXX: xd needs to know encoding too
+	# XXX: xd needs to know encoding and ignore too
 	$self->{xd}{encoding} = $self->{encoding}
 	    if $self->{xd};
+	$self->{xd}{ignore} = $self->{ignore}
+	    if $self->{ignore};
 	if ($self->{help} || !(@args = $self->parse_arg(@args))) {
 	    select STDERR unless $self->{output};
 	    $self->usage;
@@ -267,7 +271,7 @@ sub run {
 =head2 Utility Methods
 
 Except for C<arg_depotname>, all C<arg_*> methods below returns a
-L<SVK::Target> object, which consists of a hash with the following keys:
+L<SVK::Path> object, which consists of a hash with the following keys:
 
 =over
 
@@ -298,41 +302,22 @@ Argument is a number of checkout paths.
 =cut
 
 sub arg_condensed {
-    my ($self, @arg) = @_;
-    return if $#arg < 0;
-
-    s{[/\Q$SEP\E]$}{}o for @arg; # XXX band-aid
-
-    my ($report, $copath, @targets )= $self->{xd}->condense (@arg);
-
+    my $self = shift;
+    my @args = map { $self->arg_copath($_) } @_;
     if ($self->{recursive}) {
 	# remove redundant targets when doing recurisve
 	# if have '' in targets then it means everything
-	my @newtarget = @targets;
-	for my $anchor (sort {length $a <=> length $b} @targets) {
-	    @newtarget = grep { length $anchor ? $_ eq $anchor || index ($_, "$anchor/") != 0
-				               : 0} @newtarget;
+	my @newtarget = @args;
+	for my $anchor (sort {length $a->copath <=> length $b->copath} @args) {
+	    local $SIG{__WARN__} = sub {};# path::class bug on /foo/bar vs /foo
+	    @newtarget = grep {
+		$anchor->copath eq $_->copath ||
+		!Path::Class::dir($anchor->copath)->subsumes($_->copath) } @newtarget;
 	}
-	@targets = @newtarget;
+	@args = @newtarget;
     }
 
-    my ($repospath, $path, undef, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($copath, 1);
-    my $target = SVK::Target->new
-	( repos => $repos,
-	  repospath => $repospath,
-	  depotpath => $cinfo->{depotpath},
-	  copath => $copath,
-	  path => $path,
-	  report => $report,
-	  targets => @targets ? \@targets : undef );
-    my $root = $target->root ($self->{xd});
-    until ($root->check_path ($target->{path}) == $SVN::Node::dir) {
-	my $targets = delete $target->{targets};
-	$target->anchorify;
-	$target->{targets} = [map {"$target->{targets}[0]/$_"} @$targets]
-	    if $targets;
-    }
-    return $target;
+    return $self->{xd}->target_condensed(@args);
 }
 
 =head3 arg_uri_maybe ($arg, $no_new_mirror)
@@ -480,7 +465,7 @@ break history-sensitive merging within the mirrored path.
         }
     )->run ($target);
 
-    my $depotpath = length ($rel_uri) ? "$target->{depotpath}/$rel_uri" : $target->{depotpath};
+    my $depotpath = length ($rel_uri) ? $target->{depotpath}."/$rel_uri" : $target->depotpath;
     return $self->arg_depotpath($depotpath);
 }
 
@@ -494,22 +479,25 @@ handles it via C<arg_uri_maybe>.
 sub arg_co_maybe {
     my ($self, $arg, $no_new_mirror) = @_;
 
-    $arg = $self->arg_uri_maybe($arg, $no_new_mirror)->{depotpath}
+    $arg = $self->arg_uri_maybe($arg, $no_new_mirror)->depotpath
 	if is_uri($arg);
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    my $ret = SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
 	  copath => $copath,
 	  report => $copath ? File::Spec->canonpath ($arg) : $arg,
 	  path => $path,
+	  xd => $self->{xd},
 	  revision => $rev,
 	);
+    $ret->as_depotpath unless defined $copath;
+    return $ret;
 }
 
 =head3 arg_copath ($arg)
@@ -522,13 +510,14 @@ sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    return SVK::Path::Checkout->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  report => File::Spec->canonpath ($arg),
 	  copath => $copath,
 	  path => $path,
 	  cinfo => $cinfo,
+	  xd => $self->{xd},
 	  depotpath => $cinfo->{depotpath},
 	);
 }
@@ -545,7 +534,7 @@ sub arg_depotpath {
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Target->new
+    return SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  path => $path,
@@ -636,8 +625,28 @@ sub lock_target {
     my $self = shift;
     for my $target (@_) {
 	$self->{xd}->lock ($target->{copath})
-	    if $target->{copath};
+	    if $target->isa('SVK::Path::Checkout');
     }
+}
+
+=head3 lock_coroot ($target)
+
+XXX Undocumented
+
+=cut
+
+sub lock_coroot {
+    my $self = shift;
+    my @tgt = map { $_->copath($_->{copath_target}) }
+	grep { $_->isa('SVK::Path::Checkout') } @_;
+    return unless @tgt;
+    my %roots;
+    for (@tgt) {
+	my (undef, $coroot) = $self->{xd}{checkout}->get($_);
+	$roots{$coroot}++;
+    }
+    $self->{xd}->lock($_)
+	for keys %roots;
 }
 
 =head3 brief_usage ($file)
@@ -921,7 +930,7 @@ sub resolve_revspec {
     my ($r1,$r2);
     if (my $revspec = $self->{revspec}) {
         if ($#{$revspec} > 1) {
-            die loc ("Invliad -r.\n");
+            die loc ("Invalid -r.\n");
         } else {
             $revspec = [map {split /:/} @$revspec];
             ($r1, $r2) = map {
@@ -938,9 +947,9 @@ sub resolve_revision {
     my $fs = $target->{repos}->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
-    if($revstr =~ /^HEAD$/) {
+    if($revstr =~ /^HEAD$/i) {
         $rev = $self->find_head_rev($target);
-    } elsif ($revstr =~ /^BASE$/) {
+    } elsif ($revstr =~ /^BASE$/i) {
         $rev = $self->find_base_rev($target);
     } elsif ($revstr =~ /\{(\d\d\d\d-\d\d-\d\d)\}/) { 
         my $date = $1; $date =~ s/-//g;
@@ -990,7 +999,7 @@ sub find_date_rev {
 sub find_base_rev {
     my ($self,$target) = @_;
     die(loc("BASE can only be issued with a check-out path\n"))
-        unless(defined($target->{copath}));
+        unless $target->isa('SVK::Path::Checkout');
     my $rev = $self->{xd}{checkout}->get($target->copath)->{revision};
     return $rev;
 }

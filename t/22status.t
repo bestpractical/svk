@@ -28,7 +28,6 @@ $svk->add ('-N', 'A');
 $svk->add ('A/foo');
 is_output ($svk, 'status', [],
 	   [ map __($_), 'A   A', '?   A/bar', '?   A/deep', 'A   A/foo'], 'status - unknown');
-
 chdir('A');
 is_output ($svk, 'status', ['../A'],
 	   [ map __($_), 'A   ../A', '?   ../A/bar', '?   ../A/deep', 'A   ../A/foo'], 'status - unknown');
@@ -116,11 +115,14 @@ $svk->rm ('-m', 'delete', '//A/deeper');
 overwrite_file ("A/deeper/deeper/baz", "boo");
 $svk->up;
 chdir ('A');
+TODO: {
+local $TODO = 'target_condensed and report being .';
 is_output ($svk, 'status', ['deeper/deeper'],
 	   [__('C   deeper'),
 	    __('C   deeper/deeper'),
 	    __('C   deeper/deeper/baz')
 	   ]);
+}
 chdir ('..');
 $svk->revert ('-R', 'A');
 $svk->add ('A/deeper');

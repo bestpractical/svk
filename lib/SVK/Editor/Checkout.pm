@@ -158,6 +158,7 @@ sub add_directory {
     die loc("path %1 already exists", $copath) if !$self->{added}{$pdir} && -e $copath;
     mkdir ($copath) or return undef
 	unless $self->{check_only};
+    $self->{added}{$path} = 1;
     return $path;
 }
 

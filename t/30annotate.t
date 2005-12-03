@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 9;
+use Test::More tests => 10;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -32,6 +32,9 @@ $svk->cp ('-m', 'copy', '//A/foo', '//A/bar');
 $svk->update ;
 is_annotate (['A/bar'], [4,4,4,4,4], 'annotate - copied not cross');
 is_annotate (['-x', 'A/bar'], [2,1,2,3,3], 'annotate - copied');
+$svk->mv ('-m', 'rename', '//A/foo', '//A/baz');
+$svk->update ;
+is_annotate (['A/baz'], [2,1,2,3,3], 'annotate - move crossed');
 
 sub is_annotate {
     my ($arg, $annotate, $test) = @_;

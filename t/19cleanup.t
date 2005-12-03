@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
-use Test::More tests => 13;
+use Test::More tests => 15;
 use strict;
 require 't/tree.pl';
+use Clone;
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -35,9 +36,6 @@ is_output_like ($svk, 'update', [$copath],
 chdir ($copath);
 is_output_like ($svk, 'cleanup', [], qr'Cleaned up stalled lock');
 is ($xd->{checkout}->get ($corpath)->{lock}, undef,  'unlocked');
-$xd->giant_lock;
-eval { $xd->giant_lock };
-ok ($@ =~ qr'Another svk', 'command not allowed when giant locked');
 
 $xd->{checkout}->store ($corpath, {lock => $$+1});
 $xd->store;
@@ -45,3 +43,36 @@ $xd->load;
 is_output_like ($svk, 'cleanup', ['-a'], qr'Cleaned up all stalled lock');
 is_output ($svk, 'update', [],
 	   ["Syncing //(/) in $corpath to 0."]);
+
+my $tree = create_basic_tree ($xd, '//');
+
+my $output2 = '';
+$svk->up;
+$xd->store;
+
+# concurrency
+$xd->load;
+$xd->lock(__("$corpath/A"));
+$xd->{checkout}->store(__("$corpath/A"), { revision => 1});
+#$xd->store;
+
+my $xd2 = Clone::clone($xd);
+my $svk2 = SVK->new(xd=> $xd2, output => \$output2);
+{ local $$ = $$+1;
+  $xd2->load;
+  $xd2->lock(__("$corpath/B"));
+  $xd2->{checkout}->store(__("$corpath/B"), { revision => 1});
+  $xd2->store;
+}
+$xd->store;
+$xd->load;
+
+eval { $xd2->load };
+ok ($@ =~ qr'Another svk', 'command not allowed when giant locked');
+
+$xd->giant_unlock;
+$xd2->load;
+$xd2->giant_unlock;
+
+is($xd->{checkout}->get(__("$corpath/B"))->{revision}, 1);
+is($xd2->{checkout}->get(__("$corpath/A"))->{revision}, 1);

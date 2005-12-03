@@ -27,7 +27,7 @@ sub run {
         my $proplist = $self->_proplist($target);
         exists $proplist->{$pname} or next;
 
-        print $target->{report}, ' - ' if @targets > 1 and !$self->{strict};
+        print $target->report, ' - ' if @targets > 1 and !$self->{strict};
         print $proplist->{$pname};
         print "\n" if !$self->{strict};
     }

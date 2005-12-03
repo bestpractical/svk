@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-my $required_svn = '1.0.7';
+my $required_svn = '1.2.0';
 my $required_svm = '0.66';
 
 use strict;
@@ -20,7 +20,6 @@ requires(
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
-        'Clone'	                => '0',
         'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',
         'PerlIO::via::dynamic'  => '0.11',
@@ -36,6 +35,8 @@ requires(
 	'App::CLI'		=> '0',
 	'Encode'		=> '2.10',
 	'List::MoreUtils'	=> '0',
+	'Class::Accessor::Fast'	=> '0',
+	'Path::Class'		=> '0.13',
 );
 features(
     'Localized messages' => [

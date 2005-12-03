@@ -60,11 +60,13 @@ If you set this variable, svk's interactive resolver will I<always>
 perform the command it's set to. For more details about the commands
 available in svk's interactive resolver, type C<perldoc SVK::Resolve>.
 
-=item $SVKPAGER / $PAGER
+=item $SVKPAGER
 
-When svk needs to pipe long output through a pager, it first tries to
-use $SVKPAGER to send the output to your display. If that's not set,
-it falls back to $PAGER
+When svk needs to pipe long output through a pager, it uses $SVKPAGER
+to send the output to your display.  If this variable is not set or set
+to something that's not executable, the output will not be paged.  svk
+ignores your $PAGER setting, so you must explicitly set $SVKPAGER if
+you want paging.
 
 =item $SVKPGP
 

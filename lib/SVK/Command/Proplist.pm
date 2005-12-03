@@ -23,7 +23,6 @@ sub parse_arg {
 
 sub run {
     my ($self, @arg) = @_;
-
     die loc ("Revision required.\n")
 	if $self->{revprop} && !defined $self->{rev};
 
@@ -53,7 +52,7 @@ sub _show_props {
         print loc("Unversioned properties on revision %1:\n", $rev);
     }
     else {
-        print loc("Properties on %1:\n", $target->{report} || '.');
+        print loc("Properties on %1:\n", length $target->report ? $target->report : '.');
     }
 
     for my $key (sort keys %$props) {

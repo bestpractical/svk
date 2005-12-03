@@ -58,6 +58,8 @@ lib/SVK/Command/Verify.pm
 lib/SVK/Editor/Checkout.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
+lib/SVK/Editor/Composite.pm
+lib/SVK/Editor/Copy.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Local.pm
@@ -78,10 +80,17 @@ lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
 lib/SVK/I18N/zh_cn.po
 lib/SVK/I18N/zh_tw.po
+lib/SVK/Inspector.pm
+lib/SVK/Inspector/Root.pm
+lib/SVK/Inspector/XD.pm
+lib/SVK/Inspector/Compat.pm
 lib/SVK/Merge.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Patchset.pm
+lib/SVK/Path.pm
+lib/SVK/Path/Checkout.pm
+lib/SVK/Path/Txn.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
@@ -96,7 +105,6 @@ lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
-lib/SVK/Target.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
 lib/SVK/Version.pm
@@ -129,6 +137,9 @@ t/06keyword.t
 t/07smerge-anchor-replace.t
 t/07smerge-anchor.t
 t/07smerge-baseless.t
+t/07smerge-copy.t
+t/07smerge-bidi-inc.t
+t/07smerge-copy-co.t
 t/07smerge-delete.t
 t/07smerge-external.t
 t/07smerge-file.t
@@ -155,6 +166,7 @@ t/19cleanup.t
 t/20add.t
 t/21delete.t
 t/22status.t
+t/23commit-file.t
 t/23commit-mirror.t
 t/23commit-multi.t
 t/23commit.t

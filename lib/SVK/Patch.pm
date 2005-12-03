@@ -212,14 +212,7 @@ sub view {
     my $anchor = $self->{_target}->path;
     $self->editor->drive
 	( SVK::Editor::Diff->new
-	  ( cb_basecontent => sub { my ($path, $pool) = @_;
-				    my $base = $baseroot->file_contents ("$anchor/$path", $pool);
-				    return $base;
-				},
-	    cb_baseprop => sub { my ($path, $pname, $pool) = @_;
-				 return $baseroot->node_prop ("$anchor/$path", $pname, $pool);
-			     },
-	    oldtarget => $self->{_target}, oldroot => $baseroot,
+	  ( base_target => $self->{_target}, base_root => $baseroot,
 	    llabel => "revision $self->{target}{rev}",
 	    rlabel => "patch $self->{name} level $self->{level}",
 	    external => $ENV{SVKDIFF},
@@ -230,7 +223,7 @@ sub view {
 sub apply {
     my ($self, $check_only) = @_;
     my $commit = SVK::Command->get_cmd ('commit', xd => $self->{_xd});
-    my $target = $self->{_target};
+    my $target = $self->{_target}->new->refresh_revision;
     $commit->{message} = "Apply $self->{name}\@$self->{level}";
     $commit->{check_only} = $check_only;
     $self->apply_to ($target, $commit->get_editor ($target));

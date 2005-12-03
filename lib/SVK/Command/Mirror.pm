@@ -46,7 +46,7 @@ sub run {
 	if $target->root->check_path ($target->path);
     $self->get_mirror_object ($target, $source, @options)->init
 	or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
-		   $target->{depotpath});
+		   $target->depotpath);
     return;
 }
 
@@ -83,11 +83,11 @@ sub run {
     my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos},
 						$target->{path});
 
-    die loc("%1 is not a mirrored path.\n", $target->{depotpath}) if !$m;
-    die loc("%1 is inside a mirrored path.\n", $target->{depotpath}) if $mpath;
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
 
     $m->delete(1); # remove svm:source and svm:uuid too
-    print loc("Mirror path '%1' detached.\n", $target->{depotpath});
+    print loc("Mirror path '%1' detached.\n", $target->depotpath);
     return;
 }
 
@@ -230,9 +230,10 @@ sub recover_headrev {
         delete => { direct => 1, message => '' }
     )->run($target);
 
+    $target->refresh_revision;
     $self->command(
-        copy => { rev => $rev, direct  => 1, message => '' },
-    )->run($target => $target);
+        copy => { direct  => 1, message => '' },
+    )->run($target->new(revision => $rev) => $target->new);
 
     # XXX - race condition? should get the last committed rev instead
     $target->refresh_revision;

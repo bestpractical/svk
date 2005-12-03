@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 54;
+plan tests => 56;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -283,3 +283,19 @@ is_output_like ($svk, 'log', [-r => 21],
 is_output_like ($svk, 'log', [-r => 21],
 		qr/also a gorilla/, 'second line successfully edited from template');
 
+overwrite_file("changeme", 'to be committed with revprop');
+$svk->add("changeme");
+
+is_output($svk, 'commit', [-m => 'with revprop', '--set-revprop', 'fnord=baz'],
+          ["Committed revision 22."], 'fnord');
+
+is_output(
+    $svk, 'pl', ['-r' => 22, '--revprop'],
+    ['Unversioned properties on revision 22:',
+     '  fnord',
+     '  svk:copy_cache_prev',
+     '  svn:author',
+     '  svn:date',
+     '  svn:log',
+    ],
+);

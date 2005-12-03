@@ -4,7 +4,6 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Diff SVK::Command::Log);
 use SVK::XD;
-use SVK::Editor::Diff;
 
 sub options {
     ();

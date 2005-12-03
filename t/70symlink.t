@@ -60,9 +60,9 @@ _symlink ('/non-exists', "$copath/A/non.lnk");
 is_output ($svk, 'add', ["$copath/A/non.lnk"],
 	   [__("A   $copath/A/non.lnk")], 'dangling symlink');
 is_output ($svk, 'rm', ["$copath/A/non.lnk"],
-	   [__("$copath/A/non.lnk is scheduled, use 'svk revert'.")]);
+	   [__("$copath/A/non.lnk is scheduled; use '--force' to go ahead.")]);
 is_output ($svk, 'rm', ["$copath/A/bar.lnk"],
-	   [__("$copath/A/bar.lnk is scheduled, use 'svk revert'.")]);
+	   [__("$copath/A/bar.lnk is scheduled; use '--force' to go ahead.")]);
 is_output ($svk, 'status', ["$copath/A"],
 	   [__"A   $copath/A",
 	    __"A   $copath/A/bar",
@@ -96,8 +96,8 @@ _check_symlinks (@allsymlinks);
 is_output ($svk, 'diff', [$copath],
 	   [__('=== t/checkout/symlink/A/dir.lnk'),
 	    '==================================================================',
-	    __('--- t/checkout/symlink/A/dir.lnk  (revision 1)'),
-	    __('+++ t/checkout/symlink/A/dir.lnk  (local)'),
+	    __("--- t/checkout/symlink/A/dir.lnk\t(revision 1)"),
+	    __("+++ t/checkout/symlink/A/dir.lnk\t(local)"),
 	    '@@ -1 +1 @@',
 	    '-link /tmp',
             '\ No newline at end of file',
@@ -136,8 +136,8 @@ is_output ($svk, 'smerge', ['--no-ticket', '//B', "$copath/A"],
 is_output ($svk, 'diff', [$copath],
 	   [__('=== t/checkout/symlink/A/dir.lnk'),
 	    '==================================================================',
-	    __('--- t/checkout/symlink/A/dir.lnk  (revision 4)'),
-	    __('+++ t/checkout/symlink/A/dir.lnk  (local)'),
+	    __("--- t/checkout/symlink/A/dir.lnk\t(revision 4)"),
+	    __("+++ t/checkout/symlink/A/dir.lnk\t(local)"),
 	    '@@ -1 +1 @@',
 	    '-link /tmp',
             '\ No newline at end of file',

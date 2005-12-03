@@ -6,7 +6,7 @@ use IO::Socket::INET;
 use SVK::Notify;
 use SVK::Editor::Local;
 use SVK::Editor::Network;
-use SVK::Target;
+use SVK::Path::Checkout;
 use SVK::Util qw(slurp_fh);
 use YAML;
 
@@ -127,7 +127,7 @@ sub init {
 sub send_delta_request {
     my $sock = shift;
     my $editor = SVK::Editor::Local->new (get_copath =>
-					  sub { $_[0] = SVK::Target->copath ($copath,  $_[0]) },
+					  sub { $_[0] = SVK::Path::Checkout->copath ($copath,  $_[0]) },
 					  notify =>
 					  SVK::Notify->new_with_report ($copath, '', 1),
 					 );
@@ -148,7 +148,7 @@ sub fixup_text {
     # assert $call->[1] is apply_textdelta
     my $sca = ${read_msg ($sock)};
     open my $content, '<', \$sca or die $!;
-    my $path = SVK::Target->copath ($copath, $entry);
+    my $path = SVK::Path::Checkout->copath ($copath, $entry);
     open my $fh, '>', $path or die $!;
     slurp_fh ($content, $fh);
     close $fh;

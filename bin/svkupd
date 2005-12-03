@@ -7,7 +7,7 @@ use SVK::XD;
 use SVK::Editor::Network;
 use SVK::Editor::Delay;
 #use PerlIO::gzip;
-use SVK::Target;
+use SVK::Path;
 use SVK::Target::Universal;
 use SVK::Util qw(slurp_fh);
 

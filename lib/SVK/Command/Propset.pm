@@ -25,8 +25,8 @@ sub parse_arg {
 sub lock {
     my $self = shift;
     my @paths = @_[2..$#_];
-    return unless grep {$_->copath} @paths;
-    $self->lock_target ($self->arg_condensed (map {$_->{report}} @_[2..$#_]));
+    return unless grep {$_->isa('SVK::Path::Checkout')} @paths;
+    $self->lock_target ($self->{xd}->target_condensed(@_[2..$#_]));
 }
 
 sub do_propset_direct {
@@ -85,13 +85,12 @@ sub do_propset_direct {
 sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	die loc("-r not allowed for propset copath.\n")
 	    if $self->{rev};
 	# verify the content is not with mixed line endings.
 	if ($pname eq 'svn:eol-style') {
-	    my $xdroot = $target->root ($self->{xd});
-	    my $fh = SVK::XD::get_fh ($xdroot, '<', $target->{path}, $target->{copath},
+	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->{path}, $target->{copath},
 				      { 'svn:eol-style' => $pvalue }, '',
 				      undef, 1);
 	    eval {

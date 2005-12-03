@@ -135,13 +135,13 @@ is_output($svk, 'ci', [-m => 'message'],
 
 is_output($svk, 'merge', [-c => -11, '//Y'],
 	  ['R   A',
-	   'A   A/be',
-	   'A   A/neu']);
+	   __('A   A/be'),
+	   __('A   A/neu')]);
 ok(-d 'A');
 
 is_output($svk, 'st', [],
 	  ['R   A',
-	   'A   A/be',
-	   'A   A/neu']);
+	   __('A   A/be'),
+	   __('A   A/neu')]);
 is_output($svk, 'ci', [-m => 'message'],
 	  ['Committed revision 14.']);

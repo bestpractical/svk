@@ -5,6 +5,11 @@ use base qw( SVK::Command::Copy );
 use SVK::Util qw ( abs2rel );
 use SVK::I18N;
 
+sub lock {
+    my $self = shift;
+    $self->lock_coroot(@_);
+}
+
 sub handle_direct_item {
     my $self = shift;
     my ($editor, $anchor, $m, $src, $dst) = @_;
@@ -34,7 +39,7 @@ sub handle_direct_item {
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
     $self->SUPER::handle_co_item ($src->new, $dst); # might be modified
-    $self->{xd}->do_delete (%$src);
+    $self->{xd}->do_delete($src);
 }
 
 sub run {
@@ -70,6 +75,8 @@ SVK::Command::Move - Move a file or directory
 =head1 OPTIONS
 
  -r [--revision] REV    : act on revision REV instead of the head revision
+ -p [--parent]          : create intermediate directories as required
+ -q [--quiet]           : print as little as possible
  -m [--message] MESSAGE : specify commit message MESSAGE
  -F [--file] FILENAME   : read commit message from FILENAME
  --template             : use the specified message as the template to edit

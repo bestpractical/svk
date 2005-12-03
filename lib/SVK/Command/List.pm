@@ -46,8 +46,6 @@ sub _do_list {
        return;
     }
 
-    # XXX: SVK::Target should take care of this.
-    $target->{depotpath} =~ s|/$||;
     my $entries = $root->dir_entries ($target->{path});
     my $enc = get_encoder;
     for (sort keys %$entries) {
@@ -84,8 +82,7 @@ sub _do_list {
 
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
-	    _do_list($self, $level+1, $target->new (path => "$target->{path}/$_",
-						    depotpath => "$target->{depotpath}/$_"));
+	    _do_list($self, $level+1, $target->new->descend($_));
 	}
     }
 }

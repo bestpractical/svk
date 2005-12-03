@@ -74,6 +74,7 @@ sub emit {
 	if ($ret && $#$ret > 0) {
 	    my $stream = SVN::TxDelta::parse_svndiff (@$ret, 1, $pool);
 	    print $stream $svndiff;
+	    close $stream;
 	}
     }
     else {

@@ -11,7 +11,7 @@ if (!HAS_SYMLINK) {
 no warnings 'redefine';
 sub get_copath {
     my ($name) = @_;
-    my $copath = SVK::Target->copath ('t', "checkout/$name");
+    my $copath = SVK::Path::Checkout->copath ('t', "checkout/$name");
     mkpath [$copath] unless -d $copath;
     $copath = 't/checkout/_real';
     rmtree [$copath] if -e $copath;

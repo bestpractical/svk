@@ -1,16 +1,20 @@
 =head1 NAME
 
-SVK::Help::Index - List of SVK's help topics
+SVK::Help::Index - SVK Documentation - Main index
 
 =head1 DESCRIPTION
 
-    svk help intro          A brief introduction to svk
+If you've never used SVK before, you should start by reading the B<intro>,
+a getting started guide for svk. To do that, type:
+
+    svk help intro
+
+Once you've done that, more in-depth help is available:
 
     svk help environment    Environment variables that alter svk's behavior
     svk help commands       A list of all available commands
     svk help <command-name> Help for a specific command
     svk help                This page
-
 
 Additional documentation is available on the web at L<http://svk.elixus.org/>.
 

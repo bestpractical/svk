@@ -335,7 +335,7 @@ sub find_local_mirror {
     my ($repos, $uuid, $path, $rev) = @_;
     my $myuuid = $repos->fs->get_uuid;
     return unless HAS_SVN_MIRROR && $uuid ne $myuuid;
-    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
     return ("$m->{target_path}$mpath",
 	    $rev ? $m->find_local_rev ($rev) : $rev) if $m;
 }
@@ -386,7 +386,7 @@ sub resolve_svm_source {
     my $myuuid = $repos->fs->get_uuid;
     return ($path) if ($uuid eq $myuuid);
     return unless HAS_SVN_MIRROR;
-    my ($m, $mpath) = SVN::Mirror::has_local ($repos, "$uuid:$path");
+    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
     return unless $m;
     return ("$m->{target_path}$mpath", $m);
 }
@@ -600,6 +600,9 @@ sub abs2rel {
     elsif (defined $new_basedir) {
         $rel = catdir($new_basedir, $rel);
     }
+
+    # resemble file::spec pre-3.13 behaviour, return empty string.
+    return '' if $rel eq '.';
 
     $rel =~ s/\Q$SEP/$sep/go if $sep and $SEP ne $sep;
     return $rel;
@@ -818,6 +821,16 @@ sub move_path {
     );
 }
 
+=head3 traverse_history (root => $fs_root, path => $path,
+    cross => $cross, callback => $cb($path, $revision))
+
+Traverse the history of $path in $fs_root backwards until the first
+copy, unless $cross is true.  We do cross renames regardless of the
+value of $cross.  We invoke $cb for each $path, $revision we
+encounter.  If cb returns a nonzero value we stop traversing as well.
+
+=cut
+
 sub traverse_history {
     my %args = @_;
 
@@ -827,12 +840,50 @@ sub traverse_history {
 
     my $hist = $args{root}->node_history ($args{path}, $old_pool);
     my $rv;
+    my $path;
+    my $revision;
 
-    while ($hist = $hist->prev(($args{cross} || 0), $new_pool)) {
-        $rv = $args{callback}->($hist->location ($new_pool));
-        last if !$rv;
+    while (1) {
+        my $ohist = $hist;
+        $hist = $hist->prev(($args{cross} || 0), $new_pool);
+        if (!$hist) {
+            last if $args{cross};
+            last unless $hist = $ohist->prev((1), $new_pool);
+            # We are not supposed to cross copies, ($path,$revision)
+            # refers to a node in $ohist that is a copy and that has a
+            # prev if we ask svn to traverse copies.
+            # Let's find out if the copy was actually a rename instead
+            # of a copy.
+            my $root = $args{root}->fs->revision_root($revision, $spool);
+            my $frompath;
+            my $fromrev = -1;
+            # We know that $path was a real copy and it that it has a
+            # prev, so find the node from which it was copied.
+            do {
+                ($fromrev, $frompath) = $root->copied_from($path, $spool);
+            } until ($fromrev >= 0 || !($path =~ s{/[^/]*$}{}));
+            die "Assertion failed: $path in $revision isn't a copy."
+                if $fromrev < 0;
+            # Ok, $path in $root was a copy of ($frompath,$fromrev).
+            # If $frompath was deleted in $root then the copy was really
+            # a rename.
+            my $entry = $root->paths_changed($spool)->{$frompath};
+            last unless $entry &&
+                $entry->change_kind == $SVN::Fs::PathChange::delete;
+
+            # XXX Do we need to worry about a parent of $frompath having
+            # been deleted instead?  If so the 2 lines below might work as
+            # an alternative, to the previous 3 lines.  However this also
+            # treats a delete followed by a copy of an older revision in
+            # two separate commits as a rename, which technically it's not.
+            #last unless $root->check_path($frompath, $spool) ==
+            #    $SVN::Node::none;
+        }
+        ($path, $revision) = $hist->location ($new_pool);
         $old_pool->clear;
-	$spool->clear;
+        $rv = $args{callback}->($path, $revision);
+        last if !$rv;
+        $spool->clear;
         ($old_pool, $new_pool) = ($new_pool, $old_pool);
     }
 
@@ -888,6 +939,49 @@ sub find_prev_copy {
 	for $startrev..$endrev;
     return unless $rev;
     return ($root, $copy);
+}
+
+
+# this is the cached and faster version of svn::mirror::has_local,
+# which should be deprecated eventually.
+my %mirror_cached;
+
+sub _list_mirror_cached {
+    my $repos = shift;
+    my $rev = $repos->fs->youngest_rev;
+    delete $mirror_cached{$repos}
+	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
+    return %{$mirror_cached{$repos}{hash}}
+	if exists $mirror_cached{$repos};
+    my %mirrored = map {
+	my $m = SVN::Mirror->new( target_path => $_,
+				  repos => $repos,
+				  pool => SVN::Pool->new,
+				  get_source => 1 );
+	local $@;
+	eval { $m->init };
+	$@ ? () : ($_ => join(':', $m->{source_uuid}, $m->{source_path}))
+    } SVN::Mirror::list_mirror($repos);
+
+    $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
+    return %mirrored;
+}
+
+sub _has_local {
+    my ($repos, $spec) = @_;
+    my %mirrored = _list_mirror_cached($repos);
+    while (my ($path, $mspec) = each(%mirrored)) {
+	my $mpath = $spec;
+	next unless $mpath =~ s/^\Q$mspec\E//;
+	my $m = SVN::Mirror->new (target_path => $path,
+				  repos => $repos,
+				  pool => SVN::Pool->new,
+				  get_source => 1);
+	$m->init;
+	$mpath = '' if $mpath eq '/';
+	return ($m, $mpath);
+    }
+    return;
 }
 
 1;

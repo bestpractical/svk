@@ -174,9 +174,10 @@ sub run {
     my $mergecmd = $self->command ('merge');
     $mergecmd->getopt (\@args);
     my $dst = $self->arg_co_maybe ($args[0] || '');
-    $self->lock_target ($dst) if $dst->{copath};
+    $self->lock_target ($dst) if $dst->isa('SVK::Path::Checkout');
     my $ticket;
-    $mergecmd->get_commit_message ($patch->{log}) unless $dst->{copath};
+    $mergecmd->get_commit_message ($patch->{log})
+	unless $dst->isa('SVK::Path::Checkout');
     my $merge = SVK::Merge->new (%$mergecmd, dst => $dst, repos => $dst->{repos});
     $ticket = sub { $merge->get_new_ticket (SVK::Merge::Info->new ($patch->{ticket})) }
 	if $patch->{ticket} && $dst->universal->same_resource ($patch->{target});
@@ -206,7 +207,7 @@ SVK::Command::Patch - Manage patches
 
 =head1 OPTIONS
 
- None
+ --depot DEPOTNAME      : operate on a depot other than the default one
 
 =head1 DESCRIPTION
 
@@ -282,8 +283,12 @@ To see the current version of a specific patch, run:
     svk patch --view Foo
 
 When you're done with a patch and don't want it hanging around anymore,
-run
+run:
     svk patch --delete Foo
+
+To apply a patch to the repository that someone else has sent you, run:
+
+    svk patch --apply - < contributed_feature.patch
 
 =head1 AUTHORS
 

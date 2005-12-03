@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use constant opt_recursive => 0;
 use SVK::XD;
-use SVK::Util qw( slurp_fh is_symlink );
+use SVK::Util qw( slurp_fh is_symlink to_native );
 use SVK::I18N;
 
 sub options {
@@ -17,7 +17,7 @@ sub parse_arg {
     my @arg = @_;
     @arg = ('') if $#arg < 0;
 
-    return $self->arg_condensed (@arg);
+    return $self->arg_condensed(@arg);
 }
 
 sub lock {
@@ -26,7 +26,7 @@ sub lock {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $self->{xd}->xdroot (%$target);
+    my $xdroot = $target->root;
 
 	$self->{xd}->checkout_delta
 	    ( %$target,
@@ -41,8 +41,9 @@ sub run {
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
+		      my $dpath = length $path ? "$target->{path}/$path" : $target->{path};
+	              to_native($path);
 		      my $st = $status->[0];
-		      my $dpath = $path ? "$target->{path}/$path" : $target->{path};
 		      my $copath = $target->copath ($path);
 
                       if ($st =~ /[DMRC!]/) {
@@ -75,13 +76,15 @@ sub do_revert {
     # XXX: need to respect copied resources
     my $kind = $xdroot->check_path ($dpath);
     if ($kind == $SVN::Node::dir) {
-	mkdir $copath unless -e $copath;
+        unless (-e $copath) {
+	    mkdir $copath or die loc("Can't create directory while trying to revert %1.\n", $copath);
+        }
     }
     else {
 	# XXX: PerlIO::via::symlink should take care of this.
 	# It doesn't overwrite existing file or close.
 	unlink $copath;
-	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath);
+	my $fh = SVK::XD::get_fh ($xdroot, '>', $dpath, $copath) or die loc("Can't create file while trying to revert %1.\n", $copath);
 	my $content = $xdroot->file_contents ($dpath);
 	slurp_fh ($content, $fh);
 	close $fh or die $!;
