@@ -569,6 +569,10 @@ sub create_view {
 	    # XXX: mkpdir
 	    SVN::Fs::copy ($fs->revision_root ($rev), $target,
 			   $root, $abspath);
+	    # XXX: translate to relative for mapping
+	    $abspath =~ s{^/}{};
+	    $target =~ s{^/}{};
+	    $viewobj->add_map($abspath, $target);
 	}
     }
     return (defined $subpath ? $anchor eq '/' ? "/$subpath" : "$anchor/$subpath"

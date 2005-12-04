@@ -312,7 +312,7 @@ sub get_committable {
 
 sub committed_commit {
     my ($self, $target, $targets) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     sub {
 	my $rev = shift;
 	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
@@ -348,7 +348,8 @@ sub committed_commit {
                 )
             }
 	}
-	my $root = $fs->revision_root ($rev);
+	# XXX: This breaks keyword as FileRev requires revision root!
+	my $root = $target->refresh_revision->root;
 	# update keyword-translated files
 	my $encoder = get_encoder;
 	for (@$targets) {
@@ -358,7 +359,6 @@ sub committed_commit {
 	    $path = '' if $path eq '/';
 	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
-#	    warn "==> from native $dpath $encoder $target->{copath}";
 	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);

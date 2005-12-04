@@ -88,7 +88,6 @@ sub dirdelta {
 
 sub get_paths {
     my ($self, $path) = @_;
-    # XXX: No translation for XD
     $path = $self->translate($path);
     my $copath = $self->path->copath($path);
     $path = length $path ? $self->path->{path}."/$path" : $self->path->{path};

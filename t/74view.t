@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 12;
+plan tests => 15;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -68,16 +68,21 @@ is_output ($svk, 'revert', ['-R', $copath],
 $svk->add ("$copath/BSP/newfile");
 append_file ("$copath/BSP/pe", "foobar\n");
 
-$svk->commit ('-m', 'commit from view', $copath);
+is_output($svk, 'commit', ['-m', 'commit from view', $copath],
+	  ['Committed revision 4.']);
+is_output($svk, 'st', [$copath], []);
 
 rmtree [$copath];
 
 $svk->checkout ('//', $copath);
-#warn $output;
+ok(-e "$copath/B/S/P/newfile", 'file created via view commit');
+
 is_output($svk, 'switch', ['//^myview', $copath],
-	  [ "Syncing //(/) in $corpath to 3.",
+	  [ "Syncing //(/) in $corpath to 4.",
 	    map { __($_) }
 	    "A   $copath/BSP",
 	    "A   $copath/BSP/pe",
+	    "A   $copath/BSP/newfile",
 	    "D   $copath/A",
 	    "D   $copath/B"]);
+

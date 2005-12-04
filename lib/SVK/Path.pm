@@ -43,6 +43,12 @@ sub refresh_revision {
     my ($self) = @_;
     $self->_inspector(undef);
     $self->revision($self->repos->fs->youngest_rev);
+
+    # XXX: on creation, the view txn is currently recreated, try to avoid this
+    $self->view((SVK::Command->create_view($self->repos,
+					  $self->view->name, $self->revision))[1])
+	if $self->view;
+
     return $self;
 }
 
@@ -210,6 +216,9 @@ sub get_editor {
     my $editor;
     ($editor, $post_handler) =
 	$self->_commit_editor($txn, $callback);
+
+    $editor = SVK::Editor::Rename->new(editor => $editor, rename_map => $self->view->rename_map)
+	if $self->view;
 
     return ($editor, $inspector,
 	    send_fulltext => 1,
