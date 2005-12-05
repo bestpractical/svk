@@ -27,21 +27,29 @@ sub new {
     my $self = ref $class ? $class->_clone :
 	bless {}, $class;
     %$self = (%$self, @arg);
-    $self->refresh_revision unless defined $self->revision;
-    if (defined $self->{copath}) {
-	require SVK::Path::Checkout;
-#	Carp::carp "implicit svk::path::checkout creation";
-	bless $self, 'SVK::Path::Checkout';
-    }
     if (my $depotpath = delete $self->{depotpath}) {
 	$self->depotname($depotpath =~ m!^/([^/]*)!);
     }
+    else {
+#	Carp::cluck 'without depotpath';
+    }
+    if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath})) {
+	require SVK::Path::Checkout;
+	return SVK::Path::Checkout->real_new
+	    ( { copath => $copath,
+		report => $self->{report},
+		xd => $self->{xd},
+		source => $self->{source} ? $self->{source}->new(%$self) : $self });
+#	Carp::carp "implicit svk::path::checkout creation";
+    }
+    $self->refresh_revision unless defined $self->revision;
     return $self;
 }
 
 sub refresh_revision {
     my ($self) = @_;
     $self->_inspector(undef);
+    Carp::cluck unless $self->repos;
     $self->revision($self->repos->fs->youngest_rev);
 
     # XXX: on creation, the view txn is currently recreated, try to avoid this
@@ -62,7 +70,7 @@ sub _clone {
     my $view = delete $self->{view};
     my $inspector = delete $self->{_inspector};
     my $cloned = Storable::dclone ($self);
-    $cloned->repos($self->repos);
+    $cloned->repos($self->repos) if ref($self) eq 'SVK::Path';
     $self->{xd} = $cloned->{xd} = $xd if $xd;
     $cloned->{_root} = $self->{_root} = $root;
     $cloned->{view} = $self->{view} = $view;
@@ -118,7 +126,8 @@ sub is_mirrored {
     my ($self) = @_;
     return unless HAS_SVN_MIRROR;
     # XXX: improve is_mirrored with util::_list_mirror_cached
-    return SVN::Mirror::is_mirrored($self->repos, $self->{path});
+
+    return SVN::Mirror::is_mirrored($self->repos, $self->path_anchor);
 }
 
 sub _commit_editor {
@@ -265,6 +274,7 @@ Makes target depotpath. Takes C<$revision> number optionally.
 
 =cut
 
+# XXX: obsoleted maybe
 sub as_depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
@@ -326,6 +336,7 @@ Returns depotpath of the target
 sub depotpath {
     my $self = shift;
 
+    Carp::cluck unless defined $self->depotname;
     my $view = $self->view ? $self->view->spec : '';
     return '/'.$self->depotname.$view.$self->{path};
 }
@@ -480,7 +491,7 @@ sub copied_from {
 
     my $target = $self->new;
     $target->{report} = '';
-    $target->as_depotpath;
+    $target = $target->as_depotpath;
 
     my $root = $target->root;
     my $fromroot;
@@ -496,7 +507,7 @@ sub copied_from {
 	# Check for mirroredness.
 	if ($want_mirror and HAS_SVN_MIRROR) {
 	    my ($m, $mpath) = SVN::Mirror::is_mirrored (
-		$target->repos, $target->{path}
+		$target->repos, $target->path_anchor
 	    );
 	    $m->{source} or next;
 	}
@@ -504,7 +515,7 @@ sub copied_from {
 	# It works!  Let's update it to the latest revision and return
 	# it as a fresh depot path.
 	$target->refresh_revision;
-	$target->as_depotpath;
+	$target = $target->as_depotpath;
 
 	delete $target->{targets};
 	return $target;
@@ -603,6 +614,12 @@ sub merged_from {
 		? 1 : 0;
 	  } );
 }
+
+sub path_anchor { $_[0]->{path} }
+sub path_target { $_[0]->{targets}[0] || '' }
+
+use Data::Dumper;
+sub dump { warn Dumper($_[0]) }
 
 =head1 SEE ALSO
 

@@ -422,8 +422,8 @@ usually good enough.
     # If we're mirroring via svn::mirror, not mirroring the whole history
     # is an option
     my ($m, $answer);
-    ($m,undef) = SVN::Mirror::is_mirrored ($target->{'repos'}, 
-                                           $target->{'path'}) if (HAS_SVN_MIRROR);
+    ($m,undef) = SVN::Mirror::is_mirrored ($target->repos,
+                                           $target->path_anchor) if (HAS_SVN_MIRROR);
     # If the user is mirroring from svn                                       
     if (UNIVERSAL::isa($m,'SVN::Mirror::Ra'))  {                                
         print loc("
@@ -464,7 +464,7 @@ break history-sensitive merging within the mirrored path.
         }
     )->run ($target);
 
-    my $depotpath = length ($rel_uri) ? $target->{depotpath}."/$rel_uri" : $target->depotpath;
+    my $depotpath = length ($rel_uri) ? $target->depotpath."/$rel_uri" : $target->depotpath;
     return $self->arg_depotpath($depotpath);
 }
 
@@ -502,7 +502,7 @@ sub arg_co_maybe {
 	  view => $view,
 	  revision => $rev,
 	);
-    $ret->as_depotpath unless defined $copath;
+    $ret = $ret->as_depotpath unless defined $copath;
     return $ret;
 }
 
@@ -614,9 +614,7 @@ sub arg_depotroot {
     local $@;
     $arg = eval { $self->arg_co_maybe ($arg || '')->new (path => '/') }
            || $self->arg_depotpath ("//");
-    $arg->as_depotpath;
-
-    return $arg;
+    return $arg->as_depotpath;
 }
 
 =head3 arg_depotname ($arg)
@@ -891,7 +889,7 @@ sub find_checkout_anchor {
 
     my @rel_path = split(
         '/',
-        abs2rel ($target->{path}, $anchor_target->{path}, undef, '/')
+        abs2rel ($target->path_anchor, $anchor_target->path_anchor, undef, '/')
     );
 
     my $copied_from;
@@ -982,7 +980,7 @@ sub resolve_chgspec {
 
 sub resolve_revspec {
     my ($self,$target) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my ($r1,$r2);
     if (my $revspec = $self->{revspec}) {
@@ -1001,7 +999,7 @@ sub resolve_revspec {
 sub resolve_revision {
     my ($self,$target,$revstr) = @_;
     return unless defined $revstr;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
     if($revstr =~ /^HEAD$/i) {
@@ -1012,7 +1010,7 @@ sub resolve_revision {
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
     } elsif (HAS_SVN_MIRROR && (my ($rrev) = $revstr =~ m'^(\d+)@$')) {
-	if (my ($m) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path})) {
+	if (my ($m) = SVN::Mirror::is_mirrored ($target->repos, $target->path_anchor)) {
 	    $rev = $m->find_local_rev ($rrev);
 	}
 	die loc ("Can't find local revision for %1 on %2.\n", $rrev, $target->path)
@@ -1030,7 +1028,7 @@ sub resolve_revision {
 sub find_date_rev {
     my ($self,$target,$date) = @_;
     # $date should be in yyyymmdd format
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
 
     my ($rev,$last);
@@ -1063,8 +1061,8 @@ sub find_base_rev {
 
 sub find_head_rev {
     my ($self,$target) = @_;
-    $target->as_depotpath;
-    my $fs = $target->{repos}->fs;
+    $target = $target->as_depotpath;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
     traverse_history (

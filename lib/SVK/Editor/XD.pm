@@ -221,6 +221,7 @@ sub close_directory {
     $self->{get_copath}($copath);
     if ($self->{update}) {
 	# XXX: handle unwritable entries and back them up after the store
+	Carp::cluck "===> Grr $copath".$self->{target} if $main::DEBUG;
 	$self->{xd}{checkout}->store_recursively ($copath,
 						  {revision => $self->{revision},
 						   '.deleted' => undef});

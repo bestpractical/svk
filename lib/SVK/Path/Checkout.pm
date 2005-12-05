@@ -2,9 +2,9 @@ package SVK::Path::Checkout;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use base 'SVK::Path';
+use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(xd report));
+__PACKAGE__->mk_accessors(qw(xd report source _pool _inspector));
 
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel get_encoder to_native );
 
@@ -23,7 +23,7 @@ copy.
 
 =cut
 
-sub new {
+sub real_new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
     unless (ref $self->report) {
@@ -33,16 +33,38 @@ sub new {
     return $self;
 }
 
+sub new {
+    my $class = shift;
+    if (ref $class) {
+	my $source = delete $class->{source} or Carp::cluck;
+	my $self = $class->_clone;
+	%$self = (%$self, @_, source => $source->new);
+	$class->source($source);
+	die unless $self->source;
+	return $self;
+    }
+    require SVK::Path;
+    my $arg = {@_};
+    Carp::cluck unless $arg->{repos};
+    my $copath = delete $arg->{copath};
+    return $class->real_new( { source => SVK::Path->new(%$arg),
+			       xd     => $arg->{xd},
+			       report => $arg->{report},
+			       copath => $copath });
+}
+
 sub root {
     my $self = shift;
-    return $self->view->root
-	if $self->view;
+    Carp::cluck unless $self->source;
+    return $self->source->view->root
+	if $self->source->view;
+
     unless ($self->xd) {
 	$self->xd(shift);
 	Carp::cluck unless $self->xd;
     }
     Carp::cluck,die unless defined $self->{copath};
-    $self->xd->xdroot(%$self);
+    $self->xd->xdroot(%{$self->source}, %$self);
 }
 
 =head2 copath
@@ -73,11 +95,11 @@ sub report_copath {
 
 sub copath_targets {
     my $self = shift;
-    return $self->copath unless exists $self->{targets}[0];
+    return $self->copath unless exists $self->source->{targets}[0];
     my $enc = get_encoder;
     return map { $self->copath($_) }
         map {my $t = $_; to_native($t, 'path', $enc); $t }
-            @{$self->{targets}};
+            @{$self->source->{targets}};
 }
 
 sub contains_copath {
@@ -92,7 +114,8 @@ sub contains_copath {
 
 sub descend {
     my ($self, $entry) = @_;
-    $self->SUPER::descend($entry);
+    $self->source->descend($entry);
+
     to_native($entry, 'path');
     $self->{copath} = catfile($self->{copath}, $entry);
 
@@ -102,7 +125,7 @@ sub descend {
 
 sub anchorify {
     my ($self) = @_;
-    $self->SUPER::anchorify;
+    $self->source->anchorify;
     ($self->{copath}, $self->{copath_target}) = get_anchor(1, $self->{copath});
 
     if (defined $self->report) {
@@ -123,6 +146,44 @@ sub _get_inspector {
 	 });
 }
 
+sub as_depotpath {
+    my $self = shift;
+    return $self->source->new( defined $_[0] ? (revision => $_[0]) : () );
+}
+
+sub refresh_revision {
+    my $self = shift;
+    $self->source->refresh_revision;
+    $self->_inspector(undef);
+    return $self;
+}
+
+# XXX:
+for my $pass_through (qw/pool inspector _to_pclass _clone dump/) {
+    no strict 'refs';
+    *{$pass_through} = *{'SVK::Path::'.$pass_through};
+}
+
+for my $proxy (qw/same_repos same_source is_mirrored normalize path universal contains_mirror depotpath depotname copy_ancestors nearest_copy related_to copied_from search_revision merged_from revision repos path_anchor path_target repospath/) {
+    no strict 'refs';
+    *{$proxy} = sub { my $self = shift;
+		      Carp::confess unless $self->source;
+		      $self->source->$proxy(@_);
+		  };
+}
+
+sub for_checkout_delta {
+    my $self = shift;
+    my $source = $self->source;
+    return ( copath => $self->copath,
+	     path => $source->path_anchor,
+	     targets => $source->{targets},
+	     repos => $source->repos,
+	     repospath => $source->repospath,
+	     report => $self->report,
+	   )
+}
+
 =head2 get_editor
 
 Returns the L<SVK::Editor::XD> object, L<SVK::Inspector::XD>, and the callback 
@@ -132,7 +193,7 @@ hash used by L<SVK::Editor::Merge>
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my ($copath, $path, $spath) = ($self->{copath}, $self->{path}, $arg{store_path});
+    my ($copath, $path, $spath) = ($self->{copath}, $self->path_anchor, $arg{store_path});
     $spath = $path unless defined $spath;
     my $encoding = $self->xd->{checkout}->get($copath)->{encoding};
     $path = '' if $path eq '/';
@@ -144,8 +205,8 @@ sub get_editor {
 					get_copath =>
             sub { to_native ($_[0], 'path', $encoding) if $encoding;
                   $_[0] = $self->copath($_[0]) },
-					repos => $self->{repos},
-					target => $self->{targets}[0] || '',
+					repos => $self->repos,
+					target => $self->path_target,
 					xd => $self->xd);
     my $inspector = $self->inspector;
 

@@ -29,7 +29,10 @@ is_output_like($svk,'log',['-r','1','-r','2','-r','3','//A'],qr|Invalid -r.|);
 
 $svk->cp('//A/foo','//A/foo-cp2','-m','cp issued directly to depotpath');
 is_output_like($svk,'log',['-r','-1'],qr|cp and ps|);
+TODO: {
+local $TODO = 'ignore base limit when HEAD is specified';
 is_output_like($svk,'log',['-r','HEAD'],qr|cp issued directly to depotpath|);
+}
 is_output_like($svk,'log',['-r','HEAD','//A'],qr|cp issued directly to depotpath|);
 is_output_like($svk,'log',['-r','BASE'],qr|cp and ps|);
 
@@ -41,5 +44,5 @@ is_output_like($svk,'log',['-r',"LLASKDJF"],qr|is not a number|);
 # This date should always in the future to refer to the latest revision
 #  -- because we can't let this test runs for days.
 $date = sprintf('%04d-%02d-%02d',$y+2000,1,1);
-is_output_like($svk,'log',['-r',"{$date}"],qr|cp and ps|);
 
+is_output_like($svk,'log',['-r',"{$date}"],qr|cp and ps|);

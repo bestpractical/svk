@@ -38,8 +38,8 @@ sub exist {
     return $SVN::Node::none unless -e _;
 
     return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
-    if $self->xd->{checkout}->get ($copath)->{'.schedule'} or
-        $self->xdroot->check_path ($path, $pool);
+	if $self->xd->{checkout}->get ($copath)->{'.schedule'} or
+	    $self->xdroot->check_path ($path, $pool);
     return $SVN::Node::unknown;
 }
 
@@ -72,7 +72,7 @@ sub dirdelta {
     $self->xd->checkout_delta(
          # XXX: proper anchor handling
          path => $path,
-	 target => defined $self->path->{targets}[0] ? $self->path->{targets}[0] : '',
+	 target => defined $self->path->path_target,
          copath => $copath,
          base_root => $base_root,
          base_path => $base_path,
@@ -90,7 +90,7 @@ sub get_paths {
     my ($self, $path) = @_;
     $path = $self->translate($path);
     my $copath = $self->path->copath($path);
-    $path = length $path ? $self->path->{path}."/$path" : $self->path->{path};
+    $path = length $path ? $self->path->path_anchor."/$path" : $self->path->path_anchor;
 
     return ($path, $copath);
 }

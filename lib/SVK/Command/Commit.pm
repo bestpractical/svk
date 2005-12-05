@@ -45,7 +45,7 @@ sub message_prompt {
 sub under_mirror {
     my ($self, $target) = @_;
     return if $self->{direct};
-    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
+    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->repos, $target->path_anchor);
 }
 
 sub fill_commit_message {
@@ -135,7 +135,7 @@ sub _editor_for_patch {
 	if $self->{patch} =~ m!/!;
     my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
 				 $target->depotname, $source,
-				 $target->new(targets => undef)->as_depotpath);
+				 $target->as_depotpath->new(targets => undef));
     $patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
 	if $source;
     $patch->{log} = $self->{message};
@@ -148,7 +148,7 @@ sub _editor_for_patch {
     $target = $target->new->as_depotpath;
     $target->refresh_revision;
     my %cb = SVK::Editor::Merge->cb_for_root
-	($target->root, $target->{path},
+	($target->root, $target->path_anchor,
 	 $m ? $m->{fromrev} : $target->revision);
     return ($patch->commit_editor ($fname),
 	    %cb, send_fulltext => 0);
@@ -188,7 +188,7 @@ sub get_editor {
     }
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = find_svm_source ($target->repos, $target->{path});
+	my ($uuid, $dst) = find_svm_source ($target->repos, $target->path_anchor);
 	$editor = SVK::Editor::Sign->new
 	    ( _editor => [$editor],
 	      anchor => "$uuid:$dst" );
@@ -218,7 +218,7 @@ sub get_editor {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
-	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path $target->{path} first."
+	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path ".$target->path_anchor." first."
 				       : "Please update checkout first.");
 	    $self->add_handler( $_,
 				sub {
@@ -238,7 +238,7 @@ sub exclude_mirror {
     return () if $self->{direct} or !HAS_SVN_MIRROR;
 
     ( exclude => {
-	map { substr ($_, length($target->{path})) => 1 }
+	map { substr ($_, length($target->path_anchor)) => 1 }
 	    $target->contains_mirror },
     );
 }
@@ -270,7 +270,7 @@ sub get_committable {
 		print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath) if $fh;
 	    }));
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
 	  $self->exclude_mirror ($target),
 	  xdroot => $root,
@@ -297,11 +297,11 @@ sub get_committable {
 	close $fh;
 
         # get_buffer_from_editor may modify it, so it must be a ref first
-        $target->{targets} ||= [];
+        $target->source->{targets} ||= [];
 
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
-				    undef, $file, $target->{copath}, $target->{targets});
+				    undef, $file, $target->copath, $target->source->{targets});
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	++$self->{save_message};
 	unlink $file;
@@ -355,7 +355,7 @@ sub committed_commit {
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
-	    my $path = $target->{path};
+	    my $path = $target->path_anchor;
 	    $path = '' if $path eq '/';
 	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
@@ -414,10 +414,10 @@ sub run {
 
 sub run_delta {
     my ($self, $target, $xdroot, $editor, %cb) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my %revcache;
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
 	  xdroot => $xdroot,
 	  editor => $editor,
@@ -425,7 +425,7 @@ sub run_delta {
 	  nodelay => $cb{send_fulltext},
 	  $self->exclude_mirror ($target),
 	  cb_exclude => sub { print loc ("%1 is a mirrored path, please commit separately.\n",
-					 abs2rel ($_[1], $target->{copath} => $target->{report})) },
+					 abs2rel ($_[1], $target->copath => $target->report)) },
 	  $self->{import} ?
 	  ( auto_add => 1,
 	    obstruct_as_replace => 1,
@@ -438,7 +438,7 @@ sub run_delta {
 		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);
-		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
+		$revtarget = $revtarget ? $target->path_anchor."/$revtarget" : $target->path_anchor;
 		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
 		# lookup the copy source rev for the case of
 		# open_directory inside add_directotry that has

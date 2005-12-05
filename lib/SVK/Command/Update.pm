@@ -39,9 +39,10 @@ sub run {
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
-	my $update_target = $target->new
-	    ->as_depotpath(defined $self->{rev} ? $self->resolve_revision($target->new,$self->{rev}) : $target->{repos}->fs->youngest_rev);
-	$update_target->{path} = $self->{update_target_path}
+	warn $target->revision if $main::DEBUG;
+	my $update_target = $target
+	    ->as_depotpath(defined $self->{rev} ? $self->resolve_revision($target->new,$self->{rev}) : $target->repos->fs->youngest_rev);
+	$update_target->path($self->{update_target_path})
 	    if defined $self->{update_target_path};
         # Because merging under the copy anchor is unsafe, we always merge
         # to the most immediate copy anchor under copath root.
@@ -58,8 +59,8 @@ sub run {
             # Because syncing under the mirror anchor is impossible,
             # we always sync from the mirror anchor.
             my ($m, $mpath) = SVN::Mirror::is_mirrored (
-                $sync_target->{repos},
-                $sync_target->{path}
+                $sync_target->repos,
+                $sync_target->path_anchor
             );
             $m->run if $m->{source};
         }
@@ -86,44 +87,46 @@ sub do_update {
     my $pool = SVN::Pool->new_default;
     my ($xdroot, $newroot) = map { $_->root } ($cotarget, $update_target);
     # unanchorified
-    my $report = $cotarget->{report};
+    my $report = $cotarget->report;
     my $kind = $newroot->check_path ($update_target->path);
     if ($kind == $SVN::Node::none) {
 	$cotarget->anchorify;
 	$update_target->anchorify;
 	# still in the checkout
 	if ($self->{xd}{checkout}->get($cotarget->copath)->{depotpath}) {
-	    $kind = $newroot->check_path($update_target->{path});
+	    $kind = $newroot->check_path($update_target->path_anchor);
 	}
     }
-    die loc("path %1 does not exist.\n", $update_target->{path})
+    die loc("path %1 does not exist.\n", $update_target->path_anchor)
 	if $kind == $SVN::Node::none;
 
-    print loc("Syncing %1(%2) in %3 to %4.\n", $cotarget->depotpath, @{$cotarget}{qw( path copath )},
-	      $update_target->{revision});
+    print loc("Syncing %1(%2) in %3 to %4.\n", $cotarget->depotpath,
+	      $cotarget->path_anchor, $cotarget->copath,
+	      $update_target->revision);
 
     if ($kind == $SVN::Node::file ) {
 	$cotarget->anchorify;
 	$update_target->anchorify;
 	# can't use $cotarget->{path} directly since the (rev0, /) hack
-	$cotarget->{targets}[0] = $cotarget->{copath_target};
+	$cotarget->source->{targets}[0] = $cotarget->{copath_target};
     }
-    my $base = $cotarget;
-    $base = $base->new (path => '/')
+    my $base = $cotarget->as_depotpath;
+    $base = $base->new(path => '/')
 	if $xdroot->check_path ($base->path) == $SVN::Node::none;
-    unless (-e $cotarget->{copath}) {
+
+    unless (-e $cotarget->copath) {
 	die loc ("Checkout directory gone. Use 'checkout %1 %2' instead.\n",
-		 $update_target->depotpath, $cotarget->{report})
-	    unless $base->{path} eq '/';
-	mkdir ($cotarget->{copath}) or
-	    die loc ("Can't create directory %1 for checkout: %2.\n", $cotarget->{report}, $!);
+		 $update_target->depotpath, $cotarget->report)
+	    unless $base->path_anchor eq '/';
+	mkdir ($cotarget->copath) or
+	    die loc ("Can't create directory %1 for checkout: %2.\n", $cotarget->report, $!);
     }
 
     my $notify = SVK::Notify->new_with_report
-	($report, $cotarget->{targets}[0], 1);
+	($report, $cotarget->path_target, 1);
     $notify->{quiet}++ if $self->{quiet};
     my $merge = SVK::Merge->new
-	(repos => $cotarget->{repos}, base => $base, base_root => $xdroot,
+	(repos => $cotarget->repos, base => $base, base_root => $xdroot,
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 auto => 1, # not to print track-rename hint
@@ -131,10 +134,10 @@ sub do_update {
     my ($editor, $inspector, %cb) = $cotarget->get_editor
 	( ignore_checksum => 1,
 	  check_only => $self->{check_only},
-	  store_path => $update_target->{path},
+	  store_path => $update_target->path_anchor,
 	  update => $self->{check_only} ? 0 : 1,
 	  oldroot => $xdroot, newroot => $newroot,
-	  revision => $update_target->{revision},
+	  revision => $update_target->revision,
 	);
     $merge->run($editor, %cb, inspector => $inspector);
 

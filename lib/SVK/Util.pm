@@ -949,6 +949,7 @@ my %mirror_cached;
 
 sub _list_mirror_cached {
     my $repos = shift;
+    Carp::carp unless defined $repos;
     my $rev = $repos->fs->youngest_rev;
     delete $mirror_cached{$repos}
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;

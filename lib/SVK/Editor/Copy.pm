@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);
 
@@ -15,8 +14,8 @@ SVK::Editor::Copy - Turn editor calls to calls with history
 
   $editor = SVK::Editor::Copy->new
     ( _editor => [$next_editor],
-      copyboundry_root => $anchor,
-      copyboundry_rev => $base_anchor,
+      copyboundry_root => $root,
+      copyboundry_rev => \@possible_rev,
       src => $src,
       dst => $dst,
       cb_resolve_copy => sub {},
@@ -32,6 +31,10 @@ be used for editors for writing to checkout or showing diff.  However,
 it's desired to have history-aware editor calls for the purpose of
 replaying revisions which have copies, or displaying diff for
 copy-then-modified files.
+
+copyboundry_rev contains an array of possible points to be used as
+copyfrom rev to be resolved.  but the logic should be moved to the
+resolver.
 
 =cut
 
@@ -62,11 +65,18 @@ sub should_ignore {
 # wanted or not
 sub find_copy {
     my ($self, $path) = @_;
-    my $target_path = File::Spec::Unix->catdir($self->{src}{path}, $path);
+    my $target_path = File::Spec::Unix->catdir($self->{src}->path_anchor, $path);
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
 
     my $copyboundry_rev = $self->{copyboundry_rev};
+    $copyboundry_rev = [ $copyboundry_rev ] unless ref $copyboundry_rev;
+    unless ($self->{_roots}) {
+	# initialise and cache roots to be used.
+	my $pool = $self->{_pool} = SVN::Pool->new;
+	$self->{_roots}{$_} = $self->{copyboundry_root}->fs->revision_root($_, $pool)
+	    for @$copyboundry_rev;
+    }
     my $ppool = SVN::Pool->new;
     my $pool = SVN::Pool->new_default;
     while (1) {
@@ -91,11 +101,18 @@ sub find_copy {
 	my ($src_from, $to) = map {$_->revision_root_revision}
 	    ($fromroot, $toroot);
 
-	warn 
-	"$cur_path, $src_frompath: if ($src_from <= $copyboundry_rev && $copyboundry_rev < $to" if $main::DEBUG;
+	# don't care, too early
+	my ($base_rev);
+	for my $try (@$copyboundry_rev) {
+	    if ($try < $to) {
+		$base_rev = $try;
+		last;
+	    }
+	}
+	return unless $base_rev;
 
-	return unless $copyboundry_rev < $to; # don't care, too early
-	if ($src_frompath !~ m{^\Q$self->{src}{path}/}) {
+	my $hate_path = $self->{src}->path_anchor;
+	if ($src_frompath !~ m{^\Q$hate_path/}) {
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 		push @{$self->{incopy}}, { path => $path,
 					   fromrev => $src_from,
@@ -105,7 +122,7 @@ sub find_copy {
 	    return;
 	}
 
-	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
+	return unless $src_frompath =~ m{^\Q$hate_path/};
 
 	if ($self->{merge}->_is_merge_from
 	    ($self->{src}->path, $self->{dst}, $to)) {
@@ -117,11 +134,11 @@ sub find_copy {
 	# XXX: Document this condition
 
 	my $id = $fromroot->node_id($src_frompath);
-	if ($self->{copyboundry_root}->check_path($src_frompath) &&
-	    SVN::Fs::check_related($id, $self->{copyboundry_root}->node_id($src_frompath))) {
-	    my $src = $self->{src}->new(revision => $copyboundry_rev, path => $src_frompath);
+	if ($self->{_roots}{$base_rev}->check_path($src_frompath) &&
+	    SVN::Fs::check_related($id, $self->{_roots}{$base_rev}->node_id($src_frompath))) {
+	    my $src = $self->{src}->new(revision => $base_rev, path => $src_frompath);
 	    $src->normalize;
-	    $src_from = $src->{revision};
+	    $src_from = $src->revision;
 	}
 	else {
 	    ($cur_root, $cur_path) = ($fromroot, $src_frompath);
@@ -294,7 +311,7 @@ sub replay_add_history {
 	      revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
-	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
+	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
 	      editor => SVN::Delta::Editor->new(_debug => 1)) if $main::DEBUG;
     warn "==> done sample" if $main::DEBUG;
     SVK::XD->depot_delta
@@ -302,7 +319,7 @@ sub replay_add_history {
 	      revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
-	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
+	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
 	      editor => SVK::Editor::Delay->new(_editor => [$editor]) );
     warn "***=>done delta" if $main::DEBUG;
     # close file is done by the delta;

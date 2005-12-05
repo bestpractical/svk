@@ -68,11 +68,9 @@ is_output ($svk, 'add', ['A/'],
 	   [map __($_), 'A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor with trailing slash');
 $svk->revert ('-R', '.');
-
 is_output ($svk, 'add', [qw/-N A/],
 	   [map __($_), 'A   A'],
 	   'add - nonrecursive anchor');
-
 is_output ($svk, 'add', [qw/-N A/],
 	   ['A already added.'],
 	   'add - nonrecursive anchor already added');

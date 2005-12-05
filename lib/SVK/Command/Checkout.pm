@@ -29,10 +29,10 @@ sub parse_arg {
 	($src,
 	 eval { $self->arg_co_maybe ($dst, 'Checkout destination') }
 	 ? "path '$dst' is already a checkout" : undef);
-    die loc("don't know where to checkout %1\n", $src) unless length ($dst) || $depotpath->{path} ne '/';
+    die loc("don't know where to checkout %1\n", $src) unless length ($dst) || $depotpath->path_anchor ne '/';
 
     $dst =~ s|/$|| if length $dst;
-    $dst = (splitdir($depotpath->{path}))[-1]
+    $dst = (splitdir($depotpath->path_anchor))[-1]
         if !length($dst) or $dst =~ /^\.?$/;
 
     return ($depotpath, $dst);
@@ -69,7 +69,6 @@ sub run {
     # abs_path doesn't work until the parent is created.
     my $copath = abs_path ($report);
     my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
-
     die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 
@@ -82,11 +81,11 @@ sub run {
 						 '.deleted' => undef,
 						 '.conflict' => undef,
 					       });
-    $self->{rev} = $target->{repos}->fs->youngest_rev unless defined $self->{rev};
 
-    $self->do_update( $target->new(report => $report, xd => $self->{xd},
-				   view => undef,
-				   copath => $copath),
+    my $cotarget = SVK::Path::Checkout->real_new
+	({ copath => $copath, report => $report,
+	   xd => $self->{xd}, source => $target->new( revision => 0, view => undef) });
+    $self->do_update( $cotarget,
 		      $target->new->as_depotpath($self->{rev}) );
 
     $self->rebless ('checkout::detach')->run ($copath)
