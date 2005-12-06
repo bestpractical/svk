@@ -131,18 +131,20 @@ is_output($svk, 'pull', ['//local'],
 	   'Committed revision 23.']);
 
 $svk->cp('//trunk' => '//local-new', -m => 'new branch');
+$svk->cp('//trunk/B' => '//trunk/B-earlytrunk',
+	 -m => 'copy to earlyxtrunk');
 $svk->sw('//local-new');
 $svk->cp('B' => 'B-fromlocal');
 $svk->ci(-m => 'a copy at local');
 
 is_output($svk, 'push', [],
-	  ['Auto-merging (0, 25) /local-new to /trunk (base /trunk:22).',
+	  ['Auto-merging (0, 26) /local-new to /trunk (base /trunk:22).',
 	   '===> Auto-merging (0, 24) /local-new to /trunk (base /trunk:22).',
 	   'Empty merge.',
-	   '===> Auto-merging (24, 25) /local-new to /trunk (base /trunk:22).',
+	   '===> Auto-merging (24, 26) /local-new to /trunk (base /trunk:22).',
 	   'A + B-fromlocal',
-	   qr'New merge ticket: .*:/local-new:25',
-	   'Committed revision 26.']);
+	   qr'New merge ticket: .*:/local-new:26',
+	   'Committed revision 27.']);
 
 $svk->cp('//trunk/B' => '//trunk/B-orztrunk',
 	 -m => 'copy to orztrunk');
@@ -150,15 +152,16 @@ $svk->cp('//trunk/B-fromlocal' => '//trunk/B-totrunk',
 	 -m => 'copy to trunk new directory');
 
 is_output($svk, 'pull', ['//local-new'],
-	  ['Auto-merging (22, 28) /trunk to /local-new (base /local-new:25).',
+	  ['Auto-merging (22, 29) /trunk to /local-new (base /local-new:26).',
+	   'A + B-earlytrunk',
 	   'A + B-totrunk',
 	   'A + B-orztrunk',
-	   qr'New merge ticket: .*:/trunk:28',
-	   'Committed revision 29.',
+	   qr'New merge ticket: .*:/trunk:29',
+	   'Committed revision 30.',
 	  ]);
 
 is_ancestor($svk, '//local-new/B-totrunk',
-	    '/local-new/B-fromlocal', 25,
+	    '/local-new/B-fromlocal', 26,
 	    '/local-new/B', 24,
 	    '/trunk/B', 21,
 	    '/trunk/A', 16);
@@ -203,16 +206,16 @@ $ENV{SVKRESOLVE} = 't';
 #our $answer = ['t'];
 
 is_output($svk, 'push', ['-l'],
-	  ['Auto-merging (0, 39) /local-many to /trunk-3 (base /trunk-3:30).',
+	  ['Auto-merging (0, 40) /local-many to /trunk-3 (base /trunk-3:31).',
 	   'G + B/de',
 	   'A + b-s',
 	   'G + b-s/de',
 	   'A   D/new-in-local',
 	   'D   D/de',
-	   qr'New merge ticket: .*:/local-many:39',
-	   'Committed revision 40.']);
+	   qr'New merge ticket: .*:/local-many:40',
+	   'Committed revision 41.']);
 
-is_output($svk, 'diff', ['-sr39:40', '//'],
+is_output($svk, 'diff', ['-sr40:41', '//'],
 	  ['M + trunk-3/B/de',
 	   'A + trunk-3/b-s',
 	   'M + trunk-3/b-s/de',
@@ -223,38 +226,38 @@ is_output($svk, 'diff', ['-sr39:40', '//'],
 $svk->cp(-m => 'cross branch', '//local-many/b-s', '//trunk-3/b-s-cp');
 
 is_output($svk, 'pull', ['//local-many'],
-	  ['Auto-merging (30, 41) /trunk-3 to /local-many (base /local-many:39).',
+	  ['Auto-merging (31, 42) /trunk-3 to /local-many (base /local-many:40).',
 	   'U   B/de',
 	   'U   b-s/de',
 	   'A + b-s-cp',
-	   qr'New merge ticket: .*:/trunk-3:41',
-	   'Committed revision 42.']);
+	   qr'New merge ticket: .*:/trunk-3:42',
+	   'Committed revision 43.']);
 
 $svk->rm('//trunk-3/B/de', -m => 'bye');
 $svk->mkdir('//trunk-3/B/gotnew', -m => 'new');
 $svk->mv('//trunk-3/B' => '//trunk-3/B-moved', -m => 'moved');
 
 is_output($svk, 'pull', ['//local-many'],
-	  ['Auto-merging (41, 45) /trunk-3 to /local-many (base /trunk-3:41).',
+	  ['Auto-merging (42, 46) /trunk-3 to /local-many (base /trunk-3:42).',
 	   'A + B-moved',
 	   'A   B-moved/gotnew',
 	   'D   B-moved/de',
 	   'D   B',
-	   qr'New merge ticket: .*:/trunk-3:45',
-	   'Committed revision 46.'
+	   qr'New merge ticket: .*:/trunk-3:46',
+	   'Committed revision 47.'
 	  ]);
 $svk->mkdir(-m => 'outside', '//outside');
 $svk->cp(-m => 'outside -> trunk', '//outside' => '//trunk-3/outside');
 
 is_output($svk, 'pull', ['//local-many'],
-	  ['Auto-merging (45, 48) /trunk-3 to /local-many (base /trunk-3:45).',
+	  ['Auto-merging (46, 49) /trunk-3 to /local-many (base /trunk-3:46).',
 	   'A + outside',
-	   qr'New merge ticket: .*:/trunk-3:48',
-	   'Committed revision 49.'
+	   qr'New merge ticket: .*:/trunk-3:49',
+	   'Committed revision 50.'
 	  ]);
 
 is_ancestor($svk, '//local-many/outside',
-	    '/outside', 47);
+	    '/outside', 48);
 
 
 # check if prop change only
