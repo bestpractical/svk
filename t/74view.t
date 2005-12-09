@@ -85,7 +85,8 @@ is_output($svk, 'switch', ['//^myview', $copath],
 	    "A   $copath/BSP/newfile",
 	    "D   $copath/A",
 	    "D   $copath/B"]);
-
+$svk->up('-r3', "$copath/BSP");
+warn $output;
 $svk->ps ('-m', 'A view', 'svk:view:view-A',
 	  '/A
  -Q

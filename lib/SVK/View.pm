@@ -5,9 +5,7 @@ __PACKAGE__->mk_accessors(qw(base name revision txn root rename_map pool));
 
 sub spec {
     my $self = shift;
-    warn $self->base->subdir($self->name);
     my $viewspec = $self->base->subdir($self->name)->relative('/');
-#    warn $self->name;
     '/^'.$viewspec.'@'.$self->revision;
 }
 

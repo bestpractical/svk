@@ -736,7 +736,7 @@ Don't generate text deltas in C<apply_textdelta> calls.
 
 sub depot_delta {
     my ($self, %arg) = @_;
-    my @root = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} @arg{qw/oldroot newroot/};
+    my @root = map {$_->isa ('SVK::Root') ? $_->root : $_} @arg{qw/oldroot newroot/};
     my $editor = $arg{editor};
     use Data::Dumper;
     warn Dumper(\%arg) if $main::DEBUG;
@@ -946,7 +946,7 @@ sub _prop_delta {
 
 sub _prop_changed {
     my ($root1, $path1, $root2, $path2) = @_;
-    ($root1, $root2) = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} ($root1, $root2);
+    ($root1, $root2) = map {$_->isa ('SVK::Root') ? $_->root : $_} ($root1, $root2);
     return SVN::Fs::props_changed ($root1, $path1, $root2, $path2);
 }
 
@@ -1677,38 +1677,12 @@ sub flush {
 }
 
 package SVK::XD::Root;
-use SVK::I18N;
-
-sub AUTOLOAD {
-    my $func = our $AUTOLOAD;
-    $func =~ s/^SVK::XD::Root:://;
-    return if $func =~ m/^[A-Z]*$/;
-
-    no strict 'refs';
-    no warnings 'redefine';
-
-    *$func = sub {
-        my $self = shift;
-        # warn "===> $self $func: ".join(',',@_).' '.join(',', (caller(0))[0..3])."\n";
-        $self->[1]->$func (@_);
-    };
-
-    goto &$func;
-}
+require SVK::Root;
 
 sub new {
     my ($class, @arg) = @_;
     unshift @arg, undef if $#arg == 0;
-    my $self = bless [@arg], $class;
-    return $self;
-}
-
-sub DESTROY {
-    return unless $_[0][0];
-    # if this destructor is called upon the pool cleanup which holds the
-    # txn also, we need to use a new pool, otherwise it segfaults for
-    # doing allocation in a pool that is being destroyed.
-    $_[0][0]->abort(SVN::Pool->new) if $_[0][0];
+    return SVK::Root->new({ txn => $arg[0], root => $arg[1]});
 }
 
 =head1 AUTHORS
