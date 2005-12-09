@@ -486,7 +486,7 @@ sub arg_co_maybe {
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
     my ($view, $revision, $subpath);
-    if (($view, $revision, $subpath) = $path =~ m{^/\^(\w+)(?:\@(\d+)(.*))?$}) {
+    if (($view, $revision, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
 	$revision ||= $repos->fs->youngest_rev;
 	($path, $view) = SVK::Command->create_view ($repos, $view, $revision, $subpath);
     }
@@ -545,15 +545,17 @@ Argument is a depotpath, including the slashes and depot name.
 sub create_view {
     my ($self, $repos, $view, $rev, $subpath) = @_;
     my $fs = $repos->fs;
+    my $viewspec = Path::Class::File->new_foreign('Unix', '/', "$view");
+    my ($viewbase, $viewname) = ($viewspec->parent, $viewspec->basename);
     $rev = $fs->youngest_rev unless defined $rev;
     require SVK::View;
-    my $viewobj = SVK::View->new({name => $view, revision => $rev});
+    my $viewobj = SVK::View->new({name => $viewname, base => $viewbase, revision => $rev});
     $viewobj->pool(SVN::Pool->new);
     my $txn = $fs->begin_txn($rev, $viewobj->pool);
     $viewobj->txn($txn);
     $viewobj->root($txn->root($viewobj->pool));
     my $root = $viewobj->root;
-    my $content = $root->node_prop ('/', "svk:view:$view");
+    my $content = $root->node_prop ($viewbase, "svk:view:$viewname");
     my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
 
     $fs->revision_root ($rev)->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
@@ -586,7 +588,7 @@ sub arg_depotpath {
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
     my $view;
     from_native ($path, 'path', $self->{encoding});
-    if (($view) = $path =~ m{^/\^(\w+)$}) {
+    if (($view) = $path =~ m{^/\^([\w/]+)$}) {
 	($path, $view) = $self->create_view($repos, $view, $rev);
     }
 

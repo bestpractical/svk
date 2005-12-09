@@ -1,11 +1,14 @@
 package SVK::View;
 
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(name revision txn root rename_map pool));
+__PACKAGE__->mk_accessors(qw(base name revision txn root rename_map pool));
 
 sub spec {
     my $self = shift;
-    '/^'.$self->name.'@'.$self->revision;
+    warn $self->base->subdir($self->name);
+    my $viewspec = $self->base->subdir($self->name)->relative('/');
+#    warn $self->name;
+    '/^'.$viewspec.'@'.$self->revision;
 }
 
 sub add_map {

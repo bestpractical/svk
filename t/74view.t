@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 15;
+plan tests => 16;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -86,3 +86,13 @@ is_output($svk, 'switch', ['//^myview', $copath],
 	    "D   $copath/A",
 	    "D   $copath/B"]);
 
+$svk->ps ('-m', 'A view', 'svk:view:view-A',
+	  '/A
+ -Q
+ qz   /A/Q/qz
+ BSP  /B/S/P
+', '//A');
+
+
+is_output($svk, 'ls', ['//^A/view-A'],
+	  ['BSP/', 'be', 'qz']);

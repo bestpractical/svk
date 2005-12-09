@@ -54,7 +54,8 @@ sub refresh_revision {
 
     # XXX: on creation, the view txn is currently recreated, try to avoid this
     $self->view((SVK::Command->create_view($self->repos,
-					  $self->view->name, $self->revision))[1])
+					   $self->view->base.'/'.$self->view->name,
+					   $self->revision))[1])
 	if $self->view;
 
     return $self;
