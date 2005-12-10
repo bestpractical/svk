@@ -29,7 +29,7 @@ append_file("$copath/deep/test/B/fe", "fnord\n");
 $svk->ci(-m => 'blah', $copath);
 
 is_output($svk, 'up', ["$scopath/deep/test"],
-	  ['Syncing //work/trunk/deep/test(/work/trunk/deep/test) in '.
+	  ['Syncing //work/trunk(/work/trunk/deep/test) in '.
 	   __("$scorpath/deep/test").' to 9.',
 	   map {__($_)}
 	   "U   $scopath/deep/test/A/be",
