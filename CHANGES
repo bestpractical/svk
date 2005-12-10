@@ -1,3 +1,17 @@
+[Changes for 1.06 - 10 Dec 2005]
+
+* Workaround File::Spec 3.14 API change, which is causing svk's use of
+  svn libraries to fail its assertion.
+
+* Fix a bug that 'svk update' can update meta data of checkout but not
+  the file contents in some cases.  This caused the checkout to
+  contain changes reverting what is in the repository.
+
+* Fix a bug mirror state can be inconsistent when 'svk cp' use with
+  non-canonical paths.
+
+* Typo fixes in error message. [mb]
+
 [Changes for 1.05 - 6 Oct 2005]
 
 * Make use of the new svn API (fs_closest_copy) when available. This
