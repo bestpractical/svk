@@ -1,5 +1,7 @@
 bin/svk
 CHANGES
+contrib/svk-completion.pl
+contrib/svkopendiff
 inc/ExtUtils/AutoInstall.pm
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
