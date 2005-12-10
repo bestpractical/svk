@@ -46,7 +46,7 @@ append_file ("$corpath_default/T/xd", "more content\n");
 $svk->commit ('-m', 'second local modification from branch', "$corpath_default");
 
 chdir ($corpath_default);
-is_output ($svk, "push", [], [
+is_sorted_output ($svk, "push", [], [
         "Auto-merging (0, 6) /l to /m (base /m:3).",
         "===> Auto-merging (0, 4) /l to /m (base /m:3).",
         "Merging back to mirror source $uri/A.",
