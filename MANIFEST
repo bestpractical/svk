@@ -172,6 +172,7 @@ t/26revert-remove.t
 t/26revert.t
 t/27mkdir.t
 t/28info.t
+t/29update-mix.t
 t/30annotate.t
 t/31cat.t
 t/32list.t

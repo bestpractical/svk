@@ -477,17 +477,20 @@ sub create_xd_root {
 
     my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});
 
-    return (undef, $fs->revision_root
-	    ($self->{checkout}->get ($paths[0] || $copath)->{revision}))
+    # In the simple case - only one revision entry found, it can be
+    # for some descendents.  If so we actually need to construct
+    # txnroot.
+    my ($simple, $revbase) = $self->{checkout}->get($paths[0] || $copath);
+    unshift @paths, $revbase unless $revbase eq $copath;
+    return (undef, $fs->revision_root($simple->{revision}))
 	if $#paths <= 0;
 
     my $pool = SVN::Pool->new;
-    my $base_rev;
     for (@paths) {
 	my $cinfo = $self->{checkout}->get ($_);
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	unless ($root) {
-	    $base_rev = $cinfo->{revision};
+	    my $base_rev = $cinfo->{revision};
 	    $txn = $fs->begin_txn ($base_rev, $arg{pool});
 	    $root = $txn->root($arg{pool});
 	    if ($base_rev == 0) {
@@ -501,7 +504,8 @@ sub create_xd_root {
 	    }
 	    next;
 	}
-	next if $cinfo->{revision} == $base_rev;
+	my ($parent) = get_anchor(0, $path);
+	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
 	$root->delete ($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
