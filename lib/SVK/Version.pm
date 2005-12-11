@@ -1,4 +1,5 @@
 package SVK;
+use strict;
 
 our $VERSION = '1.06';
 
