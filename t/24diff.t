@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 29;
+use Test::More tests => 31;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -499,3 +499,15 @@ for (@$r6diffs)
 }
 is_output ($svk, 'diff', ['-N', '--revision', '4:6', '//A'],
 	   $r6diffs);
+
+$svk->mkdir(-pm => 'foo', '//fnord/baz/C');
+$svk->mkdir(-pm => 'foo', '//fnord/baz/D');
+$svk->ps(-m => 'bar', 'fnord' => 'value', '//fnord/baz/D');
+is_output($svk, 'diff', ['-r7:9', '//fnord/baz'],
+	  ['', 'Property changes on: D',
+	   '___________________________________________________________________',
+	   'Name: fnord',
+	   ' +value', '']);
+is_output_like($svk, 'merge', ['-r7:9', '//fnord/baz', '//fnord/baz/C', '-lm', 'baz', '-P-'],
+	       qr/Property changes on: D.*SVK PATCH BLOCK/s);
+

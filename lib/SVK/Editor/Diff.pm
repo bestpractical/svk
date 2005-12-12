@@ -205,6 +205,7 @@ sub output_prop_diff {
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
+    $self->{info}{$path}{added} = 1;
     return $path;
 }
 
