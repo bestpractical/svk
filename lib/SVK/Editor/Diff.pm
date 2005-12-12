@@ -268,6 +268,7 @@ sub output_prop_diff {
 
 sub add_directory {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
+    $self->{info}{$path}{added} = 1;
     if (defined $from_path) {
 	# XXX: print some garbage about this copy
 	$self->{dh}->store("/$path", { copyanchor => "/$path",
