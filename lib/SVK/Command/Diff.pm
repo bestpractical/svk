@@ -40,14 +40,14 @@ sub run {
 	if ($target2->isa('SVK::Path::Checkout')) {
 	    die loc("Invalid arguments.\n")
 		if $target->isa('SVK::Path::Checkout');
-	    $target->revision($r1) if $r1;
+	    $target = $target->new(revision => $r1) if $r1;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
 	    die loc("path %1 does not exist.\n", $target->report)
 		if $target->root->check_path ($target->path_anchor) == $SVN::Node::none;
 	}
     }
     else {
-	$target = $target->as_depotpath($r1) if $r1 && $r2;
+	$target = $target->new->as_depotpath($r1) if $r1 && $r2;
 	if ($target->isa('SVK::Path::Checkout')) {
 	    $target = $self->{xd}->target_condensed($target); # find anchor
 	    $target2 = $target->new;

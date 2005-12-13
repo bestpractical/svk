@@ -444,7 +444,7 @@ sub target_from_copath_maybe {
 	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
 	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
 	my ($rev, $subpath);
-	if (($view, $rev, $subpath) = $path =~ m{^/\^(\w+)\@(\d+)(.*)$}) {
+	if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
 	    ($path, $view) = SVK::Command->create_view ($repos, $view, $rev, $subpath);
 	}
 
@@ -740,6 +740,7 @@ sub depot_delta {
     my $editor = $arg{editor};
     use Data::Dumper;
     warn Dumper(\%arg) if $main::DEBUG;
+    Carp::cluck if $main::DEBUG;
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
 			   $editor, undef,

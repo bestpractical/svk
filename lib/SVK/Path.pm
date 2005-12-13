@@ -5,8 +5,8 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision view
-			     _inspector _pool));
+__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision
+			     _root _inspector _pool));
 
 =head1 NAME
 
@@ -33,30 +33,30 @@ sub new {
     else {
 #	Carp::cluck 'without depotpath';
     }
+    $self->refresh_revision unless defined $self->revision;
+    if (defined (my $view = delete $self->{view})) {
+	require SVK::Path::View;
+	$self = SVK::Path::View->new
+	    ( { %$self, view => $view } );
+    }
     if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath})) {
 	require SVK::Path::Checkout;
 	return SVK::Path::Checkout->real_new
 	    ( { copath => $copath,
 		report => $self->{report},
 		xd => $self->{xd},
-		source => $self->{source} ? $self->{source}->new(%$self) : $self });
+		source => $self });
 #	Carp::carp "implicit svk::path::checkout creation";
     }
-    $self->refresh_revision unless defined $self->revision;
     return $self;
 }
 
 sub refresh_revision {
     my ($self) = @_;
     $self->_inspector(undef);
+    $self->_root(undef);
     Carp::cluck unless $self->repos;
     $self->revision($self->repos->fs->youngest_rev);
-
-    # XXX: on creation, the view txn is currently recreated, try to avoid this
-    $self->view((SVK::Command->create_view($self->repos,
-					   $self->view->base.'/'.$self->view->name,
-					   $self->revision))[1])
-	if $self->view;
 
     return $self;
 }
@@ -73,7 +73,7 @@ sub _clone {
     my $cloned = Storable::dclone ($self);
     $cloned->repos($self->repos) if ref($self) eq 'SVK::Path';
     $self->{xd} = $cloned->{xd} = $xd if $xd;
-    $cloned->{_root} = $self->{_root} = $root;
+    $self->{_root} = $root;
     $cloned->{view} = $self->{view} = $view;
     $self->{_pool} = $pool;
     $self->{_inspector} = $inspector;
@@ -82,10 +82,13 @@ sub _clone {
 
 sub root {
     my $self = shift;
-    return $self->view->root
-	if $self->view;
-    return SVK::XD::Root->new($self->repos->fs->revision_root
-			      ($self->revision));
+
+    Carp::cluck unless defined $self->revision;
+    $self->_root(SVK::Root->new({ root => $self->repos->fs->revision_root
+				  ($self->revision) }))
+	unless $self->_root;
+
+    return $self->_root;
 }
 
 sub report { Carp::cluck if defined $_[1]; $_[0]->depotpath }
@@ -227,9 +230,6 @@ sub get_editor {
     ($editor, $post_handler) =
 	$self->_commit_editor($txn, $callback);
 
-    $editor = SVK::Editor::Rename->new(editor => $editor, rename_map => $self->view->rename_map)
-	if $self->view;
-
     return ($editor, $inspector,
 	    send_fulltext => 1,
 	    post_handler => $post_handler, # inconsistent!
@@ -338,8 +338,8 @@ sub depotpath {
     my $self = shift;
 
     Carp::cluck unless defined $self->depotname;
-    my $view = $self->view ? $self->view->spec : '';
-    return '/'.$self->depotname.$view.$self->{path};
+
+    return '/'.$self->depotname.$self->{path};
 }
 
 # depotpath only for now
@@ -389,6 +389,7 @@ sub _nearest_copy_svn {
     if ($root->isa(__PACKAGE__)) {
         ($root, $path) = ($root->root, $root->path);
     }
+    warn "==> ".$root->revision_root_revision." $path" if $main::DEBUG;
     my ($toroot, $topath) = $root->closest_copy($path, $ppool);
     return unless $toroot;
 
@@ -497,7 +498,7 @@ sub copied_from {
     my $root = $target->root;
     my $fromroot;
     while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
-	$target->revision($fromroot->revision_root_revision);
+	$target = $target->new(revision => $fromroot->revision_root_revision);
 	# Check for existence.
         # XXX This treats delete + copy in 2 separate revision as a rename
         # which may or may not be intended.

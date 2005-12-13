@@ -491,18 +491,22 @@ sub arg_co_maybe {
 	($path, $view) = SVK::Command->create_view ($repos, $view, $revision, $subpath);
     }
 
-    my $ret = SVK::Path::Checkout->new
+    $rev ||= $cinfo->{revision} if defined $copath;
+    my $ret = SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
-	  copath => $copath,
-	  report => $copath ? File::Spec->canonpath ($arg) : $arg,
 	  path => $path,
-	  xd => $self->{xd},
 	  view => $view,
 	  revision => $rev,
 	);
-    $ret = $ret->as_depotpath unless defined $copath;
+    $ret = SVK::Path::Checkout->real_new
+	({ source => $ret,
+	   copath => $copath,
+	   report => File::Spec->canonpath($arg),
+	   xd => $self->{xd},
+	 })
+	    if defined $copath;
     return $ret;
 }
 
@@ -518,7 +522,7 @@ sub arg_copath {
     my ($root);
     my ($view, $rev, $subpath);
 
-    if (($view, $rev, $subpath) = $path =~ m{^/\^(\w+)\@(\d+)(.*)$}) {
+    if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
 	($path, $view) = $self->create_view ($repos, $view, $rev, $subpath);
     }
 
@@ -551,12 +555,10 @@ sub create_view {
     require SVK::View;
     my $viewobj = SVK::View->new({name => $viewname, base => $viewbase, revision => $rev});
     $viewobj->pool(SVN::Pool->new);
-    my $txn = $fs->begin_txn($rev, $viewobj->pool);
-    $viewobj->txn($txn);
-    $viewobj->root($txn->root($viewobj->pool));
-    my $root = $viewobj->root;
+    my $root = $repos->fs->revision_root($rev);
     my $content = $root->node_prop ($viewbase, "svk:view:$viewname");
     my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
+    $viewobj->anchor(Path::Class::Dir->new_foreign('Unix', $anchor));
 
     $fs->revision_root ($rev)->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
 
@@ -564,20 +566,19 @@ sub create_view {
 	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";
 	my $abspath = ($anchor eq '/' ? '/' : "$anchor/").$path;
 	if ($del) {
-	    die "can't del with target" if $target;
-	    $root->delete ($abspath);
+	    $viewobj->add_map($abspath, undef);
 	}
 	else {
-	    # XXX: mkpdir
-	    SVN::Fs::copy ($fs->revision_root ($rev), $target,
-			   $root, $abspath);
-	    # XXX: translate to relative for mapping
-	    $abspath =~ s{^/}{};
-	    $target =~ s{^/}{};
 	    $viewobj->add_map($abspath, $target);
 	}
     }
-    return (defined $subpath ? $anchor eq '/' ? "/$subpath" : "$anchor/$subpath"
+
+
+    my $txn = $fs->begin_txn($rev, $viewobj->pool);
+
+    $viewobj->root( SVK::Root::View->new_from_view($txn, $viewobj) );
+    $subpath = '' unless defined $subpath;
+    return (length $subpath ? $anchor eq '/' ? "/$subpath" : "$anchor/$subpath"
 	    : $anchor, $viewobj);
 }
 

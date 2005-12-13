@@ -47,7 +47,11 @@ sub new {
     my $arg = {@_};
     Carp::cluck unless $arg->{repos};
     my $copath = delete $arg->{copath};
-    return $class->real_new( { source => SVK::Path->new(%$arg),
+    Carp::cluck unless defined $copath;
+    $arg->{revision} = $arg->{xd}{checkout}->get($copath)->{revision}
+	unless defined $arg->{revision};
+    return $class->real_new( { source => SVK::Path->new
+			       (%$arg),
 			       xd     => $arg->{xd},
 			       report => $arg->{report},
 			       copath => $copath });
@@ -56,15 +60,69 @@ sub new {
 sub root {
     my $self = shift;
     Carp::cluck unless $self->source;
-    return $self->source->view->root
-	if $self->source->view;
 
     unless ($self->xd) {
 	$self->xd(shift);
 	Carp::cluck unless $self->xd;
     }
     Carp::cluck,die unless defined $self->{copath};
-    $self->xd->xdroot(%{$self->source}, %$self);
+
+    return $self->create_xd_root;
+}
+
+sub create_xd_root {
+    my $self = shift;
+    my $copath = $self->copath($self->{copath_target});
+
+    my (undef, $coroot) = $self->xd->{checkout}->get($copath);
+    Carp::cluck $copath.YAML::Dump($self->xd->{checkout}) unless $coroot;
+    my @paths = $self->xd->{checkout}->find($coroot, {revision => qr'.*'});
+    my $tmp = $copath;
+    $tmp =~ s/^\Q$coroot//;
+    my $coroot_path = $self->path;
+    $coroot_path =~ s/\Q$tmp\E$// or return $self->source->root;
+    $coroot_path = '/' unless length $coroot_path;
+
+    my $base_root = $self->source->root;
+    return $base_root if $#paths <= 0;
+
+    my $pool = SVN::Pool->new;
+    my ($root, $base_rev);
+    for (@paths) {
+	my $cinfo = $self->xd->{checkout}->get($_);
+	my $path = abs2rel($_, $coroot => $coroot_path, '/');
+	unless ($root) {
+	    $root = $base_root->txn_root($self->pool);;
+	    $base_rev = $base_root->node_created_rev($path);
+	    if ($base_rev == 0) {
+		# for interrupted checkout, the anchor will be at rev 0
+		my @path = ();
+		for my $dir (File::Spec::Unix->splitdir($path)) {
+		    push @path, $dir;
+		    next unless length $dir;
+		    $root->make_dir(File::Spec::Unix->catdir(@path));
+		}
+	    }
+	    next;
+	}
+	my $parent = Path::Class::File->new_foreign('Unix', $path)->parent;
+	next if $cinfo->{revision} == $root->node_created_rev($parent);
+	my ($fromroot, $frompath) = $base_root->revision_root($path, $cinfo->{revision}, $pool);
+	$root->delete($frompath, $pool)
+	    if eval { $root->check_path ($frompath, $pool) != $SVN::Node::none };
+	unless ($cinfo->{'.deleted'}) {
+	    if ($frompath eq $path) {
+		SVN::Fs::revision_link( $fromroot->root,
+					$root->root, $path, $pool );
+	    }
+	    else {
+		SVN::Fs::copy( $fromroot, $frompath,
+			       $root->root, $path, $pool );
+	    }
+	}
+	$pool->clear;
+    }
+    return $root;
 }
 
 =head2 copath

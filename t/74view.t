@@ -1,27 +1,27 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 16;
+plan tests => 17;
 our $output;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test();
-
-my $tree = create_basic_tree ($xd, '//');
+$svk->mkdir('-m' => 'trunk', '//trunk');
+my $tree = create_basic_tree ($xd, '//trunk');
 my ($copath, $corpath) = get_copath ('view');
 
 $svk->ps ('-m', 'my view', 'svk:view:myview',
-	  '/
+	  '/trunk
  -B
  -A
-#  AQ/Q/qz /A/Q/qz
-  BSP  /B/S/P
-', '//');
-is_output($svk, 'ls', ['//^myview'],
+#  AQ/Q/qz /trunk/A/Q/qz
+  BSP  /trunk/B/S/P
+', '//trunk');
+is_output($svk, 'ls', ['//^trunk/myview'],
 	  ['BSP/', 'C/', 'D/', 'me']);
 
-is_output($svk, 'checkout', ['//^myview', $copath],
-	  ['Syncing //(/) in '.__($corpath)." to 3.",
+is_output($svk, 'checkout', ['//^trunk/myview', $copath],
+	  ['Syncing //trunk(/trunk) in '.__($corpath)." to 4.",
 	   map { __($_) } "A   $copath/me",
 	   "A   $copath/C",
 	   "A   $copath/C/R",
@@ -37,8 +37,8 @@ ok (-d "$copath/AQ/Q");
 }
 ok (!-e "$copath/A/Q/qu");
 ok (-e "$copath/BSP");
-is_output ($svk, 'status', [$copath], []);
 
+is_output ($svk, 'status', [$copath], []);
 append_file ("$copath/BSP/pe", "foobar\n");
 is_output ($svk, 'st', [$copath],
 	   [__"M   $copath/BSP/pe"]);
@@ -69,31 +69,40 @@ $svk->add ("$copath/BSP/newfile");
 append_file ("$copath/BSP/pe", "foobar\n");
 
 is_output($svk, 'commit', ['-m', 'commit from view', $copath],
-	  ['Committed revision 4.']);
+	  ['Committed revision 5.']);
+
 is_output($svk, 'st', [$copath], []);
+
+is_output($svk, 'up', [$copath],
+	  ['Syncing //^trunk/myview@4(/trunk) in '.__($corpath)." to 5."]);
+
+$svk->diff('-r4:5', '//');
 
 rmtree [$copath];
 
-$svk->checkout ('//', $copath);
+$svk->checkout ('//trunk', $copath);
+
 ok(-e "$copath/B/S/P/newfile", 'file created via view commit');
 
-is_output($svk, 'switch', ['//^myview', $copath],
-	  [ "Syncing //(/) in $corpath to 4.",
+is_output($svk, 'switch', ['//^trunk/myview', $copath],
+	  [ "Syncing //trunk(/trunk) in $corpath to 5.",
 	    map { __($_) }
 	    "A   $copath/BSP",
 	    "A   $copath/BSP/pe",
 	    "A   $copath/BSP/newfile",
 	    "D   $copath/A",
 	    "D   $copath/B"]);
-$svk->up('-r3', "$copath/BSP");
-warn $output;
+
+#$svk->up('-r3', "$copath/BSP"); # segfault
+$svk->up('-r4', "$copath/BSP");
+
 $svk->ps ('-m', 'A view', 'svk:view:view-A',
-	  '/A
+	  '/trunk/A
  -Q
- qz   /A/Q/qz
- BSP  /B/S/P
-', '//A');
+ qz   /trunk/A/Q/qz
+ BSP  /trunk/B/S/P
+', '//trunk/A');
 
-
-is_output($svk, 'ls', ['//^A/view-A'],
+our $DEBUG=1;
+is_output($svk, 'ls', ['//^trunk/A/view-A'],
 	  ['BSP/', 'be', 'qz']);
