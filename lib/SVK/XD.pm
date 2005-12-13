@@ -738,9 +738,6 @@ sub depot_delta {
     my ($self, %arg) = @_;
     my @root = map {$_->isa ('SVK::Root') ? $_->root : $_} @arg{qw/oldroot newroot/};
     my $editor = $arg{editor};
-    use Data::Dumper;
-    warn Dumper(\%arg) if $main::DEBUG;
-    Carp::cluck if $main::DEBUG;
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
 			   $editor, undef,

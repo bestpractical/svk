@@ -39,7 +39,6 @@ sub run {
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
-	warn $target->revision if $main::DEBUG;
 	my $update_target = $target
 	    ->as_depotpath(defined $self->{rev} ? $self->resolve_revision($target->new,$self->{rev}) : $target->repos->fs->youngest_rev);
 	$update_target->path($self->{update_target_path})

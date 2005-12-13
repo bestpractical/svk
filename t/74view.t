@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 17;
+plan tests => 23;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -93,8 +93,32 @@ is_output($svk, 'switch', ['//^trunk/myview', $copath],
 	    "D   $copath/A",
 	    "D   $copath/B"]);
 
-#$svk->up('-r3', "$copath/BSP"); # segfault
-$svk->up('-r4', "$copath/BSP");
+is_output($svk, 'up', ['-r3', "$copath/BSP"],
+	  ['Syncing //^trunk/myview@5(/trunk/BSP) in '.__($corpath."/BSP").' to 3.',
+	   __("U   $copath/BSP/pe"),
+	   __("D   $copath/BSP/newfile")]);
+
+is_output($svk, 'up', [$copath],
+	  ['Syncing //^trunk/myview@5(/trunk) in '.__($corpath).' to 5.',
+	   __("U   $copath/BSP/pe"),
+	   __("A   $copath/BSP/newfile")]);
+
+is_output($svk, 'up', [-r2 => "$copath/BSP"],
+	  ['Syncing //^trunk/myview@5(/trunk) in '.__($corpath).' to 2.',
+	   __("D   $copath/BSP")]);
+
+is_output($svk, 'st', [$copath], []);
+
+is_output($svk, 'up', [$copath],
+	  ['Syncing //^trunk/myview@5(/trunk) in '.__($corpath).' to 5.',
+	   __("A   $copath/BSP"),
+	   __("A   $copath/BSP/pe"),
+	   __("A   $copath/BSP/newfile")]);
+
+is_output($svk, 'up', ['-r4', "$copath/BSP"],
+	  ['Syncing //^trunk/myview@5(/trunk/BSP) in '.__($corpath."/BSP").' to 4.',
+	   __("U   $copath/BSP/pe"),
+	   __("D   $copath/BSP/newfile")]);
 
 $svk->ps ('-m', 'A view', 'svk:view:view-A',
 	  '/trunk/A
@@ -103,6 +127,5 @@ $svk->ps ('-m', 'A view', 'svk:view:view-A',
  BSP  /trunk/B/S/P
 ', '//trunk/A');
 
-our $DEBUG=1;
 is_output($svk, 'ls', ['//^trunk/A/view-A'],
 	  ['BSP/', 'be', 'qz']);

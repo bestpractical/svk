@@ -553,10 +553,15 @@ sub create_view {
     my ($viewbase, $viewname) = ($viewspec->parent, $viewspec->basename);
     $rev = $fs->youngest_rev unless defined $rev;
     require SVK::View;
-    my $viewobj = SVK::View->new({name => $viewname, base => $viewbase, revision => $rev});
+    my $viewobj = SVK::View->new
+	({ name => $viewname, base => $viewbase,
+	   revision => $rev, pool => SVN::Pool->new });
     $viewobj->pool(SVN::Pool->new);
     my $root = $repos->fs->revision_root($rev);
     my $content = $root->node_prop ($viewbase, "svk:view:$viewname");
+    die loc("Unable to create view '%1' from on %2 for revision %3.\n",
+	    $viewname, $viewbase, $rev)
+	unless defined $content;
     my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
     $viewobj->anchor(Path::Class::Dir->new_foreign('Unix', $anchor));
 
@@ -573,12 +578,8 @@ sub create_view {
 	}
     }
 
-
-    my $txn = $fs->begin_txn($rev, $viewobj->pool);
-
-    $viewobj->root( SVK::Root::View->new_from_view($txn, $viewobj) );
     $subpath = '' unless defined $subpath;
-    return (length $subpath ? $anchor eq '/' ? "/$subpath" : "$anchor/$subpath"
+    return (length $subpath ? $anchor eq '/' ? $subpath : $anchor.$subpath
 	    : $anchor, $viewobj);
 }
 

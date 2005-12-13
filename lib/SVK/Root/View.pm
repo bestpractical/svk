@@ -48,13 +48,14 @@ sub rename_check {
 }
 
 sub new_from_view {
-    my ($class, $txn, $view) = @_;
+    my ($class, $fs, $view, $revision) = @_;
     my $pool = SVN::Pool->new;
+    my $txn = $fs->begin_txn($revision, $view->pool);
+
     my $self = $class->new({ txn => $txn, root => $txn->root($pool),
 			     view => $view, pool => $pool });
-    weaken($self->{view});
 
-    $self->_apply_view_to_txn($txn, $view, $view->revision);
+    $self->_apply_view_to_txn($txn, $view, $revision);
 
     return $self;
 }
@@ -62,15 +63,18 @@ sub new_from_view {
 sub _apply_view_to_txn {
     my ($self, $txn, $view, $revision) = @_;
     my $root = $txn->root($view->pool);
+    my $origroot = $root->fs->revision_root($revision);
     for (@{$view->view_map}) {
-	my ($path, $dest) = @$_;
-	if (defined $dest) {
+	my ($path, $orig) = @$_;
+
+	if (defined $orig) {
 	    # XXX: mkpdir
-	    SVN::Fs::copy ($root->fs->revision_root($revision), $dest,
-			   $root, $path);
+	    SVN::Fs::copy( $origroot, $orig,
+			   $root, $path)
+		    if $origroot->check_path($orig);
 	}
 	else {
-	    $root->delete ($path);
+	    $root->delete($path);
 	}
     }
     return;

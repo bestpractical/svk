@@ -15,7 +15,6 @@ sub new {
 	%$self = (%$self, @_, source => $source->new);
 	if ($self->revision != $oldrev) {
 	     $source = $source->new(revision => $self->revision) ;
-	     $self->_recreate_view;
 	}
 	$class->source($source);
 	die unless $self->source;
@@ -28,17 +27,19 @@ sub new {
 					      });
 }
 
-sub root {
+sub _root {
     my $self = shift;
-    Carp::cluck unless $self->view;
-    return $self->view->root;
+
+    return SVK::Root::View->new_from_view
+	( $self->repos->fs,
+	  $self->view, $self->revision );
 }
 
 sub refresh_revision {
     my $self = shift;
-    $self->SUPER::refresh_revision;
 
-$self->_recreate_view;
+    $self->SUPER::refresh_revision;
+    $self->_recreate_view;
 
     return $self;
 }
