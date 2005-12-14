@@ -2,7 +2,7 @@
 use Test::More tests => 15;
 use strict;
 require 't/tree.pl';
-use Clone;
+require Storable;
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -56,7 +56,7 @@ $xd->lock(__("$corpath/A"));
 $xd->{checkout}->store(__("$corpath/A"), { revision => 1});
 #$xd->store;
 
-my $xd2 = Clone::clone($xd);
+my $xd2 = Storable::dclone($xd);
 my $svk2 = SVK->new(xd=> $xd2, output => \$output2);
 { local $$ = $$+1;
   $xd2->load;
