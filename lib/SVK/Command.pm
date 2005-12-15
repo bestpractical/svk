@@ -9,7 +9,7 @@ use SVK::I18N;
 use Encode;
 
 use Class::Autouse
-    qw( Path::Class SVK::Target SVK::Notify
+    qw( SVK::Target SVK::Notify
 	SVK::Editor::Status SVK::Editor::Diff
 	Pod::Simple::Text SVK::Merge );
 
