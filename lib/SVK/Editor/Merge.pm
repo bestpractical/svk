@@ -12,6 +12,9 @@ use autouse 'SVK::Util'
 
 __PACKAGE__->mk_accessors(qw(inspector notify storage));
 
+use Class::Autouse qw(SVK::Inspector::Root SVK::Notify
+		      Data::Hierarchy IO::Digest);
+
 use constant FH => 0;
 use constant FILENAME => 1;
 use constant CHECKSUM => 2;

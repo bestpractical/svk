@@ -142,7 +142,6 @@ sub rev_depends_on {
     require SVK::Editor::Merge;
     require SVK::Notify;
     require Encode;
-    require IO::Digest;
     my $meditor = SVK::Editor::Merge->new
 	( base_anchor => '',
 	  base_root => $fs->revision_root ($rev-1),
