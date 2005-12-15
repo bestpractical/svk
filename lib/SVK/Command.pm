@@ -570,10 +570,17 @@ sub create_view {
     for (@content) {
 	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";
 	my $abspath = ($anchor eq '/' ? '/' : "$anchor/").$path;
+	if (defined $target) {
+	    $target = Path::Class::Dir->new_foreign('Unix', $target);
+	    $target = $target->absolute($anchor)
+		unless $target->is_absolute;
+	}
 	if ($del) {
+	    warn "path not required" if defined $target;
 	    $viewobj->add_map($abspath, undef);
 	}
 	else {
+	    die "path required" unless defined $target;
 	    $viewobj->add_map($abspath, $target);
 	}
     }

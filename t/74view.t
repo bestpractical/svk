@@ -123,7 +123,7 @@ is_output($svk, 'up', ['-r4', "$copath/BSP"],
 $svk->ps ('-m', 'A view', 'svk:view:view-A',
 	  '/trunk/A
  -Q
- qz   /trunk/A/Q/qz
+ qz   Q/qz
  BSP  /trunk/B/S/P
 ', '//trunk/A');
 
