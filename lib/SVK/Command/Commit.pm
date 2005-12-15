@@ -12,7 +12,7 @@ use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder );
 
-use Class::Autouse qw( SVK::Editor::Rename );
+use Class::Autouse qw( SVK::Editor::Rename SVK::Editor::Merge );
 
 sub options {
     ('m|message=s'  => 'message',
