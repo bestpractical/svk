@@ -6,6 +6,8 @@ use base 'SVK::Path';
 
 __PACKAGE__->mk_accessors(qw(xd report));
 
+use Class::Autouse qw(SVK::Editor::XD SVK::Inspector::XD);
+
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel get_encoder to_native );
 
 =head1 NAME

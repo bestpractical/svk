@@ -8,6 +8,8 @@ use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw(repos repospath path depotname revision
 			     _inspector _pool));
 
+use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
+
 =head1 NAME
 
 SVK::Path - SVK path class

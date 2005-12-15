@@ -10,6 +10,11 @@ use SVK::I18N;
 use Encode;
 use constant subcommands => '*';
 
+use Class::Autouse
+    qw( Path::Class SVK::Path::Checkout SVK::Notify
+	SVK::Editor::Status SVK::Editor::Diff
+	Pod::Simple::Text SVK::Merge );
+
 =head1 NAME
 
 SVK::Command - Base class and dispatcher for SVK commands

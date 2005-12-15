@@ -25,6 +25,7 @@ sub AUTOLOAD {
     my ($self, @arg) = @_;
     my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
+    return if $func =~ m/^[A-Z]/;
 
     if ($func =~ m/^(?:add|open|delete)/) {
 	return $self->{target_baton}

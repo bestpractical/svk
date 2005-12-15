@@ -3,7 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 # Load classes on demand.
-use Class::Autouse qw(:superloader);
+use Class::Autouse qw(SVK::Command);
 
 use SVN::Core;
 BEGIN {

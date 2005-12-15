@@ -10,6 +10,7 @@ use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir s
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
 		  from_native to_native get_encoder get_depot_anchor );
+use Data::Hierarchy;
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML'	 => qw(LoadFile DumpFile);
@@ -17,9 +18,7 @@ use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
-use Path::Class ();
-
-
+use Class::Autouse qw( Path::Class SVK::Editor::Delay );
 
 =head1 NAME
 

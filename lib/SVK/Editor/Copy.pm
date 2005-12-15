@@ -38,7 +38,6 @@ resolver.
 
 =cut
 
-use SVK::Editor::Composite;
 use SVK::Util qw( get_depot_anchor );
 
 sub new {
@@ -295,6 +294,7 @@ sub replay_add_history {
 		 target => $target, target_baton => $baton );
     }
 
+    require SVK::Editor::Composite;
     my $editor = SVK::Editor::Composite->new
 	( master_editor => $self, %arg );
 
@@ -305,6 +305,7 @@ sub replay_add_history {
 
     warn "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
     warn "==> sample" if $main::DEBUG;
+    require SVK::Editor::Delay;
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
 	      revision_root($self->{incopy}[-1]{fromrev}),
