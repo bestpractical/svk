@@ -8,6 +8,11 @@ use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
 use SVK::I18N;
 use Encode;
 
+use Class::Autouse
+    qw( Path::Class SVK::Target SVK::Notify
+	SVK::Editor::Status SVK::Editor::Diff
+	Pod::Simple::Text SVK::Merge );
+
 =head1 NAME
 
 SVK::Command - Base class and dispatcher for SVK commands

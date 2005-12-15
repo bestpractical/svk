@@ -462,6 +462,7 @@ sub close_file {
 	$eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '<');
 	binmode $mfh, $eol_layer or die $! if $eol_layer;
 
+	require IO::Digest;
 	$iod = IO::Digest->new ($mfh, 'MD5');
 
 	if ($self->_overwrite_local_file ($fh, $path, $mfh, $pool)) {

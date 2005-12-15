@@ -195,6 +195,7 @@ Returns corresponding L<SVK::Target::Universal> object.
 =cut
 
 sub universal {
+    require SVK::Target::Universal;
     SVK::Target::Universal->new ($_[0]);
 }
 

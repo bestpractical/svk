@@ -5,7 +5,6 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Editor::Delay;
 use SVK::Command::Log;
 use SVK::Merge;
 use SVK::Util qw( get_buffer_from_editor find_svm_source resolve_svm_source traverse_history );
