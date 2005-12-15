@@ -64,6 +64,7 @@ sub _apply_view_to_txn {
     my ($self, $txn, $view, $revision) = @_;
     my $root = $txn->root($view->pool);
     my $origroot = $root->fs->revision_root($revision);
+
     for (@{$view->view_map}) {
 	my ($path, $orig) = @$_;
 
@@ -74,7 +75,16 @@ sub _apply_view_to_txn {
 		    if $origroot->check_path($orig);
 	}
 	else {
-	    $root->delete($path);
+	    if ($path =~ m/\*$/) {
+		my $parent = $path->parent;
+		my $entries = $root->dir_entries($parent);
+		for (keys %$entries) {
+		    $root->delete($parent->subdir($_));
+		}
+	    }
+	    else {
+		$root->delete($path);
+	    }
 	}
     }
     return;

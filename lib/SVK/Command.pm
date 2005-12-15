@@ -569,7 +569,8 @@ sub create_view {
 
     for (@content) {
 	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";
-	my $abspath = ($anchor eq '/' ? '/' : "$anchor/").$path;
+	my $abspath = Path::Class::Dir->new_foreign('Unix', $path)
+	    ->absolute($anchor);
 	if (defined $target) {
 	    $target = Path::Class::Dir->new_foreign('Unix', $target);
 	    $target = $target->absolute($anchor)
