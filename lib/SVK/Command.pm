@@ -11,7 +11,7 @@ use Encode;
 use constant subcommands => '*';
 
 use Class::Autouse
-    qw( Path::Class SVK::Path::Checkout SVK::Notify
+    qw( Path::Class SVK::Path SVK::Path::Checkout SVK::Notify
 	SVK::Editor::Status SVK::Editor::Diff
 	Pod::Simple::Text SVK::Merge );
 
