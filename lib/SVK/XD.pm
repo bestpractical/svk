@@ -18,7 +18,7 @@ use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 
-use Class::Autouse qw( SVK::Editor::XD );
+use Class::Autouse qw( SVK::Editor::XD SVK::Editor::Delay );
 
 
 =head1 NAME
