@@ -41,7 +41,7 @@ sub rename_map {
 	    [ map {
 		Path::Class::Dir->new_foreign('Unix', $_)->relative($anchor)
 		} @$_ ] : ()
-    } @{$self->view_map}];
+    } grep { defined $_->[1] && $_->[0] ne $_->[1] } @{$self->view_map}];
 }
 
 1;

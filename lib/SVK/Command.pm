@@ -598,7 +598,7 @@ sub arg_depotpath {
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
     my $view;
     from_native ($path, 'path', $self->{encoding});
-    if (($view) = $path =~ m{^/\^([\w/]+)$}) {
+    if (($view) = $path =~ m{^/\^([\w\-_/]+)$}) {
 	($path, $view) = $self->create_view($repos, $view, $rev);
     }
 

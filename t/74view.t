@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 23;
+plan tests => 27;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -129,3 +129,28 @@ $svk->ps ('-m', 'A view', 'svk:view:view-A',
 
 is_output($svk, 'ls', ['//^trunk/A/view-A'],
 	  ['BSP/', 'be', 'qz']);
+
+$svk->ps ('-m', 'A view', 'svk:view:view-A',
+	  '/trunk/A
+ -*
+ Q    Q
+', '//trunk/A');
+rmtree [$copath];
+
+is_output($svk, 'co', ['//^trunk/A/view-A', $copath],
+	  ['Syncing //trunk/A(/trunk/A) in '.__($corpath).' to 7.',
+"A   $copath/Q",
+"A   $copath/Q/qu",
+"A   $copath/Q/qz",
+" U  $copath"
+]);
+
+is_output($svk, 'rm', ["$copath/Q/qz"],
+	  ["D   $copath/Q/qz"]);
+
+is_output($svk, 'ci', [-m => 'foo', $copath],
+	  ['Committed revision 8.']);
+
+is_output($svk, 'up', ["$copath"],
+	  ['Syncing //^trunk/A/view-A@7(/trunk/A) in '.__($corpath).' to 8.']);
+
