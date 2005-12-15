@@ -118,6 +118,7 @@ sub run {
 	$editor->{report} = $report;
 
 	require SVK::Editor::Copy;
+	require SVK::Merge;
 	$editor = SVK::Editor::Copy->new
 	    ( _editor => [$editor],
 	      base_root => $target->root,
@@ -125,7 +126,7 @@ sub run {
 	      base_rev => $target->{revision},
 	      copyboundry_rev => $target->{revision},
 	      copyboundry_root => $target->root,
-	      merge => bless ({ xd => $self->{xd} }, 'SVK::Merge'),
+	      merge => SVK::Merge->new( xd => $self->{xd} ), # XXX: hack
 	      base => $target,
 	      src => $target2,
 	      dst => $target2,
