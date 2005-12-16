@@ -118,6 +118,7 @@ sub _get_logs {
 }
 
 our $chg;
+require SVN::Fs;
 $chg->[$SVN::Fs::PathChange::modify] = 'M';
 $chg->[$SVN::Fs::PathChange::add] = 'A';
 $chg->[$SVN::Fs::PathChange::delete] = 'D';
