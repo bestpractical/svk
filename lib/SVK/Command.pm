@@ -546,6 +546,17 @@ Argument is a depotpath, including the slashes and depot name.
 
 =cut
 
+sub _resolve_anchor {
+    my ($repos, $base, $anchor) = @_;
+    # XXX
+    $anchor = Path::Class::Dir->new_foreign('Unix', $anchor);
+    $anchor =~ s/^\&\:// or return $anchor;
+    $anchor = Path::Class::Dir->new_foreign('Unix', $anchor);
+    my ($uuid, $path) = find_svm_source($repos, $base);
+    return $anchor->relative($path)->absolute($base);
+
+}
+
 sub create_view {
     my ($self, $repos, $view, $rev, $subpath) = @_;
     my $fs = $repos->fs;
@@ -557,15 +568,19 @@ sub create_view {
 	({ name => $viewname, base => $viewbase,
 	   revision => $rev, pool => SVN::Pool->new });
     $viewobj->pool(SVN::Pool->new);
-    my $root = $repos->fs->revision_root($rev);
+    my $root = $fs->revision_root($rev);
     my $content = $root->node_prop ($viewbase, "svk:view:$viewname");
     die loc("Unable to create view '%1' from on %2 for revision %3.\n",
 	    $viewname, $viewbase, $rev)
 	unless defined $content;
     my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
-    $viewobj->anchor(Path::Class::Dir->new_foreign('Unix', $anchor));
+    $anchor = _resolve_anchor($repos, $viewbase, $anchor);
+    die loc("Unable to create view '%1' from on %2 for revision %3.\n",
+	    $viewname, $viewbase, $rev)
+	unless $root->check_path("$anchor");
+    $viewobj->anchor($anchor);
 
-    $fs->revision_root ($rev)->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
+    $root->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
 
     for (@content) {
 	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";
@@ -588,7 +603,7 @@ sub create_view {
 
     $subpath = '' unless defined $subpath;
     return (length $subpath ? $anchor eq '/' ? $subpath : $anchor.$subpath
-	    : $anchor, $viewobj);
+	    : $anchor->stringify, $viewobj);
 }
 
 sub arg_depotpath {
