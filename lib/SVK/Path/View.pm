@@ -40,6 +40,7 @@ sub _root {
 sub refresh_revision {
     my $self = shift;
 
+#    $self->source->refresh_revision;
     $self->SUPER::refresh_revision;
     $self->_recreate_view;
 

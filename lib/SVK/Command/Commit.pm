@@ -348,8 +348,7 @@ sub committed_commit {
                 )
             }
 	}
-	# XXX: This breaks keyword as FileRev requires revision root!
-	my $root = $target->refresh_revision->root;
+	my $root = $target->refresh_revision->source->root;
 	# update keyword-translated files
 	my $encoder = get_encoder;
 	for (@$targets) {

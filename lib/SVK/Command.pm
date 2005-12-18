@@ -133,6 +133,7 @@ sub run_command {
 	my $error = $_[0];
 	my $error_message = $error->expanded_message();
 	$error->clear();
+	Carp::cluck if $error_message =~ m/not a revision root/;
 	if ($self->handle_error ($error)) {
 	    die \'error handled';
         }

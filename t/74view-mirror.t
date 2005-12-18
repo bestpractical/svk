@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 10;
+plan tests => 11;
 our $output;
 
 # build another tree to be mirrored ourself
