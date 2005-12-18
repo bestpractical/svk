@@ -39,10 +39,18 @@ sub run {
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
-	my $update_target = $target
-	    ->as_depotpath(defined $self->{rev} ? $self->resolve_revision($target->new,$self->{rev}) : $target->repos->fs->youngest_rev);
+	my $update_target = $target->source->new
+	    (revision => defined $self->{rev} ?
+	     $self->resolve_revision($target->new,$self->{rev}) :
+	     $target->repos->fs->youngest_rev);
+
 	$update_target->path($self->{update_target_path})
 	    if defined $self->{update_target_path};
+
+	# always use the latest view
+	if ($update_target->isa('SVK::Path::View')) {
+	    $update_target->refresh_revision;
+	}
         # Because merging under the copy anchor is unsafe, we always merge
         # to the most immediate copy anchor under copath root.
         my ($merge_target, $copied_from) = $self->find_checkout_anchor (
@@ -99,9 +107,11 @@ sub do_update {
     die loc("path %1 does not exist.\n", $update_target->path_anchor)
 	if $kind == $SVN::Node::none;
 
+    my $content_revision = $update_target->isa('SVK::Path::View') ?
+	$update_target->source->revision : $update_target->revision;
     print loc("Syncing %1(%2) in %3 to %4.\n", $cotarget->depotpath,
 	      $cotarget->path_anchor, $cotarget->copath,
-	      $update_target->revision);
+	      $content_revision);
 
     if ($kind == $SVN::Node::file ) {
 	$cotarget->anchorify;
@@ -136,7 +146,7 @@ sub do_update {
 	  store_path => $update_target->path_anchor,
 	  update => $self->{check_only} ? 0 : 1,
 	  oldroot => $xdroot, newroot => $newroot,
-	  revision => $update_target->revision,
+	  revision => $content_revision,
 	);
     $merge->run($editor, %cb, inspector => $inspector);
 

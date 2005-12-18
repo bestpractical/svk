@@ -11,13 +11,12 @@ use SVK::Util qw( abs2rel );
 sub new {
     my $class = shift;
     if (ref $class) {
+	my %arg = @_;
 	my $source = delete $class->{source} or Carp::cluck;
 	my $oldrev = $class->revision;
 	my $self = $class->_clone;
-	%$self = (%$self, @_, source => $source->new);
-	if ($self->revision != $oldrev) {
-	     $source = $source->new(revision => $self->revision) ;
-	}
+	my $revision = delete $arg{revision};
+	%$self = (%$self, %arg, source => $source->new(revision => $revision));
 	$class->source($source);
 	die unless $self->source;
 	return $self;
@@ -34,13 +33,12 @@ sub _root {
 
     return SVK::Root::View->new_from_view
 	( $self->repos->fs,
-	  $self->view, $self->revision );
+	  $self->view, $self->source->revision );
 }
 
 sub refresh_revision {
     my $self = shift;
 
-#    $self->source->refresh_revision;
     $self->SUPER::refresh_revision;
     $self->_recreate_view;
 

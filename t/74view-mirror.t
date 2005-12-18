@@ -90,7 +90,10 @@ $svk->ps ('-m', 'swap V & K', 'svk:view:viewA',
  K   V
 ', '//');
 
-# XXX: todo
 is_output($svk, 'up', [$copath],
-	  ['Syncing //^viewA@29(/prj/trunk) in '.__($corpath).' to 31.']);
-
+	  ['Syncing //^viewA@29(/prj/trunk) in '.__($corpath).' to 31.',
+	   map { __($_) }
+	   "D   $copath/V/Q/qu",
+	   "D   $copath/V/Q/qz",
+	   "A   $copath/K/Q/qu",
+	   "A   $copath/K/Q/qz"]);

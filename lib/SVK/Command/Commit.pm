@@ -348,7 +348,8 @@ sub committed_commit {
                 )
             }
 	}
-	my $root = $target->refresh_revision->source->root;
+	# XXX: fix view/path revision insanity
+	my $root = $target->source->new(revision=>undef)->root;
 	# update keyword-translated files
 	my $encoder = get_encoder;
 	for (@$targets) {
