@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan tests => 2;
+plan tests => 10;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -32,3 +32,65 @@ $svk->sync('//prj');
 
 is_output($svk, 'ls', ['//^prj/trunk/myview'],
 	  ['K/', 'S/', 'V/']);
+
+is_output($svk, 'co', ['//^prj/trunk/myview', $copath],
+	  ['Syncing //prj/trunk(/prj/trunk) in '.__($corpath).' to 27.',
+	   map { __($_) }
+	   (map {
+	     ("A   $copath/$_",
+	      "A   $copath/$_/Q",
+	      "A   $copath/$_/Q/qu",
+	      "A   $copath/$_/Q/qz",
+	      "A   $copath/$_/be") } qw(S V K)),
+	   " U  $copath",
+	  ]);
+
+is_output($svk, 'rm', ["$copath/K/Q/qu"],
+	  [__("D   $copath/K/Q/qu")]);
+
+is_output($svk, 'ci', [-m => 'kill Q', "$copath/K/Q"],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri/project.",
+	   'Merge back committed as revision 27.',
+	   "Syncing $uri/project",
+	   'Retrieving log information from 27 to 27',
+	   'Committed revision 28 from revision 27.']);
+
+is_output($svk, 'st', [$copath], []);
+
+is_output($svk, 'up', [$copath],
+	  ['Syncing //^prj/trunk/myview@27(/prj/trunk) in '.__($corpath).' to 28.']);
+$svk->ps ('-m', 'my local view', 'svk:view:viewA',
+	  '/prj/trunk
+ -*
+ S   S
+ V   V
+ K   K
+', '//');
+
+is_output($svk, 'switch', ["//^viewA", $copath],
+	  ['Syncing //^prj/trunk/myview@27(/prj/trunk) in '.__($corpath).' to 29.']);
+
+is_output($svk, 'rm', ["$copath/K/Q/qz"],
+	  [__("D   $copath/K/Q/qz")]);
+
+is_output($svk, 'ci', [-m => 'kill Q', "$copath/K/Q"],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri/project.",
+	   'Merge back committed as revision 28.',
+	   "Syncing $uri/project",
+	   'Retrieving log information from 28 to 28',
+	   'Committed revision 30 from revision 28.']);
+
+$svk->ps ('-m', 'swap V & K', 'svk:view:viewA',
+	  '/prj/trunk
+ -*
+ S   S
+ V   K
+ K   V
+', '//');
+
+# XXX: todo
+is_output($svk, 'up', [$copath],
+	  ['Syncing //^viewA@29(/prj/trunk) in '.__($corpath).' to 31.']);
+

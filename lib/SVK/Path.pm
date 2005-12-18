@@ -148,7 +148,6 @@ sub _commit_editor {
 		  find_prev_copy ($self->repos->fs, $_[0]);
 		  $callback->(@_) if $callback; }, $pool
 	  ));
-
     return ($editor, \$post_handler);
 }
 
@@ -209,9 +208,11 @@ sub get_editor {
 		   print loc("Merge back committed as revision %1.\n", $rev);
 		   $post_handler->($rev) if $post_handler;
 		   $m->run($rev);
+		   # XXX: find_local_rev can fail
 		   $callback->($m->find_local_rev($rev), @_)
 		       if $callback }
 	    );
+	$editor->{_debug}++ if $main::DEBUG;
 	return ($editor, $inspector,
 		mirror => $m,
 		post_handler => \$post_handler,
@@ -389,7 +390,6 @@ sub _nearest_copy_svn {
     if ($root->isa(__PACKAGE__)) {
         ($root, $path) = ($root->root, $root->path);
     }
-    warn "==> ".$root->revision_root_revision." $path" if $main::DEBUG;
     my ($toroot, $topath) = $root->closest_copy($path, $ppool);
     return unless $toroot;
 

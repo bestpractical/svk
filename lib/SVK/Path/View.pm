@@ -6,6 +6,8 @@ use base 'SVK::Path';
 
 __PACKAGE__->mk_accessors(qw(source view));
 
+use SVK::Util qw( abs2rel );
+
 sub new {
     my $class = shift;
     if (ref $class) {
@@ -47,7 +49,12 @@ sub refresh_revision {
 sub get_editor {
     my ($self, %arg) = @_;
     my ($editor, $inspector, %extra) = $self->source->new(path => $self->view->anchor)->get_editor(%arg);
-    $editor = SVK::Editor::Rename->new(editor => $editor, rename_map => $self->view->rename_map);
+    my $prefix = abs2rel($self->source->path,
+			 $self->view->anchor => undef, '/');
+    $editor = SVK::Editor::View->new(editor => $editor,
+				     rename_map => $self->view->rename_map,
+				     prefix => $prefix,
+				    );
 
     return ($editor, $inspector, %extra);
 }

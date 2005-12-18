@@ -839,7 +839,14 @@ sub traverse_history {
     my $new_pool = SVN::Pool->new;
     my $spool = SVN::Pool->new_default;
 
-    my $hist = $args{root}->node_history ($args{path}, $old_pool);
+    my $root = $args{root};
+    if ($root->isa('SVK::Root::View')) {
+	($root, $args{path}) = $root->revision_root
+	    ($args{path},
+	     $root->txn->base_revision );
+    }
+
+    my $hist = $root->node_history ($args{path}, $old_pool);
     my $rv;
     my $path;
     my $revision;
