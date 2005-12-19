@@ -7,7 +7,9 @@ use Path::Class;
 
 sub spec {
     my $self = shift;
-    my $viewspec = $self->base->subdir($self->name)->relative('/');
+    # XXX: ->relative('/') is broken with File::Spec 3.14
+    my $viewspec = $self->base->subdir($self->name);
+    $viewspec =~ s{^/}{};
     '/^'.$viewspec.'@'.$self->revision;
 }
 
