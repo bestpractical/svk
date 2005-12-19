@@ -150,6 +150,11 @@ sub do_update {
 	);
     $merge->run($editor, %cb, inspector => $inspector);
 
+    if ($update_target->isa('SVK::Path::View')) {
+	$self->{xd}{checkout}->store
+	    ($cotarget->copath,
+	     {depotpath => $update_target->depotpath});
+    }
 }
 
 1;
