@@ -825,17 +825,30 @@ sub _unknown_verbose {
     my $ignore = $self->ignore;
     # The caller should have processed the entry already.
     my %seen = ($arg{copath} => 1);
+    my @new_targets;
     if ($arg{targets}) {
-	for my $entry (@{$arg{targets}}) {
+ENTRY:	for my $entry (@{$arg{targets}}) {
 	    my $now = '';
 	    for my $dir (splitdir ($entry)) {
 		$now .= $now ? "/$dir" : $dir;
 		my $copath = SVK::Path::Checkout->copath ($arg{copath}, $now);
 		next if $seen{$copath};
-		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
 		$seen{$copath} = 1;
+		lstat $copath;
+		unless (-e _) {
+		    print loc ("Unknown target: %1.\n", $copath);
+		    next ENTRY;
+		}
+		unless (-r _) {
+		    print loc ("Warning: %1 is unreadable.\n", $copath);
+		    next ENTRY;
+		}
+		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
 	    }
+	    push @new_targets, SVK::Path::Checkout->copath ($arg{copath}, $entry);
 	}
+	
+	return unless @new_targets;
     }
     my $nentry = $arg{entry};
     to_native($nentry, 'path', $arg{encoder});
@@ -850,8 +863,7 @@ sub _unknown_verbose {
 		my $dpath = abs2rel($copath, $arg{copath} => $nentry, '/');
 		from_native($dpath, 'path');
 		$arg{cb_unknown}->($arg{editor}, $dpath, $arg{baton});
-	  }}, defined $arg{targets} ?
-	  map { SVK::Path::Checkout->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
+	  }}, defined $arg{targets} ? @new_targets : $arg{copath});
 }
 
 sub _node_deleted {

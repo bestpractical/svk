@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 35;
+use Test::More tests => 36;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -28,6 +28,12 @@ is_output ($svk, 'add', ['asdf'],
 is_output ($svk, 'add', ['A/foo'],
 	   [map __($_), 'A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');
+
+mkdir ('Z');
+is_output ($svk, 'add', ["Z/noexist"], [
+	__"A   Z",
+	__"Unknown target: $corpath/Z/noexist."], "target doesn't exist");
+unlink ('Z');
 
 is_output ($svk, 'add', ['-q', 'A/foo'],
 	   [], 'add - quiet');
