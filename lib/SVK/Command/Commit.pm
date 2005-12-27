@@ -159,7 +159,7 @@ sub get_editor {
     # Commit as patch
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
- 
+
     # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
@@ -306,6 +306,36 @@ sub get_committable {
 	++$self->{save_message};
 	unlink $file;
     }
+
+    # additional check for view
+    # XXX: put a flag in view - as we can know well in advance
+    # if the view is cross mirror and skip this check if not.
+    if ($target->source->isa('SVK::Path::View')) {
+	my $vt = $target->source;
+	my $map = $vt->view->rename_map('');
+	my @dtargets = map { abs2rel($_->[1], $target->copath => $target->path_anchor, '/') }
+	    @$targets;
+	# get actual anchor, condense
+	my $danchor = Path::Class::Dir->new_foreign('Unix', $dtargets[0]);
+	my $dactual_anchor = $vt->_to_pclass($vt->root->rename_check($danchor, $map), 'Unix');
+	for (@dtargets) {
+	    # XXX: ugly
+	    until ($dactual_anchor->subsumes($vt->root->rename_check($_, $map))) {
+		$danchor = $danchor->parent;
+		$dactual_anchor = $vt->_to_pclass($vt->root->rename_check($danchor, $map), 'Unix');
+	    }
+	}
+	until ($vt->root->check_path($danchor) == $SVN::Node::dir) {
+	    $danchor = $danchor->parent;
+	    $dactual_anchor = $dactual_anchor->parent;
+	}
+
+	$target->{copath} = Path::Class::Dir->new($target->{copath})->subdir
+	    ( abs2rel($danchor, $vt->path_anchor => undef, '/') );
+	$vt->{path} = $danchor; # XXX: path_anchor is not an accessor yet!
+	$vt->{targets} = [ map { abs2rel( $_, $vt->path_anchor => undef, '/' ) } @dtargets];
+    }
+
     $self->decode_commit_message;
     return [sort {$a->[1] cmp $b->[1]} @$targets];
 }
@@ -356,6 +386,7 @@ sub committed_commit {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
 	    my $path = $target->path_anchor;
+	    $path = "$path"; # XXX: Fix to_native
 	    $path = '' if $path eq '/';
 	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
@@ -388,10 +419,6 @@ sub committed_import {
 sub run {
     my ($self, $target) = @_;
 
-    my $is_mirrored = $self->under_mirror($target);
-    print loc("Commit into mirrored path: merging back directly.\n")
-	if $is_mirrored and !$self->{patch};
-
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
     my $xdroot = $target->root;
@@ -404,10 +431,10 @@ sub run {
 	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
-    my ($editor, %cb) = $self->get_editor ($target->new->as_depotpath, $committed);
+    my ($editor, %cb) = $self->get_editor ($target->source, $committed);
 
-    die loc("unexpected error: commit to mirrored path but no mirror object")
-	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
+#    die loc("unexpected error: commit to mirrored path but no mirror object")
+#	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
 
     $self->run_delta ($target, $xdroot, $editor, %cb);
 }
@@ -419,6 +446,7 @@ sub run_delta {
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
+	  debug => $main::DEBUG,
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},

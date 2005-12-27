@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
+           $Devel::Trace::TRACE = 0;   # Disable
+
 BEGIN { require 't/tree.pl';};
-plan tests => 11;
+plan tests => 16;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -69,7 +71,7 @@ $svk->ps ('-m', 'my local view', 'svk:view:viewA',
 ', '//');
 
 is_output($svk, 'switch', ["//^viewA", $copath],
-	  ['Syncing //^prj/trunk/myview@27(/prj/trunk) in '.__($corpath).' to 29.']);
+	  ['Syncing //^prj/trunk/myview@28(/prj/trunk) in '.__($corpath).' to 29.']);
 
 is_output($svk, 'rm', ["$copath/K/Q/qz"],
 	  [__("D   $copath/K/Q/qz")]);
@@ -97,3 +99,50 @@ is_output($svk, 'up', [$copath],
 	   "D   $copath/V/Q/qz",
 	   "A   $copath/K/Q/qu",
 	   "A   $copath/K/Q/qz"]);
+
+$svk->cp(-m => 'make a branch', '//prj/trunk', '//local');
+
+$svk->ps ('-m', 'use local K for V', 'svk:view:viewA',
+	  '/prj/trunk
+ -*
+ S   S
+ V   //local/K
+ K   V
+', '//');
+
+is_output($svk, 'up', [$copath],
+	  ['Syncing //^viewA@31(/prj/trunk) in '.__($corpath).' to 33.']);
+
+append_file("$copath/V/be", "local\n");
+
+append_file("$copath/S/be", "mirrored\n");
+#$svk->diff($copath);
+
+is_output($svk, 'ci', [-m => 'booo', $copath],
+	  ["Can't commit a view with changes in multiple mirror sources."]);
+
+is_output($svk, 'ci', [-m => 'booo', "$copath/S/be"],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri/project.",
+	   'Merge back committed as revision 29.',
+	   "Syncing $uri/project",
+	   'Retrieving log information from 29 to 29',
+	   'Committed revision 34 from revision 29.',
+	  ]);
+
+is_output($svk, 'st', [$copath],
+	  [__("M   $copath/V/be")]);
+
+is_output($svk, 'ci', [-m => 'should be on local', $copath],
+	  ['Committed revision 35.']);
+
+is_output($svk, 'st', [$copath], []);
+
+__END__
+
+append_file("$copath/K/be", "mirrored as well\n");
+
+append_file("$copath/S/be", "mirrored\n");
+
+warn "===> mixed?";
+$svk->ci(-m => 'booo', $copath);

@@ -23,7 +23,7 @@ sub txn_root {
 sub revision_root {
     my ($self, $path, $rev, $pool) = @_;
     $path = $self->rename_check($path, $self->view->rename_map(''));
-    return ( $self->root->fs->revision_root($rev, $pool),
+    return ( SVK::Root->new( {root => $self->root->fs->revision_root($rev, $pool)} ),
 	     $path );
 }
 
@@ -70,6 +70,7 @@ sub _apply_view_to_txn {
 
 	if (defined $orig) {
 	    # XXX: mkpdir
+	    Carp::cluck if ref($origroot) ne '_p_svn_fs_root_t';
 	    SVN::Fs::copy( $origroot, $orig,
 			   $root, $path)
 		    if $origroot->check_path($orig);

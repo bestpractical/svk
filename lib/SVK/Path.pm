@@ -187,6 +187,8 @@ sub get_editor {
 
     my $inspector = $self->inspector;
 
+    print loc("Commit into mirrored path: merging back directly.\n")
+	if $m && !$arg{check_only};
     if ($arg{check_only}) {
 	print loc("Checking locally against mirror source %1.\n", $m->{source})
 	    if $m;

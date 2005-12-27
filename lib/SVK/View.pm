@@ -39,11 +39,29 @@ sub rename_map {
 
     # return relative map
     return [map {
-	defined $_->[1] ?
+	($_->[1]->subsumes($anchor)) ?
 	    [ map {
 		Path::Class::Dir->new_foreign('Unix', $_)->relative($anchor)
 		} @$_ ] : ()
     } grep { defined $_->[1] && $_->[0] ne $_->[1] } @{$self->view_map}];
+}
+
+
+sub rename_map2 {
+    my ($self, $anchor, $actual_anchor) = @_;
+
+    # return absolute map (without delets) with given anchor
+    return [grep { defined $_->[1] } @{$self->view_map}] unless length $anchor;
+
+    # return relative map
+    return [map {
+	($anchor ne $_->[0] && $anchor->subsumes($_->[0]) &&
+	 $actual_anchor ne $_->[1] && $actual_anchor->subsumes($_->[1])) ?
+	    [Path::Class::Dir->new_foreign('Unix', $_->[0])->relative($actual),
+	     Path::Class::Dir->new_foreign('Unix', $_->[1])->relative($actual_anchor)]
+	: ()
+    } grep { defined $_->[1] && $_->[0] ne $_->[1] } @{$self->view_map}];
+
 }
 
 1;
