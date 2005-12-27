@@ -116,7 +116,7 @@ sub create_xd_root {
 					$root->root, $path, $pool );
 	    }
 	    else {
-		SVN::Fs::copy( $fromroot, $frompath,
+		SVN::Fs::copy( $fromroot->root, $frompath,
 			       $root->root, $path, $pool );
 	    }
 	}

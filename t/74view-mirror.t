@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 use strict;
-           $Devel::Trace::TRACE = 0;   # Disable
 
 BEGIN { require 't/tree.pl';};
 plan tests => 16;
