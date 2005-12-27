@@ -20,7 +20,6 @@ is_output_like ($svk, 'checkout', ['//', "$copath/co-root"],
 ok (-e "$copath/co-root/V/A/Q/qu");
 
 $svk->checkout ('//V/A', "$copath/co-root-a");
-
 ok (-e "$copath/co-root-a/Q/qu");
 
 $svk->checkout ('//V/A', "$copath/co-root-deep/there");
@@ -38,7 +37,6 @@ chdir ($copath);
 $svk->checkout('//V-3.1/A', 'foo/bar');
 ok (-e 'foo/bar/Q/qu');
 is_output ($svk, 'update', ['foo/bar'], ["Syncing //V-3.1/A(/V-3.1/A) in ".__"$corpath/foo/bar to 6."]);
-
 is_output ($svk, 'update', [-r5 => 'foo/bar/P'],
 	   ["Syncing //V-3.1/A/P(/V-3.1/A/P) in ".__"$corpath/foo/bar/P to 5.",
 	    __('A   foo/bar/P/pe'),
@@ -75,7 +73,6 @@ ok (-e 'V-3.1-nr/me');
 is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu'],
 	   ["Syncing //V-3.1/A/Q/qu(/V-3.1/A/Q/qu) in ".__"$corpath/qu to 6.",
 	    'A   qu']);
-
 ok (-e 'qu');
 
 is_output ($svk, 'checkout', ['//V-3.1/A/Q/qu', 'boo'],
@@ -239,13 +236,11 @@ chmod 0700, "3.1/B";
 
 append_file ('3.1/D/de', "foo\n\n");
 $svk->ci (-m => 'change', '3.1');
-
 append_file ('3.1/D/de', "bar\n");
 chmod 0500, "3.1/D";
 is_output ($svk, 'up', [-r6 => "3.1"],
 	   ["Syncing //V-3.1(/V-3.1) in ".__"$corpath/3.1 to 6.",
 	    __('    3.1/D/de - skipped')]);
-
 TODO: {
 local $TODO = 'unwritable subdirectory should remain old state';
 is_output_like ($svk, 'diff', ['3.1'], qr'revision 7');

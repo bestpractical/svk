@@ -304,7 +304,6 @@ sub get_encoder {
 sub from_native {
     my $enc = ref $_[2] ? $_[2] : get_encoder ($_[2]);
     my $buf = eval { $enc->decode ($_[0], 1) };
-#    Carp::cluck $@ if $@;
     die loc ("Can't decode %1 as %2.\n", $_[1], $enc->name) if $@;
     $_[0] = $buf;
     Encode::_utf8_off ($_[0]);
@@ -319,7 +318,6 @@ sub to_native {
     my $enc = ref $_[2] ? $_[2] : get_encoder ($_[2]);
     Encode::_utf8_on ($_[0]);
     my $buf = eval { $enc->encode ($_[0], 1) };
-    Carp::cluck if $main::DEBUG && $@;
     die loc ("Can't encode %1 as %2.\n", $_[1], $enc->name) if $@;
     $_[0] = $buf;
     return;
@@ -958,7 +956,6 @@ my %mirror_cached;
 
 sub _list_mirror_cached {
     my $repos = shift;
-    Carp::carp unless defined $repos;
     my $rev = $repos->fs->youngest_rev;
     delete $mirror_cached{$repos}
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
@@ -993,22 +990,6 @@ sub _has_local {
 	return ($m, $mpath);
     }
     return;
-}
-
-sub condense_paths {
-    my $anchor;
-    for (@_) {
-	unless (defined $anchor) {
-	    $anchor = $_;
-	    next;
-	}
-
-	until ($anchor->subsumes($_)) {
-	    $anchor = $anchor->parent;
-	}
-    }
-
-    return ($anchor, [map { $_->relative($anchor) } @_]);
 }
 
 1;
