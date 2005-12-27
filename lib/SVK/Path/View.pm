@@ -8,6 +8,7 @@ use base 'SVK::Path';
 __PACKAGE__->mk_accessors(qw(source view));
 
 use SVK::Util qw( abs2rel );
+use SVK::Root::View;
 
 sub new {
     my $class = shift;

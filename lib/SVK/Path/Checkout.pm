@@ -221,6 +221,7 @@ sub refresh_revision {
 # XXX:
 for my $pass_through (qw/pool inspector _to_pclass _clone dump/) {
     no strict 'refs';
+    no warnings 'once';
     *{$pass_through} = *{'SVK::Path::'.$pass_through};
 }
 
