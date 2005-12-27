@@ -2,7 +2,7 @@
 use strict;
 
 BEGIN { require 't/tree.pl';};
-plan tests => 16;
+plan tests => 17;
 our $output;
 
 # build another tree to be mirrored ourself

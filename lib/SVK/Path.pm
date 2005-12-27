@@ -187,8 +187,9 @@ sub get_editor {
 
     my $inspector = $self->inspector;
 
+    # compat for old output
     print loc("Commit into mirrored path: merging back directly.\n")
-	if $m && !$arg{check_only};
+	if $arg{caller} eq 'SVK::Command::Commit' && $m && !$arg{check_only};
     if ($arg{check_only}) {
 	print loc("Checking locally against mirror source %1.\n", $m->{source})
 	    if $m;

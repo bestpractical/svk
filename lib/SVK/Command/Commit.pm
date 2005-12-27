@@ -174,6 +174,7 @@ sub get_editor {
     # XXX: unify the get_editor args so we can combine them
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
+	  caller => ref($self),
 	  check_only => $self->{check_only},
 	  callback => $callback,
 	  message => $self->{message},
