@@ -57,7 +57,7 @@ sub parse_arg {
             ($target1, $target2) = $self->find_checkout_anchor (
                 $target1, 1, $self->{sync}
                );
-	    $target1->as_depotpath;
+	    $target1 = $target1->as_depotpath;
         }
     }
 
@@ -82,17 +82,17 @@ sub get_commit_message {
 sub run {
     my ($self, $src, $dst) = @_;
     my $merge;
-    my $repos = $src->{repos};
+    my $repos = $src->repos;
 
     if (my @mirrors = $dst->contains_mirror) {
-	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->{report})
+	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->report)
 	    .join(",", @mirrors)."\n"
 		unless $mirrors[0] eq $dst->path;
     }
 
     if ($self->{sync}) {
         my $sync = $self->command ('sync');
-	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));
+	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->path_anchor));
         if ($m->{target_path}) {
             $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
             $src->refresh_revision;
@@ -104,7 +104,9 @@ sub run {
     }
 
     # for svk::merge constructor
-    $self->{report} = defined $dst->{copath} ? $dst->{report} : undef;
+    # Report only relative for depot / depot merge, but what user
+    # types for merge to checkout
+    $self->{report} = $dst->isa('SVK::Path::Checkout') ? $dst->report : undef;
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
@@ -130,7 +132,7 @@ sub run {
     }
 
     $merge->{notice_copy} = 1;
-    if ($merge->{fromrev} == $merge->{src}{revision}) {
+    if ($merge->{fromrev} == $merge->{src}->revision) {
 	print loc ("Empty merge.\n");
 	return;
     }
@@ -146,7 +148,7 @@ sub run {
 
         traverse_history (
             root        => $src->root,
-            path        => $src->{path},
+            path        => $src->path_anchor,
             cross       => 0,
             callback    => sub {
                 my $rev = $_[1];

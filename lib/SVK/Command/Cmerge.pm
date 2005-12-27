@@ -37,7 +37,7 @@ sub run {
         die("Revision spec must be N:M.\n") unless defined($r->[1])
     }
 
-    my $repos = $src->{repos};
+    my $repos = $src->repos;
     my $fs = $repos->fs;
     my $base = SVK::Merge->auto (%$self, repos => $repos, src => $src, dst => $dst,
 				 ticket => 1)->{base};

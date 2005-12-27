@@ -68,10 +68,10 @@ sub lock {
 
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
-    $src->as_depotpath;
+    $src = $src->as_depotpath;
     my $xdroot = $dst->root;
-    die loc ("Path %1 does not exist.\n", $src->{path})
-	if $src->root->check_path ($src->{path}) == $SVN::Node::none;
+    die loc ("Path %1 does not exist.\n", $src->path_anchor)
+	if $src->root->check_path ($src->path_anchor) == $SVN::Node::none;
     my ($copath, $report) = ($dst->copath, $dst->report);
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
@@ -90,7 +90,7 @@ sub handle_co_item {
 	  oldroot => $xdroot, newroot => $xdroot,
 	  update => 1, ignore_keywords => 1,
 	);
-    SVK::Merge->new (%$self, repos => $dst->{repos}, nodelay => 1,
+    SVK::Merge->new (%$self, repos => $dst->repos, nodelay => 1,
 		     report => $report, notify => $notify,
 		     base => $src->new (path => '/', revision => 0),
 		     src => $src, dst => $dst)
@@ -103,17 +103,17 @@ sub handle_co_item {
     $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',
 					    scheduleanchor => $copath,
 					    '.copyfrom' => $src->path,
-					    '.copyfrom_rev' => $src->{revision}});
+					    '.copyfrom_rev' => $src->revision});
 }
 
 sub handle_direct_item {
     my ($self, $editor, $anchor, $m, $src, $dst, $other_call) = @_;
     $src->normalize;
     # if we have targets, ->{path} must exist
-    if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->{path})) {
+    if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->path_anchor)) {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->report);
     }
-    my ($path, $rev) = @{$src}{qw/path revision/};
+    my ($path, $rev) = ($src->path_anchor, $src->revision);
     if ($m) {
 	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;
 	$rev = $m->find_remote_rev ($rev)
@@ -133,7 +133,7 @@ sub _unmodified {
     my (@modified, @unknown);
     $target = $self->{xd}->target_condensed($target); # anchor
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  xdroot => $target->root ($self->{xd}),
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
@@ -151,7 +151,7 @@ sub check_src {
     my ($self, @src) = @_;
     for my $src (@src) {
 	# XXX: respect copath rev
-	$src->{revision} = $self->{rev} if defined $self->{rev};
+	$src->revision($self->{rev}) if defined $self->{rev};
 	next unless $src->isa('SVK::Path::Checkout');
 	$self->_unmodified ($src->new);
     }
@@ -167,7 +167,7 @@ sub run {
 	if $m && !$dst->same_source (@src);
     $self->check_src (@src);
     # XXX: check dst to see if the copy is obstructured or missing parent
-    my $fs = $dst->{repos}->fs;
+    my $fs = $dst->repos->fs;
     if ($dst->isa('SVK::Path::Checkout')) {
 	return loc("%1 is not a directory.\n", $dst->report)
 	    if $#src > 0 && !-d $dst->copath;
@@ -178,7 +178,7 @@ sub run {
 	my @cpdst;
 	for (@src) {
 	    my $cpdst = $dst->new;
-	    $cpdst->descend ($_->{path} =~ m|/([^/]+)/?$|)
+	    $cpdst->descend ($_->path_anchor =~ m|/([^/]+)/?$|)
 		if -d $cpdst->copath;
 	    die loc ("Path %1 already exists.\n", $cpdst->report)
 		if -e $cpdst->copath;
@@ -187,7 +187,7 @@ sub run {
 	$self->handle_co_item ($_, shift @cpdst) for @src;
     }
     else {
-	if ($dst->root->check_path($dst->{path}) != $SVN::Node::dir) {
+	if ($dst->root->check_path($dst->path_anchor) != $SVN::Node::dir) {
 	    die loc ("Copying more than one source requires %1 to be directory.\n", $dst->report)
 		if $#src > 0;
 	    $dst->anchorify;
@@ -197,7 +197,7 @@ sub run {
 	for (@src) {
 	    $self->handle_direct_item ($editor, $anchor, $m, $_,
 				       $dst->{targets} ? $dst :
-				       $dst->new (targets => [$_->{path} =~ m|/([^/]+)/?$|]));
+				       $dst->new (targets => [$_->path_anchor =~ m|/([^/]+)/?$|]));
 	}
 	$self->finalize_dynamic_editor ($editor);
     }

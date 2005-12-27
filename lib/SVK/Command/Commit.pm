@@ -47,7 +47,7 @@ sub message_prompt {
 sub under_mirror {
     my ($self, $target) = @_;
     return if $self->{direct};
-    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
+    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->repos, $target->path_anchor);
 }
 
 sub fill_commit_message {
@@ -137,7 +137,7 @@ sub _editor_for_patch {
 	if $self->{patch} =~ m!/!;
     my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
 				 $target->depotname, $source,
-				 $target->new(targets => undef)->as_depotpath);
+				 $target->as_depotpath->new(targets => undef));
     $patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
 	if $source;
     $patch->{log} = $self->{message};
@@ -150,7 +150,7 @@ sub _editor_for_patch {
     $target = $target->new->as_depotpath;
     $target->refresh_revision;
     my %cb = SVK::Editor::Merge->cb_for_root
-	($target->root, $target->{path},
+	($target->root, $target->path_anchor,
 	 $m ? $m->{fromrev} : $target->revision);
     return ($patch->commit_editor ($fname),
 	    %cb, send_fulltext => 0);
@@ -161,7 +161,7 @@ sub get_editor {
     # Commit as patch
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
- 
+
     # XXX: the case that the target is an xd is actually only used in merge.
     if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
@@ -176,6 +176,7 @@ sub get_editor {
     # XXX: unify the get_editor args so we can combine them
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
+	  caller => ref($self),
 	  check_only => $self->{check_only},
 	  callback => $callback,
 	  message => $self->{message},
@@ -190,7 +191,7 @@ sub get_editor {
     }
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = find_svm_source ($target->repos, $target->{path});
+	my ($uuid, $dst) = find_svm_source ($target->repos, $target->path_anchor);
 	$editor = SVK::Editor::Sign->new
 	    ( _editor => [$editor],
 	      anchor => "$uuid:$dst" );
@@ -220,7 +221,7 @@ sub get_editor {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
-	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path $target->{path} first."
+	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path ".$target->path_anchor." first."
 				       : "Please update checkout first.");
 	    $self->add_handler( $_,
 				sub {
@@ -240,7 +241,7 @@ sub exclude_mirror {
     return () if $self->{direct} or !HAS_SVN_MIRROR;
 
     ( exclude => {
-	map { substr ($_, length($target->{path})) => 1 }
+	map { substr ($_, length($target->path_anchor)) => 1 }
 	    $target->contains_mirror },
     );
 }
@@ -272,7 +273,7 @@ sub get_committable {
 		print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath) if $fh;
 	    }));
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
 	  $self->exclude_mirror ($target),
 	  xdroot => $root,
@@ -299,22 +300,52 @@ sub get_committable {
 	close $fh;
 
         # get_buffer_from_editor may modify it, so it must be a ref first
-        $target->{targets} ||= [];
+        $target->source->{targets} ||= [];
 
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
-				    undef, $file, $target->{copath}, $target->{targets});
+				    undef, $file, $target->copath, $target->source->{targets});
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	++$self->{save_message};
 	unlink $file;
     }
+
+    # additional check for view
+    # XXX: put a flag in view - as we can know well in advance
+    # if the view is cross mirror and skip this check if not.
+    if ($target->source->isa('SVK::Path::View')) {
+	my $vt = $target->source;
+	my $map = $vt->view->rename_map('');
+	my @dtargets = map { abs2rel($_->[1], $target->copath => $target->path_anchor, '/') }
+	    @$targets;
+	# get actual anchor, condense
+	my $danchor = Path::Class::Dir->new_foreign('Unix', $dtargets[0]);
+	my $dactual_anchor = $vt->_to_pclass($vt->root->rename_check($danchor, $map), 'Unix');
+	for (@dtargets) {
+	    # XXX: ugly
+	    until ($dactual_anchor->subsumes($vt->root->rename_check($_, $map))) {
+		$danchor = $danchor->parent;
+		$dactual_anchor = $vt->_to_pclass($vt->root->rename_check($danchor, $map), 'Unix');
+	    }
+	}
+	until ($vt->root->check_path($danchor) == $SVN::Node::dir) {
+	    $danchor = $danchor->parent;
+	    $dactual_anchor = $dactual_anchor->parent;
+	}
+
+	$target->{copath} = Path::Class::Dir->new($target->{copath})->subdir
+	    ( abs2rel($danchor, $vt->path_anchor => undef, '/') );
+	$vt->{path} = $danchor; # XXX: path_anchor is not an accessor yet!
+	$vt->{targets} = [ map { abs2rel( $_, $vt->path_anchor => undef, '/' ) } @dtargets];
+    }
+
     $self->decode_commit_message;
     return [sort {$a->[1] cmp $b->[1]} @$targets];
 }
 
 sub committed_commit {
     my ($self, $target, $targets) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     sub {
 	my $rev = shift;
 	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
@@ -350,13 +381,15 @@ sub committed_commit {
                 )
             }
 	}
-	my $root = $fs->revision_root ($rev);
+	# XXX: fix view/path revision insanity
+	my $root = $target->source->new(revision=>undef)->root;
 	# update keyword-translated files
 	my $encoder = get_encoder;
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
-	    my $path = $target->{path};
+	    my $path = $target->path_anchor;
+	    $path = "$path"; # XXX: Fix to_native
 	    $path = '' if $path eq '/';
 	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
@@ -389,10 +422,6 @@ sub committed_import {
 sub run {
     my ($self, $target) = @_;
 
-    my $is_mirrored = $self->under_mirror($target);
-    print loc("Commit into mirrored path: merging back directly.\n")
-	if $is_mirrored and !$self->{patch};
-
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
     my $xdroot = $target->root;
@@ -405,28 +434,29 @@ sub run {
 	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
-    my ($editor, %cb) = $self->get_editor ($target->new->as_depotpath, $committed);
+    my ($editor, %cb) = $self->get_editor ($target->source, $committed);
 
-    die loc("unexpected error: commit to mirrored path but no mirror object")
-	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
+#    die loc("unexpected error: commit to mirrored path but no mirror object")
+#	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
 
     $self->run_delta ($target, $xdroot, $editor, %cb);
 }
 
 sub run_delta {
     my ($self, $target, $xdroot, $editor, %cb) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my %revcache;
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
+	  debug => $main::DEBUG,
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},
 	  nodelay => $cb{send_fulltext},
 	  $self->exclude_mirror ($target),
 	  cb_exclude => sub { print loc ("%1 is a mirrored path, please commit separately.\n",
-					 abs2rel ($_[1], $target->{copath} => $target->{report})) },
+					 abs2rel ($_[1], $target->copath => $target->report)) },
 	  $self->{import} ?
 	  ( auto_add => 1,
 	    obstruct_as_replace => 1,
@@ -439,7 +469,7 @@ sub run_delta {
 		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);
-		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
+		$revtarget = $revtarget ? $target->path_anchor."/$revtarget" : $target->path_anchor;
 		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
 		# lookup the copy source rev for the case of
 		# open_directory inside add_directotry that has

@@ -64,7 +64,7 @@ sub should_ignore {
 # wanted or not
 sub find_copy {
     my ($self, $path) = @_;
-    my $target_path = File::Spec::Unix->catdir($self->{src}{path}, $path);
+    my $target_path = File::Spec::Unix->catdir($self->{src}->path_anchor, $path);
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
 
@@ -110,7 +110,8 @@ sub find_copy {
 	}
 	return unless $base_rev;
 
-	if ($src_frompath !~ m{^\Q$self->{src}{path}/}) {
+	my $hate_path = $self->{src}->path_anchor;
+	if ($src_frompath !~ m{^\Q$hate_path/}) {
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
 		push @{$self->{incopy}}, { path => $path,
 					   fromrev => $src_from,
@@ -120,7 +121,7 @@ sub find_copy {
 	    return;
 	}
 
-	return unless $src_frompath =~ m{^\Q$self->{src}{path}/};
+	return unless $src_frompath =~ m{^\Q$hate_path/};
 
 	if ($self->{merge}->_is_merge_from
 	    ($self->{src}->path, $self->{dst}, $to)) {
@@ -136,7 +137,7 @@ sub find_copy {
 	    SVN::Fs::check_related($id, $self->{_roots}{$base_rev}->node_id($src_frompath))) {
 	    my $src = $self->{src}->new(revision => $base_rev, path => $src_frompath);
 	    $src->normalize;
-	    $src_from = $src->{revision};
+	    $src_from = $src->revision;
 	}
 	else {
 	    ($cur_root, $cur_path) = ($fromroot, $src_frompath);
@@ -311,7 +312,7 @@ sub replay_add_history {
 	      revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
-	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
+	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
 	      editor => SVN::Delta::Editor->new(_debug => 1)) if $main::DEBUG;
     warn "==> done sample" if $main::DEBUG;
     SVK::XD->depot_delta
@@ -319,7 +320,7 @@ sub replay_add_history {
 	      revision_root($self->{incopy}[-1]{fromrev}),
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
-	      newpath => File::Spec::Unix->catdir($self->{src}{path}, $path),
+	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
 	      editor => SVK::Editor::Delay->new(_editor => [$editor]) );
     warn "***=>done delta" if $main::DEBUG;
     # close file is done by the delta;

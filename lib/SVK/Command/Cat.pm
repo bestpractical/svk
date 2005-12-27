@@ -19,13 +19,12 @@ sub run {
     my $pool = SVN::Pool->new_default;
     for my $target (@arg) {
 	$pool->clear;
-	$target->as_depotpath
-	    ->revision($self->resolve_revision($target,$self->{rev}));
-	my $root = $target->root ($self->{xd});
-	my $stream = $root->file_contents ($target->{path});
+	$target = $target->as_depotpath( $self->resolve_revision($target, $self->{rev}) );
+	my $root = $target->root;
+	my $stream = $root->file_contents ($target->path);
 	# XXX: the keyword layer interface should also have reverse
-	my $layer = SVK::XD::get_keyword_layer ($root, $target->{path},
-						$root->node_proplist ($target->{path}));
+	my $layer = SVK::XD::get_keyword_layer ($root, $target->path,
+						$root->node_proplist ($target->path));
 	no strict 'refs';
 	my $io = \*{select()};
 	$layer->via ($io) if $layer;

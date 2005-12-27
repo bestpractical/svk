@@ -29,7 +29,7 @@ sub run {
     my $xdroot = $target->root;
 
 	$self->{xd}->checkout_delta
-	    ( %$target,
+	    ( $target->for_checkout_delta,
 	      xdroot => $xdroot,
 	      depth => $self->{recursive} ? undef : 0,
 	      delete_verbose => 1,
@@ -41,7 +41,7 @@ sub run {
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
-		      my $dpath = length $path ? "$target->{path}/$path" : $target->{path};
+		      my $dpath = length $path ? $target->path_anchor."/$path" : $target->path_anchor;
 	              to_native($path);
 		      my $st = $status->[0];
 		      my $copath = $target->copath ($path);
@@ -58,10 +58,9 @@ sub run {
 			  return;
 		      }
 
-                      if ($target->{targets}) {
-                          # Check that we are not reverting parents
-                          $target->contains_copath ($copath) or return;
-                      }
+		      # Check that we are not reverting parents
+		      $target->contains_copath($copath) or return;
+
                       $self->do_unschedule($target, $copath);
 		  },
 		),

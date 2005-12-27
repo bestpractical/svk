@@ -49,7 +49,7 @@ sub do_delete_direct {
     $self->get_commit_message ();
     $target->normalize;
     my ($anchor, $editor) = $self->get_dynamic_editor ($target);
-    my $rev = $target->{revision};
+    my $rev = $target->revision;
     $rev = $m->find_remote_rev ($rev) if $m;
     $editor->delete_entry (abs2rel ($target->path, $anchor => undef, '/'), $rev, 0);
     $self->adjust_anchor ($editor);

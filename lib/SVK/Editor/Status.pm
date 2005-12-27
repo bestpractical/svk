@@ -8,7 +8,7 @@ sub new {
     my ($class, @arg) = @_;
     my $self = $class->SUPER::new (@arg);
     $self->{notify} ||= SVK::Notify->new_with_report
-	(defined $self->{report} ? $self->{report} : '');
+	(defined $self->report ? $self->report : '');
     $self->{tree} ||= Data::Hierarchy->new ();
     return $self;
 }

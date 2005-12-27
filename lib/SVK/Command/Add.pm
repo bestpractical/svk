@@ -26,9 +26,9 @@ sub run {
 
     unless ($self->{recursive}) {
 	die loc ("%1 already under version control.\n", $target->report)
-	    unless $target->{targets};
+	    unless $target->source->{targets};
 	# check for multi-level targets
-	for (@{$target->{targets}}) {
+	for (@{$target->source->{targets}}) {
 	    # XXX: consolidate sep for targets
 	    my ($parent) = m{^(.*)[/\Q$SEP\E]}o or next;
 	    die loc ("Please add the parent directory '%1' first.\n", $parent)
@@ -38,7 +38,7 @@ sub run {
     }
 
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  xdroot => $target->root,
 	  delete_verbose => 1,
 	  unknown_verbose => $self->{recursive},

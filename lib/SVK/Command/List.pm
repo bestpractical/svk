@@ -38,21 +38,21 @@ sub run {
 sub _do_list {
     my ($self, $level, $target) = @_;
     my $pool = SVN::Pool->new_default;
-    $target->as_depotpath ($self->resolve_revision($target,$self->{rev}));
+    $target = $target->as_depotpath( $self->resolve_revision($target, $self->{rev}) );
     my $root = $target->root;
-    unless ((my $kind = $root->check_path ($target->{path})) == $SVN::Node::dir) {
-       die loc("Path %1 is not a versioned directory\n", $target->{path})
+    unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
+       die loc("Path %1 is not a versioned directory\n", $target->path_anchor)
            unless $kind == $SVN::Node::file;
        return;
     }
 
-    my $entries = $root->dir_entries ($target->{path});
+    my $entries = $root->dir_entries ($target->path_anchor);
     my $enc = get_encoder;
     for (sort keys %$entries) {
 	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
 
         if ($self->{verbose}) {
-	    my $rev = $root->node_created_rev ("$target->{path}/$_");
+	    my $rev = $root->node_created_rev ($target->path."/$_");
             my $fs = $target->{'repos'}->fs;
 
             my $svn_date =
@@ -64,12 +64,12 @@ sub _do_list {
 	    # Additional fields for verbose: revision author size datetime
             printf "%7ld %-8.8s %10s %12s ", $rev,
                 $fs->revision_prop ($rev, 'svn:author'),
-                ($isdir) ? "" : $root->file_length ("$target->{path}/$_"),
+                ($isdir) ? "" : $root->file_length ($target->path."/$_"),
 		time2str ("%b %d %H:%M", str2time ($svn_date));
         }
 
         if ($self->{'fullpath'}) {
-	    my $dpath = $target->{path};
+	    my $dpath = $target->path_anchor;
 	    to_native ($dpath, 'path', $enc);
 	    $dpath .= '/' unless $dpath eq '/';
             print '/'.$target->depotname.$dpath;

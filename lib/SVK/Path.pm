@@ -6,7 +6,7 @@ use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw(repos repospath path depotname revision
-			     _inspector _pool));
+			     _root _inspector _pool));
 
 use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
 
@@ -29,14 +29,26 @@ sub new {
     my $self = ref $class ? $class->_clone :
 	bless {}, $class;
     %$self = (%$self, @arg);
-    $self->refresh_revision unless defined $self->revision;
-    if (defined $self->{copath}) {
-	require SVK::Path::Checkout;
-#	Carp::carp "implicit svk::path::checkout creation";
-	bless $self, 'SVK::Path::Checkout';
-    }
     if (my $depotpath = delete $self->{depotpath}) {
 	$self->depotname($depotpath =~ m!^/([^/]*)!);
+    }
+    else {
+#	Carp::cluck 'without depotpath';
+    }
+    $self->refresh_revision unless defined $self->revision;
+    if (defined (my $view = delete $self->{view})) {
+	require SVK::Path::View;
+	$self = SVK::Path::View->new
+	    ( { %$self, view => $view } );
+    }
+    if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath})) {
+	require SVK::Path::Checkout;
+	return SVK::Path::Checkout->real_new
+	    ( { copath => $copath,
+		report => $self->{report},
+		xd => $self->{xd},
+		source => $self });
+#	Carp::carp "implicit svk::path::checkout creation";
     }
     return $self;
 }
@@ -44,7 +56,10 @@ sub new {
 sub refresh_revision {
     my ($self) = @_;
     $self->_inspector(undef);
+    $self->_root(undef);
+    Carp::cluck unless $self->repos;
     $self->revision($self->repos->fs->youngest_rev);
+
     return $self;
 }
 
@@ -53,11 +68,15 @@ sub _clone {
 
     require Storable;
     my $xd = delete $self->{xd};
+    my $root = delete $self->{_root};
     my $pool = delete $self->{_pool};
+    my $view = delete $self->{view};
     my $inspector = delete $self->{_inspector};
     my $cloned = Storable::dclone ($self);
-    $cloned->repos($self->repos);
+    $cloned->repos($self->repos) if ref($self) eq 'SVK::Path';
     $self->{xd} = $cloned->{xd} = $xd if $xd;
+    $self->{_root} = $root;
+    $cloned->{view} = $self->{view} = $view;
     $self->{_pool} = $pool;
     $self->{_inspector} = $inspector;
     return $cloned;
@@ -65,8 +84,13 @@ sub _clone {
 
 sub root {
     my $self = shift;
-    return SVK::XD::Root->new($self->repos->fs->revision_root
-			      ($self->revision));
+
+    Carp::cluck unless defined $self->revision;
+    $self->_root(SVK::Root->new({ root => $self->repos->fs->revision_root
+				  ($self->revision) }))
+	unless $self->_root;
+
+    return $self->_root;
 }
 
 sub report { Carp::cluck if defined $_[1]; $_[0]->depotpath }
@@ -108,7 +132,8 @@ sub is_mirrored {
     my ($self) = @_;
     return unless HAS_SVN_MIRROR;
     # XXX: improve is_mirrored with util::_list_mirror_cached
-    return SVN::Mirror::is_mirrored($self->repos, $self->{path});
+
+    return SVN::Mirror::is_mirrored($self->repos, $self->path_anchor);
 }
 
 sub _commit_editor {
@@ -125,7 +150,6 @@ sub _commit_editor {
 		  find_prev_copy ($self->repos->fs, $_[0]);
 		  $callback->(@_) if $callback; }, $pool
 	  ));
-
     return ($editor, \$post_handler);
 }
 
@@ -165,6 +189,9 @@ sub get_editor {
 
     my $inspector = $self->inspector;
 
+    # compat for old output
+    print loc("Commit into mirrored path: merging back directly.\n")
+	if $arg{caller} eq 'SVK::Command::Commit' && $m && !$arg{check_only};
     if ($arg{check_only}) {
 	print loc("Checking locally against mirror source %1.\n", $m->{source})
 	    if $m;
@@ -186,9 +213,11 @@ sub get_editor {
 		   print loc("Merge back committed as revision %1.\n", $rev);
 		   $post_handler->($rev) if $post_handler;
 		   $m->run($rev);
+		   # XXX: find_local_rev can fail
 		   $callback->($m->find_local_rev($rev), @_)
 		       if $callback }
 	    );
+	$editor->{_debug}++ if $main::DEBUG;
 	return ($editor, $inspector,
 		mirror => $m,
 		post_handler => \$post_handler,
@@ -252,6 +281,7 @@ Makes target depotpath. Takes C<$revision> number optionally.
 
 =cut
 
+# XXX: obsoleted maybe
 sub as_depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
@@ -312,6 +342,8 @@ Returns depotpath of the target
 
 sub depotpath {
     my $self = shift;
+
+    Carp::cluck unless defined $self->depotname;
 
     return '/'.$self->depotname.$self->{path};
 }
@@ -466,12 +498,12 @@ sub copied_from {
 
     my $target = $self->new;
     $target->{report} = '';
-    $target->as_depotpath;
+    $target = $target->as_depotpath;
 
     my $root = $target->root;
     my $fromroot;
     while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
-	$target->revision($fromroot->revision_root_revision);
+	$target = $target->new(revision => $fromroot->revision_root_revision);
 	# Check for existence.
         # XXX This treats delete + copy in 2 separate revision as a rename
         # which may or may not be intended.
@@ -482,7 +514,7 @@ sub copied_from {
 	# Check for mirroredness.
 	if ($want_mirror and HAS_SVN_MIRROR) {
 	    my ($m, $mpath) = SVN::Mirror::is_mirrored (
-		$target->repos, $target->{path}
+		$target->repos, $target->path_anchor
 	    );
 	    $m->{source} or next;
 	}
@@ -490,7 +522,7 @@ sub copied_from {
 	# It works!  Let's update it to the latest revision and return
 	# it as a fresh depot path.
 	$target->refresh_revision;
-	$target->as_depotpath;
+	$target = $target->as_depotpath;
 
 	delete $target->{targets};
 	return $target;
@@ -589,6 +621,12 @@ sub merged_from {
 		? 1 : 0;
 	  } );
 }
+
+sub path_anchor { $_[0]->{path} }
+sub path_target { $_[0]->{targets}[0] || '' }
+
+use Data::Dumper;
+sub dump { warn Dumper($_[0]) }
 
 =head1 SEE ALSO
 

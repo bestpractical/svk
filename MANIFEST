@@ -66,6 +66,7 @@ lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
+lib/SVK/Editor/View.pm
 lib/SVK/Editor/XD.pm
 lib/SVK/Help/Environment.pod
 lib/SVK/Help/Index.pod
@@ -101,8 +102,11 @@ lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
+lib/SVK/Root.pm
+lib/SVK/Root/View.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
+lib/SVK/View.pm
 lib/SVK/Version.pm
 lib/SVK/XD.pm
 Makefile.PL
@@ -186,8 +190,11 @@ t/60patchset.t
 t/70symlink.t
 t/71autovivify.t
 t/72sign.t
+t/73view.t
 t/73i18n.t
 t/74chgspec.t
+t/74view.t
+t/74view-mirror.t
 t/75hook.t
 t/svk-sec.gpg
 t/svk.gpg

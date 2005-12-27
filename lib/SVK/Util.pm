@@ -840,9 +840,17 @@ sub traverse_history {
     my $new_pool = SVN::Pool->new;
     my $spool = SVN::Pool->new_default;
 
-    my $hist = $args{root}->node_history ($args{path}, $old_pool);
+    my ($root, $path) = @args{qw/root path/};
+    # If the root is txn root, get a similar one.
+    # XXX: We actually want to move this to SVK::Path::, and
+    # svk::checkout should respect copies on checkout
+    if ($root->can('txn') && $root->txn) {
+	($root, $path) = $root->revision_root
+	    ($path, $root->txn->base_revision );
+    }
+
+    my $hist = $root->node_history ($path, $old_pool);
     my $rv;
-    my $path;
     my $revision;
 
     while (1) {
@@ -856,7 +864,7 @@ sub traverse_history {
             # prev if we ask svn to traverse copies.
             # Let's find out if the copy was actually a rename instead
             # of a copy.
-            my $root = $args{root}->fs->revision_root($revision, $spool);
+            my $root = $root->fs->revision_root($revision, $spool);
             my $frompath;
             my $fromrev = -1;
             # We know that $path was a real copy and it that it has a
