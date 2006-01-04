@@ -479,7 +479,8 @@ sub run_delta {
 		($source_path, $source_rev) = ($revtarget, $entry->{revision})
 		    unless defined $source_path;
 		return $revcache{$source_rev} if exists $revcache{$source_rev};
-		my $rev = ($fs->revision_root ($source_rev)->node_history ($source_path)->prev (0)->location)[1];
+		my ($rroot, $rsource_path) = $xdroot->revision_root($source_path, $source_rev);
+		my $rev = ($rroot->node_history($rsource_path)->prev(0)->location)[1];
 		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());
     delete $self->{save_message};
