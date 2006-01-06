@@ -39,18 +39,23 @@ sub run {
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
     for my $target (@arg) {
-	my $update_target = $target->source->new
-	    (revision => defined $self->{rev} ?
-	     $self->resolve_revision($target->new,$self->{rev}) :
-	     $target->repos->fs->youngest_rev);
-
+	my $update_target = $target->source->new;
 	$update_target->path($self->{update_target_path})
 	    if defined $self->{update_target_path};
 
-	# always use the latest view
+	my $rev = defined $self->{rev} ?
+	    $self->resolve_revision($target->new,$self->{rev}) :
+	    $target->repos->fs->youngest_rev;
+
 	if ($update_target->isa('SVK::Path::View')) {
+	    # always use the latest view layout
 	    $update_target->refresh_revision;
+	    $update_target->source->revision($rev);
 	}
+        else {
+	    $update_target->revision($rev);
+	}
+
         # Because merging under the copy anchor is unsafe, we always merge
         # to the most immediate copy anchor under copath root.
         my ($merge_target, $copied_from) = $self->find_checkout_anchor (

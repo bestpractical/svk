@@ -65,7 +65,9 @@ sub _apply_view_to_txn {
     my $root = $txn->root($view->pool);
     my $origroot = $root->fs->revision_root($revision);
 
+    my $pool = SVN::Pool->new_default;
     for (@{$view->view_map}) {
+	$pool->clear;
 	my ($path, $orig) = @$_;
 
 	if (defined $orig) {

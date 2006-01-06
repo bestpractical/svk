@@ -15,10 +15,9 @@ sub new {
     if (ref $class) {
 	my %arg = @_;
 	my $source = delete $class->{source} or Carp::cluck;
-	my $oldrev = $class->revision;
 	my $self = $class->_clone;
 	my $revision = delete $arg{revision};
-	%$self = (%$self, %arg, source => $source->new(revision => $revision));
+	%$self = (%$self, %arg, source => $source->new(revision => $class->revision));
 	$class->source($source);
 	die unless $self->source;
 	return $self;
@@ -41,6 +40,7 @@ sub _root {
 sub refresh_revision {
     my $self = shift;
 
+    $self->source->refresh_revision;
     $self->SUPER::refresh_revision;
     $self->_recreate_view;
 

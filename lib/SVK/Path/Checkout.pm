@@ -91,11 +91,12 @@ sub create_xd_root {
     my $pool = SVN::Pool->new;
     my ($root, $base_rev);
     for (@paths) {
+	$pool->clear;
 	my $cinfo = $self->xd->{checkout}->get($_);
 	my $path = abs2rel($_, $coroot => $coroot_path, '/');
 	unless ($root) {
 	    $root = $base_root->txn_root($self->pool);;
-	    $base_rev = $base_root->node_created_rev($path);
+	    $base_rev = $base_root->node_created_rev($path, $pool);
 	    if ($base_rev == 0) {
 		# for interrupted checkout, the anchor will be at rev 0
 		my @path = ();
@@ -108,7 +109,7 @@ sub create_xd_root {
 	    next;
 	}
 	my $parent = Path::Class::File->new_foreign('Unix', $path)->parent;
-	next if $cinfo->{revision} == $root->node_created_rev($parent);
+	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
 	my ($fromroot, $frompath) = $base_root->revision_root($path, $cinfo->{revision}, $pool);
 	$root->delete($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
@@ -122,7 +123,6 @@ sub create_xd_root {
 			       $root->root, $path, $pool );
 	    }
 	}
-	$pool->clear;
     }
     return $root;
 }
