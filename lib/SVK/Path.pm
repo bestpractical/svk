@@ -204,7 +204,7 @@ sub get_editor {
     my $post_handler;
     if ($m) {
 	print loc("Merging back to mirror source %1.\n", $m->{source});
-	$m->{lock_message} = SVK::Command::Sync::lock_message ();
+	$m->{lock_message} = SVK::Command::Sync::lock_message($self);
 	$m->{config} = $self->{svnconfig};
 	$m->{revprop} = ['svk:signature'];
 	my ($base_rev, $editor) = $m->get_merge_back_editor
