@@ -13,7 +13,7 @@ use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir s
 use Data::Hierarchy;
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
-use autouse 'YAML'	 => qw(LoadFile DumpFile);
+use autouse 'YAML::Syck'	 => qw(LoadFile DumpFile);
 use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;

@@ -77,7 +77,7 @@ sub create_xd_root {
     my $copath = $self->copath($self->{copath_target});
 
     my (undef, $coroot) = $self->xd->{checkout}->get($copath);
-    Carp::cluck $copath.YAML::Dump($self->xd->{checkout}) unless $coroot;
+    Carp::cluck $copath.YAML::Syck::Dump($self->xd->{checkout}) unless $coroot;
     my @paths = $self->xd->{checkout}->find($coroot, {revision => qr'.*'});
     my $tmp = $copath;
     $tmp =~ s/^\Q$coroot//;

@@ -77,7 +77,7 @@ use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
     my ($self, $patch) = @_;
-    print YAML::Dump ($patch);
+    print YAML::Syck::Dump ($patch);
     return;
 }
 

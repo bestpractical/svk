@@ -7,7 +7,7 @@ use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
 use SVK::Util qw (find_svm_source resolve_svm_source);
-use YAML;
+use YAML::Syck;
 
 sub parse_arg {
     my ($self, @arg) = @_;
