@@ -77,7 +77,7 @@ use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
     my ($self, $patch) = @_;
-    print YAML::Dump ($patch);
+    print YAML::Syck::Dump ($patch);
     return;
 }
 
@@ -178,7 +178,7 @@ sub run {
     my $ticket;
     $mergecmd->get_commit_message ($patch->{log})
 	unless $dst->isa('SVK::Path::Checkout');
-    my $merge = SVK::Merge->new (%$mergecmd, dst => $dst, repos => $dst->{repos});
+    my $merge = SVK::Merge->new (%$mergecmd, dst => $dst, repos => $dst->repos);
     $ticket = sub { $merge->get_new_ticket (SVK::Merge::Info->new ($patch->{ticket})) }
 	if $patch->{ticket} && $dst->universal->same_resource ($patch->{target});
     $patch->apply_to ($dst, $mergecmd->get_editor ($dst),

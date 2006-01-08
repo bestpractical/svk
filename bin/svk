@@ -5,6 +5,7 @@ our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
+use Class::Autouse qw(SVK::Command SVK::XD);
 
 =head1 NAME
 

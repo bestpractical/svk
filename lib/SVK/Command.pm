@@ -10,6 +10,11 @@ use SVK::I18N;
 use Encode;
 use constant subcommands => '*';
 
+use Class::Autouse
+    qw( Path::Class SVK::Path SVK::Path::Checkout SVK::Notify
+	SVK::Editor::Status SVK::Editor::Diff
+	Pod::Simple::Text SVK::Merge );
+
 =head1 NAME
 
 SVK::Command - Base class and dispatcher for SVK commands
@@ -423,8 +428,8 @@ usually good enough.
     # If we're mirroring via svn::mirror, not mirroring the whole history
     # is an option
     my ($m, $answer);
-    ($m,undef) = SVN::Mirror::is_mirrored ($target->{'repos'}, 
-                                           $target->{'path'}) if (HAS_SVN_MIRROR);
+    ($m,undef) = SVN::Mirror::is_mirrored ($target->repos,
+                                           $target->path_anchor) if (HAS_SVN_MIRROR);
     # If the user is mirroring from svn                                       
     if (UNIVERSAL::isa($m,'SVN::Mirror::Ra'))  {                                
         print loc("
@@ -465,7 +470,7 @@ break history-sensitive merging within the mirrored path.
         }
     )->run ($target);
 
-    my $depotpath = length ($rel_uri) ? $target->{depotpath}."/$rel_uri" : $target->depotpath;
+    my $depotpath = length ($rel_uri) ? $target->depotpath."/$rel_uri" : $target->depotpath;
     return $self->arg_depotpath($depotpath);
 }
 
@@ -486,17 +491,28 @@ sub arg_co_maybe {
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     from_native ($path, 'path', $self->{encoding});
-    my $ret = SVK::Path::Checkout->new
+    my ($view, $revision, $subpath);
+    if (($view, $revision, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
+	$revision ||= $repos->fs->youngest_rev;
+	($path, $view) = SVK::Command->create_view ($repos, $view, $revision, $subpath);
+    }
+
+    $rev ||= $cinfo->{revision} if defined $copath;
+    my $ret = SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
-	  copath => $copath,
-	  report => $copath ? File::Spec->canonpath ($arg) : $arg,
 	  path => $path,
-	  xd => $self->{xd},
+	  view => $view,
 	  revision => $rev,
 	);
-    $ret->as_depotpath unless defined $copath;
+    $ret = SVK::Path::Checkout->real_new
+	({ source => $ret,
+	   copath => $copath,
+	   report => File::Spec->canonpath($arg),
+	   xd => $self->{xd},
+	 })
+	    if defined $copath;
     return $ret;
 }
 
@@ -509,6 +525,13 @@ Argument is a checkout path.
 sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
+    my ($root);
+    my ($view, $rev, $subpath);
+
+    if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
+	($path, $view) = $self->create_view ($repos, $view, $rev, $subpath);
+    }
+
     from_native ($path, 'path', $self->{encoding});
     return SVK::Path::Checkout->new
 	( repos => $repos,
@@ -516,6 +539,7 @@ sub arg_copath {
 	  report => File::Spec->canonpath ($arg),
 	  copath => $copath,
 	  path => $path,
+	  view => $view,
 	  cinfo => $cinfo,
 	  xd => $self->{xd},
 	  depotpath => $cinfo->{depotpath},
@@ -528,12 +552,77 @@ Argument is a depotpath, including the slashes and depot name.
 
 =cut
 
+sub _resolve_anchor {
+    my ($repos, $base, $anchor) = @_;
+    # XXX
+    $anchor = Path::Class::Dir->new_foreign('Unix', $anchor);
+    $anchor =~ s/^\&\:// or return $anchor;
+    $anchor = Path::Class::Dir->new_foreign('Unix', $anchor);
+    my ($uuid, $path) = find_svm_source($repos, $base);
+    return $anchor->relative($path)->absolute($base);
+
+}
+
+sub create_view {
+    my ($self, $repos, $view, $rev, $subpath) = @_;
+    my $fs = $repos->fs;
+    my $viewspec = Path::Class::File->new_foreign('Unix', '/', "$view");
+    my ($viewbase, $viewname) = ($viewspec->parent, $viewspec->basename);
+    $rev = $fs->youngest_rev unless defined $rev;
+    require SVK::View;
+    my $viewobj = SVK::View->new
+	({ name => $viewname, base => $viewbase,
+	   revision => $rev, pool => SVN::Pool->new });
+    $viewobj->pool(SVN::Pool->new);
+    my $root = $fs->revision_root($rev);
+    my $content = $root->node_prop ($viewbase, "svk:view:$viewname");
+    die loc("Unable to create view '%1' from on %2 for revision %3.\n",
+	    $viewname, $viewbase, $rev)
+	unless defined $content;
+    my ($anchor, @content) = grep { $_ && !m/^#/ } $content =~ m/^.*$/mg;
+    $anchor = _resolve_anchor($repos, $viewbase, $anchor);
+    die loc("Unable to create view '%1' from on %2 for revision %3.\n",
+	    $viewname, $viewbase, $rev)
+	unless $root->check_path("$anchor");
+    $viewobj->anchor($anchor);
+
+    $root->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
+
+    for (@content) {
+	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";
+	my $abspath = Path::Class::Dir->new_foreign('Unix', $path)
+	    ->absolute($anchor);
+	if (defined $target) {
+	    $target = Path::Class::Dir->new_foreign('Unix', $target);
+	    $target = $target->absolute($anchor)
+		unless $target->is_absolute;
+	}
+	if ($del) {
+	    warn "path not required" if defined $target;
+	    $viewobj->add_map($abspath, undef);
+	}
+	else {
+	    die "path required" unless defined $target;
+	    $viewobj->add_map($abspath, $target);
+	}
+    }
+
+    $subpath = '' unless defined $subpath;
+    return (length $subpath ? $anchor eq '/' ? $subpath : $anchor.$subpath
+	    : $anchor->stringify, $viewobj);
+}
+
 sub arg_depotpath {
     my ($self, $arg) = @_;
-
+    my $root;
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
     my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
+    my $view;
     from_native ($path, 'path', $self->{encoding});
+    if (($view) = $path =~ m{^/\^([\w\-_/]+)$}) {
+	($path, $view) = $self->create_view($repos, $view, $rev);
+    }
+
     return SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
@@ -541,6 +630,7 @@ sub arg_depotpath {
 	  report => $arg,
 	  revision => $rev,
 	  depotpath => $arg,
+	  view => $view,
 	);
 }
 
@@ -557,9 +647,7 @@ sub arg_depotroot {
     local $@;
     $arg = eval { $self->arg_co_maybe ($arg || '')->new (path => '/') }
            || $self->arg_depotpath ("//");
-    $arg->as_depotpath;
-
-    return $arg;
+    return $arg->as_depotpath;
 }
 
 =head3 arg_depotname ($arg)
@@ -834,7 +922,7 @@ sub find_checkout_anchor {
 
     my @rel_path = split(
         '/',
-        abs2rel ($target->{path}, $anchor_target->{path}, undef, '/')
+        abs2rel ($target->path_anchor, $anchor_target->path_anchor, undef, '/')
     );
 
     my $copied_from;
@@ -925,7 +1013,7 @@ sub resolve_chgspec {
 
 sub resolve_revspec {
     my ($self,$target) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my ($r1,$r2);
     if (my $revspec = $self->{revspec}) {
@@ -944,7 +1032,7 @@ sub resolve_revspec {
 sub resolve_revision {
     my ($self,$target,$revstr) = @_;
     return unless defined $revstr;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
     if($revstr =~ /^HEAD$/i) {
@@ -955,7 +1043,7 @@ sub resolve_revision {
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
     } elsif (HAS_SVN_MIRROR && (my ($rrev) = $revstr =~ m'^(\d+)@$')) {
-	if (my ($m) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path})) {
+	if (my ($m) = SVN::Mirror::is_mirrored ($target->repos, $target->path_anchor)) {
 	    $rev = $m->find_local_rev ($rrev);
 	}
 	die loc ("Can't find local revision for %1 on %2.\n", $rrev, $target->path)
@@ -973,7 +1061,7 @@ sub resolve_revision {
 sub find_date_rev {
     my ($self,$target,$date) = @_;
     # $date should be in yyyymmdd format
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
 
     my ($rev,$last);
@@ -1006,8 +1094,8 @@ sub find_base_rev {
 
 sub find_head_rev {
     my ($self,$target) = @_;
-    $target->as_depotpath;
-    my $fs = $target->{repos}->fs;
+    $target = $target->as_depotpath;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my $rev;
     traverse_history (

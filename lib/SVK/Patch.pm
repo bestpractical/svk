@@ -114,7 +114,7 @@ sub load {
 	    $tmp->normalize;
 	}
 	$self->{"_${_}_updated"} = 1
-	    if $tmp->{revision} > $self->{"_$_"}->{revision};
+	    if $tmp->{revision} > $self->{"_$_"}->revision;
     }
     (undef, undef, $self->{_repos}) = $self->{_xd}->find_repos ("/$self->{_depot}/", 1);
     return wantarray ? ($self, $not_applicable) : $self;
@@ -163,7 +163,7 @@ sub _path_attribute_text {
     # XXX: check if source / target is updated
     my ($local, $mirrored, $updated);
     if (my $target = $self->{"_$type"}) {
-	if ($target->{repos}->fs->get_uuid eq $self->{$type}{uuid}) {
+	if ($target->repos->fs->get_uuid eq $self->{$type}{uuid}) {
 	    ++$local;
 	}
 	else {
@@ -243,7 +243,7 @@ sub apply_to {
 	  send_fulltext => !$cb{patch} && !$cb{mirror},
 	  ($target->{copath}
 	      ? (notify => SVK::Notify->new_with_report
-		    ($target->{report}, $target, 1))
+		    ($target->report, $target, 1))
 	      : ()
 	  ),
 	  %cb,
@@ -266,7 +266,7 @@ sub update {
 
     if ($conflict = $self->apply_to ($target, $patch, patch => 1,
 				     SVK::Editor::Merge->cb_for_root
-				     ($target->root, $target->path, $target->{revision}))) {
+				     ($target->root, $target->path, $target->revision))) {
 
 	print loc("Conflicts.\n");
 	return $conflict;
@@ -295,7 +295,7 @@ sub regen {
     # XXX: handle empty
     unless ($conflict = $merge->run ($patch,
 				     SVK::Editor::Merge->cb_for_root
-				     ($target->root, $target->path, $target->{revision}))) {
+				     ($target->root, $target->path, $target->revision))) {
 	$self->{log} = $merge->log (1);
 	++$self->{level};
 	$self->{_source} = $source;

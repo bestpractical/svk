@@ -40,10 +40,10 @@ sub lock {
 	return;
     }
     $source = $self->arg_copath ($source);
-    die loc("Import source (%1) is a checkout path; use --from-checkout.\n", $source->{copath})
+    die loc("Import source (%1) is a checkout path; use --from-checkout.\n", $source->copath)
 	unless $self->{from_checkout};
-    die loc("Import path (%1) is different from the copath (%2)\n", $target->{path}, $source->{path})
-	unless $source->{path} eq $target->{path};
+    die loc("Import path (%1) is different from the copath (%2)\n", $target->path_anchor, $source->path_anchor)
+	unless $source->path_anchor eq $target->path_anchor;
     $self->lock_target ($source);
 }
 
@@ -81,10 +81,10 @@ sub run {
 
     unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
 	$self->{xd}{checkout}->store
-	    ($copath, {depotpath => '/'.$target->depotname.$target->{path},
+	    ($copath, {depotpath => '/'.$target->depotname.$target->path_anchor,
 		       '.newprop' => undef,
 		       '.conflict' => undef,
-		       revision => $target->{revision}});
+		       revision => $target->revision});
         delete $self->{from_checkout};
     }
 

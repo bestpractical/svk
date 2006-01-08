@@ -16,7 +16,7 @@ requires(
 #        'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Algorithm::Diff'       => '0',
-        'YAML'                  => '0.38',
+        'YAML::Syck'            => '0.11',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
@@ -36,7 +36,8 @@ requires(
 	'Encode'		=> '2.10',
 	'List::MoreUtils'	=> '0',
 	'Class::Accessor::Fast'	=> '0',
-	'Path::Class'		=> '0.13',
+	'File::Spec'		=> '3.14',
+	'Path::Class'		=> '0.15',
 );
 features(
     'Localized messages' => [

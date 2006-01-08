@@ -14,6 +14,8 @@ use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
 use Test::More;
+require Storable;
+use SVK::Path::Checkout;
 
 # Fake standard input
 our $answer = [];
@@ -188,7 +190,7 @@ sub _do_run {
     my $unlock = SVK::XD->can('unlock');
     my $giant_unlock = SVK::XD->can('giant_unlock');
     no warnings 'redefine';
-    my $origxd = Clone::clone($svk->{xd}->{checkout});
+    my $origxd = Storable::dclone($svk->{xd}->{checkout});
     require SVK::Command::Checkout;
     my $giant_locked = 1;
     local *SVK::XD::giant_unlock = sub {

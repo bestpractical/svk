@@ -90,7 +90,7 @@ sub run {
                 "/$depot$_/" =~ /$arg_re/
                     ? $self->arg_depotpath("/$depot$_")
                     : ()
-                } SVN::Mirror::list_mirror( $target->{repos} );
+                } SVN::Mirror::list_mirror( $target->repos );
 
             unless ( @tempnewarg
                 || !exists $arg{$orig_arg}
@@ -105,11 +105,11 @@ sub run {
     }
 
     for my $target (@arg) {
-        my $repos = $target->{repos};
+        my $repos = $target->repos;
         my $fs    = $repos->fs;
         my $m     = SVN::Mirror->new(
-            target_path    => $target->{path},
-            target         => $target->{repospath},
+            target_path    => $target->path_anchor,
+            target         => $target->repospath,
             repos          => $repos,
             pool           => SVN::Pool->new,
             config         => $self->{svnconfig},

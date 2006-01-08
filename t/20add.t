@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 35;
+use Test::More tests => 36;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -28,6 +28,12 @@ is_output ($svk, 'add', ['asdf'],
 is_output ($svk, 'add', ['A/foo'],
 	   [map __($_), 'A   A', 'A   A/foo'], 'add - descendent target only');
 $svk->revert ('-R', '.');
+
+mkdir ('Z');
+is_output ($svk, 'add', ["Z/noexist"], [
+	__"A   Z",
+	__"Unknown target: $corpath/Z/noexist."], "target doesn't exist");
+unlink ('Z');
 
 is_output ($svk, 'add', ['-q', 'A/foo'],
 	   [], 'add - quiet');
@@ -68,11 +74,9 @@ is_output ($svk, 'add', ['A/'],
 	   [map __($_), 'A   A', 'A   A/bar', 'A   A/foo', 'A   A/deep', 'A   A/deep/baz'],
 	   'add - anchor with trailing slash');
 $svk->revert ('-R', '.');
-
 is_output ($svk, 'add', [qw/-N A/],
 	   [map __($_), 'A   A'],
 	   'add - nonrecursive anchor');
-
 is_output ($svk, 'add', [qw/-N A/],
 	   ['A already added.'],
 	   'add - nonrecursive anchor already added');

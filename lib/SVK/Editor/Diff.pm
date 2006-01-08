@@ -84,7 +84,7 @@ sub retrieve_base {
     my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
 	: $self->{base_root};
 
-    $basepath = "$self->{base_target}{path}/$path"
+    $basepath = $self->{base_target}->path_anchor."/$path"
 	if $basepath !~ m{^/};
 
     return $root->file_contents("$basepath", $pool);
@@ -99,7 +99,7 @@ sub retrieve_base_prop {
     my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
 	: $self->{base_root};
 
-    $basepath = "$self->{base_target}{path}/$path"
+    $basepath = $self->{base_target}->path_anchor."/$path"
 	if $basepath !~ m{^/};
 
     return $root->check_path($path, $pool) == $SVN::Node::none ?
@@ -268,6 +268,7 @@ sub output_prop_diff {
 
 sub add_directory {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
+    $self->{info}{$path}{added} = 1;
     if (defined $from_path) {
 	# XXX: print some garbage about this copy
 	$self->{dh}->store("/$path", { copyanchor => "/$path",
@@ -294,10 +295,10 @@ sub delete_entry {
     my $spool = SVN::Pool->new_default;
     # generate delta between empty root and oldroot of $path, then reverse in output
     SVK::XD->depot_delta
-	( oldroot => $self->{base_target}{repos}->fs->revision_root (0),
-	  oldpath => [$self->{base_target}{path}, $path],
+	( oldroot => $self->{base_target}->repos->fs->revision_root (0),
+	  oldpath => [$self->{base_target}->path_anchor, $path],
 	  newroot => $self->{base_root},
-	  newpath => $self->{base_target}{path} eq '/' ? "/$path" : "$self->{base_target}{path}/$path",
+	  newpath => $self->{base_target}->path_anchor eq '/' ? "/$path" : $self->{base_target}->path_anchor."/$path",
 	  editor => __PACKAGE__->new (%$self, reverse => 1),
 	);
 

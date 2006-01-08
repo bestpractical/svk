@@ -34,7 +34,7 @@ my ($copath, $corpath) = get_copath ('repos-hook');
 $svk->checkout ('//m', $copath);
 overwrite_file ("$copath/newfile", "new file to add\n");
 $svk->add ("$copath/newfile");
-our $DEBUG=1;
+
 is_output ($svk, 'ci', ['-m', 'test commit', $copath],
 	   ['Commit into mirrored path: merging back directly.',
 	    "Merging back to mirror source $uri/A.",

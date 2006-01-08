@@ -10,16 +10,15 @@ use SVK::Util qw( get_anchor abs_path abs_path_noexist abs2rel splitdir catdir s
 		  HAS_SYMLINK is_symlink is_executable mimetype mimetype_is_text
 		  md5_fh get_prompt traverse_history make_path dirname
 		  from_native to_native get_encoder get_depot_anchor );
+use Data::Hierarchy;
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
-use autouse 'YAML'	 => qw(LoadFile DumpFile);
+use autouse 'YAML::Syck'	 => qw(LoadFile DumpFile);
 use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
-use Path::Class ();
-
-
+use Class::Autouse qw( Path::Class SVK::Editor::Delay );
 
 =head1 NAME
 
@@ -419,11 +418,11 @@ sub target_condensed {
 	    $anchor->{copath} = Path::Class::dir($anchor->{copath});
 	    ($cinfo, $schedule) = $self->get_entry($anchor->{copath});
 	}
-	push @{$anchor->{targets}}, abs2rel($path->copath, $anchor->copath => undef, '/') unless $anchor->path eq $path->path;
+	push @{$anchor->source->{targets}}, abs2rel($path->copath, $anchor->copath => undef, '/') unless $anchor->path eq $path->path;
     }
 
     my $root = $anchor->root;
-    until ($root->check_path($anchor->{path}) == $SVN::Node::dir) {
+    until ($root->check_path($anchor->path_anchor) == $SVN::Node::dir) {
 	$anchor->anchorify;
     }
 
@@ -437,21 +436,27 @@ sub target_from_copath_maybe {
     my ($self, $arg) = @_;
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
-    my ($repospath, $path, $depotpath, $copath, $repos);
+    my ($repospath, $path, $depotpath, $copath, $repos, $view);
     unless (($repospath, $path, $repos) = eval { $self->find_repos ($arg, 1) }) {
 	$arg = File::Spec->canonpath($arg);
 	$copath = abs_path_noexist($arg);
 	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
 	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
 	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
+	my ($rev, $subpath);
+	if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
+	    ($path, $view) = SVK::Command->create_view ($repos, $view, $rev, $subpath);
+	}
+
 	$path = abs2rel ($copath, $coroot => $path, '/');
+
 	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
 	$depotpath = "/$depotpath$path";
     }
 
     from_native ($path, 'path', $self->{encoding});
     undef $@;
-    my $ret = SVK::Path::Checkout->new
+    my $ret = SVK::Path->new
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $depotpath || $arg,
@@ -459,9 +464,10 @@ sub target_from_copath_maybe {
 	  report => $arg,
 	  path => $path,
 	  xd => $self,
+	  view => $view,
 	  revision => $rev,
 	);
-    $ret->as_depotpath unless defined $copath;
+    $ret = $ret->as_depotpath unless defined $copath;
     return $ret;
 }
 
@@ -471,6 +477,7 @@ sub xdroot {
 
 sub create_xd_root {
     my ($self, %arg) = @_;
+    Carp::confess unless $arg{repos};
     my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
     $copath = File::Spec::Unix->catdir($copath, $arg{copath_target})
 	if defined $arg{copath_target};
@@ -478,17 +485,20 @@ sub create_xd_root {
 
     my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});
 
-    return (undef, $fs->revision_root
-	    ($self->{checkout}->get ($paths[0] || $copath)->{revision}))
+    # In the simple case - only one revision entry found, it can be
+    # for some descendents.  If so we actually need to construct
+    # txnroot.
+    my ($simple, $revbase) = $self->{checkout}->get($paths[0] || $copath);
+    unshift @paths, $revbase unless $revbase eq $copath;
+    return (undef, $fs->revision_root($simple->{revision}))
 	if $#paths <= 0;
 
     my $pool = SVN::Pool->new;
-    my $base_rev;
     for (@paths) {
 	my $cinfo = $self->{checkout}->get ($_);
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	unless ($root) {
-	    $base_rev = $cinfo->{revision};
+	    my $base_rev = $cinfo->{revision};
 	    $txn = $fs->begin_txn ($base_rev, $arg{pool});
 	    $root = $txn->root($arg{pool});
 	    if ($base_rev == 0) {
@@ -502,7 +512,8 @@ sub create_xd_root {
 	    }
 	    next;
 	}
-	next if $cinfo->{revision} == $base_rev;
+	my ($parent) = get_anchor(0, $path);
+	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
 	$root->delete ($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
 	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
@@ -571,10 +582,10 @@ sub do_delete {
     my $xdroot = $target->root;
     my (@deleted, @modified, @unknown, @scheduled);
 
-    $target->anchorify unless $target->{targets};
+    $target->anchorify unless $target->source->{targets};
 
     # check for if the file/dir is modified.
-    $self->checkout_delta ( %$target,
+    $self->checkout_delta ( $target->for_checkout_delta,
 			    %arg,
 			    xdroot => $xdroot,
 			    absent_as_delete => 1,
@@ -653,7 +664,8 @@ sub do_delete {
 sub do_proplist {
     my ($self, $target) = @_;
 
-    return $self->get_props ($target->root, $target->{path}, $target->{copath});
+    return $self->get_props ($target->root, $target->path_anchor,
+			     $target->can('copath') ? $target->copath : undef);
 }
 
 sub do_propset {
@@ -728,7 +740,7 @@ Don't generate text deltas in C<apply_textdelta> calls.
 
 sub depot_delta {
     my ($self, %arg) = @_;
-    my @root = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} @arg{qw/oldroot newroot/};
+    my @root = map {$_->isa ('SVK::Root') ? $_->root : $_} @arg{qw/oldroot newroot/};
     my $editor = $arg{editor};
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
 			   $root[1], $arg{newpath},
@@ -823,17 +835,30 @@ sub _unknown_verbose {
     my $ignore = $self->ignore;
     # The caller should have processed the entry already.
     my %seen = ($arg{copath} => 1);
+    my @new_targets;
     if ($arg{targets}) {
-	for my $entry (@{$arg{targets}}) {
+ENTRY:	for my $entry (@{$arg{targets}}) {
 	    my $now = '';
 	    for my $dir (splitdir ($entry)) {
 		$now .= $now ? "/$dir" : $dir;
 		my $copath = SVK::Path::Checkout->copath ($arg{copath}, $now);
 		next if $seen{$copath};
-		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
 		$seen{$copath} = 1;
+		lstat $copath;
+		unless (-e _) {
+		    print loc ("Unknown target: %1.\n", $copath);
+		    next ENTRY;
+		}
+		unless (-r _) {
+		    print loc ("Warning: %1 is unreadable.\n", $copath);
+		    next ENTRY;
+		}
+		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
 	    }
+	    push @new_targets, SVK::Path::Checkout->copath ($arg{copath}, $entry);
 	}
+	
+	return unless @new_targets;
     }
     my $nentry = $arg{entry};
     to_native($nentry, 'path', $arg{encoder});
@@ -848,13 +873,13 @@ sub _unknown_verbose {
 		my $dpath = abs2rel($copath, $arg{copath} => $nentry, '/');
 		from_native($dpath, 'path');
 		$arg{cb_unknown}->($arg{editor}, $dpath, $arg{baton});
-	  }}, defined $arg{targets} ?
-	  map { SVK::Path::Checkout->copath ($arg{copath}, $_) } @{$arg{targets}} : $arg{copath});
+	  }}, defined $arg{targets} ? @new_targets : $arg{copath});
 }
 
 sub _node_deleted {
     my ($self, %arg) = @_;
     $arg{rev} = $arg{cb_rev}->($arg{entry});
+    Carp::cluck 'hate' unless defined $arg{entry};
     $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
 
     if ($arg{kind} == $SVN::Node::dir && $arg{delete_verbose}) {
@@ -935,7 +960,7 @@ sub _prop_delta {
 
 sub _prop_changed {
     my ($root1, $path1, $root2, $path2) = @_;
-    ($root1, $root2) = map {$_->isa ('SVK::XD::Root') ? $_->[1] : $_} ($root1, $root2);
+    ($root1, $root2) = map {$_->isa ('SVK::Root') ? $_->root : $_} ($root1, $root2);
     return SVN::Fs::props_changed ($root1, $path1, $root2, $path2);
 }
 
@@ -1273,6 +1298,7 @@ sub checkout_delta {
     $arg{base_root} ||= $arg{xdroot}; # xdroot is the  
     $arg{base_path} ||= $arg{path};   # path is  ->  string name of file in repo
     $arg{encoder} = get_encoder;
+    Carp::cluck unless defined $arg{base_path};
     my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
     $arg{kind} = $arg{base_root} eq $arg{xdroot} ? $kind : $arg{xdroot}->check_path ($arg{path});
     die "checkout_delta called with non-dir node"
@@ -1524,6 +1550,7 @@ sub get_props {
 	$props = $source_root->node_proplist ($source_path);
     }
     elsif ($schedule ne 'add' && $schedule ne 'replace') {
+	Carp::cluck 'hate' unless defined $path;
 	$props = $root->node_proplist ($path);
     }
     return _combine_prop ($props, $entry->{'.newprop'});
@@ -1664,38 +1691,12 @@ sub flush {
 }
 
 package SVK::XD::Root;
-use SVK::I18N;
-
-sub AUTOLOAD {
-    my $func = our $AUTOLOAD;
-    $func =~ s/^SVK::XD::Root:://;
-    return if $func =~ m/^[A-Z]*$/;
-
-    no strict 'refs';
-    no warnings 'redefine';
-
-    *$func = sub {
-        my $self = shift;
-        # warn "===> $self $func: ".join(',',@_).' '.join(',', (caller(0))[0..3])."\n";
-        $self->[1]->$func (@_);
-    };
-
-    goto &$func;
-}
+require SVK::Root;
 
 sub new {
     my ($class, @arg) = @_;
     unshift @arg, undef if $#arg == 0;
-    my $self = bless [@arg], $class;
-    return $self;
-}
-
-sub DESTROY {
-    return unless $_[0][0];
-    # if this destructor is called upon the pool cleanup which holds the
-    # txn also, we need to use a new pool, otherwise it segfaults for
-    # doing allocation in a pool that is being destroyed.
-    $_[0][0]->abort(SVN::Pool->new) if $_[0][0];
+    return SVK::Root->new({ txn => $arg[0], root => $arg[1]});
 }
 
 =head1 AUTHORS

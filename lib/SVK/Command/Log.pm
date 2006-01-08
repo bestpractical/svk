@@ -51,23 +51,22 @@ sub run {
         ($fromrev, $torev) = $self->resolve_revspec($target);
 	$torev ||= $fromrev;
     }
-    $target->as_depotpath($self->find_base_rev($target))
+    $target = $target->as_depotpath($self->find_base_rev($target))
 	if $target->isa('SVK::Path::Checkout');
-
-    $fromrev ||= $target->{revision};
+    $fromrev ||= $target->revision;
     $torev ||= 0;
     $self->{cross} ||= 0;
 
-    my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
+    my $print_rev = _log_remote_rev ($target->repos, $target->path_anchor);
 
-    if ($target->{revision} < max ($fromrev, $torev)) {
-	print loc ("Revision too large, show log from %1.\n", $target->{revision});
-	$fromrev = min ($target->{revision}, $fromrev);
-	$torev = min ($target->{revision}, $torev);
+    if ($target->revision < max ($fromrev, $torev)) {
+	print loc ("Revision too large, show log from %1.\n", $target->revision);
+	$fromrev = min ($target->revision, $fromrev);
+	$torev = min ($target->revision, $torev);
     }
     my $sep = ('-' x 70)."\n";
     print $sep;
-    _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
+    _get_logs ($target->root, $self->{limit} || -1, $target->path_anchor, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
 	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0, $self->{quiet})} );
     return;
@@ -118,6 +117,7 @@ sub _get_logs {
 }
 
 our $chg;
+require SVN::Fs;
 $chg->[$SVN::Fs::PathChange::modify] = 'M';
 $chg->[$SVN::Fs::PathChange::add] = 'A';
 $chg->[$SVN::Fs::PathChange::delete] = 'D';

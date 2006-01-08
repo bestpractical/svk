@@ -26,7 +26,8 @@ sub flush_print {
     my ($crev, $author);
     my $fs = $root->fs;
     if ($from_path) {
-	$from_path =~ s{^file://\Q$target->{repospath}\E}{};
+	my $repospath = $target->repospath;
+	$from_path =~ s{^file://\Q$repospath\E}{};
         $crev = $fs->revision_root ($from_rev)->node_created_rev ($from_path);
 	$author = $fs->revision_prop ($crev, 'svn:author');
 	$baserev = '-';
@@ -37,7 +38,7 @@ sub flush_print {
     } elsif ($status->[0] eq 'A') {
 	$baserev = 0;
     } elsif ($status->[0] !~ '[!~]') {
-        my $p = $target->{path};
+        my $p = $target->path_anchor;
 	my $path = $p eq '/' ? "/$entry" : (length $entry ? "$p/$entry" : $p);
 	$crev = $root->node_created_rev ($path);
 	$author = $fs->revision_prop($crev, 'svn:author') unless $crev == -1;
@@ -72,8 +73,8 @@ sub run {
 	  )
       );
     $self->{xd}->checkout_delta
-	( %$target,
-	  xdroot => $xdroot,
+	( $target->for_checkout_delta,
+	  xdroot => $target->root ($self->{xd}),
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  editor => $editor,

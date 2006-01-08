@@ -6,7 +6,7 @@ use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( get_buffer_from_editor abs_path move_path );
-use YAML;
+use YAML::Syck;
 use File::Path;
 
 sub options {
@@ -50,14 +50,14 @@ sub parse_arg {
 sub run {
     my ($self) = @_;
     my $sep = '===edit the above depot map===';
-    my $map = YAML::Dump ($self->{xd}{depotmap});
+    my $map = YAML::Syck::Dump ($self->{xd}{depotmap});
     my $new;
     if ( !$self->{'init'} ) {
         do {
             $map =
               get_buffer_from_editor( loc('depot map'), $sep, "$map\n$sep\n",
                 'depotmap' );
-            $new = eval { YAML::Load($map) };
+            $new = eval { YAML::Syck::Load($map) };
             print "$@\n" if $@;
         } while ($@);
         print loc("New depot map saved.\n");

@@ -7,6 +7,7 @@ use base qw(SVK::Editor::Checkout);
 use SVK::I18N;
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'SVK::Util'  => qw( get_anchor md5_fh );
+use Class::Autouse qw( SVK::Editor::Composite );
 
 =head1 NAME
 

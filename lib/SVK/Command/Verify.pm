@@ -36,9 +36,9 @@ sub _verify {
 sub run {
     my ($self, $chg, $depot) = @_;
     my $target = $self->arg_depotpath ("/$depot/");
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $sig = $fs->revision_prop ($chg, 'svk:signature');
-    return _verify ($target->{repos}, $sig, $chg)
+    return _verify ($target->repos, $sig, $chg)
 	if $sig;
     print "No signature found for change $chg at /$depot/.\n";
     return;
