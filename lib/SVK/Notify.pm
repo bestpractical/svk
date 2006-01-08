@@ -2,6 +2,7 @@ package SVK::Notify;
 use SVK::I18N;
 use SVK::Util qw( abs2rel $SEP to_native from_native get_encoding);
 use strict;
+use Encode;
 
 =head1 NAME
 

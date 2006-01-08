@@ -155,7 +155,7 @@ sub fetch {
 package main;
 
 my $server = SVK::Server->new({'pidfile' => 'none',
-#			       'mode'    => 'single',
+			       'mode'    => 'fork',
 			       'log' => 'STDERR',
 			       'localport' => 3699}, \@ARGV);
 
