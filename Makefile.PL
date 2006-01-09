@@ -16,7 +16,7 @@ requires(
 #        'SVN::Core'   => $required_svn,
         'Algorithm::Annotate'   => '0',
         'Algorithm::Diff'       => '0',
-        'YAML::Syck'            => '0.11',
+        'YAML::Syck'            => '0.14',
         'Regexp::Shellish'      => '0',
         'Data::Hierarchy'       => '0.21',
         'File::Temp'            => '0.14',
