@@ -202,7 +202,7 @@ sub find_merge_sources {
 	if $target->isa('SVK::Path::Checkout');
     $info->add_target ($target, $self->{xd}) unless $noself;
 
-    my $minfo = $verbatim ? $info->verbatim : $info->resolve ($target->repos);
+    my $minfo = $verbatim ? $info->verbatim : $info->resolve ($self->{xd}, $target->depotname, $target->repos);
     return $minfo if $verbatim;
 
     my $myuuid = $target->repos->fs->get_uuid ();
@@ -235,7 +235,7 @@ sub log {
     no warnings 'uninitialized';
     use Sys::Hostname;
     my $print_rev = SVK::Command::Log::_log_remote_rev
-	($self->{repos}, $self->{src}->path, $self->{remoterev},
+	($self->{src}, $self->{remoterev},
 	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
     my $sep = $verbatim || $self->{verbatim} ? '' : ('-' x 70)."\n";
     my $cb_log = sub {
@@ -568,9 +568,9 @@ sub union {
 }
 
 sub resolve {
-    my ($self, $repos) = @_;
+    my ($self, $xd, $depotname, $repos) = @_;
     my $uuid = $repos->fs->get_uuid;
-    return { map { my $local = $self->{$_}->local ($repos);
+    return { map { my $local = $self->{$_}->local($xd, $depotname);
 		   $local ? ("$uuid:".$local->path_anchor => $local->revision) : ()
 	       } keys %$self };
 }

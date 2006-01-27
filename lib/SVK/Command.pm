@@ -346,12 +346,9 @@ sub arg_uri_maybe {
     my $map = $self->{xd}{depotmap};
     foreach my $depot (sort keys %$map) {
         my $repos = eval { ($self->{xd}->find_repos ("/$depot/", 1))[2] } or next;
-	foreach my $path ( SVN::Mirror::list_mirror ($repos) ) {
-	    my $m = eval {SVN::Mirror->new (
-                repos => $repos,
-                get_source => 1,
-                target_path => $path,
-            ) } or next;
+	my %mirrors = $self->{xd}->mirror($repos)->entries;
+	foreach my $path (sort keys %mirrors) {
+	    my $m = $mirrors{$path}->mirror;
 
             my $rel_uri = $uri->rel(URI->new("$m->{source}/")->canonical) or next;
             next if $rel_uri->eq($uri);
@@ -428,10 +425,9 @@ usually good enough.
     # If we're mirroring via svn::mirror, not mirroring the whole history
     # is an option
     my ($m, $answer);
-    ($m,undef) = SVN::Mirror::is_mirrored ($target->repos,
-                                           $target->path_anchor) if (HAS_SVN_MIRROR);
-    # If the user is mirroring from svn                                       
-    if (UNIVERSAL::isa($m,'SVN::Mirror::Ra'))  {                                
+    $m = $target->is_mirrored;
+    # If the user is mirroring from svn
+    if (UNIVERSAL::isa($m,'SVN::Mirror::Ra'))  {
         print loc("
 svk needs to mirror the remote repository so you can work locally.
 If you're mirroring a single branch, it's safe to use any of the options
@@ -502,6 +498,7 @@ sub arg_co_maybe {
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
+	  mirror => $self->{xd}->mirror($repos),
 	  path => $path,
 	  view => $view,
 	  revision => $rev,
@@ -535,6 +532,7 @@ sub arg_copath {
     from_native ($path, 'path', $self->{encoding});
     return SVK::Path::Checkout->new
 	( repos => $repos,
+	  mirror => $self->{xd}->mirror($repos),
 	  repospath => $repospath,
 	  report => File::Spec->canonpath ($arg),
 	  copath => $copath,
@@ -625,6 +623,7 @@ sub arg_depotpath {
 
     return SVK::Path->new
 	( repos => $repos,
+	  mirror => $self->{xd}->mirror($repos),
 	  repospath => $repospath,
 	  path => $path,
 	  report => $arg,
@@ -1043,7 +1042,7 @@ sub resolve_revision {
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
     } elsif (HAS_SVN_MIRROR && (my ($rrev) = $revstr =~ m'^(\d+)@$')) {
-	if (my ($m) = SVN::Mirror::is_mirrored ($target->repos, $target->path_anchor)) {
+	if (my $m = $target->is_mirrored) {
 	    $rev = $m->find_local_rev ($rrev);
 	}
 	die loc ("Can't find local revision for %1 on %2.\n", $rrev, $target->path)

@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR traverse_history get_encoding );
+use SVK::Util qw( traverse_history get_encoding );
 use List::Util qw(max min);
 use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
@@ -20,13 +20,15 @@ sub options {
 
 # returns a sub for getting remote rev
 sub _log_remote_rev {
-    my ($repos, $path, $remoteonly, $host) = @_;
+    my ($target, $remoteonly, $host) = @_;
     $host ||= '';
-    return sub {"r$_[0]$host"} unless HAS_SVN_MIRROR and SVN::Mirror::list_mirror ($repos);
+    # don't bother if this repository has no mirror
+    return sub {"r$_[0]$host"} unless $target->mirror->entries;
     # save some initialization
-    my $m = SVN::Mirror::is_mirrored ($repos, $path) || 'SVN::Mirror';
+    # XXX: if there's no $m why do we need to be able to lookup?
+    my $m = $target->is_mirrored || 'SVN::Mirror';
     sub {
-	my $rrev = $m->find_remote_rev ($_[0], $repos);
+	my $rrev = $m->find_remote_rev ($_[0], $target->repos);
 	$remoteonly ? "r$rrev$host" :
 	    "r$_[0]$host".($rrev ? " (orig r$rrev)" : '');
     }
@@ -57,7 +59,7 @@ sub run {
     $torev ||= 0;
     $self->{cross} ||= 0;
 
-    my $print_rev = _log_remote_rev ($target->repos, $target->path_anchor);
+    my $print_rev = _log_remote_rev ($target);
 
     if ($target->revision < max ($fromrev, $torev)) {
 	print loc ("Revision too large, show log from %1.\n", $target->revision);

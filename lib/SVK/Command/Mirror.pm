@@ -44,22 +44,11 @@ sub run {
     my ($self, $target, $source, @options) = @_;
     die loc ("%1 already exists.\n", $target->path)
 	if $target->root->check_path ($target->path);
-    $self->get_mirror_object ($target, $source, @options)->init
-	or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
+    $self->{xd}->mirror($target->repos)
+	->add_entry($target->path_anchor, $source, @options)
+	    or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
 		   $target->depotpath);
     return;
-}
-
-sub get_mirror_object {
-    my ($self, $target, $source, @options) = @_;
-    return SVN::Mirror->new (target_path => $target->path_anchor,
-			     source => $source,
-			     repospath => $target->repospath,
-			     repos => $target->repos,
-			     options => \@options,
-			     config => $self->{svnconfig},
-			     pool => SVN::Pool->new,
-			    );
 }
 
 package SVK::Command::Mirror::relocate;
@@ -68,7 +57,10 @@ use SVK::I18N;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    $self->get_mirror_object ($target, $source, @options)->relocate;
+    $self->{xd}->mirror($target->repos)
+	->svnmirror_object($target->path_anchor,
+			   source => $source, options => \@options)
+	->relocate;
     return;
 }
 
@@ -80,8 +72,7 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    my ($m, $mpath) = SVN::Mirror::is_mirrored ($target->repos,
-						$target->path_anchor);
+    my ($m, $mpath) = $target->is_mirrored;
 
     die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
     die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
@@ -111,14 +102,7 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    my $m = SVN::Mirror->new
-	( target_path => $target->path,
-	  repos => $target->repos,
-	  ignore_lock => 1,
-	  get_source => 1
-	);
-    $m->init;
-    $m->unlock ('force');
+    $self->{xd}->mirror($target->repos)->unlock($target->path_anchor);
     print loc ("mirror locks on %1 removed.\n", $target->report);
     return;
 }
@@ -147,20 +131,11 @@ sub run {
 	    warn loc ("Depot /%1/ not loadable.\n", $depot);
 	    next;
 	}
-	my @paths = SVN::Mirror::list_mirror ($target->repos);
-	my $fs = $target->repos->fs;
-	my $root = $fs->revision_root ($fs->youngest_rev);
-	my $name = $target->depotname;
-	foreach my $path (@paths) {
-	    eval {
-	    my $m = SVN::Mirror->new(
-                    target_path => $path,
-                    repos => $target->repos,
-                    get_source => 1
-                );
-	    printf $fmt, "/$name$path", $m->{source};
-	    };
-	}
+	my %mirrors = $self->{xd}->mirror($target->repos)->entries;
+	foreach my $path (sort keys %mirrors) {
+	    my $m = $mirrors{$path};
+	    printf $fmt, '/'.$target->depotname.$path, $m->mirror->{source};
+	};
     }
     return;
 }
@@ -175,7 +150,9 @@ use constant narg => 1;
 sub run {
     my ($self, $target, $source, @options) = @_;
     $source = ("file://".$target->repospath);
-    my $m = $self->get_mirror_object ($target, $source, @options);
+    my $m = $self->{xd}->mirror($target->repos)
+	->svnmirror_object($target->path_anchor,
+			   source => $source, options => \@options);
     $self->recover_headrev ($target, $m);
     $self->recover_list_entry ($target, $m);
     return;

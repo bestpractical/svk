@@ -47,7 +47,7 @@ sub message_prompt {
 sub under_mirror {
     my ($self, $target) = @_;
     return if $self->{direct};
-    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->repos, $target->path_anchor);
+    HAS_SVN_MIRROR and $target->is_mirrored;
 }
 
 sub fill_commit_message {

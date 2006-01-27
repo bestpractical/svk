@@ -952,44 +952,20 @@ sub find_prev_copy {
 }
 
 
-# this is the cached and faster version of svn::mirror::has_local,
-# which should be deprecated eventually.
-my %mirror_cached;
-
 sub _list_mirror_cached {
     my $repos = shift;
-    my $rev = $repos->fs->youngest_rev;
-    delete $mirror_cached{$repos}
-	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
-    return %{$mirror_cached{$repos}{hash}}
-	if exists $mirror_cached{$repos};
-    my %mirrored = map {
-	my $m = SVN::Mirror->new( target_path => $_,
-				  repos => $repos,
-				  pool => SVN::Pool->new,
-				  get_source => 1 );
-	local $@;
-	eval { $m->init };
-	$@ ? () : ($_ => join(':', $m->{source_uuid}, $m->{source_path}))
-    } SVN::Mirror::list_mirror($repos);
-
-    $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
-    return %mirrored;
+    SVK::Mirror->new({repos => $repos})->entries;
 }
 
 sub _has_local {
     my ($repos, $spec) = @_;
     my %mirrored = _list_mirror_cached($repos);
-    while (my ($path, $mspec) = each(%mirrored)) {
+    while (my ($path, $m) = each(%mirrored)) {
+	my $mspec = $m->spec;
 	my $mpath = $spec;
 	next unless $mpath =~ s/^\Q$mspec\E//;
-	my $m = SVN::Mirror->new (target_path => $path,
-				  repos => $repos,
-				  pool => SVN::Pool->new,
-				  get_source => 1);
-	$m->init;
 	$mpath = '' if $mpath eq '/';
-	return ($m, $mpath);
+	return ($m->mirror, $mpath);
     }
     return;
 }

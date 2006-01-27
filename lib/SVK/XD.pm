@@ -15,6 +15,7 @@ use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML::Syck'	 => qw(LoadFile DumpFile);
 use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
+use SVK::Mirror;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
@@ -463,6 +464,7 @@ sub target_from_copath_maybe {
 	  report => $arg,
 	  path => $path,
 	  xd => $self,
+	  mirror => $self->mirror($repos),
 	  view => $view,
 	  revision => $rev,
 	);
@@ -1573,6 +1575,20 @@ sub patch_file {
     my ($self, $name) = @_;
     return '-' if $name eq '-';
     return catdir ($self->patch_directory, "$name.patch");
+}
+
+sub _mirror {
+    my ($self, $repos) = @_;
+    return SVK::Mirror->new
+	( { repos => $repos,
+	    config => $self->{svnconfig},
+	    revprop => ['svk:signature'] });
+}
+
+sub mirror {
+    my ($self, $repos) = @_;
+    return $repos ? $self->_mirror($repos) :
+	map { $self->_mirror($_) } values %{$self->{depotmap}};
 }
 
 sub DESTROY {

@@ -70,10 +70,7 @@ sub run {
 
             # Because syncing under the mirror anchor is impossible,
             # we always sync from the mirror anchor.
-            my ($m, $mpath) = SVN::Mirror::is_mirrored (
-                $sync_target->repos,
-                $sync_target->path_anchor
-            );
+            my ($m, $mpath) = $sync_target->is_mirrored;
             $m->run if $m->{source};
         }
 

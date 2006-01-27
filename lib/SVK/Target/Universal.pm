@@ -52,10 +52,11 @@ sub local {
 
     SVK::Path->new
 	( repos => $repos,
+	  mirror => $xd ? $xd->mirror($repos) : undef,
 	  repospath => $repospath,
 	  path => $path,
 	  revision => $rev,
-	  depotpath => $depot ? "/$depot$path" : undef,
+	  depotname => $depot || '',
 	);
 }
 

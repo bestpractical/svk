@@ -5,7 +5,7 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision
+__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision mirror
 			     _root _inspector _pool));
 
 use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
@@ -72,9 +72,11 @@ sub _clone {
     my $pool = delete $self->{_pool};
     my $view = delete $self->{view};
     my $inspector = delete $self->{_inspector};
+    my $mirror = delete $self->{mirror};
     my $cloned = Storable::dclone ($self);
     $cloned->repos($self->repos) if ref($self) eq 'SVK::Path';
     $self->{xd} = $cloned->{xd} = $xd if $xd;
+    $self->{mirror} = $cloned->{mirror} = $mirror if $mirror;
     $self->{_root} = $root;
     $cloned->{view} = $self->{view} = $view;
     $self->{_pool} = $pool;
@@ -119,9 +121,9 @@ sub same_source {
     my ($self, @other) = @_;
     return 0 unless HAS_SVN_MIRROR;
     return 0 unless $self->same_repos (@other);
-    my $mself = SVN::Mirror::is_mirrored ($self->repos, $self->path);
+    my $mself = $self->is_mirrored;
     for (@other) {
-	my $m = SVN::Mirror::is_mirrored ($_->repos, $_->path);
+	my $m = $_->is_mirrored;
 	return 0 if $m xor $mself;
 	return 0 if $m && $m->{target_path} ne $m->{target_path};
     }
@@ -131,9 +133,13 @@ sub same_source {
 sub is_mirrored {
     my ($self) = @_;
     return unless HAS_SVN_MIRROR;
-    # XXX: improve is_mirrored with util::_list_mirror_cached
 
-    return SVN::Mirror::is_mirrored($self->repos, $self->path_anchor);
+    # XXX: fallback when we don't have mirror object associated, but we
+    # should enforce it.
+    return SVN::Mirror::is_mirrored($self->repos, $self->path_anchor)
+	unless $self->mirror;
+
+    return $self->mirror->is_mirrored($self->path_anchor);
 }
 
 sub _commit_editor {
@@ -205,8 +211,6 @@ sub get_editor {
     if ($m) {
 	print loc("Merging back to mirror source %1.\n", $m->{source});
 	$m->{lock_message} = SVK::Command::Sync::lock_message($self);
-	$m->{config} = $self->{svnconfig};
-	$m->{revprop} = ['svk:signature'];
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message},
 	     sub { my $rev = shift;
@@ -328,10 +332,9 @@ sub universal {
 sub contains_mirror {
     require SVN::Mirror;
     my ($self) = @_;
-    my $path = $self->{path};
-    $path .= '/' unless $path eq '/';
-    return map { substr ("$_/", 0, length($path)) eq $path ? $_ : () }
-	SVN::Mirror::list_mirror ($self->repos);
+    my $path = $self->_to_pclass($self->path_anchor, 'Unix');
+    my %mirrors = $self->mirror->entries;
+    return grep { $path->subsumes($_) } sort keys %mirrors;
 }
 
 =head2 depotpath
@@ -513,9 +516,7 @@ sub copied_from {
 
 	# Check for mirroredness.
 	if ($want_mirror and HAS_SVN_MIRROR) {
-	    my ($m, $mpath) = SVN::Mirror::is_mirrored (
-		$target->repos, $target->path_anchor
-	    );
+	    my ($m, $mpath) = $target->is_mirrored;
 	    $m->{source} or next;
 	}
 
