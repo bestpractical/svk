@@ -67,6 +67,7 @@ lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/Translate.pm
+lib/SVK/Editor/View.pm
 lib/SVK/Editor/XD.pm
 lib/SVK/Help/Environment.pod
 lib/SVK/Help/Index.pod
@@ -77,12 +78,18 @@ lib/SVK/I18N.pm
 lib/SVK/I18N/i_default.po
 lib/SVK/I18N/zh_cn.po
 lib/SVK/I18N/zh_tw.po
+lib/SVK/Inspector.pm
+lib/SVK/Inspector/Root.pm
+lib/SVK/Inspector/XD.pm
+lib/SVK/Inspector/Compat.pm
 lib/SVK/Merge.pm
+lib/SVK/Mirror.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Patchset.pm
 lib/SVK/Path.pm
 lib/SVK/Path/Checkout.pm
+lib/SVK/Path/Txn.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
@@ -97,8 +104,11 @@ lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
+lib/SVK/Root.pm
+lib/SVK/Root/View.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
+lib/SVK/View.pm
 lib/SVK/Version.pm
 lib/SVK/XD.pm
 Makefile.PL
@@ -160,6 +170,7 @@ t/21delete.t
 t/22status.t
 t/23commit-inter-nav.t
 t/23commit-inter-output.t
+t/23commit-file.t
 t/23commit-mirror.t
 t/23commit-multi.t
 t/23commit.t
@@ -169,6 +180,7 @@ t/26revert-remove.t
 t/26revert.t
 t/27mkdir.t
 t/28info.t
+t/29update-mix.t
 t/30annotate.t
 t/31cat.t
 t/32list.t
@@ -182,8 +194,11 @@ t/60patchset.t
 t/70symlink.t
 t/71autovivify.t
 t/72sign.t
+t/73view.t
 t/73i18n.t
 t/74chgspec.t
+t/74view.t
+t/74view-mirror.t
 t/75hook.t
 t/svk-sec.gpg
 t/svk.gpg

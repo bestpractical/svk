@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 14;
+plan_svm tests => 17;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -71,3 +71,18 @@ is_output_like ($svk, 'desc', [2],
 		qr|r2.*cp and ps.*Property changes on: A/foo.*--- foo-cp\t\(revision 1\)|s);
 is_output_like ($svk, 'desc', ['r2'],
 		qr|r2.*cp and ps.*Property changes on: A/foo.*--- foo-cp\t\(revision 1\)|s);
+$svk->mv (-m => 'mv', '//foo-cp', '//foo-mv');
+$svk->rm (-m => 'rm', '//bar-cp');
+$svk->cp (-m => 'cp', '//bar-cp@4', '//bar-notmv');
+is_output ($svk, 'log', ['//foo-mv'],
+	   [qr|-+|, qr|r4.*|, '', qr|mv|,
+            qr|-+|, qr|r2.*|, '', qr|cp and ps|s,
+            qr|-+|]);
+is_output ($svk, 'log', ['//bar-notmv'],
+	   [qr|-+|, qr|r6.*|, '', qr|cp|,
+            qr|-+|]);
+is_output ($svk, 'log', ['//bar-notmv', '--cross'],
+	   [qr|-+|, qr|r6.*|, '', qr|cp|,
+	    qr|-+|, qr|r2.*|, '', qr|cp and ps|,
+	    qr|-+|, qr|r1.*|, '', qr|init|,
+            qr|-+|]);

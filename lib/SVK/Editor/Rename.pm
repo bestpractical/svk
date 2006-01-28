@@ -80,8 +80,7 @@ sub AUTOLOAD {
     return if $func =~ m/^[A-Z]+$/;
     my $baton_at = $self->baton_at ($func);
     my ($renamed, $renamed_anchor);
-
-    if ($baton_at == 1) {
+    if ($baton_at > 0) {
 	my $newpath = $self->rename_check ($arg[0]);
 	if ($newpath ne $arg[0]) {
 	    ++$renamed;
@@ -100,10 +99,10 @@ sub AUTOLOAD {
     my $sfunc = "SUPER::$func";
     my $ret = $self->$sfunc (@arg);
 
-    $self->{renamed}[$ret]++ if $renamed;
+    $self->{renamed}[$ret]++ if $renamed && $ret;
 
     if ($renamed_anchor) {
-	$self->{renamed_anchor}[$ret] = $self->{edit_tree}[$arg[1]][-1]
+	push @{$self->{renamed_anchor}}, $self->{edit_tree}[$arg[$baton_at]][-1];
     }
     else {
 	$self->{opened_baton}{$arg[0]} = [$ret, $arg[1]]
@@ -124,7 +123,8 @@ sub open_parent {
 
     ++$self->{batons};
 
-    if ($self->{cb_exist} && !$self->{cb_exist}->($parent)) {
+    # XXX: If inspector is always there, then the first check isn't necessary.
+    if ($self->{inspector} && !$self->{inspector}->exist($parent)) {
 	unshift @{$self->{edit_tree}[$pbaton]},
 	    [$self->{batons}, 'add_directory', $parent, $ppbaton, undef, -1];
     }
@@ -163,9 +163,8 @@ sub _insert_entry {
 sub close_edit {
     my $self = shift;
     $self->SUPER::close_edit (@_);
-    for (0..$#{$self->{renamed_anchor}}) {
-	next unless defined $self->{renamed_anchor}[$_];
-	$self->adjust_anchor ($self->{renamed_anchor}[$_]);
+    for (@{$self->{renamed_anchor}}) {
+	$self->adjust_anchor($_);
     }
     # XXX: addition phase here to trim useless opens.
     $self->drive ($self->{editor});

@@ -30,6 +30,7 @@ is_file_content ("$copath/Q/qu", "first line in qu\nlocally modified on branch\n
 chdir ($copath);
 $svk->rm ('be');
 $svk->commit (-m => 'remove be', 'be');
+
 is_output ($svk, 'switch', ['//A-branch'],
 	   ["Syncing //A(/A) in $corpath to 4.",
 	    map __($_),

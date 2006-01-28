@@ -14,6 +14,8 @@ use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
 use Test::More;
+require Storable;
+use SVK::Path::Checkout;
 
 # Fake standard input
 our $answer = [];
@@ -129,8 +131,14 @@ sub rm_test {
 }
 
 sub cleanup_test {
-    return unless $ENV{TEST_VERBOSE};
     my ($xd, $svk) = @{+shift};
+    for my $depot (sort keys %{$xd->{depotmap}}) {
+	my $pool = SVN::Pool->new_default;
+	my (undef, undef, $repos) = eval { $xd->find_repos("/$depot/", 1) };
+	diag "uncleaned txn on /$depot/"
+	    if $repos && @{$repos->fs->list_transactions};
+    }
+    return unless $ENV{TEST_VERBOSE};
     use YAML;
     print Dump($xd);
     for my $depot (sort keys %{$xd->{depotmap}}) {
@@ -184,7 +192,7 @@ sub _do_run {
     my $unlock = SVK::XD->can('unlock');
     my $giant_unlock = SVK::XD->can('giant_unlock');
     no warnings 'redefine';
-    my $origxd = Clone::clone($svk->{xd}->{checkout});
+    my $origxd = Storable::dclone($svk->{xd}->{checkout});
     require SVK::Command::Checkout;
     my $giant_locked = 1;
     local *SVK::XD::giant_unlock = sub {

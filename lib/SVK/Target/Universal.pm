@@ -20,7 +20,7 @@ SVK::Target::Universal - svk target that might not be local
 
 sub new {
     my $class = shift;
-    return $class->new (find_svm_source ($_[0]->{repos}, $_[0]->path, $_[0]->{revision}))
+    return $class->new (find_svm_source ($_[0]->repos, $_[0]->path, $_[0]->revision))
 	if ref ($_[0]);
 
     my ($uuid, $path, $rev) = @_;
@@ -52,10 +52,11 @@ sub local {
 
     SVK::Path->new
 	( repos => $repos,
+	  mirror => $xd ? $xd->mirror($repos) : undef,
 	  repospath => $repospath,
 	  path => $path,
 	  revision => $rev,
-	  depotpath => $depot ? "/$depot$path" : undef,
+	  depotname => $depot || '',
 	);
 }
 

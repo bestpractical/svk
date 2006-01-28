@@ -137,10 +137,16 @@ is_output ($svk, 'push', [], [
         "Retrieving log information from 9 to 9",
         "Committed revision 17 from revision 9."]);
 
-is_output ($svk, "pull", ['--force-incremental'], [
-        "Syncing $uri/A",
-        "Auto-merging (3, 17) /m to /l (base /l:16).",
-        "===> Auto-merging (3, 13) /m to /l (base /l:10).",
+is_output ($svk, "pull", ['--force-incremental'],
+      [ "Syncing $uri/A",
+	'Auto-merging (3, 17) /m to /l (base /l:16).',
+	'===> Auto-merging (3, 7) /m to /l (base /l:5).',
+	'Empty merge.',
+	'===> Auto-merging (7, 8) /m to /l (base /l:6).',
+	'Empty merge.',
+	'===> Auto-merging (8, 11) /m to /l (base /l:10).',
+	'Empty merge.',
+	'===> Auto-merging (11, 13) /m to /l (base /l:10).',
         "A   new-file",
         "New merge ticket: $test_uuid:/A:6",
         "Committed revision 18.",
@@ -148,6 +154,11 @@ is_output ($svk, "pull", ['--force-incremental'], [
         "U   new-file",
         "New merge ticket: $test_uuid:/A:7",
         "Committed revision 19.",
+	"===> Auto-merging (14, 15) /m to /l (base /l:12).",
+	"g   new-file",
+	"Empty merge.",
+	"===> Auto-merging (15, 17) /m to /l (base /l:16).",
+	"g   new-file",
+	"Empty merge.",
         "Syncing //l(/l) in $corpath_default to 19.",
         "A   new-file"]);
-

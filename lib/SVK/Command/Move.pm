@@ -13,7 +13,7 @@ sub lock {
 sub handle_direct_item {
     my $self = shift;
     my ($editor, $anchor, $m, $src, $dst) = @_;
-    my $srcm = $self->under_mirror ($src);
+    my ($srcm) = $self->under_mirror ($src);
     my $call;
     if ($srcm && $srcm->{target_path} eq $src->path) {
 	# this should be in svn::mirror
@@ -31,8 +31,8 @@ sub handle_direct_item {
     $self->SUPER::handle_direct_item (@_, $call);
 
     $editor->delete_entry (abs2rel ($src->path, $anchor => undef, '/'),
-			   $m ? scalar $m->find_remote_rev ($src->{revision})
-			      : $src->{revision}, 0);
+			   $m ? scalar $m->find_remote_rev ($src->revision)
+			      : $src->revision, 0);
     $self->adjust_anchor ($editor);
 }
 
@@ -56,8 +56,7 @@ sub run {
 	}
 	my $cmd = $self->command('propset', { revision => undef,
 					      message => 'svk: fix-up for mirror move' });
-	$cmd->run($cmd->parse_arg('svm:mirror', $mstring,
-				  '/'.$src->depotname.'/'));
+	$cmd->run('svm:mirror', $mstring, $src->new(path => '/'));
     }
     return $ret;
 }

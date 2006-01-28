@@ -33,8 +33,8 @@ sub do_propset_direct {
     my ($self, $target, $propname, $propvalue) = @_;
 
     if ($self->{revprop}) {
-	my $fs = $target->{repos}->fs;
-        my $rev = (defined($self->{rev}) ? $self->{rev} : $target->{revision});
+	my $fs = $target->repos->fs;
+        my $rev = (defined($self->{rev}) ? $self->{rev} : $target->revision);
         $fs->change_rev_prop ($rev, $propname => $propvalue);
 	unless ($self->{quiet}) {
 	    if (defined $propvalue) {
@@ -59,7 +59,7 @@ sub do_propset_direct {
     my $path = abs2rel ($target->path, $anchor => undef, '/');
 
     my $m = $self->under_mirror ($target);
-    my $rev = $target->{revision};
+    my $rev = $target->revision;
     $rev = $m->find_remote_rev ($rev) if $m;
     if ($kind == $SVN::Node::dir) {
 	if ($anchor eq $target->path) {
@@ -85,12 +85,12 @@ sub do_propset_direct {
 sub do_propset {
     my ($self, $pname, $pvalue, $target) = @_;
 
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	die loc("-r not allowed for propset copath.\n")
 	    if $self->{rev};
 	# verify the content is not with mixed line endings.
 	if ($pname eq 'svn:eol-style') {
-	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->{path}, $target->{copath},
+	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->path, $target->{copath},
 				      { 'svn:eol-style' => $pvalue }, '',
 				      undef, 1);
 	    eval {
@@ -98,7 +98,7 @@ sub do_propset {
 		while (<$fh>) { };
 	    };
 	    if ($@ =~ m/Mixed/) {
-		die loc ("File %1 has inconsistent newlines.\n", $target->{report});
+		die loc ("File %1 has inconsistent newlines.\n", $target->report);
 	    }
 	    elsif ($@) {
 		die $@;
@@ -106,7 +106,7 @@ sub do_propset {
 	}
 
 	$self->{xd}->do_propset
-	    ( %$target,
+	    ( $target->for_checkout_delta,
 	      propname => $pname,
 	      propvalue => $pvalue,
 	      quiet => $self->{quiet},

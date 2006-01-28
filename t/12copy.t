@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 67;
+plan_svm tests => 69;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -38,7 +38,7 @@ $svk->rm ("$copath/V-copy/B/fe");
 is_output ($svk, 'status', [$copath],
 	   [__('A + t/checkout/copy/D-copy'),
 	    __('A + t/checkout/copy/V-copy'),
-	    __('D   t/checkout/copy/V-copy/B/fe'),
+	    __('D + t/checkout/copy/V-copy/B/fe'),
 	    __('M + t/checkout/copy/V-copy/D/de'),
 	    __('A + t/checkout/copy/de'),
 	    __('A + t/checkout/copy/de-copy'),
@@ -182,9 +182,16 @@ is_output ($svk, 'status', [$copath],
 	    __("A + $copath/nonexist/fnord")]
 	  );
 
+$svk->revert("$copath/nonexist");
+is_output($svk, 'copy', ["$copath/me", "$copath/nonexist"],
+	  [__"t/checkout/copy/nonexist is not a versioned directory."]);
+	  
 is_output($svk, 'copy', ["$copath/me", "$copath/me-cocopied/fnord"],
 	  [__"t/checkout/copy/me-cocopied is not a directory."]);
 
+is_output($svk, 'copy', ["$copath/A", "$copath/B", "$copath/me"],
+	  [__"t/checkout/copy/me is not a directory."]);
+	  
 is_output($svk, 'copy', [-p => "$copath/me", "$copath/me-cocopied/fnord/orz"],
 	  [__("mkdir t/checkout/copy/me-cocopied: File exists"),
 	  ]);

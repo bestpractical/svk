@@ -24,33 +24,35 @@ sub parse_arg {
 # -r N PATH@M means the node PATH@M at rev N
 sub run {
     my ($self, $target, $target2) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my ($cb_llabel, $report);
     my ($r1, $r2) = $self->resolve_revspec($target,$target2);
 
     # translate to target and target2
     if ($target2) {
-	if ($target->{copath}) {
-	    die loc("Invalid arguments.\n") if !$target2->{copath};
+	if ($target->isa('SVK::Path::Checkout')) {
+	    die loc("Invalid arguments.\n")
+		unless $target2->isa('SVK::Path::Checkout');
             $self->run($_) foreach @_[1..$#_];
             return;
 	}
-	if ($target2->{copath}) {
-	    die loc("Invalid arguments.\n") if $target->{copath};
-	    $target->{revision} = $r1 if $r1;
+	if ($target2->isa('SVK::Path::Checkout')) {
+	    die loc("Invalid arguments.\n")
+		if $target->isa('SVK::Path::Checkout');
+	    $target = $target->new(revision => $r1) if $r1;
 	    # diff DEPOTPATH COPATH require DEPOTPATH to exist
 	    die loc("path %1 does not exist.\n", $target->report)
-		if $target->root->check_path ($target->{path}) == $SVN::Node::none;
+		if $target->root->check_path ($target->path_anchor) == $SVN::Node::none;
 	}
     }
     else {
-	$target->as_depotpath($r1) if $r1 && $r2;
-	if ($target->{copath}) {
+	$target = $target->new->as_depotpath($r1) if $r1 && $r2;
+	if ($target->isa('SVK::Path::Checkout')) {
 	    $target = $self->{xd}->target_condensed($target); # find anchor
 	    $target2 = $target->new;
-	    $target->as_depotpath($r1) if $r1;;
-	    $report = $target->{report};
+	    $report = $target->report; # get the report before it turns to depotpath
+	    $target = $target->as_depotpath($r1) if $r1;;
 	    $cb_llabel =
 		sub { my ($rpath) = @_;
 		      'revision '.($self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision}) } unless $r1;
@@ -63,47 +65,42 @@ sub run {
 
     my ($oldroot, $newroot) = map { $_->root($self->{xd}) } ($target, $target2);
 
-    unless ($target2->{copath}) {
+    unless ($target2->isa('SVK::Path::Checkout')) {
 	die loc("path %1 does not exist.\n", $target2->report)
-	    if $target2->root->check_path($target2->{path}) == $SVN::Node::none;
+	    if $target2->root->check_path($target2->path_anchor) == $SVN::Node::none;
     }
 
     my $editor = $self->{summarize} ?
 	SVK::Editor::Status->new
 	: SVK::Editor::Diff->new
-	( cb_baseprop =>
-	  sub { my ($rpath, $pname, $pool) = @_;
-		my $path = "$target->{path}/$rpath";
-		return $oldroot->check_path ($path, $pool) == $SVN::Node::none ?
-		    undef : $oldroot->node_prop ($path, $pname, $pool);
-	    },
-	  $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision ".($target->{revision})),
-	  rlabel => $target2->{copath} ? 'local' : "revision ".($target2->{revision}),
+	( $cb_llabel ? (cb_llabel => $cb_llabel) : (llabel => "revision ".($target->revision)),
+	  rlabel => $target2->isa('SVK::Path::Checkout')
+	           ? 'local' : "revision ".($target2->revision),
 	  external => $ENV{SVKDIFF},
-	  $target->{path} ne $target2->{path} ?
-	  ( lpath  => $target->{path},
-	    rpath  => $target2->{path} ) : (),
+	  $target->path_anchor ne $target2->path_anchor ?
+	  ( lpath  => $target->path_anchor,
+	    rpath  => $target2->path_anchor ) : (),
 	  base_root => $oldroot, base_target => $target,
 	);
 
-    my $kind = $oldroot->check_path ($target->{path});
-    if ($target2->{copath}) {
+    my $kind = $oldroot->check_path ($target->path_anchor);
+    if ($target2->isa('SVK::Path::Checkout')) {
 	if ($kind != $SVN::Node::dir) {
 	    my $tgt;
-	    ($target2->{path}, $tgt) = get_anchor (1, $target2->{path});
+	    ($target2->{path}, $tgt) = get_anchor (1, $target2->path_anchor);
 	    ($target->{path}, $target2->{copath}) =
-		get_anchor (0, $target->{path}, $target2->{copath});
+		get_anchor (0, $target->path_anchor, $target2->{copath});
 	    $target2->{targets} = [$tgt];
 	    ($report) = get_anchor (0, $report) if defined $report;
 	}
 	$editor->{report} = $report;
 	$self->{xd}->checkout_delta
-	    ( %$target2,
+	    ( $target2->for_checkout_delta,
 	      $self->{expand}
 	      ? ( expand_copy => 1 )
 	      : ( cb_copyfrom => sub { @_ } ),
 	      base_root => $oldroot,
-	      base_path => $target->{path},
+	      base_path => $target->path_anchor,
 	      xdroot => $newroot,
 	      editor => $editor,
 	      $self->{recursive} ? () : (depth => 1),
@@ -121,14 +118,15 @@ sub run {
 	$editor->{report} = $report;
 
 	require SVK::Editor::Copy;
+	require SVK::Merge;
 	$editor = SVK::Editor::Copy->new
 	    ( _editor => [$editor],
 	      base_root => $target->root,
 	      base_path => $target->path,
-	      base_rev => $target->{revision},
-	      copyboundry_rev => $target->{revision},
+	      base_rev => $target->revision,
+	      copyboundry_rev => $target->revision,
 	      copyboundry_root => $target->root,
-	      merge => bless ({ xd => $self->{xd} }, 'SVK::Merge'),
+	      merge => SVK::Merge->new( xd => $self->{xd} ), # XXX: hack
 	      base => $target,
 	      src => $target2,
 	      dst => $target2,
@@ -139,7 +137,7 @@ sub run {
 
 	$self->{xd}->depot_delta
 	    ( oldroot => $oldroot,
-	      oldpath => [$target->{path}, $target->{targets}[0] || ''],
+	      oldpath => [$target->path_anchor, $target->path_target],
 	      newroot => $newroot,
 	      newpath => $target2->path,
 	      editor => $editor,
@@ -173,6 +171,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
                           "HEAD"       latest in repository
                           NUMBER       revision number
+                          NUMBER@      interpret as remote revision number
                           NUM1:NUM2    revision range
 
                           Given negative NUMBER means "HEAD"+NUMBER.

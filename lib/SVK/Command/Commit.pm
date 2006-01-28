@@ -12,6 +12,8 @@ use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder );
 
+use Class::Autouse qw( SVK::Editor::Rename SVK::Editor::Merge );
+
 sub options {
     ('m|message=s'  => 'message',
      'F|file=s'     => 'message_file',
@@ -22,6 +24,7 @@ sub options {
      'direct'       => 'direct',
      'template'     => 'template',
      'interactive'  => 'interactive',
+     'set-revprop=s@' => 'setrevprop',
     );
 }
 
@@ -45,7 +48,7 @@ sub message_prompt {
 sub under_mirror {
     my ($self, $target) = @_;
     return if $self->{direct};
-    HAS_SVN_MIRROR and SVN::Mirror::is_mirrored ($target->{repos}, $target->{path});
+    HAS_SVN_MIRROR and $target->is_mirrored;
 }
 
 sub fill_commit_message {
@@ -93,10 +96,11 @@ sub get_dynamic_editor {
     my $m = $self->under_mirror ($target);
     my $anchor = $m ? $m->{target_path} : '/';
     my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
+    
     my $editor = SVK::Editor::Rename->new
 	( editor => $storage,
-	  cb_exist => $self->{parent} ? $cb{cb_exist} : undef);
-    $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
+	  inspector => $self->{parent} ? $cb{inspector} : undef);
+     $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
     return ($anchor, $editor);
 }
 
@@ -123,126 +127,114 @@ sub save_message {
 
 # Return the editor according to copath, path, and is_mirror (path)
 # It will be Editor::XD, repos_commit_editor, or svn::mirror merge back editor.
+sub _editor_for_patch {
+    my ($self, $target, $source) = @_;
+    require SVK::Patch;
+    my ($m);
+    if (($m) = $target->is_mirrored) {
+	print loc("Patching locally against mirror source %1.\n", $m->{source});
+    }
+    die loc ("Illegal patch name: %1.\n", $self->{patch})
+	if $self->{patch} =~ m!/!;
+    my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
+				 $target->depotname, $source,
+				 $target->as_depotpath->new(targets => undef));
+    $patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
+	if $source;
+    $patch->{log} = $self->{message};
+    my $fname = $self->{xd}->patch_file ($self->{patch});
+    if ($fname ne '-' && -e $fname) {
+	die loc ("file %1 already exists.\n", $fname).
+	    ($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
+    }
+
+    $target = $target->new->as_depotpath;
+    $target->refresh_revision;
+    my %cb = SVK::Editor::Merge->cb_for_root
+	($target->root, $target->path_anchor,
+	 $m ? $m->{fromrev} : $target->revision);
+    return ($patch->commit_editor ($fname),
+	    %cb, send_fulltext => 0);
+}
+
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
-    my ($editor, %cb);
+    # Commit as patch
+    return $self->_editor_for_patch($target, $source)
+	if defined $self->{patch};
 
     # XXX: the case that the target is an xd is actually only used in merge.
-    if ($target->{copath}) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	my $xdroot = $target->root;
-	($editor, %cb) = $self->{xd}->get_editor
-	    ( %$target,
-	      # assuming the editor returned here are used with Editor::Merge
-	      ignore_checksum => 1,
-	      targets => undef,
-	      quiet => 1,
-	      oldroot => $xdroot,
-	      newroot => $xdroot,
-	      target => '',
-	      check_only => $self->{check_only});
-	return ($editor, %cb);
+	my ($editor, $inspector, %cb) = $target->get_editor
+	    ( ignore_checksum => 1,
+	      check_only => $self->{check_only},
+	      oldroot => $xdroot, newroot => $xdroot,
+	    );
+	return ($editor, %cb, inspector => $inspector);
     }
 
-    my ($base_rev, $m, $mpath);
-    if (!$self->{direct} and HAS_SVN_MIRROR and
-	(($m, $mpath) = SVN::Mirror::is_mirrored ($target->{repos}, $target->{path}))) {
-	if ($self->{patch}) {
-	    print loc("Patching locally against mirror source %1.\n", $m->{source});
-	    $base_rev = $m->{fromrev};
-	}
-	elsif ($self->{check_only}) {
-	    print loc("Checking locally against mirror source %1.\n", $m->{source});
-	}
-	else {
-	    print loc("Merging back to mirror source %1.\n", $m->{source});
-	    $m->{lock_message} = SVK::Command::Sync::lock_message ();
-	    $m->{config} = $self->{svnconfig};
-	    $m->{revprop} = ['svk:signature'];
-	    ($base_rev, $editor) = $m->get_merge_back_editor
-		($mpath, $self->{message},
-		 sub { print loc("Merge back committed as revision %1.\n", $_[0]);
-		       my $rev = shift;
-		       $m->_new_ra->change_rev_prop ($rev, 'svk:signature',
-						     $self->{signeditor}{sig})
-			   if $self->{sign};
-		       $m->run ($rev);
-		       $callback->($m->find_local_rev ($rev), @_)
-			   if $callback }
-		);
+    # XXX: unify the get_editor args so we can combine them
+    my ($editor, $inspector, %cb) = $target->get_editor
+	( ignore_mirror => $self->{direct},
+	  caller => ref($self),
+	  check_only => $self->{check_only},
+	  callback => $callback,
+	  message => $self->{message},
+	  author => $ENV{USER} );
+
+    if ($self->{setrevprop}) {
+	my $txn = $cb{txn} or
+	    die loc("Can't use set-revprop with remote repository.\n");
+	for (@{$self->{setrevprop}}) {
+	    $txn->change_prop( split(/=/, $_) );
 	}
     }
-
-    my $fs = $target->{repos}->fs;
-    my $yrev = $fs->youngest_rev;
-    my $root = $fs->revision_root ($yrev);
-
-    %cb = SVK::Editor::Merge->cb_for_root
-	($root, $target->{path}, defined $base_rev ? $base_rev : $yrev);
-
-    if ($self->{patch}) {
-	require SVK::Patch;
-	die loc ("Illegal patch name: %1.\n", $self->{patch})
-	    if $self->{patch} =~ m!/!;
-	my $patch = SVK::Patch->new ($self->{patch}, $self->{xd},
-				     $target->depotname, $source, $target->new(targets => undef)->as_depotpath);
-	$patch->ticket (SVK::Merge->new (xd => $self->{xd}), $source, $target)
-	    if $source;
-	$patch->{log} = $self->{message};
-	my $fname = $self->{xd}->patch_file ($self->{patch});
-	if ($fname ne '-' && -e $fname) {
-	    die loc ("file %1 already exists.\n", $fname).
-		($source ? loc ("use 'svk patch regen %1' instead.\n", $self->{patch}) : '');
-	}
-	return ($patch->commit_editor ($fname), %cb, callback => \$callback,
-		send_fulltext => 0);
-    }
-
-    $editor ||= $self->{check_only} ? SVN::Delta::Editor->new :
-	SVN::Delta::Editor->new
-	( $target->{repos}->get_commit_editor
-	  ( "file://$target->{repospath}",
-	    $target->{path}, $ENV{USER}, $self->{message},
-	    sub { print loc("Committed revision %1.\n", $_[0]);
-		  $fs->change_rev_prop ($_[0], 'svk:signature',
-					$self->{signeditor}{sig})
-		      if $self->{sign};
-		  # build the copy cache as early as possible
-		  find_prev_copy ($fs, $_[0]);
-		  $callback->(@_) if $callback; }
-	  ));
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = find_svm_source ($target->{repos}, $target->{path});
-	$self->{signeditor} = $editor = SVK::Editor::Sign->new (_editor => [$editor],
-								anchor => "$uuid:$dst"
-							       );
+	my ($uuid, $dst) = find_svm_source ($target->repos, $target->path_anchor);
+	$editor = SVK::Editor::Sign->new
+	    ( _editor => [$editor],
+	      anchor => "$uuid:$dst" );
+	my $post_handler = $cb{post_handler};
+	if (my $m = $cb{mirror}) {
+	    $$post_handler = sub {
+		$m->_new_ra->change_rev_prop($_[0], 'svk:signature',
+					     $editor->{sig});
+	    }
+	}
+	else {
+	    my $fs = $target->repos->fs;
+	    $$post_handler = sub {
+		$fs->change_rev_prop($_[0], 'svk:signature', $editor->{sig});
+	    }
+	}
     }
 
     unless ($self->{check_only}) {
+	my $txn = $cb{txn};
 	for ($SVN::Error::FS_TXN_OUT_OF_DATE,
 	     $SVN::Error::FS_CONFLICT,
 	     $SVN::Error::FS_ALREADY_EXISTS,
 	     $SVN::Error::FS_NOT_DIRECTORY,
-            $SVN::Error::RA_DAV_REQUEST_FAILED,
+	     $SVN::Error::RA_DAV_REQUEST_FAILED,
 	    ) {
 	    # XXX: this error should actually be clearer in the destructor of $editor.
 	    $self->clear_handler ($_);
 	    # XXX: there's no copath info here
-	    $self->msg_handler ($_, $m ? "Please sync mirrored path $target->{path} first."
+	    $self->msg_handler ($_, $cb{mirror} ? "Please sync mirrored path ".$target->path_anchor." first."
 				       : "Please update checkout first.");
-	    $self->add_handler ($_, sub { $editor->abort_edit });
+	    $self->add_handler( $_,
+				sub {
+				    $editor->abort_edit;
+				    $txn->abort if $txn;
+				} );
 	}
 	$self->clear_handler ($SVN::Error::REPOS_HOOK_FAILURE);
 	$self->msg_handler($SVN::Error::REPOS_HOOK_FAILURE);
     }
 
-    return ($editor, %cb, mirror => $m, callback => \$callback,
-	    cb_copyfrom => $m ?
-	      sub { my ($path, $rev) = @_;
-		    $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
-		    return ($path, scalar $m->find_remote_rev($rev)); }
-	    : sub { ('file://'.$target->{repospath}.$_[0], $_[1]) },
-	    send_fulltext => !$m);
+    return ($editor, inspector => $inspector, %cb);
 }
 
 sub exclude_mirror {
@@ -250,7 +242,7 @@ sub exclude_mirror {
     return () if $self->{direct} or !HAS_SVN_MIRROR;
 
     ( exclude => {
-	map { substr ($_, length($target->{path})) => 1 }
+	map { substr ($_, length($target->path_anchor)) => 1 }
 	    $target->contains_mirror },
     );
 }
@@ -307,7 +299,7 @@ sub get_committable {
     }
 
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
 	  $self->exclude_mirror ($target),
 	  xdroot => $root,
@@ -339,15 +331,45 @@ sub get_committable {
 	close $fh;
 
         # get_buffer_from_editor may modify it, so it must be a ref first
-        $target->{targets} ||= [];
+        $target->source->{targets} ||= [];
 
 	($self->{message}, $targets) =
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
-				    undef, $file, $target->{copath}, $target->{targets});
+				    undef, $file, $target->copath, $target->source->{targets});
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	++$self->{save_message};
 	unlink $file;
     }
+
+    # additional check for view
+    # XXX: put a flag in view - as we can know well in advance
+    # if the view is cross mirror and skip this check if not.
+    if ($target->source->isa('SVK::Path::View')) {
+	my $vt = $target->source;
+	my $map = $vt->view->rename_map('');
+	my @dtargets = map { abs2rel($_->[1], $target->copath => $target->path_anchor, '/') }
+	    @$targets;
+	# get actual anchor, condense
+	my $danchor = Path::Class::Dir->new_foreign('Unix', $dtargets[0]);
+	my $dactual_anchor = $vt->_to_pclass($vt->root->rename_check($danchor, $map), 'Unix');
+	for (@dtargets) {
+	    # XXX: ugly
+	    until ($dactual_anchor->subsumes($vt->root->rename_check($_, $map))) {
+		$danchor = $danchor->parent;
+		$dactual_anchor = $vt->_to_pclass($vt->root->rename_check($danchor, $map), 'Unix');
+	    }
+	}
+	until ($vt->root->check_path($danchor) == $SVN::Node::dir) {
+	    $danchor = $danchor->parent;
+	    $dactual_anchor = $dactual_anchor->parent;
+	}
+
+	$target->{copath} = Path::Class::Dir->new($target->{copath})->subdir
+	    ( abs2rel($danchor, $vt->path_anchor => undef, '/') );
+	$vt->{path} = $danchor; # XXX: path_anchor is not an accessor yet!
+	$vt->{targets} = [ map { abs2rel( $_, $vt->path_anchor => undef, '/' ) } @dtargets];
+    }
+
     $self->decode_commit_message;
 
     return ($commit_editor, [sort {$a->[1] cmp $b->[1]} @$targets]);
@@ -355,10 +377,10 @@ sub get_committable {
 
 sub committed_commit {
     my ($self, $target, $targets, $skipped_items) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     sub {
 	my $rev = shift;
-	my ($entry, $dataroot) = $self->{xd}{checkout}->get ($target->{copath});
+	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
 	my (undef, $coanchor) = $self->{xd}->find_repos ($entry->{depotpath});
 	my $oldroot = $fs->revision_root ($rev-1);
 	# optimize checkout map
@@ -404,13 +426,15 @@ sub committed_commit {
     $self->{xd}{checkout}->store($_, {'.schedule' => 'add' })
         for @{$skipped_items->{adds}};
 
-	my $root = $fs->revision_root ($rev);
+	# XXX: fix view/path revision insanity
+	my $root = $target->source->new->refresh_revision->root;
 	# update keyword-translated files
 	my $encoder = get_encoder;
 	for (@$targets) {
 	    my ($action, $copath) = @$_;
 	    next if $action eq 'D' || -d $copath;
-	    my $path = $target->{path};
+	    my $path = $target->path_anchor;
+	    $path = "$path"; # XXX: Fix to_native
 	    $path = '' if $path eq '/';
 	    to_native($path, 'path', $encoder);
 	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
@@ -443,10 +467,6 @@ sub committed_import {
 sub run {
     my ($self, $target) = @_;
 
-    my $is_mirrored = $self->under_mirror ($target) && !$self->{direct};
-    print loc("Commit into mirrored path: merging back directly.\n")
-	if $is_mirrored and !$self->{patch};
-
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
     my $xdroot = $target->root;
@@ -464,7 +484,7 @@ sub run {
 	$committed = $self->committed_commit ($target, $committable, $skipped_items);
     }
 
-    my ($editor, %cb) = $self->get_editor ($target->new (copath => undef), $committed);
+    my ($editor, %cb) = $self->get_editor ($target->source, $committed);
 
     if ($commit_editor) {
         $commit_editor->{storage} = $editor;
@@ -479,18 +499,19 @@ sub run {
 
 sub run_delta {
     my ($self, $target, $xdroot, $editor, %cb) = @_;
-    my $fs = $target->{repos}->fs;
+    my $fs = $target->repos->fs;
     my %revcache;
     $self->{xd}->checkout_delta
-	( %$target,
+	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
+	  debug => $main::DEBUG,
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},
 	  nodelay => $cb{send_fulltext},
 	  $self->exclude_mirror ($target),
 	  cb_exclude => sub { print loc ("%1 is a mirrored path, please commit separately.\n",
-					 abs2rel ($_[1], $target->{copath} => $target->{report})) },
+					 abs2rel ($_[1], $target->copath => $target->report)) },
 	  $self->{import} ?
 	  ( auto_add => 1,
 	    obstruct_as_replace => 1,
@@ -499,11 +520,11 @@ sub run_delta {
 	  cb_copyfrom => $cb{cb_copyfrom},
 	  $cb{mirror} ?
 	  (cb_rev => sub {
-		# XXX: the non-mirror cb_rev should be the same as
+	    # XXX: the non-mirror cb_rev should be the same as
 		# this one, so codepaths are shared.
 		my $revtarget = shift;
 		my $cotarget = $target->copath ($revtarget);
-		$revtarget = $revtarget ? "$target->{path}/$revtarget" : $target->{path};
+		$revtarget = $revtarget ? $target->path_anchor."/$revtarget" : $target->path_anchor;
 		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
 		# lookup the copy source rev for the case of
 		# open_directory inside add_directotry that has
@@ -513,7 +534,8 @@ sub run_delta {
 		($source_path, $source_rev) = ($revtarget, $entry->{revision})
 		    unless defined $source_path;
 		return $revcache{$source_rev} if exists $revcache{$source_rev};
-		my $rev = ($fs->revision_root ($source_rev)->node_history ($source_path)->prev (0)->location)[1];
+		my ($rroot, $rsource_path) = $xdroot->revision_root($source_path, $source_rev);
+		my $rev = ($rroot->node_history($rsource_path)->prev(0)->location)[1];
 		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());
     delete $self->{save_message};
@@ -547,6 +569,7 @@ SVK::Command::Commit - Commit changes to depot
  -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
  -N [--non-recursive]   : operate on single directory only
+ --set-revprop P=V      : set revision property on the commit
  --direct               : commit directly even if the path is mirrored
 
 =head1 AUTHORS

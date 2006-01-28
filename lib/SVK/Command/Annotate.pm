@@ -22,26 +22,23 @@ sub parse_arg {
 
 sub run {
     my ($self, $target) = @_;
-    my $m;
     if(defined $self->{rev}) {
         my $r = $self->resolve_revision($target,$self->{rev});
-        $target->as_depotpath($r);
+        $target = $target->as_depotpath($r);
     }
-    if (HAS_SVN_MIRROR) {
-	($m) = SVN::Mirror::is_mirrored($target->repos, $target->path);
-    }
+    my $m = $target->is_mirrored;
     my $fs = $target->repos->fs;
     my $ann = Algorithm::Annotate->new;
     my @paths;
 
     traverse_history (
-        root     => $target->new->as_depotpath->root,
+        root     => $target->as_depotpath->root,
         path     => $target->path,
         cross    => $self->{cross},
         callback => sub {
             my ($path, $rev) = @_;
             unshift @paths,
-		$target->new(path => $path)->as_depotpath($rev);
+		$target->as_depotpath($rev)->new(path => $path);
             1;
         }
     );

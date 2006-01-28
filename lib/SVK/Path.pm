@@ -5,7 +5,10 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos path depotname revision));
+__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision mirror
+			     _root _inspector _pool));
+
+use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
 
 =head1 NAME
 
@@ -26,37 +29,70 @@ sub new {
     my $self = ref $class ? $class->_clone :
 	bless {}, $class;
     %$self = (%$self, @arg);
-    $self->refresh_revision unless defined $self->revision;
-    if (defined $self->{copath}) {
-	require SVK::Path::Checkout;
-	bless $self, 'SVK::Path::Checkout';
-    }
     if (my $depotpath = delete $self->{depotpath}) {
 	$self->depotname($depotpath =~ m!^/([^/]*)!);
+    }
+    else {
+#	Carp::cluck 'without depotpath';
+    }
+    $self->refresh_revision unless defined $self->revision;
+    if (defined (my $view = delete $self->{view})) {
+	require SVK::Path::View;
+	$self = SVK::Path::View->new
+	    ( { %$self, view => $view } );
+    }
+    if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath})) {
+	require SVK::Path::Checkout;
+	return SVK::Path::Checkout->real_new
+	    ( { copath => $copath,
+		report => $self->{report},
+		xd => $self->{xd},
+		source => $self });
+#	Carp::carp "implicit svk::path::checkout creation";
     }
     return $self;
 }
 
 sub refresh_revision {
     my ($self) = @_;
+    $self->_inspector(undef);
+    $self->_root(undef);
+    Carp::cluck unless $self->repos;
     $self->revision($self->repos->fs->youngest_rev);
+
+    return $self;
 }
 
 sub _clone {
     my ($self) = @_;
 
-    require Clone;
+    require Storable;
     my $xd = delete $self->{xd};
-    my $cloned = Clone::clone ($self);
-    $cloned->repos($self->repos);
+    my $root = delete $self->{_root};
+    my $pool = delete $self->{_pool};
+    my $view = delete $self->{view};
+    my $inspector = delete $self->{_inspector};
+    my $mirror = delete $self->{mirror};
+    my $cloned = Storable::dclone ($self);
+    $cloned->repos($self->repos) if ref($self) eq 'SVK::Path';
     $self->{xd} = $cloned->{xd} = $xd if $xd;
+    $self->{mirror} = $cloned->{mirror} = $mirror if $mirror;
+    $self->{_root} = $root;
+    $cloned->{view} = $self->{view} = $view;
+    $self->{_pool} = $pool;
+    $self->{_inspector} = $inspector;
     return $cloned;
 }
 
 sub root {
     my $self = shift;
-    return SVK::XD::Root->new($self->repos->fs->revision_root
-			      ($self->revision));
+
+    Carp::cluck unless defined $self->revision;
+    $self->_root(SVK::Root->new({ root => $self->repos->fs->revision_root
+				  ($self->revision) }))
+	unless $self->_root;
+
+    return $self->_root;
 }
 
 sub report { Carp::cluck if defined $_[1]; $_[0]->depotpath }
@@ -85,19 +121,140 @@ sub same_source {
     my ($self, @other) = @_;
     return 0 unless HAS_SVN_MIRROR;
     return 0 unless $self->same_repos (@other);
-    my $mself = SVN::Mirror::is_mirrored ($self->repos, $self->path);
+    my $mself = $self->is_mirrored;
     for (@other) {
-	my $m = SVN::Mirror::is_mirrored ($_->repos, $_->path);
+	my $m = $_->is_mirrored;
 	return 0 if $m xor $mself;
 	return 0 if $m && $m->{target_path} ne $m->{target_path};
     }
     return 1;
 }
 
+sub is_mirrored {
+    my ($self) = @_;
+    return unless HAS_SVN_MIRROR;
+
+    # XXX: fallback when we don't have mirror object associated, but we
+    # should enforce it.
+    return SVN::Mirror::is_mirrored($self->repos, $self->path_anchor)
+	unless $self->mirror;
+
+    return $self->mirror->is_mirrored($self->path_anchor);
+}
+
+sub _commit_editor {
+    my ($self, $txn, $callback, $pool) = @_;
+    my $post_handler;
+    my $editor = SVN::Delta::Editor->new
+	( $self->repos->get_commit_editor2
+	  ( $txn, "file://".$self->repospath,
+	    $self->{path}, undef, undef, # author and log already set
+	    sub { print loc("Committed revision %1.\n", $_[0]);
+		  # build the copy cache as early as possible
+		  # XXX: don't need this when there's fs_closest_copy
+		  $post_handler->($_[0]) if $post_handler;
+		  find_prev_copy ($self->repos->fs, $_[0]);
+		  $callback->(@_) if $callback; }, $pool
+	  ));
+    return ($editor, \$post_handler);
+}
+
+sub pool {
+    my $self = shift;
+    $self->_pool( SVN::Pool->new )
+	unless $self->_pool;
+
+    return $self->_pool;
+}
+
+sub inspector {
+    my $self = shift;
+    $self->_inspector( $self->_get_inspector )
+	unless $self->_inspector;
+
+    return $self->_inspector;
+}
+
+sub _get_inspector {
+    my $self = shift;
+    my $fs = $self->repos->fs;
+    return SVK::Inspector::Root->new
+	({ root => $fs->revision_root($self->revision, $self->pool),
+	   _pool => $self->pool,
+	   anchor => $self->{path} });
+}
+
+sub get_editor {
+    my ($self, %arg) = @_;
+
+    my ($m, $mpath) = $arg{ignore_mirror} ? () : $self->is_mirrored;
+    my $fs = $self->repos->fs;
+    my $yrev = $fs->youngest_rev;
+
+    my $root_baserev = $m ? $m->{fromrev} : $yrev;
+
+    my $inspector = $self->inspector;
+
+    # compat for old output
+    print loc("Commit into mirrored path: merging back directly.\n")
+	if $arg{caller} eq 'SVK::Command::Commit' && $m && !$arg{check_only};
+    if ($arg{check_only}) {
+	print loc("Checking locally against mirror source %1.\n", $m->{source})
+	    if $m;
+	return (SVN::Delta::Editor->new, $inspector, 
+	        cb_rev => sub { $root_baserev },
+	        mirror => $m);
+    }
+
+    my $callback = $arg{callback};
+    my $post_handler;
+    if ($m) {
+	print loc("Merging back to mirror source %1.\n", $m->{source});
+	$m->{lock_message} = SVK::Command::Sync::lock_message($self);
+	my ($base_rev, $editor) = $m->get_merge_back_editor
+	    ($mpath, $arg{message},
+	     sub { my $rev = shift;
+		   print loc("Merge back committed as revision %1.\n", $rev);
+		   $post_handler->($rev) if $post_handler;
+		   $m->run($rev);
+		   # XXX: find_local_rev can fail
+		   $callback->($m->find_local_rev($rev), @_)
+		       if $callback }
+	    );
+	$editor->{_debug}++ if $main::DEBUG;
+	return ($editor, $inspector,
+		mirror => $m,
+		post_handler => \$post_handler,
+		cb_rev => sub { $root_baserev }, #This is the inspector baserev
+		cb_copyfrom =>
+		sub { my ($path, $rev) = @_;
+		      $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
+		      return ($path, scalar $m->find_remote_rev($rev)); });
+    }
+
+    # XXX: cleanup the txn if not committed
+    my $txn = $self->repos->fs_begin_txn_for_commit
+	($yrev, $arg{author}, $arg{message});
+
+    my $editor;
+    ($editor, $post_handler) =
+	$self->_commit_editor($txn, $callback);
+
+    return ($editor, $inspector,
+	    send_fulltext => 1,
+	    post_handler => $post_handler, # inconsistent!
+	    txn => $txn,
+	    cb_rev => sub { $root_baserev },
+	    cb_copyfrom =>
+	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
+}
+
 sub _to_pclass {
     my ($self, $path, $what) = @_;
+    # path::class only thinks empty list being .
+    my @path = length $path ? ($path) : ();
     $what = 'Unix' if !defined $what && !$self->isa('SVK::Path::Checkout');
-    return $what ? Path::Class::foreign_dir($what, $path) : Path::Class::dir($path);
+    return $what ? Path::Class::foreign_dir($what, @path) : Path::Class::dir(@path);
 }
 
 sub anchorify {
@@ -128,10 +285,12 @@ Makes target depotpath. Takes C<$revision> number optionally.
 
 =cut
 
+# XXX: obsoleted maybe
 sub as_depotpath {
     my ($self, $revision) = @_;
     delete $self->{copath};
     $self->revision($revision) if defined $revision;
+    delete $self->{_inspector};
     bless $self, 'SVK::Path';
     return $self;
 }
@@ -173,10 +332,9 @@ sub universal {
 sub contains_mirror {
     require SVN::Mirror;
     my ($self) = @_;
-    my $path = $self->{path};
-    $path .= '/' unless $path eq '/';
-    return map { substr ("$_/", 0, length($path)) eq $path ? $_ : () }
-	SVN::Mirror::list_mirror ($self->repos);
+    my $path = $self->_to_pclass($self->path_anchor, 'Unix');
+    my %mirrors = $self->mirror->entries;
+    return grep { $path->subsumes($_) } sort keys %mirrors;
 }
 
 =head2 depotpath
@@ -187,6 +345,8 @@ Returns depotpath of the target
 
 sub depotpath {
     my $self = shift;
+
+    Carp::cluck unless defined $self->depotname;
 
     return '/'.$self->depotname.$self->{path};
 }
@@ -241,9 +401,13 @@ sub _nearest_copy_svn {
     my ($toroot, $topath) = $root->closest_copy($path, $ppool);
     return unless $toroot;
 
+    my $pool = SVN::Pool->new_default;
     my ($copyfrom_rev, $copyfrom_path) = $toroot->copied_from ($topath);
     $path =~ s/^\Q$topath\E/$copyfrom_path/;
-    my $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool);
+    my $copyfrom_root = $root->fs->revision_root( $copyfrom_rev );
+    # If the path doesn't exist in copyfrom_root, it's newly created one in toroot
+    return unless $copyfrom_root->check_path( $path );
+
     $copyfrom_rev = ($copyfrom_root->node_history ($path)->prev(0)->location)[1]
         unless $copyfrom_rev == $copyfrom_root->node_created_rev ($path);
     $copyfrom_root = $root->fs->revision_root($copyfrom_rev, $ppool)
@@ -271,8 +435,8 @@ sub _nearest_copy_svk {
 	my ($hppath, $hprev) = $hist->location;
 	if ($hppath ne $path) {
 	    $hist = $root->node_history ($path, $new_pool)->prev(0);
-	    my $rev = ($hist->location($new_pool))[1];
-	    $root = $fs->revision_root ($rev, $ppool);
+	    $root = $fs->revision_root (($hist->location($new_pool))[1],
+					$ppool);
 	    return ($root, $fs->revision_root ($hprev, $ppool), $hppath);
 	}
 
@@ -337,29 +501,29 @@ sub copied_from {
 
     my $target = $self->new;
     $target->{report} = '';
-    $target->as_depotpath;
+    $target = $target->as_depotpath;
 
     my $root = $target->root;
     my $fromroot;
     while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
-	$target->revision($fromroot->revision_root_revision);
+	$target = $target->new(revision => $fromroot->revision_root_revision);
 	# Check for existence.
+        # XXX This treats delete + copy in 2 separate revision as a rename
+        # which may or may not be intended.
 	if ($root->check_path ($target->{path}) == $SVN::Node::none) {
 	    next;
 	}
 
 	# Check for mirroredness.
 	if ($want_mirror and HAS_SVN_MIRROR) {
-	    my ($m, $mpath) = SVN::Mirror::is_mirrored (
-		$target->repos, $target->{path}
-	    );
+	    my ($m, $mpath) = $target->is_mirrored;
 	    $m->{source} or next;
 	}
 
 	# It works!  Let's update it to the latest revision and return
 	# it as a fresh depot path.
 	$target->refresh_revision;
-	$target->as_depotpath;
+	$target = $target->as_depotpath;
 
 	delete $target->{targets};
 	return $target;
@@ -458,6 +622,12 @@ sub merged_from {
 		? 1 : 0;
 	  } );
 }
+
+sub path_anchor { $_[0]->{path} }
+sub path_target { $_[0]->{targets}[0] || '' }
+
+use Data::Dumper;
+sub dump { warn Dumper($_[0]) }
 
 =head1 SEE ALSO
 

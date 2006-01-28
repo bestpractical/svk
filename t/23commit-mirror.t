@@ -31,11 +31,6 @@ is_output ($svk, 'commit', ['-m', 'modify A', "$copath/remote"],
 	   [map qr'.*',(1..5),
 	    'Committed revision 6 from revision 3.']);
 
-append_file ("$copath/remote/A/direct-file", "modified on A\n");
-$svk->add ("$copath/remote/A/direct-file");
-is_output ($svk, 'commit', ['--direct', '-m', 'modify A directly', "$copath/remote"],
-	   ['Committed revision 7.']);
-
 is_output ($svk, 'commit', ['-m', 'empty', $copath],
 	   ['No targets to commit.']);
 
@@ -43,4 +38,11 @@ is_output ($svk, 'commit', ['-m', 'empty', $copath],
 append_file ("$copath/local/A/be", "modified on A\n");
 is_output ($svk, 'commit', ['-m', 'modify A', $copath],
 	   [__("$copath/remote is a mirrored path, please commit separately."),
-	    'Committed revision 8.']);
+	    'Committed revision 7.']);
+
+append_file ("$copath/remote/A/direct-file", "modified on A\n");
+$svk->add ("$copath/remote/A/direct-file");
+
+# this ruins the mirror state
+is_output ($svk, 'commit', ['--direct', '-m', 'modify A directly', "$copath/remote"],
+	   ['Committed revision 8.']);

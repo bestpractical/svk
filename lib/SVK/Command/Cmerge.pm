@@ -6,6 +6,7 @@ use base qw( SVK::Command::Merge SVK::Command::Copy SVK::Command::Propset );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Combine;
+use SVK::Inspector::Compat;
 
 sub options {
     ($_[0]->SUPER::options);
@@ -36,7 +37,7 @@ sub run {
         die("Revision spec must be N:M.\n") unless defined($r->[1])
     }
 
-    my $repos = $src->{repos};
+    my $repos = $src->repos;
     my $fs = $repos->fs;
     my $base = SVK::Merge->auto (%$self, repos => $repos, src => $src, dst => $dst,
 				 ticket => 1)->{base};
@@ -57,6 +58,7 @@ sub run {
 					   );
 
     my $spool = SVN::Pool->new_default;
+    my $inspector = SVK::Inspector::Compat->new({$ceditor->callbacks});
     for (@revlist) {
 	my ($fromrev, $torev) = @$_;
 	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
@@ -65,7 +67,8 @@ sub run {
 	SVK::Merge->new (%$self, repos => $repos,
 			 base => $src->new (revision => $fromrev),
 			 src => $src->new (revision => $torev), dst => $dst,
-			)->run ($ceditor, $ceditor->callbacks,
+			)->run ($ceditor, 
+			        inspector => $inspector,
 				# XXX: should be base_root's rev?
 				cb_rev => sub { $fs->youngest_rev });
 	$spool->clear;

@@ -8,6 +8,7 @@ use SVK::Util qw( abs2rel );
 
 sub options {
     ($_[0]->SUPER::options,
+     'force'	=> 'force',
      'K|keep-local'	=> 'keep');
 }
 
@@ -18,9 +19,9 @@ sub parse_arg {
     @arg = map { $self->{xd}->target_from_copath_maybe($_) } @arg;
 
     # XXX: better check for @target being the same type
-    if (grep {$_->{copath}} @arg) {
+    if (grep {$_->isa('SVK::Path::Checkout')} @arg) {
 	die loc("Mixed depotpath and checkoutpath not supported.\n")
-	    if grep {!$_->{copath}} @arg;
+	    if grep {!$_->isa('SVK::Path::Checkout')} @arg;
 
 	return $self->{xd}->target_condensed(@arg);
     }
@@ -48,7 +49,7 @@ sub do_delete_direct {
     $self->get_commit_message ();
     $target->normalize;
     my ($anchor, $editor) = $self->get_dynamic_editor ($target);
-    my $rev = $target->{revision};
+    my $rev = $target->revision;
     $rev = $m->find_remote_rev ($rev) if $m;
     $editor->delete_entry (abs2rel ($target->path, $anchor => undef, '/'), $rev, 0);
     $self->adjust_anchor ($editor);
@@ -58,7 +59,7 @@ sub do_delete_direct {
 sub _ensure_mirror {
     my ($self, $target) = @_;
     my @m = $target->contains_mirror or return;
-    return if !$target->{copath} && $#m == 0 && $m[0] eq $target->path;
+    return if !$target->isa('SVK::Path::Checkout') && $#m == 0 && $m[0] eq $target->path;
 
     my $depotname = $target->depotname;
     die loc("%1 contains mirror, remove explicitly: ", "/$depotname".$target->path).
@@ -70,8 +71,9 @@ sub run {
 
     $self->_ensure_mirror($target);
 
-    if ($target->{copath}) {
-	$self->{xd}->do_delete( $target, no_rm => $self->{keep} );
+    if ($target->isa('SVK::Path::Checkout')) {
+	$self->{xd}->do_delete( $target, no_rm => $self->{keep}, 
+		'force_delete' => $self->{force} );
     }
     else {
 	$self->do_delete_direct ( $target );
@@ -104,6 +106,7 @@ SVK::Command::Delete - Remove versioned item
  -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
  --direct               : commit directly even if the path is mirrored
+ --force                : delete the file/directory even if modified
 
 =head1 AUTHORS
 

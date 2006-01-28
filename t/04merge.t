@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 15;
+use Test::More tests => 16;
 use strict;
 require 't/tree.pl';
 
@@ -96,3 +96,6 @@ is_output_like ($svk, 'merge', ["-r", "3:2", '//'],
 chdir ($copath);
 is_output ($svk, 'merge', ["-r", "3:2", '//'],
 	   [status_native (undef, 'GU ', 'A/foo')]);
+
+is_output ($svk, 'merge', ["-r", "3:2", '//boo'],
+	   [qr'Filesystem has no item']);

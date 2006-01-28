@@ -7,8 +7,8 @@ our @ISA = qw(SVN::Delta::Editor);
 sub new {
     my ($class, @arg) = @_;
     my $self = $class->SUPER::new (@arg);
-    $self->{report} ||= '';
-    $self->{notify} ||= SVK::Notify->new_with_report ($self->{report});
+    $self->{notify} ||= SVK::Notify->new_with_report
+	(defined $self->report ? $self->report : '');
     $self->{tree} ||= Data::Hierarchy->new ();
     return $self;
 }
@@ -72,7 +72,9 @@ sub absent_file {
 sub delete_entry {
     my ($self, $path) = @_;
     $self->{notify}->node_status ($path, 'D');
-#    $self->{notify}->flush ($path);
+    my $info = $self->{tree}->get ($path);
+    $self->{notify}->hist_status ($path, '+', $info->{frompath},
+	$info->{fromrev}) if $info->{frompath};
 }
 
 sub add_directory {

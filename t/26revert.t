@@ -105,13 +105,22 @@ unlink('A/foo.cp');
 
 mkdir('A/dir1');
 overwrite_file ("A/dir1/foo", "foobarbaz");
+overwrite_file ("A/dir1/bar", "foobarbaz");
 $svk->add('A/dir1');
 $svk->commit ('-m', 'added A/dir1');
 $svk->cp('A/dir1', 'A/dir1-copy');
 append_file('A/dir1-copy/foo', 'some thing');
+overwrite_file ("A/dir1-copy/fnord", "foobarbaz");
+$svk->add("A/dir1-copy/fnord");
+$svk->rm('A/dir1-copy/bar');
 is_output ($svk, 'st', [], [
     __('A + A/dir1-copy'),
-    __('M + A/dir1-copy/foo')]);
+    __('M + A/dir1-copy/foo'),
+    __('A   A/dir1-copy/fnord'),
+    __('D + A/dir1-copy/bar')]);
+
 is_output ($svk, 'revert', ['-R', 'A/dir1-copy'], [
     __('Reverted A/dir1-copy'),
-    __('Reverted A/dir1-copy/foo')]);
+    __('Reverted A/dir1-copy/foo'),
+    __('Reverted A/dir1-copy/fnord'),
+    __('Reverted A/dir1-copy/bar')]);

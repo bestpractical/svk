@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR traverse_history get_encoding );
+use SVK::Util qw( traverse_history get_encoding );
 use List::Util qw(max min);
 use Date::Parse qw(str2time);
 use Date::Format qw(time2str);
@@ -20,13 +20,15 @@ sub options {
 
 # returns a sub for getting remote rev
 sub _log_remote_rev {
-    my ($repos, $path, $remoteonly, $host) = @_;
+    my ($target, $remoteonly, $host) = @_;
     $host ||= '';
-    return sub {"r$_[0]$host"} unless HAS_SVN_MIRROR and SVN::Mirror::list_mirror ($repos);
+    # don't bother if this repository has no mirror
+    return sub {"r$_[0]$host"} unless $target->mirror->entries;
     # save some initialization
-    my $m = SVN::Mirror::is_mirrored ($repos, $path) || 'SVN::Mirror';
+    # XXX: if there's no $m why do we need to be able to lookup?
+    my $m = $target->is_mirrored || 'SVN::Mirror';
     sub {
-	my $rrev = $m->find_remote_rev ($_[0], $repos);
+	my $rrev = $m->find_remote_rev ($_[0], $target->repos);
 	$remoteonly ? "r$rrev$host" :
 	    "r$_[0]$host".($rrev ? " (orig r$rrev)" : '');
     }
@@ -51,23 +53,22 @@ sub run {
         ($fromrev, $torev) = $self->resolve_revspec($target);
 	$torev ||= $fromrev;
     }
-    $target->as_depotpath($self->find_base_rev($target))
-	if defined $target->{copath};
-
-    $fromrev ||= $target->{revision};
+    $target = $target->as_depotpath($self->find_base_rev($target))
+	if $target->isa('SVK::Path::Checkout');
+    $fromrev ||= $target->revision;
     $torev ||= 0;
     $self->{cross} ||= 0;
 
-    my $print_rev = _log_remote_rev (@{$target}{qw/repos path/});
+    my $print_rev = _log_remote_rev ($target);
 
-    if ($target->{revision} < max ($fromrev, $torev)) {
-	print loc ("Revision too large, show log from %1.\n", $target->{revision});
-	$fromrev = min ($target->{revision}, $fromrev);
-	$torev = min ($target->{revision}, $torev);
+    if ($target->revision < max ($fromrev, $torev)) {
+	print loc ("Revision too large, show log from %1.\n", $target->revision);
+	$fromrev = min ($target->revision, $fromrev);
+	$torev = min ($target->revision, $torev);
     }
     my $sep = ('-' x 70)."\n";
     print $sep;
-    _get_logs ($target->root, $self->{limit} || -1, $target->{path}, $fromrev, $torev,
+    _get_logs ($target->root, $self->{limit} || -1, $target->path_anchor, $fromrev, $torev,
 	       $self->{verbose}, $self->{cross},
 	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0, $self->{quiet})} );
     return;
@@ -118,6 +119,7 @@ sub _get_logs {
 }
 
 our $chg;
+require SVN::Fs;
 $chg->[$SVN::Fs::PathChange::modify] = 'M';
 $chg->[$SVN::Fs::PathChange::add] = 'A';
 $chg->[$SVN::Fs::PathChange::delete] = 'D';
@@ -201,6 +203,7 @@ SVK::Command::Log - Show log messages for revisions
 
                           "HEAD"       latest in repository
                           NUMBER       revision number
+                          NUMBER@      interpret as remote revision number
                           NUM1:NUM2    revision range
 
                           Unlike other commands,  negative NUMBER has no

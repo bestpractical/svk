@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 8;
+plan_svm tests => 9;
 
 our $output;
 # build another tree to be mirrored ourself
@@ -62,8 +62,12 @@ $svk->switch ('//l', $copath);
 
 is_output ($svk, 'smerge', ['-CI', '//l', '//m'],
 	   ['Auto-merging (0, 6) /l to /m (base /m:3).',
-	    'Incremental merge not guaranteed even if check is successful',
-	    "Checking locally against mirror source $uri/A.",
+	    '===> Auto-merging (0, 4) /l to /m (base /m:3).',
+	    "Empty merge.",
+	    '===> Auto-merging (4, 5) /l to /m (base /m:3).',
+	    'U   Q/qu',
+	    "New merge ticket: $uuid:/l:5",
+	    '===> Auto-merging (5, 6) /l to /m (base /l:5).',
 	    'U   Q/qu',
 	    'U   Q/qz',
 	    "New merge ticket: $uuid:/l:6"]);
@@ -90,6 +94,8 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    "Syncing $uri/A",
 	    'Retrieving log information from 4 to 4',
 	    'Committed revision 8 from revision 4.']);
+is_output_like($svk, 'log', [-r7 => '//m'],
+	       qr'commit on local branch');
 
 $svk->mkdir ('-m', 'fnord', '/new/A');
 
@@ -122,5 +128,9 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    'Merge back committed as revision 6.',
 	    "Syncing $uri/A",
 	    'Retrieving log information from 6 to 6',
-	    'Committed revision 18 from revision 6.']);
+	    'Committed revision 18 from revision 6.',
+	    '===> Auto-merging (15, 17) /l to /m (base /m:16).',
+	    "Merging back to mirror source $uri/A.",
+	    'g   Q/qu',
+	    'Empty merge.']);
 

@@ -1,6 +1,7 @@
 package SVK::Editor::Translate;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
+use Class::Autouse qw( SVK::Editor::Patch );
 
 require SVN::Delta;
 our @ISA = qw(SVN::Delta::Editor);

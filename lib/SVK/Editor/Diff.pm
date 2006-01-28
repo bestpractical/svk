@@ -17,7 +17,6 @@ SVK::Editor::Diff - An editor for producing textual diffs
  $editor = SVK::Editor::Diff->new
     ( base_root   => $root,
       base_target => $target,
-      cb_baseprop    => sub { ... },
       cb_llabel      => sub { ... },
       # or llabel => 'revision <left>',
       cb_rlabel      => sub { ... },
@@ -85,10 +84,26 @@ sub retrieve_base {
     my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
 	: $self->{base_root};
 
-    $basepath = "$self->{base_target}{path}/$path"
+    $basepath = $self->{base_target}->path_anchor."/$path"
 	if $basepath !~ m{^/};
 
     return $root->file_contents("$basepath", $pool);
+}
+
+# XXX: cleanup
+sub retrieve_base_prop {
+    my ($self, $path, $prop, $pool) = @_;
+    my ($basepath, $fromrev) = $self->_resolve_base($path);
+    $basepath = $path unless defined $basepath;
+
+    my $root = $fromrev ? $self->{base_root}->fs->revision_root($fromrev, $pool)
+	: $self->{base_root};
+
+    $basepath = $self->{base_target}->path_anchor."/$path"
+	if $basepath !~ m{^/};
+
+    return $root->check_path($path, $pool) == $SVN::Node::none ?
+	undef : $root->node_prop($path, $prop, $pool);
 }
 
 sub apply_textdelta {
@@ -102,7 +117,7 @@ sub apply_textdelta {
 	my $newtype = $info->{prop} && $info->{prop}{'svn:mime-type'};
 	my $is_text = !$newtype || mimetype_is_text ($newtype);
 	if ($is_text && !$info->{added}) {
-	    my $basetype = $self->{cb_baseprop}->($path, 'svn:mime-type', $pool);
+	    my $basetype = $self->retrieve_base_prop($path, 'svn:mime-type', $pool);
 	    $is_text = !$basetype || mimetype_is_text ($basetype);
 	}
 	unless ($is_text) {
@@ -231,7 +246,7 @@ sub output_prop_diff {
 	for (sort keys %{$self->{info}{$path}{prop}}) {
 	    $self->_print(loc("Name: %1\n", $_));
 	    my $baseprop;
-	    $baseprop = $self->{cb_baseprop}->($path, $_, $pool)
+	    $baseprop = $self->retrieve_base_prop($path, $_, $pool)
 		unless $self->{info}{$path}{added};
             my @args =
                 map \$_,
@@ -253,6 +268,7 @@ sub output_prop_diff {
 
 sub add_directory {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
+    $self->{info}{$path}{added} = 1;
     if (defined $from_path) {
 	# XXX: print some garbage about this copy
 	$self->{dh}->store("/$path", { copyanchor => "/$path",
@@ -279,10 +295,10 @@ sub delete_entry {
     my $spool = SVN::Pool->new_default;
     # generate delta between empty root and oldroot of $path, then reverse in output
     SVK::XD->depot_delta
-	( oldroot => $self->{base_target}{repos}->fs->revision_root (0),
-	  oldpath => [$self->{base_target}{path}, $path],
+	( oldroot => $self->{base_target}->repos->fs->revision_root (0),
+	  oldpath => [$self->{base_target}->path_anchor, $path],
 	  newroot => $self->{base_root},
-	  newpath => $self->{base_target}{path} eq '/' ? "/$path" : "$self->{base_target}{path}/$path",
+	  newpath => $self->{base_target}->path_anchor eq '/' ? "/$path" : $self->{base_target}->path_anchor."/$path",
 	  editor => __PACKAGE__->new (%$self, reverse => 1),
 	);
 

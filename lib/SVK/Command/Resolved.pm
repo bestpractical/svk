@@ -21,7 +21,7 @@ sub run {
     my ($self, @arg) = @_;
 
     for my $target (@arg) {
-	$self->{xd}->do_resolved ( %$target,
+	$self->{xd}->do_resolved ( $target->for_checkout_delta,
 				   recursive => $self->{recursive},
 				 );
     }

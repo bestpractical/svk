@@ -5,6 +5,9 @@
 * "svk add" now displays "- (bin)" if the svn:mime-type of the file
   being added is a non text type.
 
+* "svk log" and "svk blame" Now cross renames even when the --cross (-x)
+  switch isn't provided.
+
 [Changes for 1.02 - 2 Aug, 2005]
 
 * "svk mirror" now supports moving mirror points with "svk mv".

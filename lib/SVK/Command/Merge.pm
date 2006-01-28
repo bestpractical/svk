@@ -5,7 +5,6 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Editor::Delay;
 use SVK::Command::Log;
 use SVK::Merge;
 use SVK::Util qw( get_buffer_from_editor find_svm_source resolve_svm_source traverse_history );
@@ -52,13 +51,13 @@ sub parse_arg {
 
     if ($self->{from}) {
         # When using "from", $target1 must always be a depotpath.
-        if (defined $target1->{copath}) {
+        if ($target1->isa('SVK::Path::Checkout')) {
             # Because merging under the copy anchor is unsafe, we always merge
             # to the most immediate copy anchor under copath root.
             ($target1, $target2) = $self->find_checkout_anchor (
                 $target1, 1, $self->{sync}
                );
-            delete $target1->{copath};
+	    $target1 = $target1->as_depotpath;
         }
     }
 
@@ -71,7 +70,7 @@ sub parse_arg {
 
 sub lock {
     my $self = shift;
-    $self->lock_target ($_[1]);
+    $self->lock_target($_[1]) if $_[1];
 }
 
 sub get_commit_message {
@@ -83,19 +82,17 @@ sub get_commit_message {
 sub run {
     my ($self, $src, $dst) = @_;
     my $merge;
-    my $repos = $src->{repos};
-    my $fs = $repos->fs;
-    my $yrev = $fs->youngest_rev;
+    my $repos = $src->repos;
 
     if (my @mirrors = $dst->contains_mirror) {
-	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->{report})
+	die loc ("%1 can not be used as merge target, because it contains mirrored path: ", $dst->report)
 	    .join(",", @mirrors)."\n"
 		unless $mirrors[0] eq $dst->path;
     }
 
     if ($self->{sync}) {
         my $sync = $self->command ('sync');
-	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->{path}));
+	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->path_anchor));
         if ($m->{target_path}) {
             $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
             $src->refresh_revision;
@@ -107,8 +104,9 @@ sub run {
     }
 
     # for svk::merge constructor
-    $self->{dst} = $dst;
-    $self->{report} = defined $dst->{copath} ? $dst->{report} : undef;
+    # Report only relative for depot / depot merge, but what user
+    # types for merge to checkout
+    $self->{report} = $dst->isa('SVK::Path::Checkout') ? $dst->report : undef;
     if ($self->{auto}) {
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
@@ -117,7 +115,7 @@ sub run {
 	$src->normalize; $dst->normalize;
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
-				   src => $src);
+				   src => $src, dst => $dst);
 	print $merge->info;
 	print $merge->log(1) if $self->{summary};
     }
@@ -128,20 +126,21 @@ sub run {
 	my ($baserev, $torev) = @{$revlist[0]};
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
+	     dst => $dst,
 	     base => $src->new (revision => $baserev), target => '',
 	     fromrev => $baserev);
     }
 
     $merge->{notice_copy} = 1;
-    if ($merge->{fromrev} == $merge->{src}{revision}) {
+    if ($merge->{fromrev} == $merge->{src}->revision) {
 	print loc ("Empty merge.\n");
 	return;
     }
 
     $self->get_commit_message ($self->{log} ? $merge->log(1) : undef)
-	unless $dst->{copath};
+	unless $dst->isa('SVK::Path::Checkout');
 
-    if ($self->{incremental} && !$self->{check_only}) {
+    if ($self->{incremental}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")
 	    if $self->{no_ticket};
 	print loc ("-m ignored in incremental merge\n") if $self->{message};
@@ -149,7 +148,7 @@ sub run {
 
         traverse_history (
             root        => $src->root,
-            path        => $src->{path},
+            path        => $src->path_anchor,
             cross       => 0,
             callback    => sub {
                 my $rev = $_[1];
@@ -161,30 +160,29 @@ sub run {
 
 	my $spool = SVN::Pool->new_default;
 	my $previous_base;
+	if ($self->{check_only}) {
+	    require SVK::Path::Txn;
+	    $merge->{dst} = $dst = SVK::Path::Txn->new(%$dst);
+	}
 	foreach my $rev (@rev) {
-	    $merge = SVK::Merge->auto (%$merge, src => $src->new (revision => $rev));
+	    $merge = SVK::Merge->auto(%$merge,
+				      src => $src->new(revision => $rev));
 	    if ($previous_base) {
 		$merge->{fromrev} = $previous_base;
 	    }
 
-	    # skip the merge if this change is merged from the dst.
-	    # XXX: should be strict, only skip if that's the only merge.
-	    next if $merge->_is_merge_from ($merge->{src}->path, $dst, $rev);
- 
 	    print '===> '.$merge->info;
 	    $self->{message} = $merge->log (1);
 	    $self->decode_commit_message;
 
-	    last if $merge->run ($self->get_editor ($dst));
+	    last if $merge->run( $self->get_editor($dst) );
 	    # refresh dst
-	    $dst->{revision} = $fs->youngest_rev;
+	    $dst->refresh_revision;
 	    $previous_base = $rev;
 	    $spool->clear;
 	}
     }
     else {
-	print loc("Incremental merge not guaranteed even if check is successful\n")
-	    if $self->{incremental};
 	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
 	delete $self->{save_message};
     }
@@ -209,6 +207,7 @@ SVK::Command::Merge - Apply differences between two sources
 
  -r [--revision] N:M    : act on revisions between N and M
  -c [--change] N        : act on change N (between revisions N-1 and N)
+                          using -N reverses the changes made in revision N
  -I [--incremental]     : apply each change individually
  -a [--auto]            : merge from the previous merge point
  -l [--log]             : use logs of merged revisions as commit message
