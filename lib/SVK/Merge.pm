@@ -327,7 +327,7 @@ sub run {
     # XXX: for merge editor; this should really be in SVK::Path
     my ($report, $target) = ($self->{report}, $src->path_target);
     my $dsttarget = $self->{dst}->path_target;
-    my $is_copath = defined($self->{dst}{copath});
+    my $is_copath = $self->{dst}->isa('SVK::Path::Checkout');
     my $notify_target = defined $self->{target} ? $self->{target} : $target;
     my $notify = $self->{notify} || SVK::Notify->new_with_report
 	($report, $notify_target, $is_copath);

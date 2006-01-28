@@ -27,12 +27,12 @@ sub run {
     }
 
     for (@arg) {
-	if ($self->{xd}{checkout}->get ($_->{copath})->{lock}) {
-	    print loc("Cleaned up stalled lock on %1.\n", $_->{copath});
-	    $self->{xd}{checkout}->store ($_->{copath}, {lock => undef});
+	if ($self->{xd}{checkout}->get ($_->copath_anchor)->{lock}) {
+	    print loc("Cleaned up stalled lock on %1.\n", $_->copath_anchor);
+	    $self->{xd}{checkout}->store ($_->copath_anchor, {lock => undef});
 	}
         else {
-	    print loc("Path %1 was not locked.\n", $_->{copath});
+	    print loc("Path %1 was not locked.\n", $_->copath_anchor);
 	}
     }
     return;

@@ -5,7 +5,8 @@ use SVK::I18N;
 
 use base 'SVK::Path';
 
-__PACKAGE__->mk_accessors(qw(source view));
+__PACKAGE__->mk_clonable_accessors(qw(source));
+__PACKAGE__->mk_shared_accessors(qw(view));
 
 use SVK::Util qw( abs2rel );
 use SVK::Root::View;
@@ -54,9 +55,9 @@ sub get_editor {
     my $actual_anchor = $self->_to_pclass($self->root->rename_check($anchor, $map), 'Unix');
 
 
-    if ($self->{targets}) {
+    if ($self->targets) {
 
-	my @view_targets = map { $self->{path} eq '/' ? $_ : "$self->{path}/$_"} @{$self->{targets}};
+	my @view_targets = map { $anchor->subdir($_) } @{$self->targets};
 	my @actual_targets = map { $self->root->rename_check($_, $map) }
 	    @view_targets;
 

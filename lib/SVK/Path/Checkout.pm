@@ -2,9 +2,13 @@ package SVK::Path::Checkout;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use base 'Class::Accessor::Fast';
+use base 'SVK::Accessor';
 
-__PACKAGE__->mk_accessors(qw(xd report source _pool _inspector));
+use SVK::Path;
+
+__PACKAGE__->mk_shared_accessors(qw(xd));
+__PACKAGE__->mk_clonable_accessors(qw(report source copath_anchor copath_target));
+__PACKAGE__->mk_accessors(qw(_pool _inspector));
 
 use Class::Autouse qw(SVK::Editor::XD SVK::Inspector::XD);
 
@@ -37,26 +41,16 @@ sub real_new {
 
 sub new {
     my $class = shift;
-    if (ref $class) {
-	my $source = delete $class->{source} or Carp::cluck;
-	my $self = $class->_clone;
-	%$self = (%$self, @_, source => $source->new);
-	$class->source($source);
-	die unless $self->source;
-	return $self;
-    }
-    require SVK::Path;
-    my $arg = {@_};
-    Carp::cluck unless $arg->{repos};
-    my $copath = delete $arg->{copath};
-    Carp::cluck unless defined $copath;
-    $arg->{revision} = $arg->{xd}{checkout}->get($copath)->{revision}
-	unless defined $arg->{revision};
-    return $class->real_new( { source => SVK::Path->new
-			       (%$arg),
-			       xd     => $arg->{xd},
-			       report => $arg->{report},
-			       copath => $copath });
+    Carp::cluck "don't use me" unless ref($class);
+
+    # obsoleted code for cloning and modifying
+    my $source = delete $class->{source} or Carp::cluck;
+    my $self = $class->_clone;
+    %$self = (%$self, @_, source => $source->new);
+    $class->source($source);
+    die unless $self->source;
+    return $self;
+
 }
 
 sub root {
@@ -67,14 +61,14 @@ sub root {
 	$self->xd(shift);
 	Carp::cluck unless $self->xd;
     }
-    Carp::cluck,die unless defined $self->{copath};
+    Carp::cluck,die unless defined $self->copath_anchor;
 
     return $self->create_xd_root;
 }
 
 sub create_xd_root {
     my $self = shift;
-    my $copath = $self->copath($self->{copath_target});
+    my $copath = $self->copath($self->copath_target);
 
     my (undef, $coroot) = $self->xd->{checkout}->get($copath);
     Carp::cluck $copath.YAML::Syck::Dump($self->xd->{checkout}) unless $coroot;
@@ -139,7 +133,7 @@ sub { defined $_[0] && length $_[0] ? "$_[0]/$_[1]" : "$_[1]" };
 
 sub copath {
     my $self = shift;
-    my $copath = ref($self) ? $self->{copath} : shift;
+    my $copath = ref($self) ? $self->copath_anchor : shift;
     my $paths = shift;
     return $copath unless defined $paths && length $paths;
     return $_copath_catsplit->($copath, $paths);
@@ -149,8 +143,8 @@ sub report { __PACKAGE__->make_accessor('report')->(@_) }
 
 sub report_copath {
     my ($self, $copath) = @_;
-    my $report = length($self->{report}) ? $self->{report} : undef;
-    abs2rel( $copath, $self->{copath} => $report );
+    my $report = length($self->report) ? $self->report : undef;
+    abs2rel( $copath, $self->copath_anchor => $report );
 }
 
 sub copath_targets {
@@ -177,7 +171,7 @@ sub descend {
     $self->source->descend($entry);
 
     to_native($entry, 'path');
-    $self->{copath} = catfile($self->{copath}, $entry);
+    $self->copath_anchor(catfile($self->copath_anchor, $entry));
 
     $self->report( catfile($self->report, $entry) );
     return $self;
@@ -186,7 +180,14 @@ sub descend {
 sub anchorify {
     my ($self) = @_;
     $self->source->anchorify;
-    ($self->{copath}, $self->{copath_target}) = get_anchor(1, $self->{copath});
+    # XXX: waiting for new path::class
+    # $self->copath_anchor($self->_to_pclass($self->copath_anchor))
+    #     unless ref($self->copath_anchor);
+    # $self->copath_target($self->copath_anchor->basename);
+    # $self->copath_anchor($self->copath_anchor->parent);
+    my ($copath_anchor, $copath_target) = get_anchor(1, $self->copath_anchor);
+    $self->copath_anchor($copath_anchor);
+    $self->copath_target($copath_target);
 
     if (defined $self->report) {
 	$self->report($self->_to_pclass($self->report))
@@ -254,7 +255,7 @@ hash used by L<SVK::Editor::Merge>
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my ($copath, $path, $spath) = ($self->{copath}, $self->path_anchor, $arg{store_path});
+    my ($copath, $path, $spath) = ($self->copath_anchor, $self->path_anchor, $arg{store_path});
     $spath = $path unless defined $spath;
     my $encoding = $self->xd->{checkout}->get($copath)->{encoding};
     $path = '' if $path eq '/';

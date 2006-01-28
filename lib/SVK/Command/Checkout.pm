@@ -51,7 +51,7 @@ sub run {
 	my $copath = abs_path($report);
 	my ($entry, @where) = $self->{xd}{checkout}->get($copath);
 
-        return $self->SUPER::run($target->new(xd => $self->{xd}, report => $report, copath => $copath))
+        return $self->SUPER::run($target->new(xd => $self->{xd}, report => $report, copath_anchor => $copath))
 	    if exists $entry->{depotpath} && $entry->{depotpath} eq $target->depotpath;
 	die loc("Checkout path %1 already exists.\n", $report);
     }
@@ -84,7 +84,7 @@ sub run {
 
     my $source = $target->can('source') ? $target->source : $target;
     my $cotarget = SVK::Path::Checkout->real_new
-	({ copath => $copath, report => $report,
+	({ copath_anchor => $copath, report => $report,
 	   xd => $self->{xd}, source => $source->new( revision => 0, view => undef) });
     $self->do_update( $cotarget,
 		      $target->new->as_depotpath($self->{rev}) );

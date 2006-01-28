@@ -90,7 +90,7 @@ sub do_propset {
 	    if $self->{rev};
 	# verify the content is not with mixed line endings.
 	if ($pname eq 'svn:eol-style') {
-	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->path, $target->{copath},
+	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->path, $target->copath_anchor,
 				      { 'svn:eol-style' => $pvalue }, '',
 				      undef, 1);
 	    eval {

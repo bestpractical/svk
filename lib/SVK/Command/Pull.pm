@@ -26,7 +26,7 @@ sub parse_arg {
         my $checkout = $self->{xd}{checkout}{hash};
         @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
     } 
-    elsif ( @arg == 1 and !$self->arg_co_maybe($arg[0])->{'copath'}) {
+    elsif ( @arg == 1 and !$self->arg_co_maybe($arg[0])->isa('SVK::Path::Checkout')) {
         # If the last argument is a depot path, rather than a copath
         # then we should do a merge to the local depot, rather than 
         # an update to the path

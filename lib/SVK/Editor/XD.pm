@@ -207,9 +207,12 @@ sub do_delete {
     }
 
     $self->{get_path}($path);
-    $self->{xd}->do_delete( SVK::Path::Checkout->new
-			    (repos => $self->{repos}, xd => $self->{xd},
-			     path => $path, copath => $copath),
+    $self->{xd}->do_delete( SVK::Path::Checkout->real_new
+			    ({ xd => $self->{xd},
+			       copath_anchor => $copath,
+			       source => SVK::Path->new
+			       ( path => $path,
+				 repos => $self->{repos} )}),
 			    quiet => 1 );
 }
 

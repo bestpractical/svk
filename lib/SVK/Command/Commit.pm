@@ -364,8 +364,8 @@ sub get_committable {
 	    $dactual_anchor = $dactual_anchor->parent;
 	}
 
-	$target->{copath} = Path::Class::Dir->new($target->{copath})->subdir
-	    ( abs2rel($danchor, $vt->path_anchor => undef, '/') );
+	$target->copath_anchor(Path::Class::Dir->new($target->copath_anchor)->subdir
+	    ( abs2rel($danchor, $vt->path_anchor => undef, '/') ));
 	$vt->{path} = $danchor; # XXX: path_anchor is not an accessor yet!
 	$vt->{targets} = [ map { abs2rel( $_, $vt->path_anchor => undef, '/' ) } @dtargets];
     }
@@ -437,7 +437,7 @@ sub committed_commit {
 	    $path = "$path"; # XXX: Fix to_native
 	    $path = '' if $path eq '/';
 	    to_native($path, 'path', $encoder);
-	    my $dpath = abs2rel($copath, $target->{copath} => $path, '/');
+	    my $dpath = abs2rel($copath, $target->copath_anchor => $path, '/');
 	    from_native ($dpath, 'path', $encoder);
 	    my $prop = $root->node_proplist ($dpath);
 	    my $layer = SVK::XD::get_keyword_layer ($root, $dpath, $prop);
@@ -475,7 +475,7 @@ sub run {
     my ($commit_editor, $committable);
     if ($self->{import}) {
 	$self->get_commit_message () unless $self->{check_only};
-	$committed = $self->committed_import ($target->{copath});
+	$committed = $self->committed_import ($target->copath_anchor);
     }
     else {
         ($commit_editor, $committable) =
