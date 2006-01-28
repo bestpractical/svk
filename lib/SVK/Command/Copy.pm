@@ -29,7 +29,7 @@ sub parse_arg {
         $dst = $target;
 	# don't allow new uri in source when target is copath
 	@src = (map {$self->arg_co_maybe
-			 ($_, $dst->{copath}
+			 ($_, $dst->isa('SVK::Path::Checkout')
 			  ? loc ("path '%1' is already a checkout", $dst->report)
 			  : undef)} @arg);
     }

@@ -407,16 +407,16 @@ sub target_condensed {
     my $anchor;
     for my $path (@paths) {
 	unless (defined $anchor) {
-	    $anchor = $path->new;
-	    $anchor->{copath} = Path::Class::dir($anchor->{copath});
+	    $anchor = $path->clone;
+	    $anchor->copath_anchor(Path::Class::dir($anchor->copath_anchor));
 	}
-	my ($cinfo, $schedule) = $self->get_entry($anchor->{copath});
-	while ($cinfo->{scheduleanchor} || !-d $anchor->{copath} ||
+	my ($cinfo, $schedule) = $self->get_entry($anchor->copath_anchor);
+	while ($cinfo->{scheduleanchor} || !-d $anchor->copath_anchor ||
 	       $schedule eq 'add' || $schedule eq 'delete' || $schedule eq 'replace' ||
-	       !( $anchor->{copath}->subsumes($path->{copath})) ) {
+	       !( $anchor->copath_anchor->subsumes($path->copath_anchor)) ) {
 	    $anchor->anchorify;
-	    $anchor->{copath} = Path::Class::dir($anchor->{copath});
-	    ($cinfo, $schedule) = $self->get_entry($anchor->{copath});
+	    $anchor->copath_anchor(Path::Class::dir($anchor->copath_anchor));
+	    ($cinfo, $schedule) = $self->get_entry($anchor->copath_anchor);
 	}
 	push @{$anchor->source->{targets}}, abs2rel($path->copath, $anchor->copath => undef, '/') unless $anchor->path eq $path->path;
     }
@@ -460,7 +460,7 @@ sub target_from_copath_maybe {
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $depotpath || $arg,
-	  copath => $copath,
+	  copath_anchor => $copath,
 	  report => $arg,
 	  path => $path,
 	  xd => $self,

@@ -4,9 +4,16 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
-use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(repos repospath path depotname revision mirror
-			     _root _inspector _pool));
+use base 'SVK::Accessor';
+
+__PACKAGE__->mk_shared_accessors
+    (qw(repos mirror));
+
+__PACKAGE__->mk_clonable_accessors
+    (qw(repospath depotname revision targets));
+
+__PACKAGE__->mk_accessors
+    (qw(_root _inspector _pool));
 
 use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
 
@@ -23,6 +30,11 @@ SVK::Path - SVK path class
 The class represents a node in svk depot.
 
 =cut
+
+sub real_new {
+    my $self = shift;
+    $self->SUPER::new(@_);
+}
 
 sub new {
     my ($class, @arg) = @_;
@@ -41,10 +53,10 @@ sub new {
 	$self = SVK::Path::View->new
 	    ( { %$self, view => $view } );
     }
-    if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath})) {
+    if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath_anchor})) {
 	require SVK::Path::Checkout;
 	return SVK::Path::Checkout->real_new
-	    ( { copath => $copath,
+	    ( { copath_anchor => $copath,
 		report => $self->{report},
 		xd => $self->{xd},
 		source => $self });
@@ -64,24 +76,8 @@ sub refresh_revision {
 }
 
 sub _clone {
-    my ($self) = @_;
-
-    require Storable;
-    my $xd = delete $self->{xd};
-    my $root = delete $self->{_root};
-    my $pool = delete $self->{_pool};
-    my $view = delete $self->{view};
-    my $inspector = delete $self->{_inspector};
-    my $mirror = delete $self->{mirror};
-    my $cloned = Storable::dclone ($self);
-    $cloned->repos($self->repos) if ref($self) eq 'SVK::Path';
-    $self->{xd} = $cloned->{xd} = $xd if $xd;
-    $self->{mirror} = $cloned->{mirror} = $mirror if $mirror;
-    $self->{_root} = $root;
-    $cloned->{view} = $self->{view} = $view;
-    $self->{_pool} = $pool;
-    $self->{_inspector} = $inspector;
-    return $cloned;
+    my $self = shift;
+    return $self->clone;
 }
 
 sub root {
@@ -148,7 +144,7 @@ sub _commit_editor {
     my $editor = SVN::Delta::Editor->new
 	( $self->repos->get_commit_editor2
 	  ( $txn, "file://".$self->repospath,
-	    $self->{path}, undef, undef, # author and log already set
+	    $self->path_anchor, undef, undef, # author and log already set
 	    sub { print loc("Committed revision %1.\n", $_[0]);
 		  # build the copy cache as early as possible
 		  # XXX: don't need this when there's fs_closest_copy
@@ -181,7 +177,7 @@ sub _get_inspector {
     return SVK::Inspector::Root->new
 	({ root => $fs->revision_root($self->revision, $self->pool),
 	   _pool => $self->pool,
-	   anchor => $self->{path} });
+	   anchor => $self->path_anchor });
 }
 
 sub get_editor {
@@ -259,9 +255,12 @@ sub _to_pclass {
 
 sub anchorify {
     my ($self) = @_;
+    # XXX: use new pclass when available, see ::checkout
     my $targets = delete $self->{targets};
-    ($self->{path}, $self->{targets}[0]) = get_depot_anchor(1, $self->{path});
-    $self->{targets} = [map {"$self->{targets}[0]/$_"} @$targets]
+    my $path;
+    ($path, $self->{targets}[0]) = get_depot_anchor(1, $self->path_anchor);
+    $self->path_anchor($path);
+    $self->targets([map {"$self->{targets}[0]/$_"} @$targets])
 	if $targets && @$targets;
 }
 
@@ -288,7 +287,6 @@ Makes target depotpath. Takes C<$revision> number optionally.
 # XXX: obsoleted maybe
 sub as_depotpath {
     my ($self, $revision) = @_;
-    delete $self->{copath};
     $self->revision($revision) if defined $revision;
     delete $self->{_inspector};
     bless $self, 'SVK::Path';
@@ -303,7 +301,7 @@ Returns the full path of the target even if anchorified.
 
 sub path {
     my ($self) = @_;
-    (exists $self->{targets} && defined $self->{targets}[0])
+    (defined $self->{targets} && exists $self->{targets}[0])
 	? $self->_to_pclass($self->{path}, 'Unix')->subdir($self->{targets}[0])->stringify : $self->{path};
 }
 
@@ -390,6 +388,7 @@ path.
 
 =cut
 
+use SVN::Fs;
 *nearest_copy = SVN::Fs->can('closest_copy')
   ? *_nearest_copy_svn : *_nearest_copy_svk;
 
@@ -425,6 +424,12 @@ sub _nearest_copy_svk {
     my $spool = SVN::Pool->new_default;
     my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
 
+    # XXX: this is duplicated as svk::util, maybe we should use
+    # traverse_history directly
+    if ($root->can('txn') && $root->txn) {
+	($root, $path) = $root->revision_root
+	    ($path, $root->txn->base_revision );
+    }
     # normalize
     my $hist = $root->node_history ($path)->prev(0);
     my $rev = ($hist->location)[1];
@@ -623,7 +628,9 @@ sub merged_from {
 	  } );
 }
 
-sub path_anchor { $_[0]->{path} }
+*path_anchor = __PACKAGE__->make_accessor('path');
+push @{__PACKAGE__->_clonable_accessors}, 'path_anchor';
+
 sub path_target { $_[0]->{targets}[0] || '' }
 
 use Data::Dumper;

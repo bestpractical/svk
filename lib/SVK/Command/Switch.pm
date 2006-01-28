@@ -31,7 +31,7 @@ sub run {
     my ($self, $target, $cotarget) = @_;
     die loc("different depot") unless $target->same_repos ($cotarget);
 
-    my ($entry, @where) = $self->{xd}{checkout}->get ($cotarget->{copath});
+    my ($entry, @where) = $self->{xd}{checkout}->get ($cotarget->copath_anchor);
     die loc("Can only switch checkout root.\n")
 	unless $where[0] eq $cotarget->copath;
 

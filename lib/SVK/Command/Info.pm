@@ -23,7 +23,7 @@ sub run {
 	my ($path,$repos,$depotpath) = map { $target->$_ } qw/path repos depotpath/;
 	my $yrev = $repos->fs->youngest_rev;
 	my $rev = $target->isa('SVK::Path::Checkout') ?
-	    $self->{xd}{checkout}->get ($target->{copath})->{revision} : $yrev;
+	    $self->{xd}{checkout}->get ($target->copath_anchor)->{revision} : $yrev;
 
 	$target->revision($rev);
 	my (undef,$m) = eval { resolve_svm_source($repos, find_svm_source($repos,$path,$rev)) };

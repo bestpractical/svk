@@ -1,7 +1,7 @@
 package SVK::Path::Txn;
 use strict;
 use base 'SVK::Path';
-__PACKAGE__->mk_accessors(qw(txn));
+__PACKAGE__->mk_shared_accessors(qw(txn));
 
 sub _get_inspector {
     my $self = shift;
@@ -15,7 +15,7 @@ sub _get_inspector {
        ({ root => $self->txn->root($self->pool),
 	  istxn => 1,
           _pool => $self->pool,
-          anchor => $self->{path} });
+          anchor => $self->path_anchor });
 }
 
 sub get_editor {

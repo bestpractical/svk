@@ -241,7 +241,7 @@ sub apply_to {
 	  anchor => $target->path,
 	  target => '',
 	  send_fulltext => !$cb{patch} && !$cb{mirror},
-	  ($target->{copath}
+	  ($target->isa('SVK::Path::Checkout')
 	      ? (notify => SVK::Notify->new_with_report
 		    ($target->report, $target, 1))
 	      : ()

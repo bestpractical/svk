@@ -88,8 +88,8 @@ sub run {
 	if ($kind != $SVN::Node::dir) {
 	    my $tgt;
 	    ($target2->{path}, $tgt) = get_anchor (1, $target2->path_anchor);
-	    ($target->{path}, $target2->{copath}) =
-		get_anchor (0, $target->path_anchor, $target2->{copath});
+	    ($target->{path}, $target2->copath_anchor) =
+		get_anchor (0, $target->path_anchor, $target2->copath_anchor);
 	    $target2->{targets} = [$tgt];
 	    ($report) = get_anchor (0, $report) if defined $report;
 	}

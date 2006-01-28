@@ -74,13 +74,14 @@ is_output ($svk, 'smerge', ['-C', '//l', '//m/'],
 $svk->merge ('-a', '-m', 'simple smerge from source', '//m', '//l');
 $srev = $srepos->fs->youngest_rev;
 $svk->update ($copath);
-is_deeply ($xd->do_proplist (SVK::Path::Checkout->new
-			     ( repos => $repos,
-			       copath => $corpath,
-			       path => '/l',
-			       xd => $xd,
-			       revision => $repos->fs->youngest_rev,
-			     )),
+is_deeply ($xd->do_proplist (SVK::Path::Checkout->real_new
+			     ({ copath_anchor => $corpath,
+				xd => $xd,
+				source => SVK::Path->new
+				( repos => $repos,
+				  path => '/l',
+				  revision => $repos->fs->youngest_rev,
+				) })),
 	   {'svk:merge' => "$suuid:/A:$srev",
 	    'svm:source' => uri($srepos->path).'!/A',
 	    'svm:uuid' => $suuid }, 'simple smerge from source');

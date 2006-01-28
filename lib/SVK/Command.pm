@@ -505,7 +505,7 @@ sub arg_co_maybe {
 	);
     $ret = SVK::Path::Checkout->real_new
 	({ source => $ret,
-	   copath => $copath,
+	   copath_anchor => $copath,
 	   report => File::Spec->canonpath($arg),
 	   xd => $self->{xd},
 	 })
@@ -530,18 +530,18 @@ sub arg_copath {
     }
 
     from_native ($path, 'path', $self->{encoding});
-    return SVK::Path::Checkout->new
-	( repos => $repos,
-	  mirror => $self->{xd}->mirror($repos),
-	  repospath => $repospath,
-	  report => File::Spec->canonpath ($arg),
-	  copath => $copath,
-	  path => $path,
-	  view => $view,
-	  cinfo => $cinfo,
-	  xd => $self->{xd},
-	  depotpath => $cinfo->{depotpath},
-	);
+    return SVK::Path::Checkout->real_new
+	({ report => File::Spec->canonpath ($arg),
+	   copath_anchor => $copath,
+	   xd => $self->{xd},
+	   source => SVK::Path->new
+	   ( repos => $repos,
+	     repospath => $repospath,
+	     mirror => $self->{xd}->mirror($repos),
+	     path => $path,
+	     view => $view,
+	     revision => $cinfo->{revision}, # make this sane!
+	     depotpath => $cinfo->{depotpath} ) });
 }
 
 =head3 arg_depotpath ($arg)
@@ -711,7 +711,7 @@ XXX Undocumented
 sub lock_target {
     my $self = shift;
     for my $target (@_) {
-	$self->{xd}->lock ($target->{copath})
+	$self->{xd}->lock ($target->copath_anchor)
 	    if $target->isa('SVK::Path::Checkout');
     }
 }
@@ -914,7 +914,7 @@ sub rebless {
 sub find_checkout_anchor {
     my ($self, $target, $track_merge, $track_sync) = @_;
 
-    my $entry = $self->{xd}{checkout}->get ($target->{copath});
+    my $entry = $self->{xd}{checkout}->get ($target->copath_anchor);
     my $anchor_target = $self->arg_depotpath ($entry->{depotpath});
 
     return ($anchor_target, undef) unless $track_merge;
