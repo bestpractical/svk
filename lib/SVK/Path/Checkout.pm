@@ -31,26 +31,12 @@ copy.
 
 sub real_new {
     my $class = shift;
-    my $self = $class->SUPER::new(@_);
+    my $self = $class->SUPER::real_new(@_);
     unless (ref $self->report) {
 	$self->report($self->_to_pclass($self->report))
 	    if defined $self->report && length $self->report;
     }
     return $self;
-}
-
-sub new {
-    my $class = shift;
-    Carp::cluck "don't use me" unless ref($class);
-
-    # obsoleted code for cloning and modifying
-    my $source = delete $class->{source} or Carp::cluck;
-    my $self = $class->_clone;
-    %$self = (%$self, @_, source => $source->new);
-    $class->source($source);
-    die unless $self->source;
-    return $self;
-
 }
 
 sub root {
@@ -220,7 +206,7 @@ sub refresh_revision {
 }
 
 # XXX:
-for my $pass_through (qw/pool inspector _to_pclass _clone dump/) {
+for my $pass_through (qw/pool inspector _to_pclass dump/) {
     no strict 'refs';
     no warnings 'once';
     *{$pass_through} = *{'SVK::Path::'.$pass_through};

@@ -50,14 +50,14 @@ sub local {
     # ticket
     return unless defined $path && defined $rev;
 
-    SVK::Path->new
-	( repos => $repos,
-	  mirror => $xd ? $xd->mirror($repos) : undef,
-	  repospath => $repospath,
-	  path => $path,
-	  revision => $rev,
-	  depotname => $depot || '',
-	);
+    SVK::Path->real_new
+	({ repos => $repos,
+	   mirror => $xd ? $xd->mirror($repos) : undef,
+	   repospath => $repospath,
+	   path => $path, # XXX: use path_anchor accessor
+	   revision => $rev,
+	   depotname => $depot || '',
+	 });
 }
 
 sub same_resource {

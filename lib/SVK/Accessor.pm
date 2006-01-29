@@ -45,6 +45,19 @@ sub shared_accessors {
     return (@{$self->_shared_accessors});
 }
 
+
+sub real_new {
+    my $self = shift;
+    $self->SUPER::new(@_);
+}
+
+sub new {
+    my ($self, @arg) = @_;
+    Carp::cluck "bad usage" unless ref($self);
+
+    return $self->mclone(@arg);
+}
+
 sub clone {
     my ($self) = @_;
 
@@ -62,6 +75,17 @@ sub clone {
 	else {
 	    $cloned->$key(ref $value ? Storable::dclone($value) : $value);
 	}
+    }
+    return $cloned;
+}
+
+sub mclone {
+    my $self = shift;
+    my $args = ref($_[0]) ? $_[0] : { @_ };
+    my $cloned = $self->clone;
+    for my $key (keys %$args) {
+	Carp::cluck unless $cloned->can($key);
+	$cloned->$key($args->{$key});
     }
     return $cloned;
 }

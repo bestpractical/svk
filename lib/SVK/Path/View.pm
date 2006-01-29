@@ -11,25 +11,6 @@ __PACKAGE__->mk_shared_accessors(qw(view));
 use SVK::Util qw( abs2rel );
 use SVK::Root::View;
 
-sub new {
-    my $class = shift;
-    if (ref $class) {
-	my %arg = @_;
-	my $source = delete $class->{source} or Carp::cluck;
-	my $self = $class->_clone;
-	my $revision = delete $arg{revision};
-	%$self = (%$self, %arg, source => $source->new(revision => $class->revision));
-	$class->source($source);
-	die unless $self->source;
-	return $self;
-    }
-    my $arg = $_[0];
-    my $view = delete $arg->{view};
-    return $class->Class::Accessor::Fast::new({ source => SVK::Path->new(%$arg),
-						%$arg, view => $view
-					      });
-}
-
 sub _root {
     my $self = shift;
 

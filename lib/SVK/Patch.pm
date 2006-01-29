@@ -105,7 +105,7 @@ sub load {
     for (qw/source target/) {
 	next unless $self->{$_};
 	my $tmp = $self->{"_$_"} = $self->{$_}->local ($xd, $depot) or next;
-	$tmp = $tmp->new (revision => undef);
+	$tmp = $tmp->new->refresh_revision;
 	if (wantarray) {
 	    eval { $tmp->normalize };
 	    $not_applicable = $@
@@ -259,7 +259,7 @@ sub update {
 	unless $self->{_target};
 
     return unless $self->{_target_updated};
-    my $target = $self->{_target}->new (revision => undef);
+    my $target = $self->{_target}->new->refresh_revision;
     $target->normalize;
     my $patch = SVK::Editor::Patch->new;
     my $conflict;
@@ -286,7 +286,7 @@ sub regen {
 	print loc("Source of patch %1 not updated or not local, no need to regen patch.\n", $self->{name});
 	return;
     }
-    my $source = $self->{_source}->new (revision => undef);
+    my $source = $self->{_source}->new->refresh_revision;
     $source->normalize;
     my $merge = SVK::Merge->auto (repos => $self->{_repos}, xd => $self->{_xd},
 				  src => $source, dst => $target);
