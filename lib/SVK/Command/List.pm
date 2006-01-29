@@ -28,6 +28,7 @@ sub run {
     my $exception = '';
 
     while (my $arg = shift @arg) {
+	$arg->dump if $main::DEBUG;
         eval { _do_list($self, 0, $arg); print "\n" if @arg };
         $exception .= "$@" if $@;
     }

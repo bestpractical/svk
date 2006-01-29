@@ -456,20 +456,51 @@ sub target_from_copath_maybe {
 
     from_native ($path, 'path', $self->{encoding});
     undef $@;
-    my $ret = SVK::Path->new
+    my $ret = $self->create_path_object
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $depotpath || $arg,
 	  copath_anchor => $copath,
 	  report => $arg,
 	  path => $path,
-	  xd => $self,
-	  mirror => $self->mirror($repos),
 	  view => $view,
 	  revision => $rev,
 	);
     $ret = $ret->as_depotpath unless defined $copath;
     return $ret;
+}
+
+sub create_path_object {
+    my ($self, %arg) = @_;
+    if (my $depotpath = delete $arg{depotpath}) {
+	($arg{depotname}) = $depotpath =~ m!^/([^/]*)!;
+    }
+    $arg{mirror} ||= $self->mirror($arg{repos});
+
+    if (defined (my $copath = delete $arg{copath_anchor})) {
+	require SVK::Path::Checkout;
+	my $report = delete $arg{report};
+	return SVK::Path::Checkout->real_new
+	    ({ xd => $self,
+	       report => $report,
+	       copath_anchor => $copath,
+	       source => $self->create_path_object(%arg) });
+    }
+
+    my $path;
+    if (defined (my $view = delete $arg{view})) {
+	require SVK::Path::View;
+	$path = SVK::Path::View->real_new
+	    ({ source => $self->create_path_object(%arg),
+	       view => $view,
+	       %arg });
+    }
+    else {
+	$path = SVK::Path->real_new(\%arg);
+    }
+
+    $path->refresh_revision unless defined $path->revision;
+    return $path;
 }
 
 sub xdroot {

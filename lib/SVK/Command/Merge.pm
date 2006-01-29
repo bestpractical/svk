@@ -162,7 +162,8 @@ sub run {
 	my $previous_base;
 	if ($self->{check_only}) {
 	    require SVK::Path::Txn;
-	    $merge->{dst} = $dst = SVK::Path::Txn->new(%$dst);
+	    $merge->{dst} = $dst = $dst->clone;
+	    bless $dst, 'SVK::Path::Txn'; # XXX: need a saner api for this
 	}
 	foreach my $rev (@rev) {
 	    $merge = SVK::Merge->auto(%$merge,

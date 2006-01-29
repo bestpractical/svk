@@ -31,40 +31,6 @@ The class represents a node in svk depot.
 
 =cut
 
-sub real_new {
-    my $self = shift;
-    $self->SUPER::new(@_);
-}
-
-sub new {
-    my ($class, @arg) = @_;
-    my $self = ref $class ? $class->_clone :
-	bless {}, $class;
-    %$self = (%$self, @arg);
-    if (my $depotpath = delete $self->{depotpath}) {
-	$self->depotname($depotpath =~ m!^/([^/]*)!);
-    }
-    else {
-#	Carp::cluck 'without depotpath';
-    }
-    $self->refresh_revision unless defined $self->revision;
-    if (defined (my $view = delete $self->{view})) {
-	require SVK::Path::View;
-	$self = SVK::Path::View->new
-	    ( { %$self, view => $view } );
-    }
-    if ($class eq 'SVK::Path::Checkout' || defined (my $copath = delete $self->{copath_anchor})) {
-	require SVK::Path::Checkout;
-	return SVK::Path::Checkout->real_new
-	    ( { copath_anchor => $copath,
-		report => $self->{report},
-		xd => $self->{xd},
-		source => $self });
-#	Carp::carp "implicit svk::path::checkout creation";
-    }
-    return $self;
-}
-
 sub refresh_revision {
     my ($self) = @_;
     $self->_inspector(undef);
@@ -73,11 +39,6 @@ sub refresh_revision {
     $self->revision($self->repos->fs->youngest_rev);
 
     return $self;
-}
-
-sub _clone {
-    my $self = shift;
-    return $self->clone;
 }
 
 sub root {
@@ -287,9 +248,8 @@ Makes target depotpath. Takes C<$revision> number optionally.
 # XXX: obsoleted maybe
 sub as_depotpath {
     my ($self, $revision) = @_;
+    $self = $self->clone;
     $self->revision($revision) if defined $revision;
-    delete $self->{_inspector};
-    bless $self, 'SVK::Path';
     return $self;
 }
 
@@ -300,7 +260,13 @@ Returns the full path of the target even if anchorified.
 =cut
 
 sub path {
-    my ($self) = @_;
+    my $self = shift;
+
+    if (defined $_[0]) {
+	$self->{path} = $_[0];
+	return;
+    }
+
     (defined $self->{targets} && exists $self->{targets}[0])
 	? $self->_to_pclass($self->{path}, 'Unix')->subdir($self->{targets}[0])->stringify : $self->{path};
 }

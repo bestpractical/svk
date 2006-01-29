@@ -494,7 +494,7 @@ sub arg_co_maybe {
     }
 
     $rev ||= $cinfo->{revision} if defined $copath;
-    my $ret = SVK::Path->new
+    return $self->{xd}->create_path_object
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
@@ -502,15 +502,9 @@ sub arg_co_maybe {
 	  path => $path,
 	  view => $view,
 	  revision => $rev,
+	  copath_anchor => $copath,
+	  report => File::Spec->canonpath($arg),
 	);
-    $ret = SVK::Path::Checkout->real_new
-	({ source => $ret,
-	   copath_anchor => $copath,
-	   report => File::Spec->canonpath($arg),
-	   xd => $self->{xd},
-	 })
-	    if defined $copath;
-    return $ret;
 }
 
 =head3 arg_copath ($arg)
@@ -534,7 +528,7 @@ sub arg_copath {
 	({ report => File::Spec->canonpath ($arg),
 	   copath_anchor => $copath,
 	   xd => $self->{xd},
-	   source => SVK::Path->new
+	   source => $self->{xd}->create_path_object
 	   ( repos => $repos,
 	     repospath => $repospath,
 	     mirror => $self->{xd}->mirror($repos),
@@ -621,9 +615,8 @@ sub arg_depotpath {
 	($path, $view) = $self->create_view($repos, $view, $rev);
     }
 
-    return SVK::Path->new
+    return $self->{xd}->create_path_object
 	( repos => $repos,
-	  mirror => $self->{xd}->mirror($repos),
 	  repospath => $repospath,
 	  path => $path,
 	  report => $arg,
