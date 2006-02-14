@@ -2,8 +2,6 @@ package SVK::Editor::Merge;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use SVK::Inspector::Root;
-
 require SVN::Delta;
 our @ISA = qw(Class::Accessor::Fast SVN::Delta::Editor);
 use SVK::I18N;
