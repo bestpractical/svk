@@ -86,11 +86,8 @@ sub run {
     my $kind = $oldroot->check_path ($target->path_anchor);
     if ($target2->isa('SVK::Path::Checkout')) {
 	if ($kind != $SVN::Node::dir) {
-	    my $tgt;
-	    ($target2->{path}, $tgt) = get_anchor (1, $target2->path_anchor);
-	    ($target->{path}, $target2->copath_anchor) =
-		get_anchor (0, $target->path_anchor, $target2->copath_anchor);
-	    $target2->{targets} = [$tgt];
+	    $target2->anchorify;
+	    $target->anchorify;
 	    ($report) = get_anchor (0, $report) if defined $report;
 	}
 	$editor->{report} = $report;
