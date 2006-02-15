@@ -122,10 +122,10 @@ sub find_merge_base {
 
 	# when the base is one of src or dst, make sure the base is
 	# still the same node (not removed and replaced)
-	if ($path eq $dst->path) {
+	if ($rev && $path eq $dst->path) {
 	    next unless $dst->related_to($dst->mclone(revision => $rev));
 	}
-	if ($path eq $src->path) {
+	if ($rev && $path eq $src->path) {
 	    next unless $src->related_to($src->mclone(revision => $rev));
 	}
 
@@ -476,7 +476,10 @@ sub resolve_copy {
     my $cpsrc = $src->new( path => $path,
 			   revision => $cp_rev );
     if ($path !~ m{^\Q$srcpath/}) {
-	return $src->same_source($cpsrc) ? ($cp_path, $cp_rev) : ();
+	# if the copy source is not within the merge source path, only
+	# allows using the copy if they are both not mirrored
+	return !$src->is_mirrored && !$cpsrc->is_mirrored ?
+	    ($cp_path, $cp_rev) : ();
     }
 
     $path =~ s/^\Q$srcpath/$dstpath/;
