@@ -119,6 +119,16 @@ sub find_merge_base {
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
 	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
+
+	# when the base is one of src or dst, make sure the base is
+	# still the same node (not removed and replaced)
+	if ($path eq $dst->path) {
+	    next unless $dst->related_to($dst->mclone(revision => $rev));
+	}
+	if ($path eq $src->path) {
+	    next unless $src->related_to($src->mclone(revision => $rev));
+	}
+
 	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
 
 	if ($path eq $dst->path &&
