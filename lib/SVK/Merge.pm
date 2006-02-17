@@ -433,7 +433,13 @@ sub run {
 	      src => $src,
 	      dst => $self->{dst},
 	      cb_resolve_copy => sub {
+		  my $path = shift;
+		  my $replace = shift;
 		  my ($src_from, $src_fromrev) = @_;
+		  # If the target exists, don't use copy unless it's a
+		  # replace, because merge editor can't handle it yet.
+		  return if !$replace && $self->{dst}->inspector->exist($path);
+
 		  my ($dst_from, $dst_fromrev) =
 		      $self->resolve_copy($srcinfo, $dstinfo, @_);
 		  return unless defined $dst_from;
