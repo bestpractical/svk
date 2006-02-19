@@ -38,7 +38,7 @@ sub run {
     $target = $target->as_depotpath ($self->{rev});
 #    switch to related_to once the api is ready
     # check if the switch has a base at all
-    die loc("path %1 does not exist.\n", $target->report)
+    die loc("Path %1 does not exist.\n", $target->report)
 	if $target->root->check_path ($target->path_anchor) == $SVN::Node::none;
     SVK::Merge->auto (%$self, repos => $target->repos,
 		      src => $cotarget, dst => $target);
