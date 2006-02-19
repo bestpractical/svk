@@ -119,6 +119,16 @@ sub find_merge_base {
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
 	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
+
+	# when the base is one of src or dst, make sure the base is
+	# still the same node (not removed and replaced)
+	if ($rev && $path eq $dst->path) {
+	    next unless $dst->related_to($dst->mclone(revision => $rev));
+	}
+	if ($rev && $path eq $src->path) {
+	    next unless $src->related_to($src->mclone(revision => $rev));
+	}
+
 	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
 
 	if ($path eq $dst->path &&
@@ -423,7 +433,13 @@ sub run {
 	      src => $src,
 	      dst => $self->{dst},
 	      cb_resolve_copy => sub {
+		  my $path = shift;
+		  my $replace = shift;
 		  my ($src_from, $src_fromrev) = @_;
+		  # If the target exists, don't use copy unless it's a
+		  # replace, because merge editor can't handle it yet.
+		  return if !$replace && $self->{dst}->inspector->exist($path);
+
 		  my ($dst_from, $dst_fromrev) =
 		      $self->resolve_copy($srcinfo, $dstinfo, @_);
 		  return unless defined $dst_from;
@@ -466,7 +482,10 @@ sub resolve_copy {
     my $cpsrc = $src->new( path => $path,
 			   revision => $cp_rev );
     if ($path !~ m{^\Q$srcpath/}) {
-	return $src->same_source($cpsrc) ? ($cp_path, $cp_rev) : ();
+	# if the copy source is not within the merge source path, only
+	# allows using the copy if they are both not mirrored
+	return !$src->is_mirrored && !$cpsrc->is_mirrored ?
+	    ($cp_path, $cp_rev) : ();
     }
 
     $path =~ s/^\Q$srcpath/$dstpath/;

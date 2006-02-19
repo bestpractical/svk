@@ -63,7 +63,7 @@ sub should_ignore {
 # XXX: This should call a callback to decide if a copy candidate is
 # wanted or not
 sub find_copy {
-    my ($self, $path) = @_;
+    my ($self, $path, $replace) = @_;
     my $target_path = File::Spec::Unix->catdir($self->{src}->path_anchor, $path);
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
@@ -112,7 +112,7 @@ sub find_copy {
 
 	my $hate_path = $self->{src}->path_anchor;
 	if ($src_frompath !~ m{^\Q$hate_path/}) {
-	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
+	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
 		push @{$self->{incopy}}, { path => $path,
 					   fromrev => $src_from,
 					   frompath => $src_frompath };
@@ -146,7 +146,7 @@ sub find_copy {
 
 	# GRR! cleanup this!
 	warn "==> $path(:$to) is copied from $src_frompath:$src_from" if $main::DEBUG;
-	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($src_frompath, $src_from)) {
+	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
 				       frompath => $src_frompath };
@@ -208,7 +208,7 @@ sub add_file {
 sub open_directory {
     my ($self, $path, $pbaton, @arg) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
-    if (my @ret = $self->find_copy($path)) {
+    if (my @ret = $self->find_copy($path, 1)) {
 	warn "==> turn $path into replace: ".join(',',@ret) if $main::DEBUG;
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
 	return $self->replay_add_history('directory', $path, $pbaton, @ret, $arg[1])
@@ -220,7 +220,7 @@ sub open_directory {
 sub open_file {
     my ($self, $path, $pbaton, @arg) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
-    if (my @ret = $self->find_copy($path)) {
+    if (my @ret = $self->find_copy($path, 1)) {
 	warn "==> turn file $path into replace" if $main::DEBUG;
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
 	return $self->replay_add_history('file', $path, $pbaton, @ret, $arg[1])

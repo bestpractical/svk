@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 24;
+use Test::More tests => 25;
 use strict;
 use File::Path;
 use Cwd;
@@ -259,52 +259,23 @@ is_output($svk, 'pull', ['//local-many'],
 is_ancestor($svk, '//local-many/outside',
 	    '/outside', 48);
 
+$svk->cp(-m => 'a simple file copy to collide', '//trunk-3/B-moved/fe' => '//trunk-3/outside/fe');
 
+$svk->up;
+
+overwrite_file('outside/fe', "lala our own\n");
+$svk->add('outside/fe');
+$svk->commit(-m => 'ours');
+
+$ENV{SVKRESOLVE} = 's';
+
+is_output($svk, 'pull', ['//local-many'],
+	  ['Auto-merging (49, 51) /trunk-3 to /local-many (base /trunk-3:49).',
+	   'C   outside/fe',
+	   qr'New merge ticket: .*:/trunk-3:51',
+	   'Empty merge.',
+	   '1 conflict found.']);
+
+#$svk->up;
 # check if prop change only
 #$svk->diff('//trunk-3', '//local-many');
-
-exit;
-#our $DEBUG=1;
-$ENV{SVKRESOLVE} = 't';
-our $answer = 't';
-is_output($svk, 'pull', ['//trunk-3'],
-	  ['Auto-merging (3, 28) /trunk to /trunk-3 (base /trunk:3).',
-	   'R + A',
-	   'A + A-cp',
-	   'A + A-cp-more',
-	   'A   A-cp-more/new',
-	   'A + B',
-	   'A + B/quz',
-	   'D   B/Q/qu',
-	   'R + B/be',
-	   'A   B/new',
-	   'A + B/quz-mod',
-	   'A + B-totrunk',
-	   'A + B-totrunk/quz',
-	   'R + B-totrunk/be',
-	   'A   B-totrunk/new',
-	   'A + B-totrunk/quz-mod',
-	   'A + A-cp-again',
-	   'A   A-cp-again/new',
-	   'A + B-fromlocal',
-	   'A + B-fromlocal/quz',
-	   'R + B-fromlocal/be',
-	   'A   B-fromlocal/new',
-	   'A + B-fromlocal/quz-mod',
-	   'A + B-orztrunk',
-	   'A + B-orztrunk/quz',
-	   'R + B-orztrunk/be',
-	   'A   B-orztrunk/new',
-	   'A + B-orztrunk/quz-mod',
-	   'A + B-mod',
-	   'U   B-mod/S/P/pe',
-	   'A   B-mod/S/new',
-	   'U   B-mod/fe',
-	   qr'New merge ticket: .*:/local-new:25',
-	   qr'New merge ticket: .*:/trunk:28',
-	  ]);
-exit;
-warn $output;
-exit;
-$svk->push('//trunk-3');
-warn $output;

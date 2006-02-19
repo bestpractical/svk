@@ -36,6 +36,7 @@ requires(
 	'Encode'		=> '2.10',
 	'List::MoreUtils'	=> '0',
 	'Class::Accessor::Fast'	=> '0',
+	'Class::Data::Inheritable'	=> '0',
 	'File::Spec'		=> '3.14',
 	'Path::Class'		=> '0.15',
 );

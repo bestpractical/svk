@@ -229,6 +229,9 @@ sub add_file {
 	$self->{info}{$path}{addmerge} = 1;
 	$self->{info}{$path}{open} = [$pdir, -1];
 	$self->{info}{$path}{fpool} = $pool;
+	if (defined $arg[0]) {
+	    warn "===> add merge with history... very bad";
+	}
     }
     else {
 	++$self->{changes};
