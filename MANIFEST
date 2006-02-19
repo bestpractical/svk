@@ -1,6 +1,9 @@
 bin/svk
 CHANGES
+contrib/svk-completion.pl
+contrib/svkopendiff
 inc/ExtUtils/AutoInstall.pm
+inc/Module/AutoInstall.pm
 inc/Module/Install.pm
 inc/Module/Install/AutoInstall.pm
 inc/Module/Install/Base.pm
@@ -71,6 +74,7 @@ lib/SVK/Editor/XD.pm
 lib/SVK/Help/Environment.pod
 lib/SVK/Help/Index.pod
 lib/SVK/Help/Intro.pod
+lib/SVK/Help/View.pod
 lib/SVK/Help/zh_cn/Index.pod
 lib/SVK/Help/zh_tw/Index.pod
 lib/SVK/I18N.pm
@@ -89,6 +93,7 @@ lib/SVK/Patchset.pm
 lib/SVK/Path.pm
 lib/SVK/Path/Checkout.pm
 lib/SVK/Path/Txn.pm
+lib/SVK/Path/View.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
