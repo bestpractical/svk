@@ -13,6 +13,7 @@ Once you've done that, more in-depth help is available:
 
     svk help environment    Environment variables that alter svk's behavior
     svk help commands       A list of all available commands
+    svk help view           svk view support
     svk help <command-name> Help for a specific command
     svk help                This page
 

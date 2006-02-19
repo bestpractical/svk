@@ -1,12 +1,128 @@
-[Changes for 1.?? - ? ???, 2005]
+[Changes for 2.0.0 - ? ???, 2006]
 
 * "svk commit" now has additional option --interactive
 
+* Renames and copies can now be merged across branches.
+
+* View support for customising how checkout should look like.
+
+* New global option --ignore to override ignore settings.
+
+* "svk commit" now supports --set-revprop option.
+
+* "svk smerge" -IC now actually checks if each incremental revision
+  merges correctly. [nnunley]
+
 * "svk add" now displays "- (bin)" if the svn:mime-type of the file
-  being added is a non text type.
+  being added is a non text type. [glasser]
+
+* "svk rm" now has --force option. [stig]
 
 * "svk log" and "svk blame" Now cross renames even when the --cross (-x)
-  switch isn't provided.
+  switch isn't provided. [mb]
+
+* Many other fixes, cleanups and document improvements.
+
+[Changes for 1.06 - 10 Dec 2005]
+
+* Workaround File::Spec 3.14 API change, which is causing svk's use of
+  svn libraries to fail its assertion.
+
+* Fix a bug that 'svk update' can update meta data of checkout but not
+  the file contents in some cases.  This caused the checkout to
+  contain changes reverting what is in the repository.
+
+* Fix a bug mirror state can be inconsistent when 'svk cp' use with
+  non-canonical paths.
+
+* Typo fixes in error message. [mb]
+
+[Changes for 1.05 - 6 Oct 2005]
+
+* Make use of the new svn API (fs_closest_copy) when available. This
+  boosts performance for smerge, switch and info.
+
+* Performance boost by re-implementation of SVN::Mirror::has_local.
+
+* Fixed the case that "svk up" doesn't do the right thing when running
+  for a subdirectory of a checkout that has gone in the target
+  revision.
+
+* Fix merge base lookup so merged-from takes precedence as base when
+  doing push.
+
+* Documentation update on "mv -p", switches "--parent", "--quiet" etc.
+
+* Stream is properly closed to avoid svn-trunk segfault.
+
+* Now tells the user if a file/directory creation is impossible by
+  reverting.
+
+* "svk sync -a" now aborts all sync if one repository sync is aborted.
+
+* Fixes in path encodings and other i18n related issues.
+
+* Failsafe for the case with node_created_rev on '/'.
+
+* A command line completion script is added into contrib/.
+
+* A script available in contrib/svkopendiff enables svk diff to use
+  FileMerge to display output.
+
+[Changes for 1.04 - 24 Aug 2005]
+
+* Fix various locking bugs exposed by the concurrency fix introduced
+  in 1.03.  This includes "svk mv A B" not scheduling A for deletion,
+  "svk cp -p" not scheduling newly created parent directories for
+  addition.
+
+* Use tab characters as the separators between path, depot path and
+  label in diff output.  This behaviour conforms to the output of
+  Subversion and GNU diff.
+
+[Changes for 1.03 - 18 Aug 2005]
+
+* "svk status" now accepts a --verbose (-v) switch which functions
+  just like the svn clients switch of the same name.
+
+* "svk log" and "svk revert" now accept a --quiet (-q) switch.
+
+* "svk diff" now accepts a --non-recursive (-N) switch.
+
+* Support --quiet in svk propdel and svk propset.
+
+* Fix message when doing svk propdel --revprop.
+
+* Allow svk update --sync --check-only to sync and then check what
+  would be updated in your working copy.
+
+* Fix a bug that that status and revert won't work on explicit
+  command line targets that are replaced with history.
+
+* Fix path encoding for replaced item in "svk add".
+
+* Fix a bug that svk cp A B would die if A has properties.
+
+* Fix a bug in cb_rev for mirrored path, that was using wrong base
+  revision for delete_entry when a node was replaced with history.
+
+* Fix a bug in merge editor for replaced items being deleted but not
+  replaced.
+
+* Fix merging replaced item to checkout.
+
+* Fix a bug when a file is obstructed by a stalled directory, it would
+  cause checkout_delta to cache its signature, and thus not reported
+  as obstructed for the second time.
+
+* Reduce memory leak in nearest_copy().
+
+* Fix a regression that svk sm -l (without -m or --template) should
+  prompt for log message.
+
+* Be more carefull handling failures when writing out statefile.
+
+* Fix an issue with concurrent svk storing their own state.
 
 [Changes for 1.02 - 2 Aug, 2005]
 

@@ -1,0 +1,41 @@
+=head1 NAME
+
+SVK::Help::View - Introduction to svk view support
+
+=head1 DESCRIPTION
+
+svk allows you to define a different I<view> for the existing
+repository.
+
+=head2 DEFINING A VIEW
+
+views are stored as property C<svk:view:NAME> on a directory.  Suppose
+you have C<svk:view:ptest> set on C<//project>, you can refer to it by
+C<//^project/ptest>.  That is, a caret, and then path holding the
+property, a slash, and the name of the view.
+
+You can now use C<//^project/test> as a target for normal svk commands
+like ls, checkout and diff.
+
+Here is an example for the value of the property:
+
+ &:/project/trunk
+ -*
+ dir1  dir1
+ util  src/deep/util
+
+The first line is the base of the view.  The C<&:> sign means the root
+of a mirror, so the view can still be used even if other people
+mirrored the repository to a different path in their local repository.
+
+The second line means taking out all the content under the root.  And
+then take C<dir1> back, stick the directory C<src/deep/util> to
+C<util> under the view.  So running C<svk ls //^project/ptest> you
+should see:
+
+ dir1/
+ util/
+
+=cut
+
+1;
