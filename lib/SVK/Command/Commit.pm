@@ -263,16 +263,14 @@ sub get_committable {
     my $targets = [];
     my $encoder = get_encoder;
     my ($status_editor, $commit_editor, $conflict_handler);
-
-    my $notify = SVK::Notify->new
-    (
+    
+    my $notify = SVK::Notify->new( 
         cb_flush => sub {
             my ($path, $status) = @_;
             to_native ($path, 'path', $encoder);
             my $copath = $target->copath ($path);
             push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
                 $copath];
-
             no warnings 'uninitialized';
             print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath) if $fh;
         }
@@ -478,10 +476,7 @@ sub run {
 	$committed = $self->committed_import ($target->copath_anchor);
     }
     else {
-        ($commit_editor, $committable) =
-            $self->get_committable ($target, $xdroot, $skipped_items);
-
-	$committed = $self->committed_commit ($target, $committable, $skipped_items);
+        $committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);
@@ -491,8 +486,8 @@ sub run {
         $editor = $commit_editor;
     }
 
-    die loc("unexpected error: commit to mirrored path but no mirror object")
-	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
+    #die loc("unexpected error: commit to mirrored path but no mirror object")
+    #	if $target->is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
 
     $self->run_delta ($target, $xdroot, $editor, %cb);
 }
