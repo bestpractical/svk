@@ -99,6 +99,11 @@ sub do_update {
     my $report = $cotarget->report;
     my $kind = $newroot->check_path ($update_target->path);
     if ($kind == $SVN::Node::none) {
+	# if update target doesn't exist, only allows updating from
+	# something that exist.
+	die loc("Path %1 does not exist.\n", $update_target->depotpath)
+	    unless $xdroot->check_path($cotarget->path);
+
 	$cotarget->anchorify;
 	$update_target->anchorify;
 	# still in the checkout
@@ -106,8 +111,6 @@ sub do_update {
 	    $kind = $newroot->check_path($update_target->path_anchor);
 	}
     }
-    die loc("path %1 does not exist.\n", $update_target->path_anchor)
-	if $kind == $SVN::Node::none;
 
     my $content_revision = $update_target->isa('SVK::Path::View') ?
 	$update_target->source->revision : $update_target->revision;
