@@ -423,7 +423,7 @@ sub condense {
 	my ($cinfo, $schedule) = $self->get_entry($anchor);
 	while (!-d $anchor || $cinfo->{scheduleanchor} ||
 	       $schedule eq 'add' || $schedule eq 'delete' || $schedule eq 'replace' ||
-	       ($anchor ne $copath && $anchor.$SEP ne substr ($copath, 0, length($anchor)+1))) {
+	       ($anchor ne $copath && $anchor ne $SEP && $anchor.$SEP ne substr ($copath, 0, length($anchor)+1))) {
 	    ($anchor, $report) = get_anchor (0, $anchor, $report);
 	    # XXX: put .. to report if it's anchorified beyond
 	    ($cinfo, $schedule) = $self->get_entry($anchor);
