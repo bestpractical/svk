@@ -2,7 +2,7 @@
 use strict;
 
 BEGIN { require 't/tree.pl';};
-plan tests => 17;
+plan tests => 19;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -99,6 +99,26 @@ is_output($svk, 'up', [$copath],
 	   "A   $copath/K/Q/qu",
 	   "A   $copath/K/Q/qz"]);
 
+append_file("$copath/K/Q/qu", "commit from view/K");
+
+is_output($svk, 'ci', [-m => 'foo', $copath],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri/project.",
+	   'Merge back committed as revision 29.',
+	   "Syncing $uri/project",
+	   'Retrieving log information from 29 to 29',
+	   'Committed revision 32 from revision 29.']);
+
+append_file("$copath/V/be", "commit from view/V");
+
+is_output($svk, 'ci', [-m => 'modify V', $copath],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri/project.",
+	   'Merge back committed as revision 30.',
+	   "Syncing $uri/project",
+	   'Retrieving log information from 30 to 30',
+	   'Committed revision 33 from revision 30.']);
+
 $svk->cp(-m => 'make a branch', '//prj/trunk', '//local');
 
 $svk->ps ('-m', 'use local K for V', 'svk:view:viewA',
@@ -110,7 +130,7 @@ $svk->ps ('-m', 'use local K for V', 'svk:view:viewA',
 ', '//');
 
 is_output($svk, 'up', [$copath],
-	  ['Syncing //^viewA@31(/prj/trunk) in '.__($corpath).' to 33.']);
+	  ['Syncing //^viewA@31(/prj/trunk) in '.__($corpath).' to 35.']);
 
 append_file("$copath/V/be", "local\n");
 
@@ -123,17 +143,17 @@ is_output($svk, 'ci', [-m => 'booo', $copath],
 is_output($svk, 'ci', [-m => 'booo', "$copath/S/be"],
 	  ['Commit into mirrored path: merging back directly.',
 	   "Merging back to mirror source $uri/project.",
-	   'Merge back committed as revision 29.',
+	   'Merge back committed as revision 31.',
 	   "Syncing $uri/project",
-	   'Retrieving log information from 29 to 29',
-	   'Committed revision 34 from revision 29.',
+	   'Retrieving log information from 31 to 31',
+	   'Committed revision 36 from revision 31.',
 	  ]);
 
 is_output($svk, 'st', [$copath],
 	  [__("M   $copath/V/be")]);
 
 is_output($svk, 'ci', [-m => 'should be on local', $copath],
-	  ['Committed revision 35.']);
+	  ['Committed revision 37.']);
 
 is_output($svk, 'st', [$copath], []);
 
