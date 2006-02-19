@@ -7,6 +7,7 @@ use SVK::Editor::Rename;
 use SVK::Editor::Translate;
 use SVK::Editor::Delay;
 use List::Util qw(min);
+use SVK::Target::Universal;
 
 =head1 NAME
 
