@@ -476,7 +476,8 @@ sub run {
 	$committed = $self->committed_import ($target->copath_anchor);
     }
     else {
-        $committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
+        ($commit_editor, $committable) = $self->get_committable ($target, $xdroot);
+        $committed = $self->committed_commit ($target, $committable);
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);
