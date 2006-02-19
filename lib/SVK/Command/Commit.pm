@@ -8,6 +8,8 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Command::Sync;
+use SVK::Editor::InteractiveCommitter;
+
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder );
@@ -279,7 +281,7 @@ sub get_committable {
     if ($self->{interactive}) {
         $commit_editor = $status_editor = SVK::Editor::InteractiveCommitter->new
         (
-            SVK::Editor::Merge->cb_for_root($root, $target->{path}, 0),
+            SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
             cb_skip_prop_change => sub {
                 my ($path, $prop, $value) = @_;
                 $skipped_items->{props}{$target->copath($path)}{$prop} = $value;

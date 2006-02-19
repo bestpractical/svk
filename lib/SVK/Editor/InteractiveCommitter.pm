@@ -591,15 +591,15 @@ sub on_apply_textdelta {
         @{$self->{childrens}};
 
     if ($type and !mimetype_is_text($type->{value}) or
-        ($type = $editor->{cb_localprop}($path, 'svn:mime-type', $pool)) and
+        ($type = $editor->{inspector}->localprop($path, 'svn:mime-type', $pool)) and
         !mimetype_is_text($type))
     {
         bless $self,
             "SVK::Editor::InteractiveCommitter::ModifyBinaryFileAction";
         return $self->on_apply_textdelta(@_[1..$#_]);
     }
-
-    my $fh1 = $editor->inspector->localmod($path, '', $pool)->[0];
+    
+    my $fh1 = $editor->{inspector}->localmod($path, '', $pool)->[0];
 
     $self->{old_content} = [<$fh1>];
     $self->{new_content} = '';
@@ -625,7 +625,7 @@ sub on_apply_textdelta_commit {
         if ($editor->{send_fulltext}) {
             SVN::TxDelta::send_stream($nfh, @$handle, $self->{pool});
         } else {
-            my $ofh = $editor->inspector->localmod($path, '', $pool)->[0];
+            my $ofh = $editor->{inspector}->localmod($path, '', $pool)->[0];
             my $txstream = SVN::TxDelta::new($ofh, $nfh, $pool);
 
             SVN::TxDelta::send_txstream($txstream, @$handle, $self->{pool});
@@ -854,7 +854,7 @@ sub new {
     my ($class, $parent, $editor, $path, $name, $value, $pool) = @_;
     my $self = $class->SUPER::new(@_[1..$#_]);
 
-    my ($l, $r) = $editor->inspector->localprop($path, $name, $pool);
+    my ($l, $r) = $editor->{inspector}->localprop($path, $name, $pool);
     ($l, $r) = map { !length || /\n$/ ? $_ : "$_\n"}
         defined $l ? $l : "", defined $value ? $value : "";
 
