@@ -21,8 +21,8 @@ sub parse_arg {
     }
 
     return if $#arg < 0 || $#arg > 1;
-    my $depotpath = $self->arg_depotpath ($arg[0]);
-    return ($depotpath, $self->arg_copath ($arg[1] || ''));
+    return ($self->arg_uri_maybe($arg[0]),
+	    $self->arg_copath($arg[1] || ''));
 }
 
 sub lock { $_[0]->lock_target ($_[2]) }
@@ -38,7 +38,7 @@ sub run {
     $target = $target->as_depotpath ($self->{rev});
 #    switch to related_to once the api is ready
     # check if the switch has a base at all
-    die loc("path %1 does not exist.\n", $target->report)
+    die loc("Path %1 does not exist.\n", $target->report)
 	if $target->root->check_path ($target->path_anchor) == $SVN::Node::none;
     SVK::Merge->auto (%$self, repos => $target->repos,
 		      src => $cotarget, dst => $target);

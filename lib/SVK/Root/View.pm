@@ -17,7 +17,8 @@ sub txn_root {
 
     $self->_apply_view_to_txn($txn, $self->view, $self->txn->base_revision);
 
-    return $self->new({ txn => $txn, root => $txn->root($newpool), pool => $newpool });
+    return $self->new({ view => $self->view, txn => $txn,
+			root => $txn->root($newpool), pool => $newpool });
 }
 
 sub revision_root {

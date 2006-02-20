@@ -73,6 +73,7 @@ features(
 include('ExtUtils::AutoInstall');
 auto_install();
 
+auto_provides();
 WriteAll( sign => 1 );
 
 $::VERSION = $required_svn;

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 13;
+use Test::More tests => 15;
 require 't/tree.pl';
 use File::Path;
 
@@ -43,7 +43,7 @@ is_output ($svk, 'switch', ['//A-branch', 'P'],
 	   ['Can only switch checkout root.']);
 
 is_output ($svk, 'switch', ['//A-branch-sdnfosa'],
-	   ['path //A-branch-sdnfosa does not exist.']);
+	   ['Path //A-branch-sdnfosa does not exist.']);
 
 $svk->mv (-m => 'mv', '//A-branch' => '//A-branch-renamed');
 
@@ -60,3 +60,10 @@ is_output ($svk, 'cp', [-m => 'another branch', '//A-branch-renamed', '//A-branc
 is_output ($svk, 'switch', ['//A-branch-new/P', $corpath],
 	   ["Syncing //A-branch-renamed/P(/A-branch-renamed/P) in $corpath to 6."]);
 is_output ($svk, 'st', [$corpath], []);
+
+$svk->rm(-m => 'kill it', '//A-branch-renamed');
+is_output ($svk, 'switch', ['//A-branch-renamed/P', $corpath],
+	   ["Path //A-branch-renamed/P does not exist."]);
+is_output ($svk, 'switch', ['//A-branch-renamed/P@6', $corpath],
+	   ["Syncing //A-branch-new/P(/A-branch-new/P) in $corpath to 6."]);
+

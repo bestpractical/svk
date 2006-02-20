@@ -179,6 +179,8 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
  -X [--expand]          : expand files copied as new files
  -N [--non-recursive]   : do not descend recursively
 
+ See also SVKDIFF in svk help environment.
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
