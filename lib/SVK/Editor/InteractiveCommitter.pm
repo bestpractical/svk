@@ -55,7 +55,7 @@ sub close_edit {
             my (%actions, @actions);
 
             @actions = map {delete $self->{info}{$_}} @{$self->{conflicts}};
-            push @actions, @{$_->{childrens}} for @actions;
+            push @actions, @{$_->{children}} for @actions;
             @actions = map {$_->{id}} @actions;
 
             @actions{@actions} = 1;
@@ -442,11 +442,11 @@ sub new {
         state => '',
         force_disable => {},
         force_enable => {},
-        childrens => [],
+        children => [],
     }, $class;
 
     $parent = $editor->{info}{$parent} if defined $parent;
-    push @{$parent->{childrens}}, $self if $parent;
+    push @{$parent->{children}}, $self if $parent;
 
     return $self;
 }
@@ -471,11 +471,11 @@ sub get_questions_count {
            %{$self->{force_enable}} ? 0 : 1;
 }
 
-sub update_childrens_state {
+sub update_children_state {
     my ($self, $state, $by_who) = @_;
 
     return grep {$_->on_state_update(undef, $state, $by_who || $self)}
-        @{$self->{childrens}};
+        @{$self->{children}};
 }
 
 sub on_state_update {
@@ -497,10 +497,10 @@ sub on_state_update {
             $ret ||= delete $self->{force_disable}->{$by_who->{id}};
             return 0 if not $ret;
 
-            $self->update_childrens_state($state, $by_who);
+            $self->update_children_state($state, $by_who);
             return 1;
         }
-        $self->update_childrens_state($state, $by_who);
+        $self->update_children_state($state, $by_who);
 
         return 1;
     }
@@ -550,7 +550,7 @@ sub on_state_update {
 
     return 0 if $state eq $self->{state};
 
-    return $self->update_childrens_state($state eq 's' ? 'S' : $state)
+    return $self->update_children_state($state eq 's' ? 'S' : $state)
         if $self->{state} =~ /[s]/ or $state =~ /[s]/;
 
     return 0;
@@ -588,7 +588,7 @@ sub on_apply_textdelta {
     my ($self, $editor, $path, $checksum, $pool) = @_;
 
     my ($type) = grep {$_->{name} eq 'svn:mime-type'}
-        @{$self->{childrens}};
+        @{$self->{children}};
 
     if ($type and !mimetype_is_text($type->{value}) or
         ($type = $editor->{inspector}->localprop($path, 'svn:mime-type', $pool)) and
@@ -649,7 +649,7 @@ sub enabled {
 
     return 1 if grep {$_ =~ /[aAc]/} @{$self->{states}};
 
-    return grep {$_->enabled} @{$self->{childrens}};
+    return grep {$_->enabled} @{$self->{children}};
 }
 
 sub get_questions_count {
@@ -667,7 +667,7 @@ sub get_question {
     my @flags;
 
     push @flags, "fileChunks" if $id*2+3 < $#{$self->{chunks}};
-    push @flags, "fileProps" if @{$self->{childrens}};
+    push @flags, "fileProps" if @{$self->{children}};
 
     return (loc("Modification to '%1' file", $self->{path}),
         \@flags, \$self->{states}[$id], $self->{chunks}[$id*2+1][2]);
@@ -682,7 +682,7 @@ sub on_state_update {
     return 0 if $state eq $self->{states}[$id];
 
     if ($self->{states}[$id] =~ /[ck]/ or $state =~ /[ck]/) {
-        $res = $self->update_childrens_state($state =~ /[AS]/ ? 'a' : $state);
+        $res = $self->update_children_state($state =~ /[AS]/ ? 'a' : $state);
     }
 
     if ($state =~ /[ASck]/) {
@@ -801,7 +801,7 @@ sub get_question {
     my ($self, $id) = @_;
     my @flags;
 
-    push @flags, "fileProps" if @{$self->{childrens}};
+    push @flags, "fileProps" if @{$self->{children}};
 
     return (loc("Modifications to binary file '%1'", $self->{path}),
         \@flags, \$self->{state});
@@ -814,7 +814,7 @@ sub on_state_update {
     return $res if $by_who;
 
     if ($state =~ /[ck]/ or $self->{state} =~ /[ck]/) {
-        return $self->update_childrens_state($state);
+        return $self->update_children_state($state);
     }
 
     return 0;
@@ -959,7 +959,7 @@ sub get_question {
     my @flags = ();
 
     push @flags, "dirSubdirAcceptOnly"
-        if grep { (ref $_) =~ '::Add(?:File|Directory)Action$' } @{$self->{childrens}};
+        if grep { (ref $_) =~ '::Add(?:File|Directory)Action$' } @{$self->{children}};
 
     return (loc("Directory '%1' is marked for addition", $self->{path}),
         \@flags, \$self->{state});
@@ -971,7 +971,7 @@ sub on_state_update {
     my $res = $self->SUPER::on_state_update($id, $state, $by_who);
     return $res if $by_who;
 
-    return $self->update_childrens_state($state eq 's' ? 'S' : $state)
+    return $self->update_children_state($state eq 's' ? 'S' : $state)
         if $state ne $self->{state} and ($self->{state} or $state =~ /[sA]/);
 
     return 0;
