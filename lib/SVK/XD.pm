@@ -410,6 +410,14 @@ sub find_depotname {
 
 sub condense {
     my $self = shift;
+
+    for (@_) {
+	if ($_ =~ m/([\x00-\x19\x7f])/) { # XXX: why isn't \c[ working?
+	    die loc("Invalid control character '%1' in path '%2'\n",
+		    sprintf("0x%02X", ord($1)), $_);
+	}
+    }
+
     my @targets = map {abs_path($_)} @_;
     my ($anchor, $report);
     for my $path (@_) {

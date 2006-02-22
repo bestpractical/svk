@@ -564,6 +564,12 @@ Argument is a checkout path.
 sub arg_copath {
     my ($self, $arg) = @_;
     my ($repospath, $path, $copath, $cinfo, $repos) = $self->{xd}->find_repos_from_co ($arg, 1);
+
+    if ($copath =~ m/([\x00-\x19\x7f])/) { # XXX: why isn't \c[ working?
+	die loc("Invalid control character '%1' in path '%2'\n",
+		sprintf("0x%02X", ord($1)), $arg);
+    }
+
     from_native ($path, 'path', $self->{encoding});
     return SVK::Target->new
 	( repos => $repos,
