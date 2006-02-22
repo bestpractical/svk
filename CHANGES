@@ -1,3 +1,14 @@
+[Changes for 1.07 -  Feb 2006]
+
+* Make the noisy prototype mismatch warning caused by autouse and Perl
+  5.8.8 go away. [Jim Meyering]
+
+* Disallow control character in copath.
+
+* Fix a infinite loop triggered by "svk revert //path".
+
+* Fix failed patch generation where a directory is added with properties.
+
 [Changes for 1.06 - 10 Dec 2005]
 
 * Workaround File::Spec 3.14 API change, which is causing svk's use of
