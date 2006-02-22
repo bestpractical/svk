@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 36;
+use Test::More tests => 37;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -213,5 +213,17 @@ is_output ($svk, 'pl', ['-v', glob("A/autoprop/*")],
 	    '  svn:eol-style: native',
 	    '  svn:keywords: Revision Id'
 	   ]);
+
+}
+
+eval { overwrite_file("A/\x{05}file", "fnord\n") };
+
+SKIP: {
+
+skip "can't create file with control character.", 1 unless -e "A/\x{05}file";
+
+is_output ($svk, 'add', ["A/\x{05}file"],
+	   [__("Invalid control character '0x05' in path 'A/\x{05}file'")]);
+
 
 }
