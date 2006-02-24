@@ -25,9 +25,12 @@ BEGIN {
     # override get_prompt in XD so devel::cover is happy for
     # already-exported symbols being overridden
     *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
+	local $| = 1;
 	print "$_[0]\n" if $show_prompt;
+	print STDOUT "$_[0]\n" if $main::DEBUG;
 	return $answer unless ref($answer); # compat
 	die 'expecting input' unless @$answer;
+	print STDOUT "-> $answer->[0]\n" if $main::DEBUG;
 	shift @$answer;
     } unless $ENV{DEBUG_INTERACTIVE};
 

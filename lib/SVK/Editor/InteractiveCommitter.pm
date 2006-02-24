@@ -733,8 +733,8 @@ sub split_diff_into_chunks {
             ($b1, $b2) = (max(0, $d1 - CONTEXT), max(-1, $d1 - 1));
             ($a1, $a2) = (min($lo + 1, $d2 + 1), min($lo, $d2 + CONTEXT));
         }
-        $di = "--- $self->{path}  (revision $self->{rev})\n";
-        $di.= "+++ $self->{path}  (local)\n";
+        $di = "--- $self->{path}\t(revision $self->{rev})\n";
+        $di.= "+++ $self->{path}\t(local)\n";
         my ($l1, $l2) = map {$_ < 1 ? "" : ",$_" } $a2-$b1, $i2-$i1+$a2-$b1;
         $di.= "@@ -$b1$l1 +@{[$i1+$b1-$d1]}$l2 @@\n";
         $di.= join " ","",@old_content[$b1..$b2] if $b1 <= $b2;

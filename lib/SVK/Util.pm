@@ -120,6 +120,7 @@ the regular expression pattern.  Returns the chomped answer line.
 sub get_prompt { {
     my ($prompt, $pattern) = @_;
 
+    use Data::Dumper; warn Dumper(\@_);
     local $| = 1;
     print $prompt;
 

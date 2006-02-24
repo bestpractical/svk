@@ -288,6 +288,7 @@ sub get_committable {
             },
             cb_skip_add => sub {
                 my ($path, $prop) = @_;
+                warn "=======> Skipping $path, $prop";
                 push @{$skipped_items->{adds}}, $target->copath($path);
             },
             notify => $notify
@@ -479,7 +480,7 @@ sub run {
     }
     else {
         ($commit_editor, $committable) = $self->get_committable ($target, $xdroot);
-        $committed = $self->committed_commit ($target, $committable);
+        $committed = $self->committed_commit ($target, $committable, $skipped_items);
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);
