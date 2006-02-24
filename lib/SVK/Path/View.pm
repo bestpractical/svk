@@ -60,6 +60,7 @@ sub get_editor {
 			 $actual_anchor => undef, '/');
 
     if (@{$self->view->rename_map2($anchor, $actual_anchor)}) {
+	require SVK::Editor::View;
 	$editor = SVK::Editor::View->new
 	    ( editor => $editor,
 	      rename_map => $self->view->rename_map2($anchor, $actual_anchor),

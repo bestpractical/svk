@@ -519,6 +519,11 @@ sub arg_copath {
     my ($root);
     my ($view, $rev, $subpath);
 
+    if ($copath =~ m/([\x00-\x19\x7f])/) { # XXX: why isn't \c[ working?
+	die loc("Invalid control character '%1' in path '%2'\n",
+		sprintf("0x%02X", ord($1)), $arg);
+    }
+
     if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
 	($path, $view) = $self->create_view ($repos, $view, $rev, $subpath);
     }
