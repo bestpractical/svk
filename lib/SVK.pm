@@ -17,8 +17,9 @@ BEGIN {
 	    require UNIVERSAL::require;
 	    shift; # get rid of $CLASS
 	    my $class = shift;
-	    $class->require or die $!;
-	    $class->export_to_level(1, undef, @_);
+	    $class->require or die "$class: $!";
+	    my @arg = @_;
+	    $class->export_to_level(1, undef, map {s/\(.*\)//g;$_} @arg);
         }
     }
 }
