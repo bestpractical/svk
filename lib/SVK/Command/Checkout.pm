@@ -53,7 +53,7 @@ sub run {
 
         return $self->SUPER::run
 	    ( SVK::Path::Checkout->real_new
-	      ({ source => $target,
+	      ({ source => $target->mclone(revision => $entry->{revision}),
 		 xd => $self->{xd},
 		 report => $report,
 		 copath_anchor => $copath,
