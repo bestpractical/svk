@@ -5,7 +5,7 @@ use base 'SVK::Resolve';
 sub arguments {
     my $self = shift;
     return (
-        qw( -m -O -M ),
+        qw( -X -m -O -M ),
         @{$self}{qw( merged yours base theirs )}
     );
 }
