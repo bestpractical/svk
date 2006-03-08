@@ -286,7 +286,7 @@ sub _schedule_entry {
 
     my (undef, $schedule) = $self->{xd}->get_entry($copath);
     $self->{xd}{checkout}->store_fast
-	($copath, { %copy, '.schedule' => $schedule ? 'replace' : 'add' });
+	($copath, { %copy, '.schedule' => $schedule eq 'delete' ? 'replace' : 'add' });
 }
 
 =head1 AUTHORS
