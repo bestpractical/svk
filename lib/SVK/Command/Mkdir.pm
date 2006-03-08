@@ -54,7 +54,7 @@ sub run {
     if (grep {$_->isa('SVK::Path::Checkout')} @target) {
 	$self->ensure_parent($_) for @target;
 	for (@target) {
-	    make_path($_->{report}) or die $!;
+	    make_path($_->{report});
 	}
 	for (@target) {
 	    my $add = $self->command('add');
