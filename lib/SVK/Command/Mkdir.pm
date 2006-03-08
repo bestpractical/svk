@@ -66,7 +66,12 @@ sub run {
     die loc("Mkdir for more than one depotpath is not supported yet.\n")
 	if scalar @target > 1;
 
+    # die if the path already exists
     my ($target) = @target;
+    die loc("The path %1 already exists.\n", $target->depotpath)
+        if $target->inspector->exist( $target->path );
+
+    # otherwise, proceed
     $self->get_commit_message ();
     my ($anchor, $editor) = $self->get_dynamic_editor ($target);
     $editor->close_directory

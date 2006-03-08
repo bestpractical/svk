@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-use Test::More tests => 21;
+use Test::More tests => 22;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -28,13 +28,14 @@ is_output_like ($svk, 'mkdir', [], qr'SYNOPSIS', 'mkdir - help');
 is_output_like ($svk, 'mkdir', ['nonexist'],
 		qr'not a checkout path');
 
-# XXX: fix the strange suggestion in message
 is_output ($svk, 'mkdir', ['-m', 'msg', '//'],
-	   [qr'Item already exists',
-	    'Please update checkout first.']);
+	   ['The path // already exists.']);
 
 is_output ($svk, 'mkdir', ['-m', 'msg', '//newdir'],
 	   ['Committed revision 1.']);
+
+is_output ($svk, 'mkdir', ['-m', 'msg', '//newdir'],
+	   ['The path //newdir already exists.']);
 
 is_output ($svk, 'mkdir', ['-m', 'msg', '//i-newdir/deep'],
 	   [qr'.*',
@@ -98,9 +99,7 @@ is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//m/source/deep'],
 	    'Committed revision 6 from revision 2.']);
 
 is_output ($svk, 'mkdir', ['-p', '-m', 'msg', '//m/source/deep'],
-	   ["Merging back to mirror source $uri.",
-	    qr'Item already exists',
-	    'Please sync mirrored path /m first.']);
+	   ['The path //m/source/deep already exists.']);
 }
 
 is_output ($svk, 'mkdir', ["$copath/f-newdir/foo", "$copath/g-newdir"],
