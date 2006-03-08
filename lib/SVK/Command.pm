@@ -138,6 +138,7 @@ sub run_command {
 	my $error = $_[0];
 	my $error_message = $error->expanded_message();
 	$error->clear();
+	Carp::cluck if $main::DEBUG;
 	if ($self->handle_error ($error)) {
 	    die \'error handled';
         }
