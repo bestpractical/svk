@@ -54,7 +54,7 @@ sub run {
     if (grep {$_->isa('SVK::Path::Checkout')} @target) {
 	$self->ensure_parent($_) for @target;
 	for (@target) {
-	    make_path($_->{report}) or die $!;
+	    make_path($_->{report});
 	}
 	for (@target) {
 	    my $add = $self->command('add');
@@ -66,7 +66,12 @@ sub run {
     die loc("Mkdir for more than one depotpath is not supported yet.\n")
 	if scalar @target > 1;
 
+    # die if the path already exists
     my ($target) = @target;
+    die loc("The path %1 already exists.\n", $target->depotpath)
+        if $target->inspector->exist( $target->path );
+
+    # otherwise, proceed
     $self->get_commit_message ();
     my ($anchor, $editor) = $self->get_dynamic_editor ($target);
     $editor->close_directory

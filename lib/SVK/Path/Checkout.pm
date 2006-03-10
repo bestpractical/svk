@@ -130,7 +130,10 @@ sub report { __PACKAGE__->make_accessor('report')->(@_) }
 sub report_copath {
     my ($self, $copath) = @_;
     my $report = length($self->report) ? $self->report : undef;
-    abs2rel( $copath, $self->copath_anchor => $report );
+    my $rel = abs2rel( $copath, $self->copath_anchor => $report );
+    # XXX: abs2rel from F::S already does this.  tweak S::U abs2rel
+    # and usage properly
+    return length $rel ? $rel : '.';
 }
 
 sub copath_targets {

@@ -10,7 +10,6 @@ use File::stat;
 require File::Temp;
 use File::Temp ();
 use Getopt::Long qw(:config no_ignore_case bundling);
-use lib glob('/usr/local/svk*/perl');
 use Encode;
 use Pod::Simple::Text;
 
@@ -33,9 +32,6 @@ B<update-copyright.pl> S<[I<options>]> I<path...>
 B<update-copyright.pl> is a script that uses svk to figure out when each file
 in your project has changed and updates the copyright headers in those files
 accordingly.
-
-For more information about using update-copyright.pl, visit
-L<http://coreos.apple.com/cgi-bin/wiki?Data_Security/SVK>
 
 Run C<update-copyright.pl help> to access the built-in tool documentation.
 
@@ -182,7 +178,7 @@ sub transform_line
 {
     my ($line, @years) = @_;
     my ($prefix, $suffix);
-    if ($line =~ /^(.*[Cc]opyright[^0-9]*)([0-9][0-9-, ]*)(.*)$/)
+    if ($line =~ /^(.*[Cc]opyright\s+)([0-9][0-9-, ]*)(.*)$/)
     {
         return $_ unless @years;
         $prefix = $1;
@@ -231,6 +227,7 @@ sub update_file_copyright
 {
     my $filename = $File::Find::name;
     my $relativename = $_;
+    return unless -f $_;
     #my $name_is_text = $filename =~ /([.](h|c|cpp|m|cp|plist|pbxproj|strings|pbxuser|1|8|pl|order|defs|mm|mdsinfo|cvsignore|sh|r|mk|exp|toolbar|txt|rtf|pch|html|cf|cfg|t|m4|asn|asn1|s|pm|mds|l|def|i|pem|asm|js|css|gdb_history|htm|nb|mode[0-9])|\/(info.nib|classes.nib|ChangeLog|[A-Z_]+|script[^\/]*)),v$|[Mm]akefile/;
     return unless $_ =~
         /[.]([cChHmrsx]|cp|cpp|defs|java|keyboard|mk|pl|pm|t|exp)$|^[Mm]akefile$/;
