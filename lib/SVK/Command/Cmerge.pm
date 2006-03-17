@@ -101,6 +101,8 @@ sub run {
 
     my ($depot) = $src->depotname;
     ++$self->{auto};
+    undef $self->{chgspec};
+    undef $self->{revspec};
     $self->SUPER::run ($src->new (path => $tmpbranch,
 				  depotpath => "/$depot$tmpbranch",
 				  revision => $fs->youngest_rev),
