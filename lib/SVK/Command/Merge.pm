@@ -110,7 +110,9 @@ sub run {
     if ($self->{auto}) {
 	die loc("Can't merge with specified revisions with smart merge.\n")
 	    if defined $self->{revspec} || defined $self->{chgspec};
-	die loc("No need to track rename for smerge\n")
+	# Tell svk::merge to only collect for dst.  There must be
+	# better ways doing this.
+	$self->{track_rename} = 'dst'
 	    if $self->{track_rename};
 	++$self->{no_ticket} if $self->{patch};
 	# avoid generating merge ticket pointing to other changes

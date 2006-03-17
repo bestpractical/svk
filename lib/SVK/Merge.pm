@@ -302,6 +302,14 @@ sub _collect_renamed {
     }
 }
 
+sub _collect_rename_for {
+    my ($self, $renamed, $target, $base, $reverse) = @_;
+    my $path = $target->path;
+    SVK::Command::Log::do_log (repos => $target->repos, path => $path, verbose => 1,
+			       torev => $base->revision+1, fromrev => $target->revision,
+			       cb_log => sub {_collect_renamed ($renamed, \$path, $reverse, @_)});
+}
+
 sub track_rename {
     my ($self, $editor, $cb) = @_;
 
@@ -309,13 +317,9 @@ sub track_rename {
     my ($renamed, $path) = ([]);
 
     print "Collecting renames, this might take a while.\n";
-    for (0..1) {
-	my $target = $self->{('base', 'dst')[$_]};
-	my $path = $target->path;
-	SVK::Command::Log::do_log (repos => $self->{repos}, path => $path, verbose => 1,
-				   torev => $base->revision+1, fromrev => $target->revision,
-				   cb_log => sub {_collect_renamed ($renamed, \$path, $_, @_)});
-    }
+    $self->_collect_rename_for($renamed, $self->{base}, $base, 0)
+	unless $self->{track_rename} eq 'dst';
+    $self->_collect_rename_for($renamed, $self->{dst}, $base, 1);
     return $editor unless @$renamed;
 
     my $rename_editor = SVK::Editor::Rename->new (editor => $editor, rename_map => $renamed);
