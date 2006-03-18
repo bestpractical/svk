@@ -108,6 +108,8 @@ sub run {
     # types for merge to checkout
     $self->{report} = $dst->isa('SVK::Path::Checkout') ? $dst->report : undef;
     if ($self->{auto}) {
+	die loc("Can't merge with specified revisions with smart merge.\n")
+	    if defined $self->{revspec} || defined $self->{chgspec};
 	die loc("No need to track rename for smerge\n")
 	    if $self->{track_rename};
 	++$self->{no_ticket} if $self->{patch};
