@@ -6,9 +6,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( to_native get_encoder );
-use Date::Parse qw(str2time);
-use Date::Format qw(time2str);
+use SVK::Util qw( to_native get_encoder reformat_svn_date );
 
 sub options {
     ('r|revision=s'  => 'rev',
@@ -66,7 +64,7 @@ sub _do_list {
             printf "%7ld %-8.8s %10s %12s ", $rev,
                 $fs->revision_prop ($rev, 'svn:author'),
                 ($isdir) ? "" : $root->file_length ($target->path."/$_"),
-		time2str ("%b %d %H:%M", str2time ($svn_date));
+                reformat_svn_date("%b %d %H:%M", $svn_date);
         }
 
         if ($self->{'fullpath'}) {

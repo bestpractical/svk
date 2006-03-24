@@ -19,6 +19,8 @@ our @EXPORT_OK = qw(
     catdepot abs_path_noexist 
 
     is_symlink is_executable is_uri can_run
+
+    str2time time2str reformat_svn_date
 );
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
@@ -949,6 +951,55 @@ sub find_prev_copy {
 	for $startrev..$endrev;
     return unless $rev;
     return ($root, $copy);
+}
+
+sub reformat_svn_date {
+    my ($format, $svn_date) = @_;
+    return time2str($format, str2time($svn_date));
+}
+
+sub str2time {
+    require Time::Local;
+    my ($year, $month, $day, $hh, $mm, $ss) = split /[-T:]/, $_[0];
+    $year -= 1900;
+    $month--;
+    chop($ss);  # remove the 'Z'
+    my $zone = 0;  # UTC
+
+    my @lt = localtime(time);
+
+    my $frac = $ss - int($ss);
+    $ss = int $ss;
+
+    for ( $year, $month, $day, $hh, $mm, $ss ) {
+        return undef unless defined($_) 
+    }
+    return undef
+      unless ( $month <= 11
+        && $day >= 1
+        && $day <= 31
+        && $hh <= 23
+        && $mm <= 59
+        && $ss <= 59 );
+
+    my $result;
+
+    $result = eval {
+        local $SIG{__DIE__} = sub { };    # Ick!
+        Time::Local::timegm( $ss, $mm, $hh, $day, $month, $year );
+    };
+    return undef
+        if !defined $result
+        or $result == -1
+        && join( "", $ss, $mm, $hh, $day, $month, $year ) ne "595923311169";
+
+    return $result + $frac;
+}
+
+sub time2str {
+    my ($format, $time) = @_;
+    require POSIX;
+    return POSIX::strftime($format, localtime($time) );
 }
 
 

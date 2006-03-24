@@ -5,10 +5,8 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( traverse_history get_encoding );
+use SVK::Util qw( traverse_history get_encoding reformat_svn_date );
 use List::Util qw(max min);
-use Date::Parse qw(str2time);
-use Date::Format qw(time2str);
 
 sub options {
     ('l|limit=i'	=> 'limit',
@@ -141,7 +139,7 @@ sub _show_log {
     if (defined $use_localtime) {
 	no warnings 'uninitialized';
 	local $^W; # shut off uninitialized warnings in Time::Local
-	$date = time2str("%Y-%m-%d %T %z", str2time ($date));
+	$date = reformat_svn_date("%Y-%m-%d %T %z", $date);
     }
     $author = loc('(no author)') if !defined($author) or !length($author);
     $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
