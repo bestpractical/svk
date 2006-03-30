@@ -108,7 +108,11 @@ sub run {
     # types for merge to checkout
     $self->{report} = $dst->isa('SVK::Path::Checkout') ? $dst->report : undef;
     if ($self->{auto}) {
-	die loc("No need to track rename for smerge\n")
+	die loc("Can't merge with specified revisions with smart merge.\n")
+	    if defined $self->{revspec} || defined $self->{chgspec};
+	# Tell svk::merge to only collect for dst.  There must be
+	# better ways doing this.
+	$self->{track_rename} = 'dst'
 	    if $self->{track_rename};
 	++$self->{no_ticket} if $self->{patch};
 	# avoid generating merge ticket pointing to other changes

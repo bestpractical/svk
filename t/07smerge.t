@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl';};
-plan_svm tests => 30;
+plan_svm tests => 31;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -34,6 +34,9 @@ $svk->commit ('-m', 'commit on local branch', $copath);
 $svk->sync ('//m');
 
 my ($suuid, $srev) = ($srepos->fs->get_uuid, $srepos->fs->youngest_rev);
+
+is_output ($svk, 'smerge', ['-c6', '//m/be', '//l/be'],
+	   ["Can't merge with specified revisions with smart merge."]);
 
 is_output ($svk, 'smerge', ['-C', '//m/be', '//l/be'],
 	   ['Auto-merging (2, 6) /m/be to /l/be (base /m/be:2).',

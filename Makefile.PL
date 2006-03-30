@@ -26,7 +26,6 @@ requires(
         'PerlIO::via::symlink'  => '0.02',
         'IO::Digest'		=> '0',
         'SVN::Simple::Edit'     => '0.27',
-        'Date::Parse'           => '0',
         'File::Type'            => '0',
         'URI'                   => '0',
         'PerlIO::eol'           => '0.13',
