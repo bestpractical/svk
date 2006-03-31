@@ -1,0 +1,81 @@
+* someone will send me the url for a repository
+* i want to tell svk "i'm interested in this repository"
+* "I want to say svk http://url"
+    * svk will magically check out the head of that repository into my cwd
+      i can make edits and changes
+      once I'm done, I can say "send them back"
+        if I'm a committer, default to online.
+        if I'm not a committer, default to offline.
+
+        if sending to remote and I fail, fall back to offline mode.
+
+* The only command I want to type while developing is
+
+    "checkpoint"
+        * save changes for my own use. something I can backtrack from.
+
+    "submit"
+        * save changes and push them up to "upstream"
+        * this is either directly if I'm a committer or by generating a patch
+          and emailing it. I don't want to know who I should send it. The 
+          repository should have this info automatically. It should be as
+          automated as possible
+
+
+* I also want to walk back through my checkpoints
+    and revert to a checkpoint.
+
+    Show me a timeline of what I did. 
+    Let me walk up the timeline to a particular place, and either revert one change or a range of changes.
+    
+    This should be a visual, interactive changes.   vi keybindings would be ideal 
+    
+     Possibly:
+        Let me delete items in the changelog and have svk do the right thing
+
+     "svk review" should have an interactive interface that presents the
+        changes, navigatable with j/k keys, and allow for revert/view/edit_log
+        Also, a flip view between thread view and chronological view.
+        The threading view would become like gmail "conversations", in which
+        you can "unfold" something and see all subsequent changes that depend on it.
+        
+        To mark changes, usually you select "up to" a point (but also possible to
+        tag individual "threads"), then forward these changes to some upstream
+        Under this metaphor, to commit a new change is like hitting "reply".
+
+
+svk http://svn.openfoundry.org/pugs/
+cd pugs
+# ...do changes...
+svk ci # checkpoint - ask for one-line log
+# ...do changes...
+svk ci # checkpoint - ask for one-line log
+# happy!
+
+svk review # see what I've done...
+# interactive navigation interface pops up
+in that interface, some common operations
+    - "I'm happy with everthing so far, send them all back to upstream"
+    - "I'd like to tag a thread/range and send/push it back (choose the one that applies)"
+    - "I'm so unhappy with it, I'd like to grey out parts of them and see what happens"
+    - "I'm _so_ unhappy, I'd like to revert the damage I've done"
+
+while it's doing review, on the background do a quick check to the server
+(if you are online - if you are offline then it should say so) and prompt
+that "there's 137 new changes on the server. download it now? [Y/n]" or
+saying "there's no new changes on the server."  This is done on a per-repo
+basis, based on the directory you are in.
+
+# 
+svk pull -a
+
+# <fnord>
+    svk push # pushes back to openfoundry if damian is committer
+    svk send # or to perl6-compiler@perl.org if damian is not
+# </fnord>
+
+
+
+
+
+
