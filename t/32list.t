@@ -43,7 +43,9 @@ foreach my $depot ('','bob') {
                ["/$depot/A/B/","/$depot/A/foo", '', 'Path /crap is not a versioned directory']);
     ok ($svk->ls ('-f', "/$depot/A", "/$depot/crap/") == 1, "ls -f /$depot/A /$depot/crap/ [exit status]");
 
-    my $re_date = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{2} \\d{2}:\\d{2}";
+    use POSIX qw( strftime );
+    my $re_date = join '|', map { quotemeta strftime( "%b", 0, 0, 0, 1, $_, 96) } 0 .. 11;
+    $re_date = "(?:$re_date) \\d{2} \\d{2}:\\d{2}";
     my $re_user = "(?:\\S*\\s+)";
     is_output ($svk, 'ls', ['-v'],
                [qr"      2 $re_user          $re_date A/"]);
