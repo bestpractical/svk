@@ -21,7 +21,7 @@ is_output ($svk, 'help', ['bzzzzz'], ["Cannot find help topic 'bzzzzz'."]);
 
 {
     my $warned = 0;
-    is_output ($svk, 'help', ['--boo'], ['Unknown option: b']);
+    is_output ($svk, 'help', ['--boo'], ['Unknown option: boo']);
 }
 
 for (@cmd) {
