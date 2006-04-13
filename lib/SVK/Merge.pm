@@ -520,6 +520,7 @@ sub resolve_copy {
 		    $self, $cp_path);
 
     return ($path, $rev) if defined $rev;
+    return;
 }
 
 sub resolver {
