@@ -549,7 +549,7 @@ sub merged_from {
     warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
 
     my %copies = map { join(':', $_->{uuid}, $_->{path}) => $_ }
-	$merge->copy_ancestors($self);
+	reverse $merge->copy_ancestors($self);
 
     $self->search_revision
 	( cmp => sub {
