@@ -9,6 +9,7 @@ use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Command::Sync;
 use SVK::Editor::InteractiveCommitter;
+use SVK::Editor::InteractiveStatus;
 
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
@@ -279,20 +280,25 @@ sub get_committable {
     );
     
     if ($self->{interactive}) {
-        $commit_editor = $status_editor = SVK::Editor::InteractiveCommitter->new
+        $commit_editor = SVK::Editor::InteractiveCommitter->new(
+                SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
+                status => $status_editor, 
+                notify => $notify
+        );
+        $status_editor = SVK::Editor::InteractiveStatus->new
         (
-            SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
             cb_skip_prop_change => sub {
                 my ($path, $prop, $value) = @_;
                 $skipped_items->{props}{$target->copath($path)}{$prop} = $value;
             },
             cb_skip_add => sub {
                 my ($path, $prop) = @_;
-                warn "=======> Skipping $path, $prop";
+                #warn "=======> Skipping $path, $prop";
                 push @{$skipped_items->{adds}}, $target->copath($path);
             },
-            notify => $notify
+            committer => $commit_editor
         );
+        
         $conflict_handler = \&SVK::Editor::InteractiveCommitter::conflict;
     } else {
         $status_editor = SVK::Editor::Status->new(notify => $notify);
@@ -487,6 +493,8 @@ sub run {
 
     if ($commit_editor) {
         $commit_editor->{storage} = $editor;
+        $commit_editor->{status}{storage} = $editor;
+
         $editor = $commit_editor;
     }
 

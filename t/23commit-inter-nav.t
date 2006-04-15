@@ -22,10 +22,9 @@ overwrite_file ("A/deep/mas", "po\nkra\nczny");
 $svk->add ('A');
 
 $answer = ['p','a','a','a','p','','p','s','p','p','A','p','A','p','s','a','stop'];
-our $DEBUG = 1;
+#our $DEBUG = 1;
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
-exit;
 
 is_output ($svk, 'status', [],
    ['A   A/deep',

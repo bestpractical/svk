@@ -27,10 +27,11 @@ overwrite_file ("A/ow", "foobar");
 is_output ($svk, 'commit', ['--interactive'], ['No targets to commit.'], 'commit - no target');
 
 $answer = [('a') x 11];
+#$show_prompt = 1; #Begin interactive mode.
 $svk->add ('A');
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
     ['Committed revision 1.'], 'initial commit');
-
+    
 overwrite_file ("A/foo",      "alfa\nbeta\nfoobar\ngamma\ndelta");
 $svk->propset('one', "multi\nline", 'A/foo');
 $svk->propset('two', "", 'A/foo');
@@ -55,7 +56,9 @@ $svk->propset('eight', "wer", 'A/aj');
 $svk->propset('nine', "owy", 'A/ow');
 
 $answer = [('a') x 18];
-$show_prompt = 1;
+
+our $DEBUG = 1;
+
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
     ['Property change on A/aj',
      '___________________________________________________________________',
@@ -74,8 +77,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[a]ccept, [s]kip this change,',
      'a[c]cept, s[k]ip changes to all properties with that name,',
      'move to [p]revious change > ',
-     '--- A/bar  (revision 1)',
-     '+++ A/bar  (local)',
+     "--- A/bar\t(revision 1)",
+     "+++ A/bar\t(local)",
      '@@ -0 +0 @@',
      '+alfa',
      ' foobar',
@@ -84,8 +87,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[a]ccept, [s]kip this change,',
      '[A]ccept, [S]kip the rest of changes to this file,',
      'move to [p]revious change > ',
-     '--- A/bar  (revision 1)',
-     '+++ A/bar  (local)',
+     "--- A/bar\t(revision 1)",
+     "+++ A/bar\t(local)",
      '@@ -0 +1 @@',
      ' foobar',
      '+beta',
@@ -94,8 +97,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[4/18] Modification to \'A/bar\' file:',
      '[a]ccept, [s]kip this change,',
      'move to [p]revious change > ',
-     '--- A/deep/baz  (revision 1)',
-     '+++ A/deep/baz  (local)',
+     "--- A/deep/baz\t(revision 1)",
+     "+++ A/deep/baz\t(local)",
      '@@ -0 +0 @@',
      '-foobar',
      '\ No newline at end of file',
@@ -122,8 +125,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[a]ccept, [s]kip this change,',
      'a[c]cept, s[k]ip changes to all properties with that name,',
      'move to [p]revious change > ',
-     '--- A/deep/la/no  (revision 1)',
-     '+++ A/deep/la/no  (local)',
+     "--- A/deep/la/no\t(revision 1)",
+     "+++ A/deep/la/no\t(local)",
      '@@ -0 +0 @@',
      '-foobar',
      '\ No newline at end of file',
@@ -142,8 +145,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[a]ccept, [s]kip this change,',
      'a[c]cept, s[k]ip changes to all properties with that name,',
      'move to [p]revious change > ',
-     '--- A/deep/mas  (revision 1)',
-     '+++ A/deep/mas  (local)',
+     "--- A/deep/mas\t(revision 1)",
+     "+++ A/deep/mas\t(local)",
      '@@ -0 +0 @@',
      '-po',
      '\ No newline at end of file',
@@ -153,8 +156,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[10/18] Modification to \'A/deep/mas\' file:',
      '[a]ccept, [s]kip this change,',
      'move to [p]revious change > ',
-     '--- A/foo  (revision 1)',
-     '+++ A/foo  (local)',
+     "--- A/foo\t(revision 1)",
+     "+++ A/foo\t(local)",
      '@@ -0,1 +0,2 @@',
      '+alfa',
      '+beta',
@@ -165,8 +168,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[A]ccept, [S]kip the rest of changes to this file,',
      'a[c]cept, s[k]ip rest of changes to this file and its properties,',
      'move to [p]revious change > ',
-     '--- A/foo  (revision 1)',
-     '+++ A/foo  (local)',
+     "--- A/foo\t(revision 1)",
+     "+++ A/foo\t(local)",
      '@@ -0,1 +2,2 @@',
      ' foobar',
      '-grab',
@@ -197,8 +200,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[a]ccept, [s]kip this change,',
      'a[c]cept, s[k]ip changes to all properties with that name,',
      'move to [p]revious change > ',
-     '--- A/foox  (revision 1)',
-     '+++ A/foox  (local)',
+     "--- A/foox\t(revision 1)",
+     "+++ A/foox\t(local)",
      '@@ -0,1 +0,1 @@',
      '+pies',
      ' foo',
@@ -209,8 +212,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      '[A]ccept, [S]kip the rest of changes to this file,',
      'a[c]cept, s[k]ip rest of changes to this file and its properties,',
      'move to [p]revious change > ',
-     '--- A/foox  (revision 1)',
-     '+++ A/foox  (local)',
+     "--- A/foox\t(revision 1)",
+     "+++ A/foox\t(local)",
      '@@ -0,1 +1,1 @@',
      ' foo',
      '-bar',
@@ -242,6 +245,7 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      'move to [p]revious change > ',
      'Committed revision 2.'],
     'file modifications - output');
+exit;
 
 $svk->rm("A/deep/la");
 $svk->propset('one', "multi\nline", 'A/deep');
@@ -322,8 +326,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
 overwrite_file ("A/foo", "");
 $answer = ['a'];
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 3)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 3)",
+     "+++ A/foo\t(local)",
      '@@ -0,4 +0,3 @@',
      '-alfa',
      '-beta',
@@ -336,6 +340,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
      '[a]ccept, [s]kip this change > ',
      'Committed revision 4.'],
     'File diff - no nl at end-> empty');
+    
+exit;
 
 $answer = ['a'];
 overwrite_file ("A/foo", "foobar\n");
