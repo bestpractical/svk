@@ -96,7 +96,7 @@ sub do_propset {
 	    eval {
 		local $/ = \16384;
 		while (<$fh>) { };
-	    };
+	    } if $fh;
 	    if ($@ =~ m/Mixed/) {
 		die loc ("File %1 has inconsistent newlines.\n", $target->report);
 	    }
