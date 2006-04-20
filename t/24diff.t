@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 32;
+use Test::More tests => 33;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -522,3 +522,13 @@ is_output($svk, 'diff', ['-r7:9', '//fnord/baz'],
 is_output_like($svk, 'merge', ['-r7:9', '//fnord/baz', '//fnord/baz/C', '-lm', 'baz', '-P-'],
 	       qr/Property changes on: D.*SVK PATCH BLOCK/s);
 
+
+is_output($svk, 'diff', ['//A/baz', '//B/foo'],
+	  ['=== baz',
+	   '==================================================================',
+	   "--- baz\t(/A/baz)\t(revision 9)",
+	   "+++ baz\t(/B/foo)\t(revision 9)", # XXX: this is wrong
+	   '@@ -1 +1,2 @@',
+	   ' foobar',
+	   '+fnord',
+	  ]);

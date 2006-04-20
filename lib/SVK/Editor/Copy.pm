@@ -67,6 +67,9 @@ sub find_copy {
     my $target_path = File::Spec::Unix->catdir($self->{src}->path_anchor, $path);
 
     my ($cur_root, $cur_path) = ($self->{src}->root, $target_path);
+    # XXX: this is mostly because file vs file target with different name,
+    # should resolve them back to dst name properly.
+    return unless $cur_root->check_path($cur_path);
 
     my $copyboundry_rev = $self->{copyboundry_rev};
     $copyboundry_rev = [ $copyboundry_rev ] unless ref $copyboundry_rev;
