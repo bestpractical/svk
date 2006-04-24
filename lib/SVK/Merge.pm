@@ -241,24 +241,40 @@ sub get_new_ticket {
 }
 
 sub log {
-    my ($self, $verbatim) = @_;
+    my ($self, $no_separator) = @_;
     open my $buf, '>', \ (my $tmp = '');
     no warnings 'uninitialized';
-    use Sys::Hostname;
-    my $print_rev = SVK::Command::Log::_log_remote_rev
-	($self->{src}, $self->{remoterev},
-	 '@'.($self->{host} || (split ('\.', hostname, 2))[0]));
-    my $sep = $verbatim || $self->{verbatim} ? '' : ('-' x 70)."\n";
-    my $cb_log = sub {
-	SVK::Command::Log::_show_log
-		(@_, $sep, $buf, 1, $print_rev, 0, $self->{verbatim} ? 1 : 0, 0)
-		    unless $self->_is_merge_from ($self->{src}->path, $self->{dst}, $_[0]);
-    };
 
-    print $buf " $sep" if $sep;
-    SVK::Command::Log::do_log (repos => $self->{repos}, path => $self->{src}->path,
-			       fromrev => $self->{fromrev}+1, torev => $self->{src}->revision,
-			       cb_log => $cb_log);
+    require Sys::Hostname;
+    my $get_remoterev = SVK::Command::Log::_log_remote_rev(
+            $self->{src},
+            $self->{remoterev}
+    );
+    my $host = $self->{host} || (split ('\.', Sys::Hostname::hostname(), 2))[0];
+
+    require SVK::Log::Filter;
+    my $filter = SVK::Log::Filter->new(
+        presentation  => 'std',
+        output        => $buf,
+        indent        => 1,
+        remote_only   => $self->{remoterev},
+        host          => $host,
+        get_remoterev => $get_remoterev,
+        no_sep        => $no_separator,
+        verbatim      => $self->{verbatim} ? 1 : 0,
+        quiet         => 0,
+        suppress      => sub {
+            $self->_is_merge_from ($self->{src}->path, $self->{dst}, $_[0])
+        },
+    );
+
+    SVK::Command::Log::do_log(
+        repos   => $self->{repos},
+        path    => $self->{src}->path,
+        fromrev => $self->{fromrev} + 1,
+        torev   => $self->{src}->revision,
+        filter  => $filter,
+    );
     return $tmp;
 }
 
@@ -276,9 +292,10 @@ sub info {
 }
 
 sub _collect_renamed {
-    my ($renamed, $pathref, $reverse, $rev, $root, $paths, $props) = @_;
+    my ($renamed, $pathref, $reverse, $rev, $root, $props) = @_;
     my $entries;
     my $path = $$pathref;
+    my $paths = $root->paths_changed();
     for (keys %$paths) {
 	my $entry = $paths->{$_};
 	require SVK::Command;
@@ -305,9 +322,13 @@ sub _collect_renamed {
 sub _collect_rename_for {
     my ($self, $renamed, $target, $base, $reverse) = @_;
     my $path = $target->path;
-    SVK::Command::Log::do_log (repos => $target->repos, path => $path, verbose => 1,
-			       torev => $base->revision+1, fromrev => $target->revision,
-			       cb_log => sub {_collect_renamed ($renamed, \$path, $reverse, @_)});
+    SVK::Command::Log::do_log(
+        repos   => $target->repos,
+        path    => $path,
+        torev   => $base->revision + 1,
+        fromrev => $target->revision,
+        cb_log  => sub { _collect_renamed( $renamed, \$path, $reverse, @_ ) }
+    );
 }
 
 sub track_rename {
