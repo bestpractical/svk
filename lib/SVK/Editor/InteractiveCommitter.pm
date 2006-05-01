@@ -10,7 +10,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 our @ISA = qw(SVN::Delta::Editor);
 
 sub new {
-    my ($class, $status, $notify) = @_;
+    my ($class) = shift;
     
     my $self = $class->SUPER::new(@_);
        
@@ -19,7 +19,7 @@ sub new {
 
 sub _action {
   my ($self, $path) = @_;
-  
+
   return $self->{status}{info}{$path};
 }
 
@@ -98,7 +98,8 @@ sub add_directory {
 
     my $action = $self->_action($path);
 
-    $self->{storage_baton}{$path} = $action->on_add_directory_commit(@_);
+    $self->{storage_baton}{$path} = $action->on_add_directory_commit(@_)
+	if $action->enabled;
 
     return $path;
 }

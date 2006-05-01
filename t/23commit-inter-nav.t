@@ -79,6 +79,7 @@ move to [p]revious change [A]> }, 's'],[q{
 move to [p]revious change > }, 'a'],'stop'];
 #our $DEBUG = 1;
 $svk->commit('--interactive', '-m', 'foo');
+
 is_deeply($answer, ['stop'], 'all answers used');
 
 is_output ($svk, 'status', [],
@@ -113,6 +114,7 @@ Name: roch
 a[c]cept, s[k]ip changes to all properties with that name,
 move to [p]revious change > }, 's'],'stop'];
 $svk->commit('--interactive', '-m', 'foo');
+
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
    ['A   A/deep/mas',

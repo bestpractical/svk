@@ -12,7 +12,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 #our @ISA = qw(SVN::Delta::Editor);
 
 sub new {
-    my ($class, $committer, @args) = @_;
+    my ($class, @args) = @_;
     #my $self = $class->SUPER::new (@arg);
     my $self = bless {@args}, ref $class || $class;
 
@@ -116,8 +116,6 @@ sub apply_textdelta {
 sub change_file_prop {
     my ($self, $path, $name, $value, $pool) = @_;
     
-    Carp::cluck;
-
     push @{$self->{actions}}, $self->{info}{$path}{props}{$name} = 
         SVK::Editor::InteractiveStatus::ModifyFilePropAction->new($path, @_);
 }
@@ -452,8 +450,6 @@ sub on_state_update {
 
 sub on_end_selection_phase {
     my ($self, $editor) = @_;
-    use Data::Dumper; warn Dumper($editor);
-    Carp::cluck;
     $editor->{notify}->node_status($self->{path}, '');
 }
 
@@ -717,11 +713,11 @@ sub on_end_selection_phase {
         ($self->{cutoff} ? $states[$self->{cutoff}-1] : '') x (@states - $self->{cutoff});
 
     unless (grep {$_} @states) {
-        $editor->{notify}->node_status($self->{path}, '');
+        $self->{notify}->node_status($self->{path}, '');
         return $self->{empty_change} = 1;
     }
 
-    $editor->{notify}->node_status($self->{path}, 'M');
+    $self->{notify}->node_status($self->{path}, 'M');
 
     return $self->{full_change} = 1 unless grep {!$_} @states;
 
@@ -765,7 +761,7 @@ sub on_state_update {
 sub on_end_selection_phase {
     my ($self, $editor) = @_;
 
-    $editor->{notify}->node_status($self->{path}, $self->enabled ? 'U' : '');
+    $self->{notify}->node_status($self->{path}, $self->enabled ? 'U' : '');
 }
 
 package SVK::Editor::InteractiveStatus::DeleteFileAction;
@@ -783,7 +779,7 @@ sub get_question {
 sub on_end_selection_phase {
     my ($self, $editor) = @_;
 
-    $editor->{notify}->node_status($self->{path}, 'D') if $self->{enabled}
+    $self->{notify}->node_status($self->{path}, 'D') if $self->{enabled}
 }
 
 package SVK::Editor::InteractiveStatus::ModifyFilePropAction;
@@ -796,6 +792,7 @@ sub new {
     my ($class, $parent, $editor, $path, $name, $value, $pool) = @_;
     my $self = $class->SUPER::new(@_[1..$#_]);
 
+    warn $editor;
     my ($l, $r) = $editor->{inspector}->localprop($path, $name, $pool);
     ($l, $r) = map { !length || /\n$/ ? $_ : "$_\n"}
         defined $l ? $l : "", defined $value ? $value : "";

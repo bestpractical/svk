@@ -279,26 +279,27 @@ sub get_committable {
         }
     );
     
+    die unless $notify;
     if ($self->{interactive}) {
-        $commit_editor = SVK::Editor::InteractiveCommitter->new(
-                SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
-                status => $status_editor, 
-                notify => $notify
-        );
         $status_editor = SVK::Editor::InteractiveStatus->new
         (
+            SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
+	    notify => $notify,
             cb_skip_prop_change => sub {
                 my ($path, $prop, $value) = @_;
                 $skipped_items->{props}{$target->copath($path)}{$prop} = $value;
             },
             cb_skip_add => sub {
                 my ($path, $prop) = @_;
-                #warn "=======> Skipping $path, $prop";
                 push @{$skipped_items->{adds}}, $target->copath($path);
             },
-            committer => $commit_editor
+        ); 
+
+       $commit_editor = SVK::Editor::InteractiveCommitter->new(
+                SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
+                status => $status_editor, 
         );
-        
+
         $conflict_handler = \&SVK::Editor::InteractiveCommitter::conflict;
     } else {
         $status_editor = SVK::Editor::Status->new(notify => $notify);
@@ -485,11 +486,12 @@ sub run {
 	$committed = $self->committed_import ($target->copath_anchor);
     }
     else {
-        ($commit_editor, $committable) = $self->get_committable ($target, $xdroot);
+        ($commit_editor, $committable) = $self->get_committable ($target, $xdroot, $skipped_items);
         $committed = $self->committed_commit ($target, $committable, $skipped_items);
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);
+    $editor = SVN::Delta::Editor->new(_editor=>[$editor], _debug=>1);
 
     if ($commit_editor) {
         $commit_editor->{storage} = $editor;
