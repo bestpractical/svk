@@ -713,11 +713,11 @@ sub on_end_selection_phase {
         ($self->{cutoff} ? $states[$self->{cutoff}-1] : '') x (@states - $self->{cutoff});
 
     unless (grep {$_} @states) {
-        $self->{notify}->node_status($self->{path}, '');
+        $editor->{notify}->node_status($self->{path}, '');
         return $self->{empty_change} = 1;
     }
 
-    $self->{notify}->node_status($self->{path}, 'M');
+    $editor->{notify}->node_status($self->{path}, 'M');
 
     return $self->{full_change} = 1 unless grep {!$_} @states;
 
