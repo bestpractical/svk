@@ -58,11 +58,13 @@ sub do_delete_direct {
 
 sub _ensure_mirror {
     my ($self, $target) = @_;
+
     my @m = $target->contains_mirror or return;
-    return if !$target->isa('SVK::Path::Checkout') && $#m == 0 && $m[0] eq $target->path;
+
+    return if $#m == 0 && $m[0] eq $target->path_anchor;
 
     my $depotname = $target->depotname;
-    die loc("%1 contains mirror, remove explicitly: ", "/$depotname".$target->path).
+    die loc("%1 contains mirror, remove explicitly: ", "/$depotname".$target->path_anchor).
 	join(',', map { "/$depotname$_" } @m)."\n"
 }
 
