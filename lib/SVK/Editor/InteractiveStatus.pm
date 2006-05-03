@@ -64,9 +64,9 @@ sub close_edit {
         }
     }
 
-    my $ui = SVK::Editor::InteractiveStatus::UI->new($self); #Should this be the real committer?
+    my $ui = SVK::Editor::InteractiveStatus::UI->new($self);
     $ui->run;
-
+    # Should this be on close edit???
     $_->on_end_selection_phase($self)
         for @{$self->{actions}};
     $_->on_end_selection_phase_last_chance($self)
@@ -241,7 +241,7 @@ sub run {
 
         ($question, $flags, $state, $change_info) =
             $action->get_question($self->{current_action_question});
-
+        
         my @flags = ('basic', @$flags);
         push @flags, 'move_back' if $self->{current_question} > 0;
 
@@ -779,7 +779,7 @@ sub get_question {
 sub on_end_selection_phase {
     my ($self, $editor) = @_;
 
-    $self->{notify}->node_status($self->{path}, 'D') if $self->{enabled}
+    $editor->{notify}->node_status($self->{path}, 'D') if $self->{enabled}
 }
 
 package SVK::Editor::InteractiveStatus::ModifyFilePropAction;
@@ -792,7 +792,6 @@ sub new {
     my ($class, $parent, $editor, $path, $name, $value, $pool) = @_;
     my $self = $class->SUPER::new(@_[1..$#_]);
 
-    warn $editor;
     my ($l, $r) = $editor->{inspector}->localprop($path, $name, $pool);
     ($l, $r) = map { !length || /\n$/ ? $_ : "$_\n"}
         defined $l ? $l : "", defined $value ? $value : "";

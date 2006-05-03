@@ -27,7 +27,6 @@ overwrite_file ("A/ow", "foobar");
 is_output ($svk, 'commit', ['--interactive'], ['No targets to commit.'], 'commit - no target');
 
 $answer = [('a') x 11];
-#$show_prompt = 1; #Begin interactive mode.
 $svk->add ('A');
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
     ['Committed revision 1.'], 'initial commit');
@@ -57,7 +56,8 @@ $svk->propset('nine', "owy", 'A/ow');
 
 $answer = [('a') x 18];
 
-our $DEBUG = 1;
+#our $DEBUG = 1;
+$show_prompt = 1; #Begin interactive mode.
 
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
     ['Property change on A/aj',
@@ -245,7 +245,6 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      'move to [p]revious change > ',
      'Committed revision 2.'],
     'file modifications - output');
-exit;
 
 $svk->rm("A/deep/la");
 $svk->propset('one', "multi\nline", 'A/deep');
@@ -341,13 +340,11 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
      'Committed revision 4.'],
     'File diff - no nl at end-> empty');
     
-exit;
-
 $answer = ['a'];
 overwrite_file ("A/foo", "foobar\n");
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 4)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 4)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '+foobar',
      '',
@@ -359,8 +356,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
 $answer = ['a'];
 overwrite_file ("A/foo", "");
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 5)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 5)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '-foobar',
      '',
@@ -372,8 +369,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
 $answer = ['a'];
 overwrite_file ("A/foo", "foobar");
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 6)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 6)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '+foobar',
      '\ No newline at end of file',
@@ -386,8 +383,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
 $answer = ['a'];
 overwrite_file ("A/foo", "foobar\n");
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 7)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 7)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '-foobar',
      '\ No newline at end of file',
@@ -401,8 +398,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
 $answer = ['a'];
 overwrite_file ("A/foo", "bar\n");
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 8)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 8)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '-foobar',
      '+bar',
@@ -415,8 +412,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
 $answer = ['a'];
 overwrite_file ("A/foo", "rabarbar");
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 9)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 9)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '-bar',
      '+rabarbar',
@@ -512,8 +509,8 @@ skip('broken SVN::Stream', 2) if $output ne '0';
 overwrite_file ("A/foo", "content\n");
 $answer = ['a'];
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 17)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 17)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '-0',
      '\ No newline at end of file',
@@ -527,8 +524,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
 overwrite_file ("A/foo", "0");
 $answer = ['a'];
 is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
-    ['--- A/foo  (revision 18)',
-     '+++ A/foo  (local)',
+    ["--- A/foo\t(revision 18)",
+     "+++ A/foo\t(local)",
      '@@ -0 +0 @@',
      '-content',
      '+0',

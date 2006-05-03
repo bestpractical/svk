@@ -20,6 +20,7 @@ sub new {
 sub _action {
   my ($self, $path) = @_;
 
+  #Carp::cluck $path if $::DEBUG;
   return $self->{status}{info}{$path};
 }
 
@@ -75,7 +76,8 @@ sub change_file_prop {
     my ($self, $path, $name, $value, $pool) = @_;
 
     my $action = $self->_action($path)->{props}{$name};
-    $action->on_change_file_prop_commit(@_) if $action->enabled;
+    return unless $action->enabled;
+    $action->on_change_file_prop_commit(@_);
 }
 
 sub close_file {

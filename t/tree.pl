@@ -20,6 +20,7 @@ use SVK::Path::Checkout;
 # Fake standard input
 our $answer = [];
 our $show_prompt = 0;
+
 BEGIN {
     no warnings 'redefine';
     # override get_prompt in XD so devel::cover is happy for

@@ -491,7 +491,7 @@ sub run {
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);
-    $editor = SVN::Delta::Editor->new(_editor=>[$editor], _debug=>1);
+    #$editor = SVN::Delta::Editor->new(_editor=>[$editor], _debug=>1);
 
     if ($commit_editor) {
         $commit_editor->{storage} = $editor;
