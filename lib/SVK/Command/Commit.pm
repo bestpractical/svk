@@ -371,7 +371,7 @@ sub get_committable {
 	}
 	until ($vt->root->check_path($danchor) == $SVN::Node::dir) {
 	    $danchor = $danchor->parent;
-	    $dactual_anchor = $dactual_anchor->parent;
+            $dactual_anchor = $dactual_anchor->parent;
 	}
 
 	$target->copath_anchor(Path::Class::Dir->new($target->copath_anchor)->subdir
@@ -381,7 +381,6 @@ sub get_committable {
     }
 
     $self->decode_commit_message;
-    warn YAML::Dump($targets);
 
     return ($commit_editor, [sort {$a->[1] cmp $b->[1]} @$targets]);
 }

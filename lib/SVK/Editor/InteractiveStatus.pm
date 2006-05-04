@@ -551,7 +551,6 @@ sub on_apply_textdelta {
 
 sub on_apply_textdelta_commit {
     my ($self, $editor, $path, $checksum, $pool) = @_;
-    warn "####### Applying change";
     return undef if $self->{empty_change};
 
     my $handle = SVK::Editor::InteractiveStatus::Action::on_apply_textdelta_commit(@_);
@@ -761,7 +760,7 @@ sub on_state_update {
 sub on_end_selection_phase {
     my ($self, $editor) = @_;
 
-    $self->{notify}->node_status($self->{path}, $self->enabled ? 'U' : '');
+    $editor->{notify}->node_status($self->{path}, $self->enabled ? 'U' : '');
 }
 
 package SVK::Editor::InteractiveStatus::DeleteFileAction;
