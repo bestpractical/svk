@@ -30,10 +30,11 @@ BEGIN {
 	print "$_[0]\n" if $show_prompt;
 	print STDOUT "$_[0]\n" if $main::DEBUG;
 	return $answer unless ref($answer); # compat
-	my $ans = shift @$answer
-	    or die 'expecting input';
+	die "expecting input" unless @$answer;
+	my $ans = shift @$answer;
 	print STDOUT "-> $answer->[0]\n" if $main::DEBUG;
 	return $ans unless ref($ans);
+	
 	if (ref($ans->[0]) eq 'Regexp') {
 	    Carp::cluck "prompt mismatch ($_[0]) vs ($ans->[0])" unless $_[0] =~ m/$ans->[0]/s;
 	}
