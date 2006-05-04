@@ -8,6 +8,8 @@ use SVK::I18N;
 use SVN::Delta;
 
 use SVK::Version;  our $VERSION = $SVK::VERSION;
+use SVK::Editor::Patch;
+use Algorithm::Diff;
 
 #our @ISA = qw(SVN::Delta::Editor);
 

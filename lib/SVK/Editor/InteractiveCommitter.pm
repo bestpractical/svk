@@ -1,7 +1,6 @@
 package SVK::Editor::InteractiveCommitter;
 
 use strict;
-use Algorithm::Diff;
 use SVK::I18N;
 use SVN::Delta;
 
