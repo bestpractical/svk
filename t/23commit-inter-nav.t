@@ -750,17 +750,12 @@ file. Do you want to skip it and commit other changes? (y/n) }, 'y'],[qq{--- A/f
 
 [1/1] Modification to 'A/foo' file:
 [a]ccept, [s]kip this change > }, 'a'],'stop'];
-our $DEBUG=1;
+#our $DEBUG=1;
 $svk->commit('--interactive', '-m', 'foo');
-warn $output;
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],[
 'C   A/deep/mas',
-# 'M   A/foo' # This is the actual output, but my guess is that it should be
-# committed.
 ], 'conflict - skip the conflict, but commit changes to foo');
-warn $output;
-#exit;
 
 $show_prompt=1;
 is_output($svk, 'merge', ['-c1', '//A/foo', 'A/deep/baz'],
@@ -779,7 +774,6 @@ is_output($svk, 'commit', ['--interactive', '-m', 'foo'],
      'files. Do you want to skip those and commit other changes? (y/n) ',
      '2 conflicts detected. Use \'svk resolved\' after resolving them.'],
      'multiple conflicts -  output');
-warn $output;
 
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],

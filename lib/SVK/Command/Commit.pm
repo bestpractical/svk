@@ -279,7 +279,6 @@ sub get_committable {
         }
     );
     
-    die unless $notify;
     if ($self->{interactive}) {
         my %cb = SVK::Editor::Merge->cb_for_root($root, $target->path_anchor, 0);
 

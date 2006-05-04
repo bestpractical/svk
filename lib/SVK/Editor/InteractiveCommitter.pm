@@ -112,7 +112,7 @@ sub add_directory {
 sub open_directory {
     my ($self, $path, $pdir, $rev, $pool) = @_;
 
-    my $action = $self->_action($path) or return $path;
+    my $action = $self->_action($path) or return;
 
     $self->{storage_baton}{$path} = $action->on_open_directory_commit(@_);
 
