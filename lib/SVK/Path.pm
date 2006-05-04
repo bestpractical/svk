@@ -37,8 +37,6 @@ sub refresh_revision {
     $self->_root(undef);
     Carp::cluck unless $self->repos;
     $self->revision($self->repos->fs->youngest_rev);
-    Carp::cluck unless defined $self->revision;
-
 
     return $self;
 }

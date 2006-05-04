@@ -27,7 +27,6 @@ sub localmod {
 
 sub localprop {
     my ($self, $path, $propname, $pool) = @_;
-    my $oldpath = $path;
     $path = $self->_anchor_path($path);
     local $@;
     return eval { $self->root->node_prop ($path, $propname, $pool) };

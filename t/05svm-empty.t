@@ -37,11 +37,13 @@ $svk->cp (-m => 'branch empty repository', $uri, '//test');
 
 $svk->co ('//test', $copath);
 chdir ($copath);
+our $DEBUG = 1;
 is_output ($svk, 'push', [],
 	   ["Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
 	    "===> Auto-merging (0, 10) /test to /mirror/empty (base /:0).",
 	    "Merging back to mirror source $uri.",
 	    'Empty merge.']);
+warn $output;
 $svk->mkdir ('-m', 'Added trunk', '//test/trunk');
 is_output ($svk, 'push', [],
           ["Auto-merging (0, 11) /test to /mirror/empty (base /:0).",
