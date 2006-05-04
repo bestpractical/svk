@@ -38,7 +38,7 @@ sub close_edit {
                 $msg);
         }
 
-        if (SVK::Util::get_prompt($msg, qr/^[yn]$/i) eq 'n') {
+        if (SVK::Util::get_prompt($msg, qr/^[yn]$/i) =~ /[Nn]/) {
             $_->on_end_selection_phase($self)
                 for @{$self->{actions}};
 
@@ -52,8 +52,8 @@ sub close_edit {
             return;
         } else {
             my (%actions, @actions);
-
             @actions = map {delete $self->{info}{$_}} @{$self->{conflicts}};
+            # flatten actions list.
             push @actions, @{$_->{children}} for @actions;
             @actions = map {$_->{id}} @actions;
 
@@ -551,7 +551,7 @@ sub on_apply_textdelta {
 
 sub on_apply_textdelta_commit {
     my ($self, $editor, $path, $checksum, $pool) = @_;
-
+    warn "####### Applying change";
     return undef if $self->{empty_change};
 
     my $handle = SVK::Editor::InteractiveStatus::Action::on_apply_textdelta_commit(@_);

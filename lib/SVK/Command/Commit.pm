@@ -281,10 +281,12 @@ sub get_committable {
     
     die unless $notify;
     if ($self->{interactive}) {
+        my %cb = SVK::Editor::Merge->cb_for_root($root, $target->path_anchor, 0);
+
         $status_editor = SVK::Editor::InteractiveStatus->new
         (
-            SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
-	    notify => $notify,
+            %cb,
+            notify => $notify,
             cb_skip_prop_change => sub {
                 my ($path, $prop, $value) = @_;
                 $skipped_items->{props}{$target->copath($path)}{$prop} = $value;
@@ -296,8 +298,8 @@ sub get_committable {
         ); 
 
        $commit_editor = SVK::Editor::InteractiveCommitter->new(
-                SVK::Editor::Merge->cb_for_root($root, $target->path, 0),
-                status => $status_editor, 
+            %cb,
+            status => $status_editor, 
         );
 
         $conflict_handler = \&SVK::Editor::InteractiveCommitter::conflict;
@@ -379,6 +381,7 @@ sub get_committable {
     }
 
     $self->decode_commit_message;
+    warn YAML::Dump($targets);
 
     return ($commit_editor, [sort {$a->[1] cmp $b->[1]} @$targets]);
 }
@@ -482,12 +485,12 @@ sub run {
     my $committed;
     my ($commit_editor, $committable);
     if ($self->{import}) {
-	$self->get_commit_message () unless $self->{check_only};
-	$committed = $self->committed_import ($target->copath_anchor);
+      $self->get_commit_message () unless $self->{check_only};
+      $committed = $self->committed_import ($target->copath_anchor);
     }
     else {
-        ($commit_editor, $committable) = $self->get_committable ($target, $xdroot, $skipped_items);
-        $committed = $self->committed_commit ($target, $committable, $skipped_items);
+      ($commit_editor, $committable) = $self->get_committable ($target, $xdroot, $skipped_items);
+      $committed = $self->committed_commit ($target, $committable, $skipped_items);
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);

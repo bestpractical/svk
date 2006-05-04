@@ -20,8 +20,10 @@ sub new {
 sub _action {
   my ($self, $path) = @_;
 
-  #Carp::cluck $path if $::DEBUG;
-  return $self->{status}{info}{$path};
+  return unless defined $path;
+  my $ret = $self->{status}{info}{$path};
+  #Carp::cluck $path unless $ret;
+  return $ret;
 }
 
 sub close_edit {
@@ -48,7 +50,7 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, $copy_path, $rev, $pool) = @_;
 
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
     $self->{storage_baton}{$path} = $action->on_add_file_commit(@_)
         if $action->enabled;
     
@@ -58,7 +60,7 @@ sub add_file {
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
 
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
 
     $self->{storage_baton}{$path} = $action->on_open_file_commit(@_);
 
@@ -67,7 +69,7 @@ sub open_file {
 
 sub apply_textdelta {
     my ($self, $path, $checksum, $pool) = @_;
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
     
     return $action->on_apply_textdelta_commit(@_);
 }
@@ -75,14 +77,15 @@ sub apply_textdelta {
 sub change_file_prop {
     my ($self, $path, $name, $value, $pool) = @_;
 
-    my $action = $self->_action($path)->{props}{$name};
+    my $action = $self->_action($path) or return;
+    $action = $action->{props}{$name};
     return unless $action->enabled;
     $action->on_change_file_prop_commit(@_);
 }
 
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
 
     $action->on_close_file_commit(@_) if $action->enabled;
     delete $self->{status}{info}{$path};
@@ -91,14 +94,14 @@ sub close_file {
 sub delete_entry {
     my ($self, $path, $rev, $pdir, $pool) = @_;
 
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
     $action->on_delete_entry_commit(@_);
 }
 
 sub add_directory {
     my ($self, $path, $pdir, $copy_from, $rev, $pool) = @_;
 
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
 
     $self->{storage_baton}{$path} = $action->on_add_directory_commit(@_)
 	if $action->enabled;
@@ -109,7 +112,7 @@ sub add_directory {
 sub open_directory {
     my ($self, $path, $pdir, $rev, $pool) = @_;
 
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return $path;
 
     $self->{storage_baton}{$path} = $action->on_open_directory_commit(@_);
 
@@ -119,7 +122,8 @@ sub open_directory {
 sub change_dir_prop {
     my ($self, $path, $name, $value, $pool) = @_;
 
-    my $action = $self->_action($path)->{props}{$name};
+    my $action = $self->_action($path) or return;
+    $action = $action->{props}{$name};
     
     return unless $action->enabled;
     $action->on_change_dir_prop_commit(@_);
@@ -127,7 +131,7 @@ sub change_dir_prop {
 
 sub close_directory {
     my ($self, $path) = @_;
-    my $action = $self->_action($path);
+    my $action = $self->_action($path) or return;
 
     $action->on_close_directory_commit(@_);
     delete $self->{status}{info}{$path};
@@ -136,6 +140,7 @@ sub close_directory {
 sub conflict {
     my ($self, $path) = @_;
 
+    $self->{conflicts} ||= $self->{status}{conflicts};
     push @{$self->{conflicts}}, $path;
 }
 
