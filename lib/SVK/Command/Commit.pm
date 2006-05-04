@@ -8,6 +8,9 @@ use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Command::Sync;
+use SVK::Editor::InteractiveCommitter;
+use SVK::Editor::InteractiveStatus;
+
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder );
@@ -18,11 +21,12 @@ sub options {
     ('m|message=s'  => 'message',
      'F|file=s'     => 'message_file',
      'C|check-only' => 'check_only',
-     'S|sign'	  => 'sign',
-     'P|patch=s'  => 'patch',
-     'import'	  => 'import',
-     'direct'	  => 'direct',
-     'template'	  => 'template',
+     'S|sign'       => 'sign',
+     'P|patch=s'    => 'patch',
+     'import'       => 'import',
+     'direct'       => 'direct',
+     'template'     => 'template',
+     'interactive'  => 'interactive',
      'set-revprop=s@' => 'setrevprop',
     );
 }
@@ -247,7 +251,7 @@ sub exclude_mirror {
 }
 
 sub get_committable {
-    my ($self, $target, $root) = @_;
+    my ($self, $target, $root, $skipped_items) = @_;
     my ($fh, $file);
     $self->fill_commit_message;
     if ($self->{template} or not defined $self->{message}) {
@@ -261,17 +265,48 @@ sub get_committable {
 
     my $targets = [];
     my $encoder = get_encoder;
-    my $statuseditor = SVK::Editor::Status->new
-	( notify => SVK::Notify->new
-	  ( cb_flush => sub {
-		my ($path, $status) = @_;
-		to_native ($path, 'path', $encoder);
-		my $copath = $target->copath ($path);
-		push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
-				 $copath];
-		    no warnings 'uninitialized';
-		print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath) if $fh;
-	    }));
+    my ($status_editor, $commit_editor, $conflict_handler);
+    
+    my $notify = SVK::Notify->new( 
+        cb_flush => sub {
+            my ($path, $status) = @_;
+            to_native ($path, 'path', $encoder);
+            my $copath = $target->copath ($path);
+            push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
+                $copath];
+            no warnings 'uninitialized';
+            print $fh sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath) if $fh;
+        }
+    );
+    
+    if ($self->{interactive}) {
+        my %cb = SVK::Editor::Merge->cb_for_root($root, $target->path_anchor, 0);
+
+        $status_editor = SVK::Editor::InteractiveStatus->new
+        (
+            %cb,
+            notify => $notify,
+            cb_skip_prop_change => sub {
+                my ($path, $prop, $value) = @_;
+                $skipped_items->{props}{$target->copath($path)}{$prop} = $value;
+            },
+            cb_skip_add => sub {
+                my ($path, $prop) = @_;
+                push @{$skipped_items->{adds}}, $target->copath($path);
+            },
+        ); 
+
+       $commit_editor = SVK::Editor::InteractiveCommitter->new(
+            %cb,
+            status => $status_editor, 
+        );
+
+        $conflict_handler = \&SVK::Editor::InteractiveCommitter::conflict;
+    } else {
+        $status_editor = SVK::Editor::Status->new(notify => $notify);
+        $conflict_handler = \&SVK::Editor::Status::conflict;
+    }
+
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
@@ -280,8 +315,8 @@ sub get_committable {
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  absent_ignore => 1,
-	  editor => $statuseditor,
-	  cb_conflict => \&SVK::Editor::Status::conflict,
+	  editor => $status_editor,
+	  cb_conflict => $conflict_handler,
 	);
 
     my $conflicts = grep {$_->[0] eq 'C'} @$targets;
@@ -294,6 +329,11 @@ sub get_committable {
 
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
 	die loc("%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n", $conflicts);
+    }
+
+    if ($self->{interactive}) {
+    	$target->{targets} =
+            [map{abs2rel($_->[1], $target->{copath}, undef, '/')} @$targets];
     }
 
     if ($fh) {
@@ -330,7 +370,7 @@ sub get_committable {
 	}
 	until ($vt->root->check_path($danchor) == $SVN::Node::dir) {
 	    $danchor = $danchor->parent;
-	    $dactual_anchor = $dactual_anchor->parent;
+            $dactual_anchor = $dactual_anchor->parent;
 	}
 
 	$target->copath_anchor(Path::Class::Dir->new($target->copath_anchor)->subdir
@@ -340,11 +380,12 @@ sub get_committable {
     }
 
     $self->decode_commit_message;
-    return [sort {$a->[1] cmp $b->[1]} @$targets];
+
+    return ($commit_editor, [sort {$a->[1] cmp $b->[1]} @$targets]);
 }
 
 sub committed_commit {
-    my ($self, $target, $targets) = @_;
+    my ($self, $target, $targets, $skipped_items) = @_;
     my $fs = $target->repos->fs;
     sub {
 	my $rev = shift;
@@ -381,6 +422,19 @@ sub committed_commit {
                 )
             }
 	}
+
+    # regenerate schedule information about skipped properties...
+    for (keys %{$skipped_items->{props}}) {
+        $self->{xd}{checkout}->store($_, {
+            '.newprop' => $skipped_items->{props}{$_},
+            '.schedule' => 'prop'
+        });
+    }
+
+    # ...and files in interactive commit mode.
+    $self->{xd}{checkout}->store($_, {'.schedule' => 'add' })
+        for @{$skipped_items->{adds}};
+
 	# XXX: fix view/path revision insanity
 	my $root = $target->source->new->refresh_revision->root;
 	# update keyword-translated files
@@ -425,19 +479,30 @@ sub run {
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
     my $xdroot = $target->root;
+    my $skipped_items = {};
     my $committed;
+    my ($commit_editor, $committable);
     if ($self->{import}) {
-	$self->get_commit_message () unless $self->{check_only};
-	$committed = $self->committed_import ($target->copath_anchor);
+      $self->get_commit_message () unless $self->{check_only};
+      $committed = $self->committed_import ($target->copath_anchor);
     }
     else {
-	$committed = $self->committed_commit ($target, $self->get_committable ($target, $xdroot));
+      ($commit_editor, $committable) = $self->get_committable ($target, $xdroot, $skipped_items);
+      $committed = $self->committed_commit ($target, $committable, $skipped_items);
     }
 
     my ($editor, %cb) = $self->get_editor ($target->source, $committed);
+    #$editor = SVN::Delta::Editor->new(_editor=>[$editor], _debug=>1);
 
-#    die loc("unexpected error: commit to mirrored path but no mirror object")
-#	if $is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
+    if ($commit_editor) {
+        $commit_editor->{storage} = $editor;
+        $commit_editor->{status}{storage} = $editor;
+
+        $editor = $commit_editor;
+    }
+
+    #die loc("unexpected error: commit to mirrored path but no mirror object")
+    #	if $target->is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
 
     $self->run_delta ($target, $xdroot, $editor, %cb);
 }

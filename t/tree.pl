@@ -19,14 +19,29 @@ use SVK::Path::Checkout;
 
 # Fake standard input
 our $answer = [];
+our $show_prompt = 0;
+
 BEGIN {
     no warnings 'redefine';
     # override get_prompt in XD so devel::cover is happy for
     # already-exported symbols being overridden
     *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
+	local $| = 1;
+	print "$_[0]\n" if $show_prompt;
+	print STDOUT "$_[0]\n" if $main::DEBUG;
 	return $answer unless ref($answer); # compat
-	die 'expecting input' unless @$answer;
-	shift @$answer;
+	die "expecting input" unless @$answer;
+	my $ans = shift @$answer;
+	print STDOUT "-> $answer->[0]\n" if $main::DEBUG;
+	return $ans unless ref($ans);
+	
+	if (ref($ans->[0]) eq 'Regexp') {
+	    Carp::cluck "prompt mismatch ($_[0]) vs ($ans->[0])" unless $_[0] =~ m/$ans->[0]/s;
+	}
+	else {
+	    Carp::cluck "prompt mismatch ($_[0]) vs ($ans->[0])" if $_[0] ne $ans->[0];
+	}
+	return $ans->[1];
     } unless $ENV{DEBUG_INTERACTIVE};
 
     chdir catdir(abs_path(dirname(__FILE__)), '..' );

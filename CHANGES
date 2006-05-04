@@ -1,5 +1,7 @@
 [Changes for 2.0.0 - ? ???, 2006]
 
+* "svk commit" now has additional option --interactive
+
 * Renames and copies can now be merged across branches.
 
 * View support for customising how checkout should look like.
