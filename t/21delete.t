@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 48;
+use Test::More tests => 49;
 use strict;
 use File::Path;
 BEGIN { require 't/tree.pl' };
@@ -21,6 +21,10 @@ overwrite_file ("A/deep/baz", "foobar");
 $svk->add ('A');
 is_output ($svk, 'rm', ['A/foo'],
 	   [__"A/foo is scheduled; use '--force' to go ahead."]);
+chdir('A');
+is_output ($svk, 'rm', ['foo'],
+	   [__"../A/foo is scheduled; use '--force' to go ahead."]);
+chdir('..');
 $svk->commit ('-m', 'init');
 
 append_file ('A/foo', "modified.\n");

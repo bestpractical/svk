@@ -4,7 +4,7 @@ use Test::More;
 
 BEGIN { require 't/tree.pl' };
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 6;
+plan tests => 9;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('svmrm');
@@ -28,6 +28,16 @@ chdir ($copath);
 is_output ($svk, 'rm', ['rm'],
 	  ['//rm contains mirror, remove explicitly: //rm/m']);
 
+$svk->mkdir(-p => "rm/m/foo/bar");
+$svk->mkdir(-p => "rm/unrelated");
+is_output($svk, 'rm', ["rm/m/foo/bar"],
+	  ["rm/m/foo/bar is scheduled; use '--force' to go ahead."]);
+
+is_output($svk, 'rm', ["rm/m/foo/bar", "rm/unrelated"],
+	  ['//rm contains mirror, remove explicitly: //rm/m']);
+
+is_output($svk, 'rm', ['--force', "rm/m/foo/bar"],
+	  ["D   rm/m/foo/bar"]);
 
 is_output($svk, 'rm', [-m => 'bye', '--direct', '//rm/m'],
 	  ['Committed revision 5.']);

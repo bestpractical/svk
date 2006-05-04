@@ -68,6 +68,12 @@ to something that's not executable, the output will not be paged.  svk
 ignores your $PAGER setting, so you must explicitly set $SVKPAGER if
 you want paging.
 
+=item $SVKLOGOUTPUT
+
+By specifying this variable, you change the default output filter used by the
+C<svk log> command.  The value of this variable can be anything that you can
+pass to C<svk log>'s C<--output> option.
+
 =item $SVKPGP
 
 svk supports signing and verifying changesets using the Gnu Privacy Guard.

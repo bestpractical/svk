@@ -9,26 +9,30 @@ use SVK::Util qw( traverse_history get_encoding reformat_svn_date );
 use List::Util qw(max min);
 
 sub options {
-    ('l|limit=i'	=> 'limit',
-     'q|quiet'		=> 'quiet',
-     'r|revision=s@'	=> 'revspec',
-     'x|cross'		=> 'cross',
-     'v|verbose'	=> 'verbose');
+    (
+        'l|limit=i'	    => 'limit',
+        'q|quiet'		=> 'quiet',
+        'r|revision=s@'	=> 'revspec',
+        'x|cross'		=> 'cross',
+        'v|verbose'	    => 'verbose',
+        'xml'           => 'xml',
+        'output:s'      => 'present_filter',
+        'filter:s'      => 'select_filter',
+    );
 }
 
 # returns a sub for getting remote rev
 sub _log_remote_rev {
-    my ($target, $remoteonly, $host) = @_;
-    $host ||= '';
+    my ( $target, $remoteonly ) = @_;
+
     # don't bother if this repository has no mirror
-    return sub {"r$_[0]$host"} unless $target->mirror->entries;
-    # save some initialization
+    return if !$target->mirror->entries;
+
     # XXX: if there's no $m why do we need to be able to lookup?
     my $m = $target->is_mirrored || 'SVN::Mirror';
-    sub {
-	my $rrev = $m->find_remote_rev ($_[0], $target->repos);
-	$remoteonly ? "r$rrev$host" :
-	    "r$_[0]$host".($rrev ? " (orig r$rrev)" : '');
+    return sub {
+        my $rrev = $m->find_remote_rev( $_[0], $target->repos );
+        return $rrev;
     }
 }
 
@@ -45,6 +49,17 @@ sub run {
     # as_depotpath, but use the base revision rather than youngest
     # for the target.
 
+    # establish the output argument (presentation filter)
+    my ( $presentation_filter, $filter_xml ) = @{$self}{qw/present_filter xml/};
+    if ($filter_xml) {
+        print loc("Ignoring --output $presentation_filter. Using --xml.\n")
+            if $presentation_filter;
+        $presentation_filter = 'xml';
+    }
+    else {
+        $presentation_filter ||= $ENV{SVKLOGOUTPUT} || 'Std';
+    }
+
     my ($fromrev, $torev);
     # move to general revspec parser in svk::command
     if ($self->{revspec}) {
@@ -57,37 +72,72 @@ sub run {
     $torev ||= 0;
     $self->{cross} ||= 0;
 
-    my $print_rev = _log_remote_rev ($target);
+    my $get_remoterev = _log_remote_rev($target);
 
     if ($target->revision < max ($fromrev, $torev)) {
 	print loc ("Revision too large, show log from %1.\n", $target->revision);
 	$fromrev = min ($target->revision, $fromrev);
 	$torev = min ($target->revision, $torev);
     }
-    my $sep = ('-' x 70)."\n";
-    print $sep;
-    _get_logs ($target->root, $self->{limit} || -1, $target->path_anchor, $fromrev, $torev,
-	       $self->{verbose}, $self->{cross},
-	       sub {_show_log (@_, $sep, undef, 0, $print_rev, 1, 0, $self->{quiet})} );
+    require SVK::Log::Filter;
+    my $filter = SVK::Log::Filter->new(
+        presentation  => $presentation_filter,
+        selection     => $self->{select_filter},
+        output        => undef,
+        indent        => 0,
+        get_remoterev => $get_remoterev,
+        verbatim      => 0,
+        quiet         => $self->{quiet},
+        verbose       => $self->{verbose},
+    );
+    _get_logs(
+        root     => $target->root,
+        limit    => $self->{limit},
+        path     => $target->path_anchor,
+        fromrev  => $fromrev,
+        torev    => $torev,
+        verbose  => $self->{verbose},
+        cross    => $self->{cross},
+        filter   => $filter,
+    );
     return;
 }
 
 sub _get_logs {
-    my ($root, $limit, $path, $fromrev, $torev, $verbose, $cross, $callback) = @_;
+    my (%args) = @_;
+    my   (   $root, $limit, $path, $fromrev, $torev, $cross, $filter, $cb_log) = 
+    @args{qw/ root   limit   path   fromrev   torev   cross   filter   cb_log/};
+
+    $limit ||= -1;
     my $fs = $root->fs;
     my $reverse = ($fromrev < $torev);
     my @revs;
     ($fromrev, $torev) = ($torev, $fromrev) if $reverse;
     $torev = 1 if $torev < 1;
 
-    my $docall = sub {
-	my ($rev) = @_;
-	my ($root, $changed, $props);
-	$root = $fs->revision_root ($rev);
-	$changed = $root->paths_changed if $verbose;
-	$props = $fs->revision_proplist ($rev);
-	$callback->($rev, $root, $changed, $props);
-    };
+    # establish the traverse_history callback
+    my $docall;
+    if ($filter) {
+        $docall = sub {
+            my ($rev) = @_;
+            my $root  = $fs->revision_root($rev);
+            my $props = $fs->revision_proplist($rev);
+            return $filter->filter(    # only continue if $filter wants to
+                rev   => $rev,
+                root  => $root,
+                props => $props,
+            );
+        };
+    }
+    else {
+        $docall = sub {
+            my ($rev) = @_;
+            my $root  = $fs->revision_root($rev);
+            my $props = $fs->revision_proplist($rev);
+            $cb_log->( $rev, $root, $props );
+            return 1;  # always continue to the next revision
+        };
+    }
 
     traverse_history (
         root        => $root,
@@ -102,11 +152,9 @@ sub _get_logs {
 
             if ($reverse) {
                 unshift @revs, $rev;
+                return 1;
             }
-            else {
-                $docall->($rev);
-            }
-            return 1;
+            return $docall->($rev);
         },
     );
 
@@ -114,6 +162,9 @@ sub _get_logs {
 	my $pool = SVN::Pool->new_default;
 	$docall->($_), $pool->clear for @revs;
     }
+
+    # we're done with the log so we're done with the filter
+    $filter->finished() if $filter;
 }
 
 our $chg;
@@ -123,60 +174,25 @@ $chg->[$SVN::Fs::PathChange::add] = 'A';
 $chg->[$SVN::Fs::PathChange::delete] = 'D';
 $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
-sub _show_log {
-    my ($rev, $root, $paths, $props, $sep, $output, $indent, $print_rev, $use_localtime,
-	$verbatim, $quiet) = @_;
-    $output ||= select;
-    $indent = (' ' x $indent);
-    my ($author, $date, $message);
-    if ($quiet) {
-      ($author, $date) = @{$props}{qw/svn:author svn:date/};
-      $message = $sep;
-    } else {
-      ($author, $date, $message) = @{$props}{qw/svn:author svn:date svn:log/};
-	$message = ($indent ? '' : "\n")."$message\n$sep";
-    }
-    if (defined $use_localtime) {
-	no warnings 'uninitialized';
-	local $^W; # shut off uninitialized warnings in Time::Local
-	$date = reformat_svn_date("%Y-%m-%d %T %z", $date);
-    }
-    $author = loc('(no author)') if !defined($author) or !length($author);
-    $output->print ($indent.$print_rev->($rev).":  $author | $date\n") unless $verbatim;
-    if ($paths) {
-	$output->print ($indent.loc("Changed paths:\n"));
-	my $enc = get_encoding;
-	for (sort keys %$paths) {
-	    my $entry = $paths->{$_};
-	    my ($action, $propaction) = ($chg->[$entry->change_kind], ' ');
-	    my ($copyfrom_rev, $copyfrom_path) = $action eq 'D' ? (-1) : $root->copied_from ($_);
-	    $propaction = 'M' if $action eq 'M' && $entry->prop_mod;
-	    $action = ' ' if $action eq 'M' && !$entry->text_mod;
-	    $action = 'M' if $action eq 'A' && $copyfrom_path && $entry->text_mod;
-	    Encode::from_to ($_, 'utf8', $enc);
-	    Encode::from_to ($copyfrom_path, 'utf8', $enc) if defined $copyfrom_path;
-	    $output->print ($indent.
-		"  $action$propaction $_".
-		    (defined $copyfrom_path ?
-		     ' ' . loc("(from %1:%2)", $copyfrom_path, $copyfrom_rev) : ''
-		    )."\n");
-	}
-    }
-#    $message =~ s/\n\n+/\n/mg;
-    $message =~ s/^/$indent/mg if $indent and !$verbatim;
-    require Encode;
-    Encode::from_to ($message, 'UTF-8', get_encoding);
-    $output->print ($message);
-}
-
 sub do_log {
     my (%arg) = @_;
-    $arg{cross} ||= 0, $arg{limit} ||= -1;
+    my (    $cross, $fromrev, $limit, $path, $repos, $torev, $filter, $cb_log ) =
+    @arg{qw/ cross   fromrev   limit   path   repos   torev   filter   cb_log /};
+
+    $cross ||= 0;
     my $pool = SVN::Pool->new_default;
-    my $fs = $arg{repos}->fs;
-    my $rev = $arg{fromrev} > $arg{torev} ? $arg{fromrev} : $arg{torev};
-    _get_logs ($fs->revision_root ($rev),
-	       @arg{qw/limit path fromrev torev verbose cross cb_log/});
+    my $fs = $repos->fs;
+    my $rev = $fromrev > $torev ? $fromrev : $torev;
+    _get_logs (
+        root     => $fs->revision_root($rev),
+        limit    => $limit,
+        path     => $path,
+        fromrev  => $fromrev,
+        torev    => $torev,
+        cross    => $cross,
+        filter   => $filter,    # let _get_logs() sort out filter ...
+        cb_log   => $cb_log,    # ... vs cb_log  (only 1 should be defined)
+    );
 }
 
 1;
@@ -211,6 +227,58 @@ SVK::Command::Log - Show log messages for revisions
  -q [--quiet]           : Don't display the actual log message itself
  -x [--cross]           : track revisions copied from elsewhere
  -v [--verbose]         : print extra information
+    --xml               : display the log messages in XML format
+    --filter FILTER     : select revisions based on FILTER
+    --output FILTER     : display logs using the given FILTER
+
+=head1 DESCRIPTION
+
+Display the log messages and other meta-data associated with revisions.
+
+SVK provides a flexible system allowing log messages and other revision
+properties to be displayed and processed in many ways.  This flexibility comes
+through the use of "log filters."  Log filters are of two types: selection and
+output.  Selection filters determine which revisions are included in the
+output, while output filters determine how the information about those
+revisions is displayed.  Here's a simple example.  These two invocations
+produce equivalent output:
+
+    svk log -l 5 //local/project
+    svk log --filter "head 5" --output std //local/project
+
+The "head" filter chooses only the first revisions that it encounters, in this
+case, the first 5 revisions.  The "std" filter displays the revisions using
+SVK's default output format.
+
+Selection filters can be connected together into pipelines.  For example, to
+see the first 3 revisions with log messages containing the string 'needle', we
+might do this
+
+    svk log --filter "grep needle | head 3" //local/project
+
+That example introduced the "grep" filter.  The argument for the grep filter
+is a valid Perl pattern (with any '|' characters as '\|' and '\' as '\\').  A
+revision is allowed to continue to the next stage of the pipeline if the
+revision's log message matches the pattern.  If we wanted to search only the
+first 10 revisions for 'needle' we could use either of the following commands
+
+    svk log --filter "head 10 | grep needle" //local/project
+    svk log -l 10 --filter "grep needle" //local/project
+
+You may change SVK's default output filter by setting the SVKLOGOUTPUT
+environment.  See B<svk help environment> for details.
+
+=head2 Standard Filters
+
+The following log filters are included with the standard SVK
+distribution:
+
+    Selection : grep, head
+    Output    : std, xml
+
+Other log filters are available from CPAN L<http://search.cpan.org> by searching
+for "SVK::Log::Filter".  To details on writing log filters, see the documentation
+for the SVK::Log::Filter module.
 
 =head1 AUTHORS
 
