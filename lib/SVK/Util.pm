@@ -385,6 +385,8 @@ XXX Undocumented
 
 =cut
 
+# XXX: deprecated, only used in command::verify now. use
+# $target->is_mirrored instead
 sub resolve_svm_source {
     my ($repos, $uuid, $path) = @_;
     my $myuuid = $repos->fs->get_uuid;

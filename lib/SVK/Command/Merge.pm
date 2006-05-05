@@ -7,7 +7,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Command::Log;
 use SVK::Merge;
-use SVK::Util qw( get_buffer_from_editor find_svm_source resolve_svm_source traverse_history );
+use SVK::Util qw( get_buffer_from_editor traverse_history );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -92,8 +92,7 @@ sub run {
 
     if ($self->{sync}) {
         my $sync = $self->command ('sync');
-	my (undef, $m) = resolve_svm_source($repos, find_svm_source($repos, $src->path_anchor));
-        if ($m->{target_path}) {
+	if (my $m = $src->is_mirrored) {
             $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
             $src->refresh_revision;
         }

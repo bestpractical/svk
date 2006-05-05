@@ -37,7 +37,6 @@ info and anchor for the patch to be applied.
 =cut
 
 use SVK::Editor::Patch;
-use SVK::Util qw(find_svm_source find_local_mirror resolve_svm_source);
 use SVK::Merge;
 use SVK::Editor::Diff;
 use SVK::Target::Universal;
@@ -167,10 +166,7 @@ sub _path_attribute_text {
 	    ++$local;
 	}
 	else {
-            my ($repos, $path) = @$target{qw/repos path/};
-            (undef, $mirrored) = resolve_svm_source(
-                $repos, find_svm_source($repos, $path)
-            );
+	    $mirrored = $target->is_mirrored or die;
 	}
     }
     my $label = $no_label ? '' : join(
