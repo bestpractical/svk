@@ -2,12 +2,14 @@ package SVK::Command::Info;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use base qw( SVK::Command::Merge );
+use base qw( SVK::Command );
 use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
-use SVK::Util qw (find_svm_source resolve_svm_source);
 use YAML::Syck;
+
+# XXX: provide -r which walks peg to the specified revision based on
+# the root.
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -19,35 +21,50 @@ sub parse_arg {
 sub run {
     my ($self, @arg) = @_;
     my $exception='';
+    my $pool = SVN::Pool->new_default;
     for my $target (@arg) {
-	my ($path,$repos,$depotpath) = map { $target->$_ } qw/path repos depotpath/;
-	my $yrev = $repos->fs->youngest_rev;
-	my $rev = $target->isa('SVK::Path::Checkout') ?
-	    $self->{xd}{checkout}->get ($target->copath_anchor)->{revision} : $yrev;
-
-	$target->revision($rev);
-	my (undef,$m) = eval { resolve_svm_source($repos, find_svm_source($repos,$path,$rev)) };
-	if($@) { $exception .= "$@\n" ; next }
-	print loc("Checkout Path: %1\n",$target->copath) if $target->isa('SVK::Path::Checkout');
-	print loc("Depot Path: %1\n", $target->depotpath);
-	print loc("Revision: %1\n", $rev);
-	print loc(
-	    "Last Changed Rev.: %1\n",
-	    $repos->fs->revision_root($rev)->node_created_rev($path)
-	);
-	print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
-	    if($m->{source});
-	for ($target->copy_ancestors) {
-	    print loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]);
+	$pool->clear;
+	eval { $self->_do_info($target) };
+	if($@) {
+	    $exception .= "$@";
+	    $exception .= "\n" unless $exception =~ m/\n$/;
+	    next;
 	}
-	$self->{merge} = SVK::Merge->new (%$self);
-	my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
-	for (keys %$minfo) {
-	    print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
-	}
-	print "\n";
     }
     die($exception) if($exception);
+}
+
+sub _do_info {
+    my ($self, $target) = @_;
+    my $root = $target->root;
+
+    # XXX: handle checkout specific ones such as schedule
+
+    $target->root->check_path($target->path)
+	or die loc("Path %1 does not exist.\n", $target->depotpath);
+
+    my ($m, $mpath) = $target->is_mirrored;
+
+    print loc("Checkout Path: %1\n",$target->copath)
+	if $target->isa('SVK::Path::Checkout');
+    print loc("Depot Path: %1\n", $target->depotpath);
+    print loc("Revision: %1\n", $target->revision);
+    print loc("Last Changed Rev.: %1\n",
+	      $target->root->node_created_rev($target->path));
+
+    print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
+	if $m;
+
+    for ($target->copy_ancestors) {
+	print loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]);
+    }
+
+    $self->{merge} = SVK::Merge->new (%$self);
+    my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
+    for (keys %$minfo) {
+	print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
+    }
+    print "\n";
 }
 
 1;

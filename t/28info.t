@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 14;
+use Test::More tests => 15;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -29,5 +29,9 @@ is_output ($svk, 'info', [''], \@co_info);
 is_output ($svk, 'info', [$corpath], \@co_info);
 
 ok ($svk->info ('//info-root') > 0);
-is_output_like ($svk, 'info', ['//info-root'], qr'Filesystem has no item');
-is_output_like ($svk, 'info', ['info-root'], qr'Filesystem has no item');
+is_output($svk, 'info', ['//info-root'],
+	  ['Path //info-root does not exist.']);
+is_output($svk, 'info', ['blah'],
+	  ['Path //info-root/blah does not exist.']);
+is_output($svk, 'info', ['//info-root@1'],
+	   \@depot_info);
