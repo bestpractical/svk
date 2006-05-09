@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 6;
+use Test::More tests => 9;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -29,3 +29,12 @@ is_output ($svk, 'cat', ['-r1', '//A/foo'], ['foobar'],
 	  'cat -rN depotpath');
 is_output ($svk, 'cat', ['A/bar'], ['$Revision: 2 $', 'barbar'],
 	  'cat - with keyword');
+
+$svk->mv(-m => 'rename', '//A/foo' => '//A/foo.new');
+
+is_output ($svk, 'cat', ['-r1', '//A/foo.new'], ['foobar'],
+	   "cat -rN depotpath peg'ed");
+
+is_output_like($svk, 'cat', ['-r1', '//A/foo'], qr'not found');
+
+is_output ($svk, 'cat', ['-r1', '//A/foo@2'], ['foobar']);

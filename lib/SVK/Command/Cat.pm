@@ -19,7 +19,7 @@ sub run {
     my $pool = SVN::Pool->new_default;
     for my $target (@arg) {
 	$pool->clear;
-	$target = $target->as_depotpath( $self->resolve_revision($target, $self->{rev}) );
+	$target = $self->apply_revision($target);
 	my $root = $target->root;
 	my $stream = $root->file_contents ($target->path);
 	# XXX: the keyword layer interface should also have reverse

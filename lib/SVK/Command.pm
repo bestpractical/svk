@@ -673,6 +673,20 @@ sub arg_path {
     return abs_path ($arg);
 }
 
+=head3 apply_revision($target)
+
+Apply the given revision from command line to C<$target>.
+
+=cut
+
+sub apply_revision {
+    my ($self, $target) = @_;
+    return $target unless defined $self->{rev};
+
+    $target = $target->as_depotpath;
+    return $target->seek_to( $self->resolve_revision($target, $self->{rev}) );
+}
+
 =head3 parse_revlist ()
 
 Parse -c or -r to a list of [from, to] pairs.

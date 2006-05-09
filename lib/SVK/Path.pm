@@ -594,6 +594,29 @@ sub merged_from {
 	  } );
 }
 
+=head2 $self->seek_to($revision)
+
+Return the C<SVK::Path> object that C<$self> is at C<$revision>.  Note
+that we don't have forward tracing, so if <$revision is greater than
+C<$self->revision>, a C<SVK::Path> at <$revision> will be returned.
+In other words, assuming C<foo@N> for C<-r N foo@M> when N > M.
+
+=cut
+
+sub seek_to {
+    my ($self, $revision) = @_;
+
+    if ($revision < $self->revision) {
+	while (my ($toroot, $fromroot, $path) = $self->nearest_copy) {
+	    last if $toroot->revision_root_revision <= $revision;
+	    $self = $self->mclone( path => $path,
+				   revision => $fromroot->revision_root_revision );
+	}
+    }
+
+    return $self->mclone( revision => $revision );
+}
+
 *path_anchor = __PACKAGE__->make_accessor('path');
 push @{__PACKAGE__->_clonable_accessors}, 'path_anchor';
 
