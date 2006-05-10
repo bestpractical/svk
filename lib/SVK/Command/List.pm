@@ -26,8 +26,9 @@ sub run {
     my $exception = '';
 
     while (my $arg = shift @arg) {
-	$arg->dump if $main::DEBUG;
-        eval { _do_list($self, 0, $arg); print "\n" if @arg };
+	$arg = $arg->as_depotpath;
+        eval { _do_list($self, 0, $self->apply_revision($arg));
+	       print "\n" if @arg };
         $exception .= "$@" if $@;
     }
 
@@ -37,7 +38,6 @@ sub run {
 sub _do_list {
     my ($self, $level, $target) = @_;
     my $pool = SVN::Pool->new_default;
-    $target = $target->as_depotpath( $self->resolve_revision($target, $self->{rev}) );
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
        die loc("Path %1 is not a versioned directory\n", $target->path_anchor)
@@ -52,7 +52,7 @@ sub _do_list {
 
         if ($self->{verbose}) {
 	    my $rev = $root->node_created_rev ($target->path."/$_");
-            my $fs = $target->{'repos'}->fs;
+            my $fs = $target->repos->fs;
 
             my $svn_date =
                 $fs->revision_prop ($rev, 'svn:date');

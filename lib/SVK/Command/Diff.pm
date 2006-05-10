@@ -47,19 +47,19 @@ sub run {
 	}
     }
     else {
-	$target = $target->new->as_depotpath($r1) if $r1 && $r2;
 	if ($target->isa('SVK::Path::Checkout')) {
-	    $target = $self->{xd}->target_condensed($target); # find anchor
 	    $target2 = $target->new;
 	    $report = $target->report; # get the report before it turns to depotpath
-	    $target = $target->as_depotpath($r1) if $r1;;
+	    $target = $target->as_depotpath->seek_to($r1) if $r1;
+	    $target2 = $target->as_depotpath->seek_to($r2) if $r2;
 	    $cb_llabel =
 		sub { my ($rpath) = @_;
 		      'revision '.($self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision}) } unless $r1;
 	}
 	else {
 	    die loc("Revision required.\n") unless $r1 && $r2;
-	    $target2 = $target->new(revision => $r2);
+	    ($target, $target2) = map { $target->as_depotpath->seek_to($_) }
+		($r1, $r2);
 	}
     }
 

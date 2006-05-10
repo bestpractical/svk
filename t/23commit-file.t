@@ -1,4 +1,4 @@
-use Test::More tests => 9;
+use Test::More tests => 8;
 use strict;
 BEGIN { require 't/tree.pl' };
 our($output, $answer);
@@ -14,25 +14,12 @@ is_output ($svk, 'checkout', ['//V/A/Q/qu'],
 ok (-e 'qu');
 
 append_file("qu", "change single file\n");
-TODO: {
 
-local $TODO = 'pesky path report';
 is_output($svk, 'diff', ['qu'],
 	  ['=== qu',
 	   '==================================================================',
 	   "--- qu\t(revision 3)",
 	   "+++ qu\t(local)",
-	   '@@ -1,2 +1,3 @@',
-	   ' first line in qu',
-	   ' 2nd line in qu',
-	   '+change single file',
-	  ]);
-}
-is_output($svk, 'diff', ['./qu'],
-	  [__('=== ./qu'),
-	   '==================================================================',
-	   __("--- ./qu\t(revision 3)"),
-	   __("+++ ./qu\t(local)"),
 	   '@@ -1,2 +1,3 @@',
 	   ' first line in qu',
 	   ' 2nd line in qu',

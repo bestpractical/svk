@@ -22,14 +22,12 @@ sub parse_arg {
 
 sub run {
     my ($self, $target) = @_;
-    if(defined $self->{rev}) {
-        my $r = $self->resolve_revision($target,$self->{rev});
-        $target = $target->as_depotpath($r);
-    }
     my $m = $target->is_mirrored;
     my $fs = $target->repos->fs;
     my $ann = Algorithm::Annotate->new;
     my @paths;
+
+    $target = $self->apply_revision($target);
 
     traverse_history (
         root     => $target->as_depotpath->root,
