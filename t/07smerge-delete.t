@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 24;
+use Test::More tests => 25;
 use strict;
 use File::Path;
 use Cwd;
@@ -231,4 +231,17 @@ is_output ($svk, 'smerge', ['//trunk', $copath],
 	    '2 conflicts found.']);
 
 ok ($unversioned, 'unversioned file not deleted');
+
+$svk->revert(-R => $copath);
+$svk->switch('//local', $copath);
+
+$svk->rm("$copath/A/foo");
+$svk->mkdir("$copath/A/foo");
+
+$svk->rm(-m => 'hate', '//local/A/foo');
+
+is_output($svk, 'up', [$copath],
+	  ['Syncing //local(/local) in '.__($corpath).' to 13.',
+	   __("C   $copath/A/foo"),
+	   '1 conflict found.']);
 

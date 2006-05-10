@@ -778,12 +778,20 @@ sub delete_entry {
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
     my $torm;
     # XXX: need txn-aware cb_*! for the case current path is from a
-    # copy and to be deleted
-    if ($self->inspector->exist($path, $pool)) {
-	# XXX: this is evil
+    # copy and to be deleted - Note this might have been done, exam it.
+    if (my $localkind = $self->inspector->exist($path, $pool)) {
+	# XXX: this is too evil
 	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
-	$torm = $self->_check_delete_conflict ($path, $rpath,
-					      $self->{base_root}->check_path ($rpath), $pdir, @arg);
+	my $kind = $self->{base_root}->check_path ($rpath);
+	if ($kind == $localkind) {
+	    $torm = $self->_check_delete_conflict ($path, $rpath,
+						   $kind, $pdir, @arg);
+	}
+	else {
+	    # deleting, but local node is of different type already
+	    # XXX: prompt for resolution
+	    $torm = {};
+	}
     }
 
     if (ref($torm)) {
