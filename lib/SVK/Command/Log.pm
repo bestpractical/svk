@@ -273,11 +273,13 @@ environment.  See B<svk help environment> for details.
 The following log filters are included with the standard SVK
 distribution:
 
-    Selection : grep, head
+    Selection : grep, head, author
     Output    : std, xml
 
-Other log filters are available from CPAN L<http://search.cpan.org> by searching
-for "SVK::Log::Filter".  To details on writing log filters, see the documentation
+For detailed documentation about any of these filters, try "perldoc
+SVK::Log::Filter::Name" where "Name" is "Grep", "Head", "XML", etc.. Other log
+filters are available from CPAN L<http://search.cpan.org> by searching for
+"SVK::Log::Filter".  For details on writing log filters, see the documentation
 for the SVK::Log::Filter module.
 
 =head1 AUTHORS

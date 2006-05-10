@@ -40,7 +40,7 @@ __END__
 
 =head1 SYNOPSIS
 
-SVK::Log::Filter::Author - search log messages for given authors
+SVK::Log::Filter::Author - search revisions for given authors
 
 =head1 DESCRIPTION
 

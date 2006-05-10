@@ -39,9 +39,9 @@ upstream filter causes the pipeline to skip a revision, Head won't (and can't)
 count it.  As soon as Head has seen the specified number of revisions, it
 stops the pipeline from processing any further revisions.
 
-This filter is particularly useful when search log messages for patterns (see
-L<SVK::Log::Filter::Grep>).  For example, to view the first three revisions
-with messages that match "foo", one might use
+This filter is particularly useful when searching log messages for patterns
+(see L<SVK::Log::Filter::Grep>).  For example, to view the first three
+revisions with messages that match "foo", one might use
 
     svk log --filter "grep foo | head 3"
 
