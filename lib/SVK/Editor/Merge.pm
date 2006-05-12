@@ -270,7 +270,7 @@ sub open_file {
     # modified but rm locally - tag for conflict?
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
-    if ($self->inspector->exist($basepath, $pool)) {
+    if ($self->inspector->exist($basepath, $pool) == $SVN::Node::file) {
 	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
 	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
