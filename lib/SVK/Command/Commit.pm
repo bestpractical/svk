@@ -571,6 +571,7 @@ SVK::Command::Commit - Commit changes to depot
 =head1 OPTIONS
 
  --import               : import mode; automatically add and delete nodes
+ --interactive          : interactively select which "chunks" to commit
  -m [--message] MESSAGE : specify commit message MESSAGE
  -F [--file] FILENAME   : read commit message from FILENAME
  --encoding ENC         : treat -m/-F value as being in charset encoding ENC
@@ -588,7 +589,7 @@ Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
