@@ -82,9 +82,23 @@ sub print_changed_details {
 
 __END__
 
-=head1 SYNOPSIS
+=head1 NAME
 
 SVK::Log::Filter::XML - display log messages in XML format
+
+=head1 SYNOPSIS
+
+    > svk log --xml
+    <?xml version="1.0" encoding="utf-8"?>
+    <log>
+    <logentry revision="1234" original="456">
+    <author>author</author>
+    <date>2006-05-16T15:43:28.889532Z</date>
+    <msg>This is the commit message for the revision.</msg>
+    </logentry>
+    </log>
+    > svk log --output xml
+    ...
 
 =head1 DESCRIPTION
 

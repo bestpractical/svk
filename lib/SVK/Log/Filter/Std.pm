@@ -106,9 +106,20 @@ sub build_changed_details {
 
 __END__
 
-=head1 SYNOPSIS
+=head1 NAME
 
 SVK::Log::Filter::Std - display log messages in standard SVK format
+
+=head1 SYNOPSIS
+
+    > svk log
+    ----------------------------------------------------------------------
+    r1234 (orig r456):  author | 2006-05-15 09:28:52 -0600
+
+    This is the commit message for the revision.
+    ----------------------------------------------------------------------
+    > svk log --output std
+    ...
 
 =head1 DESCRIPTION
 
