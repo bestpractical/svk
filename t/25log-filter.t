@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 15;
+plan_svm tests => 16;
 
 # working copy initialization
 our $output;
@@ -94,6 +94,18 @@ is_output(
 
 is_output(
     $svk, 'log', [ '-q', '--filter', 'head 2' ],
+    [
+        qr/-+/,
+        qr/r4:/,
+        qr/-+/,
+        qr/r3:/,
+        qr/-+/,
+    ],
+);
+
+# again, with space after the number...
+is_output(
+    $svk, 'log', [ '-q', '--filter', 'head 2 ' ],
     [
         qr/-+/,
         qr/r4:/,

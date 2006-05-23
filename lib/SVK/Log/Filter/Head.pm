@@ -10,7 +10,7 @@ sub setup {
 
     my $argument = $stash->{argument};
     die loc("Head: '%1' is not numeric.\n", $argument)
-        if $argument !~ /\A \d+ \z/xms;
+        if $argument !~ /\A \d+\s* \z/xms;
 
     $stash->{head_remaining} = $argument;
 }
