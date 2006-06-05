@@ -152,7 +152,7 @@ sub cleanup_test {
 	    if $repos && @{$repos->fs->list_transactions};
     }
     return unless $ENV{TEST_VERBOSE};
-    use YAML;
+    use YAML::Syck;
     print Dump($xd);
     for my $depot (sort keys %{$xd->{depotmap}}) {
 	my $pool = SVN::Pool->new_default;
@@ -215,7 +215,7 @@ sub _do_run {
     local *SVK::XD::unlock = sub {
 	my $self = shift;
 	unless ($giant_locked) {
-	    my $newxd = Clone::clone($self->{checkout});
+	    my $newxd = Storable::dclone($self->{checkout});
 	    my @paths = $self->{checkout}->find ('', {lock => $$});
 	    my %empty = (lock => undef, '.conflict' => undef,
 			 '.deleted' => undef,
@@ -225,7 +225,7 @@ sub _do_run {
 		$origxd->store_recursively($_, \%empty);
 		$newxd->store_recursively($_, \%empty);
 	    }
-	    diag Carp::longmess.YAML::Dump({orig => $origxd, new => $newxd, paths => \@paths})
+	    diag Carp::longmess.YAML::Syck::Dump({orig => $origxd, new => $newxd, paths => \@paths})
 		unless eq_hash($origxd, $newxd);
 	}
 	$unlock->($self, @_);
