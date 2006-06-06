@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 64;
+use Test::More tests => 65;
 use strict;
 BEGIN { require 't/tree.pl' };
 our($output, $answer);
@@ -321,4 +321,11 @@ is_output ($svk, 'checkout', ['--list'], [
             "  //V-3.1/A/Q/qu                \t".__("$corpath/qu"),
 	    "  //V/A                         \t".__("$corpath/co-root-deep/there"),
             "? //V/A                         \t".__("$corpath/co-root-a"),
+            ]);
+
+# make sure we can detach multiple checkouts at once
+is_output ($svk, 'checkout', ['--detach', __("$corpath/qu"), __("$corpath/Q"), __("$corpath/3.1")], [
+            __("Checkout path '$corpath/qu' detached."),
+            __("Checkout path '$corpath/Q' detached."),
+            __("Checkout path '$corpath/3.1' detached."),
             ]);
