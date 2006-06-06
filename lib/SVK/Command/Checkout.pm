@@ -197,15 +197,17 @@ sub lock { ++$_[0]->{hold_giant} }
 sub _remove_entry { (depotpath => undef, revision => undef, encoding => undef) }
 
 sub run {
-    my ($self, $path) = @_;
+    my ($self, @paths) = @_;
 
-    my @copath = $self->_find_copath($path)
-        or die loc("'%1' is not a checkout path.\n", $path);
+    for my $path (@paths) {
+        my @copath = $self->_find_copath($path)
+          or die loc("'%1' is not a checkout path.\n", $path);
 
-    my $checkout = $self->{xd}{checkout};
-    foreach my $copath (sort @copath) {
-        $checkout->store_recursively ($copath, {_remove_entry, $self->_schedule_empty});
-        print loc("Checkout path '%1' detached.\n", $copath);
+        my $checkout = $self->{xd}{checkout};
+        foreach my $copath (sort @copath) {
+            $checkout->store_recursively ($copath, {_remove_entry, $self->_schedule_empty});
+            print loc("Checkout path '%1' detached.\n", $copath);
+        }
     }
 
     return;
