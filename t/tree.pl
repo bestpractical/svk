@@ -465,6 +465,10 @@ sub replace_file {
     close $fh;
 }
 
+sub chmod_probably_useless {
+    return $^O eq 'MSWin32' || Cwd::cwd() =~ m!^/afs/!;
+}
+
 END {
     return unless $$ == $pid;
     unlink $_ for @unlink;
