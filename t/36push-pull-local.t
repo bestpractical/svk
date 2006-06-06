@@ -24,8 +24,12 @@ TODO: {
     local $TODO = 'entirely local pull should actually pull';
     # these regexps might not actually be right. The point is it should do SOMETHING with the me file::path
     is_output($svk, 'pull', [__($corpath_branch)],
-              [qr/^Auto-merging/,
-               qr/^U/,]);
+              ['Auto-merging (3, 5) /trunk to /branch (base /trunk:3).',
+               'U   me',
+               qr'New merge ticket: .*:/trunk:5',
+               'Committed revision 6.',
+               "Syncing //branch(/branch) in $corpath_branch to 6.",
+               __("U   $corpath_branch/me"),]);
 }
 
 
