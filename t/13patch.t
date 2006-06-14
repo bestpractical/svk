@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 36;
+plan_svm tests => 38;
 
 use File::Copy qw( copy );
 our $output;
@@ -12,6 +12,7 @@ my ($xd2, $svk2) = build_test();
 is_output_like ($svk, 'patch', [], qr'SYNOPSIS');
 is_output_like ($svk, 'patch', ['blah'], qr'SYNOPSIS');
 is_output ($svk, 'patch', ['--view'], ['Filename required.']);
+is_output ($svk, 'patch', ['view'], ['Filename required.']);
 
 $svk->mkdir ('-m', 'init', '//trunk');
 my $tree = create_basic_tree ($xd, '//trunk');
@@ -260,6 +261,9 @@ eval { $svk->patch ('--regen', 'test-1') };
 is ($@, '', "Can't regenerate an non-applicable patch");
 
 eval { $svk->patch ('--apply', 'test-1') };
+is ($@, '', "Can't apply an non-applicable patch");
+
+eval { $svk->patch ('apply', 'test-1') };
 is ($@, '', "Can't apply an non-applicable patch");
 
 eval { $svk->patch ('--delete', 'test-1') };

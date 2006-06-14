@@ -26,7 +26,18 @@ sub options {
 }
 
 sub parse_arg {
-    # always return help
+    my ($self, @args) = @_;
+    my $cmd = shift @args or return;
+
+    # Try to find a subcommand for invocations such as "svk patch ls"
+    my %options = $self->options;
+    while (my ($names, $canonical) = each %options) {
+        $cmd =~ /\A$names\z/ or next;
+        bless($self, "SVK::Command::Patch::$canonical");
+        return($self->parse_arg(@args));
+    }
+
+    # Can't find a subcommand - return help
     return;
 }
 
