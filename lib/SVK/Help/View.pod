@@ -14,7 +14,7 @@ you have C<svk:view:ptest> set on C<//project>, you can refer to it by
 C<//^project/ptest>.  That is, a caret, and then path holding the
 property, a slash, and the name of the view.
 
-You can now use C<//^project/test> as a target for normal svk commands
+You can now use C<//^project/ptest> as a target for normal svk commands
 like ls, checkout and diff.
 
 Here is an example for the value of the property:
