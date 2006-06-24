@@ -61,7 +61,7 @@ sub _do_info {
 
     $self->{merge} = SVK::Merge->new (%$self);
     my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
-    for (sort keys %$minfo) {
+    for (sort { $minfo->{$b} <=> $minfo->{$a} } keys %$minfo) {
 	print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
     }
     print "\n";
