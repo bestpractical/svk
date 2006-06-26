@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet href="chrome://global/skin/" type="text/css"?><?xml-stylesheet href="takahashi.css" type="text/css"?><page xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" id="presentation" xmlns:html="http:/www.w3.org/1999/xhtml" orient="vertical" onkeypress="Presentation.onKeyPress(event);">
+<!--
+
+outline
+* clkao / bps
+* cp/rm
+* rcs
+* cvs / hate
+* subversion / good stuff
+* 2003 status / hate
+* benchmark
+* svk feature
+* svk in action
+* interactive conflict resolution
+* stealing
+* interactive commit
+* things in the way
+* history-sensitive patch management
+* svk development
+* what's new and coming
+
+
+-->
+<html:textarea id="builtinCode" style="visibility: collapse">
+
+&#9832; SVK
+----
+Chia-liang Kao
+
+Best Practical 
+----
+We 
+Make 
+RT
+----
+We
+Make
+Jifty
+----
+We 
+Make
+SVK
+----
+Version Control
+----
+  % date +%Y
+  1980
+----
+THE Version
+Control System
+----
+Backup
+ cp -rf project
+ project.1980-01-30
+----
+New feature
+ cp -rf project
+ project.new-feature
+----
+Revert
+ cp ../project.0130/core.c .
+----
+ Start over
+ rm -rf *
+
+----
+ Start over
+ rm -rf *
+ # oh no
+----
+  % date +%Y
+  1982
+----
+RCS
+----
+ci file
+----
+co file
+----
+rlog file
+----
+rcsmerge -p
+-r2.8 -r3.4 file
+> merged
+----
+Collaborating?
+----
+  % date +%Y
+  1992
+----
+CVS
+----
+{{img src="images/hate-wall.jpg" width="800" height="600"}}
+----
+directory &#x2623;
+----
+rename &#x2623;
+----
+committing might
+break in-between &#x2623;
+----
+branch and tag &#x2623;
+one day and one night
+----
+requires network &#x2623;
+all the time
+----
+You hate it
+----
+It hates back
+----
+cvs/src/server.c:
+
+  5878         goto i_hate_you;
+  ...
+  5898     i_hate_you:
+  5899         printf ("I HATE YOU\n");
+  5900         fflush (stdout);
+----
+Ok, Let's
+be fair
+----
+It served
+its time
+----
+Most opensource
+projects used it
+----
+  % date +%Y
+  2002
+----
+Subversion!
+----
+Versioned directory. &#x263a;
+----
+Versioned rename. &#x263a;
+----
+Atomic commits. &#x263a;
+----
+Cheap branching
+and tagging. &#x263a;
+----
+Offline diff. &#x263a;
+----
+Active community. &#x263a;
+----
+  % date +%Y
+  2003
+----
+Committing from
+Europe
+to Taiwan
+is slow! &#x2623;
+----
+.svn/
+grep -r
+find
+----
+Manual merge
+log keeping &#x2623;
+----
+People still
+use CVS &#x2623;
+----
+{{img src="images/we_hate_software.jpg" width="800" height="500"}}
+----
+/me takes 1 year off
+to bring you...
+----
+SVK
+----
+People
+are
+busy
+----
+Tools are
+to save time
+----
+Spending
+more time
+on tool &#x2623;
+----
+People
+like
+benchmarks
+----
+{{img src="images/img33.png" width="800" height="600"}}
+----
+{{img src="images/img34.png" width="800" height="600"}}
+----
+Space-wise
+----
+    * 1.3G repository, 35k revisions.
+    * svn checkout of trunk is 2.2G
+    * svk mirror is 1.3G
+    * svk checkout is 750M
+    * So, 200M saved, and we get the
+      whole history of the 35k revisions
+----
+initial overhead
+when mirroring &#x2623;
+----
+(We are working on it)
+----
+SVK
+features
+----
+Work with your
+SVN repository &#x263a;
+----
+History-
+sensive
+merge
+----
+History-
+sensive
+patch
+----
+no .svn/
+no CVS/
+----
+Painless
+vendor
+branching &#x263a;
+----
+Interactive
+conflict
+resolution. &#x263a;
+----
+SVK also comes
+with...
+----
+{{img src="images/svk_pony.jpg" width="367" height="500"}}
+----
+and stickers!
+(come get them)
+----
+SVK
+in action
+----
+svk co
+http://svn.clkao.org/svk/trunk
+----
+svk cp
+http://svn.clkao.org/svk/trunk
+----
+s/svn/svk
+
+and it does
+more
+----
+ mirror the reposiotry to //mirror
+ create a local branch in //local
+ checkout //local/svk-trunk
+----
+SVN: "Disks are cheap,
+bandwidth is expensive"
+----
+svk commit
+----
+svk push
+svk pull
+----
+switch to //mirror
+when you have
+bandwidth
+----
+What about
+conflicts?
+----
+Conflicts
+are
+nightmare &#x2623;
+----
+ >>> YOUR VERSION
+ ....
+ === ORIGINAL VERSION x
+ ....
+ === THEIR VERSION x
+ ....
+ &lt;&lt;&lt; THEIR VERSION y
+----
+Even there's
+only
+whitespace
+change!
+----
+Conflicts
+were
+nightmare &#x263a;
+----
+ In svk:
+
+ Conflict found on file foobar.c:
+ (d)iff, (t)heirs, (y)ours, (m)erge, (e)dit, (s)kip ? 
+----
+We stole
+this from
+Perforce
+----
+We take
+good stuff
+from others
+----
+Interactive
+commit
+from darcs
+(svk 2.0)
+----
+It's all about
+removing things
+that get in the way
+----
+Contribute to
+opensource project
+----
+Sending patch
+----
+Get reviewed
+----
+Revise the patch &#x2623;
+----
+  create a local branch
+  % svk push -P mypatch
+    (~/.svk/patches/mypatch.patch)
+  % svk patch --update mypatch
+  % svk patch --regen mypatch
+----
+SVK development
+----
+Sep 2003 - Started
+----
+Self-host after 2 weeks
+----
+Bi-weekly releases
+----
+May 2005 - 1.0
+----
+Jun 2006 - Acquired by
+Best Practical
+----
+This Christmas
+----
+svk 2.0
+----
+Interactive
+Commit
+----
+View support
+----
+And then...
+----
+Thin client
+----
+Better cherry
+picking merge
+----
+#svk on freenode.net
+----
+ svk-dev@lists.openfoundry.org
+----
+Commercial
+support
+----
+sales@bestpractical.com
+----
+Thank you!
+----
+{{img src="images/bowing.jpg" width="197" height="300"}}
+</html:textarea>
+<deck flex="1" id="deck">
+<vbox flex="1" onmousemove="Presentation.onMouseMoveOnCanvas(event);">
+<toolbox id="canvasToolbar">
+<toolbar>
+<toolbarbutton oncommand="Presentation.home()" label="|&lt;&lt;" observes="canBack"/>
+<toolbarbutton oncommand="Presentation.back()" label="&lt;" observes="canBack"/>
+<toolbarbutton oncommand="Presentation.forward()" label="&gt;" observes="canForward"/>
+<toolbarbutton oncommand="Presentation.end()" label="&gt;&gt;|" observes="canForward"/>
+<toolbarseparator/>
+<hbox align="center">
+<textbox id="current_page" size="4" oninput="if (this.value) Presentation.showPage(parseInt(this.value)-1);"/>
+<description value="/"/>
+<description id="max_page"/>
+</hbox>
+<toolbarseparator/>
+<vbox flex="2">
+<spacer flex="1"/>
+<scrollbar id="scroller" align="center" orient="horizontal" oncommand="Presentation.showPage(parseInt(event.target.getAttribute('curpos')));" onclick="Presentation.showPage(parseInt(event.target.getAttribute('curpos')));" onmousedown="Presentation.onScrollerDragStart();" onmousemove="Presentation.onScrollerDragMove();" onmouseup="Presentation.onScrollerDragDrop();"/>
+<spacer flex="1"/>
+</vbox>
+<toolbarseparator/>
+<spacer flex="1"/>
+<toolbarseparator/>
+<toolbarbutton id="toggleEva" label="Eva" type="checkbox" autoCheck="false" oncommand="Presentation.toggleEvaMode();"/>
+<toolbarseparator/>
+<toolbarbutton label="Edit" oncommand="Presentation.toggleEditMode();"/>
+<toolbarbutton oncommand="Presentation.reload();" label="Reload"/>
+</toolbar>
+</toolbox>
+<vbox flex="1" id="canvas" onclick="Presentation.onPresentationClick(event);">
+<spacer flex="1"/>
+<hbox flex="1">
+<spacer flex="1"/>
+<vbox id="content">
+</vbox>
+<spacer flex="1"/>
+</hbox>
+<spacer flex="1"/>
+</vbox>
+</vbox>
+<vbox flex="1" id="edit">
+<toolbox>
+<toolbar>
+<toolbarbutton label="New Page" oncommand="Presentation.addPage()"/>
+<spacer flex="1"/>
+<toolbarseparator/>
+<toolbarbutton label="View" oncommand="Presentation.toggleEditMode();"/>
+<toolbarbutton oncommand="Presentation.reload();" label="Reload"/>
+</toolbar>
+</toolbox>
+<textbox id="textField" flex="1" multiline="true" oninput="Presentation.onEdit()"/>
+<hbox collapsed="true">
+<iframe id="dataLoader" onload="if (window.Presentation) Presentation.onDataLoad();"/>
+</hbox>
+</vbox>
+</deck>
+<broadcasterset>
+<broadcaster id="canBack"/>
+<broadcaster id="canForward"/>
+</broadcasterset>
+<commandset>
+<command id="cmd_forward" oncommand="if (Presentation.isPresentationMode) Presentation.forward();"/>
+<command id="cmd_back" oncommand="if (Presentation.isPresentationMode) Presentation.back();"/>
+<command id="cmd_home" oncommand="if (Presentation.isPresentationMode) Presentation.home();"/>
+<command id="cmd_end" oncommand="if (Presentation.isPresentationMode) Presentation.end();"/>
+</commandset>
+<keyset>
+<key key=" "      command="cmd_forward"/>
+<key keycode="VK_ENTER"      command="cmd_forward"/>
+<key keycode="VK_RETURN"     command="cmd_forward"/>
+<key keycode="VK_PAGE_DOWN"  command="cmd_forward"/>
+<key keycode="VK_RIGHT"      command="cmd_forward"/>
+<key keycode="VK_DOWN"       command="cmd_forward"/>
+<!--key keycode="VK_BACK_SPACE" command="cmd_back"/-->
+<key keycode="VK_UP"    command="cmd_back"/>
+<key keycode="VK_PAGE_UP"    command="cmd_back"/>
+<!--
+<key keycode="VK_BACK_UP"    command="cmd_back"/>-->
+<!--
+<key keycode="VK_BACK_LEFT"  command="cmd_back"/>-->
+<key keycode="VK_HOME"       command="cmd_home"/>
+<!--
+<key keycode="VK_END"        command="cmd_end"/>-->
+<key key="n" modifiers="accel" oncommand="Presentation.addPage();"/>
+<key key="r" modifiers="accel" oncommand="window.location.reload();"/>
+<key key="e" modifiers="accel" oncommand="Presentation.toggleEditMode();"/>
+<key key="a" modifiers="accel" oncommand="Presentation.toggleEvaMode();"/>
+</keyset>
+<script src="takahashi.js" type="application/x-javascript" />
+</page>
+
+<!-- ***** BEGIN LICENSE BLOCK *****
+   - Version: MPL 1.1
+   -
+   - The contents of this file are subject to the Mozilla Public License Version
+   - 1.1 (the "License"); you may not use this file except in compliance with
+   - the License. You may obtain a copy of the License at
+   - http://www.mozilla.org/MPL/
+   -
+   - Software distributed under the License is distributed on an "AS IS" basis,
+   - WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+   - for the specific language governing rights and limitations under the
+   - License.
+   -
+   - The Original Code is the Takahashi-Method-based Presentation Tool in XUL.
+   -
+   - The Initial Developer of the Original Code is SHIMODA Hiroshi.
+   - Portions created by the Initial Developer are Copyright (C) 2005
+   - the Initial Developer. All Rights Reserved.
+   -
+   - Contributor(s): SHIMODA Hiroshi <piro@p.club.ne.jp>
+   -
+   - ***** END LICENSE BLOCK ***** -->
+
+
