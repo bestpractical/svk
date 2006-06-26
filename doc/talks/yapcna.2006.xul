@@ -50,22 +50,22 @@ THE Version
 Control System
 ----
 Backup
- cp -rf project
- project.1980-01-30
+ % cp -rf project
+   project.1980-01-30
 ----
 New feature
- cp -rf project
- project.new-feature
+ % cp -rf project
+   project.new-feature
 ----
 Revert
- cp ../project.0130/core.c .
+ % cp ../project.0130/core.c .
 ----
- Start over
- rm -rf *
+Start over
+ % rm -rf *
 
 ----
- Start over
- rm -rf *
+Start over
+ % rm -rf *
  # oh no
 ----
   % date +%Y
@@ -73,17 +73,19 @@ Revert
 ----
 RCS
 ----
-ci file
+ % ci file
 ----
-co file
+ % co file
 ----
-rlog file
+ % rlog file
 ----
-rcsmerge -p
--r2.8 -r3.4 file
-> merged
+ % rcsmerge -p
+   -r2.8 -r3.4 file
+   > merged
 ----
 Collaborating?
+----
+Good Luck
 ----
   % date +%Y
   1992
@@ -107,7 +109,8 @@ all the time
 ----
 You hate it
 ----
-It hates back
+It hates
+you back
 ----
 cvs/src/server.c:
 
@@ -131,40 +134,44 @@ projects used it
 ----
 Subversion!
 ----
-Versioned directory. &#x263a;
+Versioned directories &#x263a;
 ----
-Versioned rename. &#x263a;
+Versioned renames &#x263a;
 ----
-Atomic commits. &#x263a;
+Atomic commits &#x263a;
 ----
 Cheap branching
-and tagging. &#x263a;
+and tagging &#x263a;
 ----
-Offline diff. &#x263a;
+Offline diff &#x263a;
 ----
-Active community. &#x263a;
+Active community &#x263a;
 ----
   % date +%Y
   2003
+----
+I went on 
+holiday 
+in Europe
 ----
 Committing from
 Europe
 to Taiwan
 is slow! &#x2623;
 ----
-.svn/
-grep -r
-find
+ - .svn/
+ - grep -r
+ - find
 ----
 Manual merge
-log keeping &#x2623;
+log tracking &#x2623;
 ----
 People still
 use CVS &#x2623;
 ----
 {{img src="images/we_hate_software.jpg" width="800" height="500"}}
 ----
-/me takes 1 year off
+I took a year off
 to bring you...
 ----
 SVK
@@ -173,12 +180,20 @@ People
 are
 busy
 ----
-Tools are
-to save time
+Tools should
+save time
 ----
-Spending
+Spend
 more time
-on tool &#x2623;
+on tools &#x2623;
+----
+People
+like
+fast tools
+----
+SVK 
+is 
+Fast
 ----
 People
 like
@@ -188,19 +203,28 @@ benchmarks
 ----
 {{img src="images/img34.png" width="800" height="600"}}
 ----
-Space-wise
+SVK saves
+disk space
 ----
-    * 1.3G repository, 35k revisions.
-    * svn checkout of trunk is 2.2G
-    * svk mirror is 1.3G
-    * svk checkout is 750M
-    * So, 200M saved, and we get the
-      whole history of the 35k revisions
+By mirroring
+the whole
+repository
 ----
-initial overhead
+No, Really!
+----
+  * 1.3G repository, 35k revisions.
+  * svn checkout of trunk is 2.2G
+  * svk mirror is 1.3G
+  * svk checkout is 750M
+  * So, 200M saved, and we get the
+    whole history of the 35k revisions
+----
+(There is a down side)
+----
+Initial overhead
 when mirroring &#x2623;
 ----
-(We are working on it)
+(We're working on it)
 ----
 SVK
 features
@@ -208,27 +232,39 @@ features
 Work with your
 SVN repository &#x263a;
 ----
-History-
-sensive
-merge
-----
-History-
-sensive
-patch
-----
-no .svn/
-no CVS/
-----
 Painless
 vendor
 branching &#x263a;
 ----
+(Branch, 
+don't fork!)
+----
+Painless
+branching &#x263a;
+----
+History
+sensitive
+merging
+----
+History
+sensitive
+patches
+----
+no .svn/
+no CVS/
+----
 Interactive
 conflict
-resolution. &#x263a;
+resolution &#x263a;
 ----
-SVK also comes
-with...
+Offline 
+commits
+----
+Offline
+branching
+----
+SVK also 
+comes with...
 ----
 {{img src="images/svk_pony.jpg" width="367" height="500"}}
 ----
@@ -238,38 +274,51 @@ and stickers!
 SVK
 in action
 ----
-svk co
-http://svn.clkao.org/svk/trunk
+ % svk co
+    http://svn.clkao.org/svk/trunk
 ----
-svk cp
-http://svn.clkao.org/svk/trunk
+ % svk cp
+    http://svn.clkao.org/svk/trunk
 ----
-s/svn/svk
+s/svn/svk/
+----
+and it 
+does more
+----
+Mirror the repository 
 
-and it does
-more
+ % svk mirror http://svn.clkao.org/svk/
+  //mirror/svk
 ----
- mirror the reposiotry to //mirror
- create a local branch in //local
- checkout //local/svk-trunk
+Make a local branch
+ % svk cp //mirror/svk/trunk
+  //local/svk/trunk
+----
+Check it out
+ % svk checkout //local/svk-trunk
 ----
 SVN: "Disks are cheap,
 bandwidth is expensive"
 ----
-svk commit
+SVK: "CPU is cheap,
+programmers are expensive"
 ----
-svk push
-svk pull
+ % svk commit
+----
+ % svk push
+ % svk pull
 ----
 switch to //mirror
-when you have
-bandwidth
+(when you have
+bandwidth)
+----
+(If you want to)
 ----
 What about
 conflicts?
 ----
 Conflicts
-are
+are a
 nightmare &#x2623;
 ----
  >>> YOUR VERSION
@@ -280,16 +329,16 @@ nightmare &#x2623;
  ....
  &lt;&lt;&lt; THEIR VERSION y
 ----
-Even there's
-only
-whitespace
-change!
+Even when
+you only
+changed the
+whitespace!
 ----
 Conflicts
-were
+were a
 nightmare &#x263a;
 ----
- In svk:
+In svk:
 
  Conflict found on file foobar.c:
  (d)iff, (t)heirs, (y)ours, (m)erge, (e)dit, (s)kip ? 
@@ -302,25 +351,24 @@ We take
 good stuff
 from others
 ----
-Interactive
-commit
-from darcs
-(svk 2.0)
+Interactive commit
+from darcs (In 2.0)
 ----
 It's all about
 removing things
 that get in the way
 ----
-Contribute to
+Contributing to an
 opensource project
 ----
-Sending patch
+Send a patch
 ----
-Get reviewed
+Get it reviewed
 ----
 Revise the patch &#x2623;
 ----
-  create a local branch
+  # create a local branch
+  # then...
   % svk push -P mypatch
     (~/.svk/patches/mypatch.patch)
   % svk patch --update mypatch
@@ -348,14 +396,22 @@ Commit
 ----
 View support
 ----
-And then...
+"Next Christmas"
+----
+(Even if it's June,
+it Will feel like
+Christmas)
 ----
 Thin client
 ----
 Better cherry
 picking merge
 ----
-#svk on freenode.net
+Join us
+----
+ % cpan SVK
+----
+ #svk on freenode.net
 ----
  svk-dev@lists.openfoundry.org
 ----
