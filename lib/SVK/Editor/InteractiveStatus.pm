@@ -605,7 +605,7 @@ sub get_question {
     my ($self, $id) = @_;
     my @flags;
 
-    push @flags, "fileChunks" if $id*2+3 < $#{$self->{chunks}};
+    push @flags, "fileChunks" if $id*2+1 < $#{$self->{chunks}};
     push @flags, "fileProps" if @{$self->{children}};
 
     return (loc("Modification to '%1' file", $self->{path}),
