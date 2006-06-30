@@ -6,7 +6,7 @@ use SVN::Delta;
 use base qw(SVK::Editor::Checkout);
 use SVK::I18N;
 use autouse 'File::Path' => qw(rmtree);
-use autouse 'SVK::Util'  => qw( get_anchor md5_fh );
+use autouse 'SVK::Util'  => qw( get_anchor get_depot_anchor md5_fh );
 use Class::Autouse qw( SVK::Editor::Composite );
 
 =head1 NAME
@@ -272,13 +272,27 @@ sub _schedule_entry {
     my %copy;
     if (defined $copyfrom) {
 	my $fs = $self->{oldroot}->fs;
+	my $from_root = $fs->revision_root($copyfrom_rev);
 	$editor->{master_editor} = SVK::Editor::Checkout->new(%$self);
-	$self->{xd}->depot_delta
-	    ( oldroot => $fs->revision_root(0),
-	      newroot => $fs->revision_root($copyfrom_rev),
-	      oldpath => ['/', ''],
-	      newpath => $copyfrom,
-	      editor => $editor );
+	if (defined $editor->{target}) {
+	    # XXX: depot_delta can't generate single file fulltext.
+	    my $handle = $editor->apply_textdelta($editor->{target},
+						  $from_root->file_md5_checksum($copyfrom));
+		if ($handle && $#{$handle} >= 0) {
+		    if ($self->{send_fulltext}) {
+			SVN::TxDelta::send_stream($from_root->file_content($copyfrom),
+						  @$handle);
+		    }
+		}
+	}
+	else {
+	    $self->{xd}->depot_delta
+		( oldroot => $fs->revision_root(0),
+		  newroot => $from_root,
+		  oldpath => ['/', ''],
+		  newpath => $copyfrom,
+		  editor => $editor );
+	}
 	%copy = ( scheduleanchor => $copath,
 		  '.copyfrom' => $copyfrom,
 		  '.copyfrom_rev' => $copyfrom_rev );

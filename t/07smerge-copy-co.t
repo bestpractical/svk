@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 3;
+use Test::More tests => 4;
 use strict;
 use File::Path;
 use Cwd;
@@ -29,4 +29,12 @@ is_output ($svk, 'st', [],
 
 is_output ($svk, 'ci', [-m => 'commit the smerge from checkout'],
 	   ['Committed revision 6.']);
+
+$svk->cp('//trunk/me' => '//trunk/me.cp', -m => 'copy me');
+
+
+is_output ($svk, 'sm', ['-t'],
+	   ['Auto-merging (5, 7) /trunk to /local (base /trunk:5).',
+	    'A + me.cp',
+	    qr'New merge ticket: .*:/trunk:7']);
 
