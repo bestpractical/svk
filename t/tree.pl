@@ -16,6 +16,8 @@ use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_
 use Test::More;
 use SVK::Target;
 
+require Clone;
+
 # Fake standard input
 our $answer = [];
 BEGIN {

@@ -34,6 +34,7 @@ requires(
 	'Class::Autouse'	=> '1.15',
 	'Getopt::Long'		=> '2.34',
 	'Encode'		=> '2.10',
+        'File::Spec'            => '3.18',
 );
 features(
     'Localized messages' => [
