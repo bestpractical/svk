@@ -60,6 +60,15 @@ If you set this variable, svk's interactive resolver will I<always>
 perform the command it's set to. For more details about the commands
 available in svk's interactive resolver, type C<perldoc SVK::Resolve>.
 
+=item $SVKMIME
+
+Indicates which module is used for automatically detecting the MIME types of
+files.  Implementations included with core SVK are: "File::LibMagic",
+"File::MMagic", "File::Type" and "Internal".  The value "Internal" means to use
+SVK's own internal MIME detection algorithm which requires no external modules.
+This poor, but fast algorithm simply assigns "application/octet-stream" to
+anything that looks binary.  If $SVKMIME has no value, "Internal" is used.
+
 =item $SVKPAGER
 
 When svk needs to pipe long output through a pager, it uses $SVKPAGER

@@ -586,14 +586,14 @@ sub auto_prop {
     return {'svn:special' => '*'} if is_symlink($copath);
     my $prop;
     $prop->{'svn:executable'} = '*' if is_executable($copath);
-    # auto mime-type
-    open my $fh, '<', $copath or Carp::confess "$copath: $!";
-    if (my $type = mimetype($fh)) {
-	# add only binary mime types or text/* but not text/plain
-	$prop->{'svn:mime-type'} = $type
-	    if $type ne 'text/plain' &&
-		($type =~ m/^text/ || !mimetype_is_text ($type));
+
+    # auto mime-type: binary or text/* but not text/plain
+    if ( my $type = mimetype($copath) ) {
+        $prop->{'svn:mime-type'} = $type
+            if $type ne 'text/plain'
+            && ( $type =~ m/^text/ || !mimetype_is_text($type) );
     }
+
     # svn auto-prop
     if ($self->{svnconfig} && $self->{svnconfig}{config}->get_bool ('miscellany', 'enable-auto-props', 0)) {
 	$self->_load_svn_autoprop unless $self->{svnautoprop};

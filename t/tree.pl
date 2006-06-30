@@ -465,6 +465,41 @@ sub replace_file {
     close $fh;
 }
 
+# Samples of files with various MIME types
+{
+my %samples = (
+    'empty.txt'     => q{},
+    'false.bin'     => 'LZ  Not application/octet-stream',
+    'foo.pl'        => "#!/usr/bin/perl\n",
+    'foo.jpg'       => "\xff\xd8\xff\xe0\x00this is jpeg",
+    'foo.bin'       => "\x1f\xf0\xff\x01\x00\xffthis is binary",
+    'foo.html'      => "<html>",
+    'foo.txt'       => "test....",
+    'foo.c'         => "/*\tHello World\t*/",
+    'not-audio.txt' => "if\n",  # reported: alley_cat 2006-06-02
+);
+
+# Return the names of mime sample files relative to a particular directory
+sub glob_mime_samples {
+    my ($directory) = @_;
+    my @names;
+    push @names, "$directory/$_" for sort keys %samples;
+    return @names;
+}
+
+# Create a directory and fill it with files of different MIME types.
+# The directory must be specified as the first argument.
+sub create_mime_samples {
+    my ($directory) = @_;
+
+    mkdir $directory;
+    overwrite_file ("mime/not-audio.txt", "if\n"); # reported: alley_cat 2006-06-02
+    while ( my ($basename, $content) = each %samples ) {
+        overwrite_file( "$directory/$basename", $content );
+    }
+}
+}
+
 sub chmod_probably_useless {
     return $^O eq 'MSWin32' || Cwd::cwd() =~ m!^/afs/!;
 }

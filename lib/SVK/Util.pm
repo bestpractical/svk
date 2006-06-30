@@ -13,6 +13,7 @@ our @EXPORT_OK = qw(
     find_prev_copy
 
     read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
+    is_binary_file
 
     abs_path abs2rel catdir catfile catpath devnull dirname get_anchor 
     move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
@@ -34,8 +35,6 @@ use File::Glob qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
 use autouse 'File::Spec::Functions' => 
                                qw(catdir catpath splitpath splitdir tmpdir);
-
-use Class::Autouse qw( File::Type );
 
 
 =head1 NAME
@@ -479,22 +478,20 @@ is missing on the system.
 =cut
 
 sub mimetype {
-    my $fh = shift;
+    my ($filename) = @_;
+    my $mm if 0;  # C<state $mm>, yuck
 
-    return 'text/plain' if -z $fh;
-
-    binmode($fh);
-    read $fh, my $data, 16*1024 or return undef;
-
-    my $type = File::Type->checktype_contents($data);
-
-    # On fallback, use the same logic as File::MimeInfo to detect text
-    if ($type eq 'application/octet-stream') {
-        substr($data, 0, 32) =~ m/[\x00-\x07\x0B\x0E-\x1A\x1C-\x1F]/
-            or return 'text/plain';
+    # find an implementation module if necessary
+    if ( !$mm ) {
+        my $module = $ENV{SVKMIME} || 'Internal';
+        $module =~ s/:://;
+        $module = "SVK::MimeDetect::$module";
+        eval "require $module";
+        die $@ if $@;
+        $mm = $module->new();
     }
 
-    return $type;
+    return $mm->checktype_filename($filename);
 }
 
 =head3 mimetype_is_text ($mimetype)
@@ -516,6 +513,21 @@ sub mimetype_is_text {
                                           |awk
                                           |shellscript)
                          |image/x-x(?:bit|pix)map)$}x;
+}
+
+=head3 is_binary_file ($filename OR $filehandle)
+
+Returns true if the given file or filehandle contains binary data.  Otherwise,
+returns false.
+
+=cut
+
+sub is_binary_file {
+    my ($file) = @_;
+
+    # let Perl do the hard work
+    return 1 if -f $file && !-T _;  # !-T handles empty files correctly
+    return;
 }
 
 =head2 Path and Filename Handling

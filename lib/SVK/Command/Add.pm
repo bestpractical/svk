@@ -83,8 +83,13 @@ sub _do_add {
 				    $autoprop ?
 				    ('.newprop'  => $newprop) : ()});
     return if $self->{quiet};
-    my $mtype = $newprop && ref $newprop ? $newprop->{'svn:mime-type'} : undef;
-    my $bin = $mtype && !mimetype_is_text ($mtype) ? ' - (bin)' : '';
+
+    # determine whether the path is binary
+    my $bin = q{};
+    if ( ref $newprop && $newprop->{'svn:mime-type'} ) {
+        $bin = ' - (bin)' if !mimetype_is_text( $newprop->{'svn:mime-type'} );
+    }
+
     print "$st   $report$bin\n";
 }
 

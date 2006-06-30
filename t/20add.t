@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 37;
+use Test::More tests => 35;
 use strict;
 BEGIN { require 't/tree.pl' };
 our $output;
@@ -126,35 +126,6 @@ is_output ($svk, 'add', ['-N', 'A/exe'],
 unlink ('A/exe');
 $svk->revert ('A/exe');
 ok (_x 'A/exe');
-
-mkdir ('A/mime');
-overwrite_file ("A/mime/foo.pl", "#!/usr/bin/perl\n");
-overwrite_file ("A/mime/foo.jpg", "\xff\xd8\xff\xe0this is jpeg");
-overwrite_file ("A/mime/foo.bin", "\x1f\xf0\xff\x01\x00\xffthis is binary");
-overwrite_file ("A/mime/foo.html", "<html>");
-overwrite_file ("A/mime/foo.txt", "test....");
-overwrite_file ("A/mime/foo.c", "/*\tHello World\t*/");
-
-is_output ($svk, 'add', ['A/mime'],
-	   [__('A   A/mime'),
-	    __('A   A/mime/foo.bin - (bin)'),
-	    __('A   A/mime/foo.c'),
-	    __('A   A/mime/foo.html'),
-	    __('A   A/mime/foo.jpg - (bin)'),
-	    __('A   A/mime/foo.pl'),
-	    __('A   A/mime/foo.txt'),
-	   ]);
-is_output ($svk, 'pl', ['-v', glob("A/mime/*")],
-	   [__('Properties on A/mime/foo.bin:'),
-	    '  svn:mime-type: application/octet-stream',
-	    __('Properties on A/mime/foo.html:'),
-	    '  svn:mime-type: text/html',
-	    __('Properties on A/mime/foo.jpg:'),
-	    '  svn:mime-type: image/jpeg',
-	   ]);
-
-
-$svk->revert ('-R', 'A');
 
 mkdir ('Ai');
 overwrite_file ("Ai/foo", "foobar");
