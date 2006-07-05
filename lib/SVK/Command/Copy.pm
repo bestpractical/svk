@@ -116,8 +116,11 @@ sub handle_direct_item {
     my ($path, $rev) = ($src->path_anchor, $src->revision);
     if ($m) {
 	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;
-	$rev = $m->find_remote_rev ($rev)
-	    or die "Can't find remote revision of for $path";
+        if (my $remote_rev = $m->find_remote_rev($rev)) {
+            $rev = $remote_rev;
+        } else {
+            die "Can't find remote revision of local revision $rev for $path";
+        }
     }
     else {
 	$path = "file://$src->{repospath}$path";
