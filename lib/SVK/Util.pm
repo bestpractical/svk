@@ -595,11 +595,11 @@ sub abs_path_noexist {
 Replace the base directory in the native pathname to another base directory
 and return the result.
 
-If the pathname is not under C<$old_basedir>, it is not unmodified.
+If the pathname is not under C<$old_basedir>, it is returned unmodified.
 
 If C<$new_basedir> is an empty string, removes the old base directory but
-keeps the trailing slash.  If C<$new_basedir> is C<undef>, also removes
-the trailing slash.
+keeps the leading slash.  If C<$new_basedir> is C<undef>, also removes
+the leading slash.
 
 By default, the return value of this function will use C<$SEP> as its
 path separator.  Setting C<$sep> to C</> will turn native path separators
