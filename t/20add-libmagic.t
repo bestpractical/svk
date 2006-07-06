@@ -17,6 +17,9 @@ create_mime_samples('mime');
 SKIP: {
     eval { require File::LibMagic };
     skip 'File::LibMagic is not installed', 2 if $@;
+    my $libmagic_version = File::LibMagic->VERSION();
+    skip "File::LibMagic 0.84 required ($libmagic_version installed)", 2
+        if $libmagic_version < 0.84;
 
     local $ENV{SVKMIME} = 'File::LibMagic';
     is_output ($svk, 'add', ['mime'],
