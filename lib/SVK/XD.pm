@@ -206,7 +206,7 @@ sub _store_config {
 
     if (-f $ancient_backup ) {
       unlink ($ancient_backup) ||
-	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $oldfile);
+	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $ancient_backup);
 
     }
 }
