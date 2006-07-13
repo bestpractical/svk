@@ -14,7 +14,6 @@ use Data::Hierarchy;
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML::Syck'	 => qw(LoadFile DumpFile);
-use autouse 'Regexp::Shellish' => qw( compile_shellish ) ;
 use SVK::Mirror;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
@@ -574,7 +573,7 @@ sub _load_svn_autoprop {
     eval {
 	$self->{svnconfig}{config}->
 	    enumerate ('auto-props',
-		       sub { $self->{svnautoprop}{compile_shellish $_[0]} = $_[1]; 1} );
+		       sub { $self->{svnautoprop}{compile_apr_fnmatch($_[0])} = $_[1]; 1} );
     };
     warn "Your svn is too old, auto-prop in svn config is not supported: $@\n" if $@;
 }
@@ -841,7 +840,60 @@ sub ignore {
     push @ignore, @{$self->{ignore}}
 	if $self->{ignore};
 
-    return join('|', map {$ignore_cache{$_} ||= compile_shellish $_} (@ignore, @_));
+    return join('|', map {$ignore_cache{$_} ||= compile_apr_fnmatch($_)} (@ignore, @_));
+}
+
+# Emulates APR's apr_fnmatch function with flags=0, which is what
+# Subversion uses.  Converts a string in fnmatch format to a Perl regexp.
+# Code is based on Barrie Slaymaker's Regexp::Shellish.
+sub compile_apr_fnmatch {
+    my $re = shift;
+
+    $re =~ s@
+             (  \\.
+             |  \[                       # character class
+                   [!^]?                 # maybe negation (^ and ! are both supported)
+                   (?: (?:\\.|[^\\\]])   # one item
+                     (?: -               # possibly followed by a dash and another
+                       (?:\\.|[^\\\]]))? # item
+                   )*                    # 0 or more entries (zero case will be checked specially below)
+                (\]?)                    # if this ] doesn't match, that means we fell off end of string!
+             |  .
+            )
+             @
+               if ( $1 eq '?' ) {
+                   '.' ;
+               } elsif ( $1 eq '*' ) {
+                   '.*' ;
+               } elsif ( substr($1, 0, 1) eq '[') {
+                   if ($1 eq '[]') { # should never match
+                       '[^\s\S]';
+                   } elsif ($1 eq '[!]' or $1 eq '[^]') { # 0-length match
+                       '';
+                   } else {
+                       my $temp = $1;
+                       my $failed = $2 eq '';
+                       if ($failed) {
+                           '[^\s\S]';
+                       } else {
+                           $temp =~ s/(\\.|.)/$1 eq '-' ? '-' : quotemeta(substr($1, -1))/ges;
+                           # the previous step puts in backslashes at beginning and end; remove them
+                           $temp =~ s/^\\\[/[/;
+                           $temp =~ s/\\\]$/]/;
+                           # if it started with [^ or [!, it now starts with [\^ or [\!; fix.
+                           $temp =~ s/^\[     # literal [
+                                       \\     # literal backslash
+                                       [!^]   # literal ! or ^
+                                     /[^/x;
+                           $temp;
+                       }
+                   }
+               } else {
+                   quotemeta(substr( $1, -1 ) ); # ie, either quote it, or if it's \x, quote x
+               }
+    @gexs ;
+
+    return qr/\A$re\Z/s;
 }
 
 sub _delta_content {
