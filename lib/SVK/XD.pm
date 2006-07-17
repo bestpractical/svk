@@ -1710,7 +1710,7 @@ sub path {
 
 sub lock_path {
     my $self = shift;
-    return $self->path.'_lock';
+    return $self->path.'=lock';
 }
 
 sub lock {
