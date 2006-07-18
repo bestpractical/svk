@@ -1,3 +1,18 @@
+[Changes for 1.08 - 30 Jun 2006]
+
+* Fix a bug that stalled schedule entries confusing merge to schedule
+  entries for replace rather than add, which then makes revert fail.
+
+* report_copath now reports '.' for the anchor.
+
+* Don't die in svk mkdir when make_path returns undef, which means the
+ directory is already there.
+
+* Fix warnings about "Use of uninitialized value in array element"
+  when doing various "svk help command".
+
+* Dependency fixes.
+
 [Changes for 1.07 - 25 Feb 2006]
 
 * Make the noisy prototype mismatch warning caused by autouse and Perl
