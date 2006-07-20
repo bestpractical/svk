@@ -223,7 +223,7 @@ sub _do_run {
 			  SVK::Command->_schedule_empty);
 	    for (@paths) {
 		$origxd->store($_, \%empty, override_sticky_descendents => 1);
-		$newxd-> store($_, \%empty, override_sticky_descendents => 12);
+		$newxd-> store($_, \%empty, override_sticky_descendents => 1);
 	    }
 	    diag Carp::longmess.YAML::Syck::Dump({orig => $origxd, new => $newxd, paths => \@paths})
 		unless eq_hash($origxd, $newxd);
