@@ -396,6 +396,7 @@ a[c]cept, s[k]ip rest of changes to this file and its properties > }, 's'],[qq{-
 
 [2/4] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 a[c]cept, s[k]ip rest of changes to this file and its properties,
 move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 6)
 +++ A/deep/mas\t(local)}.q{
@@ -418,6 +419,7 @@ a[c]cept, s[k]ip rest of changes to this file and its properties [s]> }, ''],[qq
 
 [2/4] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 a[c]cept, s[k]ip rest of changes to this file and its properties,
 move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 6)
 +++ A/deep/mas\t(local)}.q{
@@ -504,6 +506,7 @@ $answer = [[qq{--- A/deep/mas\t(revision 7)
 
 [1/4] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 a[c]cept, s[k]ip rest of changes to this file and its properties > }, 'S'],[q{Property change on A/deep/mas
 ___________________________________________________________________
 Name: parra
@@ -522,6 +525,7 @@ move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 7)
 
 [1/4] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 a[c]cept, s[k]ip rest of changes to this file and its properties [S]> }, 'c'],[qq{--- A/foo\t(revision 7)
 +++ A/foo\t(local)}.q{
 @@ -0,1 +0,1 @@
@@ -532,6 +536,7 @@ a[c]cept, s[k]ip rest of changes to this file and its properties [S]> }, 'c'],[q
 
 [2/2] Modification to 'A/foo' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 7)
 +++ A/deep/mas\t(local)}.q{
 @@ -0,2 +0,2 @@
@@ -542,6 +547,7 @@ move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 7)
 
 [1/2] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 a[c]cept, s[k]ip rest of changes to this file and its properties [c]> }, 'a'],[q{Property change on A/deep/mas
 ___________________________________________________________________
 Name: parra
@@ -560,6 +566,7 @@ move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 7)
 
 [1/2] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 a[c]cept, s[k]ip rest of changes to this file and its properties [a]> }, 'c'],[qq{--- A/foo\t(revision 7)
 +++ A/foo\t(local)}.q{
 @@ -0,1 +0,1 @@
@@ -570,6 +577,7 @@ a[c]cept, s[k]ip rest of changes to this file and its properties [a]> }, 'c'],[q
 
 [2/2] Modification to 'A/foo' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 move to [p]revious change > }, 's'],'stop'];
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
@@ -628,6 +636,7 @@ $answer = [[qq{--- foo\t(revision 9)
 
 [2/2] Modification to 'foo' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 move to [p]revious change > }, 's'],'stop'];
 is_output($svk, 'commit', 
   ['--interactive', 'A/foo', '-m', 'foo'],
@@ -749,7 +758,8 @@ file. Do you want to skip it and commit other changes? (y/n) }, 'y'],[qq{--- A/f
 +palny
 
 [1/1] Modification to 'A/foo' file:
-[a]ccept, [s]kip this change > }, 'a'],'stop'];
+[a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file > }, 'a'],'stop'];
 #our $DEBUG=1;
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
@@ -792,7 +802,8 @@ files. Do you want to skip those and commit other changes? (y/n) }, 'y'],[qq{---
 -palny
 
 [1/1] Modification to 'A/foo' file:
-[a]ccept, [s]kip this change > }, 'a'],'stop'];
+[a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file > }, 'a'],'stop'];
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
@@ -866,6 +877,7 @@ move to [p]revious change > }, 'a'],[qq{--- A/deep/mas\t(revision 15)
 
 [3/3] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 move to [p]revious change > }, 'a'],'stop'];
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
@@ -917,6 +929,7 @@ move to [p]revious change > }, 'p'],[qq{--- A/deep/mas\t(revision 16)
 
 [2/3] Modification to 'A/deep/mas' file:
 [a]ccept, [s]kip this change,
+[A]ccept, [S]kip the rest of changes to this file,
 move to [p]revious change > }, 'a'],[q{Property change on A/deep
 ___________________________________________________________________
 Name: kox
