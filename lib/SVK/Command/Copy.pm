@@ -97,7 +97,7 @@ sub handle_co_item {
 	    ->run
 		($editor, %cb, inspector => $inspector);
 
-    $self->{xd}{checkout}->store_recursively
+    $self->{xd}{checkout}->store
 	($copath, { revision => undef });
     # XXX: can the schedule be something other than delete ?
     $self->{xd}{checkout}->store ($copath, {'.schedule' => $schedule ? 'replace' : 'add',

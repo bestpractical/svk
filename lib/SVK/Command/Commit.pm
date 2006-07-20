@@ -400,13 +400,14 @@ sub committed_commit {
 	    defined $orev or next;
 	    # XXX: cache the node_created_rev for entries within $target->path
 	    next if $coinfo->{revision} < $orev;
-	    $self->{xd}{checkout}->store_override ($copath, {revision => $rev});
+	    $self->{xd}{checkout}->store ($copath, {revision => $rev}, override_descendents => 0);
 	}
 	# update checkout map with new revision
 	for (reverse @$targets) {
 	    my ($action, $path) = @$_;
-	    my $store = $self->{recursive} ? 'store_recursively' : 'store';
-	    $self->{xd}{checkout}->$store ($path, { $self->_schedule_empty });
+	    $self->{xd}{checkout}->store ($path,
+                                          { $self->_schedule_empty },
+                                          override_sticky_descendents => $self->{recursive});
             if (($action eq 'D') and $self->{xd}{checkout}->get ($path)->{revision} == $rev ) {
                 # Fully merged, remove the special node
                 $self->{xd}{checkout}->store (
@@ -468,8 +469,8 @@ sub committed_import {
     my ($self, $copath) = @_;
     sub {
 	my $rev = shift;
-	$self->{xd}{checkout}->store_recursively
-	    ($copath, {revision => $rev, $self->_schedule_empty});
+	$self->{xd}{checkout}->store
+	    ($copath, {revision => $rev, $self->_schedule_empty}, override_sticky_descendents => 1);
     }
 }
 

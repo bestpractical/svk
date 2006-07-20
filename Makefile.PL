@@ -17,7 +17,7 @@ requires(
         'Algorithm::Annotate'   => '0',
         'Algorithm::Diff'       => '0',
         'YAML::Syck'            => '0.14',
-        'Data::Hierarchy'       => '0.21',
+        'Data::Hierarchy'       => '0.30',
         'File::Temp'            => '0.14',
         'Pod::Escapes'          => '0',
         'Pod::Simple'           => '0',

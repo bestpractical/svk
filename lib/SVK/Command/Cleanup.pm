@@ -21,7 +21,7 @@ sub run {
     my ($self, @arg) = @_;
 
     if ($self->{all}) {
-        $self->{xd}{checkout}->store_recursively ('', {lock => undef});
+        $self->{xd}{checkout}->store ('', {lock => undef});
         print loc("Cleaned up all stalled locks.\n");
         return;
     }

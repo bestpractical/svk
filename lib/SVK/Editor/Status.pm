@@ -13,6 +13,20 @@ sub new {
     return $self;
 }
 
+sub _tree_get {
+    my $self = shift;
+    my $path = shift;
+    $path = $self->{tree}->{sep} . $path;
+    return $self->{tree}->get($path, @_);
+}
+
+sub _tree_store {
+    my $self = shift;
+    my $path = shift;
+    $path = $self->{tree}->{sep} . $path;
+    return $self->{tree}->store($path, @_);
+}
+
 sub open_root {
     my ($self, $baserev) = @_;
     $self->{notify}->node_status ('', '');
@@ -72,7 +86,7 @@ sub absent_file {
 sub delete_entry {
     my ($self, $path) = @_;
     $self->{notify}->node_status ($path, 'D');
-    my $info = $self->{tree}->get ($path);
+    my $info = $self->_tree_get ($path);
     $self->{notify}->hist_status ($path, '+', $info->{frompath},
 	$info->{fromrev}) if $info->{frompath};
 }
@@ -82,8 +96,8 @@ sub add_directory {
     $self->add_or_replace ($path);
     if ($from_path) {
 	$self->{notify}->hist_status ($path, '+', $from_path, $from_rev);
-	$self->{tree}->store ($path, {frompath => $from_path,
-				      fromrev => $from_rev});
+	$self->_tree_store ($path, {frompath => $from_path,
+                                    fromrev => $from_rev});
     }
     $self->{notify}->flush ($path, 1);
     return $path;
@@ -109,7 +123,7 @@ sub open_node {
     $self->{notify}->node_status ($path, '')
 	unless $self->{notify}->node_status ($path);
     $self->{notify}->node_baserev ($path, $baserev);
-    my $info = $self->{tree}->get ($path);
+    my $info = $self->_tree_get ($path);
     $self->{notify}->hist_status ($path, '+', $info->{frompath},
 	$info->{fromrev}) if $info->{frompath};
     return $path;

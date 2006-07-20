@@ -78,15 +78,16 @@ sub run {
     die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 
-    $self->{xd}{checkout}->store_recursively ( $copath,
-					       { depotpath => $target->depotpath,
-						 encoding => get_encoding,
-						 revision => 0,
-						 '.schedule' => undef,
-						 '.newprop' => undef,
-						 '.deleted' => undef,
-						 '.conflict' => undef,
-					       });
+    $self->{xd}{checkout}->store ( $copath,
+                                   { depotpath => $target->depotpath,
+                                     encoding => get_encoding,
+                                     revision => 0,
+                                     '.schedule' => undef,
+                                     '.newprop' => undef,
+                                     '.deleted' => undef,
+                                     '.conflict' => undef,
+                                   },
+                                 override_sticky_descendents => 1);
 
     my $source = $target->can('source') ? $target->source : $target;
     my $cotarget = SVK::Path::Checkout->real_new
@@ -205,7 +206,8 @@ sub run {
 
         my $checkout = $self->{xd}{checkout};
         foreach my $copath (sort @copath) {
-            $checkout->store_recursively ($copath, {_remove_entry, $self->_schedule_empty});
+            $checkout->store ($copath, {_remove_entry, $self->_schedule_empty},
+                             override_sticky_descendents => 1);
             print loc("Checkout path '%1' detached.\n", $copath);
         }
     }

@@ -222,8 +222,8 @@ sub _do_run {
 			  SVK::Command::Checkout::detach->_remove_entry,
 			  SVK::Command->_schedule_empty);
 	    for (@paths) {
-		$origxd->store_recursively($_, \%empty);
-		$newxd->store_recursively($_, \%empty);
+		$origxd->store($_, \%empty, override_sticky_descendents => 1);
+		$newxd-> store($_, \%empty, override_sticky_descendents => 12);
 	    }
 	    diag Carp::longmess.YAML::Syck::Dump({orig => $origxd, new => $newxd, paths => \@paths})
 		unless eq_hash($origxd, $newxd);

@@ -95,12 +95,13 @@ sub run {
 			$copath, $target->depotpath, $yrev);
 
 	      if ($self->{to_checkout}) {
-                  $self->{xd}{checkout}->store_recursively (
+                  $self->{xd}{checkout}->store (
                       $copath, {
                           depotpath => $target->depotpath,
                           revision => $yrev,
                           $self->_schedule_empty,
-                      }
+                      },
+                      override_sticky_descendents => 1
                   );
               }
               elsif ($self->{from_checkout}) {
