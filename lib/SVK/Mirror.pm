@@ -101,7 +101,7 @@ __PACKAGE__->mk_accessors(qw(mirror));
 sub sync {
     my ($self, %arg) = @_;
     $self->mirror->{$_} = $arg{$_} for keys %arg;
-    $self->mirror->run;
+    $self->mirror->run($arg{torev});
 }
 
 sub spec {
