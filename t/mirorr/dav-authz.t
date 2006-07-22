@@ -87,3 +87,6 @@ is_output ($svk, 'sync', ['//remote'],
 	    'Retrieving log information from 1 to 2',
 	    'Committed revision 2 from revision 1.',
 	    'Committed revision 3 from revision 2.']);
+
+$server->stop;
+print "\n";
