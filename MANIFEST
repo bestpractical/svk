@@ -207,6 +207,8 @@ t/74chgspec.t
 t/74view.t
 t/74view-mirror.t
 t/75hook.t
+t/mirorr/dav-authz.t
+t/mirorr/sync-empty.t
 t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl
