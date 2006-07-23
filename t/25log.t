@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 17;
+plan_svm tests => 18;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -86,3 +86,10 @@ is_output ($svk, 'log', ['//bar-notmv', '--cross'],
 	    qr|-+|, qr|r2.*|, '', qr|cp and ps|,
 	    qr|-+|, qr|r1.*|, '', qr|init|,
             qr|-+|]);
+
+# If you specify a copath (or implicitly specify . ) to svk desc which
+# happens to be of an older revision than the revision you specify, it
+# should work anyway.
+$svk->up('-r1');
+is_output_like ($svk, 'desc', ['r2'],
+		qr|r2.*cp and ps.*Property changes on: A/foo.*--- foo-cp\t\(revision 1\)|s);

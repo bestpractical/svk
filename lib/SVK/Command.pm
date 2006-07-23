@@ -644,7 +644,7 @@ sub arg_depotroot {
     local $@;
     $arg = eval { $self->arg_co_maybe ($arg || '')->new (path => '/') }
            || $self->arg_depotpath ("//");
-    return $arg->as_depotpath;
+    return $arg->as_depotpath->refresh_revision;
 }
 
 =head3 arg_depotname ($arg)
