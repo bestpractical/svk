@@ -156,6 +156,7 @@ sub _report_path {
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
+
     if (exists $self->{info}{$path}{new}) {
 	no warnings 'uninitialized';
 	my $rpath = $self->_report_path ($path);
@@ -177,8 +178,11 @@ sub close_file {
 	else {
 	    my @content = ($base, \$self->{info}{$path}{new});
 	    @content = reverse @content if $self->{reverse};
-	    $self->output_diff ($rpath, @label, @showpath, @content);
+	    $self->output_diff ($rpath, @label, @showpath, undef, @content);
 	}
+    } elsif (exists $self->{dh}->get("/$path")->{'.copyfrom'}) {
+        # File copied but not changed.
+        $self->output_diff_header($path);
     }
 
     $self->output_prop_diff ($path, $pool);
@@ -200,6 +204,12 @@ sub _full_label {
 sub output_diff_header {
     my ($self, $path) = @_;
 
+    my $copyinfo = $self->{dh}->get("/$path");
+
+    if (exists $copyinfo->{'.copyfrom'}) {
+        $path = "$path\t(copied from $copyinfo->{'.copyfrom'}\@$copyinfo->{'.copyfrom_rev'})";
+    }
+
     $self->_print (
         "=== $path\n",
         '=' x 66, "\n",
@@ -207,7 +217,7 @@ sub output_diff_header {
 }
 
 sub output_diff {
-    my ($self, $path, $llabel, $rlabel, $lpath, $rpath) = splice(@_, 0, 6);
+    my ($self, $path, $llabel, $rlabel, $lpath, $rpath, $copyfrom) = splice(@_, 0, 7);
     my $fh = $self->_output_fh;
 
     $self->output_diff_header ($path);
