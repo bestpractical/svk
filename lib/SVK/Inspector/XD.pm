@@ -48,6 +48,7 @@ sub localmod {
     my $copath;
     ($path,$copath) = $self->get_paths($path);
 
+    # FIXME it doesn't work when there's a addmerge
     # XXX: really want something that returns the file.
     my $base = SVK::XD::get_fh($self->xdroot, '<', $path, $copath);
     my $md5 = md5_fh ($base);
