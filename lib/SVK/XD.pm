@@ -90,7 +90,8 @@ sub new {
 	    or die loc("Cannot create svk-config-directory at '%1': %2\n",
 		       $self->{svkpath}, $!)
 	    unless -d $self->{svkpath};
-        $self->{signature} ||= SVK::XD::Signature->new (root => $self->cache_directory)
+        $self->{signature} ||= SVK::XD::Signature->new (root => $self->cache_directory,
+                                                        floating => $self->{floating})
     }
 
     $self->{checkout} ||= Data::Hierarchy->new( sep => $SEP );
@@ -127,6 +128,8 @@ sub load {
 	}
         elsif ($info) {
             $info->{checkout}{sep} = $SEP;
+            $info->{checkout} = $info->{checkout}->to_absolute($self->{floating})
+                if $self->{floating};
         }
     }
 
@@ -134,7 +137,7 @@ sub load {
 	        checkout => Data::Hierarchy->new( sep => $SEP ) };
     $self->{$_} = $info->{$_} for keys %$info;
     $self->{updated} = 0;
-    $self->create_depots('');
+    $self->create_depots('') if exists $self->{depotmap}{''};
 }
 
 =item store
@@ -184,9 +187,10 @@ sub _store_config {
     my $oldfile = "$file~";
     my $ancient_backup = $file.".bak.".$$;
 
-
-    DumpFile ($tmpfile,
-	      { map { $_ => $hash->{$_}} qw/checkout depotmap/ });
+    my $tmphash = { map { $_ => $hash->{$_}} qw/checkout depotmap/ };
+    $tmphash->{checkout} = $tmphash->{checkout}->to_relative($self->{floating})
+        if $self->{floating};
+    DumpFile ($tmpfile, $tmphash);
 
     if (not -f $tmpfile ) {
         die loc("Couldn't write your new configuration file to %1. Please try again.", $tmpfile);
@@ -221,6 +225,8 @@ sub store {
     elsif ($self->{modified}) {
 	$self->giant_lock ();
 	my $info = LoadFile ($self->{statefile});
+	$info->{checkout} = $info->{checkout}->to_absolute($self->{floating})
+	    if $self->{floating};
 	my @paths = $info->{checkout}->find ('', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
@@ -1289,6 +1295,10 @@ sub _delta_dir {
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
 	opendir my ($dir), $arg{copath} or Carp::confess "$arg{copath}: $!";
 	for (readdir($dir)) {
+	    # Completely deny the existance of .svk; we shouldn't
+	    # show this even with e.g. --no-ignore.
+	    next if $_ eq '.svk' and $self->{floating};
+
 	    if (eval {from_native($_, 'path', $arg{encoder}); 1}) {
 		push @direntries, $_;
 	    }
@@ -1694,10 +1704,17 @@ sub new {
 sub load {
     my ($factory, $path) = @_;
     my $spath = $path;
+
+    if ($factory->{floating}) {
+	$spath .= $SEP if $spath eq $factory->{floating};
+	$spath = substr($spath, length($factory->{floating}));
+    }
+
     $spath =~ s{(?=[_=])}{=}g;
     $spath =~ s{:}{=-}g;
     $spath =~ s{\Q$SEP}{_}go;
     my $self = bless { root => $factory->{root},
+		       floating => $factory->{floating},
 		       path => $path, spath => $spath }, __PACKAGE__;
     $self->read;
     return $self;

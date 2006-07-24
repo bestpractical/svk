@@ -126,6 +126,19 @@ sub build_test {
     return ($xd, $svk);
 }
 
+sub build_floating_test {
+    my ($directory) = @_;
+
+    my $svkpath = File::Spec->catfile($directory, '.svk');
+    my $xd = SVK::XD->new (statefile => File::Spec->catfile($svkpath, 'config'),
+			   svkpath => $svkpath,
+			   floating => $directory);
+    $xd->load;
+    my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
+    push @TOCLEAN, [$xd, $svk];
+    return ($xd, $svk);
+}
+
 sub get_copath {
     my ($name) = @_;
     my $copath = SVK::Path::Checkout->copath ('t', "checkout/$name");

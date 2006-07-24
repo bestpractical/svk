@@ -4,7 +4,7 @@ use SVK;
 our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use Getopt::Long qw(:config no_ignore_case bundling);
-use autouse 'SVK::Util' => qw(get_anchor catfile catdir);
+use autouse 'SVK::Util' => qw(get_anchor catfile catdir find_dotsvk);
 use Class::Autouse qw(SVK::Command SVK::XD);
 
 =head1 NAME
@@ -67,12 +67,18 @@ $ENV{USER} ||= (
     (defined &Win32::LoginName) ? Win32::LoginName() : ''
 ) || $ENV{USERNAME} || (getpwuid($<))[0];
 
-my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
+my $svkpath = find_dotsvk || $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
+my $floating = undef;
+if (-e catfile($svkpath, 'floating')) {
+    require Path::Class;
+    $floating = Path::Class::Dir->new( $svkpath )->parent();
+}
 my $ret;
 {
     my $xd = SVK::XD->new ( giantlock => catfile($svkpath, 'lock'),
 			    statefile => catfile($svkpath, 'config'),
 			    svkpath => $svkpath,
+			    floating => $floating,
 			  );
     $xd->load();
     $SIG{INT} = sub {

@@ -22,6 +22,8 @@ our @EXPORT_OK = qw(
     is_symlink is_executable is_uri can_run
 
     str2time time2str reformat_svn_date
+
+    find_dotsvk
 );
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
@@ -1016,6 +1018,24 @@ sub time2str {
     return POSIX::strftime($format, localtime($time) );
 }
 
+
+sub find_dotsvk {
+    require Cwd;
+    require Path::Class;
+
+    my $p = Path::Class::Dir->new( Cwd::cwd() );
+
+    my $prev = "not $p";
+    my $found = q{};
+    while ( $p && $p ne $prev && -r $p ) {
+	$prev = $p;
+	my $svk = $p->subdir('.svk');
+	return $svk if -e $svk;
+	$p = $p->parent();
+    }
+
+    return
+}
 
 sub _list_mirror_cached {
     my $repos = shift;
