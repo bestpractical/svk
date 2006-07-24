@@ -67,6 +67,9 @@ features(
     ],
 );
 
+# Include subdirectory tests too.
+tests("t/*.t t/*/*.t");
+
 include('ExtUtils::AutoInstall');
 auto_install();
 
