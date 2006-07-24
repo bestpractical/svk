@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 38;
+plan_svm tests => 43;
 
 use File::Copy qw( copy );
 our $output;
@@ -268,3 +268,18 @@ is ($@, '', "Can't apply an non-applicable patch");
 
 eval { $svk->patch ('--delete', 'test-1') };
 is ($@, '', 'Successfully deleted patch test-1');
+
+$svk->mkdir(-m => "init", "//cptest");
+my ($cp_copath, $cp_corpath) = get_copath ('copy-test');
+$svk->checkout ('//cptest', $cp_copath);
+overwrite_file ("$cp_copath/test-file", "first line\n");
+
+is_output($svk, add => [$cp_copath], [__("A   $cp_copath/test-file")]);
+is_output($svk, ci => ['-m', 'first file', $cp_copath], ["Committed revision 8."]);
+
+is_output($svk, cp => ["$cp_copath/test-file", "$cp_copath/test-copy"], [__("A   $cp_copath/test-copy")]);
+append_file("$cp_copath/test-copy", "new line in copy\n");
+
+is_output($svk, status => ["$cp_copath"], [__("M + $cp_copath/test-copy")]);
+
+is_output($svk, ci => ['-P', 'copytestpatch', '-m', 'copy and change', $cp_copath], ["Patch copytestpatch created."]);
