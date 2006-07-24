@@ -178,7 +178,7 @@ sub close_file {
 	else {
 	    my @content = ($base, \$self->{info}{$path}{new});
 	    @content = reverse @content if $self->{reverse};
-	    $self->output_diff ($rpath, @label, @showpath, undef, @content);
+	    $self->output_diff ($rpath, @label, @showpath, @content);
 	}
     } elsif (exists $self->{dh}->get("/$path")->{'.copyfrom'}) {
         # File copied but not changed.
@@ -225,7 +225,7 @@ sub output_diff_header {
 }
 
 sub output_diff {
-    my ($self, $path, $llabel, $rlabel, $lpath, $rpath, $copyfrom) = splice(@_, 0, 7);
+    my ($self, $path, $llabel, $rlabel, $lpath, $rpath) = splice(@_, 0, 6);
     my $fh = $self->_output_fh;
 
     $self->output_diff_header ($path);
