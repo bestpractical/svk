@@ -2,14 +2,12 @@ package SVK::Command::Help;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use base qw( App::CLI::Command::Help SVK::Command );
+use base qw( SVK::Command );
 use SVK::I18N;
 use SVK::Util qw( get_encoder can_run );
 use autouse 'File::Find' => qw(find);
 
-sub parse_arg { shift; @_ }
-
-use constant default_topic => 'index';
+sub parse_arg { shift; @_ ? @_ : 'index'; }
 
 # Note: lock is not called for help, as it's invoked differently from
 # other commands.
@@ -23,7 +21,14 @@ sub run {
 
     foreach my $topic (@_) {
         if ($topic eq 'commands') {
-            $self->brief_usage ($_) for $self->app->files;
+            my @cmd;
+            my $dir = $INC{'SVK/Command.pm'};
+            $dir =~ s/\.pm$//;
+            print loc("Available commands:\n");
+            find (
+                sub { push @cmd, $File::Find::name if m/\.pm$/ }, $dir,
+            );
+            $self->brief_usage ($_) for sort @cmd;
         }
         elsif (my $cmd = eval { SVK::Command->get_cmd ($topic) }) {
             $cmd->usage(1);
