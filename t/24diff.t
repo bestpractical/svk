@@ -359,7 +359,7 @@ append_file ("C/foo", "copied and modified on C\n");
 is_output($svk, 'diff', ['C'],
 	  [__("=== C\t(new directory; copied from /A\@5)"),
 	    '==================================================================',
-           __("=== C/foo"),
+           __("=== C/foo\t(copied from /A/foo\@5)"),
 	   '==================================================================',
 	   __("--- C/foo\t(revision 4)"),
 	   __("+++ C/foo\t(local)"),

@@ -204,14 +204,13 @@ sub _full_label {
 sub output_diff_header {
     my ($self, $path, $is_newdir) = @_;
 
-    my $copyinfo = $self->{dh}->get("/$path");
-
     my @notes;
 
     push @notes, ($self->{reverse} ? "deleted" : "new") . " directory" if $is_newdir;
 
-    push @notes, "copied from $copyinfo->{'.copyfrom'}\@$copyinfo->{'.copyfrom_rev'}"
-      if exists $copyinfo->{'.copyfrom'};
+    if (my ($where, $rev) = $self->_resolve_base($path)) {
+        push @notes, "copied from $where\@$rev";
+    }
 
     if (@notes) {
         $path = "$path\t(" . (join "; ", @notes) . ")";
