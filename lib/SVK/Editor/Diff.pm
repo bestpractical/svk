@@ -208,9 +208,9 @@ sub output_diff_header {
 
     my @notes;
 
-    push @notes, "new directory" if $is_newdir;
+    push @notes, ($self->{reverse} ? "deleted" : "new") . " directory" if $is_newdir;
 
-    push @notes, "copied from $copyinfo->{'.copyfrom'}\@$copyinfo->{'.copyfrom_rev'})"
+    push @notes, "copied from $copyinfo->{'.copyfrom'}\@$copyinfo->{'.copyfrom_rev'}"
       if exists $copyinfo->{'.copyfrom'};
 
     if (@notes) {
