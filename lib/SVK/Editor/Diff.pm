@@ -202,13 +202,21 @@ sub _full_label {
 }
 
 sub output_diff_header {
-    my ($self, $path) = @_;
+    my ($self, $path, $is_newdir) = @_;
 
     my $copyinfo = $self->{dh}->get("/$path");
 
-    if (exists $copyinfo->{'.copyfrom'}) {
-        $path = "$path\t(copied from $copyinfo->{'.copyfrom'}\@$copyinfo->{'.copyfrom_rev'})";
+    my @notes;
+
+    push @notes, "new directory" if $is_newdir;
+
+    push @notes, "copied from $copyinfo->{'.copyfrom'}\@$copyinfo->{'.copyfrom_rev'})"
+      if exists $copyinfo->{'.copyfrom'};
+
+    if (@notes) {
+        $path = "$path\t(" . (join "; ", @notes) . ")";
     }
+
 
     $self->_print (
         "=== $path\n",
@@ -286,6 +294,7 @@ sub add_directory {
 				       '.copyfrom_rev' => $from_rev,
 				     });
     }
+    $self->output_diff_header($path, 1);
     return $path;
 }
 
