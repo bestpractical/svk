@@ -129,8 +129,6 @@ sub find_merge_base {
 	    next unless $src->related_to($src->mclone(revision => $rev));
 	}
 
-	# XXX: should compare revprop svn:date instead, for old dead branch being newly synced back
-
 	if ($path eq $dst->path &&
 	    $self->_is_merge_from($src->path,
 				  $src->new(path => $path, revision => $rev), $src->revision)) {
@@ -138,7 +136,7 @@ sub find_merge_base {
 	    last;
 	}
 	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
-	    if !$basepath || $rev > $baserev;
+	    if !$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date');
     }
 
     return ($src->new (revision => $self->{baserev}), $self->{baserev})
