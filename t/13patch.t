@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 43;
+plan_svm tests => 48;
 
 use File::Copy qw( copy );
 our $output;
@@ -274,7 +274,7 @@ my ($cp_copath, $cp_corpath) = get_copath ('copy-test');
 $svk->checkout ('//cptest', $cp_copath);
 overwrite_file ("$cp_copath/test-file", "first line\n");
 
-is_output($svk, add => [$cp_copath], [__("A   $cp_copath/test-file")]);
+is_output($svk, add => ["$cp_copath/test-file"], [__("A   $cp_copath/test-file")]);
 is_output($svk, ci => ['-m', 'first file', $cp_copath], ["Committed revision 8."]);
 
 is_output($svk, cp => ["$cp_copath/test-file", "$cp_copath/test-copy"], [__("A   $cp_copath/test-copy")]);
@@ -283,3 +283,24 @@ append_file("$cp_copath/test-copy", "new line in copy\n");
 is_output($svk, status => ["$cp_copath"], [__("M + $cp_copath/test-copy")]);
 
 is_output($svk, ci => ['-P', 'copytestpatch', '-m', 'copy and change', $cp_copath], ["Patch copytestpatch created."]);
+
+$svk->mkdir(-pm => "init", "//cptest-deep/subdir/deeper");
+($cp_copath, $cp_corpath) = get_copath ('copy-deep-test');
+$svk->checkout ('//cptest-deep', $cp_copath);
+overwrite_file ("$cp_copath/subdir/deeper/test-file", "first line\n");
+
+is_output($svk, add => ["$cp_copath/subdir/deeper/test-file"], [__("A   $cp_copath/subdir/deeper/test-file")]);
+is_output($svk, ci => ['-m', 'first file', $cp_copath], ["Committed revision 10."]);
+
+is_output($svk, cp => ["$cp_copath/subdir", "$cp_copath/subdir-copy"],
+          [__("A   $cp_copath/subdir-copy"),
+           __("A   $cp_copath/subdir-copy/deeper"),
+           __("A   $cp_copath/subdir-copy/deeper/test-file"),
+          ]);
+append_file("$cp_copath/subdir-copy/deeper/test-file", "new line in deep copy\n");
+
+is_output($svk, status => ["$cp_copath"],
+          [__("A + $cp_copath/subdir-copy"),
+           __("M + $cp_copath/subdir-copy/deeper/test-file")]);
+
+is_output($svk, ci => ['-P', 'copytestpatch-deep', '-m', 'copy and change', $cp_copath], ["Patch copytestpatch-deep created."]);

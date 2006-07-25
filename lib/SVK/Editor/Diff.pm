@@ -37,9 +37,21 @@ sub open_root {
     return '';
 }
 
+# XXX maybe this needs to be done more methodically
+sub _copyfrom_uri_to_path {
+    my ($self, $from_path) = @_;
+
+    my $repospath_start = "file://" . $self->{base_target}->repospath;
+    $from_path =~ s/^$repospath_start//;
+
+    return $from_path;
+}
+
 sub add_file {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
     if (defined $from_path) {
+        $from_path = $self->_copyfrom_uri_to_path($from_path);
+
 	$self->{info}{$path}{baseinfo} = [$from_path, $from_rev];
 	$self->{dh}->store("/$path", { copyanchor => "/$path",
 				       '.copyfrom' => $from_path,
@@ -287,6 +299,8 @@ sub add_directory {
     my ($self, $path, $pdir, $from_path, $from_rev, $pool) = @_;
     $self->{info}{$path}{added} = 1;
     if (defined $from_path) {
+        $from_path = $self->_copyfrom_uri_to_path($from_path);
+
 	# XXX: print some garbage about this copy
 	$self->{dh}->store("/$path", { copyanchor => "/$path",
 				       '.copyfrom' => $from_path,
