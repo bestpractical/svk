@@ -101,7 +101,7 @@ sub run {
                           revision => $yrev,
                           $self->_schedule_empty,
                       },
-                      override_sticky_descendents => 1
+                      {override_sticky_descendents => 1}
                   );
               }
               elsif ($self->{from_checkout}) {

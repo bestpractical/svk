@@ -135,7 +135,7 @@ sub close_file {
 	# for modified entries.
 	$self->{cursignature}[-1]->changed ($file)
 	    if $self->{added}{$path};
-	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}}, override_descendents => 0);
+	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}}, {override_descendents => 0});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
     }
@@ -203,7 +203,7 @@ sub do_delete {
 	    ($copath,
 	     {revision => $self->{revision},
 	      '.deleted' => 1},
-            override_descendents => 0);
+            {override_descendents => 0});
 	return $self->SUPER::do_delete (@_)
     }
 
@@ -227,7 +227,7 @@ sub close_directory {
 	$self->{xd}{checkout}->store ($copath,
                                       {revision => $self->{revision},
                                        '.deleted' => undef},
-                                      override_sticky_descendents => 1);
+                                      {override_sticky_descendents => 1});
 	if (@{$self->{cursignature}}) {
 	    $self->{cursignature}[-1]->flush;
 	    pop @{$self->{cursignature}};
@@ -302,7 +302,7 @@ sub _schedule_entry {
 
     my (undef, $schedule) = $self->{xd}->get_entry($copath);
     $self->{xd}{checkout}->store
-	($copath, { %copy, '.schedule' => $schedule eq 'delete' ? 'replace' : 'add' }, override_descendents => 0);
+	($copath, { %copy, '.schedule' => $schedule eq 'delete' ? 'replace' : 'add' }, {override_descendents => 0});
 }
 
 =head1 AUTHORS

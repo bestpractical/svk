@@ -116,7 +116,7 @@ sub run {
 			       '.deleted' => undef,
 			       '.conflict' => undef,
 			     },
-			     override_sticky_descendents => 1);
+			     {override_sticky_descendents => 1});
 
     my $source = $target->can('source') ? $target->source : $target;
     my $cotarget = SVK::Path::Checkout->real_new
@@ -251,7 +251,7 @@ sub run {
         my $checkout = $self->{xd}{checkout};
         foreach my $copath (sort @copath) {
             $checkout->store ($copath, {_remove_entry, $self->_schedule_empty},
-                             override_sticky_descendents => 1);
+                             {override_sticky_descendents => 1});
             print loc("Checkout path '%1' detached.\n", $copath);
         }
     }
