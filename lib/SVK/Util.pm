@@ -31,7 +31,6 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Config ();
 use SVK::I18N;
 use SVN::Core;
-use SVN::Ra;
 use autouse 'Encode'            => qw(resolve_alias($) decode encode);
 use File::Glob qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
