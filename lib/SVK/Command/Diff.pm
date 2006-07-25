@@ -123,7 +123,7 @@ sub run {
 	      base_rev => $target->revision,
 	      copyboundry_rev => $target->revision,
 	      copyboundry_root => $target->root,
-	      merge => SVK::Merge->new( xd => $self->{xd} ), # XXX: hack
+	      merge => SVK::Merge->new( xd => $self->{xd}, repos => $target->repos ), # XXX: hack
 	      base => $target,
 	      src => $target2,
 	      dst => $target2,
