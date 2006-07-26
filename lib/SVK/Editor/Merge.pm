@@ -420,6 +420,7 @@ sub _merge_text_change {
 	      1, 0, $pool);
 
     my $conflict = SVN::Core::diff_contains_conflicts ($diff);
+    $conflict ||= $self->{tree_conflict};
     if (my $resolve = $self->{resolve}) {
 	$resolve->run
 	    ( fh              => $fh,
@@ -647,17 +648,20 @@ sub close_directory {
 
 sub _merge_file_delete {
     my ($self, $path, $rpath, $pdir, $pool) = @_;
+
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
+    
+    my $no_base;
+    my $md5 = $self->{base_root}->check_path ($rpath, $pool)?
+        $self->{base_root}->file_md5_checksum ($rpath, $pool)
+        : do { $no_base = 1; require Digest::MD5; Digest::MD5::md5_hex('') };
 
-    return undef unless $self->inspector->localmod(
-		$basepath,
-		$self->{base_root}->file_md5_checksum ($rpath, $pool),
-		$pool);
+    return undef unless $self->inspector->localmod ($basepath, $md5, $pool);
     return {} unless $self->{resolve};
 
     my $fh = $self->{info}{$path}->{fh} || {};
-    $fh->{base} ||= [$self->_retrieve_base($path, $pool)];
+    $fh->{base} ||= [$no_base? (tmpfile('base-')): ($self->_retrieve_base($path, $pool))];
     $fh->{new} = [tmpfile('new-')];
     $fh->{local} = [tmpfile('local-')];
     my ($tmp) = $self->inspector->localmod($basepath, '', $pool);
@@ -686,84 +690,139 @@ sub _merge_file_delete {
 
     return 1;
 }
-# returns undef for deleting this, a hash for partial delete.
-# returns 1 for merged delete
-# Note that empty hash means don't delete.
+
+# return a hash for partial delete
+# returns undef for deleting this
+# returns 1 for merged delete (user changed content and we leave node)
+# Note that empty hash means don't delete - conflict.
 sub _check_delete_conflict {
     my ($self, $path, $rpath, $kind, $pdir, $pool) = @_;
 
-    return $self->_merge_file_delete($path, $rpath, $pdir, $pool) if $kind == $SVN::Node::file;
+    my $localkind = $self->inspector->exist ($path, $pool);
 
-    my ($basepath, $fromrev) = $self->_resolve_base($path, 1);
-    $basepath = $path unless defined $basepath;
-    my $dirmodified = $self->inspector->dirdelta($path, $self->{base_root}, $rpath);
+    # node doesn't exist in dst
+    return undef unless $localkind;
+
+    # deleting, but local node is of different type already
+    # original node could be moved to different place
+    # Editor::Rename should track the latter case
+    # XXX: prompt for resolution
+    return {} if $kind && $kind != $localkind;
+
+    return $self->_merge_file_delete ($path, $rpath, $pdir, $pool) if $localkind == $SVN::Node::file;
+
+    # TODO: checkouts may have unversioned files/dirs under the dir we are going to delete
+    # we still has no interactive resolver for this
+    return {} unless $localkind == $SVN::Node::dir;
+
+    # it's dir...
+
+    my $dirmodified = $self->inspector->dirdelta ($path, $self->{base_root}, $rpath);
     my $entries = $self->{base_root}->dir_entries ($rpath);
-    my ($torm, $modified, $merged);
+
+    my $baton = $self->{storage_baton}{$path} = $self->{storage}->open_directory (
+        $path, $self->{storage_baton}{$pdir}, $self->{cb_rev}->($path), $pool
+    );
+
+    my $torm;
     for my $name (sort keys %$entries) {
 	my ($cpath, $crpath) = ("$path/$name", "$rpath/$name");
+        my $entry = $entries->{$name};
+
 	if (my $mod = $dirmodified->{$name}) {
 	    if ($mod eq 'D') {
-		$self->{notify}->node_status ($cpath, 'd');
-		++$merged;
+                $torm->{$name} = undef;
 	    }
-	    else {
-		++$modified;
-		$self->node_conflict ($cpath);
-	    }
-	    delete $dirmodified->{$name};
+            else {
+                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, $pool);
+            }
+            delete $dirmodified->{$name};
 	}
 	else { # dir or unmodified file
-	    my $entry = $entries->{$name};
-	    $torm->{$name} = undef, next
-		if $entry->kind == $SVN::Node::file;
-
-	    if ($self->inspector->exist($cpath, $pool)) {
-		$torm->{$name} = $self->_check_delete_conflict
-		    ($cpath, $crpath, $SVN::Node::dir, $pdir, $pool);
-		if (ref ($torm->{$name})) {
-		    $self->node_conflict ($cpath);
-		    ++$modified;
-		}
-		if ($torm->{$name} && $torm->{$name} == 1) {
-		    ++$merged;
-		}
-	    }
-	    else {
-		$torm->{$name} = 1;
-		++$merged;
-	    }
+            $torm->{$name} = $self->_check_delete_conflict
+                ($cpath, $crpath, $entry->kind, $path, $pool);
 	}
     }
-    for my $name (keys %$dirmodified) {
-	my ($cpath, $crpath) = ("$path/$name", "$rpath/$name");
-	++$modified;
-	$self->node_conflict ($cpath);
+
+    foreach my $node (keys %$dirmodified) {
+        local $self->{tree_conflict} = 1;
+        my ($cpath, $crpath) = ("$path/$node", "$rpath/$node");
+        my $kind = $self->{base_root}->check_path ($crpath);
+        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, $pool);
     }
-    if ($modified || $merged) {
-	# maybe leave the status to _partial delete?
-	$self->{notify}->node_status ("$path/$_", defined $torm->{$_} ? 'd' : 'D')
-	    for grep {!ref($torm->{$_})} keys %$torm;
-    }
-    return $torm if $modified;
-    return $merged ? 1 : undef;
+
+    $self->{storage}->close_directory ($baton, $pool);
+
+    return $torm;
 }
 
 sub _partial_delete {
-    my ($self, $torm, $path, $pbaton, $pool) = @_;
-    my $baton = $self->{storage}->open_directory ($path, $pbaton,
-						  $self->{cb_rev}->($path), $pool);
+    my ($self, $torm, $path, $pbaton, $pool, $no_status) = @_;
+
+    unless (ref $torm) {
+        my $s;
+        if ($torm && $torm == 1) {
+            $s = 'G';
+        } else {
+            if ($self->inspector->exist($path, $pool)) {
+                $self->{storage}->delete_entry (
+                    $path, $self->{cb_rev}->($path), $pbaton, $pool
+                );
+            }
+            $s = 'D';
+        }
+        $self->{notify}->node_status($path, $s) unless $no_status;
+        return $s;
+    } elsif (!keys %$torm) {
+        $self->node_conflict($path) unless $no_status;
+        return 'C';
+    }
+    # it's dir...
+
+    my $baton = $self->{storage}->open_directory ($path, $pbaton, $self->{cb_rev}->($path), $pool);
+    my $summary = '';
+    my @children_stats;
+    my $skip_children = 1;
     for (sort keys %$torm) {
 	my $cpath = "$path/$_";
-	if (ref $torm->{$_}) {
-	    $self->_partial_delete ($torm->{$_}, $cpath, $baton,
-				    SVN::Pool->new ($pool));
-	}
-	elsif ($self->inspector->exist($cpath, $pool)) {
-	    $self->{storage}->delete_entry ($cpath, $self->{cb_rev}->($cpath),
-					    $baton, $pool);
-	}
+        # check that out
+	my $status = $self->_partial_delete ($torm->{$_}, $cpath, $baton, SVN::Pool->new ($pool), 1);
+        push @children_stats, [$cpath, $status];
+        $skip_children = 0  unless $status eq 'D';
+        $summary = 'C' if $status eq 'C';
+        $summary = 'G' if !$summary && $status eq 'G';
     }
+    $summary ||= 'D';
     $self->{storage}->close_directory ($baton, $pool);
+
+    if ($summary eq 'D') {
+        if ($self->inspector->exist($path, $pool)) {
+            $self->{storage}->delete_entry ($path, $self->{cb_rev}->($path), $pbaton, $pool);
+        }
+        $self->{notify}->node_status ($path, 'D') unless $no_status;
+    }
+    elsif ($summary eq 'C') {
+        $self->node_conflict ($path) unless $no_status;
+    }
+    elsif ($summary eq 'G') {
+        $self->{notify}->node_status ($path, 'G') unless $no_status;
+    }
+    else { # really should be assert
+        $self->node_conflict ($path) unless $no_status;
+        $summary = 'C';
+    }
+
+    unless ($skip_children) {
+        foreach (@children_stats) {
+            if ($_->[1] ne 'C') {
+                $self->{notify}->node_status (@$_);
+            } else {
+                $self->node_conflict ($_->[0]);
+            }
+        }
+    }
+
+    return $summary;
 }
 
 sub delete_entry {
@@ -777,33 +836,17 @@ sub delete_entry {
     my $rpath = $basepath =~ m{^/} ? $basepath :
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
     my $torm;
+
     # XXX: need txn-aware cb_*! for the case current path is from a
     # copy and to be deleted - Note this might have been done, exam it.
-    if (my $localkind = $self->inspector->exist($path, $pool)) {
+    {
 	# XXX: this is too evil
 	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
 	my $kind = $self->{base_root}->check_path ($rpath);
-	if ($kind == $localkind) {
-	    $torm = $self->_check_delete_conflict ($path, $rpath,
-						   $kind, $pdir, @arg);
-	}
-	else {
-	    # deleting, but local node is of different type already
-	    # XXX: prompt for resolution
-	    $torm = {};
-	}
+        $torm = $self->_check_delete_conflict ($path, $rpath, $kind, $pdir, @arg);
     }
 
-    if (ref($torm)) {
-	$self->node_conflict ($path);
-	$self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, @arg);
-    } elsif( $torm && $torm == 1) {
-	$self->{notify}->node_status ($path, 'G');
-    } else {
-	$self->{storage}->delete_entry ($path, $self->{cb_rev}->($path),
-					$self->{storage_baton}{$pdir}, @arg);
-	$self->{notify}->node_status ($path, 'D');
-    }
+    $self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, @arg);
     ++$self->{changes};
 }
 
