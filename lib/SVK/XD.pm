@@ -840,6 +840,8 @@ my %ignore_cache;
 
 sub ignore {
     my $self = shift;
+    my $more_ignores = shift;
+
     no warnings;
     my $ignore = $self->{svnconfig} ?
 	           $self->{svnconfig}{config}->
@@ -850,7 +852,11 @@ sub ignore {
     push @ignore, @{$self->{ignore}}
 	if $self->{ignore};
 
-    return join('|', map {$ignore_cache{$_} ||= compile_apr_fnmatch($_)} (@ignore, @_));
+    if (defined $more_ignores) {
+        push @ignore, split ("\n", $more_ignores);
+    }
+
+    return join('|', map {$ignore_cache{$_} ||= compile_apr_fnmatch($_)} (@ignore));
 }
 
 # Emulates APR's apr_fnmatch function with flags=0, which is what
@@ -1292,7 +1298,7 @@ sub _delta_dir {
 	$signature->flush;
 	undef $signature;
     }
-    my $ignore = $self->ignore (split ("\n", $fullprops->{'svn:ignore'} || ''));
+    my $ignore = $self->ignore ($fullprops->{'svn:ignore'});
 
     my @direntries;
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
