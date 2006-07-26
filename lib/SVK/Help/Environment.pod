@@ -103,6 +103,12 @@ To be able to talk to a remote Subversion server, svk needs the
 SVN::Mirror perl package installed.  If you have SVN::Mirror installed,
 but want svk to operate as if you didn't, set $SVKNOSVM to a true value.
 
+=item $SVKSVNBACKTRACE
+
+(For debugging use only.) If this environment variable is set to a
+true value, any error message which comes from the Subversion
+libraries will be accompanied by a stack backtrace.
+
 =back
 
 =head2 Win32

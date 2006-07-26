@@ -141,7 +141,13 @@ sub run_command {
 	if ($self->handle_error ($error)) {
 	    die \'error handled';
         }
-	die $error_message."\n";
+
+        if ($ENV{SVKSVNBACKTRACE}) {
+            require Carp;
+            Carp::confess($error_message);
+        } else {
+            die $error_message."\n";
+        }
     };
 
     # XXX: this eval is too nasty
