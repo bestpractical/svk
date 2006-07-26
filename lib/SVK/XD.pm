@@ -525,7 +525,11 @@ sub create_xd_root {
     # In the simple case - only one revision entry found, it can be
     # for some descendents.  If so we actually need to construct
     # txnroot.
-    my ($simple, $revbase) = $self->{checkout}->get($paths[0] || $copath);
+    my ($simple, @bases) = $self->{checkout}->get($paths[0] || $copath);
+    # XXX this isn't really right: we aren't guaranteed that $revbase
+    # actually has the revision, it might just have a lock or
+    # something
+    my $revbase = $bases[-1];
     unshift @paths, $revbase unless $revbase eq $copath;
     return (undef, $fs->revision_root($simple->{revision}))
 	if $#paths <= 0;
