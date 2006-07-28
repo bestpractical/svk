@@ -13,7 +13,7 @@ use SVK::Editor::InteractiveStatus;
 
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
 		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
-		  get_encoder );
+		  get_encoder get_anchor );
 
 use Class::Autouse qw( SVK::Editor::Rename SVK::Editor::Merge );
 
@@ -462,22 +462,27 @@ sub committed_commit {
             #
             # Pretty sure that the input does not need to have keyword
             # or eol translation itself, though this might not be
-            # right.
+            # right (esp eol).
             #
-            # Have to use a temp variable for the content (if this is
-            # a problem for huge files, switch to temp file) because
+            # Have to use a temp file for the content because
             # otherwise we'd be reading and writing a file
             # simultaneously.
 
-            open my ($fh), '<', $copath or die $1;
-            my $temp = '';
-            open my ($tempfh), '>', \$temp;
-            slurp_fh ($fh, $tempfh);
+            my ($basedir, $basefile) = get_anchor(1, $copath);
+            my $basename = "$basedir.svk.$basefile.commit-base";
 
 	    my $perm = (stat ($copath))[2];
+            rename ($copath, $basename)
+              or do { warn loc("rename %1 to %2 failed: %3", $copath, $basename, $!), next };
+
+            open my ($fh), '<', $basename or die $!; # *maybe* should do eol layer
+
 	    open my ($newfh), ">$eol", $copath or die $!;
 	    $layer->via ($newfh) if $layer;
-	    slurp_fh ($temp, $newfh);
+	    slurp_fh ($fh, $newfh);
+            close $fh;
+            unlink $basename;
+
 	    chmod ($perm, $copath);
 	}
     }
