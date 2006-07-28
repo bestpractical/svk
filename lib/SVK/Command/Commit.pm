@@ -455,11 +455,29 @@ sub committed_commit {
 	    # XXX: can't bypass eol translation when normalization needed
 	    next unless $layer || ($eol ne ':raw' && $eol ne ' ');
 
-	    my $fh = $root->file_contents ($dpath);
+            # We need to read the file for normalization from the
+            # checkout, not from the repository, since if we just did
+            # an interactive commit, there may be skipped changes
+            # there.
+            #
+            # Pretty sure that the input does not need to have keyword
+            # or eol translation itself, though this might not be
+            # right.
+            #
+            # Have to use a temp variable for the content (if this is
+            # a problem for huge files, switch to temp file) because
+            # otherwise we'd be reading and writing a file
+            # simultaneously.
+
+            open my ($fh), '<', $copath or die $1;
+            my $temp = '';
+            open my ($tempfh), '>', \$temp;
+            slurp_fh ($fh, $tempfh);
+
 	    my $perm = (stat ($copath))[2];
 	    open my ($newfh), ">$eol", $copath or die $!;
 	    $layer->via ($newfh) if $layer;
-	    slurp_fh ($fh, $newfh);
+	    slurp_fh ($temp, $newfh);
 	    chmod ($perm, $copath);
 	}
     }
