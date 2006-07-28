@@ -109,7 +109,7 @@ _check_symlinks (@allsymlinks);
 is_output ($svk, 'status', [$copath], [], 'revert');
 
 $svk->cp ('//A/non.lnk', "$copath/non.lnk.cp");
-ok (_l "$copath/non.lnk.cp", 'copy');
+ok (_l("$copath/non.lnk.cp"), 'copy');
 _fix_symlinks();
 _check_symlinks (@allsymlinks, "$copath/non.lnk.cp");
 is_output ($svk, 'commit', ['-m', 'add copied symlink', $copath],
@@ -148,7 +148,7 @@ _symlink ('non', "$copath/B/new-non.lnk");
 $svk->import ('--force', '-m', 'use import', '//', $copath);
 unlink ("$copath/B/new-non.lnk");
 $svk->revert ('-R', "$copath/B");
-ok (_l "$copath/B/new-non.lnk", 'import sets auto prop too');
+ok (_l("$copath/B/new-non.lnk"), 'import sets auto prop too');
 
 is_output ($svk, 'status', [$copath], [], 'import');
 
@@ -164,7 +164,7 @@ _fix_symlinks();
 is_output ($svk, 'commit', ['-m', 'change to non-link', $copath],
 	   ['Committed revision 6.']);
 $svk->update ('-r5', $copath);
-ok (_l "$copath/B/new-non.lnk", 'update from file to symlink');
+ok (_l("$copath/B/new-non.lnk"), 'update from file to symlink');
 $svk->update ($copath);
 ok (-e "$copath/B/new-non.lnk", 'update from symlink to file');
 

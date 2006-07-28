@@ -16,9 +16,9 @@ is_file_content ("$copath/A/be",
 append_file ("$copath/A/be", "some more\n");
 append_file ("$copath/A/be", "my \$Rev = \$Revision ? \$Revision : \$VERSION;\n");
 $svk->ps ('svn:executable', 'on', "$copath/A/be");
-ok (_x "$copath/A/be", 'svn:excutable effective after ps');
+ok (_x("$copath/A/be"), 'svn:excutable effective after ps');
 $svk->commit ('-m', 'some modifications', $copath);
-ok (_x "$copath/A/be", 'take care of svn:executable after commit');
+ok (_x("$copath/A/be"), 'take care of svn:executable after commit');
 
 my $newcontent = "\$Rev: 3 \$ \$Revision: 3 \$\n\$FileRev: #2 \$\nfirst line in be\n2nd line in be\nsome more\nmy \$Rev = \$Revision ? \$Revision : \$VERSION;\n";
 
@@ -28,21 +28,21 @@ append_file ("$copath/A/be", "some more\n");
 $svk->revert ("$copath/A/be");
 is_file_content ("$copath/A/be", $newcontent, 'commit Id');
 
-ok (_x "$copath/A/be", 'take care of svn:executable after revert');
+ok (_x("$copath/A/be"), 'take care of svn:executable after revert');
 append_file ("$copath/A/be", "some more\n");
 $svk->commit ('-m', 'some more modifications', $copath);
 
 is_file_content ("$copath/A/be",
 		 "\$Rev: 4 \$ \$Revision: 4 \$\n\$FileRev: #3 \$\nfirst line in be\n2nd line in be\nsome more\nmy \$Rev = \$Revision ? \$Revision : \$VERSION;\nsome more\n");
 $svk->update ('-r', 3, $copath);
-ok (_x "$copath/A/be", 'take care of svn:executable after update');
+ok (_x("$copath/A/be"), 'take care of svn:executable after update');
 is_file_content ("$copath/A/be", $newcontent, 'commit Id');
 
 my $cofile = __"$copath/A/be";
 is_output_like ($svk, 'update', ['-r', 2, $copath], qr|^UU  \Q$cofile\E$|m,
 		'keyword does not cause merge');
 
-ok (not_x "$copath/A/be", 'take care of removing svn:executable after update');
+ok (not_x("$copath/A/be"), 'take care of removing svn:executable after update');
 overwrite_file ("$copath/A/foo", "\$Rev: 999 \$");
 $svk->add ("$copath/A/foo");
 $svk->commit ('-m', 'adding a file', $copath);

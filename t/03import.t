@@ -60,7 +60,7 @@ ok (-e copath ('filea'));
 ok (!-e copath ('fileb'));
 ok (!-e copath ('filec'));
 ok (-e copath ('dir/filed'));
-ok (_x copath ('exe'), 'executable bit imported');
+ok (_x(copath ('exe')), 'executable bit imported');
 ok (!-e copath ('filea~'));
 ok (!-e copath ('.DS_Store'));
 ok (!-e copath ('.DS_Store/ignored'));

@@ -125,7 +125,7 @@ is_output ($svk, 'add', ['-N', 'A/exe'],
 
 unlink ('A/exe');
 $svk->revert ('A/exe');
-ok (_x 'A/exe');
+ok (_x('A/exe'));
 
 mkdir ('Ai');
 overwrite_file ("Ai/foo", "foobar");
