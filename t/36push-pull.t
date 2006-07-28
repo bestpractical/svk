@@ -215,16 +215,16 @@ $svk->commit (-m => 'randome changes between sync and merge', $corpath_second);
 is_output($svk, 'pull', [],
 	  ["Syncing $uri/A",
 	   'Auto-merging (16, 27) /m to /l2 (base /m:16).',
-	   'g   Q/qz',
-	   'U   T/xd',
-	   'U   new-file',
-	   'A   push-newfile',
+	   __('g   Q/qz'),
+	   __('U   T/xd'),
+	   __('U   new-file'),
+	   __('A   push-newfile'),
 	   qr'New merge ticket: .*:/A:12',
 	   'Committed revision 29.',
 	   "Syncing //l2(/l2) in $corpath_second to 29.",
-	   'U   T/xd',
-	   'U   new-file',
-	   'A   push-newfile']);
+	   __('U   T/xd'),
+	   __('U   new-file'),
+	   __('A   push-newfile')]);
 
 $svk->up($corpath_test);
 append_file("$corpath_test/new-file", "more modification that will get overwritten if using wrong merge base\n");

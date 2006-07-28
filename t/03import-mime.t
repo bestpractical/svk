@@ -22,16 +22,16 @@ SKIP: {
         ["Committed revision 1.",
         'Import path //import initialized.',
         "Committed revision 2.",
-        __("Directory $corpath imported to depotpath //import as revision 2."),
+        "Directory $corpath imported to depotpath //import as revision 2.",
         ]);
     is_output ($svk, 'pl', ['-v', glob_mime_samples('//import/mime')],
-        [__('Properties on //import/mime/foo.bin:'),
+        ['Properties on //import/mime/foo.bin:',
         '  svn:mime-type: application/octet-stream',
-        __('Properties on //import/mime/foo.html:'),
+        'Properties on //import/mime/foo.html:',
         '  svn:mime-type: text/html',
-        __('Properties on //import/mime/foo.jpg:'),
+        'Properties on //import/mime/foo.jpg:',
         '  svn:mime-type: image/jpeg',
-        __('Properties on //import/mime/not-audio.txt:'),
+        'Properties on //import/mime/not-audio.txt:',
         '  svn:mime-type: audio/x-669-mod',   # wrong, but it's what F::T says
         ]);
 }

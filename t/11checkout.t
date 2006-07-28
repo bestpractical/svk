@@ -176,11 +176,11 @@ is_output ($svk, 'checkout', ['--relocate', "//V-3.1"],
 chdir ('..');
 is_output($svk, 'update', [-r3 =>'co-root-a'],
 	  ['Syncing //V/A(/V/A) in '.__("$corpath/co-root-a").' to 3.',
-	   'A   co-root-a/P',
-	   'A   co-root-a/P/pe']);
+	   __('A   co-root-a/P'),
+	   __('A   co-root-a/P/pe')]);
 is_output($svk, 'co', ['//V/A' =>'co-root-a'],
 	  ['Syncing //V/A(/V/A) in '.__("$corpath/co-root-a").' to 6.',
-	   'D   co-root-a/P']);
+	   __('D   co-root-a/P')]);
 
 rmtree ['co-root-a'];
 is_output ($svk, 'update', ['co-root-a'],

@@ -31,13 +31,13 @@ is_output ($svk, 'rm', ['rm'],
 $svk->mkdir(-p => "rm/m/foo/bar");
 $svk->mkdir(-p => "rm/unrelated");
 is_output($svk, 'rm', ["rm/m/foo/bar"],
-	  ["rm/m/foo/bar is scheduled; use '--force' to go ahead."]);
+	  [__("rm/m/foo/bar is scheduled; use '--force' to go ahead.")]);
 
 is_output($svk, 'rm', ["rm/m/foo/bar", "rm/unrelated"],
 	  ['//rm contains mirror, remove explicitly: //rm/m']);
 
 is_output($svk, 'rm', ['--force', "rm/m/foo/bar"],
-	  ["D   rm/m/foo/bar"]);
+	  [__("D   rm/m/foo/bar")]);
 
 is_output($svk, 'rm', [-m => 'bye', '--direct', '//rm/m'],
 	  ['Committed revision 5.']);

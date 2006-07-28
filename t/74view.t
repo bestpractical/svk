@@ -60,10 +60,10 @@ is_output($svk, 'st', [$copath],
 	   "D   $copath/D/de",
 	  ]);
 is_output ($svk, 'revert', ['-R', $copath],
-	   ["Reverted $copath/BSP/pe",
-	    "Reverted $copath/BSP/newfile",
-	    "Reverted $copath/D",
-	    "Reverted $copath/D/de"]);
+	   [__("Reverted $copath/BSP/pe"),
+	    __("Reverted $copath/BSP/newfile"),
+	    __("Reverted $copath/D"),
+	    __("Reverted $copath/D/de")]);
 
 $svk->add ("$copath/BSP/newfile");
 append_file ("$copath/BSP/pe", "foobar\n");
@@ -139,14 +139,14 @@ rmtree [$copath];
 
 is_output($svk, 'co', ['//^trunk/A/view-A', $copath],
 	  ['Syncing //trunk/A(/trunk/A) in '.__($corpath).' to 7.',
-"A   $copath/Q",
-"A   $copath/Q/qu",
-"A   $copath/Q/qz",
-" U  $copath"
+__("A   $copath/Q"),
+__("A   $copath/Q/qu"),
+__("A   $copath/Q/qz"),
+__(" U  $copath")
 ]);
 
 is_output($svk, 'rm', ["$copath/Q/qz"],
-	  ["D   $copath/Q/qz"]);
+	  [__("D   $copath/Q/qz")]);
 
 is_output($svk, 'ci', [-m => 'foo', $copath],
 	  ['Committed revision 8.']);

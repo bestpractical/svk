@@ -83,11 +83,11 @@ $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 
 is_output ($svk, 'status', [],
-   ['A   A/deep',
-    'A   A/deep/baz',
-    'A   A/deep/la',
-    'A   A/deep/la/no',
-    'A   A/deep/mas'], 'skip subdirectory');
+   [__('A   A/deep'),
+    __('A   A/deep/baz'),
+    __('A   A/deep/la'),
+    __('A   A/deep/la/no'),
+    __('A   A/deep/mas')], 'skip subdirectory');
 
 #our $show_prompt_output = 1;
 $svk->propset('roch', 'miata', 'A/deep');
@@ -117,8 +117,8 @@ $svk->commit('--interactive', '-m', 'foo');
 
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
-   ['A   A/deep/mas',
-    ' M  A/deep'], 'accept subdirectory, skip file');
+   [__('A   A/deep/mas'),
+    __(' M  A/deep')], 'accept subdirectory, skip file');
 
 $answer = [[q{
 [1/3] File 'A/deep/mas' is marked for addition:
@@ -136,7 +136,7 @@ $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 # XXX: this should show info about property
 is_output ($svk, 'status', [],
-   ['A   A/deep/mas'], 'skip file with property');
+   [__('A   A/deep/mas')], 'skip file with property');
 is_output ($svk, 'diff', [],
    ['=== A/deep/mas',
     '==================================================================',
@@ -582,7 +582,7 @@ move to [p]revious change > }, 's'],'stop'];
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
-    ['M   A/foo'], 'commit all changes to content and properties');
+    [__('M   A/foo')], 'commit all changes to content and properties');
 
 $svk->revert("A/foo");
 $svk->propset('parra', 'kok', '.');
@@ -728,7 +728,7 @@ is_output ($svk, 'status', [], [], 'commit prop changes to directly passed file'
 
 our $show_prompt=1;
 is_output($svk,'merge', ['-c1', '//A/foo', 'A/deep/mas'],
-[ 'C   A/deep/mas', '1 conflict found.'], "Merge a conflict into the tree");
+[ __('C   A/deep/mas'), '1 conflict found.'], "Merge a conflict into the tree");
 
 overwrite_file ("A/foo", "za\npalny\n");
 $answer = [[q{Conflict detected in:
@@ -743,8 +743,8 @@ is_output($svk, 'commit', ['--interactive', '-m', 'foo'],
 
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
-    ['C   A/deep/mas',
-     'M   A/foo'], 'conflict - abort');
+    [__('C   A/deep/mas'),
+     __('M   A/foo')], 'conflict - abort');
 
 $show_prompt=0;
 $answer = [[q{Conflict detected in:
@@ -764,12 +764,12 @@ file. Do you want to skip it and commit other changes? (y/n) }, 'y'],[qq{--- A/f
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],[
-'C   A/deep/mas',
+__('C   A/deep/mas'),
 ], 'conflict - skip the conflict, but commit changes to foo');
 
 $show_prompt=1;
 is_output($svk, 'merge', ['-c1', '//A/foo', 'A/deep/baz'],
-['C   A/deep/baz',
+[__('C   A/deep/baz'),
 '1 conflict found.'
 ], "create another conflict");
 overwrite_file ("A/foo", "");
@@ -787,9 +787,9 @@ is_output($svk, 'commit', ['--interactive', '-m', 'foo'],
 
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
-    ['C   A/deep/baz',
-     'C   A/deep/mas',
-     'M   A/foo'], 'multiple conflicts - abort');
+    [__('C   A/deep/baz'),
+     __('C   A/deep/mas'),
+     __('M   A/foo')], 'multiple conflicts - abort');
 
 $show_prompt=0;
 $answer = [[q{Conflict detected in:
@@ -807,8 +807,8 @@ files. Do you want to skip those and commit other changes? (y/n) }, 'y'],[qq{---
 $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [],
-    ['C   A/deep/baz',
-     'C   A/deep/mas'], 'multiple conflicts- skip');
+    [__('C   A/deep/baz'),
+     __('C   A/deep/mas')], 'multiple conflicts- skip');
 
 $svk->revert('A/deep/baz', 'A/deep/mas');
 $svk->propset('svn:mime-type', 'faked/type', 'A/deep/mas');
@@ -941,6 +941,6 @@ a[c]cept, s[k]ip changes to all properties with that name,
 move to [p]revious change > }, 's'],'stop'];
 $svk->commit('--interactive', '-m', 'foo');
 is_output ($svk, 'status', [],
-    [' M  A/deep'], 'skip directory property on used directory.');
+    [__(' M  A/deep')], 'skip directory property on used directory.');
 is_deeply($answer, ['stop'], 'all answers used');
 
