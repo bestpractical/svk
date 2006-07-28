@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan tests => 21;
+plan tests => 26;
 
 our $output;
 our $answer;
@@ -582,4 +582,72 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
      'Committed revision 21.'],
     'Prop diff - change from "0"');
 
+# test for bug where svn:keywords or svn:eol-style could make svk revert
+# skipped changes
 
+is_output($svk, propset => ['svn:keywords', 'Id', 'A/bar'],
+          [__(' M  A/bar')]);
+
+overwrite_file("A/bar", "\$Id\$\nalfa\nfoobar\nbeta\n");
+
+is_output($svk, commit => ['-m', 'set keywords', 'A/bar'], ['Committed revision 22.']);
+
+overwrite_file("A/bar", "\$Id\$\nalfa\nskip this insert\nfoobar\naccept this insert\nbeta\n");
+
+is_output($svk, diff => ['A/bar'],
+          [__('=== A/bar'),
+              '==================================================================',
+           __("--- A/bar\t(revision 22)"),
+           __("+++ A/bar\t(local)"),
+              '@@ -1,4 +1,6 @@',
+              ' $Id$',
+              ' alfa',
+              '+skip this insert',
+              ' foobar',
+              '+accept this insert',
+              ' beta',
+          ]);
+
+$answer = ['s', 'a'];
+is_output ($svk, 'commit', ['--interactive', '-m', 'foo'],
+           [__("--- A/bar\t(revision 22)"),
+            __("+++ A/bar\t(local)"),
+            '@@ -0,3 +0,3 @@',
+            ' $Id$',
+            ' alfa',
+            '+skip this insert',
+            ' foobar',
+            ' beta',
+            '',
+            __("[1/2] Modification to 'A/bar' file:"),
+            '[a]ccept, [s]kip this change,',
+            '[A]ccept, [S]kip the rest of changes to this file > ',
+            __("--- A/bar\t(revision 22)"),
+            __("+++ A/bar\t(local)"),
+            '@@ -0,3 +1,3 @@',
+            ' $Id$',
+            ' alfa',
+            ' foobar',
+            '+accept this insert',
+            ' beta',
+            '',
+            __("[2/2] Modification to 'A/bar' file:"),
+            '[a]ccept, [s]kip this change,',
+            '[A]ccept, [S]kip the rest of changes to this file,',
+            'move to [p]revious change > ',
+            'Committed revision 23.',
+           ]);
+
+is_output($svk, diff => ['A/bar'],
+          [__('=== A/bar'),
+              '==================================================================',
+           __("--- A/bar\t(revision 23)"),
+           __("+++ A/bar\t(local)"),
+              '@@ -1,5 +1,6 @@',
+              ' $Id$',
+              ' alfa',
+              '+skip this insert',
+              ' foobar',
+              ' accept this insert',
+              ' beta',
+          ]);
