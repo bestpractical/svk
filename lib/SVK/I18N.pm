@@ -11,8 +11,10 @@ sub loc {
     local $@;
 
     if ( !lang_is_english() && eval {
-	require Locale::Maketext::Simple;
-	Locale::Maketext::Simple->VERSION >= 0.12
+        require Locale::Maketext::Lexicon;
+        require Locale::Maketext::Simple;
+        Locale::Maketext::Simple->VERSION >= 0.12 &&
+        Locale::Maketext::Lexicon->VERSION >= 0.42
     }) {
 	Locale::Maketext::Simple->import(
 	    Subclass    => '',
