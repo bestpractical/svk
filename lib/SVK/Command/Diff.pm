@@ -50,7 +50,8 @@ sub run {
 	if ($target->isa('SVK::Path::Checkout')) {
 	    $target2 = $target->new;
 	    $report = $target->report; # get the report before it turns to depotpath
-	    $target = $target->as_depotpath->seek_to($r1) if $r1;
+	    $target = $target->as_depotpath;
+	    $target = $target->seek_to($r1) if $r1;
 	    $target2 = $target->as_depotpath->seek_to($r2) if $r2;
 	    $cb_llabel =
 		sub { my ($rpath) = @_;
@@ -62,8 +63,6 @@ sub run {
 		($r1, $r2);
 	}
     }
-
-    my ($oldroot, $newroot) = map { $_->root($self->{xd}) } ($target, $target2);
 
     unless ($target2->isa('SVK::Path::Checkout')) {
 	die loc("path %1 does not exist.\n", $target2->report)
@@ -80,10 +79,11 @@ sub run {
 	  $target->path_anchor ne $target2->path_anchor ?
 	  ( lpath  => $target->path_anchor,
 	    rpath  => $target2->path_anchor ) : (),
-	  base_root => $oldroot, base_target => $target,
+	  base_target => $target, base_root => $target->root,
 	);
 
-    my $kind = $oldroot->check_path ($target->path_anchor);
+    my $oldroot = $target->root;
+    my $kind = $oldroot->check_path($target->path_anchor);
     if ($target2->isa('SVK::Path::Checkout')) {
 	if ($kind != $SVN::Node::dir) {
 	    $target2->anchorify;
@@ -98,7 +98,7 @@ sub run {
 	      : ( cb_copyfrom => sub { @_ } ),
 	      base_root => $oldroot,
 	      base_path => $target->path_anchor,
-	      xdroot => $newroot,
+	      xdroot => $target2->create_xd_root,
 	      editor => $editor,
 	      $self->{recursive} ? () : (depth => 1),
 	    );
@@ -135,7 +135,7 @@ sub run {
 	$self->{xd}->depot_delta
 	    ( oldroot => $oldroot,
 	      oldpath => [$target->path_anchor, $target->path_target],
-	      newroot => $newroot,
+	      newroot => $target2->root,
 	      newpath => $target2->path,
 	      editor => $editor,
 	      $self->{recursive} ? () : (no_recurse => 1),

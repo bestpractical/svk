@@ -90,9 +90,8 @@ sub do_propset {
 	    if $self->{rev};
 	# verify the content is not with mixed line endings.
 	if ($pname eq 'svn:eol-style') {
-	    my $fh = SVK::XD::get_fh ($target->root, '<', $target->path, $target->copath_anchor,
-				      { 'svn:eol-style' => $pvalue }, '',
-				      undef, 1);
+	    my $fh = $target->root->file_contents($target->path);
+	    binmode($fh, SVK::XD::get_eol_layer({ 'svn:eol-style' => $pvalue }, '<', 1));
 	    eval {
 		local $/ = \16384;
 		while (<$fh>) { };

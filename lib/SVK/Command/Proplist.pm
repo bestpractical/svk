@@ -37,7 +37,7 @@ sub run {
         }
 
 	$target = $target->as_depotpath ($self->{rev}) if defined $self->{rev};
-        $self->_show_props ($target, $self->{xd}->do_proplist ( $target ));
+        $self->_show_props( $target, $target->root->node_proplist($target->path) );
     }
 
     return;
@@ -75,7 +75,7 @@ sub _proplist {
     if (defined $self->{rev}) {
         $target = $target->as_depotpath ($self->{rev});
     }
-    return $self->{xd}->do_proplist ($target);
+    return $target->root->node_proplist($target->path);
 }
 
 

@@ -98,7 +98,7 @@ sub run {
         }
     }
 
-    if ($dst->root ($self->{xd})->check_path ($dst->path) != $SVN::Node::dir) {
+    if ($dst->root->check_path($dst->path) != $SVN::Node::dir) {
 	$src->anchorify; $dst->anchorify;
     }
 

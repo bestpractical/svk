@@ -21,7 +21,7 @@ sub txn_root {
 			root => $txn->root($newpool), pool => $newpool });
 }
 
-sub revision_root {
+sub get_revision_root {
     my ($self, $path, $rev, $pool) = @_;
     $path = $self->rename_check($path, $self->view->rename_map(''));
     return ( SVK::Root->new( {root => $self->root->fs->revision_root($rev, $pool)} ),

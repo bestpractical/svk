@@ -26,7 +26,7 @@ sub lock {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $target->root;
+    my $xdroot = $target->create_xd_root;
 
 	$self->{xd}->checkout_delta
 	    ( $target->for_checkout_delta,

@@ -66,12 +66,12 @@ $svk->commit ('-m', 'commit message here', "$copath/A");
 $svk->ps ('-m', 'set propdirectly', 'directprop' ,'propvalue', '//A');
 $svk->update ($copath);
 
-ok (eq_hash ($xd->do_proplist ( $xd->create_path_object
+ok (eq_hash ($xd->create_path_object
 			      ( xd => $xd,
 				copath_anchor => $corpath,
 				repos => $repos,
 				path => '/A',
-				revision => $repos->fs->youngest_rev) ),
+				revision => $repos->fs->youngest_rev)->root->node_proplist('/A') ,
 	     { directprop => 'propvalue',
 	       someprop => 'propvalue',
 	       moreprop => 'propvalue'}), 'prop matched');

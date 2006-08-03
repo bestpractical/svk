@@ -40,10 +40,8 @@ sub ensure_parent {
 	die loc ("%1 is not a directory.\n", $dst->report);
     }
 
-    unless ($dst->root($self->{xd})->check_path ($dst->path_anchor)) {
-	my $info = $self->{xd}{checkout}->get($dst->copath);
-	die loc ("Parent directory %1 is unknown, add first.\n", $dst->report)
-	    unless $info->{'.schedule'};
+    if ($dst->root->check_path($dst->path_anchor) == $SVN::Node::unknown) {
+	die loc ("Parent directory %1 is unknown, add first.\n", $dst->report);
     }
 }
 

@@ -10,7 +10,7 @@ __PACKAGE__->mk_shared_accessors(qw(xd));
 __PACKAGE__->mk_clonable_accessors(qw(report source copath_anchor copath_target));
 __PACKAGE__->mk_accessors(qw(_pool _inspector));
 
-use Class::Autouse qw(SVK::Editor::XD SVK::Inspector::XD);
+use Class::Autouse qw(SVK::Editor::XD SVK::Root::Checkout);
 
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel get_encoder to_native );
 
@@ -41,15 +41,12 @@ sub real_new {
 
 sub root {
     my $self = shift;
-    Carp::cluck unless $self->source;
-
-    unless ($self->xd) {
-	$self->xd(shift);
-	Carp::cluck unless $self->xd;
-    }
-    Carp::cluck,die unless defined $self->copath_anchor;
-
-    return $self->create_xd_root;
+    my $root = SVK::Root::Checkout->new({ path => $self });
+    # XXX: It might not always be the case that we hold svk::path object
+    # when using the root.
+    use Scalar::Util 'weaken';
+    weaken $root->{path};
+    return $root;
 }
 
 sub create_xd_root {
@@ -90,7 +87,7 @@ sub create_xd_root {
 	}
 	my $parent = Path::Class::File->new_foreign('Unix', $path)->parent;
 	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
-	my ($fromroot, $frompath) = $base_root->revision_root($path, $cinfo->{revision}, $pool);
+	my ($fromroot, $frompath) = $base_root->get_revision_root($path, $cinfo->{revision}, $pool);
 	$root->delete($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
 	unless ($cinfo->{'.deleted'}) {
@@ -188,11 +185,10 @@ sub anchorify {
 
 sub _get_inspector {
     my $self = shift;
-    return SVK::Inspector::XD->new
-	({ xd => $self->xd,
-	   path => $self->new,
+    return SVK::Inspector::Root->new
+	({ root => $self->root,
+	   anchor => $self->path_anchor,
 	   _pool => $self->pool,
-	   xdroot => $self->root(pool => $self->pool),
 	 });
 }
 
@@ -209,13 +205,13 @@ sub refresh_revision {
 }
 
 # XXX:
-for my $pass_through (qw/pool inspector _to_pclass dump/) {
+for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_ancestors nearest_copy/) {
     no strict 'refs';
     no warnings 'once';
     *{$pass_through} = *{'SVK::Path::'.$pass_through};
 }
 
-for my $proxy (qw/same_repos same_source is_mirrored normalize path universal contains_mirror depotpath depotname copy_ancestors nearest_copy related_to copied_from search_revision merged_from revision repos path_anchor path_target repospath/) {
+for my $proxy (qw/same_repos same_source is_mirrored normalize path universal contains_mirror depotpath depotname related_to copied_from search_revision merged_from revision repos path_anchor path_target repospath/) {
     no strict 'refs';
     *{$proxy} = sub { my $self = shift;
 		      Carp::confess unless $self->source;
@@ -237,7 +233,7 @@ sub for_checkout_delta {
 
 =head2 get_editor
 
-Returns the L<SVK::Editor::XD> object, L<SVK::Inspector::XD>, and the callback 
+Returns the L<SVK::Editor::XD> object, L<SVK::Inspector>, and the callback 
 hash used by L<SVK::Editor::Merge>
 
 =cut
@@ -252,6 +248,9 @@ sub get_editor {
     $encoding = Encode::find_encoding($encoding) if $encoding;
     $arg{get_path} = sub { $_[0] = "$path/$_[0]" };
     $arg{get_store_path} = sub { $_[0] = "$spath/$_[0]" };
+    my $xdroot = $self->create_xd_root;
+    $arg{oldroot} ||= $xdroot;
+    $arg{newroot} ||= $xdroot;
     my $storage = SVK::Editor::XD->new (%arg,
 					get_copath =>
             sub { to_native ($_[0], 'path', $encoding) if $encoding;
@@ -265,14 +264,14 @@ sub get_editor {
         cb_rev => sub {
             my ($path) = @_;
             my $copath;
-            ($path,$copath) = $inspector->get_paths($path);
+            ($path,$copath) = $self->_get_paths($path);
             return $self->xd->{checkout}->get($copath)->{revision};
         },
 
         cb_conflict => sub {
             my ($path) = @_;
             my $copath;
-            ($path, $copath) = $inspector->get_paths($path);
+            ($path, $copath) = $self->_get_paths($path);
             $self->xd->{checkout}->store ($copath, {'.conflict' => 1})
                 unless $arg{check_only};
         },
@@ -280,7 +279,7 @@ sub get_editor {
             return if $arg{check_only};
             my ($path, $name) = @_;
             my $copath;
-            ($path, $copath) = $inspector->get_paths($path);
+            ($path, $copath) = $self->_get_paths($path);
             my $entry = $self->xd->{checkout}->get ($copath);
             warn $entry unless ref $entry eq 'HASH';
             my $prop = $entry->{'.newprop'};
@@ -291,6 +290,15 @@ sub get_editor {
                         );
         });
 
+}
+
+sub _get_paths {
+    my ($self, $path) = @_;
+    $path = $self->inspector->translate($path);
+    my $copath = $self->copath($path);
+    $path = length $path ? $self->path_anchor."/$path" : $self->path_anchor;
+
+    return ($path, $copath);
 }
 
 =head1 SEE ALSO

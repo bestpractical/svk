@@ -31,15 +31,34 @@ sub localprop {
     local $@;
     return eval { $self->root->node_prop ($path, $propname, $pool) };
 }
-
-sub dirdelta { 
+sub dirdelta {
     my ($self, $path, $base_root, $base_path, $pool) = @_;
+    $path = $self->_anchor_path($path);
     my $modified = {};
-    SVK::XD->depot_delta (oldroot => $base_root, newroot => $self->root,
-             oldpath => [$base_path, ''],
-             newpath => $self->_anchor_path($path),
-             editor => $self->dirdelta_status_editor($modified),
-             no_textdelta => 1, no_recurse => 1);
+    my $entries = $self->root->dir_entries($path, $pool);
+    my $base_entries = $base_root->dir_entries($base_path, $pool);
+    my $spool = SVN::Pool->new_default;
+    for (sort keys %$base_entries) {
+	$spool->clear;
+	my $entry = delete $entries->{$_};
+	next if $base_root->check_path("$base_path/$_") == $SVN::Node::dir;
+	if ($entry) {
+	    $modified->{$_} = 'M'
+		if $self->root->file_md5_checksum("$path/$_") ne
+		    $base_root->file_md5_checksum("$base_path/$_");
+	    next;
+	}
+
+	$modified->{$_} = 'D';
+    }
+    for (keys %$entries) {
+	if ($entries->{$_}->kind == $SVN::Node::file) {
+	    $modified->{$_} = 'A';
+	}
+	elsif ($entries->{$_}->kind == $SVN::Node::unknown) {
+	    $modified->{$_} = '?';
+	}
+    }
     return $modified;
 }
 
@@ -48,7 +67,7 @@ sub _anchor_path {
     $path = $self->translate($path);
     return $path if $path =~ m{^/};
     return $self->anchor unless length $path;
-    return $self->anchor."/$path";
+    return $self->anchor eq '/' ? "/$path" : $self->anchor."/$path";
 }
 
 1;

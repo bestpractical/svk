@@ -58,14 +58,13 @@ sub flush_print {
 
 sub run {
     my ($self, $target) = @_;
-    my $xdroot = $target->root;
     my $editor = SVK::Editor::Status->new (
 	  ignore_absent => $self->{quiet},
 	  $self->{verbose} ?
 	  (notify => SVK::Notify->new (
 	       flush_baserev => 1,
 	       flush_unchanged => 1,
-	       cb_flush => sub { flush_print ($xdroot, $target, @_); }
+	       cb_flush => sub { flush_print ($target->root, $target, @_); }
 	   )
 	  )                :
 	  (notify => SVK::Notify->new_with_report ($target->report,
@@ -74,7 +73,7 @@ sub run {
       );
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
-	  xdroot => $target->root ($self->{xd}),
+	  xdroot => $target->create_xd_root,
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  editor => $editor,

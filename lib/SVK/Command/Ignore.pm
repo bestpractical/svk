@@ -28,7 +28,7 @@ sub do_ignore {
 
     my $filename = $target->copath_target;
 
-    my $current_props = $self->{xd}->do_proplist($target);
+    my $current_props = $target->root->node_proplist($target->path_anchor);
 
     my $svn_ignore = $current_props->{'svn:ignore'};
     $svn_ignore = '' unless defined $svn_ignore;

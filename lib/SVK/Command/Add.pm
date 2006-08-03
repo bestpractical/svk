@@ -39,7 +39,7 @@ sub run {
 
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
-	  xdroot => $target->root,
+	  xdroot => $target->create_xd_root,
 	  delete_verbose => 1,
 	  unknown_verbose => $self->{recursive},
 	  editor => SVK::Editor::Status->new

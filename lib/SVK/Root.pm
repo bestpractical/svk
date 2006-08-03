@@ -6,12 +6,6 @@ use base qw{ Class::Accessor::Fast };
 
 __PACKAGE__->mk_accessors(qw(root txn pool));
 
-sub new {
-    my $class = shift;
-    my $self = $class->SUPER::new(@_);
-    return $self;
-}
-
 sub AUTOLOAD {
     my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
@@ -37,7 +31,9 @@ sub DESTROY {
     $_[0]->txn->abort(SVN::Pool->new) if $_[0]->txn;
 }
 
-sub revision_root {
+# return the root and path on the given revnum, the returned path is
+# with necessary translations.
+sub get_revision_root {
     my $self = shift;
     my $path = shift;
     return ( $self->new({root => $self->fs->revision_root(@_)}), 

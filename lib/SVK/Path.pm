@@ -41,12 +41,21 @@ sub refresh_revision {
     return $self;
 }
 
+=head2 root
+
+Returns the root representing the file system of the revision at the
+B<anchor>.  Give optional pool (null to use default), otherwise use
+the internal root of the path object.  Be careful if you are using the
+root object but not keeping the path object.
+
+=cut
+
 sub root {
     my $self = shift;
-
+    my $pool = @_ ? undef : $self->pool;
     Carp::cluck unless defined $self->revision;
     $self->_root(SVK::Root->new({ root => $self->repos->fs->revision_root
-				  ($self->revision) }))
+				  ($self->revision, $pool) }))
 	unless $self->_root;
 
     return $self->_root;
@@ -331,8 +340,8 @@ sub copy_ancestors {
 sub _copy_ancestors {
     my $self = shift;
     my $fs = $self->repos->fs;
-    my $t = $self->new->as_depotpath;
     my @result;
+    my $t = $self->clone;
     my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
     my ($root, $path) = ($t->root, $t->path);
     while (my (undef, $copyfrom_root, $copyfrom_path) = nearest_copy ($root, $path, $new_pool)) {
@@ -393,7 +402,7 @@ sub _nearest_copy_svk {
     # XXX: this is duplicated as svk::util, maybe we should use
     # traverse_history directly
     if ($root->can('txn') && $root->txn) {
-	($root, $path) = $root->revision_root
+	($root, $path) = $root->get_revision_root
 	    ($path, $root->txn->base_revision );
     }
     # normalize
@@ -455,6 +464,9 @@ sub related_to {
     my ($self, $other) = @_;
     # XXX: when two related paths are mirrored separatedly, need to
     # use hooks or merge tickets to decide if they are related.
+
+    # XXX: defer to $other->related_to if it is SVK::Path::Checkout,
+    # when we need to use it.
     return SVN::Fs::check_related
 	($self->root->node_id ($self->path),
 	 $other->root->node_id ($other->path));
@@ -474,7 +486,7 @@ sub copied_from {
     $target->{report} = '';
     $target = $target->as_depotpath;
 
-    my $root = $target->root;
+    my $root = $target->root(undef);
     my $fromroot;
     while ((undef, $fromroot, $target->{path}) = $target->nearest_copy) {
 	$target = $target->new(revision => $fromroot->revision_root_revision);
@@ -513,7 +525,7 @@ sub search_revision {
     while ($rev[0] <= $rev[1]) {
 	$pool->clear;
 	my $rev = int(($rev[0]+$rev[1])/2);
-	my $search_root = $self->new(revision => $rev)->root;
+	my $search_root = $self->new(revision => $rev)->root($pool);
 	if ($search_root->check_path($self->path) &&
 	    SVN::Fs::check_related($id, $search_root->node_id($self->path))) {
 

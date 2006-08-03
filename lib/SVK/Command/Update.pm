@@ -94,7 +94,8 @@ sub run {
 sub do_update {
     my ($self, $cotarget, $update_target) = @_;
     my $pool = SVN::Pool->new_default;
-    my ($xdroot, $newroot) = map { $_->root } ($cotarget, $update_target);
+    my $xdroot = $cotarget->create_xd_root;
+    my $newroot = $update_target->root;
     # unanchorified
     my $report = $cotarget->report;
     my $kind = $newroot->check_path ($update_target->path);
@@ -150,7 +151,7 @@ sub do_update {
 	  check_only => $self->{check_only},
 	  store_path => $update_target->path_anchor,
 	  update => $self->{check_only} ? 0 : 1,
-	  oldroot => $xdroot, newroot => $newroot,
+	  newroot => $newroot,
 	  revision => $content_revision,
 	);
     $merge->run($editor, %cb, inspector => $inspector);

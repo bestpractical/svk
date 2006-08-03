@@ -69,7 +69,6 @@ sub lock {
 sub handle_co_item {
     my ($self, $src, $dst) = @_;
     $src = $src->as_depotpath;
-    my $xdroot = $dst->root;
     die loc ("Path %1 does not exist.\n", $src->path_anchor)
 	if $src->root->check_path ($src->path_anchor) == $SVN::Node::none;
     my ($copath, $report) = ($dst->copath, $dst->report);
@@ -87,7 +86,6 @@ sub handle_co_item {
     my ($editor, $inspector, %cb) = $dst->get_editor
 	( ignore_checksum => 1, quiet => 1,
 	  check_only => $self->{check_only},
-	  oldroot => $xdroot, newroot => $xdroot,
 	  update => 1, ignore_keywords => 1,
 	);
     SVK::Merge->new (%$self, repos => $dst->repos, nodelay => 1,
@@ -137,7 +135,7 @@ sub _unmodified {
     $target = $self->{xd}->target_condensed($target); # anchor
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
-	  xdroot => $target->root ($self->{xd}),
+	  xdroot => $target->create_xd_root,
 	  editor => SVK::Editor::Status->new
 	  ( notify => SVK::Notify->new
 	    ( cb_flush => sub { push @modified, $_[0] })),
@@ -175,9 +173,8 @@ sub run {
 	return loc("%1 is not a directory.\n", $dst->report)
 	    if $#src > 0 && !-d $dst->copath;
 	return loc("%1 is not a versioned directory.\n", $dst->report)
-	    if -d $dst->copath &&
-		!($dst->root($self->{xd})->check_path ($dst->path) ||
-		  $self->{xd}{checkout}->get ($dst->copath)->{'.schedule'});
+	    if -d $dst->copath && $dst->root->check_path($dst->path) != $SVN::Node::dir;
+
 	my @cpdst;
 	for (@src) {
 	    my $cpdst = $dst->new;

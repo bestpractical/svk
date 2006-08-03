@@ -686,9 +686,9 @@ Apply the given revision from command line to C<$target>.
 
 sub apply_revision {
     my ($self, $target) = @_;
+    $target = $target->source if $target->isa('SVK::Path::Checkout');
     return $target unless defined $self->{rev};
 
-    $target = $target->as_depotpath;
     return $target->seek_to( $self->resolve_revision($target, $self->{rev}) );
 }
 

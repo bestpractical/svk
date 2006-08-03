@@ -166,18 +166,6 @@ sub get_editor {
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
 
-    # XXX: the case that the target is an xd is actually only used in merge.
-    if ($target->isa('SVK::Path::Checkout')) {
-	my $xdroot = $target->root;
-	my ($editor, $inspector, %cb) = $target->get_editor
-	    ( ignore_checksum => 1,
-	      check_only => $self->{check_only},
-	      oldroot => $xdroot, newroot => $xdroot,
-	    );
-	return ($editor, %cb, inspector => $inspector);
-    }
-
-    # XXX: unify the get_editor args so we can combine them
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
 	  caller => ref($self),
@@ -185,6 +173,10 @@ sub get_editor {
 	  callback => $callback,
 	  message => $self->{message},
 	  author => $ENV{USER} );
+
+    # Note: the case that the target is an xd is actually only used in merge.
+    return ($editor, %cb, inspector => $inspector)
+	if $target->isa('SVK::Path::Checkout');
 
     if ($self->{setrevprop}) {
 	my $txn = $cb{txn} or
@@ -251,7 +243,7 @@ sub exclude_mirror {
 }
 
 sub get_committable {
-    my ($self, $target, $root, $skipped_items) = @_;
+    my ($self, $target, $skipped_items) = @_;
     my ($fh, $file);
     $self->fill_commit_message;
     if ($self->{template} or not defined $self->{message}) {
@@ -280,11 +272,9 @@ sub get_committable {
     );
     
     if ($self->{interactive}) {
-        my %cb = SVK::Editor::Merge->cb_for_root($root, $target->path_anchor, 0);
-
         $status_editor = SVK::Editor::InteractiveStatus->new
         (
-            %cb,
+            inspector => $target->source->inspector,
             notify => $notify,
             cb_skip_prop_change => sub {
                 my ($path, $prop, $value) = @_;
@@ -297,7 +287,7 @@ sub get_committable {
         ); 
 
        $commit_editor = SVK::Editor::InteractiveCommitter->new(
-            %cb,
+            inspector => $target->source->inspector,
             status => $status_editor, 
         );
 
@@ -311,7 +301,7 @@ sub get_committable {
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
 	  $self->exclude_mirror ($target),
-	  xdroot => $root,
+	  xdroot => $target->create_xd_root,
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  absent_ignore => 1,
@@ -437,7 +427,7 @@ sub committed_commit {
         for @{$skipped_items->{adds}};
 
 	# XXX: fix view/path revision insanity
-	my $root = $target->source->new->refresh_revision->root;
+	my $root = $target->source->new->refresh_revision->root(undef);
 	# update keyword-translated files
 	my $encoder = get_encoder;
 	for (@$targets) {
@@ -502,7 +492,6 @@ sub run {
 
     # XXX: should use some status editor to get the committed list for post-commit handling
     # while printing the modified nodes.
-    my $xdroot = $target->root;
     my $skipped_items = {};
     my $committed;
     my ($commit_editor, $committable);
@@ -511,7 +500,7 @@ sub run {
       $committed = $self->committed_import ($target->copath_anchor);
     }
     else {
-      ($commit_editor, $committable) = $self->get_committable ($target, $xdroot, $skipped_items);
+      ($commit_editor, $committable) = $self->get_committable($target, $skipped_items);
       $committed = $self->committed_commit ($target, $committable, $skipped_items);
     }
 
@@ -528,7 +517,7 @@ sub run {
     #die loc("unexpected error: commit to mirrored path but no mirror object")
     #	if $target->is_mirrored and !($self->{direct} or $self->{patch} or $cb{mirror});
 
-    $self->run_delta ($target, $xdroot, $editor, %cb);
+    $self->run_delta ($target, $target->create_xd_root, $editor, %cb);
 }
 
 sub run_delta {
@@ -568,7 +557,7 @@ sub run_delta {
 		($source_path, $source_rev) = ($revtarget, $entry->{revision})
 		    unless defined $source_path;
 		return $revcache{$source_rev} if exists $revcache{$source_rev};
-		my ($rroot, $rsource_path) = $xdroot->revision_root($source_path, $source_rev);
+		my ($rroot, $rsource_path) = $xdroot->get_revision_root($source_path, $source_rev);
 		my $rev = ($rroot->node_history($rsource_path)->prev(0)->location)[1];
 		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
 	    }) : ());

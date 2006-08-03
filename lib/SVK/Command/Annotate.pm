@@ -27,7 +27,7 @@ sub run {
     my $ann = Algorithm::Annotate->new;
     my @paths;
 
-    $target = $self->apply_revision($target);
+    $target = $self->apply_revision($target) if $self->{rev};
 
     traverse_history (
         root     => $target->as_depotpath->root,
@@ -56,17 +56,16 @@ sub run {
 		    $content);
     }
 
+    # TODO: traverse history should just DTRT and we dont need to special case here
+    my $last = $target->isa('SVK::Path::Checkout')
+	? $target : $paths[-1];
     my $final;
-    if ($target->isa('SVK::Path::Checkout')) {
-	$final = SVK::XD::get_fh($target->root, '<', $target->path, $target->copath);
+    {
 	local $/;
+	$final = $last->root->file_contents($last->path);
 	$final = [split /\015?\012|\015/, <$final>];
-	$ann->add ( "\t(working copy): \t\t", $final );
-    }
-    else {
-	local $/;
-	$final = $paths[-1]->root->file_contents($paths[-1]->path);
-	$final = [split /\015?\012|\015/, <$final>];
+	$ann->add ( "\t(working copy): \t\t", $final )
+	    if $target->isa('SVK::Path::Checkout');
     }
 
     my $result = $ann->result;

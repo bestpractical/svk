@@ -123,10 +123,10 @@ sub find_merge_base {
 	# when the base is one of src or dst, make sure the base is
 	# still the same node (not removed and replaced)
 	if ($rev && $path eq $dst->path) {
-	    next unless $dst->related_to($dst->mclone(revision => $rev));
+	    next unless $dst->related_to($dst->as_depotpath->seek_to($rev));
 	}
 	if ($rev && $path eq $src->path) {
-	    next unless $src->related_to($src->mclone(revision => $rev));
+	    next unless $src->related_to($src->as_depotpath->seek_to($rev));
 	}
 
 	if ($path eq $dst->path &&
@@ -211,8 +211,8 @@ sub find_merge_sources {
 	if $target->isa('SVK::Path::Checkout');
     $info->add_target ($target, $self->{xd}) unless $noself;
 
-    my $minfo = $verbatim ? $info->verbatim : $info->resolve ($self->{xd}, $target->depotname, $target->repos);
-    return $minfo if $verbatim;
+    return $info->verbatim if $verbatim || !$target->root->check_path($target->path);
+    my $minfo = $info->resolve ($self->{xd}, $target->depotname, $target->repos);
 
     my $myuuid = $target->repos->fs->get_uuid ();
 
@@ -438,7 +438,7 @@ sub run {
 		$boundry_rev = $src->search_revision
 		    ( cmp => sub {
 			  my $rev = shift;
-			  my $root = $src->new(revision => $rev)->root;
+			  my $root = $src->mclone(revision => $rev)->root(undef);
 			  return $root->node_history($src->path)->prev(0)->prev(0) ? 1 : 0;
 		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
 	    }

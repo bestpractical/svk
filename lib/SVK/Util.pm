@@ -862,7 +862,7 @@ sub traverse_history {
     # XXX: We actually want to move this to SVK::Path::, and
     # svk::checkout should respect copies on checkout
     if ($root->can('txn') && $root->txn) {
-	($root, $path) = $root->revision_root
+	($root, $path) = $root->get_revision_root
 	    ($path, $root->txn->base_revision );
     }
 

@@ -36,10 +36,8 @@ sub run {
 
 sub _do_info {
     my ($self, $target) = @_;
-    my $root = $target->root;
 
     # XXX: handle checkout specific ones such as schedule
-
     $target->root->check_path($target->path)
 	or die loc("Path %1 does not exist.\n", $target->depotpath);
 
@@ -49,8 +47,10 @@ sub _do_info {
 	if $target->isa('SVK::Path::Checkout');
     print loc("Depot Path: %1\n", $target->depotpath);
     print loc("Revision: %1\n", $target->revision);
-    print loc("Last Changed Rev.: %1\n",
-	      $target->root->node_created_rev($target->path));
+    if (defined (my $lastchanged = $target->root->node_created_rev($target->path))) {
+	print loc("Last Changed Rev.: %1\n", $lastchanged);
+	# XXX: last changed date
+    }
 
     print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
 	if $m;

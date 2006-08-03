@@ -426,7 +426,7 @@ sub target_condensed {
 	push @{$anchor->source->{targets}}, abs2rel($path->copath, $anchor->copath => undef, '/') unless $anchor->path eq $path->path;
     }
 
-    my $root = $anchor->root;
+    my $root = $anchor->create_xd_root;
     until ($root->check_path($anchor->path_anchor) == $SVN::Node::dir) {
 	$anchor->anchorify;
     }
@@ -620,7 +620,6 @@ sub auto_prop {
 
 sub do_delete {
     my ($self, $target, %arg) = @_;
-    my $xdroot = $target->root;
     my (@deleted, @modified, @unknown, @scheduled);
 
     $target->anchorify unless $target->source->{targets};
@@ -628,7 +627,7 @@ sub do_delete {
     # check for if the file/dir is modified.
     $self->checkout_delta ( $target->for_checkout_delta,
 			    %arg,
-			    xdroot => $xdroot,
+			    xdroot => $target->create_xd_root,
 			    absent_as_delete => 1,
 			    delete_verbose => 1,
 			    absent_verbose => 1,
@@ -700,13 +699,6 @@ sub do_delete {
     
     return if $arg{no_rm};
     rmtree (\@paths) if @paths;
-}
-
-sub do_proplist {
-    my ($self, $target) = @_;
-
-    return $self->get_props ($target->root, $target->path_anchor,
-			     $target->can('copath') ? $target->copath : undef);
 }
 
 sub do_propset {
@@ -1593,7 +1585,7 @@ Returns a file handle with keyword translation and line-ending layers attached.
 =cut
 
 sub get_fh {
-    my ($root, $mode, $path, $fname, $prop, $layer, $eol, $checkle) = @_;
+    my ($root, $mode, $path, $fname, $prop, $layer, $eol) = @_;
     {
         # don't care about nonexisting path, for new file with keywords
         local $@;
@@ -1604,7 +1596,7 @@ sub get_fh {
 	   if HAS_SYMLINK and ( defined $prop->{'svn:special'} || ($mode eq '<' && is_symlink($fname)) );
     if (keys %$prop) {
         $layer ||= get_keyword_layer ($root, $path, $prop);
-        $eol ||= get_eol_layer($prop, $mode, $checkle);
+        $eol ||= get_eol_layer($prop, $mode);
     }
     $eol ||= ':raw';
     open my ($fh), $mode.$eol, $fname or return undef;
