@@ -392,7 +392,7 @@ sub _nearest_copy_svn {
 
 sub _nearest_copy_svk {
     my ($root, $path, $ppool) = @_;
-    if (ref ($root) eq __PACKAGE__) {
+    if (UNIVERSAL::isa($root, __PACKAGE__)) {
 	($root, $path) = ($root->root, $root->path);
     }
     my $fs = $root->fs;
