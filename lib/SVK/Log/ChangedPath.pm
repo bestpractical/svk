@@ -154,7 +154,7 @@ None known.
  
 =head1 AUTHOR
  
-Michael Hendricks  <michael@palmcluster.org>
+Michael Hendricks  <michael@ndrix.org>
  
 =head1 LICENSE AND COPYRIGHT
 

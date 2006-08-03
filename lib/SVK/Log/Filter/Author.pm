@@ -2,36 +2,38 @@ package SVK::Log::Filter::Author;
 
 use strict;
 use warnings;
+use base qw( SVK::Log::Filter );
+
 use SVK::I18N;
-use SVK::Log::Filter;
+use List::MoreUtils qw( any );
 
 sub setup {
-    my ($stash) = $_[STASH];
+    my ($self) = @_;
 
-    my $search = $stash->{argument}
+    my $search = $self->{argument}
         or die loc("Author: at least one author name is required.\n");
 
-    my @matching_authors        = split /\s* , \s*/xms, $search;
-    $stash->{author_names}      = \@matching_authors;
-    $stash->{author_wants_none} = grep { $_ eq '(none)' } @matching_authors;
+    my @matching_authors = split /\s* , \s*/xms, $search;
+    $self->{names} = \@matching_authors;
+    $self->{wants_none} = grep { $_ eq '(none)' } @matching_authors;
 }
 
 sub revision {
-    my ( $stash, $props ) = @_[ STASH, PROPS ];
+    my ($self, $args) = @_;
+    my $props = $args->{props};
 
     # look for a matching, non-existent author
     my $author = $props->{'svn:author'};
     if ( !defined $author ) {
-        return if $stash->{author_wants_none};
-        pipeline('next');
+        return if $self->{wants_none};
+        $self->pipeline('next');
     }
 
     # look for a matching, existent author
-    for my $needle ( @{ $stash->{author_names} } ) {
-        return if $author eq $needle;
-    }
+    return if any { $_ eq $author } @{ $self->{names} };
 
-    pipeline('next');    # no match so skip
+    # no match, so skip to the next revision
+    $self->pipeline('next');
 }
 
 1;
@@ -63,16 +65,15 @@ Of course "(none)" may be used in a list with other authors
 
 =head1 STASH/PROPERTY MODIFICATIONS
 
-Author leaves all properties intact and only modifies the stash under the
-"author_" namespace.
+Author leaves all properties and the stash intact.
 
 =head1 AUTHORS
 
-Michael Hendricks E<lt>michael@palmcluster.orgE<gt>
+Michael Hendricks E<lt>michael@ndrix.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -79,8 +79,8 @@ sub run {
 	$fromrev = min ($target->revision, $fromrev);
 	$torev = min ($target->revision, $torev);
     }
-    require SVK::Log::Filter;
-    my $filter = SVK::Log::Filter->new(
+    require SVK::Log::FilterPipeline;
+    my $pipeline = SVK::Log::FilterPipeline->new(
         presentation  => $presentation_filter,
         selection     => $self->{select_filter},
         output        => undef,
@@ -98,15 +98,15 @@ sub run {
         torev    => $torev,
         verbose  => $self->{verbose},
         cross    => $self->{cross},
-        filter   => $filter,
+        pipeline => $pipeline,
     );
     return;
 }
 
 sub _get_logs {
     my (%args) = @_;
-    my   (   $root, $limit, $path, $fromrev, $torev, $cross, $filter, $cb_log) = 
-    @args{qw/ root   limit   path   fromrev   torev   cross   filter   cb_log/};
+    my   (   $root, $limit, $path, $fromrev, $torev, $cross, $pipeline, $cb_log) = 
+    @args{qw/ root   limit   path   fromrev   torev   cross   pipeline   cb_log/};
 
     $limit ||= -1;
     my $fs = $root->fs;
@@ -117,12 +117,12 @@ sub _get_logs {
 
     # establish the traverse_history callback
     my $docall;
-    if ($filter) {
+    if ($pipeline) {
         $docall = sub {
             my ($rev) = @_;
             my $root  = $fs->revision_root($rev);
             my $props = $fs->revision_proplist($rev);
-            return $filter->filter(    # only continue if $filter wants to
+            return $pipeline->filter(    # only continue if $pipeline wants to
                 rev   => $rev,
                 root  => $root,
                 props => $props,
@@ -163,8 +163,8 @@ sub _get_logs {
 	$docall->($_), $pool->clear for @revs;
     }
 
-    # we're done with the log so we're done with the filter
-    $filter->finished() if $filter;
+    # we're done with the log so we're done with the pipeline
+    $pipeline->finished() if $pipeline;
 }
 
 our $chg;
@@ -176,8 +176,8 @@ $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub do_log {
     my (%arg) = @_;
-    my (    $cross, $fromrev, $limit, $path, $repos, $torev, $filter, $cb_log ) =
-    @arg{qw/ cross   fromrev   limit   path   repos   torev   filter   cb_log /};
+    my (    $cross, $fromrev, $limit, $path, $repos, $torev, $pipeline, $cb_log ) =
+    @arg{qw/ cross   fromrev   limit   path   repos   torev   pipeline   cb_log /};
 
     $cross ||= 0;
     my $pool = SVN::Pool->new_default;
@@ -190,7 +190,7 @@ sub do_log {
         fromrev  => $fromrev,
         torev    => $torev,
         cross    => $cross,
-        filter   => $filter,    # let _get_logs() sort out filter ...
+        pipeline => $pipeline,  # let _get_logs() sort out the pipeline ...
         cb_log   => $cb_log,    # ... vs cb_log  (only 1 should be defined)
     );
 }

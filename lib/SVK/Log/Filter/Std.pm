@@ -1,6 +1,6 @@
 package SVK::Log::Filter::Std;
 
-use SVK::Log::Filter;
+use base qw( SVK::Log::Filter );
 
 use SVK::I18N;
 use SVK::Util qw( get_encoding reformat_svn_date );
@@ -8,17 +8,19 @@ use SVK::Util qw( get_encoding reformat_svn_date );
 our $sep;
 
 sub setup {
-    my ($stash) = $_[STASH];
+    my ($self, $args) = @_;
+    my $stash = $args->{stash};
 
     $sep = $stash->{verbatim} || $stash->{no_sep} ? '' : ('-' x 70)."\n";
     print $sep;
 
     # avoid get_encoding() calls for each revision
-    $stash->{std_encoding} = get_encoding();
+    $self->{encoding} = get_encoding();
 }
 
 sub revision {
-    my ( $stash, $rev, $props ) = @_[STASH, REV, PROPS];
+    my ($self, $args) = @_;
+    my ($stash, $rev, $props) = @{$args}{qw( stash rev props )};
 
     # get short names for attributes
     my            ( $indent, $verbatim, $quiet )
@@ -38,27 +40,26 @@ sub revision {
     $author = loc('(no author)') if !defined($author) or !length($author);
     if ( !$verbatim ) {
         print $indent;
-        print fancy_rev( $stash, $rev );
+        print fancy_rev( $stash, $rev, $args->{get_remoterev} );
         print ":  $author | $date\n";
     }
 
     # display the paths that were modified by this revision
     if ( $stash->{verbose} ) {
-        print( build_changed_details( $stash, $_[PATHS] ) );
+        print build_changed_details( $stash, $args->{paths}, $self->{encoding} );
     }
 
     $message =~ s/^/$indent/mg if $indent and !$verbatim;
     require Encode;
-    Encode::from_to( $message, 'UTF-8', $stash->{std_encoding} );
+    Encode::from_to( $message, 'UTF-8', $self->{encoding} );
     print($message);
 }
 
 sub fancy_rev {
-    my ( $stash, $rev ) = @_;
+    my ( $stash, $rev, $get_remoterev ) = @_;
 
     # find the remote revision number (if possible)
     my $host          = $stash->{host};
-    my $get_remoterev = $stash->{get_remoterev};
     my $remoterev     = $get_remoterev->($rev) if $get_remoterev;
 
     $host = '@' . $host       if length($host);
@@ -69,11 +70,10 @@ sub fancy_rev {
 }
 
 sub build_changed_details {
-    my ($stash, $changed) = @_;
+    my ($stash, $changed, $encoding) = @_;
 
     # get short names for some useful quantities
     my $indent   = $stash->{indent};
-    my $encoding = $stash->{std_encoding};
 
     my $output = '';
 
@@ -143,16 +143,15 @@ the revision.
 
 =head1 STASH/PROPERTY MODIFICATIONS
 
-Std leaves all properties intact and only modifies the stash under the "std_"
-namespace.
+Std leaves all properties and the stash intact.
 
 =head1 AUTHORS
 
-Michael Hendricks E<lt>michael@palmcluster.orgE<gt>
+Michael Hendricks E<lt>michael@ndrix.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

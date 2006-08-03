@@ -2,27 +2,29 @@ package SVK::Log::Filter::XML;
 use strict;
 use warnings;
 
-use SVK::Log::Filter;
+use base qw( SVK::Log::Filter );
 
 sub header {
     print qq{<?xml version="1.0" encoding="utf-8"?>\n<log>\n};
 }
 
 sub revision {
-    my ($stash, $rev, $props) = @_[ STASH, REV, PROPS ];
+    my ($self, $args) = @_;
+    my ($stash, $rev, $props) = @{$args}{qw( stash rev props )};
 
     # extract interesting revision properties
     my          (    $author,    $date,    $log ) =
     @{$props}{qw( svn:author  svn:date  svn:log )};
 
-    my $original = format_original_revision( $stash, $rev );
+    my $original
+        = format_original_revision( $stash, $rev, $args->{get_remoterev} );
     print qq{<logentry revision="$rev"$original>\n};
 
     print "<author>$author</author>\n" if defined $author;
     print "<date>$date</date>\n"       if defined $date;
 
     # display the paths that were modified by this revision
-    print_changed_details( $_[PATHS] ) if $stash->{verbose};
+    print_changed_details( $args->{paths} ) if $stash->{verbose};
 
     if ( defined $log and !$stash->{quiet} ) {
         $log =~ s/&/&amp;/g;
@@ -39,10 +41,9 @@ sub footer {
 }
 
 sub format_original_revision {
-    my ( $stash, $rev ) = @_;
+    my ( $stash, $rev, $get_remoterev ) = @_;
 
-    my $get_remoterev = $stash->{get_remoterev};
-    my $remoterev     = $get_remoterev->($rev) if $get_remoterev;
+    my $remoterev = $get_remoterev->($rev) if $get_remoterev;
 
     return q{} if !$remoterev;
     return qq{ original="$remoterev"};
@@ -130,16 +131,15 @@ was modified in the revision.
 
 =head1 STASH/PROPERTY MODIFICATIONS
 
-XML leaves all properties intact and only modifies the stash under the "xml_"
-namespace.
+XML leaves all properties and the stash intact.
 
 =head1 AUTHORS
 
-Michael Hendricks E<lt>michael@palmcluster.orgE<gt>
+Michael Hendricks E<lt>michael@ndrix.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

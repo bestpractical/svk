@@ -250,8 +250,8 @@ sub log {
     );
     my $host = $self->{host} || (split ('\.', Sys::Hostname::hostname(), 2))[0];
 
-    require SVK::Log::Filter;
-    my $filter = SVK::Log::Filter->new(
+    require SVK::Log::FilterPipeline;
+    my $pipeline = SVK::Log::FilterPipeline->new(
         presentation  => 'std',
         output        => $buf,
         indent        => 1,
@@ -271,7 +271,7 @@ sub log {
         path    => $self->{src}->path,
         fromrev => $self->{fromrev} + 1,
         torev   => $self->{src}->revision,
-        filter  => $filter,
+        pipeline => $pipeline,
     );
     return $tmp;
 }

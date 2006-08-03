@@ -3,24 +3,22 @@ package SVK::Log::Filter::Grep;
 use strict;
 use warnings;
 use SVK::I18N;
-use SVK::Log::Filter;
+use base qw( SVK::Log::Filter );
 
 sub setup {
-    my ($stash) = $_[STASH];
+    my ($self) = @_;
 
-    my $search = $stash->{argument};
+    my $search = $self->{argument};
     my $rx = eval "qr{$search}i"
         or die loc( "Grep: Invalid regular expression '%1'.\n", $search );
 
-    $stash->{grep_pattern} = $rx;
+    $self->{pattern} = $rx;
 }
 
 sub revision {
-    my ($stash, $props) = @_[STASH, PROPS];
-
-    my $rx  = $stash->{grep_pattern};
-    my $log = $props->{'svn:log'};
-    pipeline('next') if  $log !~ /$rx/;
+    my ($self, $args) = @_;
+    my $log = $args->{props}{'svn:log'};
+    $self->pipeline('next') if $log !~ m/$self->{pattern}/;
 }
 
 1;
@@ -61,16 +59,15 @@ after the pipe character is interpreted as the name of a log filter.
 
 =head1 STASH/PROPERTY MODIFICATIONS
 
-Grep leaves all properties intact and only modifies the stash under the "grep_"
-namespace.
+Grep leaves all properties and the stash intact.
 
 =head1 AUTHORS
 
-Michael Hendricks E<lt>michael@palmcluster.orgE<gt>
+Michael Hendricks E<lt>michael@ndrix.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

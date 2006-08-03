@@ -3,23 +3,21 @@ package SVK::Log::Filter::Head;
 use strict;
 use warnings;
 use SVK::I18N;
-use SVK::Log::Filter;
+use base qw( SVK::Log::Filter );
 
 sub setup {
-    my ($stash) = $_[STASH];
+    my ($self) = @_;
 
-    my $argument = $stash->{argument};
+    my $argument = $self->{argument};
     die loc("Head: '%1' is not numeric.\n", $argument)
         if $argument !~ /\A \d+\s* \z/xms;
 
-    $stash->{head_remaining} = $argument;
+    $self->{remaining} = $argument;
 }
 
 sub revision {
-    my ($stash) = $_[STASH];
-    $stash->{head_remaining}--;
-
-    pipeline('last') if $stash->{head_remaining} < 0;
+    my ($self, $args) = @_;
+    $self->pipeline('last') if --$self->{remaining} < 0;
 }
 
 1;
@@ -48,16 +46,15 @@ revisions with messages that match "foo", one might use
 
 =head1 STASH/PROPERTY MODIFICATIONS
 
-Head leaves all properties intact and only modifies the stash under the "head_"
-namespace.
+Head leaves all properties and the stash intact.
 
 =head1 AUTHORS
 
-Michael Hendricks E<lt>michael@palmcluster.orgE<gt>
+Michael Hendricks E<lt>michael@ndrix.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2003-2005 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
