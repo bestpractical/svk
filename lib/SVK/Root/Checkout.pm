@@ -50,8 +50,6 @@ sub node_created_rev {
     return $root->check_path($path, $pool) ? $root->node_created_rev($path, $pool) : undef;
 }
 
-# XXX: node_history / entry
-
 sub closest_copy {
     my ($self, $path, $pool) = @_;
     my ($copath, $root) = $self->_get_copath($path, $pool);
@@ -121,6 +119,33 @@ sub _get_copath {
 	($path, $self->path->xd->{checkout}->get($copath)->{revision}, $pool);
     return ($copath, $root);
 }
+
+# Currently unimplemented svn_fs_root methods:
+#
+# is_txn_root
+# is_revision_root
+# txn_root_name
+# revision_root_revision
+# paths_changed
+# node_history (and the svn_fs_history methods)
+# is_dir
+# is_file
+# node_id
+# node_created_path
+# change_node_prop
+# props_changed
+# merge
+# make_dir
+# delete
+# copy
+# revision_link
+# file_length
+# make_file
+# apply_textdelta
+# apply_text
+# contents_changed
+# get_file_delta_stream
+
 
 package SVK::Root::Checkout::Entry;
 use base 'Class::Accessor::Fast';
