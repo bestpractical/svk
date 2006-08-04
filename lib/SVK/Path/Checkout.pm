@@ -204,10 +204,8 @@ sub refresh_revision {
     return $self;
 }
 
-*nearest_copy = *SVK::Path::_nearest_copy_svn; # always use the closest_copy implementation
-
 # XXX:
-for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_ancestors/) {
+for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_ancestors nearest_copy/) {
     no strict 'refs';
     no warnings 'once';
     *{$pass_through} = *{'SVK::Path::'.$pass_through};
