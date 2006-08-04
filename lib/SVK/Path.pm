@@ -344,7 +344,7 @@ sub _copy_ancestors {
     my $t = $self->clone;
     my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
     my ($root, $path) = ($t->root, $t->path);
-    while (my (undef, $copyfrom_root, $copyfrom_path) = nearest_copy ($root, $path, $new_pool)) {
+    while (my (undef, $copyfrom_root, $copyfrom_path) = $self->can('nearest_copy')->($root, $path, $new_pool)) {
 	push @result, [$copyfrom_path,
 		       $copyfrom_root->revision_root_revision];
 	($root, $path) = ($copyfrom_root, $copyfrom_path);

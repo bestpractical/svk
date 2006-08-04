@@ -72,6 +72,23 @@ sub copied_from {
     return ($source_rev, $source_path);
 }
 
+sub node_history {
+    my ($self, $path, $pool) = @_;
+    my ($copath, $root) = $self->_get_copath($path, $pool);
+    my $entry = $self->path->xd->{checkout}->get($copath);
+    my $kind = $entry->{'.schedule'} || '';
+
+    return $root->node_history($path, $pool) unless $kind eq 'add';
+
+    if ($entry->{scheduleanchor} && $entry->{'.copyfrom'}) {
+       my $hist = $root->node_history($entry->{scheduleanchor}, $pool);
+       my %info = ( revision => $root->revision_root_revision, path => $path );
+       my $rhist = SVK::Root::Checkout::History->new( { _prev => $hist, %info });
+       return SVK::Root::Checkout::History->new( { _init => 1, _prev => $rhist, %info });
+    }
+    Carp::confess "dunno what to do yet"; # XXX
+}
+
 sub dir_entries {
     my ($self, $path, $pool) = @_;
     my ($copath,$root) = $self->_get_copath($path, $pool);
@@ -121,13 +138,12 @@ sub _get_copath {
 }
 
 # Currently unimplemented svn_fs_root methods:
-#
+# (forbid the txnroot-specific methods)
 # is_txn_root
 # is_revision_root
 # txn_root_name
 # revision_root_revision
 # paths_changed
-# node_history (and the svn_fs_history methods)
 # is_dir
 # is_file
 # node_id
@@ -159,5 +175,14 @@ sub AUTOLOAD {
     return if $func =~ m/^[A-Z]/;
     die "$self $AUTOLOAD";
 }
+
+package SVK::Root::Checkout::History;
+use base 'Class::Accessor::Fast';
+__PACKAGE__->mk_accessors(qw(path revision _init _prev));
+
+sub location { ($_[0]->path, $_[0]->revision) }
+
+sub prev { return $_[0]->_prev if $_[0]->init || $_[1] }
+
 
 1;
