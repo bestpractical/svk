@@ -194,7 +194,7 @@ is_output(
 is_output(
     $svk, 'log', [ '--filter', 'std' ],
     [
-        q(Cannot use the output filter "Std" in a selection pipeline.),
+        q(Cannot use the output filter "std" in a selection pipeline.),
         q(Perhaps you meant "--output std".  If not, take a look at),
         q("svk help log" for examples of using log filters.),
     ],
@@ -202,7 +202,7 @@ is_output(
 is_output(
     $svk, 'log', [ '--filter', 'author joe | std' ],
     [
-        q(Cannot use the output filter "Std" in a selection pipeline.),
+        q(Cannot use the output filter "std" in a selection pipeline.),
         q(Perhaps you meant "--output std".  If not, take a look at),
         q("svk help log" for examples of using log filters.),
     ],
@@ -210,8 +210,8 @@ is_output(
 is_output(
     $svk, 'log', [ '--output', 'grep' ],
     [
-        q(Cannot use the selection filter "Grep" as an output filter.),
-        q(Perhaps you meant "--filter 'grep'".  If not, take a look at),
+        q(Cannot use the selection filter "grep" as an output filter.),
+        q(Perhaps you meant "--filter 'grep ...'".  If not, take a look at),
         q("svk help log" for examples of using log filters.),
     ],
 );
