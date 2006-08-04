@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 16;
+plan_svm tests => 20;
 
 # working copy initialization
 our $output;
@@ -189,5 +189,36 @@ is_output(
     $svk, 'log', [ '--filter', 'author' ],
     [
         q(Author: at least one author name is required.),
+    ],
+);
+is_output(
+    $svk, 'log', [ '--filter', 'std' ],
+    [
+        q(Cannot use the output filter "Std" in a selection pipeline.),
+        q(Perhaps you meant "--output std".  If not, take a look at),
+        q("svk help log" for examples of using log filters.),
+    ],
+);
+is_output(
+    $svk, 'log', [ '--filter', 'author joe | std' ],
+    [
+        q(Cannot use the output filter "Std" in a selection pipeline.),
+        q(Perhaps you meant "--output std".  If not, take a look at),
+        q("svk help log" for examples of using log filters.),
+    ],
+);
+is_output(
+    $svk, 'log', [ '--output', 'grep' ],
+    [
+        q(Cannot use the selection filter "Grep" as an output filter.),
+        q(Perhaps you meant "--filter 'grep'".  If not, take a look at),
+        q("svk help log" for examples of using log filters.),
+    ],
+);
+is_output(
+    $svk, 'log', [ '--output', 'std | xml' ],
+    [
+        q(Output filters cannot be chained in a pipeline.),
+        q(See "svk help log" for examples of using log filters.),
     ],
 );

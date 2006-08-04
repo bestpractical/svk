@@ -3,7 +3,7 @@ package SVK::Log::Filter::Grep;
 use strict;
 use warnings;
 use SVK::I18N;
-use base qw( SVK::Log::Filter );
+use base qw( SVK::Log::Filter::Selection );
 
 sub setup {
     my ($self) = @_;

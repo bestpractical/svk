@@ -1,6 +1,6 @@
 package SVK::Log::Filter::Std;
 
-use base qw( SVK::Log::Filter );
+use base qw( SVK::Log::Filter::Output );
 
 use SVK::I18N;
 use SVK::Util qw( get_encoding reformat_svn_date );

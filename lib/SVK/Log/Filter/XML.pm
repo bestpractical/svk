@@ -2,7 +2,7 @@ package SVK::Log::Filter::XML;
 use strict;
 use warnings;
 
-use base qw( SVK::Log::Filter );
+use base qw( SVK::Log::Filter::Output );
 
 sub header {
     print qq{<?xml version="1.0" encoding="utf-8"?>\n<log>\n};

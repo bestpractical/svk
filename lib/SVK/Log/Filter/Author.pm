@@ -2,7 +2,7 @@ package SVK::Log::Filter::Author;
 
 use strict;
 use warnings;
-use base qw( SVK::Log::Filter );
+use base qw( SVK::Log::Filter::Selection );
 
 use SVK::I18N;
 use List::MoreUtils qw( any );

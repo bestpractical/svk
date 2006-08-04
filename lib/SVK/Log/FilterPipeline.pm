@@ -7,10 +7,17 @@ use SVK::I18N;
 sub new {
     my ($proto, %args) = @_;
 
+    # validate the presentation filter and argument
+    die loc(
+          qq(Output filters cannot be chained in a pipeline.\n)
+        . qq(See "svk help log" for examples of using log filters.\n)
+    ) if $args{presentation} && $args{presentation} =~ m{[|]};
+
     # make the presentation filter object
     my ( $class, $argument ) = split_filter( $args{presentation} || 'std' );
     $args{presentation} = {};
-    $args{presentation}{object} = build_filter_object($class, $argument);
+    $args{presentation}{object}
+        = build_filter_object( $class, $argument, 'output' );
 
     # make the selection filter pipeline
     my @selectors = split_selectors( $args{selection} || '' );
@@ -19,7 +26,7 @@ sub new {
         my ( $class, $argument ) = split_filter($selector);
 
         my %details;
-        $details{object} = build_filter_object($class, $argument);
+        $details{object} = build_filter_object($class, $argument, 'selection');
 
         push @{ $args{selection} }, \%details;
     }
@@ -72,7 +79,7 @@ sub split_selectors {
 }
 
 sub build_filter_object {
-    my ($class, $argument) = @_;
+    my ($class, $argument, $type) = @_;
 
     # try to locate the log filter implementation
     my $found;
@@ -91,6 +98,26 @@ sub build_filter_object {
     my (undef, undef, $filename) = File::Spec->splitpath($found);
     $filename =~ s/.pm\z//xms;
     $found = "SVK::Log::Filter::$filename";
+
+    # is the filter class of the right type?
+    if ( $type eq 'output' ) {
+        die loc(
+              qq(Cannot use the selection filter "%1" as an output filter.\n)
+            . qq(Perhaps you meant "--filter '%2'".  If not, take a look at\n)
+            . qq("svk help log" for examples of using log filters.\n),
+            $filename,
+            lc($class),
+        ) if !$found->isa('SVK::Log::Filter::Output');
+    }
+    elsif ( $type eq 'selection' ) {
+        die loc(
+              qq(Cannot use the output filter "%1" in a selection pipeline.\n)
+            . qq(Perhaps you meant "--output %2".  If not, take a look at\n)
+            . qq("svk help log" for examples of using log filters.\n),
+            $filename,
+            lc($class),
+        ) if !$found->isa('SVK::Log::Filter::Selection');
+    }
 
     # success! make the new object
     return $found->new($argument);
