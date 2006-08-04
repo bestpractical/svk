@@ -182,7 +182,7 @@ __PACKAGE__->mk_accessors(qw(path revision _init _prev));
 
 sub location { ($_[0]->path, $_[0]->revision) }
 
-sub prev { return $_[0]->_prev if $_[0]->init || $_[1] }
+sub prev { return $_[0]->_prev if $_[0]->_init || $_[1] }
 
 
 1;
