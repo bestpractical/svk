@@ -369,7 +369,7 @@ use SVN::Fs;
 
 sub _nearest_copy_svn {
     my ($root, $path, $ppool) = @_;
-    if ($root->isa(__PACKAGE__)) {
+    if (ref($root) =~ m/^SVK::Path/) {
         ($root, $path) = ($root->root, $root->path);
     }
     my ($toroot, $topath) = $root->closest_copy($path, $ppool);

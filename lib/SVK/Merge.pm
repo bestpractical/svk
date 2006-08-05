@@ -167,8 +167,16 @@ sub find_merge_base {
 	(path => $basepath, revision => $baserev, targets => undef);
     $base->anchorify if exists $src->{targets}[0];
     $base->{path} = '/' if $base->revision == 0;
-    return ($base, $dstinfo->{$fs->get_uuid.':'.$src->path} ||
-	    ($basepath eq $src->path ? $baserev : 0));
+
+    # When /A:1 is copied to /B:2, then removed, /B:2 copied to /A:5
+    # the fromrev shouldn't be /A:1, as it confuses the copy detection during merge.
+    my $from = $dstinfo->{$fs->get_uuid.':'.$src->path};
+    if ($from) {
+	my ($toroot, $fromroot) = $src->nearest_copy;
+	$from = 0 if $toroot && $from < $toroot->revision_root_revision;
+    }
+
+    return ($base, $from || ($basepath eq $src->path ? $baserev : 0));
 }
 
 sub merge_info {
@@ -443,7 +451,8 @@ sub run {
 		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
 	    }
 	}
-	warn "==> got $boundry_rev as copyboundry" if $main::DEBUG;
+	warn "==> got $boundry_rev as copyboundry, add $self->{fromrev} as boundry as well"
+	    if $main::DEBUG;
 
 	if (defined $boundry_rev) {
 	  require SVK::Editor::Copy;
