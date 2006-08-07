@@ -16,7 +16,7 @@ requires(
     # 'SVN::Core'                => $required_svn,
     'Algorithm::Annotate'      => '0',
     'Algorithm::Diff'          => '0',
-    'YAML::Syck'               => '0.14',
+    'YAML::Syck'               => '0.60',
     'Data::Hierarchy'          => '0.30',
     'PerlIO::via::dynamic'     => '0.11',
     'PerlIO::via::symlink'     => '0.02',
