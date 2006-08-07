@@ -609,8 +609,8 @@ sub auto_prop {
 	my (undef, undef, $filename) = splitpath ($copath);
 	while (my ($pattern, $value) = each %{$self->{svnautoprop}}) {
 	    next unless $filename =~ m/$pattern/;
-	    for (split (';', $value)) {
-		my ($propname, $propvalue) = split ('=', $_, 2);
+	    for (split (/\s*;\s*/, $value)) {
+		my ($propname, $propvalue) = split (/\s*=\s*/, $_, 2);
 		$prop->{$propname} = $propvalue;
 	    }
 	}

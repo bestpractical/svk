@@ -152,7 +152,7 @@ overwrite_file (File::Spec->catfile ($dir, 'config'), << "EOF");
 [miscellany]
 enable-auto-props = yes
 [auto-props]
-*.txt = svn:eol-style=native;svn:keywords=Revision Id
+*.txt = svn:eol-style = native ; svn:keywords = Revision Id
 *.pl = svn:eol-style=native;svn:mime-type=text/perl
 
 EOF
