@@ -96,8 +96,8 @@ sub do_revert {
 
 sub do_unschedule {
     my ($self, $target, $copath) = @_;
-    $self->{xd}{checkout}->store ($copath, { $self->_schedule_empty,
-					     '.conflict' => undef });
+    $self->{xd}{checkout}->store($copath, { $self->_schedule_empty,
+					    '.conflict' => undef }, {override_descendents => 0});
     print loc("Reverted %1\n", $target->report_copath ($copath))
 	unless $self->{quiet};
 

@@ -21,6 +21,8 @@ mkdir ("$copath/A");
 overwrite_file ("$copath/A/be", "foobar\n2nd replace\n");
 overwrite_file ("$copath/A/neu", "foobar\n2nd replace\n");
 # XXX: notify flush and cb_unknown ordering
+# XXX: A/be shouldn't be replace, it's actually an add. but this
+# requires more .scheudle fix with anchor.
 is_output ($svk, 'add', ["$copath/A"],
 	   [__"A   $copath/A/neu",
 	    __"R   $copath/A",

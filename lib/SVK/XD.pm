@@ -696,6 +696,10 @@ sub do_delete {
 	$self->{checkout}->store ($_, { SVK::Command->_schedule_empty })
 	    for @scheduled;
     }
+
+    # TODO: perhaps use the information to warn commiting a rename partially
+    $self->{checkout}->store($_, {scheduleanchor => $_})
+	for $target->copath_targets;
     
     return if $arg{no_rm};
     rmtree (\@paths) if @paths;
@@ -990,7 +994,8 @@ sub _node_deleted_or_absent {
     my $schedule = $arg{cinfo}{'.schedule'} || '';
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
-	$self->_node_deleted (%arg);
+	$self->_node_deleted (%arg)
+	    if !$arg{_really_in_copy} || $arg{copath} eq ($arg{cinfo}{scheduleanchor} || '');
 	# when doing add over deleted entry, descend into it
 	if ($schedule eq 'delete') {
 	    $self->_unknown_verbose (%arg)
@@ -1363,6 +1368,7 @@ sub _delta_dir {
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			$copyfrom ?
 			( base => 1,
+			  _really_in_copy => 1,
 			  in_copy => $arg{expand_copy},
 			  base_kind => $fromroot->check_path ($copyfrom),
 			  base_root => $fromroot,
