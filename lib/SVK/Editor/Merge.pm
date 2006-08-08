@@ -580,6 +580,7 @@ sub _merge_file_delete {
 	return undef;
     }
     seek $mfh, 0, 0;
+    require IO::Digest;
     my $iod = IO::Digest->new ($mfh, 'MD5');
 
     $self->{info}{$path}{open} = [$pdir, -1];
