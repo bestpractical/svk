@@ -392,8 +392,8 @@ sub _nearest_copy_svn {
 
 sub _nearest_copy_svk {
     my ($root, $path, $ppool) = @_;
-    if (UNIVERSAL::isa($root, __PACKAGE__)) {
-	($root, $path) = ($root->root, $root->path);
+    if (ref($root) =~ m/^SVK::Path/) {
+        ($root, $path) = ($root->root, $root->path);
     }
     my $fs = $root->fs;
     my $spool = SVN::Pool->new_default;
