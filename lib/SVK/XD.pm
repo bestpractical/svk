@@ -908,6 +908,25 @@ sub compile_apr_fnmatch {
     return qr/\A$re\Z/s;
 }
 
+# Here be dragon. below is checkout_delta related function.
+
+sub _delta_rev {
+    my ($self, $arg) = @_;
+    my $entry = $arg->{cinfo};
+    my $schedule = $entry->{'.schedule'} || '';
+    # XXX: uncomment this as mutation coverage test
+    # return $cb_resolve_rev->($arg->{path}, $entry->{revision});
+
+    # Lookup the copy source rev for the case of open_directory inside
+    # add_directotry with history.  But shouldn't do so for replaced
+    # items, because the rev here is used for delete_entry
+    my ($source_path, $source_rev) = $schedule ne 'replace' ?
+	$self->_copy_source($entry, $arg->{copath}) : ();
+    ($source_path, $source_rev) = ($arg->{path}, $entry->{revision})
+	unless defined $source_path;
+    return $arg->{cb_resolve_rev}->($source_path, $source_rev);
+}
+
 sub _delta_content {
     my ($self, %arg) = @_;
 
@@ -974,7 +993,7 @@ ENTRY:	for my $entry (@{$arg{targets}}) {
 
 sub _node_deleted {
     my ($self, %arg) = @_;
-    $arg{rev} = $arg{cb_rev}->($arg{entry});
+    $arg{rev} = $self->_delta_rev(\%arg);
     Carp::cluck 'hate' unless defined $arg{entry};
     $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
 
@@ -1028,7 +1047,7 @@ sub _node_deleted_or_absent {
 	my $type = $arg{kind} == $SVN::Node::dir ? 'directory' : 'file';
 
 	if ($arg{absent_as_delete}) {
-	    $arg{rev} = $arg{cb_rev}->($arg{entry});
+	    $arg{rev} = $self->_delta_rev(\%arg);
 	    $self->_node_deleted (%arg);
 	}
 	else {
@@ -1135,7 +1154,7 @@ sub _delta_file {
     unless ($schedule || $arg{add} ||
 	($arg{base} && $mymd5 ne ($md5 = $arg{base_root}->file_md5_checksum ($arg{base_path})))) {
 	$arg{cb_unchanged}->($arg{editor}, $arg{entry}, $arg{baton},
-			     $arg{cb_rev}->($arg{entry})
+			     $self->_delta_rev(\%arg)
 			    ) if ($arg{cb_unchanged} && !$modified);
 	return $modified;
     }
@@ -1146,7 +1165,7 @@ sub _delta_file {
 				     : (undef, -1), $pool)
 	if $arg{add};
 
-    $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool)
+    $baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $self->_delta_rev(\%arg), $pool)
 	if keys %$newprops;
 
     $arg{editor}->change_file_prop ($baton, $_, ref ($newprops->{$_}) ? undef : $newprops->{$_}, $pool)
@@ -1155,7 +1174,7 @@ sub _delta_file {
     if (!$arg{base} ||
 	$mymd5 ne ($md5 ||= $arg{base_root}->file_md5_checksum ($arg{base_path}))) {
 	seek $fh, 0, 0;
-	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $arg{cb_rev}->($arg{entry}), $pool);
+	$baton ||= $arg{editor}->open_file ($arg{entry}, $arg{baton}, $self->_delta_rev(\%arg), $pool);
 	$self->_delta_content (%arg, baton => $baton, pool => $pool,
 			       fh => $fh, md5 => $arg{base} ? $md5 : undef);
     }
@@ -1221,7 +1240,7 @@ sub _delta_dir {
 
     $baton ||= $arg{root} ? $arg{baton}
 	: $arg{editor}->open_directory ($arg{entry}, $arg{baton},
-					$arg{cb_rev}->($arg{entry}), $pool);
+					$self->_delta_rev(\%arg), $pool);
 
     # check scheduled addition
     # XXX: does this work with copied directory?
@@ -1257,9 +1276,13 @@ sub _delta_dir {
 	    next;
 	}
 	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
+	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
 	if ($unchanged && !$ccschedule && !$ccinfo->{'.conflict'}) {
 	    $arg{cb_unchanged}->($arg{editor}, $newentry, $baton,
-				 $arg{cb_rev}->($newentry)
+				 $self->_delta_rev({ %arg,
+						     cinfo  => $ccinfo,
+						     path   => $newpath,
+						     copath => $copath })
 				) if $arg{cb_unchanged};
 	    next;
 	}
@@ -1267,7 +1290,6 @@ sub _delta_dir {
 	next unless defined $type;
 	my $delta = $type ? $type eq 'directory' ? \&_delta_dir : \&_delta_file
 	                  : $kind == $SVN::Node::file ? \&_delta_file : \&_delta_dir;
-	my $newpath = $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry";
 	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
 	# if the sub-delta returns 1 it means the node is modified. invlidate
 	# the signature cache
@@ -1410,13 +1432,13 @@ sub checkout_delta {
 	if $arg{debug};
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	   unless $arg{nodelay};
-	
-	# XXX: Another bit of cb_rev evil.
-    $arg{cb_rev} ||= sub { $self->_get_rev (SVK::Path::Checkout->copath ($copath, $_[0])) };
+
+    my $cb_resolve_rev = $arg{cb_resolve_rev} ||= sub { $_[1] };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
 	: sub { ("file://$repospath$_[0]", $_[1]) };
-    my $rev = $arg{cb_rev}->('');
+    my ($entry) = $self->get_entry($arg{copath});
+    my $rev = $arg{cb_resolve_rev}->($arg{path}, $entry->{revision});
     local $SIG{INT} = sub {
 	$arg{editor}->abort_edit;
 	die loc("Interrupted.\n");

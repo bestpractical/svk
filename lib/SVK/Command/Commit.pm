@@ -540,25 +540,14 @@ sub run_delta {
 	  ( absent_ignore => 1),
 	  cb_copyfrom => $cb{cb_copyfrom},
 	  $cb{mirror} ?
-	  (cb_rev => sub {
-	    # XXX: the non-mirror cb_rev should be the same as
-		# this one, so codepaths are shared.
-		my $revtarget = shift;
-		my $cotarget = $target->copath ($revtarget);
-		$revtarget = $revtarget ? $target->path_anchor."/$revtarget" : $target->path_anchor;
-		my ($entry, $schedule) = $self->{xd}->get_entry($cotarget);
-		# lookup the copy source rev for the case of
-		# open_directory inside add_directotry that has
-		# history.  but shouldn't do that for replaced item,
-		# because the rev is used for delete_entry
-		my ($source_path, $source_rev) = $schedule ne 'replace' ? $self->{xd}->_copy_source ($entry, $cotarget) : ();
-		($source_path, $source_rev) = ($revtarget, $entry->{revision})
-		    unless defined $source_path;
-		return $revcache{$source_rev} if exists $revcache{$source_rev};
-		my ($rroot, $rsource_path) = $xdroot->get_revision_root($source_path, $source_rev);
-		my $rev = ($rroot->node_history($rsource_path)->prev(0)->location)[1];
-		$revcache{$source_rev} = $cb{mirror}->find_remote_rev ($rev);
-	    }) : ());
+	  (cb_resolve_rev => sub {
+	       my ($source_path, $source_rev) = @_;
+	       return $revcache{$source_rev} if exists $revcache{$source_rev};
+	       my ($rroot, $rsource_path) = $xdroot->get_revision_root($source_path, $source_rev);
+	       my $rev = ($rroot->node_history($rsource_path)->prev(0)->location)[1];
+
+	       $revcache{$source_rev} = $cb{mirror}->find_remote_rev($rev);
+	   }) : ());
     delete $self->{save_message};
     return;
 }
