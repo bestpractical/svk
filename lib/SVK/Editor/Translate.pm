@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Class::Autouse qw( SVK::Editor::Patch );
 
 require SVN::Delta;
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor::ByPass';
 
 
 =head1 NAME

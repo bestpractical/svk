@@ -4,7 +4,7 @@ use warnings;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor::ByPass';
 
 =head1 NAME
 

@@ -35,8 +35,8 @@ sub run {
 	      delete_verbose => 1,
 	      absent_verbose => 1,
 	      nodelay => 1,
-	      cb_conflict => \&SVK::Editor::Status::conflict,
-	      cb_unknown => \&SVK::Editor::Status::unknown,
+	      cb_conflict => sub { shift->conflict(@_) },
+	      cb_unknown => sub { shift->unknown(@_) },
 	      editor => SVK::Editor::Status->new
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {

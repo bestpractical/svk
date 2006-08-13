@@ -2,8 +2,7 @@ package SVK::Editor::Merge;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-require SVN::Delta;
-our @ISA = qw(Class::Accessor::Fast SVN::Delta::Editor);
+use base 'SVK::Editor';
 use SVK::I18N;
 use autouse 'SVK::Util'
     => qw( slurp_fh md5_fh tmpfile devnull abs2rel );

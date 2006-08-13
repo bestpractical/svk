@@ -1,7 +1,7 @@
 package SVK::Editor::Sign;
 
 require SVN::Delta;
-our @ISA = qw (SVN::Delta::Editor);
+use base 'SVK::Editor::ByPass';
 use SVK::I18N;
 use autouse 'SVK::Util' => qw (tmpfile);
 

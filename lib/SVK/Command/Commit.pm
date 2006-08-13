@@ -291,10 +291,8 @@ sub get_committable {
             status => $status_editor, 
         );
 
-        $conflict_handler = \&SVK::Editor::InteractiveCommitter::conflict;
     } else {
         $status_editor = SVK::Editor::Status->new(notify => $notify);
-        $conflict_handler = \&SVK::Editor::Status::conflict;
     }
 
     $self->{xd}->checkout_delta
@@ -306,7 +304,7 @@ sub get_committable {
 	  delete_verbose => 1,
 	  absent_ignore => 1,
 	  editor => $status_editor,
-	  cb_conflict => $conflict_handler,
+	  cb_conflict => sub { shift->conflict(@_) },
 	);
 
     my $conflicts = grep {$_->[0] eq 'C'} @$targets;

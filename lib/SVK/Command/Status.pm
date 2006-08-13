@@ -77,20 +77,20 @@ sub run {
 	  nodelay => 1,
 	  delete_verbose => 1,
 	  editor => $editor,
-	  cb_conflict => \&SVK::Editor::Status::conflict,
-	  cb_obstruct => \&SVK::Editor::Status::obstruct,
+	  cb_conflict => sub { shift->conflict(@_) },
+	  cb_obstruct => sub { shift->obstruct(@_) },
 	  $self->{verbose} ?
-	      (cb_unchanged => \&SVK::Editor::Status::unchanged
+	      (cb_unchanged => sub { shift->unchanged(@_) },
 	      )            :
 	      (),
 	  $self->{recursive} ? () : (depth => 1),
 	  $self->{no_ignore} ?
-              (cb_ignored => \&SVK::Editor::Status::ignored
+              (cb_ignored => sub { shift->ignored(@_) },
               )              :
               (),
 	  $self->{quiet} ?
               ()         :
-              (cb_unknown => \&SVK::Editor::Status::unknown)
+              (cb_unknown => sub { shift->unknown(@_) } )
 	);
     return;
 }

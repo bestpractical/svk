@@ -3,7 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor::ByPass';
 
 sub _open_pbaton {
     my ($self, $pbaton, $func) = @_;

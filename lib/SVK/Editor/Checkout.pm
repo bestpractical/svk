@@ -1,7 +1,7 @@
 package SVK::Editor::Checkout;
 use strict;
 our $VERSION = $SVK::VERSION;
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor';
 use SVK::I18N;
 use SVN::Delta;
 use File::Path;

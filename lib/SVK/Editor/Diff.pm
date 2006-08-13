@@ -3,7 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor';
 
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( slurp_fh tmpfile mimetype_is_text catfile abs2rel );

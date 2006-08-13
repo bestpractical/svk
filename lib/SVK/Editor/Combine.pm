@@ -4,7 +4,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 require SVN::Delta;
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor';
 
 use autouse 'SVK::Util' => qw( tmpfile );
 

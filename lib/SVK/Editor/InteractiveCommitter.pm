@@ -6,7 +6,7 @@ use SVN::Delta;
 
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-our @ISA = qw(SVN::Delta::Editor);
+use base 'SVK::Editor';
 
 sub new {
     my ($class) = shift;
