@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 2;
+use Test::More tests => 5;
 use strict;
 our $output;
 BEGIN { require 't/tree.pl' };
@@ -27,3 +27,22 @@ is_output($svk, 'st', [$copath],
 	  [__('R + t/checkout/replaced/Y'),
 	   __('D + t/checkout/replaced/Y/D'),
 	   __('D + t/checkout/replaced/Y/D/de')]);
+
+append_file("$copath/Y/A/be", "bwahaha\n");
+
+is_output($svk, 'st', [$copath],
+	  [__('R + t/checkout/replaced/Y'),
+	   __('M + t/checkout/replaced/Y/A/be'),
+	   __('D + t/checkout/replaced/Y/D'),
+	   __('D + t/checkout/replaced/Y/D/de')]);
+$svk->ci(-m => 'go', $copath);
+$svk->admin ('rmcache');
+is_output($svk, 'st', [$copath], []);
+
+$svk->rm("$copath/Y");
+$svk->cp('//V/Y@5' => "$copath/Y");
+append_file("$copath/Y/A/be", "mmmmmm\n");
+
+is_output($svk, 'st', [$copath],
+	  [__('R + t/checkout/replaced/Y'),
+	   __('M + t/checkout/replaced/Y/A/be')]);

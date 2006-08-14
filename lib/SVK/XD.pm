@@ -994,7 +994,6 @@ ENTRY:	for my $entry (@{$arg{targets}}) {
 sub _node_deleted {
     my ($self, %arg) = @_;
     $arg{rev} = $self->_delta_rev(\%arg);
-    Carp::cluck 'hate' unless defined $arg{entry};
     $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
 
     if ($arg{kind} == $SVN::Node::dir && $arg{delete_verbose}) {
@@ -1013,13 +1012,14 @@ sub _node_deleted_or_absent {
     my $schedule = $arg{cinfo}{'.schedule'} || '';
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
+	my $should_do_delete = !$arg{_really_in_copy} || $arg{copath} eq ($arg{cinfo}{scheduleanchor} || '');
 	$self->_node_deleted (%arg)
-	    if !$arg{_really_in_copy} || $arg{copath} eq ($arg{cinfo}{scheduleanchor} || '');
+	    if $should_do_delete;
 	# when doing add over deleted entry, descend into it
 	if ($schedule eq 'delete') {
 	    $self->_unknown_verbose (%arg)
 		if $arg{cb_unknown} && $arg{unknown_verbose};
-	    return 1;
+	    return $should_do_delete;
 	}
     }
 
@@ -1185,6 +1185,7 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($self, %arg) = @_;
+    # warn "===> $arg{entry} ".join(',',(caller)[0..2]) if $ENV{SVKDEBUG};
     if ($arg{entry} && $arg{exclude} && exists $arg{exclude}{$arg{entry}}) {
 	$arg{cb_exclude}->($arg{path}, $arg{copath}) if $arg{cb_exclude};
 	return;
@@ -1225,7 +1226,7 @@ sub _delta_dir {
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
     # if a node is replaced, it has no base, unless it was replaced with history.
-    $arg{base} = 0 if $schedule eq 'replace' && $arg{path} eq $arg{base_path};
+    $arg{base} = 0 if $schedule eq 'replace' && !$cinfo->{'.copyfrom'};
     my ($entries, $baton) = ({});
     if ($arg{add}) {
 	$baton = $arg{root} ? $arg{baton} :
