@@ -209,6 +209,7 @@ t/75hook.t
 t/copy_replace.t
 t/mirror/dav-authz.t
 t/mirror/sync-empty.t
+t/mirror/sync-replaced.t
 t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl
