@@ -26,7 +26,6 @@ append_file("$copath/A/Q/qu", "this is a different change\n");
 $svk->st("$copath/A");
 
 $svk->ci(-m => 'replace A with older A, with different change to qu', $copath);
-warn $output;
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
 my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
