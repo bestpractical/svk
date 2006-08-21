@@ -211,6 +211,7 @@ t/mirror/dav-authz.t
 t/mirror/sync-empty.t
 t/mirror/sync-replaced.t
 t/mirror/sync-replaced-nocopy.t
+t/mirror/sync-crazy-replace.t
 t/svk-sec.gpg
 t/svk.gpg
 t/tree.pl
