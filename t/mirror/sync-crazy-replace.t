@@ -95,5 +95,5 @@ is_output($svk, ci => [-m => 'copy inside replace', $copath],
 is_output($svk, 'sync', ['//m'],
 	  ["Syncing $uri",
 	   'Retrieving log information from 4 to 4',
-	   'Committed revision 5 from revision 5.']);
+	   'Committed revision 5 from revision 4.']);
 
