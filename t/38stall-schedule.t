@@ -59,5 +59,5 @@ is_output($svk, 'st', [],
 	   ' M  .']);
 
 is_output($svk, 'revert', ['-R'],
-	  ['Reverted A/deep',
+	  [__('Reverted A/deep'),
 	   'Reverted .']);
