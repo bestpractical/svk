@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 69;
+plan_svm tests => 70;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');
@@ -262,6 +262,16 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    'Retrieving log information from 7 to 7',
 	    'Committed revision 23 from revision 7.']);
 
+TODO: {
+local $TODO = 'BUG - fix copy with -r 2@';
+is_output ($svk, 'cp', ['-m', 'copy for remote', -r => '2@', '//foo-remote/me', '//foo-remote/me-rcopied-wr'],
+	   [
+	    "Merging back to mirror source $uri.",
+	    'Merge back committed as revision 8.',
+	    "Syncing $uri",
+	    'Retrieving log information from 8 to 8',
+	    'Committed revision 24 from revision 8.']);
+}
 
 is_output($svk, 'rm', ["$copath/B/fe"],
 	  [__("D   $copath/B/fe")]);
