@@ -222,9 +222,9 @@ is_output($svk, 'pull', [],
 	   qr'New merge ticket: .*:/A:12',
 	   'Committed revision 29.',
 	   "Syncing //l2(/l2) in $corpath_second to 29.",
-	   'U   T/xd',
-	   'U   new-file',
-	   'A   push-newfile']);
+	   __('U   T/xd'),
+	   __('U   new-file'),
+	   __('A   push-newfile')]);
 
 $svk->up($corpath_test);
 append_file("$corpath_test/new-file", "more modification that will get overwritten if using wrong merge base\n");
