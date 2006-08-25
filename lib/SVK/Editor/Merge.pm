@@ -389,7 +389,11 @@ sub _merge_text_change {
 	(map {$fh->{$_}[FILENAME]} qw/base local new/);
     my $mfh = tmpfile ('merged-');
     my $marker = time.int(rand(100000));
-    my $ylabel = $label . ' (' . $self->{inspector}->{anchor}.')';
+    my $ylabel
+        = ref($self->{inspector}) eq 'SVK::Inspector::Compat'
+        ? $label
+        : $label . ' (' . $self->{inspector}->{anchor}.')'
+        ;
     my $tlabel = $label . ' (' . $self->{anchor}.')';
     SVN::Core::diff_file_output_merge
 	    ( $mfh, $diff,
