@@ -1,5 +1,6 @@
 bin/svk
 CHANGES
+COMMITTERS
 contrib/svk-completion.pl
 contrib/svkopendiff
 inc/ExtUtils/AutoInstall.pm
@@ -33,6 +34,7 @@ lib/SVK/Command/Describe.pm
 lib/SVK/Command/Diff.pm
 lib/SVK/Command/Help.pm
 lib/SVK/Command/Import.pm
+lib/SVK/Command/Ignore.pm
 lib/SVK/Command/Info.pm
 lib/SVK/Command/List.pm
 lib/SVK/Command/Log.pm
@@ -56,6 +58,8 @@ lib/SVK/Command/Switch.pm
 lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
+lib/SVK/Editor.pm
+lib/SVK/Editor/ByPass.pm
 lib/SVK/Editor/Checkout.pm
 lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
@@ -86,7 +90,23 @@ lib/SVK/I18N/zh_tw.po
 lib/SVK/Inspector.pm
 lib/SVK/Inspector/Root.pm
 lib/SVK/Inspector/Compat.pm
+lib/SVK/Log/ChangedPath.pm
+lib/SVK/Log/ChangedPaths.pm
+lib/SVK/Log/Filter.pm
+lib/SVK/Log/Filter/Author.pm
+lib/SVK/Log/Filter/Grep.pm
+lib/SVK/Log/Filter/Head.pm
+lib/SVK/Log/Filter/Output.pm
+lib/SVK/Log/Filter/Selection.pm
+lib/SVK/Log/Filter/Std.pm
+lib/SVK/Log/Filter/XML.pm
+lib/SVK/Log/FilterPipeline.pm
 lib/SVK/Merge.pm
+lib/SVK/MimeDetect.pm
+lib/SVK/MimeDetect/FileLibMagic.pm
+lib/SVK/MimeDetect/FileMMagic.pm
+lib/SVK/MimeDetect/FileType.pm
+lib/SVK/MimeDetect/Internal.pm
 lib/SVK/Mirror.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
@@ -110,6 +130,7 @@ lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
 lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Root.pm
+lib/SVK/Root/Checkout.pm
 lib/SVK/Root/View.pm
 lib/SVK/Target/Universal.pm
 lib/SVK/Util.pm
@@ -129,6 +150,8 @@ t/01init.t
 t/01pod.t
 t/02basic-symlink.t
 t/02basic.t
+t/03import-mime.t
+t/03import-nomime.t
 t/03import.t
 t/04merge.t
 t/04merge-rename.t
@@ -155,11 +178,13 @@ t/07smerge-foreign.t
 t/07smerge-incremental.t
 t/07smerge-log.t
 t/07smerge-mixanchor.t
-t/07smerge-renamed.t
+t/07smerge-rename.t
 t/07smerge-multi.t
 t/07smerge-prop.t
 t/07smerge-relayed.t
+t/07smerge-rename.t
 t/07smerge-to-from.t
+t/07smerge-tree.t
 t/07smerge-upload.t
 t/07smerge.t
 t/09cmerge.t
@@ -171,6 +196,10 @@ t/13patch.t
 t/14move.t
 t/18replaced.t
 t/19cleanup.t
+t/20add-filetype.t
+t/20add-libmagic.t
+t/20add-mmagic.t
+t/20add-nomime.t
 t/20add.t
 t/21delete.t
 t/22status.t
@@ -181,6 +210,8 @@ t/23commit-mirror.t
 t/23commit-multi.t
 t/23commit.t
 t/24diff.t
+t/25log-filter.t
+t/25log-xml.t
 t/25log.t
 t/26revert-remove.t
 t/26revert.t
@@ -193,6 +224,7 @@ t/32list.t
 t/33prop.t
 t/34revprop.t
 t/35admin.t
+t/36push-pull-local.t
 t/36push-pull.t
 t/37revspec.t
 t/38stall-schedule.t
@@ -206,7 +238,8 @@ t/74chgspec.t
 t/74view.t
 t/74view-mirror.t
 t/75hook.t
-t/copy_replace.t
+t/76ignore.t
+t/copy-replace.t
 t/mirror/dav-authz.t
 t/mirror/sync-empty.t
 t/mirror/sync-replaced.t
