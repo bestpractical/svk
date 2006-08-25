@@ -463,7 +463,7 @@ sub committed_commit {
             rename ($copath, $basename)
               or do { warn loc("rename %1 to %2 failed: %3", $copath, $basename, $!), next };
 
-            open my ($fh), '<', $basename or die $!; # *maybe* should do eol layer
+            open my ($fh), '<:raw', $basename or die $!; 
 
 	    open my ($newfh), ">$eol", $copath or die $!;
 	    $layer->via ($newfh) if $layer;

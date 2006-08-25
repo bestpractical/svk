@@ -66,7 +66,7 @@ is_output ($svk, 'st', [], []);
 #        is_output ($svk, 'ci', [-m => 'change the file in local', 'dir/file'], [ 'M   dir/file' ]);
 #    }
     overwrite_file('dir/file', "foobar\n");
-    is_output ($svk, 'st', [], [ 'M   dir/file' ]);
+    is_output ($svk, 'st', [], [ __('M   dir/file') ]);
     is_output ($svk, 'ci', [-m => 'change the file in local', 'dir/file'], [ 'Committed revision 9.' ]);
 
     $svk->rm(-m => 'remove the dir in trunk' => '//trunk/dir');
