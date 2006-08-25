@@ -389,15 +389,17 @@ sub _merge_text_change {
 	(map {$fh->{$_}[FILENAME]} qw/base local new/);
     my $mfh = tmpfile ('merged-');
     my $marker = time.int(rand(100000));
+    my $ylabel = $label . ' (' . $self->{inspector}->{anchor}.')';
+    my $tlabel = $label . ' (' . $self->{anchor}.')';
     SVN::Core::diff_file_output_merge
 	    ( $mfh, $diff,
 	      (map {
 		  $fh->{$_}[FILENAME]
 	      } qw/base local new/),
 	      "==== ORIGINAL VERSION $label $marker",
-	      ">>>> YOUR VERSION $label $marker",
+	      ">>>> YOUR VERSION $ylabel $marker",
 	      "<<<< $marker",
-	      "==== THEIR VERSION $label $marker",
+	      "==== THEIR VERSION $tlabel $marker",
 	      1, 0, $pool);
 
     my $conflict = SVN::Core::diff_contains_conflicts ($diff);

@@ -165,7 +165,7 @@ sub filter_conflict {
 
     my $state = '';
     my $newline = "[\r\n|\n\r?]";
-    my $in  = qr/^[>=]{4} (YOUR|ORIGINAL|THEIR) VERSION $self->{path} $self->{marker}$newline$/;
+    my $in  = qr/^[>=]{4} (YOUR|ORIGINAL|THEIR) VERSION $self->{path}(?: \(.*\))? $self->{marker}$newline$/;
     my $out = qr/<<<< $self->{marker}$newline/;
 
     while (<$ifh>) {

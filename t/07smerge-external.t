@@ -33,6 +33,7 @@ is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 $ENV{SVKRESOLVE} = '';
 $answer = 't'; # yours
 $svk->sm ('//trunk', $copath);
+
 is_output ($svk, 'diff', ["$copath/test.pl"],
 	   [__"=== $copath/test.pl",
             "==================================================================",
@@ -95,22 +96,22 @@ $answer = 's'; # skip
 
 $ENV{SVKRESOLVE} = 'd'; # diff
 is_output_like ($svk, 'sm', ['-m', 'merge to local again', '//trunk', '//local'], qr|
-\+>>>> YOUR VERSION test\.pl (\d+)\r?
+\+>>>> YOUR VERSION test\.pl \(/local\) (\d+)\r?
  .*\r?
 \+==== ORIGINAL VERSION test\.pl \1\r?
 \+.*\r?
-\+==== THEIR VERSION test\.pl \1\r?
+\+==== THEIR VERSION test\.pl \(/trunk\) \1\r?
 \+.*!\r?
 \+<<<< \1\r?
 |s);
 
 $ENV{SVKRESOLVE} = 'dm'; # diff merged
 is_output_like ($svk, 'sm', ['-m', 'merge to local again', '//trunk', '//local'], qr|
-\+>>>> YOUR VERSION test.pl (\d+)\r?
+\+>>>> YOUR VERSION test.pl \(/local\) (\d+)\r?
 \+.*\r?
 \+==== ORIGINAL VERSION test.pl \1\r?
  .*\r?
-\+==== THEIR VERSION test.pl \1\r?
+\+==== THEIR VERSION test.pl \(/trunk\) \1\r?
 \+.*\r?
 \+<<<< \1\r?
 |s);
