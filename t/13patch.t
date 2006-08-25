@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 48;
+plan_svm tests => 49;
 
 use File::Copy qw( copy );
 our $output;
@@ -35,6 +35,11 @@ is_output ($svk2, 'smerge', ['-lm', '', '-P', '//local', '//local', '//trunk',],
 	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
 	    "Patching locally against mirror source $uri/trunk.",
 	    'Illegal patch name: //local.']);
+TODO: {
+local $TODO = "fail -P on merge to checkout";
+is_output ($svk2, 'smerge', ['-lm', '', '-P', '-', '//trunk', $copath,],
+	   ["-P doesn't go with checkout path as target"]);
+}
 is_output ($svk2, 'smerge', ['-lm', '', '-P', 'test-1', '//local', '//trunk'],
 	   ['Auto-merging (0, 6) /local to /trunk (base /trunk:4).',
 	    "Patching locally against mirror source $uri/trunk.",
