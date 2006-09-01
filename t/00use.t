@@ -13,7 +13,7 @@ open FH, $manifest;
 
 my @pm = map { s|^lib/||; chomp; $_ } grep { m|^lib/.*pm$| } <FH>;
 
-plan tests => $#pm+1;
+plan tests => scalar @pm;
 for (@pm) {
     s|\.pm$||;
     s|/|::|g;
