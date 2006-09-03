@@ -16,12 +16,6 @@ sub parse_arg {
 
     @arg = ('') if $#arg < 0;
 
-    # -- XXX -- will break otherwise -- XXX ---
-    # (Possibly fixed now, so we'll add an undocumented option to override
-    # this, to enable testing.)
-    $self->{lump} = 1 unless $self->{force_incremental};
-    $self->{incremental} = !$self->{lump};
-
     if ($self->{all}) {
         my $checkout = $self->{xd}{checkout}{hash};
         @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
@@ -34,11 +28,17 @@ sub parse_arg {
             smerge => {
                 to => 1,
                 log => 1,
+                incremental => !$self->{lump},
                 message => '',
             }
         )->parse_arg (@arg);
     }
 
+    # -- XXX -- will break otherwise -- XXX ---
+    # (Possibly fixed now, so we'll add an undocumented option to override
+    # this, to enable testing.)
+    $self->{lump} = 1 unless $self->{force_incremental};
+    $self->{incremental} = !$self->{lump};
 
     $self->{sync}++;
     $self->{merge}++;
