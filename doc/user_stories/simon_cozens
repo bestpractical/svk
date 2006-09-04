@@ -1,0 +1,28 @@
+Date: Wed, 2 Aug 2006 09:28:31 +0100 
+From: Simon Cozens <simon@simon-cozens.org>
+To: jesse <jesse@fsck.com>, Chia-liang Kao <clkao@clkao.org> 
+Subject: Something I would love from svk 
+ 
+You may already be able to do this - if so it needs better documentation. :) 
+ 
+One of the reasons why I don't use version control as much as I should is
+that it always seems to be too cumbersome to set up. Once I have two computers 
+set up both pointing at the right repository, I'm happy to commit and update 
+every time I hack; if I don't have that, I won't bother. 
+ 
+So what I would love to see is a one-command "bring this directory under 
+version control, creating me a repository in ~/svk/ if necessary" which echos
+to the terminal another command, to be run on another host, which checks out 
+the just-created project from the remote repository. 
+ 
+Basically, anything that removes the amount of thought required to get a 
+project under version control will improve the updtake of version control. 
+ 
+What do you think? 
+ 
+Simon
+ 
+-- 
+It's a testament to the versatility of the human mind that we're so able 
+to compensate for our own incompetence.
+- Darrell Furhiman 
