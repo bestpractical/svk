@@ -64,6 +64,9 @@ SVK::Command::Switch - Switch to another branch and keep local changes
 
  switch DEPOTPATH [PATH]
 
+For information about how to change the mirrored location of a remote
+repository, please see the C<--relocate> option to C<svk mirror>.
+
 =head1 OPTIONS
 
  -r [--revision] REV    : act on revision REV instead of the head revision

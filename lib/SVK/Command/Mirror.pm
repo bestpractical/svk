@@ -268,7 +268,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
  -l [--list]            : list mirrored paths
  -d [--detach]          : mark a depotpath as no longer mirrored
- --relocate             : relocate the mirror to another URI
+ --relocate             : change the upstream URI for the mirrored depotpath
  --recover              : recover the state of a mirror path
  --unlock               : forcibly remove stalled locks on a mirror
  --upgrade              : upgrade mirror state to the latest version
