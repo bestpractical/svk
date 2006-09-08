@@ -178,13 +178,23 @@ sub run {
 	my @cpdst;
 	for (@src) {
 	    my $cpdst = $dst->new;
-	    $cpdst->descend ($_->path_anchor =~ m|/([^/]+)/?$|)
-		if -d $cpdst->copath;
+	    # implicit target for "cp x y z dir/"
+	    if (-d $cpdst->copath) {
+		# XXX: _path_inside should be refactored in to SVK::Util
+		if ( substr($cpdst->path_anchor, 0, length($_->path_anchor)+1) eq $_->path_anchor."/") {
+		    die loc("Invalid argument: copying directory %1 into itself.\n", $_->report);
+		}
+		if ($_->path_anchor eq $cpdst->path_anchor) {
+		    print loc("Ignoring %1 as source.\n", $_->report);
+		    next;
+		}
+		$cpdst->descend ($_->path_anchor =~ m|/([^/]+)/?$|)
+	    }
 	    die loc ("Path %1 already exists.\n", $cpdst->report)
 		if -e $cpdst->copath;
-	    push @cpdst, $cpdst;
+	    push @cpdst, [$_, $cpdst];
 	}
-	$self->handle_co_item ($_, shift @cpdst) for @src;
+	$self->handle_co_item(@$_) for @cpdst;
     }
     else {
 	if ($dst->root->check_path($dst->path_anchor) != $SVN::Node::dir) {
