@@ -8,13 +8,18 @@ use SVK::XD;
 sub options {
     ($_[0]->SUPER::options,
      'B|baseless'	=> 'baseless',
-     'b|base|baserev:i'	=> 'baserev',
+     'b|base=s'         => 'merge_base',
+     'baserev=i'        => 'rev',
     );
 }
 
 sub run {
     my ($self, @arg) = @_;
     $self->{auto}++;
+    if ($self->{baserev}) {
+	print loc("--baserev is deprecated, use --base instead\n");
+	$self->{base} ||= $self->{baserev};
+    }
     $self->SUPER::run (@arg);
 }
 
@@ -37,7 +42,7 @@ SVK::Command::Smerge - Automatically merge all changes between branches
  -I [--incremental]     : apply each change individually
  -l [--log]             : use logs of merged revisions as commit message
  -B [--baseless]        : use the earliest revision as the merge point
- -b [--base] REV        : use revision REV of SOURCE as the merge base
+ -b [--base] BASE       : use BASE as the merge base, which can be can be PATH:REV
  -s [--sync]            : synchronize mirrored sources before update
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path

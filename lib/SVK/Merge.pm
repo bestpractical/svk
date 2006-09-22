@@ -115,6 +115,31 @@ sub find_merge_base {
     my $yrev = $fs->youngest_rev;
     my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
+    my ($merge_base, $merge_baserev) = $self->{merge_base} ?
+	split(/:/, $self->{merge_base}) : ('', undef);
+    ($merge_base, $merge_baserev) = (undef, $merge_base)
+        if $merge_base =~ /^\d+$/;
+
+    return ($src->as_depotpath->new
+	    (path => $merge_base, revision => $merge_baserev, targets => undef),
+	    $merge_baserev)
+	if $merge_base && $merge_baserev;
+
+    if ($merge_base) {
+        my %allowed = map { ($_ =~ /:(.*)$/) => $_ }
+            grep exists $srcinfo->{$_} && exists $dstinfo->{$_},
+            keys %{ { %$srcinfo, %$dstinfo } };
+
+        unless ($allowed{$merge_base}) {
+	    die loc("base '%1' is not allowed without revision specification.\nUse one of the next or provide revision:%2\n",
+                $merge_base, (join '', map "\n    $_", sort keys %allowed) );
+        }
+	my $rev = min ($srcinfo->{$allowed{$merge_base}}, $dstinfo->{$allowed{$merge_base}});
+	return ($src->as_depotpath->new
+		(path => $merge_base, revision => $rev, targets => undef),
+		$rev);
+    }
+
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
@@ -139,8 +164,8 @@ sub find_merge_base {
 	    if !$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date');
     }
 
-    return ($src->new (revision => $self->{baserev}), $self->{baserev})
-        if $self->{baserev};
+    return ($src->new (revision => $merge_baserev), $merge_baserev)
+        if $merge_baserev;
 
     unless ($basepath) {
 	return ($src->new (path => '/', revision => 0), 0)
