@@ -552,6 +552,21 @@ sub search_revision {
     return;
 }
 
+# is $self merged from $other at the revision?
+# if so, return the revision of $other that is merged to $self
+sub is_merged_from {
+    my ($self, $other) = @_;
+    my $fs = $self->repos->fs;
+    my $u = $other->universal;
+    my $resource = join (':', $u->{uuid}, $u->{path});
+    my $prev = $self->prev;
+    local $@;
+    my ($merge, $pmerge) =
+	map { SVK::Merge::Info->new(eval { $_->root->node_prop($_->path, 'svk:merge') } )
+		->{$resource}{rev} || 0 } ($self, $prev);
+    return ($merge != $pmerge) ? $merge : 0;
+}
+
 # $path is the actul path we use to normalise
 sub merged_from {
     my ($self, $src, $merge, $path) = @_;
@@ -636,6 +651,15 @@ sub path_target { $_[0]->{targets}[0] || '' }
 
 use Data::Dumper;
 sub dump { warn Dumper($_[0]) }
+
+sub prev {
+    my ($self) = shift;
+    my $prev = $self->as_depotpath($self->revision-1);
+
+    eval { $prev->normalize; 1 } or return ;
+
+    return $prev;
+}
 
 =head1 SEE ALSO
 

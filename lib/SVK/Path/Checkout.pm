@@ -205,7 +205,7 @@ sub refresh_revision {
 }
 
 # XXX:
-for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_ancestors nearest_copy/) {
+for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_ancestors nearest_copy is_merged_from/) {
     no strict 'refs';
     no warnings 'once';
     *{$pass_through} = *{'SVK::Path::'.$pass_through};
@@ -299,6 +299,11 @@ sub _get_paths {
     $path = length $path ? $self->path_anchor."/$path" : $self->path_anchor;
 
     return ($path, $copath);
+}
+
+sub prev {
+    my $self = shift;
+    return $self->source;
 }
 
 =head1 SEE ALSO

@@ -52,12 +52,13 @@ is_output_like ($svk, 'smerge', ['-m', 'simple smerge from source again', '//m/A
 my ($uuid, $rev) = ($repos->fs->get_uuid, $repos->fs->youngest_rev);
 is_output_like ($svk, 'smerge', ['-m', 'simple smerge from local', '//l', '//m/A'],
 		qr|base /m/A:8|);
+
 is_deeply ((SVK::Path->real_new
 			     ({ repos => $repos,
 			       path => '/m/A',
 			       revision => $repos->fs->youngest_rev,
 			      })->root->node_proplist('/m/A')),
-	   {'svk:merge' => "$uuid:/l:$rev"},
+	   { 'svk:merge' => $uuid.':/l:9'},
 	   'simple smerge back to source');
 is_output_like ($svk, 'smerge', ['-m', 'mergedown', '//m/A', '//l'],
-		qr|base /l:9|);
+		qr|Empty merge\.|);

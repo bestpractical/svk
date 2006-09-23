@@ -224,6 +224,7 @@ t/32list.t
 t/33prop.t
 t/34revprop.t
 t/35admin.t
+t/36push-pull-cross.t
 t/36push-pull-local.t
 t/36push-pull.t
 t/37revspec.t

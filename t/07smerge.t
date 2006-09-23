@@ -112,11 +112,11 @@ is_deeply ((SVK::Path->real_new
 
 $svk->smerge ('-C', '//m', '//l');
 is_output ($svk, 'smerge', ['-m', 'mergedown', '//m', '//l'],
-	   ['Auto-merging (6, 8) /m to /l (base /l:7).',
+	   ['Auto-merging (6, 8) /m to /l (base */m:6).',
 	    'Empty merge.'], 'merge down - empty');
 $svk->pl ('-v', '//m');
 is_output ($svk, 'smerge', ['-m', 'mergedown', '//m', '//l'],
-	   ['Auto-merging (6, 8) /m to /l (base /l:7).',
+	   ['Auto-merging (6, 8) /m to /l (base */m:6).',
 	    'Empty merge.'], 'merge up - empty');
 $svk->update ($scopath);
 append_file ("$scopath/A/be", "more modification on trunk\n");

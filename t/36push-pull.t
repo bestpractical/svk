@@ -249,9 +249,8 @@ is_output($svk, 'push', [],
 	   'Retrieving log information from 13 to 14',
 	   'Committed revision 30 from revision 13.',
 	   'Committed revision 31 from revision 14.',
-	   '===> Auto-merging (28, 29) /l2 to /m (base /m:27).',
+	   '===> Auto-merging (28, 29) /l2 to /m (base */l2:28).',
 	   "Merging back to mirror source $uri/A.",
-	   'g   be',
 	   'Empty merge.']);
 
 chdir ($initial_cwd);

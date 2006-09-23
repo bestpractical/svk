@@ -938,7 +938,7 @@ sub close_edit {
 	$self->{storage}->close_edit(@arg);
     }
     else {
-	print loc("Empty merge.\n");
+	print loc("Empty merge.\n") unless $self->{notify}{quiet};
 	$self->{storage}->abort_edit(@arg);
     }
 }

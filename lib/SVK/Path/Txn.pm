@@ -6,8 +6,9 @@ __PACKAGE__->mk_shared_accessors(qw(txn));
 sub _get_inspector {
     my $self = shift;
 
+    Carp::cluck unless $self->repos;
     $self->txn($self->repos->fs_begin_txn_for_commit
-	       ($self->repos->fs->youngest_rev,
+	       ($self->revision,
 		undef, undef, $self->pool))
 	unless $self->txn;
 
@@ -20,7 +21,7 @@ sub _get_inspector {
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my $yrev = $self->repos->fs->youngest_rev;
+    my $yrev = $self->revision;
 
     my $inspector = $self->inspector;
 
@@ -41,6 +42,18 @@ sub get_editor {
 sub root {
     my $self = shift;
     return $self->inspector->root;
+}
+
+sub as_depotpath {
+    my $self = shift;
+    my $depotpath = $self->mclone(txn => undef);
+    bless $depotpath, 'SVK::Path';
+    return $depotpath;
+}
+
+sub prev {
+    my ($self) = shift;
+    $self->as_depotpath;
 }
 
 1;

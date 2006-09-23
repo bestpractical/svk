@@ -64,10 +64,46 @@ sub new {
 
 sub auto {
     my $self = new (@_);
-    @{$self}{qw/base fromrev/} = $self->find_merge_base (@{$self}{qw/src dst/});
+    @{$self}{qw/base fromrev/} = $self->find_merge_base(@{$self}{qw/src dst/});
+    $self->_rebase;
+
     return $self;
 }
 
+sub _rebase {
+    my $self = shift;
+
+    return unless $self->{base}->path eq $self->{dst}->path;
+
+    $self->{src}->is_merged_from($self->{base})
+	or return;
+
+    my $dst = $self->{src}->prev or return;
+    $dst->root->check_path($dst->path) or return;
+
+    # If the previous source hasn't been merged, use the original base
+    # logic.  Otherwise we are merging changes between the alleged
+    # merge and actual revision.
+    $self->{dst}->is_merged_from($dst) or return;
+
+    require SVK::Path::Txn;
+    $dst = $dst->clone;
+    bless $dst, 'SVK::Path::Txn'; # XXX: need a saner api for this
+
+    my $xmerge = SVK::Merge->auto(%$self, quiet => 1,
+				  src => $self->{base},
+				  dst => $dst);
+
+    my ($editor, $inspector, %cb) = $xmerge->{dst}->get_editor();
+    local $ENV{SVKRESOLVE} = 's';
+    unless ($xmerge->run( $editor, inspector => $inspector, %cb )) {
+	# XXX why isn't the txnroot uptodate??
+	$self->{base} = $xmerge->{dst};
+	$self->{base}->inspector->root($self->{base}->txn->root($self->{base}->pool));
+    }
+}
+
+# DEPRECATED
 sub _is_merge_from {
     my ($self, $path, $target, $rev) = @_;
     my $fs = $self->{repos}->fs;
@@ -79,7 +115,7 @@ sub _is_merge_from {
 	map {SVK::Merge::Info->new (eval { $fs->revision_root ($_)->node_prop
 					       ($path, 'svk:merge') })->{$resource}{rev} || 0}
 	    ($rev, $rev-1);
-    return ($merge != $pmerge);
+    return ($merge != $pmerge) ? $merge : 0;
 }
 
 sub _next_is_merge {
@@ -155,8 +191,7 @@ sub find_merge_base {
 	}
 
 	if ($path eq $dst->path &&
-	    $self->_is_merge_from($src->path,
-				  $src->new(path => $path, revision => $rev), $src->revision)) {
+	    (my $src_base = $src->is_merged_from($src->mclone(path => $path, revision => $rev)))) {
 	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
 	    last;
 	}
@@ -264,9 +299,11 @@ sub get_new_ticket {
     my $dstinfo = $self->merge_info ($self->{dst});
     # We want the ticket representing src, but not dst.
     my $newinfo = $dstinfo->union ($srcinfo)->del_target ($self->{dst});
-    for (sort keys %$newinfo) {
-	print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_}{rev})
-	    if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
+    unless ($self->{quiet}) {
+	for (sort keys %$newinfo) {
+	    print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_}{rev})
+		if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
+	}
     }
     return $newinfo->as_string;
 }
@@ -317,9 +354,10 @@ Return a string about how the merge is done.
 
 sub info {
     my $self = shift;
-    return loc("Auto-merging (%1, %2) %3 to %4 (base %5:%6).\n",
+    return loc("Auto-merging (%1, %2) %3 to %4 (base %7%5:%6).\n",
 	       $self->{fromrev}, $self->{src}->revision, $self->{src}->path,
-	       $self->{dst}->path, $self->{base}->path, $self->{base}->revision);
+	       $self->{dst}->path, $self->{base}->path, $self->{base}->revision,
+	       $self->{base}->isa('SVK::Path::Txn') ? '*' : '' );
 }
 
 sub _collect_renamed {
@@ -398,6 +436,7 @@ sub run {
     my $notify_target = defined $self->{target} ? $self->{target} : $target;
     my $notify = $self->{notify} || SVK::Notify->new_with_report
 	($report, $notify_target, $is_copath);
+    $notify->{quiet} = 1 if $self->{quiet};
     my $translate_target;
     if ($target && $dsttarget && $target ne $dsttarget) {
 	$translate_target = sub { $_[0] =~ s/^\Q$target\E/$dsttarget/ };
@@ -520,9 +559,12 @@ sub run {
 #	      pool => SVN::Pool->new,
 	      no_recurse => $self->{no_recurse}, editor => $editor,
 	    );
-    print loc("%*(%1,conflict) found.\n", $meditor->{conflicts}) if $meditor->{conflicts};
-    print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
-	      $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
+    unless ($self->{quiet}) {
+	print loc("%*(%1,conflict) found.\n", $meditor->{conflicts})
+	    if $meditor->{conflicts};
+	print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
+		  $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
+    }
 
     return $meditor->{conflicts};
 }
