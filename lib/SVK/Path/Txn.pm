@@ -38,4 +38,9 @@ sub get_editor {
 	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
 }
 
+sub root {
+    my $self = shift;
+    return $self->inspector->root;
+}
+
 1;
