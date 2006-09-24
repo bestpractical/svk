@@ -172,7 +172,7 @@ sub run_command {
 	else {
 	    $self->msg_handler ($SVN::Error::FS_NO_SUCH_REVISION);
 	    eval { $self->lock (@args);
-		   $self->{xd}->giant_unlock if $self->{xd} && !$self->{hold_giant};
+		   $self->{xd}->store if $self->{xd} && !$self->{hold_giant};
 		   $ret = $self->run (@args) };
 	    $self->{xd}->unlock if $self->{xd};
 	    die $@ if $@;

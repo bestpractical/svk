@@ -16,13 +16,13 @@ $xd->{giantlock} = __("$repospath/svk.giant");
 
 $xd->giant_lock;
 is_file_content ($xd->{giantlock}, $$, 'giant locked');
-ok ($xd->{giantlocked}, 'giant locked');
+ok ($xd->{giantlock_handle}, 'giant locked');
 $xd->store;
 ok ($xd->{updated}, 'marked as updated');
-ok (!$xd->{giantlocked}, 'giant unlocked');
+ok (!$xd->{giantlock_handle}, 'giant unlocked');
 $xd->giant_lock;
 $svk->checkout ('//', $copath);
-ok (!$xd->{giantlocked}, 'giant unlocked after command invocation');
+ok (!$xd->{giantlock_handle}, 'giant unlocked after command invocation');
 is_output_like ($svk, 'cleanup', [$copath], qr'not locked');
 $xd->giant_lock;
 $xd->lock ($corpath);
@@ -53,8 +53,8 @@ $xd->store;
 # concurrency
 $xd->load;
 $xd->lock(__("$corpath/A"));
+$xd->store;
 $xd->{checkout}->store(__("$corpath/A"), { revision => 1});
-#$xd->store;
 
 my $xd2 = Storable::dclone($xd);
 my $svk2 = SVK->new(xd=> $xd2, output => \$output2);
