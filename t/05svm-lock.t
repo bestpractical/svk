@@ -26,7 +26,7 @@ if (($pid =fork) == 0) {
     exit;
 }
 while ($repos->fs->youngest_rev < 23 ) {
-    sleep 1;
+    sleep 0.2;
 }
 waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
 is_output_like ($svk, 'sync', ['-a'],
@@ -40,7 +40,6 @@ if (($pid =fork) == 0) {
     exit;
 }
 waste_rev ($svk, '/svm-lock/trunk/more-hate') for (1..20);
-sleep 2;
 kill (15, $pid);
 wait;
 
