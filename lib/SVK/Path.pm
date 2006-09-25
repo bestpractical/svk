@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
+use SVK::Editor::TxnCleanup;
 use base 'SVK::Accessor';
 
 __PACKAGE__->mk_shared_accessors
@@ -198,13 +199,13 @@ sub get_editor {
 		      return ($path, scalar $m->find_remote_rev($rev)); });
     }
 
-    # XXX: cleanup the txn if not committed
     my $txn = $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
 
     my $editor;
     ($editor, $post_handler) =
 	$self->_commit_editor($txn, $callback);
+    $editor = SVK::Editor::TxnCleanup->new(_editor => [$editor], txn => $txn);
 
     return ($editor, $inspector,
 	    send_fulltext => 1,
