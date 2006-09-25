@@ -1,28 +1,28 @@
 Hi all,
 
-I'm glad to announce svk 2.0 technology preview 1 (tp1); we are on
-the way to our 2.0 release, scheduled by Christmas.
+I'm glad to announce svk 2.0 technology preview 1 (tp1); we are on the
+way to our 2.0 release, scheduled by Christmas.
 
 Although this is not a stable release, we have been using this version
 for daily development without issues.  So please upgrade if you'd like
 to help with testing and to try out the new features below.
 
 This is the first major release after 18 months of development since
-svk 1.0 was released in May 2005, and there have been exciting improvements
-and features since then.  Here are some highlights:
+svk 1.0 was released in May 2005, and there have been exciting
+improvements and features since then.  Here are some highlights:
 
 * Interactive commits
 
   You can now use "svk commit --interactive".  svk will work you
-  through each chunk of changes in each file, and let you decide exactly
-  which ones you want to commit.
+  through each chunk of changes in each file, and let you decide
+  exactly which ones you want to commit.
 
 * Floating checkout
 
   You can now use "svk checkout --float" to have the checkout metadata
-  stored in the toplevel directory of the checkout copy.  This
-  allows you to move the checkout copy around without having to use
-  "svk checkout --relocate".
+  stored in the toplevel directory of the checkout copy.  This allows
+  you to move the checkout copy around without having to use "svk
+  checkout --relocate".
 
 * View support
 
@@ -37,10 +37,11 @@ and features since then.  Here are some highlights:
 
 * Log filter plugins
 
-  You can now write custom log processing plugins for filtering and displaying
-  log messages; svk ships with several, and others are available on CPAN.  For
-  example, try "svk log --filter 'author clkao'" or "svk log --output stat" (the
-  latter requires SVK::Log::Filter::Stats from CPAN).
+  You can now write custom log processing plugins for filtering and
+  displaying log messages; svk ships with several, and others are
+  available on CPAN.  For example, try "svk log --filter 'author
+  clkao'" or "svk log --output stat" (the latter requires
+  SVK::Log::Filter::Stats from CPAN).
 
 * Better copy and rename support across merge.
 
