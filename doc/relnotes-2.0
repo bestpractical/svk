@@ -1,43 +1,46 @@
 Hi all,
 
-I'm glad to announce svk 2.0 technology preview 1 (tp1), and we are on
-the way to 2.0 release, scheduled by Christmas.
+I'm glad to announce svk 2.0 technology preview 1 (tp1); we are on
+the way to our 2.0 release, scheduled by Christmas.
 
-Although this is not a stable release, we have been using the version
+Although this is not a stable release, we have been using this version
 for daily development without issues.  So please upgrade if you'd like
-to help testing and try out the new features below.
+to help with testing and to try out the new features below.
 
 This is the first major release after 18 months of development since
-svk 1.0 was release May 2005, and there has been exciting improvements
-and features since then.  Here are some hilights:
+svk 1.0 was released in May 2005, and there have been exciting improvements
+and features since then.  Here are some highlights:
 
 * Interactive commits
 
   You can now use "svk commit --interactive".  svk will work you
-  through every chunks of changes in each files, and let you decide if
-  you want to commit them.
+  through each chunk of changes in each file, and let you decide exactly
+  which ones you want to commit.
 
 * Floating checkout
 
-  You can now use "svk checkout --float" to have the checkout meta
-  data stored in the toplevel directory of the checkout copy.  This
-  allows you to move the checkout copy around.
+  You can now use "svk checkout --float" to have the checkout metadata
+  stored in the toplevel directory of the checkout copy.  This
+  allows you to move the checkout copy around without having to use
+  "svk checkout --relocate".
 
-* view support
+* View support
 
-  The term "view" is much like what you know about it in database. With
-  svk's view support, you can set up a "view" that is actually a map to
-  the different parts of a repository. You can then check out the
-  "view" and work with it as if you're with yet another svk checkout path.
+  svk's "views" are much like views in databases. You can now set up a
+  "view" that is actually a map to different parts of a
+  repository. You can then check out the "view" and work with it as if
+  it's just an ordinary svk checkout path.
 
-  Please note that the feature is still of beta-quality, some
-  commands are not working properly in view checkouts.  We plan to
-  have them fixed before the tp2 release.
+  Please note that this feature is still of beta-quality; some
+  commands do not work properly in view checkouts.  We plan to fix
+  them before the tp2 release.
 
-* log filter plugins
+* Log filter plugins
 
-  try "svk log --filter 'author clkao'"
-  and "svk log --output stat" (requires SVK::Log::Filter::Stats from CPAN)
+  You can now write custom log processing plugins for filtering and displaying
+  log messages; svk ships with several, and others are available on CPAN.  For
+  example, try "svk log --filter 'author clkao'" or "svk log --output stat" (the
+  latter requires SVK::Log::Filter::Stats from CPAN).
 
 * Better copy and rename support across merge.
 
@@ -45,7 +48,9 @@ and features since then.  Here are some hilights:
 
   http://svn.haxx.se/dev/archive-2005-08/0712.shtml
 
-* startup time improvements
+* Startup time improvements
+
+* Many, many bugfixes and tiny features
 
 
 Cheers,
