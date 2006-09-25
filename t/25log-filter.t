@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 BEGIN { require 't/tree.pl' };
-plan_svm tests => 20;
+plan_svm tests => 24;
 
 # working copy initialization
 our $output;
@@ -124,9 +124,57 @@ is_output(
     ],
 );
 
+# There are two needle entries, but only one is in the first two, so
+# "head | grep" only finds one, while "grep | head" and grep with
+# --limit find both.
+
+is_output(
+    $svk, 'log', [ '-q', '--filter', 'head 2 | grep needle' ],
+    [
+        qr/-+/,
+        qr/r4:/,
+        qr/-+/,
+    ],
+);
+
+is_output(
+    $svk, 'log', [ '-q', '--filter', 'grep needle | head 2' ],
+    [
+        qr/-+/,
+        qr/r4:/,
+        qr/-+/,
+        qr/r2:/,
+        qr/-+/,
+    ],
+);
+
+is_output(
+    $svk, 'log', [ '-q', '--limit', 2, '--filter', 'grep needle' ],
+    [
+        qr/-+/,
+        qr/r4:/,
+        qr/-+/,
+        qr/r2:/,
+        qr/-+/,
+    ],
+);
+
+# the "init" message is not in the first two, so we should not find it
+# if we "head 2" first.
 is_output(
     $svk, 'log', [ '--filter', 'head 2 | grep init' ],
     [
+        qr/-+/,
+    ],
+);
+
+is_output(
+    $svk, 'log', [ '--filter', 'grep init | head 2' ],
+    [
+        qr/-+/,
+        qr/r1:/,
+        '',
+        'init',
         qr/-+/,
     ],
 );

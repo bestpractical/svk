@@ -79,10 +79,16 @@ sub run {
 	$fromrev = min ($target->revision, $fromrev);
 	$torev = min ($target->revision, $torev);
     }
+
+    my $select_filter = $self->{select_filter};
+    if (defined $self->{limit}) {
+        $select_filter .= ' | ' if defined $select_filter and length $select_filter;
+        $select_filter .= "head " . $self->{limit};
+    }
     require SVK::Log::FilterPipeline;
     my $pipeline = SVK::Log::FilterPipeline->new(
         presentation  => $presentation_filter,
-        selection     => $self->{select_filter},
+        selection     => $select_filter,
         output        => undef,
         indent        => 0,
         get_remoterev => $get_remoterev,
@@ -92,7 +98,6 @@ sub run {
     );
     _get_logs(
         root     => $target->root,
-        limit    => $self->{limit},
         path     => $target->path_anchor,
         fromrev  => $fromrev,
         torev    => $torev,
@@ -105,10 +110,9 @@ sub run {
 
 sub _get_logs {
     my (%args) = @_;
-    my   (   $root, $limit, $path, $fromrev, $torev, $cross, $pipeline, $cb_log) = 
-    @args{qw/ root   limit   path   fromrev   torev   cross   pipeline   cb_log/};
+    my   (   $root, $path, $fromrev, $torev, $cross, $pipeline, $cb_log) = 
+    @args{qw/ root   path   fromrev   torev   cross   pipeline   cb_log/};
 
-    $limit ||= -1;
     my $fs = $root->fs;
     my $reverse = ($fromrev < $torev);
     my @revs;
@@ -148,8 +152,6 @@ sub _get_logs {
             return 1 if $rev > $fromrev; # next
             return 0 if $rev < $torev;   # last
 
-            return 0 if !$limit--; # last
-
             if ($reverse) {
                 unshift @revs, $rev;
                 return 1;
@@ -176,8 +178,8 @@ $chg->[$SVN::Fs::PathChange::replace] = 'R';
 
 sub do_log {
     my (%arg) = @_;
-    my (    $cross, $fromrev, $limit, $path, $repos, $torev, $pipeline, $cb_log ) =
-    @arg{qw/ cross   fromrev   limit   path   repos   torev   pipeline   cb_log /};
+    my (    $cross, $fromrev, $path, $repos, $torev, $pipeline, $cb_log ) =
+    @arg{qw/ cross   fromrev   path   repos   torev   pipeline   cb_log /};
 
     $cross ||= 0;
     my $pool = SVN::Pool->new_default;
@@ -185,7 +187,6 @@ sub do_log {
     my $rev = $fromrev > $torev ? $fromrev : $torev;
     _get_logs (
         root     => $fs->revision_root($rev),
-        limit    => $limit,
         path     => $path,
         fromrev  => $fromrev,
         torev    => $torev,
