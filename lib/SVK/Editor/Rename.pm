@@ -171,6 +171,15 @@ sub close_edit {
 #SVN::Delta::Editor->new (_debug => 1, _editor => [$self->{editor}]));
 }
 
+# Make sure driven editor aborts too.
+sub abort_edit {
+    my $self = shift;
+    $self->SUPER::abort_edit (@_);
+    my $r = $self->{editor}->abort_edit(@_);
+    $self->{txn}->abort if $self->{txn};
+    return $r;
+}
+
 =head1 AUTHORS
 
 Chia-liang Kao E<lt>clkao@clkao.orgE<gt>

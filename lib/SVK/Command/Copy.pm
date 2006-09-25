@@ -205,9 +205,17 @@ sub run {
 	$self->get_commit_message ();
 	my ($anchor, $editor) = $self->get_dynamic_editor ($dst);
 	for (@src) {
-	    $self->handle_direct_item ($editor, $anchor, $m, $_,
-				       $dst->{targets} ? $dst :
-				       $dst->new (targets => [$_->path_anchor =~ m|/([^/]+)/?$|]));
+            eval {
+                $self->handle_direct_item ($editor, $anchor, $m, $_,
+                                           $dst->{targets} ? $dst :
+                                           $dst->new (targets => [$_->path_anchor =~ m|/([^/]+)/?$|]));
+            };
+            if ($@) {
+                my $err = $@; # make sure not to lose it
+                # Clean up transaction.
+                $editor->abort_edit;
+                die $err;
+            }
 	}
 	$self->finalize_dynamic_editor ($editor);
     }
