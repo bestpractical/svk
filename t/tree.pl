@@ -161,9 +161,20 @@ sub cleanup_test {
     my ($xd, $svk) = @{+shift};
     for my $depot (sort keys %{$xd->{depotmap}}) {
 	my $pool = SVN::Pool->new_default;
-	my (undef, undef, $repos) = eval { $xd->find_repos("/$depot/", 1) };
-	diag "uncleaned txn on /$depot/"
-	    if $repos && @{$repos->fs->list_transactions};
+	my ($repospath, undef, $repos) = eval { $xd->find_repos("/$depot/", 1) };
+        if ($repos) {
+            my @txns = @{$repos->fs->list_transactions};
+            if (@txns) {
+                diag "uncleaned txn on /$depot/";
+                if ($ENV{SVKTESTUNCLEANTXN}) {
+                    for my $txn_name (@txns) {
+                        my $txn = $repos->fs->open_txn($txn_name);
+                        my $log = $txn->prop('svn:log');
+                        diag "$txn_name: $log";
+                    }
+                }
+            }
+        }
     }
     return unless $ENV{TEST_VERBOSE};
     use YAML::Syck;
