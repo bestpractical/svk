@@ -223,7 +223,7 @@ sub get_editor {
 	    $self->add_handler( $_,
 				sub {
 				    $editor->abort_edit;
-				    $txn->abort if $txn;
+				    $txn->abort if $txn and not $cb{aborts_txn};
 				} );
 	}
 	$self->clear_handler ($SVN::Error::REPOS_HOOK_FAILURE);

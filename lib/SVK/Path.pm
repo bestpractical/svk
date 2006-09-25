@@ -211,6 +211,7 @@ sub get_editor {
 	    send_fulltext => 1,
 	    post_handler => $post_handler, # inconsistent!
 	    txn => $txn,
+            aborts_txn => 1,
 	    cb_rev => sub { $root_baserev },
 	    cb_copyfrom =>
 	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
