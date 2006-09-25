@@ -14,7 +14,7 @@ use Data::Hierarchy 0.30;
 use autouse 'File::Find' => qw(find);
 use autouse 'File::Path' => qw(rmtree);
 use autouse 'YAML::Syck'	 => qw(LoadFile DumpFile);
-use SVK::Mirror;
+use SVK::MirrorDirectory;
 use PerlIO::eol 0.10 qw( NATIVE LF );
 use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
@@ -1755,7 +1755,7 @@ sub patch_file {
 
 sub _mirror {
     my ($self, $repos) = @_;
-    return SVK::Mirror->new
+    return SVK::MirrorDirectory->new
 	( { repos => $repos,
 	    config => $self->{svnconfig},
 	    revprop => ['svk:signature'] });
