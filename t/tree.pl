@@ -167,7 +167,7 @@ sub cleanup_test {
             if (@txns) {
                 diag "uncleaned txn on /$depot/";
                 if ($ENV{SVKTESTUNCLEANTXN}) {
-                    for my $txn_name (@txns) {
+                    for my $txn_name (sort @txns) {
                         my $txn = $repos->fs->open_txn($txn_name);
                         my $log = $txn->prop('svn:log');
                         diag "$txn_name: $log";
