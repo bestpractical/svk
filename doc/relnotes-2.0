@@ -1,0 +1,52 @@
+Hi all,
+
+I'm glad to announce svk 2.0 technology preview 1 (tp1), and we are on
+the way to 2.0 release, scheduled by Christmas.
+
+Although this is not a stable release, we have been using the version
+for daily development without issues.  So please upgrade if you'd like
+to help testing and try out the new features below.
+
+This is the first major release after 18 months of development since
+svk 1.0 was release May 2005, and there has been exciting improvements
+and features since then.  Here are some hilights:
+
+* Interactive commits
+
+  You can now use "svk commit --interactive".  svk will work you
+  through every chunks of changes in each files, and let you decide if
+  you want to commit them.
+
+* Floating checkout
+
+  You can now use "svk checkout --float" to have the checkout meta
+  data stored in the toplevel directory of the checkout copy.  This
+  allows you to move the checkout copy around.
+
+* view support
+
+  The term "view" is much like what you know about it in database. With
+  svk's view support, you can set up a "view" that is actually a map to
+  the different parts of a repository. You can then check out the
+  "view" and work with it as if you're with yet another svk checkout path.
+
+  Please note that the feature is still of beta-quality, some
+  commands are not working properly in view checkouts.  We plan to
+  have them fixed before the tp2 release.
+
+* log filter plugins
+
+  try "svk log --filter 'author clkao'"
+  and "svk log --output stat" (requires SVK::Log::Filter::Stats from CPAN)
+
+* Better copy and rename support across merge.
+
+  This solves the problem described in:
+
+  http://svn.haxx.se/dev/archive-2005-08/0712.shtml
+
+* startup time improvements
+
+
+Cheers,
+CLK
