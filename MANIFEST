@@ -121,7 +121,7 @@ lib/SVK/MimeDetect/FileLibMagic.pm
 lib/SVK/MimeDetect/FileMMagic.pm
 lib/SVK/MimeDetect/FileType.pm
 lib/SVK/MimeDetect/Internal.pm
-lib/SVK/MirrorDirectory.pm
+lib/SVK/MirrorCatalog.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
 lib/SVK/Patchset.pm

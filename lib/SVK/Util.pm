@@ -1038,7 +1038,7 @@ sub find_dotsvk {
 
 sub _list_mirror_cached {
     my $repos = shift;
-    SVK::MirrorDirectory->new({repos => $repos})->entries;
+    SVK::MirrorCatalog->new({repos => $repos})->entries;
 }
 
 sub _has_local {

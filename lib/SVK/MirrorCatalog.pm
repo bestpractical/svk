@@ -1,4 +1,4 @@
-package SVK::MirrorDirectory;
+package SVK::MirrorCatalog;
 use strict;
 
 use base 'Class::Accessor::Fast';
@@ -9,7 +9,7 @@ __PACKAGE__->mk_accessors(qw(repos cb_lock config revprop));
 
 =head1 NAME
 
-SVK::MirrorDirectory - mirror handling
+SVK::MirrorCatalog - mirror handling
 
 =head1 SYNOPSIS
 
@@ -39,7 +39,7 @@ sub entries {
 	    $m->init;
 	    1;
 	};
-	$@ ? () : ($_ => SVK::MirrorDirectory::Entry->new({mirror => $m}))
+	$@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({mirror => $m}))
     } SVN::Mirror::list_mirror($repos);
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
@@ -62,7 +62,7 @@ sub load_from_path {
     my $m = $self->svnmirror_object
 	( $path,  get_source => 1 );
     $m->init;
-    return SVK::MirrorDirectory::Entry->new({ mirror => $m });
+    return SVK::MirrorCatalog::Entry->new({ mirror => $m });
 }
 
 sub add_entry {
@@ -93,7 +93,7 @@ sub is_mirrored {
     return wantarray ? ($m, $path) : $m;
 }
 
-package SVK::MirrorDirectory::Entry;
+package SVK::MirrorCatalog::Entry;
 use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(qw(mirror));
