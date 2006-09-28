@@ -97,6 +97,14 @@ sub same_source {
     return 1;
 }
 
+=head2 is_mirrored
+
+Returns the mirror object if the path is mirrored.  Returns additional
+path component if used in array context.
+
+=cut
+
+
 sub is_mirrored {
     my ($self) = @_;
     return unless HAS_SVN_MIRROR;
@@ -661,6 +669,33 @@ sub prev {
     eval { $prev->normalize; 1 } or return ;
 
     return $prev;
+}
+
+=head1 as_url($local_only)
+
+Returns (url, revision) pair.
+
+=cut
+
+sub as_url {
+    my ($self, $local_only) = @_;
+    my ($path, $rev) = ($self->path_anchor, $self->revision);
+
+    if (!$local_only && (my $m = $self->is_mirrored)) {
+	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;
+	$path =~ s/%/%25/g;
+        if (my $remote_rev = $m->find_remote_rev($rev)) {
+            $rev = $remote_rev;
+        } else {
+            die "Can't find remote revision of local revision $rev for $path";
+        }
+    }
+    else {
+	$path =~ s/%/%25/g;
+	$path = "file://".$self->repospath.$path;
+    }
+
+    return ($path, $rev);
 }
 
 =head1 SEE ALSO

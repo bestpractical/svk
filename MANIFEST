@@ -260,6 +260,7 @@ t/74view-mirror.t
 t/74view.t
 t/75hook.t
 t/76ignore.t
+t/copy-escape.t
 t/copy-replace.t
 t/mirror/dav-authz.t
 t/mirror/sync-crazy-replace.t

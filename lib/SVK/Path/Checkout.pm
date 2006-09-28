@@ -211,7 +211,7 @@ for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_anc
     *{$pass_through} = *{'SVK::Path::'.$pass_through};
 }
 
-for my $proxy (qw/same_repos same_source is_mirrored normalize path universal contains_mirror depotpath depotname related_to copied_from search_revision merged_from revision repos path_anchor path_target repospath/) {
+for my $proxy (qw/same_repos same_source is_mirrored normalize path universal contains_mirror depotpath depotname related_to copied_from search_revision merged_from revision repos path_anchor path_target repospath as_url/) {
     no strict 'refs';
     *{$proxy} = sub { my $self = shift;
 		      Carp::confess unless $self->source;

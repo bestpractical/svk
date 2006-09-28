@@ -111,22 +111,11 @@ sub handle_direct_item {
     if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->path_anchor)) {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->report);
     }
-    my ($path, $rev) = ($src->path_anchor, $src->revision);
-    if ($m) {
-	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;
-        if (my $remote_rev = $m->find_remote_rev($rev)) {
-            $rev = $remote_rev;
-        } else {
-            die "Can't find remote revision of local revision $rev for $path";
-        }
-    }
-    else {
-	$path = "file://$src->{repospath}$path";
-    }
+    my ($path, $rev) = $src->as_url(!$m);
     my $baton = $editor->add_directory (abs2rel ($dst->path, $anchor => undef, '/'), 0, $path, $rev);
     $other_call->($baton) if $other_call;
     $editor->close_directory($baton);
-    $self->adjust_anchor ($editor);
+    $editor->adjust_last_anchor;
 }
 
 sub _unmodified {
