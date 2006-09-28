@@ -116,7 +116,7 @@ sub finalize_dynamic_editor {
 
 sub adjust_anchor {
     my ($self, $editor) = @_;
-    $editor->adjust_anchor ($editor->{edit_tree}[0][-1]);
+    $editor->adjust_last_anchor;
 }
 
 sub save_message {

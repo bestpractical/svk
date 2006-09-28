@@ -148,6 +148,10 @@ sub adjust_anchor {
     @$entry = [];
 }
 
+sub adjust_last_anchor {
+    $_[0]->adjust_anchor($_[0]{edit_tree}[0][-1]);
+}
+
 sub _insert_entry {
     my ($self, $anchor, $entry) = @_;
     # move the call to a proper place.
