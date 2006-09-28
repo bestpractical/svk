@@ -221,8 +221,7 @@ sub get_editor {
 	    txn => $txn,
             aborts_txn => 1,
 	    cb_rev => sub { $root_baserev },
-	    cb_copyfrom =>
-	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
+	    cb_copyfrom => sub { $self->as_url(1, @_) });
 }
 
 sub _to_pclass {
@@ -671,7 +670,7 @@ sub prev {
     return $prev;
 }
 
-=head1 as_url($local_only)
+=head1 as_url($local_only, [ $path, $rev ])
 
 Returns (url, revision) pair.
 
@@ -679,7 +678,7 @@ Returns (url, revision) pair.
 
 sub as_url {
     my ($self, $local_only) = @_;
-    my ($path, $rev) = ($self->path_anchor, $self->revision);
+    my ($path, $rev) = ($_[2] || $self->path_anchor, $_[3] || $self->revision);
 
     if (!$local_only && (my $m = $self->is_mirrored)) {
 	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;

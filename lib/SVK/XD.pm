@@ -1489,7 +1489,7 @@ sub checkout_delta {
     my $cb_resolve_rev = $arg{cb_resolve_rev} ||= sub { $_[1] };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
-	: sub { ("file://$repospath$_[0]", $_[1]) };
+	: sub { my $path = $_[0]; $path =~ s/%/%25/g; ("file://$repospath$path", $_[1]) };
     my ($entry) = $self->get_entry($arg{copath});
     my $rev = $arg{cb_resolve_rev}->($arg{path}, $entry->{revision});
     local $SIG{INT} = sub {

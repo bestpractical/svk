@@ -21,8 +21,6 @@ sub _get_inspector {
 
 sub get_editor {
     my ($self, %arg) = @_;
-    my $yrev = $self->revision;
-
     my $inspector = $self->inspector;
 
     my $callback;
@@ -34,9 +32,8 @@ sub get_editor {
 	    $inspector,
 	    txn => $self->txn,
 	    post_handler => $post_handler,
-	    cb_rev => sub { $yrev },
-	    cb_copyfrom =>
-	    sub { ('file://'.$self->repospath.$_[0], $_[1]) });
+	    cb_rev => sub { $self->revision },
+	    cb_copyfrom => sub { $self->as_url(1, @_) });
 }
 
 sub root {
