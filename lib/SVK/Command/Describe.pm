@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Diff SVK::Command::Log);
 use SVK::XD;
+use SVK::I18N;
 
 sub options {
     ();
@@ -23,6 +24,9 @@ sub parse_arg {
 sub run {
     my ($self, $chg, $target) = @_;
     my $rev = $self->resolve_revision($target,$chg);
+    if ($rev > $target->revision) {
+        die loc("Depot /%1/ has no revision %2\n", $target->depotname, $rev);
+    }
     $self->{revspec} = [$rev];
     $self->SVK::Command::Log::run ($target);
     $self->{revspec} = [$rev-1, $rev];
