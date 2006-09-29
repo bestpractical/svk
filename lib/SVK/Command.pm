@@ -1098,7 +1098,7 @@ sub find_date_rev {
     my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
 
-    my ($rev,$last);
+    my $rev = 0;
     traverse_history (
         root        => $fs->revision_root($yrev),
         path        => $target->path,
@@ -1107,14 +1107,13 @@ sub find_date_rev {
             my $revdate = $props->{'svn:date'};
             $revdate =~ s/T.*$//; $revdate =~ s/-//g;
             if($date > $revdate) {
-                $rev = ($last || $_[1]);
+                $rev = $_[1];
                 return 0;
             }
-            $last = $_[1];
             return 1;
         },
     );
-    return $rev || $last;
+    return $rev;
 }
 
 
