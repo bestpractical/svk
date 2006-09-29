@@ -11,7 +11,10 @@ sub options {
     ("v|verbose"    => 'verbose',
      "s|summarize"  => 'summarize',
      "X|expand"     => 'expand',
-     "r|revision=s@" => 'revspec');
+     "r|revision=s@" => 'revspec',
+     # *not* using chgspec, which does comma-separated stuff
+     "c|change=s"    => 'change',
+    );
 }
 
 sub parse_arg {
@@ -157,12 +160,14 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
 
  diff [-r REV] [PATH...]
  diff -r N[:M] DEPOTPATH
+ diff -c N DEPOTPATH
  diff DEPOTPATH1 DEPOTPATH2
  diff DEPOTPATH PATH
 
 =head1 OPTIONS
 
  -r [--revision] arg    : ARG (some commands also take ARG1:ARG2 range)
+ -c [--change]   rev    : show change from rev-1 to rev (reverse if negative)
 
                           A revision argument can be one of:
 

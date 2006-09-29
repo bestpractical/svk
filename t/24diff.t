@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 33;
+use Test::More tests => 36;
 use strict;
 require 't/tree.pl';
 our $output;
@@ -102,9 +102,19 @@ my $r12output = ['=== A/foo',
 		 '@@ -1 +0,0 @@',
 		 '-foobar'];
 is_sorted_output ($svk, 'diff', ['-r1:2'], $r12output, 'diff - rN:M copath');
+is_sorted_output ($svk, 'diff', ['-c2'], $r12output);
 is_sorted_output ($svk, 'diff', ['-r1', '-r2'], $r12output, 'diff - rN:M copath');
 is_sorted_output ($svk, 'diff', ['-r1:2', '//'], $r12output, 'diff - rN:M depotdir');
 is_output ($svk, 'diff', ['-r1:2', '//A/foo'],
+	   ['=== foo',
+	    '==================================================================',
+	    "--- foo\t(revision 1)",
+	    "+++ foo\t(revision 2)",
+	    '@@ -1,2 +1,3 @@',
+	    ' foobar',
+	    '+newline',
+	    ' fnord'], 'diff - rN:M depotfile');
+is_output ($svk, 'diff', ['-c2', '//A/foo'],
 	   ['=== foo',
 	    '==================================================================',
 	    "--- foo\t(revision 1)",
@@ -344,6 +354,14 @@ is_output ($svk, 'diff', [],
 	    '']);
 $svk->commit('-m', 'Property changes for A/binary.');
 is_output ($svk, 'diff', ['-r4:3'],
+           ['',
+            'Property changes on: A/binary',
+            '___________________________________________________________________',
+            'Name: svn:mime-type',
+            ' -image/jpg',
+            ' +image/png',
+	    '']);
+is_output ($svk, 'diff', ['-c-4'],
            ['',
             'Property changes on: A/binary',
             '___________________________________________________________________',

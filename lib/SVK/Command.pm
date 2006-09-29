@@ -1028,11 +1028,15 @@ sub resolve_chgspec {
     return @revlist;
 }
 
+# Looks in revspec or change (not in chgspec, which is more complicated)
+
 sub resolve_revspec {
     my ($self,$target) = @_;
     my $fs = $target->repos->fs;
     my $yrev = $fs->youngest_rev;
     my ($r1,$r2);
+    die loc("Can't assign --revision and --change at the same time.\n")
+      if defined $self->{revspec} and defined $self->{change};
     if (my $revspec = $self->{revspec}) {
         if ($#{$revspec} > 1) {
             die loc ("Invalid -r.\n");
@@ -1041,6 +1045,19 @@ sub resolve_revspec {
             ($r1, $r2) = map {
                 $self->resolve_revision($target,$_);
             } @$revspec;
+        }
+    } elsif (my $change = $self->{change}) {
+        my $flip;
+        $flip = 1 if $change =~ s/^-//;
+
+        my $r = $self->resolve_revision($target, $change);
+
+        if ($r == 0) {
+            die loc("There is no change 0.\n");
+        } elsif ($flip) {
+            ($r1, $r2) = ($r, $r-1);
+        } else {
+            ($r1, $r2) = ($r-1, $r);
         }
     }
     return($r1,$r2);
