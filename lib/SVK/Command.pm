@@ -1046,7 +1046,7 @@ sub resolve_revspec {
                 $self->resolve_revision($target,$_);
             } @$revspec;
         }
-    } elsif (my $change = $self->{change}) {
+    } elsif (defined(my $change = $self->{change})) {
         my $flip;
         $flip = 1 if $change =~ s/^-//;
 

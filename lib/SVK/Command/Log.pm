@@ -62,14 +62,14 @@ sub run {
 
     my ($fromrev, $torev);
     # move to general revspec parser in svk::command
-    if ($self->{revspec}) {
+    if (defined $self->{revspec}) {
         ($fromrev, $torev) = $self->resolve_revspec($target);
 	$torev ||= $fromrev;
     }
     $target = $target->as_depotpath($self->find_base_rev($target))
 	if $target->isa('SVK::Path::Checkout');
-    $fromrev ||= $target->revision;
-    $torev ||= 0;
+    $fromrev = $target->revision unless defined $fromrev;
+    $torev = 0 unless defined $torev;
     $self->{cross} ||= 0;
 
     my $get_remoterev = _log_remote_rev($target);
