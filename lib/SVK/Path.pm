@@ -125,9 +125,11 @@ sub _commit_editor {
 	  ( $txn, "file://".$self->repospath,
 	    $self->path_anchor, undef, undef, # author and log already set
 	    sub { print loc("Committed revision %1.\n", $_[0]);
+		  if ($post_handler) {
+		      return unless $post_handler->($_[0]);
+		  }
 		  # build the copy cache as early as possible
 		  # XXX: don't need this when there's fs_closest_copy
-		  $post_handler->($_[0]) if $post_handler;
 		  find_prev_copy ($self->repos->fs, $_[0]);
 		  $callback->(@_) if $callback; }, $pool
 	  ));
@@ -184,13 +186,16 @@ sub get_editor {
     my $callback = $arg{callback};
     my $post_handler;
     if ($m) {
+	require SVK::Command::Sync;
 	print loc("Merging back to mirror source %1.\n", $m->{source});
 	$m->{lock_message} = SVK::Command::Sync::lock_message($self);
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message},
 	     sub { my $rev = shift;
 		   print loc("Merge back committed as revision %1.\n", $rev);
-		   $post_handler->($rev) if $post_handler;
+		   if ($post_handler) {
+		       return unless $post_handler->($rev);
+		   }
 		   $m->run($rev);
 		   # XXX: find_local_rev can fail
 		   $callback->($m->find_local_rev($rev), @_)

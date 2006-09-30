@@ -196,12 +196,14 @@ sub get_editor {
 	    $$post_handler = sub {
 		$m->_new_ra->change_rev_prop($_[0], 'svk:signature',
 					     $editor->{sig});
+		1;
 	    }
 	}
 	else {
 	    my $fs = $target->repos->fs;
 	    $$post_handler = sub {
 		$fs->change_rev_prop($_[0], 'svk:signature', $editor->{sig});
+		1;
 	    }
 	}
     }
