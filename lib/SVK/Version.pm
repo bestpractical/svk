@@ -1,6 +1,6 @@
 package SVK;
 
-our $VERSION = '1.99_01';
+our $VERSION = '1.99_02';
 
 =head1 NAME
 
