@@ -215,6 +215,9 @@ sub get_editor {
     my $txn = $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
 
+    $txn->change_prop('svk:commit', '*')
+	if $fs->revision_prop(0, 'svk:notify-commit');
+
     my $editor;
     ($editor, $post_handler) =
 	$self->_commit_editor($txn, $callback);
