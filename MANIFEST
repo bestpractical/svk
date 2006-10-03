@@ -147,6 +147,7 @@ lib/SVK/Root.pm
 lib/SVK/Root/Checkout.pm
 lib/SVK/Root/View.pm
 lib/SVK/Target/Universal.pm
+lib/SVK/Test.pm
 lib/SVK/Util.pm
 lib/SVK/Version.pm
 lib/SVK/View.pm
@@ -271,7 +272,6 @@ t/mirror/sync-replaced-nocopy.t
 t/mirror/sync-replaced.t
 t/svk-sec.gpg
 t/svk.gpg
-t/tree.pl
 utils/extract-docs
 utils/extract-message-catalog
 utils/svk-ediff.el

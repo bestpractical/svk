@@ -2,7 +2,7 @@
 use Test::More tests => 12;
 use strict;
 use File::Temp;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;

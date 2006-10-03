@@ -3,7 +3,7 @@ use Test::More tests => 25;
 use strict;
 use File::Path;
 use Cwd;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
@@ -211,7 +211,7 @@ is_output ($svk, 'smerge', ['-m', 'merge down clean', '//trunk', '//local'],
 
 $svk->update ($copath);
 
-my $unversioned = copath ('C/unversioned.txt');
+my $unversioned = "$copath/C/unversioned.txt";
 overwrite_file ($unversioned, "I am here\n");
 
 $svk->rm ('-m', 'rm C on trunk', '//trunk/C');
@@ -224,7 +224,7 @@ is_output ($svk, 'smerge', ['//trunk', $copath],
 	    "New merge ticket: $uuid:/trunk:12",
 	    '2 conflicts found.']);
 
-ok ($unversioned, 'unversioned file not deleted');
+ok (-e $unversioned, 'unversioned file not deleted');
 
 $svk->revert(-R => $copath);
 $svk->switch('//local', $copath);

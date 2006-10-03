@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-BEGIN { require 't/tree.pl';};
+use SVK::Test;
 SVN::Repos->can ('get_commit_editor2')
     or plan (skip_all => 'svn 1.2 required');
 eval { require Text::Thread; 1 }

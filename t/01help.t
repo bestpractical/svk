@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More;
 use strict;
-require 't/tree.pl';
+use SVK::Test;
 
 plan skip_all => 'MANIFEST not exists' unless -e 'MANIFEST';
 open FH, 'MANIFEST' or die $!;

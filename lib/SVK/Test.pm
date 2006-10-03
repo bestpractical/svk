@@ -1,15 +1,33 @@
-#!/usr/bin/perl
+package SVK::Test;
+use strict;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+use Exporter 'import';
+
+our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
+		 get_copath append_file overwrite_file
+		 overwrite_file_raw is_file_content
+		 is_file_content_raw _do_run is_output
+		 is_sorted_output is_deeply_like is_output_like
+		 is_output_unlike is_ancestor status_native status
+		 get_editor create_basic_tree waste_rev
+		 tree_from_fsroot tree_from_xdroot __ _x not_x _l
+		 not_l uri set_editor replace_file glob_mime_samples
+		 create_mime_samples chmod_probably_useless
+
+		 catdir HAS_SVN_MIRROR IS_WIN32
+
+		 rmtree mkpath @TOCLEAN $output $answer $show_prompt);
+push @EXPORT, @Test::More::EXPORT;
 
 my $pid = $$;
 
+our @TOCLEAN;
 END {
     return unless $$ == $pid;
     rm_test($_) for @TOCLEAN;
 }
 
-use strict;
 use SVK;
-require Data::Hierarchy;
 use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
@@ -20,6 +38,8 @@ use Clone;
 
 # Fake standard input
 our $answer = [];
+our $output;
+
 our $show_prompt = 0;
 
 BEGIN {
@@ -45,7 +65,7 @@ BEGIN {
 	return $ans->[1];
     } unless $ENV{DEBUG_INTERACTIVE};
 
-    chdir catdir(abs_path(dirname(__FILE__)), '..' );
+#    chdir catdir(abs_path(dirname(__FILE__)), '..' );
 }
 
 sub plan_svm {
@@ -60,15 +80,11 @@ use Carp;
 use SVK;
 use SVK::XD;
 
-our @TOCLEAN;
 END {
     return unless $$ == $pid;
     $SIG{__WARN__} = sub { 1 };
     cleanup_test($_) for @TOCLEAN;
 }
-
-our $output = '';
-our $copath;
 
 for (qw/SVKRESOLVE SVKMERGE SVKDIFF SVKPGP SVKLOGOUTPUT LC_CTYPE LC_ALL LANG LC_MESSAGES/) {
     $ENV{$_} = '' if $ENV{$_};
@@ -330,15 +346,11 @@ sub is_ancestor {
     goto &is_deeply;
 }
 
-sub copath {
-    SVK::Path::Checkout->copath ($copath, @_);
-}
-
 sub status_native {
     my $copath = shift;
     my @ret;
     while (my ($status, $path) = splice (@_, 0, 2)) {
-	push @ret, join (' ', $status, $copath ? copath ($path) :
+	push @ret, join (' ', $status, $copath ? SVK::Path::Checkout->copath($copath, $path) :
 			 File::Spec->catfile (File::Spec::Unix->splitdir ($path)));
     }
     return @ret;

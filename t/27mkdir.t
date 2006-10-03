@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 use Test::More tests => 22;
 
 our $output;

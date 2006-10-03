@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Util qw( is_executable );
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 plan_svm tests => 2;
 our $output;
 

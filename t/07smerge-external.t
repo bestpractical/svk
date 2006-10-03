@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Test::More tests => 25;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 our ($answer, $output);
 

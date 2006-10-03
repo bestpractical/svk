@@ -3,7 +3,7 @@ use Test::More tests => 4;
 use strict;
 use File::Path;
 use Cwd;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 
 my ($xd, $svk) = build_test();

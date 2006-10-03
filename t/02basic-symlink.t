@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More;
 use strict;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 use SVK::Util qw(HAS_SYMLINK);
 
 if (!HAS_SYMLINK) {
@@ -23,4 +23,6 @@ sub get_copath {
     return ($copath, File::Spec->rel2abs("t/checkout/_real/$name"));
 }
 
+local $^W;
 require 't/02basic.t';
+

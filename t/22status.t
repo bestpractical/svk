@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 27;
 use strict;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('status');

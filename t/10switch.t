@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Test::More tests => 15;
-require 't/tree.pl';
+use SVK::Test;
 use File::Path;
 
 # build another tree to be mirrored ourself

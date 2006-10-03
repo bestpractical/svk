@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Test::More;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
 plan tests => 26;
 
@@ -9,9 +9,10 @@ use Cwd;
 use File::Path;
 
 my ($xd, $svk) = build_test('test');
-our ($copath, $corpath) = get_copath ('import');
+my ($copath, $corpath) = get_copath ('import');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
-our $output;
+
+sub copath { SVK::Path::Checkout->copath($copath, @_) }
 
 is_output_like ($svk, 'import', [], qr'SYNOPSIS', 'import - help');
 is_output_like ($svk, 'import', ['foo','bar','baz'], qr'SYNOPSIS', 'import - help');

@@ -1,26 +1,26 @@
 #!/usr/bin/perl -w
 use strict;
 use Test::More tests => 9;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 our $output;
 
 my ($xd, $svk) = build_test();
 
-our ($copath, $corpath) = get_copath ('smerge-log');
+my ($copath, $corpath) = get_copath ('smerge-log');
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->checkout ('//', $copath);
-overwrite_file (copath ('trunk/filea.txt'), "this is filea\n");
+overwrite_file ("$copath/".('trunk/filea.txt'), "this is filea\n");
 $svk->commit ('--import', '-m', 'commit on trunk', $copath);
 
 $svk->cp ('-m', 'branch for local', '//trunk', '//local');
 
 $svk->update ($copath);
-overwrite_file (copath ('local/fileb.txt'), "this is fileb\n");
+overwrite_file ("$copath/".('local/fileb.txt'), "this is fileb\n");
 $svk->commit ('--import', '-m', 'add fileb on local', $copath);
 
-append_file (copath ('trunk/filea.txt'), "modified on trunk\n");
+append_file ("$copath/".('trunk/filea.txt'), "modified on trunk\n");
 $svk->commit ('-m', 'modify filea on trunk', $copath);
 
 $svk->smerge ('-Clm', 'Merge from local to trunk', '--host', 'svk', '-f', '//local');
@@ -49,7 +49,7 @@ is_output ($svk, 'log', ['-r7', '//'],
 	   ]);
 
 $svk->update ($copath);
-append_file (copath ('local/fileb.txt'), "appended\n");
+append_file ("$copath/".('local/fileb.txt'), "appended\n");
 $svk->commit ('-m', 'modify fileb on local', $copath);
 is_output ($svk, 'smerge', ['-lm', 'Merge from local to trunk', '--host', 'svk', '-f', '//local'],
 	   ['Auto-merging (6, 8) /local to /trunk (base /local:6).',
@@ -66,11 +66,11 @@ is_output ($svk, 'log', ['-r9', '//'],
 	    '-' x 70]);
 $svk->cp ('-m', 'branch for local', '//local', '//fix');
 $svk->update ($copath);
-append_file (copath ('fix/fileb.txt'), "fileb fixes on branch\n");
+append_file ("$copath/".('fix/fileb.txt'), "fileb fixes on branch\n");
 $svk->commit ('-m', 'modify fileb on fix', $copath);
 $svk->smerge ('-lm', 'Merge from fix to local', '--host', 'fix', '-f', '//fix');
 $svk->smerge ('-lm', 'Merge from local to trunk', '--host', 'svk', '-f', '//local');
-append_file (copath ('fix/fileb.txt'), "more fileb fixes on branch\n");
+append_file ("$copath/".('fix/fileb.txt'), "more fileb fixes on branch\n");
 $svk->commit ('-m', 'modify fileb on fix', $copath);
 $svk->smerge ('-lm', 'Merge from fix to local with verbatim log', '--verbatim', '--host', 'fix', '-f', '//fix');
 
@@ -118,7 +118,7 @@ print _ @_;
 close _;
 TMP
 
-append_file (copath ('fix/fileb.txt'), "even more fileb fixes on branch\n");
+append_file ("$copath/".('fix/fileb.txt'), "even more fileb fixes on branch\n");
 $svk->commit ('-m', 'modify fileb on fix again', $copath);
 $svk->smerge ('-l', '--host', 'editor-fix', '-f', '//fix');
 

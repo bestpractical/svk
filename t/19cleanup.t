@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 15;
 use strict;
-require 't/tree.pl';
+use SVK::Test;
 require Storable;
 
 my ($xd, $svk) = build_test();

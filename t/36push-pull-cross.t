@@ -4,7 +4,7 @@ use Test::More tests => 3  ;
 use Cwd;
 use File::Path;
 
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');

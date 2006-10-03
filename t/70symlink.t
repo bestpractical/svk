@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Test::More tests => 54;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 use SVK::Util qw( HAS_SYMLINK is_symlink);
 

@@ -2,7 +2,7 @@
 use Test::More tests => 49;
 use strict;
 use File::Path;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 our $output;
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('delete');

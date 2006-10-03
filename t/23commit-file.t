@@ -1,6 +1,6 @@
 use Test::More tests => 8;
 use strict;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 our($output, $answer);
 my ($xd, $svk) = build_test();
 $svk->mkdir ('-m', 'init', '//V');

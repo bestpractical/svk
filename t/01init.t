@@ -3,7 +3,7 @@ use strict;
 use SVK::Util qw( catfile tmpdir );
 use File::Spec;
 use Test::More tests => 2;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 
 our ($answer, $output, @TOCLEAN);
 my $repospath = catdir(tmpdir(), "svk-$$-".int(rand(1000)));

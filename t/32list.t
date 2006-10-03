@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 69;
 use strict;
-require 't/tree.pl';
+use SVK::Test;
 our $output;
 
 my ($xd, $svk) = build_test('bob');

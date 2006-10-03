@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Util qw( is_executable );
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 {
     local $SIG{__WARN__} = sub { 1 };
     plan skip_all => 'gnupg not found'

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More tests => 5;
 use strict;
-require 't/tree.pl';
+use SVK::Test;
 
 my ($xd, $svk) = build_test();
 my ($copath, $corpath) = get_copath ('cherrypicking');

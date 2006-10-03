@@ -2,7 +2,7 @@
 use strict;
 use SVK::Util qw( catdir tmpdir );
 use File::Spec;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 plan tests => 17;
 
 our ($answer, $output, @TOCLEAN);

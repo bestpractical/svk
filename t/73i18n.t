@@ -2,7 +2,7 @@
 use strict;
 use Cwd;
 use File::Path;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 use POSIX qw(setlocale LC_CTYPE);
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
     or plan skip_all => 'cannot set locale to zh_TW.Big5';

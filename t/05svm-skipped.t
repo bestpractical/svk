@@ -1,7 +1,7 @@
 #!usr/bin/perl -w
 use strict;
 use Test::More;
-BEGIN { require 't/tree.pl' };
+use SVK::Test;
 plan_svm tests => 3;
 our ($output, $answer);
 # build another tree to be mirrored ourself

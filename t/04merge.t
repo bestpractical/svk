@@ -1,11 +1,12 @@
 #!/usr/bin/perl -w
 use Test::More tests => 16;
 use strict;
-require 't/tree.pl';
+use SVK::Test;
 
-our $output;
 my ($xd, $svk) = build_test();
-our ($copath, $corpath) = get_copath ('merge');
+my ($copath, $corpath) = get_copath ('merge');
+
+sub copath { SVK::Path::Checkout->copath($copath, @_) }
 
 set_editor(<< 'TMP');
 $_ = shift;

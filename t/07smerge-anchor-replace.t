@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-BEGIN { require 't/tree.pl';};
+use SVK::Test;
 plan tests => 1 ;
 
 my ($xd, $svk) = build_test ();
