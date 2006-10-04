@@ -354,10 +354,13 @@ Return a string about how the merge is done.
 
 sub info {
     my $self = shift;
-    return loc("Auto-merging (%1, %2) %3 to %4 (base %7%5:%6).\n",
+    return loc("Auto-merging (%1, %2) %3 to %4 (base %5%6:%7).\n",
 	       $self->{fromrev}, $self->{src}->revision, $self->{src}->path,
-	       $self->{dst}->path, $self->{base}->path, $self->{base}->revision,
-	       $self->{base}->isa('SVK::Path::Txn') ? '*' : '' );
+	       $self->{dst}->path,
+	       $self->{base}->isa('SVK::Path::Txn') ? '*' : '',
+           $self->{base}->path,
+           $self->{base}->revision,
+    );
 }
 
 sub _collect_renamed {
