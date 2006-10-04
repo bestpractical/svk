@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 27;
+plan tests => 30;
 our $output;
 
 # build another tree to be mirrored ourself
@@ -133,24 +133,41 @@ is_output($svk, 'ls', ['//^trunk/A/view-A'],
 $svk->ps ('-m', 'A view', 'svk:view:view-A',
 	  '/trunk/A
  -*
- Q    Q
+ X    Q
 ', '//trunk/A');
 rmtree [$copath];
 
 is_output($svk, 'co', ['//^trunk/A/view-A', $copath],
 	  ['Syncing //trunk/A(/trunk/A) in '.__($corpath).' to 7.',
-__("A   $copath/Q"),
-__("A   $copath/Q/qu"),
-__("A   $copath/Q/qz"),
+__("A   $copath/X"),
+__("A   $copath/X/qu"),
+__("A   $copath/X/qz"),
 __(" U  $copath")
 ]);
 
-is_output($svk, 'rm', ["$copath/Q/qz"],
-	  [__("D   $copath/Q/qz")]);
+is_output($svk, 'rm', ["$copath/X/qz"],
+	  [__("D   $copath/X/qz")]);
 
 is_output($svk, 'ci', [-m => 'foo', $copath],
 	  ['Committed revision 8.']);
 
-is_output($svk, 'up', ["$copath"],
-	  ['Syncing //^trunk/A/view-A@7(/trunk/A) in '.__($corpath).' to 8.']);
+overwrite_file("$copath/X/orz", "orz\n");
+is_output($svk, 'add', ["$copath/X/orz"],
+	  [__("A   $copath/X/orz")]);
+is_output($svk, 'rm', ["$copath/X/qu"],
+	  [__("D   $copath/X/qu")]);
 
+is_output($svk, 'ci', [-m => 'foo', $copath],
+	  ['Committed revision 9.']);
+
+is_output($svk, 'up', ["$copath"],
+	  ['Syncing //^trunk/A/view-A@7(/trunk/A) in '.__($corpath).' to 9.']);
+
+TODO: {
+local $TODO = 'blame in view.';
+$svk->blame("$copath/X/orz");
+#warn $output;
+
+$svk->blame('//^trunk/A/view-A/X/orz@7');
+#warn $output;
+}

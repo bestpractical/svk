@@ -52,3 +52,30 @@ $svk->cat('/test/A/Q/qu');
 my $expected = $output;
 
 is_output($svk, 'cat', ['//m/A/Q/qu'], [split(/\n/,$output)], 'content is the same');
+
+$svk->cp(-m => 'b cp', '/test/B' => '/test/B.cp');
+$svk->up($copath);
+append_file("$copath/B.cp/fe", "modify fe");
+$svk->ci(-m => 'modify fe in B.cp', $copath );
+
+$svk->rm("$copath/B/fe");
+$svk->cp('/test/B.cp/fe', "$copath/B/fe"); # replace with a related file
+append_file("$copath/B/fe", "orz\n");
+$svk->rm("$copath/B/S/be");
+$svk->cp('/test/B.cp/fe', "$copath/B/S/be"); # replace with a unrelated file
+append_file("$copath/B/S/be", "orz\n");
+$svk->cp('/test/A/Q/qz', "$copath/B/fnord");
+$svk->add("$copath/B/fnord");
+$svk->ci(-m => 'replace a file in B from A', $copath );
+
+$svk->rm(-m => 'remove mirror', '//m');
+
+$svk->mirror('//m', "$uri/B");
+
+is_output($svk, 'sync', ['//m'],
+	  ["Syncing $uri",
+	   'Retrieving log information from 1 to 3',
+	   'Committed revision 2 from revision 1.',
+	   'Committed revision 3 from revision 2.',
+	   'Committed revision 4 from revision 3.']);
+warn $output;
