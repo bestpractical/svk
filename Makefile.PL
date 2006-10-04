@@ -41,7 +41,7 @@ features(
     'Localized messages' => [
 	-default => 1,
         'Locale::Maketext::Lexicon' => '0.42',
-        'Locale::Maketext::Simple'  => '0.12',
+        'Locale::Maketext::Simple'  => '0.13',
     ],
     'Message display through a pager' => [
         -default => 1,
