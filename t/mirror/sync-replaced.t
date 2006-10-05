@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 use SVK::Test;
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 4;
+plan tests => 5;
 
 my ($xd, $svk) = build_test('test');
 
@@ -73,9 +73,8 @@ $svk->rm(-m => 'remove mirror', '//m');
 $svk->mirror('//m', "$uri/B");
 
 is_output($svk, 'sync', ['//m'],
-	  ["Syncing $uri",
-	   'Retrieving log information from 1 to 3',
-	   'Committed revision 2 from revision 1.',
-	   'Committed revision 3 from revision 2.',
-	   'Committed revision 4 from revision 3.']);
-warn $output;
+	  ["Syncing $uri/B",
+	   'Retrieving log information from 1 to 7',
+	   'Committed revision 9 from revision 1.',
+	   'Committed revision 10 from revision 2.',
+	   'Committed revision 11 from revision 7.']);
