@@ -111,6 +111,7 @@ package SVK::Command::Mirror::list;
 use SVK::Util qw( HAS_SVN_MIRROR );
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
+use List::Util qw( max );
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -119,24 +120,39 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $target) = @_;
-    my $fmt = "%-20s\t%-s\n";
-    printf $fmt, loc('Path'), loc('Source');
-    print '=' x 60, "\n";
-    my @depots = (defined($_[1])) ? @_[1..$#_] : sort keys %{$self->{xd}{depotmap}};
+    my ( $self, $target ) = @_;
+
+    my @mirror_columns;
+    my @depots
+        = defined $target
+        ? @_[ 1 .. $#_ ]
+        : sort keys %{ $self->{xd}{depotmap} }
+        ;
+    DEPOT:
     foreach my $depot (@depots) {
-	$depot =~ s{/}{}g;
-	$target = eval { $self->arg_depotpath ("/$depot/") };
-	if ($@) {
-	    warn loc ("Depot /%1/ not loadable.\n", $depot);
-	    next;
-	}
-	my %mirrors = $self->{xd}->mirror($target->repos)->entries;
-	foreach my $path (sort keys %mirrors) {
-	    my $m = $mirrors{$path};
-	    printf $fmt, '/'.$target->depotname.$path, $m->mirror->{source};
-	};
+        $depot =~ s{/}{}g;
+        $target = eval { $self->arg_depotpath("/$depot/") };
+        if ($@) {
+            warn loc( "Depot /%1/ not loadable.\n", $depot );
+            next DEPOT;
+        }
+        my %mirrors = $self->{xd}->mirror( $target->repos )->entries;
+        my $depot_name = $target->depotname;
+        foreach my $path ( sort keys %mirrors ) {
+            my $m = $mirrors{$path};
+            push @mirror_columns, [ "/$depot_name$path", $m->mirror->{source} ];
+        }
     }
+
+    my $max_depot_path = max map { length $_->[0] } @mirror_columns;
+    my $max_uri        = max map { length $_->[1] } @mirror_columns;
+
+    my $fmt = "%-${max_depot_path}s   %-s\n";
+    printf $fmt, loc('Path'), loc('Source');
+    print '=' x ( $max_depot_path + $max_uri + 3 ), "\n";
+
+    printf $fmt, @$_ for @mirror_columns;
+
     return;
 }
 
