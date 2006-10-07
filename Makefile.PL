@@ -37,6 +37,10 @@ requires(
     'Pod::Simple'              => '0',       # in core since 5.9.3
     'File::Spec'               => '3.14',    # in core since 5.9.3
 );
+build_requires(
+    'Test::More'               => '0.42',
+    'Clone'                    => 0,
+);
 features(
     'Localized messages' => [
 	-default => 1,
