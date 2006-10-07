@@ -15,7 +15,7 @@ my $manifest = File::Spec->catdir( dirname(__FILE__), '..', 'MANIFEST' );
 require SVN::Core;
 
 diag "Subversion $SVN::Core::VERSION";
-plan skip_all => 'MANIFEST not exists' unless -e $manifest;
+plan skip_all => 'MANIFEST does not exist' unless -e $manifest;
 open FH, $manifest;
 
 my @pms = map { s|^lib/||; chomp; $_ } grep { m|^lib/.*pm$| } <FH>;
