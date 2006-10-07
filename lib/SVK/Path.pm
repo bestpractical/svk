@@ -608,9 +608,9 @@ sub merged_from {
 	      # get the actual revision of the on the merge target,
 	      # and compare
 	      my $msrc = $self->new
-		  ( path => $path,
-		    revision => $minfo->{$srckey}->
-		    local($self->repos)->revision );
+	          ( path => $path,
+		    revision => $minfo->{$srckey}->local($self->repos)->revision
+                  );
 	      { local $@;
 	        eval { $msrc->normalize } or return -1;
 	      }
