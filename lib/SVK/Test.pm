@@ -1,7 +1,7 @@
 package SVK::Test;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
-use Exporter 'import';
+use base 'Exporter';
 
 our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
 		 get_copath append_file overwrite_file
@@ -17,7 +17,18 @@ our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
 		 catdir HAS_SVN_MIRROR IS_WIN32
 
 		 rmtree mkpath @TOCLEAN $output $answer $show_prompt);
+
+use Test::More;
 push @EXPORT, @Test::More::EXPORT;
+sub import {
+    my $class = shift;
+
+    my $caller = caller;
+    my $tb = Test::More->builder;
+    $tb->exported_to($caller);
+
+    $class->export_to_level(1, @_);
+}
 
 my $pid = $$;
 
@@ -31,7 +42,6 @@ use SVK;
 use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
-use Test::More;
 require Storable;
 use SVK::Path::Checkout;
 use Clone;
