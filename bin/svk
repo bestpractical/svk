@@ -32,7 +32,7 @@ It uses the Subversion filesystem but provides additional features:
 
 =back
 
-For more information about the SVK project, visit L<http://svk.elixus.org/>.
+For more information about the SVK project, visit L<http://svk.bestpractical.com/>.
 
 Run C<svk help> to access the built-in tool documentation.
 

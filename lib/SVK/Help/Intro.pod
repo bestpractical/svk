@@ -119,7 +119,7 @@ the upstream repository.
 To see a full list of svk's commands, type C<svk help commands>.
 For help with a specific command, just type C<svk help I<command>>.
 
-The svk wiki (L<http://svk.elixus.org>) is a great place to find the
+The svk wiki (L<http://svk.bestpractical.com>) is a great place to find the
 latest svk tips, tricks and updates.  If you run into trouble using svk,
 the wiki's the right place to start looking for help.
 

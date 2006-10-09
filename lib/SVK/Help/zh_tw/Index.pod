@@ -16,6 +16,6 @@ SVK::Help::Index - SVK 說明索引
     svk help 指令名稱       顯示某項指令的說明
     svk help                這份說明索引
 
-L<http://svk.elixus.org/> 有完整的說明文件.
+L<http://svk.bestpractical.com/> 有完整的說明文件.
 
 =cut

@@ -17,6 +17,6 @@ Once you've done that, more in-depth help is available:
     svk help <command-name> Help for a specific command
     svk help                This page
 
-Additional documentation is available on the web at L<http://svk.elixus.org/>.
+Additional documentation is available on the web at L<http://svk.bestpractical.com/>.
 
 =cut
