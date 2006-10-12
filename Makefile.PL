@@ -35,7 +35,7 @@ requires(
     'Getopt::Long'             => '2.35',    # in core since 5.8.8
     'Pod::Escapes'             => '0',       # in core since 5.9.3
     'Pod::Simple'              => '0',       # in core since 5.9.3
-    'File::Spec'               => '3.14',    # in core since 5.9.3
+    'File::Spec'               => '3.19',    # in core since 5.9.3
 );
 build_requires(
     'Test::More'               => '0.42',
@@ -44,8 +44,8 @@ build_requires(
 features(
     'Localized messages' => [
 	-default => 1,
-        'Locale::Maketext::Lexicon' => '0.42',
-        'Locale::Maketext::Simple'  => '0.13',
+        'Locale::Maketext::Lexicon' => '0.62',
+        'Locale::Maketext::Simple'  => '0.16',
     ],
     'Message display through a pager' => [
         -default => 1,
