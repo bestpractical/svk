@@ -28,7 +28,7 @@ sub _log_remote_rev {
     # don't bother if this repository has no mirror
     return if !$target->mirror->entries;
 
-    # XXX: if there's no $m why do we need to be able to lookup?
+    # we might be running log on a path containing mirrors.
     my $m = $target->is_mirrored || 'SVN::Mirror';
     return sub {
         my $rrev = $m->find_remote_rev( $_[0], $target->repos );
