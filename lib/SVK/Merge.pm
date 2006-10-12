@@ -1,6 +1,6 @@
 package SVK::Merge;
 use strict;
-use SVK::Util qw(HAS_SVN_MIRROR find_svm_source find_local_mirror is_executable traverse_history);
+use SVK::Util qw(HAS_SVN_MIRROR traverse_history);
 use SVK::I18N;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;

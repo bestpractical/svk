@@ -12,7 +12,7 @@ use SVK::Editor::InteractiveCommitter;
 use SVK::Editor::InteractiveStatus;
 
 use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
-		  find_svm_source tmpfile abs2rel find_prev_copy from_native to_native
+		  tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder get_anchor );
 
 use Class::Autouse qw( SVK::Editor::Rename SVK::Editor::Merge );
@@ -187,10 +187,9 @@ sub get_editor {
     }
 
     if ($self->{sign}) {
-	my ($uuid, $dst) = find_svm_source ($target->repos, $target->path_anchor);
 	$editor = SVK::Editor::Sign->new
 	    ( _editor => [$editor],
-	      anchor => "$uuid:$dst" );
+	      anchor => $target->universal->ukey );
 	my $post_handler = $cb{post_handler};
 	if (my $m = $cb{mirror}) {
 	    $$post_handler = sub {
