@@ -2,22 +2,32 @@
 <!--
 
 outline
-* clkao / bps
-* cp/rm
-* rcs
-* cvs / hate
-* subversion / good stuff
-* 2003 status / hate
-* benchmark
-* svk feature
-* svk in action
-* interactive conflict resolution
-* stealing
-* interactive commit
-* things in the way
-* history-sensitive patch management
-* svk development
-* what's new and coming
+
+- the svk use case .  airplanes. hiking.
+
+- tech overview: svk depot is svn repo )
+
+- things we had first
+
+- things you don't hve yet
+
+- user case:
+  * mirror
+  * log filter (-l), desc
+
+  * merge on repo
+  * inplce import
+  * smart merge
+  * no wc / floting
+  * mkdir -p
+  * rm -K
+  * cp ...... 
+  * interactive resolver
+  * interactive commit
+  * view
+  * patches (history, serialised editor)
+
+  * news
 
 
 -->
@@ -114,6 +124,19 @@ Import
 Lightweight
 Checkout
 ----
+How often
+do you
+relocate?
+----
+How often do
+you crawl
+checkout?
+----
+Floating
+Checkout
+----
+top level .svk/
+----
 Smart(-ish)
 Merge
 ----
@@ -136,14 +159,47 @@ CLI Goodies
 Interactive
 Resolver
 ----
+Conflicts
+are a
+nightmare &#x2623;
+----
+ >>> YOUR VERSION
+ ....
+ === ORIGINAL VERSION x
+ ....
+ === THEIR VERSION x
+ ....
+ &lt;&lt;&lt; THEIR VERSION y
+----
+Even when
+you only
+changed the
+whitespace!
+----
+Conflicts
+were a
+nightmare &#x263a;
+----
+In svk:
+
+ Conflict found on file foobar.c:
+ (d)iff, (t)heirs, (y)ours, (m)erge, (e)dit, (s)kip ? 
+----
+We stole
+this from
+Perforce
+----
 Interactive
 Commit
+----
+We stole
+this from
+Darcs
 ----
 View
 ----
 History-sensible
 Patches
-----
 ----
 Join us
 ----
