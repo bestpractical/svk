@@ -275,6 +275,14 @@ sub get_editor {
             $self->xd->{checkout}->store ($copath, {'.conflict' => 1})
                 unless $arg{check_only};
         },
+        cb_add_merged => sub { 
+            return if $arg{check_only};
+            my ($path) = @_;
+            my $copath;
+            ($path, $copath) = $self->_get_paths($path);
+            my $entry = $self->xd->{checkout}->get($copath);
+            $self->xd->{checkout}->store( $copath, { '.schedule' => undef } );
+	},
         cb_prop_merged => sub { 
             return if $arg{check_only};
             my ($path, $name) = @_;

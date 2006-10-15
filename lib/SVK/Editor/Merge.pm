@@ -213,6 +213,7 @@ sub add_file {
 	if (defined $arg[0]) {
 	    warn "===> add merge with history... very bad";
 	}
+	$self->{cb_add_merged}->($path) if $self->{cb_add_merged};
     }
     else {
 	++$self->{changes};
@@ -554,6 +555,7 @@ sub add_directory {
 	    $self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					      $self->{cb_rev}->($path), $pool);
 	$self->{notify}->node_status ($path, 'G');
+	$self->{cb_add_merged}->($path) if $self->{cb_add_merged};
     }
     else {
 	if (defined $arg[0]) {

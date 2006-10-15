@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 8;
+use Test::More tests => 9;
 use strict;
 use File::Path;
 use SVK::Test;
@@ -25,13 +25,16 @@ is_output($svk, 'st', ['A'], [__('?   A/deep')],
 
 $svk->add('A/deep');
 $svk->mkdir(-m => 'mkdir', '//trunk/A/deep');
+$svk->up('-C');
+
+is($xd->{checkout}->get( SVK::Path::Checkout->copath($corpath, 'A/deep'))->{'.schedule'},
+   'add', "update -C doesn't unschedule addmerge");
 $svk->up;
-{
-local $TODO = 'add-merge should unschedule';
+
 ok(!$xd->{checkout}->get
    (SVK::Path::Checkout->copath($corpath, 'A/deep'))->{'.schedule'},
    'up add-merge clears stalled schedule');
-}
+
 $svk->mkdir('A/stall');
 unlink('A/stall');
 
