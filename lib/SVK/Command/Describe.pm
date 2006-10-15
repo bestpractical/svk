@@ -16,21 +16,35 @@ sub parse_arg {
 
     # Allow user to type "svk describe r12345", for easy copy-and-paste
     # from "svk log".
-    $arg[0] =~ s/^r(\d+)$/$1/;
+    $arg[0] =~ s/^r(\d+\@?)$/$1/;
 
-    return ($arg[0], $self->arg_depotroot($arg[1]));
+    # We need to find a depotroot for generating a diff that includes
+    # the entire tree (not just where we might be now), and a
+    # depotpath which is specific in order to do find_local_revs.
+    # Note that if arg_co_maybe fails, then "svk desc" looks in //, so
+    # just run any localrev calls through that.
+
+    my $depotroot = $self->arg_depotroot($arg[1]);
+    my $depotpath = $depotroot;
+    {
+        local $@;
+        eval { $depotpath = $self->arg_co_maybe(defined $arg[1] ? $arg[1] : '')
+                 ->as_depotpath->refresh_revision };
+    }
+
+    return ($arg[0], $depotroot, $depotpath);
 }
 
 sub run {
-    my ($self, $chg, $target) = @_;
-    my $rev = $self->resolve_revision($target,$chg);
-    if ($rev > $target->revision) {
-        die loc("Depot /%1/ has no revision %2\n", $target->depotname, $rev);
+    my ($self, $chg, $target_root, $target_sub) = @_;
+    my $rev = $self->resolve_revision($target_sub,$chg);
+    if ($rev > $target_root->revision) {
+        die loc("Depot /%1/ has no revision %2\n", $target_root->depotname, $rev);
     }
     $self->{revspec} = [$rev];
-    $self->SVK::Command::Log::run ($target);
+    $self->SVK::Command::Log::run ($target_root);
     $self->{revspec} = [$rev-1, $rev];
-    $self->SVK::Command::Diff::run ($target);
+    $self->SVK::Command::Diff::run ($target_root);
 }
 
 1;

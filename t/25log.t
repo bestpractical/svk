@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 19;
+plan_svm tests => 20;
 
 our $output;
 my ($xd, $svk) = build_test('test');
@@ -71,6 +71,8 @@ is_output_like ($svk, 'desc', [2],
 		qr|r2.*cp and ps.*Property changes on: A/foo.*--- foo-cp\t\(revision 1\)|s);
 is_output_like ($svk, 'desc', ['r2'],
 		qr|r2.*cp and ps.*Property changes on: A/foo.*--- foo-cp\t\(revision 1\)|s);
+is_output_like ($svk, 'desc', ['r2@', '/test/A'],
+		qr|r3 \(orig r2\).*cp and ps.*Property changes on: A/foo|s);
 $svk->mv (-m => 'mv', '//foo-cp', '//foo-mv');
 $svk->rm (-m => 'rm', '//bar-cp');
 $svk->cp (-m => 'cp', '//bar-cp@4', '//bar-notmv');
