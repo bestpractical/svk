@@ -61,7 +61,7 @@ Use
 Cases
 ----
 We
-fly
+Fly
 ----
 We
 Hike
@@ -98,11 +98,6 @@ before SVN
  svn log --limit 
  (1.2.0)
 ----
-Log Filter
-in SVK
-----
- svk desc
-----
   svk diff -s
 ----
  svn diff -s
@@ -117,6 +112,9 @@ Things SVN
 doesn't have
 ----
 (Please steal)
+----
+Offline
+Commits
 ----
 In-place
 Import
@@ -140,10 +138,9 @@ top level .svk/
 Smart(-ish)
 Merge
 ----
-Merge to
-Repository
-without
-checkout
+Merging
+Without
+Checkouts
 ----
 Misc Nice
 CLI Goodies
@@ -155,6 +152,39 @@ CLI Goodies
 (Think /etc/passwd)
 ----
   svk cp path1 path2 dir
+----
+ svk desc
+----
+Log Filters
+----
+ svk log //mirror/svn/trunk --filter 'author glasser | grep prop'
+----
+ macbook:~ glasser$ svk log //mirror/svn/trunk --output stats -v
+ Newest commit : 2006-10-16
+ Oldest commit : 2001-08-31
+ Commits: 15567
+ Days: 1872
+ Commits per day : 8.3
+ Committer count: 112
+ Most active committers:
+   - kfogel         (2095)
+   - cmpilato       (1553)
+   - sussman        (1084)
+   - maxb           (784)
+   - philip         (639)
+----
+ Count of modified paths: 4771
+ Most modified paths:
+   - /mirror/svn/trunk/subversion/clients/cmdline/main.c (396)
+   - /mirror/svn/trunk/subversion/include/svn_wc.h       (382)
+   - /mirror/svn/trunk/subversion/include/svn_client.h   (322)
+   - /mirror/svn/trunk/CHANGES                           (311)
+   - /mirror/svn/trunk/subversion/libsvn_wc/adm_ops.c    (297)
+ Concentration:
+   Concentration ratio : 0.35
+   Herfindahl index : 484
+   Normalized Herfindahl index : 0.05
+   Equivalent committers : 20.6
 ----
 Interactive
 Resolver
@@ -192,11 +222,38 @@ Perforce
 Interactive
 Commit
 ----
+ === Targets to commit (you may delete items from it) ===
+ M   /Users/glasser/Projects/SVK/trunk/doc/talks/svnsummit.2006.xul
+----
+  svk ci --interactive
+----
+ --- subversion/include/svn_fs.h	(revision 106678)
+ +++ subversion/include/svn_fs.h	(local)
+ @@ -1402,10 +1402,11 @@
+  /** Write data directly to the file @a path in @a root.  @a root must be the
+   * root of a transaction, not a revision.
+   *
+   * Set @a *contents_p to a stream ready to receive full textual data.
+   * When the caller closes this stream, the data replaces the previous
+ - * contents of the file.
+ + * contents of the file.  The caller must write all file data and close
+ + * the stream before making further changes to the transaction.
+   *
+   * If @a path does not exist in @a root, return an error.  (You cannot use
+   * this routine to create new files;  use svn_fs_make_file() to create
+   * an empty file first.)
+   *
+
+ [2/38] Modification to 'subversion/include/svn_fs.h' file:
+ [a]ccept, [s]kip this change,
+ [A]ccept, [S]kip the rest of changes to this file,
+ move to [p]revious change > 
+----
 We stole
 this from
 Darcs
 ----
-View
+Views
 ----
 History-sensible
 Patches
