@@ -45,15 +45,24 @@ sub load {
 
 sub create {
     my ($class, $mirror) = @_;
+
+    my $self = $class->SUPER::new({ mirror => $mirror });
+
+    print "DEBUG: going into _new_ra\n";
+    my $ra = $self->_new_ra;
+    print "DEBUG: done with _new_ra\n";
+    
     # init the svm:source and svm:uuid thing on $mirror->path
     # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
+
+    return $self;
 }
 
 sub _new_ra {
     my ($self) = @_;
 
     $self->_initialize_svn;
-
+    print "DEBUG: making ra\n";
     return SVN::Ra->new( url => $self->url,
                          auth => $self->_auth_baton,
                          config => $self->_config );
@@ -68,7 +77,7 @@ sub _initialize_svn {
       unless $self->_auth_baton;
 }
 
-sub _initalize_auth {
+sub _initialize_auth {
     my ($self) = @_;
 
     # create a subpool that is not automatically destroyed

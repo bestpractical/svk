@@ -2,6 +2,8 @@ package SVK::Mirror;
 use strict;
 use warnings;
 
+use SVN::Core;
+
 use Sys::Hostname;
 
 use base 'Class::Accessor::Fast';
@@ -36,7 +38,7 @@ sub create {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 
-    $self->pool( SVN::Pool->(undef) )
+    $self->pool( SVN::Pool->new(undef) )
       unless $self->pool;
 
     $self->_backend(
