@@ -23,7 +23,7 @@ SVK::Mirror::Backend::SVNRa -
 
 =cut
 
-sub new {
+sub load {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 

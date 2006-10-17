@@ -15,8 +15,8 @@ SVK::Mirror -
 =head1 SYNOPSIS
 
     # setup a new mirror
-    my $mirror = SVK::Mirror->new( { backend => 'SVNRa',  url => 'http://server/',
-                                     backend_options => {}, repos => $repos, path => '/mirror' } );
+    my $mirror = SVK::Mirror->create( { backend => 'SVNRa',  url => 'http://server/',
+                                        backend_options => {}, repos => $repos, path => '/mirror' } );
     # load existing mirror
     my $existing = SVK::Mirror->load( { path => $path, repos => $repos } );
 
@@ -28,11 +28,11 @@ SVK::Mirror -
 
 =over
 
-=item new
+=item create
 
 =cut
 
-sub new {
+sub create {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 
@@ -72,7 +72,7 @@ sub load {
 sub _load_backend {
     my ($self) = @_;
 
-    return SVK::Mirror::Backend::SVNRa->new( { mirror => $self } );
+    return SVK::Mirror::Backend::SVNRa->load( { mirror => $self } );
 }
 
 =back
