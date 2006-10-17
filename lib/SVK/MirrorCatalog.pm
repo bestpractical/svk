@@ -93,6 +93,15 @@ sub is_mirrored {
     return wantarray ? ($m, $path) : $m;
 }
 
+sub add_mirror {
+    my ($self, $mirror) = @_;
+    # SVNMIRROR XXX: switch away from svnmirror
+    my $m = $self->svnmirror_object
+	( $mirror->path, source => $mirror->url );
+    $m->init;
+}
+
+
 package SVK::MirrorCatalog::Entry;
 use base 'Class::Accessor::Fast';
 
