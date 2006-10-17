@@ -31,15 +31,21 @@ sub new {
     return $self;
 }
 
+=item create
+
+=cut
+
+sub create {
+    my ($class, $mirror) = @_;
+    # init the svm:source and svm:uuid thing on $mirror->path
+    # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
+}
+
 =back
 
 =head2 METHODS
 
 =over
-
-=item find_changeset($localrev)
-
-=cut
 
 =item find_changeset_from_remote($remote_identifier)
 

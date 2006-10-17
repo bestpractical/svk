@@ -48,6 +48,12 @@ sub new {
 sub _create_backend {
     my ($self, $backend, $args) = @_;
     die unless $backend eq 'SVNRa';
+
+    # put svm:mirror prop
+
+    # actually initialise the mirror on mirror path
+    return SVK::Mirror::Backend::SVNRa->create( $self );
+
 }
 
 =item load
