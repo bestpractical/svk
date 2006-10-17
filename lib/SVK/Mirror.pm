@@ -6,7 +6,7 @@ use Sys::Hostname;
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(repos path server_uuid _backend _locked));
+__PACKAGE__->mk_accessors(qw(repos path server_uuid pool _backend _locked));
 
 =head1 NAME
 
@@ -35,6 +35,9 @@ SVK::Mirror -
 sub create {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
+
+    $self->pool( SVN::Pool->(undef) )
+      unless $self->pool;
 
     $self->_backend(
         $self->_create_backend( $args->{backend}, $args->{backend_options} )
