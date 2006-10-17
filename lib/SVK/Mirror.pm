@@ -142,15 +142,21 @@ sub _unlock {
 
 =item get_commit_editor
 
-=item move($newpath)
-
-NOT IMPLEMENTED
-
 =item url
 
 =cut
 
-sub url { $_[0]->_backend->url }
+for my $delegate
+    qw( find_changeset find_changeset_from_remote traverse_new_changesets mirror_changesets get_commit_editor url )
+{
+    no strict 'refs';
+    *{$delegate} = sub {
+        my $self   = shift;
+        my $method = $self->_backend->can($delegate);
+        unshift @_, $self->_backend;
+        goto $method;
+    };
+}
 
 =back
 
