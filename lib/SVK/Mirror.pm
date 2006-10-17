@@ -164,19 +164,18 @@ for my $delegate
 
 package SVK::Mirror::ChangeSet;
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(mirror synced));
+__PACKAGE__->mk_accessors(qw(synced local_rev));
 
 =over
 
 =item sync
 
-This may only be called when you hold the mirror sync lock.
+This should be implemented by the backend, and this may only be called
+when you hold the mirror sync lock.
 
 =cut
 
-sub sync {
-
-}
+sub sync { die "abstract method sync" }
 
 =back
 
