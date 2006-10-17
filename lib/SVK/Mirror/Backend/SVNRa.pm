@@ -14,7 +14,7 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror url _config _auth_baton _auth_ref _auth_baton _pool));
+__PACKAGE__->mk_accessors(qw(mirror url _config _auth_baton _auth_ref _auth_baton));
 
 =head1 NAME
 
@@ -62,8 +62,7 @@ sub _new_ra {
 sub _initialize_svn {
     my ($self) = @_;
 
-    $self->_pool( SVN::Pool::create )
-    $self->_config( SVN::Core::config_get_config(undef, $self->_pool) )
+    $self->_config( SVN::Core::config_get_config(undef, $self->mirror->pool) )
       unless $self->_config;
     $self->_initialize_auth
       unless $self->_auth_baton;
@@ -173,19 +172,6 @@ sub _ssl_client_cert_pw_prompt {
     my ($cred, $realm, $may_save, $pool) = @_;
 
     $cred->password(_read_password("Passphrase for '%s': "));
-
-    return OK;
-}
-
-sub _username_prompt {
-    my ($cred, $realm, $may_save, $pool) = @_;
-
-    print "Authentication realm: $realm\n" if defined $realm and length $realm;
-    print "Username: ";
-    chomp(my $username = <STDIN>);
-    $username = '' unless defined $username;
-
-    $cred->username($username);
 
     return OK;
 }
