@@ -8,7 +8,7 @@ use Sys::Hostname;
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(repos path server_uuid pool _backend _locked));
+__PACKAGE__->mk_accessors(qw(repos path server_uuid pool url _backend _locked));
 
 =head1 NAME
 
@@ -187,7 +187,7 @@ calls C<$code> with an opaque object that C<sync_changeset> understands.
 =cut
 
 for my $delegate
-    qw( find_changeset_from_remote sync_changeset traverse_new_changesets mirror_changesets get_commit_editor url )
+    qw( find_changeset_from_remote sync_changeset traverse_new_changesets mirror_changesets get_commit_editor )
 {
     no strict 'refs';
     *{$delegate} = sub {

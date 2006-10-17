@@ -14,7 +14,7 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror url _config _auth_baton _auth_ref _auth_baton));
+__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton));
 
 =head1 NAME
 
@@ -48,10 +48,8 @@ sub create {
 
     my $self = $class->SUPER::new({ mirror => $mirror });
 
-    print "DEBUG: going into _new_ra\n";
     my $ra = $self->_new_ra;
-    print "DEBUG: done with _new_ra\n";
-    
+
     # init the svm:source and svm:uuid thing on $mirror->path
     # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
 
@@ -62,8 +60,7 @@ sub _new_ra {
     my ($self) = @_;
 
     $self->_initialize_svn;
-    print "DEBUG: making ra\n";
-    return SVN::Ra->new( url => $self->url,
+    return SVN::Ra->new( url => $self->mirror->url,
                          auth => $self->_auth_baton,
                          config => $self->_config );
 }
@@ -234,8 +231,6 @@ sub _read_password {
 =item mirror_changesets
 
 =item get_commit_editor
-
-=item url
 
 
 =cut
