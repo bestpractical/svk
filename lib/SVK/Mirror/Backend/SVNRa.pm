@@ -6,7 +6,7 @@ use warnings;
 # use base 'SVK::Mirror::Backend';
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw());
+__PACKAGE__->mk_accessors(qw(mirror ));
 
 =head1 NAME
 
@@ -36,6 +36,21 @@ sub new {
 =head2 METHODS
 
 =over
+
+=item find_changeset($localrev)
+
+=cut
+
+=item find_changeset_from_remote($remote_identifier)
+
+=item traverse_new_changesets()
+
+=item mirror_changesets
+
+=item get_commit_editor
+
+=item url
+
 
 =cut
 

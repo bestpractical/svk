@@ -6,7 +6,7 @@ use Sys::Hostname;
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(repos path _backend _locked));
+__PACKAGE__->mk_accessors(qw(repos path server_uuid _backend _locked));
 
 =head1 NAME
 
@@ -45,6 +45,11 @@ sub new {
     return $self;
 }
 
+sub _create_backend {
+    my ($self, $backend, $args) = @_;
+    die unless $backend eq 'SVNRa';
+}
+
 =item load
 
 =cut
@@ -61,7 +66,7 @@ sub load {
 sub _load_backend {
     my ($self) = @_;
 
-    return SVK::Mirror::Backend::SVNRa->new();
+    return SVK::Mirror::Backend::SVNRa->new( { mirror => $self } );
 }
 
 =back
@@ -134,9 +139,33 @@ sub _unlock {
 
 =item find_changeset($localrev)
 
+Returns an opaque object that C<sync_changeset> understands.
+
+=cut
+
+sub find_changeset {
+    my ($self, $rev) = @_;
+    return $self->_find_remote_rev($rev, $self->mirror->repos);
+}
+
+sub _find_local_rev {
+    my ($self, $rev, $repos) = @_;
+    $repos ||= $self->mirror->repos;
+    my $fs = $repos->fs;
+    my $prop = $fs->revision_prop ($rev, 'svm:headrev') or return;
+    my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
+    return %rev if wantarray;
+    return $rev{ $self->server_uuid };
+
+}
+
 =item find_changeset_from_remote($remote_identifier)
 
-=item traverse_new_changesets()
+=item traverse_new_changesets($code)
+
+calls C<$code> with an opaque object that C<sync_changeset> understands.
+
+=item sync_changeset($changeset)
 
 =item mirror_changesets
 
@@ -147,7 +176,7 @@ sub _unlock {
 =cut
 
 for my $delegate
-    qw( find_changeset find_changeset_from_remote traverse_new_changesets mirror_changesets get_commit_editor url )
+    qw( find_changeset_from_remote sync_changeset traverse_new_changesets mirror_changesets get_commit_editor url )
 {
     no strict 'refs';
     *{$delegate} = sub {
@@ -162,24 +191,4 @@ for my $delegate
 
 =cut
 
-package SVK::Mirror::ChangeSet;
-use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(synced local_rev));
-
-=over
-
-=item sync
-
-This should be implemented by the backend, and this may only be called
-when you hold the mirror sync lock.
-
-=cut
-
-sub sync { die "abstract method sync" }
-
-=back
-
-=cut
-
 1;
-
