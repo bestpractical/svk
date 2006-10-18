@@ -28,6 +28,7 @@ then the method name and its arguments.
 
 sub baton_at {
     my ($self, $func) = @_;
+    Carp::cluck unless defined $func;
     return -1
 	if $func eq 'set_target_revision' || $func eq 'open_root' ||
 	    $func eq 'close_edit' || $func eq 'abort_edit';
@@ -52,6 +53,7 @@ sub AUTOLOAD {
     }
 
     my $ret = $func =~ m/^(?:add|open)/ ? ++$self->{batons} : undef;
+    Carp::cluck unless defined $func;
     push @{$self->{edit_tree}[$baton]}, [$ret, $func, @arg];
     return $ret;
 }

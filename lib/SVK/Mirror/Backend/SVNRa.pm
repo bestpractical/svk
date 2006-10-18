@@ -51,7 +51,31 @@ sub create {
     my $ra = $self->_new_ra;
 
     # init the svm:source and svm:uuid thing on $mirror->path
+    my $uuid = $ra->get_uuid;
+    my $source_root = $ra->get_repos_root;
+    my $source_path = $self->mirror->url;
+    # XXX: this shouldn't happen. kill this substr
+    die "source url not under source root"
+	if substr($source_path, 0, length($source_root), '') ne $source_root;
+    # XXX: $self->_check_overlap;
+
     # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
+
+    my $t = SVK::Path->real_new( { repos => $self->mirror->repos, path => '/' } )->refresh_revision;
+
+    require SVK::Editor::Dynamic;
+
+    my ($editor, $inspector, undef) = $t->get_editor( ignore_mirror => 1, caller => '' );
+    $editor = SVK::Editor::Dynamic->new( { editor => $editor,
+					   inspector => $t->inspector } );
+
+
+    my $dir_baton = $editor->add_directory( substr($self->mirror->path, 1), 0, undef, -1 );
+    $editor->change_dir_prop( $dir_baton, 'svm:uuid', $uuid);
+    $editor->change_dir_prop( $dir_baton, 'svm:source', $source_root.'!'.$source_path );
+    $editor->close_directory($dir_baton);
+    $editor->adjust;
+    $editor->close_edit;
 
     return $self;
 }
