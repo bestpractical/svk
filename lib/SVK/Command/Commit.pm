@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
+use SVK::Editor::Dynamic;
 use SVK::Command::Sync;
 use SVK::Editor::InteractiveCommitter;
 use SVK::Editor::InteractiveStatus;
@@ -99,24 +100,23 @@ sub get_dynamic_editor {
     my $m = $self->under_mirror ($target);
     my $anchor = $m ? $m->{target_path} : '/';
     my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
-    
-    my $editor = SVK::Editor::Rename->new
-	( editor => $storage,
-	  inspector => $self->{parent} ? $cb{inspector} : undef);
-     $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
+
+    my $editor = SVK::Editor::Dynamic->new
+	( editor => $storage, root_rev => $cb{cb_rev}->(''),
+	  inspector => $self->{parent} ? $cb{inspector} : undef );
+
     return ($anchor, $editor);
 }
 
 sub finalize_dynamic_editor {
     my ($self, $editor) = @_;
-    $editor->close_directory ($editor->{_root_baton});
     $editor->close_edit;
     delete $self->{save_message};
 }
 
 sub adjust_anchor {
     my ($self, $editor) = @_;
-    $editor->adjust_last_anchor;
+    $editor->adjust;
 }
 
 sub save_message {
