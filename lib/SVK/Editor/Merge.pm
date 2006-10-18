@@ -818,10 +818,11 @@ sub delete_entry {
     my ($self, $path, $revision, $pdir, @arg) = @_;
     no warnings 'uninitialized';
     my $pool = $arg[-1];
+    $pool->default;
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
 
-    return unless defined $pdir && $self->inspector->exist($basepath, $pool);
+    return unless defined $pdir && $self->inspector->exist($basepath);
     my $rpath = $basepath =~ m{^/} ? $basepath :
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
     my $torm;
