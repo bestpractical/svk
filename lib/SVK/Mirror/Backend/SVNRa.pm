@@ -5,6 +5,8 @@ use warnings;
 use SVN::Core;
 use SVN::Ra;
 use SVN::Client ();
+use SVK::Editor::Dynamic;
+
 
 use constant OK => $SVN::_Core::SVN_NO_ERROR;
 
@@ -32,9 +34,14 @@ SVK::Mirror::Backend::SVNRa -
 =cut
 
 sub load {
-    my ( $class, $args ) = @_;
-    my $self = $class->SUPER::new($args);
+    my ($class, $mirror) = @_;
+    my $self = $class->SUPER::new( { mirror => $mirror } );
+    my $t = SVK::Path->real_new( { repos => $mirror->repos, path => $mirror->path } )->refresh_revision;
 
+    my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
+    my ( $root, $path ) = split('!',  $t->root->node_prop($t->path, 'svm:source'));
+
+    $mirror->url( "$root$path" );
 
     return $self;
 }
@@ -57,13 +64,12 @@ sub create {
     # XXX: this shouldn't happen. kill this substr
     die "source url not under source root"
 	if substr($source_path, 0, length($source_root), '') ne $source_root;
-    # XXX: $self->_check_overlap;
+
+    $self->_check_overlap;
 
     # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
 
     my $t = SVK::Path->real_new( { repos => $self->mirror->repos, path => '/' } )->refresh_revision;
-
-    require SVK::Editor::Dynamic;
 
     my ($editor, $inspector, undef) = $t->get_editor( ignore_mirror => 1, caller => '' );
     $editor = SVK::Editor::Dynamic->new( { editor => $editor,
@@ -78,6 +84,25 @@ sub create {
     $editor->close_edit;
 
     return $self;
+}
+
+sub _check_overlap {
+    my ($self) = @_;
+    my $repos = $self->mirror->repos;
+    my $fs = $repos->fs;
+    my $root = $fs->revision_root($fs->youngest_rev);
+    my $prop = $root->node_prop ('/', 'svm:mirror') or return;
+    my @mirrors = $prop =~ m/^(.*)$/mg;
+
+    for (map {$root->node_prop($_, 'svm:source')} @mirrors) {
+	my $mirror = $self->load( { repos => $repos, path => $_ });
+	next if $self->source_root ne $mirror->source_root;
+	# XXX: check overlap with svk::mirror objects.
+
+#	die "Mirroring overlapping paths not supported\n"
+#	    if _is_descendent ($source_path, $self->{source_path})
+#	    || _is_descendent ($self->{source_path}, $source_path);
+    }
 }
 
 sub _new_ra {

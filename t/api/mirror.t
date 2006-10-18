@@ -4,7 +4,7 @@ use Test::More;
 use SVK::Test;
 use SVK::Mirror;
 use SVK::Mirror::Backend::SVNRa;
-plan tests => 2;
+plan tests => 8;
 
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('api-mirror');
@@ -16,33 +16,56 @@ my ($repospath, $path, $repos) = $xd->find_repos ('//', 1);
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
 my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
 
-SVK::Mirror::Backend::SVNRa->create(
+my $m = SVK::Mirror::Backend::SVNRa->create(
     SVK::Mirror->new(
         { repos => $repos, path => '/m',
-	  url => $uri, pool => SVN::Pool->new }
+	  url => "$uri/A", pool => SVN::Pool->new }
     )
 );
 
 is_output($svk, 'pg', ['svm:source', '//m'],
-	  [$uri.'!']);
+	  [uri($srepospath).'!/A']);
 
 is_output($svk, 'pg', ['svm:uuid', '//m'],
 	  [$srepos->fs->get_uuid]);
 
-exit;
-# XXX: die
-SVK::Mirror::Backend::SVNRa->create(
+is_output($svk, 'pg', ['svm:mirror', '//'],
+	  ['/m']);
+
+$m = SVK::Mirror::Backend::SVNRa->load(
     SVK::Mirror->new(
-        { repos => $repos, path => '/m2',
-	  url => $uri, pool => SVN::Pool->new }
+        { repos => $repos, path => '/m',
+	  pool => SVN::Pool->new }
     )
 );
 
+is( $m->mirror->url, "$uri/A" );
 
-# XXX: die
-SVK::Mirror::Backend::SVNRa->create(
+$m = SVK::Mirror::Backend::SVNRa->create(
     SVK::Mirror->new(
         { repos => $repos, path => '/m2',
+	  url => "$uri/B", pool => SVN::Pool->new }
+    )
+);
+
+is_output($svk, 'pg', ['svm:source', '//m2'],
+	  [uri($srepospath).'!/B']);
+
+is_output($svk, 'pg', ['svm:uuid', '//m2'],
+	  [$srepos->fs->get_uuid]);
+
+is_output($svk, 'pg', ['svm:mirror', '//'],
+	  ['/m', '/m2']);
+
+eval {
+SVK::Mirror::Backend::SVNRa->create(
+    SVK::Mirror->new(
+        { repos => $repos, path => '/m3',
 	  url => $uri, pool => SVN::Pool->new }
     )
 );
+};
+
+is($@, 'overlapped mirror');
+
+is_output($svk, 'ls', ['//'], ['m/', 'm2/'], 'm3 not created');

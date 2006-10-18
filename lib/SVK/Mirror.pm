@@ -5,6 +5,7 @@ use warnings;
 use SVN::Core;
 
 use Sys::Hostname;
+use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
 
@@ -45,6 +46,8 @@ sub create {
         $self->_create_backend( $args->{backend}, $args->{backend_options} )
     );
 
+    weaken( $self->{_backend}{mirror} );
+
     SVK::MirrorCatalog->add_mirror($self);
 
     return $self;
@@ -70,6 +73,7 @@ sub load {
     my $self = $class->SUPER::new($args);
 
     $self->_backend( $self->_load_backend );
+    weaken( $self->{_backend}{mirror} );
 
     return $self;
 }
