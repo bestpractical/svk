@@ -102,9 +102,10 @@ sub _check_overlap {
 	next if $self->source_root ne $mirror->_backend->source_root;
 	# XXX: check overlap with svk::mirror objects.
 
-#	die "Mirroring overlapping paths not supported\n"
-#	    if _is_descendent ($source_path, $self->{source_path})
-#	    || _is_descendent ($self->{source_path}, $source_path);
+	my ($me, $other) = map { Path::Class::Dir->new_foreign('Unix', $_) }
+	    $self->source_path, $mirror->_backend->source_path;
+	die "Mirroring overlapping paths not supported\n"
+	    if $me->subsumes($other) || $other->subsumes($me);
     }
 }
 

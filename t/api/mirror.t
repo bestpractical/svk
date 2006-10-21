@@ -4,7 +4,7 @@ use Test::More;
 use SVK::Test;
 use SVK::Mirror;
 use SVK::Mirror::Backend::SVNRa;
-plan tests => 8;
+plan tests => 9;
 
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('api-mirror');
@@ -63,6 +63,6 @@ SVK::Mirror::Backend::SVNRa->create(
 );
 };
 
-is($@, 'overlapped mirror');
+is($@, "Mirroring overlapping paths not supported\n");
 
 is_output($svk, 'ls', ['//'], ['m/', 'm2/'], 'm3 not created');
