@@ -16,12 +16,9 @@ my ($repospath, $path, $repos) = $xd->find_repos ('//', 1);
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
 my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
 
-my $m = SVK::Mirror::Backend::SVNRa->create(
-    SVK::Mirror->new(
-        { repos => $repos, path => '/m',
-	  url => "$uri/A", pool => SVN::Pool->new }
-    )
-);
+my $m = SVK::Mirror->create(
+        { repos => $repos, path => '/m', backend => 'SVNRa',
+	  url => "$uri/A", pool => SVN::Pool->new } );
 
 is_output($svk, 'pg', ['svm:source', '//m'],
 	  [uri($srepospath).'!/A']);
@@ -30,22 +27,22 @@ is_output($svk, 'pg', ['svm:uuid', '//m'],
 	  [$srepos->fs->get_uuid]);
 
 is_output($svk, 'pg', ['svm:mirror', '//'],
-	  ['/m']);
+	  ['/m', '' ]);
 
-$m = SVK::Mirror::Backend::SVNRa->load(
-    SVK::Mirror->new(
+$m = SVK::Mirror->load(
         { repos => $repos, path => '/m',
 	  pool => SVN::Pool->new }
-    )
-);
+    );
 
-is( $m->mirror->url, "$uri/A" );
+is( $m->url, "$uri/A" );
 
-$m = SVK::Mirror::Backend::SVNRa->create(
-    SVK::Mirror->new(
-        { repos => $repos, path => '/m2',
-	  url => "$uri/B", pool => SVN::Pool->new }
-    )
+$m = SVK::Mirror->create(
+    {   repos   => $repos,
+        path    => '/m2',
+        backend => 'SVNRa',
+        url     => "$uri/B",
+        pool    => SVN::Pool->new
+    }
 );
 
 is_output($svk, 'pg', ['svm:source', '//m2'],
@@ -55,7 +52,7 @@ is_output($svk, 'pg', ['svm:uuid', '//m2'],
 	  [$srepos->fs->get_uuid]);
 
 is_output($svk, 'pg', ['svm:mirror', '//'],
-	  ['/m', '/m2']);
+	  ['/m', '/m2', '']);
 
 eval {
 SVK::Mirror::Backend::SVNRa->create(

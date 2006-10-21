@@ -16,7 +16,7 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton));
+__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path));
 
 =head1 NAME
 
@@ -35,11 +35,15 @@ SVK::Mirror::Backend::SVNRa -
 
 sub load {
     my ($class, $mirror) = @_;
+    Carp::cluck unless ref($mirror) eq 'SVK::Mirror';
     my $self = $class->SUPER::new( { mirror => $mirror } );
     my $t = SVK::Path->real_new( { repos => $mirror->repos, path => $mirror->path } )->refresh_revision;
 
     my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
     my ( $root, $path ) = split('!',  $t->root->node_prop($t->path, 'svm:source'));
+
+    $self->source_root( $root );
+    $self->source_path( $path );
 
     $mirror->url( "$root$path" );
 
@@ -65,17 +69,15 @@ sub create {
     die "source url not under source root"
 	if substr($source_path, 0, length($source_root), '') ne $source_root;
 
+    $self->source_root( $source_root );
+    $self->source_path( $source_path );
+
     $self->_check_overlap;
 
     # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
 
     my $t = SVK::Path->real_new( { repos => $self->mirror->repos, path => '/' } )->refresh_revision;
-
-    my ($editor, $inspector, undef) = $t->get_editor( ignore_mirror => 1, caller => '' );
-    $editor = SVK::Editor::Dynamic->new( { editor => $editor,
-					   inspector => $t->inspector } );
-
-
+    my ($editor) = $t->get_dynamic_editor( ignore_mirror => 1, caller => '', author => $ENV{USER} );
     my $dir_baton = $editor->add_directory( substr($self->mirror->path, 1), 0, undef, -1 );
     $editor->change_dir_prop( $dir_baton, 'svm:uuid', $uuid);
     $editor->change_dir_prop( $dir_baton, 'svm:source', $source_root.'!'.$source_path );
@@ -94,9 +96,10 @@ sub _check_overlap {
     my $prop = $root->node_prop ('/', 'svm:mirror') or return;
     my @mirrors = $prop =~ m/^(.*)$/mg;
 
-    for (map {$root->node_prop($_, 'svm:source')} @mirrors) {
-	my $mirror = $self->load( { repos => $repos, path => $_ });
-	next if $self->source_root ne $mirror->source_root;
+    for (@mirrors) {
+	my $mirror = SVK::Mirror->load( { repos => $repos, path => $_ } );
+#	warn $mirror;
+	next if $self->source_root ne $mirror->_backend->source_root;
 	# XXX: check overlap with svk::mirror objects.
 
 #	die "Mirroring overlapping paths not supported\n"

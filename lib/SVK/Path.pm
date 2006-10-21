@@ -232,6 +232,16 @@ sub get_editor {
 	    cb_copyfrom => sub { $self->as_url(1, @_) });
 }
 
+sub get_dynamic_editor {
+    my $self = shift;
+
+    my ($editor, $inspector) = $self->get_editor( @_ );
+    $editor = SVK::Editor::Dynamic->new( { editor => $editor,
+					   inspector => $inspector } );
+    return $editor;
+}
+
+
 sub _to_pclass {
     my ($self, $path, $what) = @_;
     # path::class only thinks empty list being .

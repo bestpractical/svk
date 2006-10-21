@@ -40,7 +40,7 @@ sub create {
     my $self = $class->SUPER::new($args);
 
     $self->pool( SVN::Pool->new(undef) )
-      unless $self->pool;
+        unless $self->pool;
 
     $self->_backend(
         $self->_create_backend( $args->{backend}, $args->{backend_options} )
@@ -48,7 +48,16 @@ sub create {
 
     weaken( $self->{_backend}{mirror} );
 
-    SVK::MirrorCatalog->add_mirror($self);
+    my $t = SVK::Path->real_new( { repos => $self->repos, path => '/' } )
+        ->refresh_revision;
+    my ($editor) = $t->get_dynamic_editor( ignore_mirror => 1, caller => '', author => $ENV{USER} );
+
+    my %mirrors = map { ( $_ => 1 ) } $self->path,
+        split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
+
+    $editor->change_dir_prop( $editor->_root_baton, 'svm:mirror',
+        join( "\n", ( grep length, sort keys %mirrors ), '' ) );
+    $editor->close_edit;
 
     return $self;
 }
@@ -72,16 +81,10 @@ sub load {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 
-    $self->_backend( $self->_load_backend );
+    $self->_backend( SVK::Mirror::Backend::SVNRa->load( $self ) );
     weaken( $self->{_backend}{mirror} );
 
     return $self;
-}
-
-sub _load_backend {
-    my ($self) = @_;
-
-    return SVK::Mirror::Backend::SVNRa->load( { mirror => $self } );
 }
 
 =back
