@@ -66,3 +66,11 @@ SVK::Mirror::Backend::SVNRa->create(
 is($@, "Mirroring overlapping paths not supported\n");
 
 is_output($svk, 'ls', ['//'], ['m/', 'm2/'], 'm3 not created');
+
+
+$m = SVK::Mirror->load(
+        { repos => $repos, path => '/m',
+	  pool => SVN::Pool->new }
+    );
+
+$m->traverse_new_changesets(sub { diag join(',',@_); });

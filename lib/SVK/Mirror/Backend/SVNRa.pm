@@ -10,13 +10,18 @@ use SVK::Editor::Dynamic;
 
 use constant OK => $SVN::_Core::SVN_NO_ERROR;
 
+## class SVK::Mirror::Backend::SVNRa;
+## has $.mirror is weak;
+## has ($!config, $!auth_baton, $!auth_ref);
+## has ($.source_root, $.source_path, $.fromrev)
+
 # We'll extract SVK::Mirror::Backend later.
 # use base 'SVK::Mirror::Backend';
 use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path));
+__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev));
 
 =head1 NAME
 
@@ -33,6 +38,17 @@ SVK::Mirror::Backend::SVNRa -
 
 =cut
 
+sub _do_load_fromrev {
+    my $self = shift;
+    my $fs = $self->mirror->repos->fs;
+    my $root = $fs->revision_root($fs->youngest_rev);
+    my $changed = $root->node_created_rev($self->mirror->path);
+    my $prop = $fs->revision_prop($changed, 'svm:headrev');
+    return unless $prop;
+    my %revs = map {split (':', $_)} $prop =~ m/^.*$/mg;
+    return $revs{$self->mirror->server_uuid};
+}
+
 sub load {
     my ($class, $mirror) = @_;
     Carp::cluck unless ref($mirror) eq 'SVK::Mirror';
@@ -44,6 +60,7 @@ sub load {
 
     $self->source_root( $root );
     $self->source_path( $path );
+    $self->fromrev($self->_do_load_fromrev);
 
     $mirror->url( "$root$path" );
 
@@ -280,6 +297,28 @@ sub _read_password {
 =item find_changeset_from_remote($remote_identifier)
 
 =item traverse_new_changesets()
+
+=cut
+
+sub traverse_new_changesets {
+    my ($self, $code) = @_;
+    my $from = $self->fromrev || 0;
+    my $to = -1;
+    print "Retrieving log information from $from to $to\n";
+
+    my $ra = $self->_new_ra;
+    eval {
+    $ra->get_log([''], 1, 2, 0,
+		  1, 1,
+		  sub {
+		      my ($paths, $rev, $author, $date, $msg, $pool) = @_;
+		      # move the anchor detection stuff to &mirror ?
+		      $code->($rev);
+		      $self->fromrev($rev);
+		  });
+    };
+
+}
 
 =item mirror_changesets
 

@@ -11,6 +11,28 @@ use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(qw(repos path server_uuid pool url _backend _locked));
 
+## class SVK::Mirror;
+## has ($.repos, $.path, $.server_uuid, $.url, $.pool);
+## has $!backend handles <find_changeset_from_remote sync_changeset traverse_new_changesets mirror_changesets get_commit_editor>;
+## has $!locked
+
+## submethod BUILD($.path, $.repos, :$backend = 'SVNRa', :$.url, :%backend_options) {
+##   $!backend = $.load_backend: self;
+##   if $.url {
+##       $!backend.new: self;
+##   }
+##   else {
+##       $!backend.load: self;
+##   }
+##   POST {
+##     [&&] $.url, $.server_uuid;
+##   }
+## }
+
+## method load($path, $repos) {
+##   $.new(:$path, :$repos);
+##}
+
 =head1 NAME
 
 SVK::Mirror - 
