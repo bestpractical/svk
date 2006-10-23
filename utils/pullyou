@@ -21,6 +21,7 @@ my $t  = SVK::Path->real_new(
 my ( $m, $mpath ) = $t->is_mirrored;
 die "only whole repository mirrors are supported.\n" if length($mpath);
 $t->normalize;
+
 my @revs;
 
 traverse_history(
@@ -71,27 +72,33 @@ for my $rev (@revs) {
         next if exists $record->{headers}{'SVN-fs-dump-format-version'};
         next if exists $record->{headers}{'UUID'};
 
-        $record->{headers}{'Revision-number'} = $rrev
-            if exists $record->{headers}{'Revision-number'};
+        my $translate = sub {
+            my $rec = shift;
+            $rec->{headers}{'Revision-number'} = $rrev
+                if exists $rec->{headers}{'Revision-number'};
 
-        $record->{headers}{'Node-copyfrom-rev'}
-            = $m->find_remote_rev( $record->{headers}{'Node-copyfrom-rev'} )
-            if $record->{headers}{'Node-copyfrom-rev'};
+            $rec->{headers}{'Node-copyfrom-rev'}
+                = $m->find_remote_rev( $rec->{headers}{'Node-copyfrom-rev'} )
+                if exists $rec->{headers}{'Node-copyfrom-rev'};
 
-        $record->{headers}{'Node-copyfrom-path'} =~ s{^\Q$prefix\E/?}{}
-            if $record->{headers}{'Node-copyfrom-path'};
+            $rec->{headers}{'Node-copyfrom-path'} =~ s{^\Q$prefix\E/?}{}
+                if exists $rec->{headers}{'Node-copyfrom-path'};
 
-        if ( exists $record->{property} ) {
-            my $prop = $record->{property};
-            delete $prop->{hash}{'svm:headrev'};
-            $prop->{keys}
-                = [ grep { $_ ne 'svm:headrev' } @{ $prop->{keys} } ];
-        }
+            if ( exists $rec->{property} ) {
+                my $prop = $rec->{property};
+                delete $prop->{hash}{'svm:headrev'};
+                $prop->{keys}
+                    = [ grep { $_ ne 'svm:headrev' } @{ $prop->{keys} } ];
+            }
 
-        if ( $record->{headers}{'Node-path'} ) {
-            $record->{headers}{'Node-path'} =~ s{^\Q$prefix\E/?}{}
-                or die $record->{headers}{'Node-path'};
-        }
+            if ( $rec->{headers}{'Node-path'} ) {
+                $rec->{headers}{'Node-path'} =~ s{^\Q$prefix\E/?}{}
+                    or die $rec->{headers}{'Node-path'};
+            }
+
+        };
+        $translate->( $record );
+	$translate->( $record->{included} ) if $record->{included};
 
         print $record->as_string;
     }
@@ -110,6 +117,9 @@ sub recal_header {
         $record->{headers}{'Text-content-length'}
             = length( $record->{property}->as_string );
     }
+    recal_header($record->{included})
+	if exists $record->{included};
+
     if ( $record->{headers}{'Content-length'} ) {
         $record->{headers}{'Content-length'} = $textlength + $proplength;
     }
