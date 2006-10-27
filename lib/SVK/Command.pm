@@ -578,7 +578,7 @@ sub create_view {
 	   revision => $rev, pool => SVN::Pool->new });
     $viewobj->pool(SVN::Pool->new);
     my $root = $fs->revision_root($rev);
-    my $content = $root->node_prop ($viewbase, "svk:view:$viewname");
+    my $content = $root->node_prop("$viewbase", "svk:view:$viewname");
     die loc("Unable to create view '%1' from on %2 for revision %3.\n",
 	    $viewname, $viewbase, $rev)
 	unless defined $content;
