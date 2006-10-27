@@ -561,9 +561,8 @@ sub _resolve_anchor {
     $anchor = Path::Class::Dir->new_foreign('Unix', $anchor);
     $anchor =~ s/^\&\:// or return $anchor;
     $anchor = Path::Class::Dir->new_foreign('Unix', $anchor);
-    my ($uuid, $path) = find_svm_source($repos, $base);
+    my ($uuid, $path) = find_svm_source($repos, "$base");
     return $anchor->relative($path)->absolute($base);
-
 }
 
 sub create_view {
@@ -589,7 +588,7 @@ sub create_view {
 	unless $root->check_path("$anchor");
     $viewobj->anchor($anchor);
 
-    $root->dir_entries($anchor); # XXX: for some reasons fsfs needs refresh
+    $root->dir_entries("$anchor"); # XXX: for some reasons fsfs needs refresh
 
     for (@content) {
 	my ($del, $path, $target) = m/\s*(-)?(\S+)\s*(\S+)?\s*$/ or die "can't parse $_";

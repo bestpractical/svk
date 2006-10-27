@@ -86,7 +86,7 @@ sub create_xd_root {
 	    next;
 	}
 	my $parent = Path::Class::File->new_foreign('Unix', $path)->parent;
-	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
+	next if $cinfo->{revision} == $root->node_created_rev("$parent", $pool);
 	my ($fromroot, $frompath) = $base_root->get_revision_root($path, $cinfo->{revision}, $pool);
 	$root->delete($path, $pool)
 	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
