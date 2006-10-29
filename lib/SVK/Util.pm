@@ -9,7 +9,7 @@ our @EXPORT_OK = qw(
 
     get_encoding get_encoder from_native to_native
 
-    find_local_mirror find_svm_source resolve_svm_source traverse_history
+    find_local_mirror find_svm_source traverse_history
     find_prev_copy
 
     read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
@@ -377,24 +377,6 @@ sub find_svm_source {
     }
 
     return ($uuid, $path, $rev);
-}
-
-=head3 resolve_svm_source ($repos, $uuid, $path)
-
-XXX Undocumented
-
-=cut
-
-# XXX: deprecated, only used in command::verify now. use
-# $target->is_mirrored instead
-sub resolve_svm_source {
-    my ($repos, $uuid, $path) = @_;
-    my $myuuid = $repos->fs->get_uuid;
-    return ($path) if ($uuid eq $myuuid);
-    return unless HAS_SVN_MIRROR;
-    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
-    return unless $m;
-    return ("$m->{target_path}$mpath", $m);
 }
 
 =head2 File Content Manipulation

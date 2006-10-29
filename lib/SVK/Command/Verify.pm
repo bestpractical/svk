@@ -46,7 +46,7 @@ sub run {
 
 # XXX: Don't need this editor once root->paths_changed is available.
 package SVK::VerifyEditor;
-use autouse 'SVK::Util' => qw(resolve_svm_source);
+use autouse 'SVK::Util' => qw(find_local_mirror);
 require SVN::Delta;
 our @ISA = ('SVN::Delta::Editor');
 
@@ -84,7 +84,9 @@ sub close_edit {
     my $header = '-----BEGIN PGP SIGNED MESSAGE-----';
     $sig =~ s/^.*$header/$header/s;
     my ($anchor) = $sig =~ m/^ANCHOR: (.*)$/m;
-    my ($path) = resolve_svm_source ($self->{repos}, split (':', $anchor));
+    my ($path) = find_local_mirror($self->{repos}, split(':', $anchor));
+    $path ||= (split(':', $anchor))[1];
+
     while ($sig =~ m/^MD5\s(.*?)\s(.*?)$/gm) {
 	my ($md5, $filename) = ($1, $2);
 	my $checksum = delete $self->{checksum}{"$path/$filename"};
