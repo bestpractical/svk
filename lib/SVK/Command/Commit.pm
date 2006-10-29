@@ -180,7 +180,6 @@ sub get_editor {
 
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
-	  caller => ref($self),
 	  check_only => $self->{check_only},
 	  callback => $callback,
 	  message => $self->{message},
@@ -191,12 +190,14 @@ sub get_editor {
     return ($editor, %cb, inspector => $inspector)
 	if $target->isa('SVK::Path::Checkout');
 
-    if ($cb{mirror}) {
+    if (my $m = $cb{mirror}) {
 	if ($self->{check_only}) {
-	    print loc("Checking locally against mirror source %1.\n", $cb{mirror}->url);
+	    print loc("Checking locally against mirror source %1.\n", $m->url);
 	}
 	else {
-	    print loc("Commit into mirrored path: merging back directly.\n");
+	    print loc("Merging back to mirror source %1.\n", $m->url);
+	    print loc("Commit into mirrored path: merging back directly.\n")
+		if ref($self) eq __PACKAGE__; # XXX: output compat
 	}
     }
 

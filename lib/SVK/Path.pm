@@ -185,7 +185,6 @@ sub get_editor {
     my $post_handler;
     if ($m) {
 	require SVK::Command::Sync;
-	$arg{notify}->(loc("Merging back to mirror source %1.\n", $m->url));
 	$m->set_lock_message(SVK::Command::Sync::lock_message($self));
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message},
