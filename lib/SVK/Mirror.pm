@@ -253,6 +253,11 @@ sub find_remote_rev {
     goto \&find_changeset;
 }
 
+sub get_merge_back_editor {
+    my $self = shift;
+    return ($self->_backend->fromrev, $self->get_commit_editor(@_));
+}
+
 =back
 
 =cut

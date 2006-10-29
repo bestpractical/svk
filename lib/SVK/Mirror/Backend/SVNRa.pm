@@ -140,12 +140,12 @@ sub _check_overlap {
 }
 
 sub _new_ra {
-    my ($self) = @_;
+    my ($self, @args) = @_;
 
     $self->_initialize_svn;
     return SVN::Ra->new( url => $self->mirror->url,
                          auth => $self->_auth_baton,
-                         config => $self->_config );
+                         config => $self->_config, @args );
 }
 
 sub _initialize_svn {
@@ -356,6 +356,20 @@ sub sync_changeset {
 
 =cut
 
+sub _relayed {
+    my $self = shift;
+    $self->mirror->server_uuid ne $self->mirror->source_uuid;
+}
+
+sub get_commit_editor {
+    my ($self, $path, $msg, $committed) = @_;
+    die loc("relayed merge back not supported yet.\n") if $self->_relayed;
+    $self->{commit_ra} = $self->_new_ra( url => $self->mirror->url.$path );
+
+    my @lock = $SVN::Core::VERSION ge '1.2.0' ? (undef, 0) : ();
+
+    return SVN::Delta::Editor->new($self->{commit_ra}->get_commit_editor($msg, $committed, @lock));
+}
 
 1;
 
