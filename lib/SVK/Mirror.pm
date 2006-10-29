@@ -17,7 +17,7 @@ use SVK::Mirror::Backend::SVNRa;
 
 ## class SVK::Mirror;
 ## has ($.repos, $.path, $.server_uuid, $.url, $.pool);
-## has $!backend handles <find_changeset_from_remote sync_changeset traverse_new_changesets mirror_changesets get_commit_editor>;
+## has $!backend handles <find_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor>;
 ## has $!locked
 
 ## submethod BUILD($.path, $.repos, :$backend = 'SVNRa', :$.url, :%backend_options) {
@@ -205,8 +205,8 @@ sub _find_remote_rev {
     my $prop = $fs->revision_prop($rev, 'svm:headrev') or return;
     my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
     return %rev if wantarray;
-    return $rev{ $self->server_uuid };
-
+    # XXX: needs to be more specific
+    return $rev{ $self->source_uuid } || $rev{ $self->server_uuid };
 }
 
 =item find_rev_from_changeset($remote_identifier)
@@ -245,8 +245,12 @@ sub spec {
 }
 
 sub find_local_rev {
-    my ($self, $changeset) = @_;
-    $self->find_rev_from_changeset($changeset);
+    my ($self, $changeset, $uuid) = @_;
+    $self->find_rev_from_changeset($changeset, $uuid);
+}
+
+sub find_remote_rev {
+    goto \&find_changeset;
 }
 
 =back

@@ -135,7 +135,7 @@ package SVK::MirrorCatalog::SVMCompat;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw(svm_object svk_mirror));
 
-for my $method qw(url path server_uuid source_uuid) {
+for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev) {
     no strict 'refs';
     *$method = sub { my $self=shift; $self->svk_mirror->$method(@_) };
 }
@@ -143,8 +143,11 @@ for my $method qw(url path server_uuid source_uuid) {
 sub set_lock_message { $_[0]->svm_object->{lock_message} = $_[1] }
 sub set_cb_copy_notify { $_[0]->svm_object->{cb_copy_notify} = $_[1] }
 sub set_skip_to { $_[0]->svm_object->{skip_to} = $_[1] }
-sub fromrev { $_[0]->svm_object->{fromrev} }
-sub source_path { $_[0]->svm_object->{source_path} }
+
+
+sub fromrev { $_[0]->svk_mirror->_backend->fromrev }
+sub source_path { $_[0]->svk_mirror->_backend->source_path }
+
 
 our $AUTOLOAD;
 sub AUTOLOAD {
