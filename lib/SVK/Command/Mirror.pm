@@ -44,9 +44,8 @@ sub run {
     my ($self, $target, $source, @options) = @_;
     die loc ("%1 already exists.\n", $target->path)
 	if $target->root->check_path ($target->path);
-    $self->{xd}->mirror($target->repos)
-	->add_entry($target->path_anchor, $source, @options)
-	    or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
+    $target->mirror->add_entry($target->path_anchor, $source, @options)
+        or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
 		   $target->depotpath);
     return;
 }
@@ -57,7 +56,7 @@ use SVK::I18N;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    $self->{xd}->mirror($target->repos)
+    $target->depot->mirror
 	->svnmirror_object($target->path_anchor,
 			   source => $source, options => \@options)
 	->relocate;
@@ -102,7 +101,7 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    $self->{xd}->mirror($target->repos)->unlock($target->path_anchor);
+    $target->depot->mirror->unlock($target->path_anchor);
     print loc ("mirror locks on %1 removed.\n", $target->report);
     return;
 }
@@ -136,7 +135,7 @@ sub run {
             warn loc( "Depot /%1/ not loadable.\n", $depot );
             next DEPOT;
         }
-        my %mirrors = $self->{xd}->mirror( $target->repos )->entries;
+        my %mirrors = $target->depot->mirror->entries;
         my $depot_name = $target->depotname;
         foreach my $path ( sort keys %mirrors ) {
             my $m = $mirrors{$path};
@@ -166,7 +165,7 @@ use constant narg => 1;
 sub run {
     my ($self, $target, $source, @options) = @_;
     $source = ("file://".$target->repospath);
-    my $m = $self->{xd}->mirror($target->repos)
+    my $m = $target->depot->mirror
 	->svnmirror_object($target->path_anchor,
 			   source => $source, options => \@options);
     $self->recover_headrev ($target, $m);

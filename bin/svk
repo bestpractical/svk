@@ -85,10 +85,6 @@ my $ret;
     $SIG{INT} = sub {
 	die loc("Interrupted.\n");
     };
-    unless ($ENV{SVKNOSVNCONFIG}) {
-	SVN::Core::config_ensure (undef);
-	$xd->{svnconfig} = SVN::Core::config_get_config (undef);
-    }
 
     $ret = SVK::Command->invoke ($xd, $cmd, undef, @ARGV);
     $xd->store ();

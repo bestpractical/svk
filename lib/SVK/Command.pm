@@ -109,7 +109,7 @@ sub invoke {
 
     local *ARGV = [$cmd, @args];
     $ofh = select $output if $output;
-    $ret = eval {$pkg->dispatch ($xd ? (xd => $xd, svnconfig => $xd->{svnconfig}) : (),
+    $ret = eval {$pkg->dispatch ($xd ? (xd => $xd) : (),
 				 output => $output) };
 
     $ofh = select STDERR unless $output;
@@ -350,9 +350,9 @@ sub arg_uri_maybe {
     require URI;
     my $uri = URI->new($arg)->canonical or die loc("%1 is not a valid URI.\n", $arg);
     my $map = $self->{xd}{depotmap};
-    foreach my $depot (sort keys %$map) {
-        my $repos = eval { ($self->{xd}->find_repos ("/$depot/", 1))[2] } or next;
-	my %mirrors = $self->{xd}->mirror($repos)->entries;
+    foreach my $depotname (sort keys %$map) {
+        my $depot = eval { $self->{xd}->find_depot($depotname) } or next;
+	my %mirrors = $depot->mirror->entries;
 	foreach my $path (sort keys %mirrors) {
 	    my $m = $mirrors{$path}->mirror;
 
@@ -360,8 +360,8 @@ sub arg_uri_maybe {
             next if $rel_uri->eq($uri);
             next if $rel_uri =~ /^\.\./;
 
-            my $depotpath = catdepot($depot, $path, $rel_uri);
-            $depotpath = "/$depotpath" if !length($depot);
+            my $depotpath = catdepot($depot->depotname, $path, $rel_uri);
+            $depotpath = "/$depotpath" if !length($depot->depotname);
             return $self->arg_depotpath($depotpath);
 	}
     }
@@ -504,7 +504,6 @@ sub arg_co_maybe {
 	( repos => $repos,
 	  repospath => $repospath,
 	  depotpath => $cinfo->{depotpath} || $arg,
-	  mirror => $self->{xd}->mirror($repos),
 	  path => $path,
 	  view => $view,
 	  revision => $rev,
@@ -542,7 +541,6 @@ sub arg_copath {
 	   source => $self->{xd}->create_path_object
 	   ( repos => $repos,
 	     repospath => $repospath,
-	     mirror => $self->{xd}->mirror($repos),
 	     path => $path,
 	     view => $view,
 	     revision => $cinfo->{revision}, # make this sane!
@@ -618,20 +616,18 @@ sub arg_depotpath {
     my ($self, $arg) = @_;
     my $root;
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
-    my ($repospath, $path, $repos) = $self->{xd}->find_repos ($arg, 1);
+    my ($depot, $path) = $self->{xd}->find_depotpath($arg);
     my $view;
     from_native ($path, 'path', $self->{encoding});
     if (($view) = $path =~ m{^/\^([\w\-_/]+)$}) {
-	($path, $view) = $self->create_view($repos, $view, $rev);
+	($path, $view) = $self->create_view($depot->repos, $view, $rev);
     }
 
     return $self->{xd}->create_path_object
-	( repos => $repos,
-	  repospath => $repospath,
+	( depot => $depot,
 	  path => $path,
 	  report => $arg,
 	  revision => $rev,
-	  depotpath => $arg,
 	  view => $view,
 	);
 }

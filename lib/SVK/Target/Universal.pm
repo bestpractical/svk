@@ -12,9 +12,9 @@ SVK::Target::Universal - svk target that might not be local
 
 =head1 SYNOPSIS
 
- $target = SVK::Target::Universal->new ($uuid, $path, $rev);
- $target = SVK::Target::Universal->new ($local_target);
- $local_target = $target->local ($xd, 'depot');
+ $target = SVK::Target::Universal->new($uuid, $path, $rev);
+ $target = SVK::Target::Universal->new($local_target);
+ $local_target = $target->local($depot);
 
 =cut
 
@@ -30,19 +30,10 @@ sub new {
 }
 
 sub local {
-    my $self = shift;
-    my ($repospath, $repos, $depot, $xd);
-    if ($#_) {
-	($xd, $depot) = @_;
-	($repospath, undef, $repos) = $xd->find_repos ("/$depot/", 1);
-    }
-    else {
-	$repos = $_[0];
-	$repospath = $repos->path;
-    }
+    my ($self, $depot) = @_;
 
-    my ($path, $rev) = $self->{uuid} ne $repos->fs->get_uuid ?
-	find_local_mirror ($repos, @{$self}{qw/uuid path rev/}) :
+    my ($path, $rev) = $self->{uuid} ne $depot->repos->fs->get_uuid ?
+	find_local_mirror($depot->repos, @{$self}{qw/uuid path rev/}) :
 	@{$self}{qw/path rev/};
 
     # $rev can be undefined even if $path is defined.  This is the case
@@ -51,12 +42,10 @@ sub local {
     return unless defined $path && defined $rev;
 
     SVK::Path->real_new
-	({ repos => $repos,
-	   mirror => $xd ? $xd->mirror($repos) : undef,
-	   repospath => $repospath,
+	({ depot => $depot,
+	   mirror => $depot->mirror,
 	   path => $path, # XXX: use path_anchor accessor
 	   revision => $rev,
-	   depotname => $depot || '',
 	 });
 }
 

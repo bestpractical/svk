@@ -105,9 +105,8 @@ sub run {
     }
 
     for my $target (@arg) {
-        my $repos = $target->repos;
-        my $fs    = $repos->fs;
-        my $m     = $self->{xd}->mirror($repos)
+        my $fs    = $target->repos->fs;
+        my $m     = $target->depot->mirror
 	    ->load_from_path($target->path_anchor);
 
 	my $run_sync = sub {

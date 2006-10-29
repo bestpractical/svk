@@ -71,6 +71,8 @@ lib/SVK/Command/Switch.pm
 lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
+lib/SVK/Config.pm
+lib/SVK/Depot.pm
 lib/SVK/Editor.pm
 lib/SVK/Editor/ByPass.pm
 lib/SVK/Editor/Checkout.pm

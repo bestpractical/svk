@@ -280,7 +280,7 @@ sub find_merge_sources {
     $info->add_target ($target, $self->{xd}) unless $noself;
 
     return $info->verbatim if $verbatim || !$target->root->check_path($target->path);
-    my $minfo = $info->resolve ($self->{xd}, $target->depotname, $target->repos);
+    my $minfo = $info->resolve($target->depot);
 
     my $myuuid = $target->repos->fs->get_uuid ();
 
@@ -600,9 +600,9 @@ sub resolve_copy {
 	my $udst = $self->{dst}->universal;
 	my $dstkey = join(':', $udst->{uuid}, $udst->{path});
 	return $srcinfo->{$dstkey}{rev} ?
-	    ($path, $srcinfo->{$dstkey}->local($self->{dst}->repos)->revision) : ();
+	    ($path, $srcinfo->{$dstkey}->local($self->{dst}->depot)->revision) : ();
     }
-    if ($dstinfo->{$srckey}->local($self->{dst}->repos)->revision < $cp_rev) {
+    if ($dstinfo->{$srckey}->local($self->{dst}->depot)->revision < $cp_rev) {
 	# same as re-base in editor::copy
 	my $rev = $self->{src}->merged_from
 	    ($self->{base}, $self, $self->{base}->path_anchor);
@@ -691,9 +691,9 @@ sub union {
 }
 
 sub resolve {
-    my ($self, $xd, $depotname, $repos) = @_;
-    my $uuid = $repos->fs->get_uuid;
-    return { map { my $local = $self->{$_}->local($xd, $depotname);
+    my ($self, $depot) = @_;
+    my $uuid = $depot->repos->fs->get_uuid;
+    return { map { my $local = $self->{$_}->local($depot);
 		   $local ? ("$uuid:".$local->path_anchor => $local->revision) : ()
 	       } keys %$self };
 }
