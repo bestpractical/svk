@@ -191,7 +191,7 @@ sub cleanup_test {
         my @txns = @{ $depot->repos->fs->list_transactions };
         if (@txns) {
             my $how_many = @txns;
-            diag "uncleaned txns ($how_many) on /$depot/";
+            diag "uncleaned txns ($how_many) on /$depotname/";
             if ( $ENV{SVKTESTUNCLEANTXN} ) {
                 for my $txn_name ( sort @txns ) {
                     my $txn = $depot->repos->fs->open_txn($txn_name);
