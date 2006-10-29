@@ -79,7 +79,6 @@ sub create {
 
     my ($editor) = $t->get_dynamic_editor(
         ignore_mirror => 1,
-        caller        => '',
         message       => 'init mirror',
         author        => $ENV{USER},
     );

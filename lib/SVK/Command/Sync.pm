@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR find_prev_copy);
+use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -112,7 +112,6 @@ sub run {
 	    $m->sync( torev => $self->{torev}, skip_to => $self->{skip_to},
 		      cb_copy_notify => sub { $self->copy_notify($target, $m->tmp_svnmirror, @_) },
 		      lock_message   => lock_message($target));
-	    find_prev_copy( $fs, $fs->youngest_rev );
 	    1;
 	};
         if ( $self->{sync_all} ) {
@@ -129,7 +128,6 @@ sub run {
             # build the copy cache after sync.
             # we should do this in svn::mirror::committed, with a
             # hook provided here.
-            find_prev_copy( $fs, $fs->youngest_rev );
         }
     }
     return;

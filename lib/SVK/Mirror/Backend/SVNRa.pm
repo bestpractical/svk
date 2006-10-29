@@ -102,7 +102,6 @@ sub create {
     my $t = SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )->refresh_revision;
     my ($editor, %cb) = $t->get_dynamic_editor(
         ignore_mirror => 1,
-        caller        => '',
         author        => $ENV{USER},
     );
     $cb{txn}->change_prop( 'svm:headrev', "$uuid:0" );

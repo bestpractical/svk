@@ -160,11 +160,23 @@ sub _editor_for_patch {
 	    %cb, send_fulltext => 0);
 }
 
+sub _commit_callback {
+    my ($self, $callback) = @_;
+
+    return sub {
+	print loc("Committed revision %1.\n", $_[0]);
+	$callback->(@_) if $callback,
+    }
+}
+
 sub get_editor {
     my ($self, $target, $callback, $source) = @_;
     # Commit as patch
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
+
+    $callback = $self->_commit_callback($callback)
+	if $self->{direct} || !$target->is_mirrored;
 
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
@@ -172,6 +184,7 @@ sub get_editor {
 	  check_only => $self->{check_only},
 	  callback => $callback,
 	  message => $self->{message},
+	  notify  => sub { print @_ },
 	  author => $ENV{USER} );
 
     # Note: the case that the target is an xd is actually only used in merge.
