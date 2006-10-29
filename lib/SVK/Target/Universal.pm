@@ -1,7 +1,7 @@
 package SVK::Target::Universal;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
-use SVK::Util qw(find_svm_source find_local_mirror);
+use SVK::Util qw(find_svm_source);
 use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(qw(uuid path rev));
@@ -33,7 +33,7 @@ sub local {
     my ($self, $depot) = @_;
 
     my ($path, $rev) = $self->{uuid} ne $depot->repos->fs->get_uuid ?
-	find_local_mirror($depot->repos, @{$self}{qw/uuid path rev/}) :
+	$depot->find_local_mirror(@{$self}{qw/uuid path rev/}) :
 	@{$self}{qw/path rev/};
 
     # $rev can be undefined even if $path is defined.  This is the case

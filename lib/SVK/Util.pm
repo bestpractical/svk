@@ -9,7 +9,7 @@ our @EXPORT_OK = qw(
 
     get_encoding get_encoder from_native to_native
 
-    find_local_mirror find_svm_source traverse_history
+    find_svm_source traverse_history
     find_prev_copy
 
     read_file write_file slurp_fh md5_fh bsd_glob mimetype mimetype_is_text
@@ -325,23 +325,6 @@ sub to_native {
     die loc ("Can't encode %1 as %2.\n", $_[1], $enc->name) if $@;
     $_[0] = $buf;
     return;
-}
-
-=head2 Mirror Handling
-
-=head3 find_local_mirror ($repos, $uuid, $path, $rev)
-
-XXX Undocumented
-
-=cut
-
-sub find_local_mirror {
-    my ($repos, $uuid, $path, $rev) = @_;
-    my $myuuid = $repos->fs->get_uuid;
-    return unless HAS_SVN_MIRROR && $uuid ne $myuuid;
-    my ($m, $mpath) = _has_local ($repos, "$uuid:$path");
-    return ("$m->{target_path}$mpath",
-	    $rev ? $m->find_local_rev ($rev) : $rev) if $m;
 }
 
 =head3 find_svm_source ($repos, $path, $rev)
