@@ -327,39 +327,13 @@ sub to_native {
     return;
 }
 
-=head3 find_svm_source ($repos, $path, $rev)
-
-XXX Undocumented
-
-=cut
-
-sub find_svm_source {
+sub find_svm_source { # DEPRECATED: use SVK::Path->universal, only used in SVK::Command now.
     my ($repos, $path, $rev) = @_;
-    my $fs = $repos->fs;
-    $rev ||= $fs->youngest_rev;
-    my $root = $fs->revision_root ($rev);
-    my ($uuid, $m, $mpath);
-
-    if (HAS_SVN_MIRROR) {
-	($m, $mpath) = SVN::Mirror::is_mirrored ($repos, $path);
-    }
-
-    if ($m) {
-	# XXX: we should normalize $rev before calling find_svm_source
-	$rev = ($root->node_history($path)->prev(0)->location)[1]
-	    unless $rev == $root->node_created_rev ($path);
-	$rev = $m->find_remote_rev ($rev);
-	$path =~ s/\Q$mpath\E$//;
-	$uuid = $m->{source_uuid};
-	$path = $m->{source_path}.$mpath;
-	$path ||= '/';
-    }
-    else {
-	$uuid = $fs->get_uuid;
-	$rev = ($root->node_history ($path)->prev (0)->location)[1];
-    }
-
-    return ($uuid, $path, $rev);
+    my $t = SVK::Path->real_new({ depot => SVK::Depot->new({repos => $repos}),
+                                  path => $path, revision => $rev });
+    $t->refresh_revision unless $rev;
+    my $u = $t->universal;
+    return map { $u->$_ } qw(uuid path rev);
 }
 
 =head2 File Content Manipulation
@@ -999,26 +973,6 @@ sub find_dotsvk {
     }
 
     return
-}
-
-sub _list_mirror_cached {
-    my $repos = shift;
-    # XXX: temporary
-    my $depot = SVK::Depot->new({repos => $repos, repospath => $repos->path, depotname => ''});
-    SVK::MirrorCatalog->new({repos => $repos, depot => $depot})->entries;
-}
-
-sub _has_local {
-    my ($repos, $spec) = @_;
-    my %mirrored = _list_mirror_cached($repos);
-    while (my ($path, $m) = each(%mirrored)) {
-	my $mspec = $m->spec;
-	my $mpath = $spec;
-	next unless $mpath =~ s/^\Q$mspec\E//;
-	$mpath = '' if $mpath eq '/';
-	return ($m->svnmirror_object, $mpath);
-    }
-    return;
 }
 
 1;

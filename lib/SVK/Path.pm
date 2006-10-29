@@ -2,7 +2,7 @@ package SVK::Path;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
+use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use SVK::Editor::TxnCleanup;
 use SVK::Depot;
@@ -110,12 +110,16 @@ path component if used in array context.
 
 =cut
 
-
 sub is_mirrored {
     my ($self) = @_;
-    return unless HAS_SVN_MIRROR;
 
     return $self->mirror->is_mirrored($self->path_anchor);
+}
+
+sub mirror_source {
+    my ($self) = @_;
+
+    return $self->mirror->is_mirrored($self->path);
 }
 
 sub _commit_editor {
@@ -279,6 +283,7 @@ sub normalize {
     my $root = $fs->revision_root($self->revision);
     $self->revision( ($root->node_history ($self->path)->prev(0)->location)[1] )
 	unless $self->revision == $root->node_created_rev ($self->path);
+    return $self;
 }
 
 =head2 as_depotpath
@@ -332,7 +337,24 @@ Returns corresponding L<SVK::Target::Universal> object.
 =cut
 
 sub universal {
-    SVK::Target::Universal->new ($_[0]);
+    my $self = shift;
+    $self = $self->clone->normalize if $self->revision;
+    my $path = $self->path;
+    my ($uuid, $rev);
+    my ($m, $mpath) = $self->mirror_source;
+
+    if ($m) {
+	$rev = $m->find_remote_rev($self->revision);
+	$uuid = $m->{source_uuid};
+	$path = $m->{source_path}.$mpath;
+	$path ||= '/';
+    }
+    else {
+	$uuid = $self->repos->fs->get_uuid;
+        $rev = $self->revision;
+    }
+
+    return SVK::Target::Universal->new($uuid, $path, $rev);
 }
 
 sub contains_mirror {
