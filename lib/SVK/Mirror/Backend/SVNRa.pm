@@ -5,7 +5,7 @@ use warnings;
 use SVN::Core;
 use SVN::Ra;
 use SVN::Client ();
-use SVK::Editor::Dynamic;
+use SVK::Editor::Composite;
 use SVK::I18N;
 
 use constant OK => $SVN::_Core::SVN_NO_ERROR;
