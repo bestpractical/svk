@@ -56,7 +56,7 @@ sub _has_local {
 	my $mpath = $spec;
 	next unless $mpath =~ s/^\Q$mspec\E//;
 	$mpath = '' if $mpath eq '/';
-	return ($m->svnmirror_object, $mpath);
+	return ($m->tmp_svnmirror, $mpath);
     }
     return;
 }

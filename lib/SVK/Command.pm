@@ -354,7 +354,7 @@ sub arg_uri_maybe {
         my $depot = eval { $self->{xd}->find_depot($depotname) } or next;
 	my %mirrors = $depot->mirror->entries;
 	foreach my $path (sort keys %mirrors) {
-	    my $m = $mirrors{$path}->svnmirror_object;
+	    my $m = $mirrors{$path}->tmp_svnmirror;
 
             my $rel_uri = $uri->rel(URI->new("$m->{source}/")->canonical) or next;
             next if $rel_uri->eq($uri);

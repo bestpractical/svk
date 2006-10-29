@@ -43,7 +43,7 @@ sub entries {
 	    1;
 	};
 #	$@ ? () : ($_ => $m)
-        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({svnmirror_object => $m}))
+        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({tmp_svnmirror => $m}))
     } SVN::Mirror::list_mirror($repos);
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
@@ -66,7 +66,7 @@ sub load_from_path { # DEPRECATED: only used by ::Command::Sync
     my $m = $self->svnmirror_object
 	( $path,  get_source => 1 );
     $m->init;
-    return SVK::MirrorCatalog::Entry->new({ svnmirror_object => $m });
+    return SVK::MirrorCatalog::Entry->new({ tmp_svnmirror => $m });
 }
 
 sub add_entry {
@@ -92,7 +92,7 @@ sub is_mirrored {
 	keys %mirrors;
     return unless $mpath;
 
-    my $m = $mirrors{$mpath}->svnmirror_object;
+    my $m = $mirrors{$mpath}->tmp_svnmirror;
     $path =~ s/^\Q$mpath\E//;
     return wantarray ? ($m, $path) : $m;
 }
@@ -109,18 +109,17 @@ sub add_mirror {
 package SVK::MirrorCatalog::Entry;
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(svnmirror_object));
+__PACKAGE__->mk_accessors(qw(tmp_svnmirror));
 
 sub sync {
     my ($self, %arg) = @_;
-    Carp::cluck unless $self->svnmirror_object;
-    $self->svnmirror_object->{$_} = $arg{$_} for keys %arg;
-    $self->svnmirror_object->run($arg{torev});
+    $self->tmp_svnmirror->{$_} = $arg{$_} for keys %arg;
+    $self->tmp_svnmirror->run($arg{torev});
 }
 
 sub spec {
     my $self = shift;
-    my $m = $self->svnmirror_object;
+    my $m = $self->tmp_svnmirror;
     return join(':', $m->{source_uuid}, $m->{source_path});
 }
 
