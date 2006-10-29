@@ -346,7 +346,7 @@ sub universal {
 
     if ($m) {
 	$rev = $m->find_remote_rev($self->revision);
-	$uuid = $m->server_uuid; # XXX: relay
+	$uuid = $m->source_uuid;
 	$path = $m->source_path.$mpath;
 	$path ||= '/';
     }

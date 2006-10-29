@@ -34,16 +34,16 @@ sub entries {
     return %{$mirror_cached{$repos}{hash}}
 	if exists $mirror_cached{$repos};
     my %mirrored = map {
-	my $m;
+	my ($m, $m2);
 	local $@;
 	eval {
             $m = $self->svnmirror_object( $_, get_source => 1);
             $m->init;
-            #$m = SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
+            $m2 = SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
 	    1;
 	};
 #	$@ ? () : ($_ => $m)
-        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({tmp_svnmirror => $m}))
+        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({svm_object => $m, svk_mirror => $m2 }))
     } SVN::Mirror::list_mirror($repos);
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
@@ -63,10 +63,9 @@ sub svnmirror_object {
 
 sub load_from_path { # DEPRECATED: only used by ::Command::Sync
     my ($self, $path) = @_;
-    my $m = $self->svnmirror_object
-	( $path,  get_source => 1 );
-    $m->init;
-    return SVK::MirrorCatalog::Entry->new({ tmp_svnmirror => $m });
+
+    my %mirrors = $self->entries;
+    return $mirrors{$path};
 }
 
 sub add_entry {
@@ -113,9 +112,7 @@ __PACKAGE__->mk_accessors(qw(tmp_svnmirror));
 
 sub new {
     my ($class, $args) = @_;
-    my $svm = delete $args->{tmp_svnmirror};
-    $args->{tmp_svnmirror} = SVK::MirrorCatalog::SVMCompat->new({ svm_object => $svm });
-    $class->SUPER::new($args);
+    $class->SUPER::new({ tmp_svnmirror => SVK::MirrorCatalog::SVMCompat->new($args) });
 }
 
 sub sync {
@@ -131,19 +128,20 @@ sub sync {
 sub spec {
     my $self = shift;
     my $m = $self->tmp_svnmirror;
-    return join(':', $m->server_uuid, $m->source_path);
+    return join(':', $m->source_uuid, $m->source_path);
 }
 
 package SVK::MirrorCatalog::SVMCompat;
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(svm_object));
+__PACKAGE__->mk_accessors(qw(svm_object svkmirror));
 
 sub url { $_[0]->svm_object->{source} }
 sub path { $_[0]->svm_object->{target_path} }
 sub set_lock_message { $_[0]->svm_object->{lock_message} = $_[1] }
 sub set_cb_copy_notify { $_[0]->svm_object->{cb_copy_notify} = $_[1] }
 sub set_skip_to { $_[0]->svm_object->{skip_to} = $_[1] }
-sub server_uuid { $_[0]->svm_object->{source_uuid} }
+sub server_uuid { $_[0]->svm_object->{rsource_uuid} }
+sub source_uuid { $_[0]->svm_object->{source_uuid} }
 sub fromrev { $_[0]->svm_object->{fromrev} }
 sub source_path { $_[0]->svm_object->{source_path} }
 
@@ -152,6 +150,7 @@ sub AUTOLOAD {
     my $self = shift;
     my $func = $AUTOLOAD;
     $func =~ s/.*:://;
+    return if $func =~ m/^[A-Z]/;
 
     my $method = $self->svm_object->can($func);
     Carp::confess $func unless $method;

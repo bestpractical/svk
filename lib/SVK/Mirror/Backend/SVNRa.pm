@@ -54,6 +54,7 @@ sub load {
     my $t = SVK::Path->real_new( { depot => $mirror->depot, path => $mirror->path } )->refresh_revision;
 
     my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
+    my $ruuid = $t->root->node_prop($t->path, 'svm:ruuid') || $uuid;
     die loc("%1 is not a mirrored path.\n", $t->path) unless $uuid;
     my ( $root, $path ) = split('!',  $t->root->node_prop($t->path, 'svm:source'));
 
@@ -61,7 +62,8 @@ sub load {
     $self->source_path( $path );
 
     $mirror->url( "$root$path" );
-    $mirror->server_uuid( $uuid );
+    $mirror->server_uuid( $ruuid );
+    $mirror->source_uuid( $uuid );
 
     # XXX: locking etc
     $self->fromrev($self->_do_load_fromrev);
@@ -296,9 +298,6 @@ sub _read_password {
     return $password;
 }
 
-
-
-
 =back
 
 =head2 METHODS
@@ -310,7 +309,16 @@ sub _read_password {
 =cut
 
 sub find_rev_from_changeset {
-
+    my ($self, $changeset) = @_;
+    my $t = SVK::Path->real_new({ depot => $self->mirror->depot, path => $self->mirror->path })
+        ->refresh_revision;
+    return $t->search_revision
+	( cmp => sub {
+	      my $rev = shift;
+	      my $search = $t->mclone(revision => $rev);
+              my $s_changeset = scalar $self->mirror->find_changeset($rev);
+              return $s_changeset <=> $changeset;
+          } );
 }
 
 =item traverse_new_changesets()
@@ -338,6 +346,7 @@ sub traverse_new_changesets {
 
 sub sync_changeset {
     my ($self, $changeset, $metadata) = @_;
+
 }
 
 =item mirror_changesets
