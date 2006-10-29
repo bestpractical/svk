@@ -326,30 +326,71 @@ sub find_rev_from_changeset {
 =cut
 
 sub traverse_new_changesets {
-    my ($self, $code) = @_;
+    my ($self, $code, $torev) = @_;
     my $from = $self->fromrev || 0;
-    my $to = -1;
-    print "Retrieving log information from $from to $to\n";
+    my $to = $torev || -1;
 
     my $ra = $self->_new_ra;
+    $to = $ra->get_latest_revnum() if $to == -1;
+    print "Retrieving log information from $from to $to\n";
     eval {
-    $ra->get_log([''], 1, 2, 0,
-		  1, 1,
+    $ra->get_log([''], $from+1, $to, 0,
+		  0, 1,
 		  sub {
 		      my ($paths, $rev, $author, $date, $msg, $pool) = @_;
-		      # move the anchor detection stuff to &mirror ?
 		      $code->($rev, { author => $author, date => $date, msg => $msg });
-		      $self->fromrev($rev);
 		  });
     };
 }
 
 sub sync_changeset {
     my ($self, $changeset, $metadata) = @_;
+    warn "==> sync $changeset";
+    my $t = SVK::Path->real_new({ depot => $self->mirror->depot, path => $self->mirror->path })
+        ->refresh_revision;
+    my ($editor) = $t->get_editor( ignore_mirror => 1, caller => '');
+    my $ra = $self->_new_ra;
+    if ( $ra->{session}->can('replay') ) {
+        require SVK::Editor::CopyHandler;
+        my $baton      = $editor->open_root('');
+        my $compeditor = SVK::Editor::Composite->new(
+            master_editor => SVK::Editor::CopyHandler->new(
+                _editor => $editor,
+#                  SVN::Delta::Editor->new( _editor => [$editor], _debug => 0 ),
+                cb_copy => sub {
+                    my ( $editor, $path, $rev ) = @_;
+                    return (
+                        $self->{target_path} . '/' . $path,
+                        $self->find_rev_from_changeset($rev)
+                    );
+                }
+            ),
+            anchor       => $self->mirror->path,
+            anchor_baton => $baton
+        );
+
+#        $editor->{_debug}++;
+        warn $editor;
+        $ra->replay( $changeset, 0, 1, $editor );
+#            SVN::Delta::Editor->new( _debug => 0, _editor => [$compeditor] ) );
+        $editor->close_directory($baton);
+        $editor->close_edit;
+        return;
+    }
+    die 'no replay'
 
 }
 
 =item mirror_changesets
+
+=cut
+
+sub mirror_changesets {
+    my ($self, $torev) = @_;
+    $self->mirror->with_lock('mirror', sub {
+        $self->traverse_new_changesets(sub { $self->sync_changeset(@_) }, $torev);
+    });
+}
 
 =item get_commit_editor
 

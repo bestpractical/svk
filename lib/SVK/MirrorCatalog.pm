@@ -148,7 +148,6 @@ sub set_skip_to { $_[0]->svm_object->{skip_to} = $_[1] }
 sub fromrev { $_[0]->svk_mirror->_backend->fromrev }
 sub source_path { $_[0]->svk_mirror->_backend->source_path }
 
-
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $self = shift;

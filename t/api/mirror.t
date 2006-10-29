@@ -74,7 +74,6 @@ use Data::Dumper;
 my %mirrored = $mc->entries;
 is_deeply([ sort keys %mirrored], ['/m', '/m2']);
 
-
 $m = SVK::Mirror->load(
         { depot => $depot, path => '/m',
 	  pool => SVN::Pool->new }
@@ -85,3 +84,7 @@ $m = SVK::Mirror->load(
     $m->traverse_new_changesets(sub { push @revs, $_[0] });
     is_deeply(\@revs, [1,2]);
 }
+
+$m->mirror_changesets();
+warn $@;
+

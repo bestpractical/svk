@@ -133,6 +133,14 @@ sub load {
 
 =cut
 
+sub lock {
+
+}
+
+sub unlock {
+
+}
+
 sub with_lock {
     my ( $self, $lock, $code ) = @_;
 
