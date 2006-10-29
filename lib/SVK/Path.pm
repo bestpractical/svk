@@ -98,7 +98,7 @@ sub same_source {
     for (@other) {
 	my $m = $_->is_mirrored;
 	return 0 if $m xor $mself;
-	return 0 if $m && $m->{target_path} ne $m->{target_path};
+	return 0 if $m && $m->path ne $m->path;
     }
     return 1;
 }
@@ -173,7 +173,7 @@ sub get_editor {
     my $fs = $self->repos->fs;
     my $yrev = $fs->youngest_rev;
 
-    my $root_baserev = $m ? $m->{fromrev} : $yrev;
+    my $root_baserev = $m ? $m->fromrev : $yrev;
 
     my $inspector = $self->inspector;
 
@@ -181,7 +181,7 @@ sub get_editor {
     print loc("Commit into mirrored path: merging back directly.\n")
 	if $arg{caller} eq 'SVK::Command::Commit' && $m && !$arg{check_only};
     if ($arg{check_only}) {
-	print loc("Checking locally against mirror source %1.\n", $m->{source})
+	print loc("Checking locally against mirror source %1.\n", $m->url)
 	    if $m;
 	return (SVN::Delta::Editor->new, $inspector, 
 	        cb_rev => sub { $root_baserev },
@@ -192,8 +192,8 @@ sub get_editor {
     my $post_handler;
     if ($m) {
 	require SVK::Command::Sync;
-	print loc("Merging back to mirror source %1.\n", $m->{source});
-	$m->{lock_message} = SVK::Command::Sync::lock_message($self);
+	print loc("Merging back to mirror source %1.\n", $m->url);
+	$m->set_lock_message(SVK::Command::Sync::lock_message($self));
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message},
 	     sub { my $rev = shift;
@@ -213,7 +213,8 @@ sub get_editor {
 		cb_rev => sub { $root_baserev }, #This is the inspector baserev
 		cb_copyfrom =>
 		sub { my ($path, $rev) = @_;
-		      $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
+                      my ($m_path, $m_url) = ($m->path, $m->url);
+		      $path =~ s|^\Q$m_path\E|$m_url|;
 		      return ($path, scalar $m->find_remote_rev($rev)); });
     }
 
@@ -345,8 +346,8 @@ sub universal {
 
     if ($m) {
 	$rev = $m->find_remote_rev($self->revision);
-	$uuid = $m->{source_uuid};
-	$path = $m->{source_path}.$mpath;
+	$uuid = $m->server_uuid; # XXX: relay
+	$path = $m->source_path.$mpath;
 	$path ||= '/';
     }
     else {
@@ -555,7 +556,7 @@ sub copied_from {
 	# Check for mirroredness.
 	if ($want_mirror and HAS_SVN_MIRROR) {
 	    my ($m, $mpath) = $target->is_mirrored;
-	    $m->{source} or next;
+	    $m or next;
 	}
 
 	# It works!  Let's update it to the latest revision and return
@@ -727,7 +728,8 @@ sub as_url {
     my ($path, $rev) = ($_[2] || $self->path_anchor, $_[3] || $self->revision);
 
     if (!$local_only && (my $m = $self->is_mirrored)) {
-	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;
+        my ($m_path, $m_url) = ($m->path, $m->url);
+	$path =~ s/^\Q$m_path\E/$m_url/;
 	$path =~ s/%/%25/g;
         if (my $remote_rev = $m->find_remote_rev($rev)) {
             $rev = $remote_rev;

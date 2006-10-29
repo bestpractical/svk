@@ -111,16 +111,51 @@ use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(qw(tmp_svnmirror));
 
+sub new {
+    my ($class, $args) = @_;
+    my $svm = delete $args->{tmp_svnmirror};
+    $args->{tmp_svnmirror} = SVK::MirrorCatalog::SVMCompat->new({ svm_object => $svm });
+    $class->SUPER::new($args);
+}
+
 sub sync {
     my ($self, %arg) = @_;
-    $self->tmp_svnmirror->{$_} = $arg{$_} for keys %arg;
+    for (keys %arg) {
+        next if $_ eq 'torev';
+        my $method = "set_$_";
+        $self->tmp_svnmirror->$method($arg{$_});
+    }
     $self->tmp_svnmirror->run($arg{torev});
 }
 
 sub spec {
     my $self = shift;
     my $m = $self->tmp_svnmirror;
-    return join(':', $m->{source_uuid}, $m->{source_path});
+    return join(':', $m->server_uuid, $m->source_path);
+}
+
+package SVK::MirrorCatalog::SVMCompat;
+use base 'Class::Accessor::Fast';
+__PACKAGE__->mk_accessors(qw(svm_object));
+
+sub url { $_[0]->svm_object->{source} }
+sub path { $_[0]->svm_object->{target_path} }
+sub set_lock_message { $_[0]->svm_object->{lock_message} = $_[1] }
+sub set_cb_copy_notify { $_[0]->svm_object->{cb_copy_notify} = $_[1] }
+sub set_skip_to { $_[0]->svm_object->{skip_to} = $_[1] }
+sub server_uuid { $_[0]->svm_object->{source_uuid} }
+sub fromrev { $_[0]->svm_object->{fromrev} }
+sub source_path { $_[0]->svm_object->{source_path} }
+
+our $AUTOLOAD;
+sub AUTOLOAD {
+    my $self = shift;
+    my $func = $AUTOLOAD;
+    $func =~ s/.*:://;
+
+    my $method = $self->svm_object->can($func);
+    Carp::confess $func unless $method;
+    $method->($self->svm_object, @_);
 }
 
 =head1 SEE ALSO

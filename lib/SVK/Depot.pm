@@ -43,7 +43,7 @@ sub find_local_mirror {
     return if $uuid eq $myuuid;
 
     my ($m, $mpath) = $self->_has_local("$uuid:$path");
-    return ("$m->{target_path}$mpath",
+    return ($m->path.$mpath,
 	    $rev ? $m->find_local_rev($rev) : $rev) if $m;
     return;
 }

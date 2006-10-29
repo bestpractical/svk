@@ -98,7 +98,7 @@ sub decode_commit_message {
 sub get_dynamic_editor {
     my ($self, $target) = @_;
     my $m = $self->under_mirror ($target);
-    my $anchor = $m ? $m->{target_path} : '/';
+    my $anchor = $m ? $m->path : '/';
     my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
 
     my $editor = SVK::Editor::Dynamic->new
@@ -135,7 +135,7 @@ sub _editor_for_patch {
     require SVK::Patch;
     my ($m);
     if (($m) = $target->is_mirrored) {
-	print loc("Patching locally against mirror source %1.\n", $m->{source});
+	print loc("Patching locally against mirror source %1.\n", $m->url);
     }
     die loc ("Illegal patch name: %1.\n", $self->{patch})
 	if $self->{patch} =~ m!/!;
@@ -155,7 +155,7 @@ sub _editor_for_patch {
     $target->refresh_revision;
     my %cb = SVK::Editor::Merge->cb_for_root
 	($target->root, $target->path_anchor,
-	 $m ? $m->{fromrev} : $target->revision);
+	 $m ? $m->fromrev : $target->revision);
     return ($patch->commit_editor ($fname),
 	    %cb, send_fulltext => 0);
 }

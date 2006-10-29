@@ -355,8 +355,7 @@ sub arg_uri_maybe {
 	my %mirrors = $depot->mirror->entries;
 	foreach my $path (sort keys %mirrors) {
 	    my $m = $mirrors{$path}->tmp_svnmirror;
-
-            my $rel_uri = $uri->rel(URI->new("$m->{source}/")->canonical) or next;
+            my $rel_uri = $uri->rel(URI->new($m->url."/")->canonical) or next;
             next if $rel_uri->eq($uri);
             next if $rel_uri =~ /^\.\./;
 
@@ -433,7 +432,7 @@ usually good enough.
     my ($m, $answer);
     $m = $target->is_mirrored;
     # If the user is mirroring from svn
-    if (UNIVERSAL::isa($m,'SVN::Mirror::Ra'))  {
+    if ($m) {
         print loc("
 svk needs to mirror the remote repository so you can work locally.
 If you're mirroring a single branch, it's safe to use any of the options

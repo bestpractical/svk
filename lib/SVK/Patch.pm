@@ -158,22 +158,22 @@ sub editor {
 sub _path_attribute_text {
     my ($self, $type, $no_label) = @_;
     # XXX: check if source / target is updated
-    my ($local, $mirrored, $updated);
+    my ($local, $m, $updated);
     if (my $target = $self->{"_$type"}) {
 	if ($target->repos->fs->get_uuid eq $self->{$type}{uuid}) {
 	    ++$local;
 	}
 	else {
-	    $mirrored = $target->is_mirrored or die;
+	    $m= $target->is_mirrored or die;
 	}
     }
     my $label = $no_label ? '' : join(
 	' ', '',
 	($local ? '[local]' : ()),
-	($mirrored ? '[mirrored]' : ()),
+	($m? '[mirrored]' : ()),
 	($self->{"_${type}_updated"} ? '[updated]' : ())
     );
-    $label .= "\n        ($mirrored->{source})" if $mirrored;
+    $label .= "\n        (".$m->url.")" if $m;
     return $label;
 }
 

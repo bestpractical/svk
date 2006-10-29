@@ -138,8 +138,8 @@ sub run {
         my %mirrors = $target->depot->mirror->entries;
         my $depot_name = $target->depotname;
         foreach my $path ( sort keys %mirrors ) {
-            my $m = $mirrors{$path};
-            push @mirror_columns, [ "/$depot_name$path", $m->tmp_svnmirror->{source} ];
+            my $m = $mirrors{$path}->tmp_svnmirror;
+            push @mirror_columns, [ "/$depot_name$path", $m->url ];
         }
     }
 
@@ -176,7 +176,7 @@ sub run {
 sub recover_headrev {
     my ($self, $target, $m) = @_;
 
-    my $fs = $m->{fs};
+    my $fs = $target->repos->fs;
     my ($props, $headrev, $rev, $firstrev, $skipped, $uuid, $rrev);
 
     traverse_history (

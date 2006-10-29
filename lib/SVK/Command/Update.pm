@@ -71,7 +71,7 @@ sub run {
             # Because syncing under the mirror anchor is impossible,
             # we always sync from the mirror anchor.
             my ($m, $mpath) = $sync_target->is_mirrored;
-            $m->run if $m->{source};
+            $m->run if $m;
         }
 
         if ($self->{merge}) {

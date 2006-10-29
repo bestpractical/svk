@@ -15,7 +15,7 @@ sub handle_direct_item {
     my ($editor, $anchor, $m, $src, $dst) = @_;
     my ($srcm) = $self->under_mirror ($src);
     my $call;
-    if ($srcm && $srcm->{target_path} eq $src->path) {
+    if ($srcm && $srcm->path eq $src->path) {
 	# this should be in svn::mirror
 	my $props = $src->root->node_proplist($src->path);
 	# this is very annoying: for inejecting an additional
