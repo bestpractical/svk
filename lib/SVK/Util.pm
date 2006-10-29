@@ -1020,7 +1020,9 @@ sub find_dotsvk {
 
 sub _list_mirror_cached {
     my $repos = shift;
-    SVK::MirrorCatalog->new({repos => $repos})->entries;
+    # XXX: temporary
+    my $depot = SVK::Depot->new({repos => $repos, repospath => $repos->path, depotname => ''});
+    SVK::MirrorCatalog->new({repos => $repos, depot => $depot})->entries;
 }
 
 sub _has_local {
@@ -1031,7 +1033,7 @@ sub _has_local {
 	my $mpath = $spec;
 	next unless $mpath =~ s/^\Q$mspec\E//;
 	$mpath = '' if $mpath eq '/';
-	return ($m->mirror, $mpath);
+	return ($m->svnmirror_object, $mpath);
     }
     return;
 }

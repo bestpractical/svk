@@ -10,6 +10,7 @@ sub mirror {
     my $self = shift;
     return SVK::MirrorCatalog->new
 	( { repos => $self->repos,
+            depot => $self,
 	    revprop => ['svk:signature'] });
 }
 

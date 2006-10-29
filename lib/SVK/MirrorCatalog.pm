@@ -4,9 +4,10 @@ use strict;
 use base 'Class::Accessor::Fast';
 use SVK::Util qw( HAS_SVN_MIRROR );
 use SVK::Path;
+use SVK::Mirror;
 use SVK::Config;
 
-__PACKAGE__->mk_accessors(qw(repos cb_lock revprop));
+__PACKAGE__->mk_accessors(qw(depot repos cb_lock revprop));
 
 =head1 NAME
 
@@ -36,11 +37,13 @@ sub entries {
 	my $m;
 	local $@;
 	eval {
-	    $m = $self->svnmirror_object( $_, get_source => 1);
-	    $m->init;
+            $m = $self->svnmirror_object( $_, get_source => 1);
+            $m->init;
+            #$m = SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
 	    1;
 	};
-	$@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({mirror => $m}))
+#	$@ ? () : ($_ => $m)
+        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({svnmirror_object => $m}))
     } SVN::Mirror::list_mirror($repos);
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
@@ -58,12 +61,12 @@ sub svnmirror_object {
 	  %arg);
 }
 
-sub load_from_path {
+sub load_from_path { # DEPRECATED: only used by ::Command::Sync
     my ($self, $path) = @_;
     my $m = $self->svnmirror_object
 	( $path,  get_source => 1 );
     $m->init;
-    return SVK::MirrorCatalog::Entry->new({ mirror => $m });
+    return SVK::MirrorCatalog::Entry->new({ svnmirror_object => $m });
 }
 
 sub add_entry {
@@ -89,7 +92,7 @@ sub is_mirrored {
 	keys %mirrors;
     return unless $mpath;
 
-    my $m = $mirrors{$mpath}->mirror;
+    my $m = $mirrors{$mpath}->svnmirror_object;
     $path =~ s/^\Q$mpath\E//;
     return wantarray ? ($m, $path) : $m;
 }
@@ -106,17 +109,18 @@ sub add_mirror {
 package SVK::MirrorCatalog::Entry;
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(mirror));
+__PACKAGE__->mk_accessors(qw(svnmirror_object));
 
 sub sync {
     my ($self, %arg) = @_;
-    $self->mirror->{$_} = $arg{$_} for keys %arg;
-    $self->mirror->run($arg{torev});
+    Carp::cluck unless $self->svnmirror_object;
+    $self->svnmirror_object->{$_} = $arg{$_} for keys %arg;
+    $self->svnmirror_object->run($arg{torev});
 }
 
 sub spec {
     my $self = shift;
-    my $m = $self->mirror;
+    my $m = $self->svnmirror_object;
     return join(':', $m->{source_uuid}, $m->{source_path});
 }
 

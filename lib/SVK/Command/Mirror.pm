@@ -139,7 +139,7 @@ sub run {
         my $depot_name = $target->depotname;
         foreach my $path ( sort keys %mirrors ) {
             my $m = $mirrors{$path};
-            push @mirror_columns, [ "/$depot_name$path", $m->mirror->{source} ];
+            push @mirror_columns, [ "/$depot_name$path", $m->svnmirror_object->{source} ];
         }
     }
 

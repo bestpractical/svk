@@ -9,7 +9,11 @@ use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(repos path server_uuid pool url _backend _locked));
+__PACKAGE__->mk_accessors(qw(depot path server_uuid pool url _backend _locked));
+
+*repos = sub { Carp::cluck unless $_[0]->depot; shift->depot->repos };
+
+use SVK::Mirror::Backend::SVNRa;
 
 ## class SVK::Mirror;
 ## has ($.repos, $.path, $.server_uuid, $.url, $.pool);
@@ -70,9 +74,15 @@ sub create {
 
     weaken( $self->{_backend}{mirror} );
 
-    my $t = SVK::Path->real_new( { repos => $self->repos, path => '/' } )
+    my $t = SVK::Path->real_new( { depot => $self->depot, path => '/' } )
         ->refresh_revision;
-    my ($editor) = $t->get_dynamic_editor( ignore_mirror => 1, caller => '', author => $ENV{USER} );
+
+    my ($editor) = $t->get_dynamic_editor(
+        ignore_mirror => 1,
+        caller        => '',
+        message       => 'init mirror',
+        author        => $ENV{USER},
+    );
 
     my %mirrors = map { ( $_ => 1 ) } $self->path,
         split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
@@ -185,27 +195,27 @@ Returns an opaque object that C<sync_changeset> understands.
 
 sub find_changeset {
     my ($self, $rev) = @_;
-    return $self->_find_remote_rev($rev, $self->mirror->repos);
+    return $self->_find_remote_rev($rev, $self->repos);
 }
 
-sub _find_local_rev {
+sub _find_remote_rev {
     my ($self, $rev, $repos) = @_;
-    $repos ||= $self->mirror->repos;
+    $repos ||= $self->repos;
     my $fs = $repos->fs;
-    my $prop = $fs->revision_prop ($rev, 'svm:headrev') or return;
+    my $prop = $fs->revision_prop($rev, 'svm:headrev') or return;
     my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
     return %rev if wantarray;
     return $rev{ $self->server_uuid };
 
 }
 
-=item find_changeset_from_remote($remote_identifier)
+=item find_rev_from_changeset($remote_identifier)
 
 =item traverse_new_changesets($code)
 
-calls C<$code> with an opaque object that C<sync_changeset> understands.
+calls C<$code> with an opaque object and metadata that C<sync_changeset> understands.
 
-=item sync_changeset($changeset)
+=item sync_changeset($changeset, $metadata)
 
 =item mirror_changesets
 
@@ -216,7 +226,7 @@ calls C<$code> with an opaque object that C<sync_changeset> understands.
 =cut
 
 for my $delegate
-    qw( find_changeset_from_remote sync_changeset traverse_new_changesets mirror_changesets get_commit_editor )
+    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor )
 {
     no strict 'refs';
     *{$delegate} = sub {
@@ -225,6 +235,17 @@ for my $delegate
         unshift @_, $self->_backend;
         goto $method;
     };
+}
+
+# TMP method to be compat with SVK::MirrorCatalog::Entry
+
+sub spec {
+    my $self = shift;
+    return join(':', $self->server_uuid, $self->_backend->source_path);
+}
+
+sub find_local_rev {
+
 }
 
 =back

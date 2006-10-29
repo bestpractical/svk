@@ -6,7 +6,7 @@ use SVN::Core;
 use SVN::Ra;
 use SVN::Client ();
 use SVK::Editor::Dynamic;
-
+use SVK::I18N;
 
 use constant OK => $SVN::_Core::SVN_NO_ERROR;
 
@@ -43,26 +43,30 @@ sub _do_load_fromrev {
     my $fs = $self->mirror->repos->fs;
     my $root = $fs->revision_root($fs->youngest_rev);
     my $changed = $root->node_created_rev($self->mirror->path);
-    my $prop = $fs->revision_prop($changed, 'svm:headrev');
-    return unless $prop;
-    my %revs = map {split (':', $_)} $prop =~ m/^.*$/mg;
-    return $revs{$self->mirror->server_uuid};
+    return scalar $self->mirror->find_changeset($changed);
 }
 
 sub load {
     my ($class, $mirror) = @_;
     Carp::cluck unless ref($mirror) eq 'SVK::Mirror';
     my $self = $class->SUPER::new( { mirror => $mirror } );
-    my $t = SVK::Path->real_new( { repos => $mirror->repos, path => $mirror->path } )->refresh_revision;
+    Carp::cluck unless $mirror->depot;
+    my $t = SVK::Path->real_new( { depot => $mirror->depot, path => $mirror->path } )->refresh_revision;
 
     my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
+    die loc("%1 is not a mirrored path.\n", $t->path) unless $uuid;
     my ( $root, $path ) = split('!',  $t->root->node_prop($t->path, 'svm:source'));
 
     $self->source_root( $root );
     $self->source_path( $path );
-    $self->fromrev($self->_do_load_fromrev);
 
     $mirror->url( "$root$path" );
+    $mirror->server_uuid( $uuid );
+
+    # XXX: locking etc
+    $self->fromrev($self->_do_load_fromrev);
+
+    die loc("%1 is not a mirrored path.\n", $t->path) unless defined $self->fromrev;
 
     return $self;
 }
@@ -93,8 +97,13 @@ sub create {
 
     # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
 
-    my $t = SVK::Path->real_new( { repos => $self->mirror->repos, path => '/' } )->refresh_revision;
-    my ($editor) = $t->get_dynamic_editor( ignore_mirror => 1, caller => '', author => $ENV{USER} );
+    my $t = SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )->refresh_revision;
+    my ($editor, %cb) = $t->get_dynamic_editor(
+        ignore_mirror => 1,
+        caller        => '',
+        author        => $ENV{USER},
+    );
+    $cb{txn}->change_prop( 'svm:headrev', "$uuid:0" );
     my $dir_baton = $editor->add_directory( substr($self->mirror->path, 1), 0, undef, -1 );
     $editor->change_dir_prop( $dir_baton, 'svm:uuid', $uuid);
     $editor->change_dir_prop( $dir_baton, 'svm:source', $source_root.'!'.$source_path );
@@ -102,19 +111,21 @@ sub create {
     $editor->adjust;
     $editor->close_edit;
 
+    $mirror->server_uuid( $uuid );
+
     return $self;
 }
 
 sub _check_overlap {
     my ($self) = @_;
-    my $repos = $self->mirror->repos;
-    my $fs = $repos->fs;
+    my $depot = $self->mirror->depot;
+    my $fs = $depot->repos->fs;
     my $root = $fs->revision_root($fs->youngest_rev);
     my $prop = $root->node_prop ('/', 'svm:mirror') or return;
     my @mirrors = $prop =~ m/^(.*)$/mg;
 
     for (@mirrors) {
-	my $mirror = SVK::Mirror->load( { repos => $repos, path => $_ } );
+	my $mirror = SVK::Mirror->load( { depot => $depot, path => $_ } );
 #	warn $mirror;
 	next if $self->source_root ne $mirror->_backend->source_root;
 	# XXX: check overlap with svk::mirror objects.
@@ -294,7 +305,13 @@ sub _read_password {
 
 =over
 
-=item find_changeset_from_remote($remote_identifier)
+=item find_rev_from_changeset($remote_identifier)
+
+=cut
+
+sub find_rev_from_changeset {
+
+}
 
 =item traverse_new_changesets()
 
@@ -313,11 +330,14 @@ sub traverse_new_changesets {
 		  sub {
 		      my ($paths, $rev, $author, $date, $msg, $pool) = @_;
 		      # move the anchor detection stuff to &mirror ?
-		      $code->($rev);
+		      $code->($rev, { author => $author, date => $date, msg => $msg });
 		      $self->fromrev($rev);
 		  });
     };
+}
 
+sub sync_changeset {
+    my ($self, $changeset, $metadata) = @_;
 }
 
 =item mirror_changesets

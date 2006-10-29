@@ -21,7 +21,7 @@ use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
 
 for my $proxy (qw/depotname repos repospath mirror/) {
     no strict 'refs';
-    *{$proxy} = sub { my $self = shift; $self->depot->$proxy(@_) }
+    *{$proxy} = sub { my $self = shift; $self->depot; $self->depot->$proxy(@_) }
 }
 
 =head1 NAME
@@ -213,6 +213,7 @@ sub get_editor {
 		      return ($path, scalar $m->find_remote_rev($rev)); });
     }
 
+    warn "has txn " if $arg{txn};
     my $txn = $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
 
@@ -236,10 +237,14 @@ sub get_editor {
 sub get_dynamic_editor {
     my $self = shift;
 
-    my ($editor, $inspector) = $self->get_editor( @_ );
-    $editor = SVK::Editor::Dynamic->new( { editor => $editor,
-					   inspector => $inspector } );
-    return $editor;
+    my ($editor, $inspector, %cb) = $self->get_editor( @_ );
+    $editor = SVK::Editor::Dynamic->new(
+        {   editor    => $editor,
+            root_rev  => $self->revision,
+            inspector => $inspector
+        }
+    );
+    return ($editor, %cb);
 }
 
 
