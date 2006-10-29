@@ -178,6 +178,15 @@ sub get_editor {
     return ($editor, %cb, inspector => $inspector)
 	if $target->isa('SVK::Path::Checkout');
 
+    if ($cb{mirror}) {
+	if ($self->{check_only}) {
+	    print loc("Checking locally against mirror source %1.\n", $cb{mirror}->url);
+	}
+	else {
+	    print loc("Commit into mirrored path: merging back directly.\n");
+	}
+    }
+
     if ($self->{setrevprop}) {
 	my $txn = $cb{txn} or
 	    die loc("Can't use set-revprop with remote repository.\n");

@@ -178,12 +178,7 @@ sub get_editor {
 
     my $inspector = $self->inspector;
 
-    # compat for old output
-    print loc("Commit into mirrored path: merging back directly.\n")
-	if $arg{caller} eq 'SVK::Command::Commit' && $m && !$arg{check_only};
     if ($arg{check_only}) {
-	print loc("Checking locally against mirror source %1.\n", $m->url)
-	    if $m;
 	return (SVN::Delta::Editor->new, $inspector, 
 	        cb_rev => sub { $root_baserev },
 	        mirror => $m);
@@ -219,7 +214,6 @@ sub get_editor {
 		      return ($path, scalar $m->find_remote_rev($rev)); });
     }
 
-    warn "has txn " if $arg{txn};
     my $txn = $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
 
