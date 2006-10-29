@@ -5,18 +5,24 @@ use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use SVK::Editor::TxnCleanup;
+use SVK::Depot;
 use base 'SVK::Accessor';
 
 __PACKAGE__->mk_shared_accessors
-    (qw(repos mirror));
+    (qw(depot));
 
 __PACKAGE__->mk_clonable_accessors
-    (qw(repospath depotname revision targets));
+    (qw(revision targets));
 
 __PACKAGE__->mk_accessors
     (qw(_root _inspector _pool));
 
 use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
+
+for my $proxy (qw/depotname repos repospath mirror/) {
+    no strict 'refs';
+    *{$proxy} = sub { my $self = shift; $self->depot->$proxy(@_) }
+}
 
 =head1 NAME
 
@@ -108,11 +114,6 @@ path component if used in array context.
 sub is_mirrored {
     my ($self) = @_;
     return unless HAS_SVN_MIRROR;
-
-    # XXX: fallback when we don't have mirror object associated, but we
-    # should enforce it.
-    return SVN::Mirror::is_mirrored($self->repos, $self->path_anchor)
-	unless $self->mirror;
 
     return $self->mirror->is_mirrored($self->path_anchor);
 }
@@ -619,7 +620,7 @@ sub merged_from {
 	      # and compare
 	      my $msrc = $self->new
 	          ( path => $path,
-		    revision => $minfo->{$srckey}->local($self->repos)->revision
+		    revision => $minfo->{$srckey}->local($self->depot)->revision
                   );
 	      { local $@;
 	        eval { $msrc->normalize } or return -1;
@@ -643,7 +644,7 @@ sub merged_from {
 		  ($self->new(revision => $prev))->{$srckey}
 		      or return 0;
 
-	      return ($uret->local($self->repos)->revision == $src->revision)
+	      return ($uret->local($self->depot)->revision == $src->revision)
 		? 1 : 0;
 	  } );
 }

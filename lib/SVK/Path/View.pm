@@ -33,7 +33,7 @@ sub get_editor {
     my ($self, %arg) = @_;
     my $anchor = $self->_to_pclass($self->path_anchor, 'Unix');
     my $map = $self->view->rename_map('');
-    my $actual_anchor = $self->_to_pclass($self->root->rename_check($anchor, $map), 'Unix');
+    my $actual_anchor = $self->root->rename_check($anchor, $map);
 
 
     if ($self->targets) {

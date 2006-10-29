@@ -541,7 +541,12 @@ sub on_apply_textdelta {
     
     my $fh1 = $editor->{inspector}->localmod($path, '', $pool)->[0];
 
-    $self->{old_content} = [<$fh1>];
+    {
+        # XXX: some swig build doesn't like like mg $/ used in
+        # SVN::Stream::readline
+        local $/ = "$/";
+        $self->{old_content} = [<$fh1>];
+    }
     $self->{new_content} = '';
     open my $fh2, '>', \$self->{new_content};
 

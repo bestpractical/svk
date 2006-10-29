@@ -20,6 +20,8 @@ use PerlIO::via::dynamic;
 use PerlIO::via::symlink;
 use Class::Autouse qw( Path::Class SVK::Editor::Delay );
 use Fcntl qw(:flock);
+use SVK::Depot;
+use SVK::Config;
 
 =head1 NAME
 
@@ -385,6 +387,7 @@ repository to be opened.
 
 =cut
 
+# DEPRECATED
 sub find_repos {
     my ($self, $depotpath, $open) = @_;
     die loc("no depot spec") unless $depotpath;
@@ -395,6 +398,25 @@ sub find_repos {
     my $repospath = $self->{depotmap}{$depot} or die loc("No such depot: %1.\n", $depot);
 
     return ($repospath, $path, $open && _open_repos ($repospath));
+}
+
+sub find_depotpath {
+    my ($self, $depotpath) = @_;
+    die loc("no depot spec") unless $depotpath;
+    my ($depotname, $path) = $depotpath =~ m|^/([^/]*)(/.*?)/?$|
+	or die loc("%1 is not a depot path.\n", $depotpath);
+    $path = Path::Class::foreign_dir('Unix', $path)->stringify;
+
+    return ( $self->find_depot($depotname), $path );
+}
+
+sub find_depot {
+    my ($self, $depotname) = @_;
+    my $repospath = $self->{depotmap}{$depotname} or die loc("No such depot: %1.\n", $depotname);
+
+    return SVK::Depot->new( { depotname => $depotname,
+                              repospath => $repospath,
+                              repos => _open_repos($repospath) } );
 }
 
 =item find_repos_from_co
@@ -532,7 +554,6 @@ sub create_path_object {
     if (my $depotpath = delete $arg{depotpath}) {
 	($arg{depotname}) = $depotpath =~ m!^/([^/]*)!;
     }
-    $arg{mirror} ||= $self->mirror($arg{repos});
 
     if (defined (my $copath = delete $arg{copath_anchor})) {
 	require SVK::Path::Checkout;
@@ -545,9 +566,15 @@ sub create_path_object {
     }
 
     my $path;
+    unless ($arg{depot}) {
+        my $depotname = delete $arg{depotname};
+        my $repospath = delete $arg{repospath};
+        my $repos     = delete $arg{repos};
+        $arg{depot} = SVK::Depot->new({ depotname => $depotname, repos => $repos, repospath => $repospath });
+    }
     if (defined (my $view = delete $arg{view})) {
 	require SVK::Path::View;
-	$path = SVK::Path::View->real_new
+        $path = SVK::Path::View->real_new
 	    ({ source => $self->create_path_object(%arg),
 	       view => $view,
 	       %arg });
@@ -633,7 +660,7 @@ sub _load_svn_autoprop {
     $self->{svnautoprop} = {};
     local $@;
     eval {
-	$self->{svnconfig}{config}->
+        SVK::Config->svnconfig->{config}->
 	    enumerate ('auto-props',
 		       sub { $self->{svnautoprop}{compile_apr_fnmatch($_[0])} = $_[1]; 1} );
     };
@@ -656,7 +683,7 @@ sub auto_prop {
     }
 
     # svn auto-prop
-    if ($self->{svnconfig} && $self->{svnconfig}{config}->get_bool ('miscellany', 'enable-auto-props', 0)) {
+    if (SVK::Config->svnconfig && SVK::Config->svnconfig->{config}->get_bool ('miscellany', 'enable-auto-props', 0)) {
 	$self->_load_svn_autoprop unless $self->{svnautoprop};
 	my (undef, undef, $filename) = splitpath ($copath);
 	while (my ($pattern, $value) = each %{$self->{svnautoprop}}) {
@@ -891,8 +918,8 @@ sub ignore {
     my $more_ignores = shift;
 
     no warnings;
-    my $ignore = $self->{svnconfig} ?
-	           $self->{svnconfig}{config}->
+    my $ignore = SVK::Config->svnconfig ?
+	           SVK::Config->svnconfig->{config}->
 		   get ('miscellany', 'global-ignores', '') : '';
     my @ignore = split / /,
 	($ignore || "*.o *.lo *.la #*# .*.rej *.rej .*~ *~ .#* .DS_Store");
@@ -1751,20 +1778,6 @@ sub patch_file {
     my ($self, $name) = @_;
     return '-' if $name eq '-';
     return catdir ($self->patch_directory, "$name.patch");
-}
-
-sub _mirror {
-    my ($self, $repos) = @_;
-    return SVK::MirrorCatalog->new
-	( { repos => $repos,
-	    config => $self->{svnconfig},
-	    revprop => ['svk:signature'] });
-}
-
-sub mirror {
-    my ($self, $repos) = @_;
-    return $repos ? $self->_mirror($repos) :
-	map { $self->_mirror($_) } values %{$self->{depotmap}};
 }
 
 sub DESTROY {

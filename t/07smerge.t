@@ -14,7 +14,8 @@ my ($copath, $corpath) = get_copath ('smerge');
 my ($scopath, $scorpath) = get_copath ('smerge-source');
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
-my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
+my $depot = $xd->find_depot('');
+my $repos = $depot->repos;
 my ($nrepospath, undef, $nrepos) = $xd->find_repos ('/client2/', 1);
 
 my $uri = uri($srepospath);
@@ -101,7 +102,7 @@ is_output ($svk, 'smerge', ['-m', 'simple smerge from local', '//l', '//m'],
 $svk->sync ('//m');
 
 is_deeply ((SVK::Path->real_new
-			     ({ repos => $repos,
+			     ({ depot => $depot,
 				path => '/m',
 				revision => $repos->fs->youngest_rev,
 			       })->root->node_proplist('/m')),

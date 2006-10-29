@@ -16,8 +16,11 @@ sub AUTOLOAD {
 
     *$func = sub {
         my $self = shift;
+        my $path = shift;
+        $path = $path->stringify if index(ref($path), 'Path::Class') == 0;
         # warn "===> $self $func: ".join(',',@_).' '.join(',', (caller(0))[0..3])."\n";
-        return $self->root->$func (@_);
+        unshift @_, $path if defined $path;
+        return $self->root->$func(@_);
     };
 
     goto &$func;

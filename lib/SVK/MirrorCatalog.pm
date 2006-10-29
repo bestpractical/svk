@@ -4,8 +4,9 @@ use strict;
 use base 'Class::Accessor::Fast';
 use SVK::Util qw( HAS_SVN_MIRROR );
 use SVK::Path;
+use SVK::Config;
 
-__PACKAGE__->mk_accessors(qw(repos cb_lock config revprop));
+__PACKAGE__->mk_accessors(qw(repos cb_lock revprop));
 
 =head1 NAME
 
@@ -51,7 +52,7 @@ sub svnmirror_object {
     SVN::Mirror->new
 	( target_path    => $path,
 	  repos          => $self->repos,
-	  config         => $self->config,
+	  config         => SVK::Config->svnconfig,
 	  revprop        => $self->revprop,
 	  pool           => SVN::Pool->new,
 	  %arg);

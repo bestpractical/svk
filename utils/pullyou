@@ -1,0 +1,126 @@
+#!/usr/bin/perl -w
+use strict;
+use SVK;
+use SVK::XD;
+use SVN::Repos;
+use SVK::Util 'traverse_history';
+
+# XXX: requires patch to svn::dump 0.01
+use SVN::Dump;
+
+my $repospath = shift or die "repospath required.\n";
+my $path      = shift or die "path required.\n";
+
+my $repos = SVN::Repos::open($repospath);
+
+my $xd = SVK::XD->new;
+my $t  = SVK::Path->real_new(
+    { repos => $repos, path => $path, mirror => $xd->mirror($repos) } )
+    ->refresh_revision;
+
+my ( $m, $mpath ) = $t->is_mirrored;
+die "only whole repository mirrors are supported.\n" if length($mpath);
+$t->normalize;
+
+my @revs;
+
+traverse_history(
+    root     => $t->root,
+    path     => $t->path,
+    cross    => 0,
+    callback => sub {
+        my ( $path, $rev ) = @_;
+        unshift @revs, $rev;
+        1;
+    }
+);
+
+autoflush STDERR 1;
+my $i    = 0;
+my $pool = SVN::Pool->new_default;
+
+my $prefix = substr( $m->{target_path}, 1 );
+
+print bless(
+    {   headers => bless(
+            { 'SVN-fs-dump-format-version' => 3 },
+            'SVN::Dump::Headers'
+        )
+    },
+    'SVN::Dump::Record'
+)->as_string;
+print bless(
+    {   headers =>
+            bless( { 'UUID' => $m->{rsource_uuid} }, 'SVN::Dump::Headers' )
+    },
+    'SVN::Dump::Record'
+)->as_string;
+
+for my $rev (@revs) {
+    $pool->clear;
+
+    my $rrev = $m->find_remote_rev($rev) or next;
+
+    my $r = $t->mclone( revision => $rev );
+    my $scalar;
+    open my $buf, '+>', \$scalar;
+    SVN::Repos::dump_fs2( $repos, $buf, undef, $rev, $rev, 1, 1, undef,
+        undef );
+    seek $buf, 0, 0;
+    my $dump = SVN::Dump->new( { fh => $buf } );
+    while ( my $record = $dump->next_record() ) {
+        next if exists $record->{headers}{'SVN-fs-dump-format-version'};
+        next if exists $record->{headers}{'UUID'};
+
+        my $translate = sub {
+            my $rec = shift;
+            $rec->{headers}{'Revision-number'} = $rrev
+                if exists $rec->{headers}{'Revision-number'};
+
+            $rec->{headers}{'Node-copyfrom-rev'}
+                = $m->find_remote_rev( $rec->{headers}{'Node-copyfrom-rev'} )
+                if exists $rec->{headers}{'Node-copyfrom-rev'};
+
+            $rec->{headers}{'Node-copyfrom-path'} =~ s{^\Q$prefix\E/?}{}
+                if exists $rec->{headers}{'Node-copyfrom-path'};
+
+            if ( exists $rec->{property} ) {
+                my $prop = $rec->{property};
+                delete $prop->{hash}{'svm:headrev'};
+                $prop->{keys}
+                    = [ grep { $_ ne 'svm:headrev' } @{ $prop->{keys} } ];
+            }
+
+            if ( $rec->{headers}{'Node-path'} ) {
+                $rec->{headers}{'Node-path'} =~ s{^\Q$prefix\E/?}{}
+                    or die $rec->{headers}{'Node-path'};
+            }
+
+        };
+        $translate->( $record );
+	$translate->( $record->{included} ) if $record->{included};
+
+        print $record->as_string;
+    }
+
+    printf STDERR "%d/%d\r", ++$i, scalar @revs;
+}
+
+sub recal_header {
+    my $record = shift;
+    my ( $proplength, $textlength ) = ( 0, 0 );
+    if ( exists $record->{property} ) {
+        $record->{headers}{'Prop-content-length'}
+            = length( $record->{property}->as_string );
+    }
+    if ( exists $record->{text} ) {
+        $record->{headers}{'Text-content-length'}
+            = length( $record->{property}->as_string );
+    }
+    recal_header($record->{included})
+	if exists $record->{included};
+
+    if ( $record->{headers}{'Content-length'} ) {
+        $record->{headers}{'Content-length'} = $textlength + $proplength;
+    }
+}

@@ -36,29 +36,30 @@ $svk->mkdir (-m => 'fnord', '//baz/fnord');
 $svk->cp (-m => 'xyz', '//baz' => '//xyz');
 is_ancestor ($svk, '//xyz/fnord',
 	     '/baz/fnord', 206);
-my ($repospath, $path, $repos) = $xd->find_repos ('//', 1);
+my $depot = $xd->find_depot('');
+my $repos = $depot->repos;
 my $fs = $repos->fs;
 
 $svk->ps(-m=>'mod', 'foo', 'bar', '//baz/S');
 
 is_copy ([SVK::Path->real_new
-	  ({repos => $repos,
+	  ({depot => $depot,
 	    revision => 208, path => '/baz/S'})->nearest_copy],
 	 [205, 204, '/bar/B/S']);
 is_copy ([SVK::Path->real_new
-	  ({repos => $repos,
+	  ({depot => $depot,
 	    revision => 208, path => '/baz'})->nearest_copy],
 	 [205, 204, '/bar/B']);
 is_copy ([SVK::Path->real_new
-	  ({repos => $repos,
+	  ({depot => $depot,
 	    revision => 204, path => '/bar/B/S'})->nearest_copy],
 	 [204, 3, '/foo/B/S']);
 is_copy ([SVK::Path->real_new
-	  ({repos => $repos,
+	  ({depot => $depot,
 	    revision => 3, path => '/foo/B/S'})->nearest_copy],
 	 [3, 2, '/foo/A']);
 is_copy ([SVK::Path->real_new
-	  ({repos => $repos,
+	  ({depot => $depot,
 	    revision => 2, path => '/foo/A'})->nearest_copy],
 	 []);
 

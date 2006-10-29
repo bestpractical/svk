@@ -74,20 +74,20 @@ sub _apply_view_to_txn {
 	if (defined $orig) {
 	    # XXX: mkpdir
 	    Carp::cluck if ref($origroot) ne '_p_svn_fs_root_t';
-	    SVN::Fs::copy( $origroot, $orig,
-			   $root, $path)
-		    if $origroot->check_path($orig);
+	    SVN::Fs::copy( $origroot, "$orig",
+			   $root, "$path")
+		    if $origroot->check_path("$orig");
 	}
 	else {
 	    if ($path =~ m/\*$/) {
 		my $parent = $path->parent;
-		my $entries = $root->dir_entries($parent);
+		my $entries = $root->dir_entries("$parent");
 		for (keys %$entries) {
-		    $root->delete($parent->subdir($_));
+		    $root->delete($parent->subdir($_)->stringify);
 		}
 	    }
 	    else {
-		$root->delete($path);
+		$root->delete("$path");
 	    }
 	}
     }

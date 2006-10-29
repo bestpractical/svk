@@ -159,7 +159,6 @@ use base qw/SVK::Command::Patch/;
 sub parse_arg { undef }
 sub run {
     my ($self) = @_;
-    my (undef, undef, $repos) = $self->{xd}->find_repos ('//', 1);
     opendir my $dir, $self->{xd}->patch_directory;
     foreach my $file (readdir ($dir)) {
 	next if $file =~ /^\./;

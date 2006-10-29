@@ -157,14 +157,14 @@ enable-auto-props = yes
 
 EOF
 
-$xd->{svnconfig} = SVN::Core::config_get_config ($dir);
+SVK::Config->_svnconfig( SVN::Core::config_get_config($dir) );
 mkdir ('A/autoprop');
 overwrite_file ("A/autoprop/foo.pl", "#!/usr/bin/perl\n");
 overwrite_file ("A/autoprop/foo.txt", "Text file\n");
 overwrite_file ("A/autoprop/foo.bar", "this is just a test\n");
 
 # test enumerator
-eval { $xd->{svnconfig}{config}->enumerate ('auto-props', sub {}) };
+eval { SVK::Config->svnconfig->{config}->enumerate('auto-props', sub {}) };
 
 SKIP: {
 

@@ -185,20 +185,18 @@ sub rm_test {
 
 sub cleanup_test {
     my ($xd, $svk) = @{+shift};
-    for my $depot (sort keys %{$xd->{depotmap}}) {
+    for my $depotname (sort keys %{$xd->{depotmap}}) {
 	my $pool = SVN::Pool->new_default;
-	my ($repospath, undef, $repos) = eval { $xd->find_repos("/$depot/", 1) };
-        if ($repos) {
-            my @txns = @{$repos->fs->list_transactions};
-            if (@txns) {
-                my $how_many = @txns;
-                diag "uncleaned txns ($how_many) on /$depot/";
-                if ($ENV{SVKTESTUNCLEANTXN}) {
-                    for my $txn_name (sort @txns) {
-                        my $txn = $repos->fs->open_txn($txn_name);
-                        my $log = $txn->prop('svn:log');
-                        diag "$txn_name: $log";
-                    }
+        my $depot = eval { $xd->find_depot($depotname) } or next;
+        my @txns = @{ $depot->repos->fs->list_transactions };
+        if (@txns) {
+            my $how_many = @txns;
+            diag "uncleaned txns ($how_many) on /$depot/";
+            if ( $ENV{SVKTESTUNCLEANTXN} ) {
+                for my $txn_name ( sort @txns ) {
+                    my $txn = $depot->repos->fs->open_txn($txn_name);
+                    my $log = $txn->prop('svn:log');
+                    diag "$txn_name: $log";
                 }
             }
         }
@@ -206,11 +204,11 @@ sub cleanup_test {
     return unless $ENV{TEST_VERBOSE};
     use YAML::Syck;
     print Dump($xd);
-    for my $depot (sort keys %{$xd->{depotmap}}) {
+    for my $depotname (sort keys %{$xd->{depotmap}}) {
 	my $pool = SVN::Pool->new_default;
-	my (undef, undef, $repos) = $xd->find_repos ("/$depot/", 1);
-	print "===> depot /$depot/ (".$repos->fs->get_uuid."):\n";
-	$svk->log ('-v', "/$depot/");
+        my $depot = eval { $xd->find_depot($depotname) } or next;
+	print "===> depot /$depotname/ (".$depot->repos->fs->get_uuid."):\n";
+	$svk->log ('-v', "/$depotname/");
         # if DEBUG is set, the log command already printed the log to
         # stdout; if it isn't, we have to do it ourself
 	print ${$svk->{output}} unless $ENV{DEBUG};
@@ -391,12 +389,12 @@ sub get_editor {
 }
 
 sub create_basic_tree {
-    my ($xd, $depot) = @_;
+    my ($xd, $depotpath) = @_;
     my $pool = SVN::Pool->new_default;
-    my ($repospath, $path, $repos) = $xd->find_repos ($depot, 1);
+    my ($depot, $path) = $xd->find_depotpath($depotpath);
 
     local $/ = $EOL;
-    my $edit = get_editor ($repospath, $path, $repos);
+    my $edit = get_editor ($depot->repospath, $path, $depot->repos);
     $edit->open_root ();
 
     $edit->modify_file ($edit->add_file ('/me'),
@@ -427,14 +425,14 @@ sub create_basic_tree {
 			    B => {},
 			    C => { child => { R => { child => {}}}}
 			  }};
-    my $rev = $repos->fs->youngest_rev;
-    $edit = get_editor ($repospath, $path, $repos);
+    my $rev = $depot->repos->fs->youngest_rev;
+    $edit = get_editor ($depot->repospath, $path, $depot->repos);
     $edit->open_root ();
     $edit->modify_file ('/me', "first line in me$/2nd line in me - mod$/");
     $edit->modify_file ($edit->add_file ('/B/fe'),
 			"file fe added later$/");
     $edit->delete_entry ('/A/P');
-    $edit->copy_directory('/B/S', "file://${repospath}/${path}/A", $rev);
+    $edit->copy_directory('/B/S', "file://@{[$depot->repospath]}/${path}/A", $rev);
     $edit->modify_file ($edit->add_file ('/D/de'),
 			"file de added later$/");
     $edit->close_edit ();
