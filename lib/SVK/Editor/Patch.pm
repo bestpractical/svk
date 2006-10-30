@@ -26,16 +26,6 @@ then the method name and its arguments.
 
 =cut
 
-sub baton_at {
-    my ($self, $func) = @_;
-    Carp::cluck unless defined $func;
-    return -1
-	if $func eq 'set_target_revision' || $func eq 'open_root' ||
-	    $func eq 'close_edit' || $func eq 'abort_edit';
-    return 2 if $func eq 'delete_entry';
-    return $func =~ m/^(?:add|open|absent)/ ? 1 : 0;
-}
-
 sub AUTOLOAD {
     my ($self, @arg) = @_;
     my $func = our $AUTOLOAD;

@@ -1,7 +1,6 @@
 package SVK::Editor::Translate;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
-use Class::Autouse qw( SVK::Editor::Patch );
 
 require SVN::Delta;
 use base 'SVK::Editor::ByPass';
@@ -26,7 +25,7 @@ sub AUTOLOAD {
     return if $func =~ m/^[A-Z]+$/;
 
     $self->{translate}->($arg[0])
-	if SVK::Editor::Patch->baton_at ($func) == 1;
+	if $self->baton_at ($func) == 1;
     $func = "SUPER::$func";
     $self->$func (@arg);
 }
