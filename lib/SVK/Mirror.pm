@@ -165,14 +165,6 @@ sub detach {
 
 =cut
 
-sub lock {
-
-}
-
-sub unlock {
-    my ($self, $force) = @_;
-}
-
 sub with_lock {
     my ( $self, $lock, $code ) = @_;
 
@@ -189,7 +181,7 @@ sub _lock_token {
     return "svm:lock:$token";
 }
 
-sub _lock {
+sub lock {
     my ($self)  = @_;
     my $fs      = $self->repos->fs;
     my $token   = $self->_lock_token;
@@ -210,7 +202,7 @@ LOCKED:
     $self->_locked(1);
 }
 
-sub _unlock {
+sub unlock {
     my ( $self, $force ) = @_;
     my $fs = $self->repos->fs;
     if ($force) {

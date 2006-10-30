@@ -353,6 +353,7 @@ sub find_rev_from_changeset {
 
 sub traverse_new_changesets {
     my ($self, $code, $torev) = @_;
+    $self->refresh;
     my $from = ($self->fromrev || 0)+1;
     my $to = $torev || -1;
 
