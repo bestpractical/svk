@@ -283,6 +283,21 @@ sub run {
     warn ${$@} if ref($@);
 }
 
+sub sync_snapshot {
+    my ($self, $snapshot) = @_;
+    print loc("
+svk is now taking a snapshot of the repository at:
+  %1
+
+This is essentially making a checkout of the url, and is bad if the
+url contains directories like trunk and branches.  If this isn't what
+you mean, please hit ^C.
+
+", $self->url);
+
+    $self->run_svnmirror_sync( { skip_to => $snapshot });
+}
+
 sub run_svnmirror_sync {
     my ( $self, $arg ) = @_;
 

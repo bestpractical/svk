@@ -106,12 +106,11 @@ sub run {
 
     for my $target (@arg) {
         my $fs    = $target->repos->fs;
-        my $m     = $target->depot->mirror->load_from_path($target->path_anchor);
+        my $m     = $target->depot->mirror->load_from_path($target->path_anchor)->tmp_svnmirror;
 
 	my $run_sync = sub {
-	    $m->sync( torev => $self->{torev}, skip_to => $self->{skip_to},
-		      cb_copy_notify => sub { $self->copy_notify($target, $m->tmp_svnmirror, @_) },
-		      lock_message   => lock_message($target));
+	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};
+	    $m->run( $self->{torev} );
 	    1;
 	};
         if ( $self->{sync_all} ) {

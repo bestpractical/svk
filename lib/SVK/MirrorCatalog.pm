@@ -135,7 +135,7 @@ package SVK::MirrorCatalog::SVMCompat;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw(svm_object svk_mirror));
 
-for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run) {
+for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot) {
     no strict 'refs';
     *$method = sub { my $self=shift; $self->svk_mirror->$method(@_) };
 }
