@@ -109,8 +109,10 @@ sub run {
         my $m     = $target->depot->mirror->load_from_path($target->path_anchor);
 
 	my $run_sync = sub {
-	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};
-	    $m->refresh;
+	    if ($self->{skip_to}) {
+		$m->sync_snapshot($self->{skip_to});
+		$m->refresh;
+	    }
 	    $m->run( $self->{torev} );
 	    1;
 	};

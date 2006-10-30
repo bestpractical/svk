@@ -175,8 +175,19 @@ sub get_editor {
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
 
-    $callback = $self->_commit_callback($callback)
-	if $self->{direct} || !$target->is_mirrored;
+    if (!$self->{direct} && (my $m = $target->is_mirrored)) {
+	if ($self->{check_only}) {
+	    print loc("Checking locally against mirror source %1.\n", $m->url);
+	}
+	else {
+	    print loc("Commit into mirrored path: merging back directly.\n")
+		if ref($self) eq __PACKAGE__; # XXX: output compat
+	    print loc("Merging back to mirror source %1.\n", $m->url);
+	}
+    }
+    else {
+	$callback = $self->_commit_callback($callback)
+    }
 
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
@@ -189,17 +200,6 @@ sub get_editor {
     # Note: the case that the target is an xd is actually only used in merge.
     return ($editor, %cb, inspector => $inspector)
 	if $target->isa('SVK::Path::Checkout');
-
-    if (my $m = $cb{mirror}) {
-	if ($self->{check_only}) {
-	    print loc("Checking locally against mirror source %1.\n", $m->url);
-	}
-	else {
-	    print loc("Commit into mirrored path: merging back directly.\n")
-		if ref($self) eq __PACKAGE__; # XXX: output compat
-	    print loc("Merging back to mirror source %1.\n", $m->url);
-	}
-    }
 
     if ($self->{setrevprop}) {
 	my $txn = $cb{txn} or
@@ -571,11 +571,13 @@ sub run_delta {
 
 	       $revcache{$source_rev} = $cb{mirror}->find_remote_rev($rev);
 	   }) : ());
+warn "finish up run_delta";
     delete $self->{save_message};
     return;
 }
 
 sub DESTROY {
+    Carp::cluck "... destroy";
     $_[0]->save_message;
 }
 
