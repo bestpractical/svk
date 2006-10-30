@@ -6,7 +6,8 @@ use SVN::Core;
 use SVN::Ra;
 use SVN::Client ();
 use SVK::I18N;
-use Class::Autouse qw(SVK::Editor::SubTree);
+use SVK::Editor;
+use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler);
 
 use constant OK => $SVN::_Core::SVN_NO_ERROR;
 
@@ -21,7 +22,7 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev));
+__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay));
 
 =head1 NAME
 
@@ -136,6 +137,22 @@ sub _check_overlap {
 	die "Mirroring overlapping paths not supported\n"
 	    if $me->subsumes($other) || $other->subsumes($me);
     }
+}
+
+sub has_replay {
+    my $self = shift;
+    return $self->_has_replay if defined $self->_has_replay;
+
+    return $self->_has_replay(0) unless _p_svn_ra_session_t->can('replay');
+
+    if (eval { $self->_new_ra->replay(0, 0, 0, SVK::Editor->new); 1}) {
+	return $self->_has_replay(1);
+    }
+
+    return $self->_has_replay(0)
+        if $@ =~ m/not implemented/ || $@ =~ m/unsupported feature/;
+
+    die $@;
 }
 
 sub _new_ra {
@@ -370,52 +387,48 @@ sub sync_changeset {
         }
     }
 
-    if ( $ra->{session}->can('replay') ) {
-        require SVK::Editor::CopyHandler;
-#	$editor->{_debug}++;
-	$editor =  SVK::Editor::CopyHandler->new(
-                    _editor => $editor,,
-                    cb_copy => sub {
-                        my ( $editor, $path, $rev ) = @_;
-                        return ( $path, $rev ) if $rev == -1;
-			my $source_path = $self->source_path;
-			$path =~ s/^\Q$self->{source_path}//;
-                        return $t->as_url( 1, $self->mirror->path . $path,
-                            $self->find_rev_from_changeset( $rev ) );
-                    }
-                );
-        # ra->replay gives us editor calls based on repos root not
-        # base uri, so we need to get the correct subtree.
-	my $baton;
-	if ( length $self->source_path ) {
-	    my $anchor = substr( $self->source_path, 1 );
-	    $baton = $editor->open_root(-1); # XXX: should use $t->revision
-	    $editor = SVK::Editor::SubTree->new(
-            {   master_editor => $editor,
-                anchor       => $anchor,
-                anchor_baton => $baton
-            }
-						      );
-	}
+    $editor = SVK::Editor::CopyHandler->new(
+        _editor => $editor,
+        cb_copy => sub {
+            my ( $editor, $path, $rev ) = @_;
+            return ( $path, $rev ) if $rev == -1;
+            my $source_path = $self->source_path;
+            $path =~ s/^\Q$self->{source_path}//;
+            return $t->as_url(
+                1,
+                $self->mirror->path . $path,
+                $self->find_rev_from_changeset($rev)
+            );
+        }
+    );
 
-#        $ra->replay( $changeset, 0, 1, SVK::Editor->new({_debug=>1}) );
-        $ra->replay( $changeset, 0, 1, $editor );
-	if ( length $self->source_path ) {
-#            SVN::Delta::Editor->new( _debug => 0, _editor => [$compeditor] ) );
-	    $editor->close_directory($baton);
-	    if ($editor->needs_touch) {
-		$editor->change_dir_prop($baton, 'svk:mirror' => undef);
-	    }
-	}
-	if ($editor->isa('SVK::Editor::SubTree') && !$editor->changes) {
-	    $editor->abort_edit;
-	}
-	else {
-	    $editor->close_edit;
-	}
-        return;
+    # ra->replay gives us editor calls based on repos root not
+    # base uri, so we need to get the correct subtree.
+    my $baton;
+    if ( length $self->source_path ) {
+        my $anchor = substr( $self->source_path, 1 );
+        $baton  = $editor->open_root(-1);      # XXX: should use $t->revision
+        $editor = SVK::Editor::SubTree->new(
+            {   master_editor => $editor,
+                anchor        => $anchor,
+                anchor_baton  => $baton
+            }
+        );
     }
-    die 'no replay'
+
+    $ra->replay( $changeset, 0, 1, $editor );
+    if ( length $self->source_path ) {
+        $editor->close_directory($baton);
+        if ( $editor->needs_touch ) {
+            $editor->change_dir_prop( $baton, 'svk:mirror' => undef );
+        }
+    }
+    if ( $editor->isa('SVK::Editor::SubTree') && !$editor->changes ) {
+        $editor->abort_edit;
+    } else {
+        $editor->close_edit;
+    }
+    return;
 
 }
 
@@ -425,9 +438,17 @@ sub sync_changeset {
 
 sub mirror_changesets {
     my ($self, $torev, $callback) = @_;
-    $self->mirror->with_lock('mirror', sub {
-        $self->traverse_new_changesets(sub { $self->sync_changeset(@_, $callback) }, $torev);
-    });
+    if ( $self->has_replay ) {
+        $self->mirror->with_lock(
+            'mirror',
+            sub {
+                $self->traverse_new_changesets(
+                    sub { $self->sync_changeset( @_, $callback ) }, $torev );
+            }
+        );
+    } else {
+
+    }
 }
 
 =item get_commit_editor
