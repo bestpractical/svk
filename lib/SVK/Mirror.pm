@@ -293,9 +293,13 @@ sub run_svnmirror_sync {
         repos        => $self->depot->repos,
         config       => SVK::Config->svnconfig,
         revprop      => $self->depot->mirror->revprop,
-        lock_message => SVK::Command::Sync::lock_message( $self->depot ),
-        get_source   => 1,
-        pool         => SVN::Pool->new,
+        lock_message => SVK::Command::Sync::lock_message(
+            SVK::Path->real_new(
+                { depot => $self->depot, path => $self->path }
+              )->refresh_revision
+        ),
+        get_source => 1,
+        pool       => SVN::Pool->new,
         %$arg
     );
     $svm->init;

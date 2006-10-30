@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
+use Time::HiRes 'sleep';
 plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
 plan skip_all => "Doesn't work on win32" if $^O eq 'MSWin32';
 plan_svm tests => 3;
