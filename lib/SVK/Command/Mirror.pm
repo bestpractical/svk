@@ -176,6 +176,7 @@ use constant narg => 1;
 sub run {
     my ($self, $target, $source, @options) = @_;
     die loc("recover not supported.\n");
+    my ($m, $mpath) = $target->is_mirrored;
 
     $self->recover_headrev ($target, $m);
     $self->recover_list_entry ($target, $m);
