@@ -571,13 +571,11 @@ sub run_delta {
 
 	       $revcache{$source_rev} = $cb{mirror}->find_remote_rev($rev);
 	   }) : ());
-warn "finish up run_delta";
     delete $self->{save_message};
     return;
 }
 
 sub DESTROY {
-    Carp::cluck "... destroy";
     $_[0]->save_message;
 }
 
