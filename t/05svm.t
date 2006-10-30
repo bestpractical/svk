@@ -161,7 +161,6 @@ is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
             qr"inside", '--detach inside a mirrored path');
 
 is_output ($svk, 'mirror', ['--detach', '//m'], [
-            "Committed revision 19.",
             "Mirror path '//m' detached.",
             ], '--detach on mirrored path');
 
@@ -189,7 +188,9 @@ is_output($svk, 'smerge', ['-m', '', '--sync', '--from', $copath4], [
         ]);
 
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-        ['Committed revision 21.', 'Committed revision 22.']);
+        ['Committed revision 22.']);
+SKIP:{
+skip 'recover not implemented.', 4;
 
 $answer = 'y';
 is_output ($svk, 'mirror', ['--recover', '//m'],
@@ -226,3 +227,4 @@ is_output ($svk, 'ps', ['foo' => 'bar', -m => 'ps on mirror', '//m/Q-moved'],
 	    'Retrieving log information from 32 to 32',
 	    'Committed revision 27 from revision 32.']);
 
+}

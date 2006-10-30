@@ -135,15 +135,10 @@ package SVK::MirrorCatalog::SVMCompat;
 use base 'Class::Accessor::Fast';
 __PACKAGE__->mk_accessors(qw(svm_object svk_mirror));
 
-for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot refresh) {
+for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot refresh detach) {
     no strict 'refs';
     *$method = sub { my $self=shift; $self->svk_mirror->$method(@_) };
 }
-
-sub set_lock_message { $_[0]->svm_object->{lock_message} = $_[1] }
-sub set_cb_copy_notify { $_[0]->svm_object->{cb_copy_notify} = $_[1] }
-sub set_skip_to { $_[0]->svm_object->{skip_to} = $_[1] }
-
 
 sub fromrev { $_[0]->svk_mirror->_backend->fromrev }
 sub source_path { $_[0]->svk_mirror->_backend->source_path }
@@ -154,7 +149,7 @@ sub AUTOLOAD {
     my $func = $AUTOLOAD;
     $func =~ s/.*:://;
     return if $func =~ m/^[A-Z]/;
-
+    die $func;
     my $method = $self->svm_object->can($func);
     Carp::confess $func unless $method;
     $method->($self->svm_object, @_);

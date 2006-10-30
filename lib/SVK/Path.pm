@@ -183,8 +183,6 @@ sub get_editor {
     $arg{notify} ||= sub {};
     my $callback = $arg{callback};
     if ($m) {
-	require SVK::Command::Sync;
-	$m->set_lock_message(SVK::Command::Sync::lock_message($self));
 	my $post_handler;
         my $mcallback = $arg{mcallback} ||= sub {
             my $rev = shift;

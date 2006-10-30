@@ -127,6 +127,35 @@ sub load {
 
 =item detach
 
+=cut
+
+sub detach {
+    my ($self, $remove_props) = @_;
+
+    my $t = SVK::Path->real_new( { depot => $self->depot, path => '/' } )
+        ->refresh_revision;
+
+    my ($editor) = $t->get_dynamic_editor(
+        ignore_mirror => 1,
+        message       => 'Discard mirror for '.$self->path,
+        author        => $ENV{USER},
+    );
+
+    my %mirrors = map { ( $_ => 1 ) } $self->path,
+        split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
+
+    $editor->change_dir_prop( $editor->_root_baton, 'svm:mirror',
+        join( "\n", grep { $_ ne $self->path }( grep length, sort keys %mirrors ), '' ) );
+
+    if (0 && $remove_props) {
+	$editor->change_dir_prop( 0, 'svm:uuid', undef);
+	$editor->change_dir_prop( 0, 'svm:source', undef);
+	$editor->adjust;
+    }
+
+    $editor->close_edit;
+}
+
 =item relocate($newurl)
 
 =item with_lock($code)

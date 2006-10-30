@@ -76,7 +76,7 @@ sub run {
     die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
     die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
 
-    $m->delete(1); # remove svm:source and svm:uuid too
+    $m->detach(1); # remove svm:source and svm:uuid too
     print loc("Mirror path '%1' detached.\n", $target->depotpath);
     return;
 }
@@ -164,6 +164,8 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
+    die loc("recover not supported.\n");
+
     $source = ("file://".$target->repospath);
     my $m = $target->depot->mirror
 	->svnmirror_object($target->path_anchor,
