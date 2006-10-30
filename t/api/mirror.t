@@ -70,9 +70,7 @@ is($@, "Mirroring overlapping paths not supported\n");
 is_output($svk, 'ls', ['//'], ['m/', 'm2/'], 'm3 not created');
 
 my $mc = SVK::MirrorCatalog->new( { repos => $repos, depot => $depot } );
-use Data::Dumper;
-my %mirrored = $mc->entries;
-is_deeply([ sort keys %mirrored], ['/m', '/m2']);
+is_deeply([ sort $mc->entries], ['/m', '/m2']);
 
 $m = SVK::Mirror->load(
         { depot => $depot, path => '/m',
