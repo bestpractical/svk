@@ -210,13 +210,14 @@ sub lock {
     my $content = hostname . ':' . $$;
     my $where = join( ' ', ( caller(0) )[ 0 .. 2 ] );
 
+    my $lock_message = $self->_lock_message;
     # This is not good enough but race condition should result in failed sync
     # without corrupting repository.
 LOCKED:
     {
         while (1) {
             my $who = $fs->revision_prop( 0, $token ) or last LOCKED;
-            print loc( "Waiting for lock on %1: %2.\n", $self->path, $who );
+	    $lock_message->($self, '', $who);
             sleep 1;
         }
     }
@@ -342,6 +343,14 @@ you mean, please hit ^C.
     $self->run_svnmirror_sync( { skip_to => $snapshot });
 }
 
+sub _lock_message {
+    my $self = shift;
+    my $target =
+      SVK::Path->real_new( { depot => $self->depot, path => $self->path } )
+      ->refresh_revision;
+    return SVK::Command::Sync::lock_message($target);
+}
+
 sub run_svnmirror_sync {
     my ( $self, $arg ) = @_;
 
@@ -359,7 +368,7 @@ sub run_svnmirror_sync {
         revprop        => $self->depot->mirror->revprop,
         cb_copy_notify =>
           sub { SVK::Command::Sync->copy_notify( $target, $self, @_ ) },
-        lock_message => SVK::Command::Sync::lock_message($target),
+        lock_message => $self->_lock_message,
         get_source   => 1,
         pool         => SVN::Pool->new,
         %$arg
