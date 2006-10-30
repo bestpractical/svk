@@ -80,8 +80,7 @@ sub create {
         return $self;
     }
 
-    my $t = SVK::Path->real_new( { depot => $self->depot, path => '/' } )
-        ->refresh_revision;
+    my $t = $self->get_svkpath('/');
 
     my ($editor, %opt) = $t->get_dynamic_editor(
         ignore_mirror => 1,
@@ -157,8 +156,7 @@ sub _load_backend {
 sub detach {
     my ($self, $remove_props) = @_;
 
-    my $t = SVK::Path->real_new( { depot => $self->depot, path => '/' } )
-        ->refresh_revision;
+    my $t = $self->get_svkpath('/');
 
     my ($editor) = $t->get_dynamic_editor(
         ignore_mirror => 1,
@@ -280,6 +278,12 @@ calls C<$code> with an opaque object and metadata that C<sync_changeset> underst
 
 =cut
 
+sub get_svkpath {
+    my ($self, $path) = @_;
+    return SVK::Path->real_new( { depot => $self->depot, path => $path || $self->path } )
+      ->refresh_revision;
+}
+
 for my $delegate
     qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path )
 {
@@ -345,9 +349,7 @@ you mean, please hit ^C.
 
 sub _lock_message {
     my $self = shift;
-    my $target =
-      SVK::Path->real_new( { depot => $self->depot, path => $self->path } )
-      ->refresh_revision;
+    my $target = $self->get_svkpath;
     my $i = 0;
     sub {
 	my ($mirror, $who) = @_;
@@ -377,9 +379,7 @@ sub run_svnmirror_sync {
     my ( $self, $arg ) = @_;
 
     require SVN::Mirror;
-    my $target =
-      SVK::Path->real_new( { depot => $self->depot, path => $self->path } )
-      ->refresh_revision;
+    my $target = $self->get_svkpath;
 
     my $svm = SVN::Mirror->new(
         target_path    => $self->path,

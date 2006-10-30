@@ -43,8 +43,7 @@ sub find_rev_from_changeset {
 
 sub sync_changeset {
     my ( $self, $changeset, $metadata, $callback ) = @_;
-    my $t = SVK::Path->real_new(
-        { depot => $self->mirror->depot, path => '/' } )->refresh_revision;
+    my $t = $self->mirror->get_svkpath('/');
     my ( $editor, undef, %opt ) = $t->get_editor(
         ignore_mirror => 1,
         message       => $metadata->{message},

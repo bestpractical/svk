@@ -55,7 +55,7 @@ sub refresh {
 sub load {
     my ($class, $mirror) = @_;
     my $self = $class->SUPER::new( { mirror => $mirror } );
-    my $t = SVK::Path->real_new( { depot => $mirror->depot, path => $mirror->path } )->refresh_revision;
+    my $t = $mirror->get_svkpath;
 
     my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
     my $ruuid = $t->root->node_prop($t->path, 'svm:ruuid') || $uuid;
@@ -109,9 +109,7 @@ sub _init_state {
     my $mirror = $self->mirror;
     my $uuid = $mirror->server_uuid;
 
-    my $t =
-	SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )
-          ->refresh_revision;
+    my $t = $mirror->get_svkpath('/');
     die loc( "%1 already exists.\n", $mirror->path )
         if $t->root->check_path( $mirror->path );
 
@@ -359,8 +357,7 @@ sub _read_password {
 
 sub find_rev_from_changeset {
     my ($self, $changeset) = @_;
-    my $t = SVK::Path->real_new({ depot => $self->mirror->depot, path => $self->mirror->path })
-        ->refresh_revision;
+    my $t = $self->mirror->get_svkpath;
     return $t->search_revision
 	( cmp => sub {
 	      my $rev = shift;
@@ -398,8 +395,7 @@ sub traverse_new_changesets {
 
 sub sync_changeset {
     my ($self, $changeset, $metadata, $callback) = @_;
-    my $t = SVK::Path->real_new({ depot => $self->mirror->depot, path => $self->mirror->path })
-        ->refresh_revision;
+    my $t = $self->mirror->get_svkpath;
     my ( $editor, undef, %opt ) = $t->get_editor(
         ignore_mirror => 1,
         message       => $metadata->{message},
