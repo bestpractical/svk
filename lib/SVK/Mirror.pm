@@ -381,6 +381,7 @@ sub run_svnmirror_sync {
     require SVN::Mirror;
     my $target = $self->get_svkpath;
 
+    my $lock_message = $self->_lock_message;
     my $svm = SVN::Mirror->new(
         target_path    => $self->path,
         repos          => $self->depot->repos,
@@ -388,7 +389,7 @@ sub run_svnmirror_sync {
         revprop        => $self->depot->mirror->revprop,
         cb_copy_notify =>
           sub { $self->_copy_notify( $target, $self, @_ ) },
-        lock_message => $self->_lock_message,
+        lock_message => sub { $lock_message->($_[0], $_[2])},
         get_source   => 1,
         pool         => SVN::Pool->new,
         %$arg
