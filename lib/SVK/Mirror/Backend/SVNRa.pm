@@ -22,7 +22,7 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay));
+__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra));
 
 =head1 NAME
 
@@ -138,7 +138,6 @@ sub _check_overlap {
 
     for (@mirrors) {
 	my $mirror = SVK::Mirror->load( { depot => $depot, path => $_ } );
-#	warn $mirror;
 	next if $self->source_root ne $mirror->_backend->source_root;
 	# XXX: check overlap with svk::mirror objects.
 
@@ -155,10 +154,13 @@ sub has_replay {
 
     return $self->_has_replay(0) unless _p_svn_ra_session_t->can('replay');
 
-    if (eval { $self->_new_ra->replay(0, 0, 0, SVK::Editor->new); 1}) {
+    my $ra = $self->_new_ra;
+    if (eval { $ra->replay(0, 0, 0, SVK::Editor->new); 1}) {
+	$self->_ra_finished($ra);
 	return $self->_has_replay(1);
     }
 
+    $self->_ra_finished($ra);
     return $self->_has_replay(0)
         if $@ =~ m/not implemented/ || $@ =~ m/unsupported feature/;
 
@@ -166,12 +168,21 @@ sub has_replay {
 }
 
 sub _new_ra {
-    my ($self, @args) = @_;
+    my ($self, %args) = @_;
+
+    my $x = $self->_cached_ra;
+    return delete $self->{_cached_ra} if $self->_cached_ra;
 
     $self->_initialize_svn;
     return SVN::Ra->new( url => $self->mirror->url,
                          auth => $self->_auth_baton,
-                         config => $self->_config, @args );
+                         config => $self->_config, %args );
+}
+
+sub _ra_finished {
+    my ($self, $ra) = @_;
+    return if $self->_cached_ra;
+    $self->_cached_ra( $ra );
 }
 
 sub _initialize_svn {
@@ -369,6 +380,7 @@ sub traverse_new_changesets {
 		      $code->($rev, { author => $author, date => $date, message => $msg });
 		  });
     };
+    $self->_ra_finished($ra);
 }
 
 sub sync_changeset {
@@ -386,10 +398,11 @@ sub sync_changeset {
             $callback->( $changeset, $_[0] ) if $callback;
         }
     );
-    my $ra = $self->_new_ra;
     # XXX: sync relayed revmap as well
     $opt{txn}->change_prop('svm:headrev', $self->mirror->server_uuid.":$changeset\n");
 
+    my $ra = $self->_new_ra;
+    Carp::cluck unless $ra;
     if ( my $revprop = $self->mirror->depot->mirror->revprop ) {
         my $prop = $ra->rev_proplist($changeset);
         for (@$revprop) {
@@ -428,6 +441,7 @@ sub sync_changeset {
     }
 
     $ra->replay( $changeset, 0, 1, $editor );
+    $self->_ra_finished($ra);
     if ( length $self->source_path ) {
         $editor->close_directory($baton);
         if ( $editor->needs_touch ) {
@@ -474,13 +488,21 @@ sub get_commit_editor {
     $self->{commit_ra} = $self->_new_ra( url => $self->mirror->url.$path );
 
     my @lock = $SVN::Core::VERSION ge '1.2.0' ? (undef, 0) : ();
-
-    return SVN::Delta::Editor->new($self->{commit_ra}->get_commit_editor($msg, $committed, @lock));
+    return SVN::Delta::Editor->new(
+        $self->{commit_ra}->get_commit_editor(
+            $msg,
+            sub {
+		$self->_ra_finished($self->{commit_ra});
+                $committed->(@_);
+            },
+            @lock ) );
 }
 
 sub change_rev_prop {
     my $self = shift;
-    $self->_new_ra->change_rev_prop(@_);
+    my $ra = $self->_new_ra;
+    $ra->change_rev_prop(@_);
+    $self->_ra_finished($ra);
 }
 
 1;
