@@ -41,8 +41,6 @@ sub parse_arg {
 
 sub run {
     my ( $self, $target, $source, @options ) = @_;
-    die loc( "%1 already exists.\n", $target->path )
-      if $target->root->check_path( $target->path );
 
     SVK::Mirror->create(
         {

@@ -71,6 +71,15 @@ sub create {
     $self->pool( SVN::Pool->new(undef) )
         unless $self->pool;
 
+    if ( $self->path eq '/' ) {
+        $self->_backend(
+            $self->_create_backend( 'SVNSync',
+                $args->{backend_options} )
+        );
+        weaken( $self->{_backend}{mirror} );
+        return $self;
+    }
+
     my $t = SVK::Path->real_new( { depot => $self->depot, path => '/' } )
         ->refresh_revision;
 
@@ -99,12 +108,12 @@ sub create {
 sub _create_backend {
     my $self = shift;
     my ($backend) = @_;
-    die unless $backend eq 'SVNRa';
-
-    # put svm:mirror prop
+    my $class = 'SVK::Mirror::Backend::'.$backend;
+    use UNIVERSAL::require;
+    $class->require or die $!;
 
     # actually initialise the mirror on mirror path
-    return SVK::Mirror::Backend::SVNRa->create( $self, @_ );
+    return $class->create( $self, @_ );
 
 }
 
@@ -116,10 +125,23 @@ sub load {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 
-    $self->_backend( SVK::Mirror::Backend::SVNRa->load( $self ) );
+    my $backend = $self->path eq '/' ? 'SVNSync' : 'SVNRa';
+    $self->_backend(
+        $self->_load_backend( $backend, $args->{backend_options} ) );
     weaken( $self->{_backend}{mirror} );
 
     return $self;
+}
+
+sub _load_backend {
+    my $self = shift;
+    my ($backend) = @_;
+    my $class = 'SVK::Mirror::Backend::'.$backend;
+    use UNIVERSAL::require;
+    $class->require or die $!;
+
+    # actually initialise the mirror on mirror path
+    return $class->load( $self, @_ );
 }
 
 =back
@@ -303,8 +325,6 @@ sub run {
         }
     );
     die $@ if $@;
-    warn $@ if $@;
-    warn ${$@} if ref($@);
 }
 
 sub sync_snapshot {

@@ -54,9 +54,7 @@ sub refresh {
 
 sub load {
     my ($class, $mirror) = @_;
-    Carp::cluck unless ref($mirror) eq 'SVK::Mirror';
     my $self = $class->SUPER::new( { mirror => $mirror } );
-    Carp::cluck unless $mirror->depot;
     my $t = SVK::Path->real_new( { depot => $mirror->depot, path => $mirror->path } )->refresh_revision;
 
     my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
@@ -90,8 +88,10 @@ sub create {
     my $ra = $self->_new_ra;
 
     # init the svm:source and svm:uuid thing on $mirror->path
-    my $uuid = $ra->get_uuid;
+    $mirror->server_uuid($ra->get_uuid);
     my $source_root = $ra->get_repos_root;
+    $self->_ra_finished($ra);
+
     my $source_path = $self->mirror->url;
     # XXX: this shouldn't happen. kill this substr
     die "source url not under source root"
@@ -100,12 +100,24 @@ sub create {
     $self->source_root( $source_root );
     $self->source_path( $source_path );
 
+    return $self->_init_state($txn, $editor);
+}
+
+sub _init_state {
+    my ($self, $txn, $editor) = @_;
+
+    my $mirror = $self->mirror;
+    my $uuid = $mirror->server_uuid;
+
+    my $t =
+	SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )
+          ->refresh_revision;
+    die loc( "%1 already exists.\n", $mirror->path )
+        if $t->root->check_path( $mirror->path );
+
     $self->_check_overlap;
 
     unless ($txn) {
-        my $t =
-          SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )
-          ->refresh_revision;
         my %opt;
         ( $editor, %opt ) = $t->get_dynamic_editor(
             ignore_mirror => 1,
@@ -116,9 +128,10 @@ sub create {
     else {
         $txn->change_prop( 'svm:headrev', "$uuid:0" );
     }
-    my $dir_baton = $editor->add_directory( substr($self->mirror->path, 1), 0, undef, -1 );
+
+    my $dir_baton = $editor->add_directory( substr($mirror->path, 1), 0, undef, -1 );
     $editor->change_dir_prop( $dir_baton, 'svm:uuid', $uuid);
-    $editor->change_dir_prop( $dir_baton, 'svm:source', $source_root.'!'.$source_path );
+    $editor->change_dir_prop( $dir_baton, 'svm:source', $self->source_root.'!'.$self->source_path );
     $editor->close_directory($dir_baton);
     $editor->adjust;
     $editor->close_edit unless $txn;
@@ -170,7 +183,6 @@ sub has_replay {
 sub _new_ra {
     my ($self, %args) = @_;
 
-    my $x = $self->_cached_ra;
     return delete $self->{_cached_ra} if $self->_cached_ra;
 
     $self->_initialize_svn;
@@ -381,6 +393,7 @@ sub traverse_new_changesets {
 		  });
     };
     $self->_ra_finished($ra);
+    die $@ if $@;
 }
 
 sub sync_changeset {
@@ -402,7 +415,6 @@ sub sync_changeset {
     $opt{txn}->change_prop('svm:headrev', $self->mirror->server_uuid.":$changeset\n");
 
     my $ra = $self->_new_ra;
-    Carp::cluck unless $ra;
     if ( my $revprop = $self->mirror->depot->mirror->revprop ) {
         my $prop = $ra->rev_proplist($changeset);
         for (@$revprop) {

@@ -37,6 +37,12 @@ sub _entries {
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
     return %{$mirror_cached{$repos}{hash}}
 	if exists $mirror_cached{$repos};
+
+    if ($repos->fs->revision_prop(0, 'svn:svnsync:from-url')) {
+	$mirror_cached{$repos} = { rev => $rev, hash => { '/' => 1 } };
+	return ( '/' => 1 );
+    }
+
     my @mirrors = grep length,
         ( $repos->fs->revision_root($rev)->node_prop( '/', 'svm:mirror' )
             || '' ) =~ m/^(.*)$/mg;
