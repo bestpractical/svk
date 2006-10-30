@@ -114,9 +114,6 @@ sub run {
         }
         else {
 	    $run_sync->();
-            # build the copy cache after sync.
-            # we should do this in svn::mirror::committed, with a
-            # hook provided here.
         }
     }
     return;
