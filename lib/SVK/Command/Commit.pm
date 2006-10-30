@@ -12,7 +12,7 @@ use SVK::Command::Sync;
 use SVK::Editor::InteractiveCommitter;
 use SVK::Editor::InteractiveStatus;
 
-use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
+use SVK::Util qw( get_buffer_from_editor slurp_fh read_file
 		  tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder get_anchor );
 
@@ -52,7 +52,7 @@ sub message_prompt {
 sub under_mirror {
     my ($self, $target) = @_;
     return if $self->{direct};
-    HAS_SVN_MIRROR and $target->is_mirrored;
+    return $target->is_mirrored;
 }
 
 sub fill_commit_message {
@@ -175,15 +175,18 @@ sub get_editor {
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
 
-    if (!$self->{direct} && (my $m = $target->is_mirrored)) {
-	if ($self->{check_only}) {
-	    print loc("Checking locally against mirror source %1.\n", $m->url);
-	}
-	else {
-	    print loc("Commit into mirrored path: merging back directly.\n")
-		if ref($self) eq __PACKAGE__; # XXX: output compat
-	    print loc("Merging back to mirror source %1.\n", $m->url);
-	}
+    if (   !$target->isa('SVK::Path::Checkout')
+        && !$self->{direct}
+        && ( my $m = $target->is_mirrored ) ) {
+        if ( $self->{check_only} ) {
+            print loc( "Checking locally against mirror source %1.\n", $m->url )
+		unless $self->{incremental};
+        }
+        else {
+            print loc("Commit into mirrored path: merging back directly.\n")
+                if ref($self) eq __PACKAGE__;    # XXX: output compat
+            print loc( "Merging back to mirror source %1.\n", $m->url );
+        }
     }
     else {
 	$callback = $self->_commit_callback($callback)
@@ -257,7 +260,7 @@ sub get_editor {
 
 sub exclude_mirror {
     my ($self, $target) = @_;
-    return () if $self->{direct} or !HAS_SVN_MIRROR;
+    return () if $self->{direct};
 
     ( exclude => {
 	map { substr ($_, length($target->path_anchor)) => 1 }

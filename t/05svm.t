@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 use SVK::Test;
-plan_svm tests => 29;
+plan tests => 29;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');

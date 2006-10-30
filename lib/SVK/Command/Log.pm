@@ -29,7 +29,12 @@ sub _log_remote_rev {
     return if !$target->mirror->entries;
 
     # we might be running log on a path containing mirrors.
-    my $m = $target->is_mirrored || 'SVN::Mirror';
+    # FIXME: resolve when log outside mirror anchor
+    my $m = $target->is_mirrored;
+    return sub { my $prop = $target->repos->fs->revision_prop($_[0], 'svm:headrev') or return;
+		 my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
+		 return (values %rev)[0];
+	     } unless $m;
     return sub {
         my $rrev = $m->find_remote_rev( $_[0], $target->repos );
         return $rrev;

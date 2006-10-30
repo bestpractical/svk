@@ -2,7 +2,7 @@ package SVK::Path;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR
+use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel
 			       IS_WIN32 find_prev_copy get_depot_anchor );
 use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup);
 
@@ -93,7 +93,6 @@ Returns true if all C<@other> targets are mirrored from the same source
 
 sub same_source {
     my ($self, @other) = @_;
-    return 0 unless HAS_SVN_MIRROR;
     return 0 unless $self->same_repos (@other);
     my $mself = $self->is_mirrored;
     for (@other) {
@@ -351,7 +350,6 @@ sub universal {
 }
 
 sub contains_mirror {
-    require SVN::Mirror;
     my ($self) = @_;
     my $path = $self->_to_pclass($self->path_anchor, 'Unix');
     my %mirrors = $self->mirror->entries;
@@ -546,7 +544,7 @@ sub copied_from {
 	}
 
 	# Check for mirroredness.
-	if ($want_mirror and HAS_SVN_MIRROR) {
+	if ($want_mirror) {
 	    my ($m, $mpath) = $target->is_mirrored;
 	    $m or next;
 	}

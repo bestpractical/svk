@@ -5,7 +5,7 @@ use Cwd;
 use File::Path;
 
 use SVK::Test;
-plan_svm tests => 15;
+plan tests => 15;
 
 my $initial_cwd = getcwd;
 

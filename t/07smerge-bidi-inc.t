@@ -5,7 +5,7 @@ use Cwd;
 use File::Path;
 
 use SVK::Test;
-plan_svm tests => 6;
+plan tests => 6;
 
 # These tests actually use push and pull, in the hope that I'll get less
 # confused. This should be okay, because other tests demonstrate that

@@ -8,7 +8,7 @@ use SVK::Test;
         unless (`gpg --version` || '') =~ /GnuPG/;
     plan (skip_all => "Test does not work with BDB") if $ENV{SVNFSTYPE} eq 'bdb';
 }
-plan_svm tests => 9;
+plan tests => 9;
 our $output;
 
 mkpath ["t/checkout/sign-gnupg"], 0, 0700 unless -d "t/checkout/sign-gnupg";

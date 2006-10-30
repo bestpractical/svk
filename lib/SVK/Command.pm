@@ -5,7 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
-		  find_svm_source $SEP IS_WIN32 HAS_SVN_MIRROR catdepot traverse_history);
+		  find_svm_source $SEP IS_WIN32 catdepot traverse_history);
 use SVK::I18N;
 use Encode;
 use constant subcommands => '*';
@@ -343,7 +343,6 @@ sub arg_uri_maybe {
     my ($self, $arg, $no_new_mirror) = @_;
 
     is_uri($arg) or return $self->arg_depotpath($arg);
-    HAS_SVN_MIRROR or die loc("cannot load SVN::Mirror");
 
     $arg =~ s{/?$}{/}; # add a trailing slash at the end
 
@@ -1070,7 +1069,7 @@ sub resolve_revision {
     } elsif ($revstr =~ /\{(\d\d\d\d-\d\d-\d\d)\}/) { 
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
-    } elsif (HAS_SVN_MIRROR && (my ($rrev) = $revstr =~ m'^(\d+)@$')) {
+    } elsif ((my ($rrev) = $revstr =~ m'^(\d+)@$')) {
 	if (my $m = $target->is_mirrored) {
 	    $rev = $m->find_local_rev ($rrev);
 	}

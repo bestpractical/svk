@@ -49,7 +49,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn and mod_authz_svn";
 }
 
-plan_svm tests => 2;
+plan tests => 2;
 
 my $utf8 = SVK::Util::get_encoding;
 

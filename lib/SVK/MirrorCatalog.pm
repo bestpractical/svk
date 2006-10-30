@@ -2,7 +2,6 @@ package SVK::MirrorCatalog;
 use strict;
 
 use base 'Class::Accessor::Fast';
-use SVK::Util qw( HAS_SVN_MIRROR );
 use SVK::Path;
 use SVK::Mirror;
 use SVK::Config;
@@ -26,13 +25,16 @@ my %mirror_cached;
 
 sub entries {
     my $self = shift;
-    return unless HAS_SVN_MIRROR;
     my $repos  = $self->repos;
     my $rev = $repos->fs->youngest_rev;
     delete $mirror_cached{$repos}
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
     return %{$mirror_cached{$repos}{hash}}
 	if exists $mirror_cached{$repos};
+    my @mirrors
+        = ( $repos->fs->revision_root($rev)->node_prop( '/', 'svm:mirror' )
+            || '' ) =~ m/^(.*)$/mg;
+
     my %mirrored = map {
 	my ($m, $m2);
 	local $@;
@@ -42,7 +44,8 @@ sub entries {
 	};
 #	$@ ? () : ($_ => $m)
         $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({svk_mirror => $m2 }))
-    } SVN::Mirror::list_mirror($repos);
+
+    } @mirrors;
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
     return %mirrored;

@@ -160,7 +160,6 @@ sub run {
                 return 1;
             },
         );
-
 	my $spool = SVN::Pool->new_default;
 	my $previous_base;
 	if ($self->{check_only}) {

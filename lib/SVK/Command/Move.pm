@@ -16,7 +16,7 @@ sub handle_direct_item {
     my ($srcm) = $self->under_mirror ($src);
     my $call;
     if ($srcm && $srcm->path eq $src->path) {
-	# this should be in svn::mirror
+	# XXX: this should be in svk::mirror
 	my $props = $src->root->node_proplist($src->path);
 	# this is very annoying: for inejecting an additional
 	# editor call, has to give callback to Command::Copy's
@@ -48,7 +48,7 @@ sub run {
     my $ret = $self->SUPER::run(@_);
     if ($self->{post_process_mirror}) {
 	# XXX: also should set svm:incomplete revprop
-	# should be in SVN::Mirror as well
+	# should be in SVK::Mirror as well
 	my $mstring = $src->root->node_prop('/', 'svm:mirror');
 	for (@{$self->{post_process_mirror}}) {
 	    my ($from, $to) = @$_;

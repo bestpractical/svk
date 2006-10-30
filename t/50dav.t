@@ -48,7 +48,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn";
 }
 
-plan_svm tests => 11;
+plan tests => 11;
 
 my $utf8 = SVK::Util::get_encoding;
 

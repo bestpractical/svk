@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 5;
+plan tests => 5;
 
 our ($output, $answer);
 # build another tree to which we want to mirror ourselves.

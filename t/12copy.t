@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 70;
+plan tests => 70;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test('foo');

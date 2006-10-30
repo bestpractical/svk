@@ -4,7 +4,6 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -48,7 +47,6 @@ If the mirror lock is stalled, please interrupt this process and run:
 
 sub run {
     my ( $self, @arg ) = @_;
-    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
 
     die loc("argument skipto not allowed when multiple target specified")
         if $self->{skip_to} && ( $self->{sync_all} || $#arg > 0 );
@@ -62,41 +60,33 @@ sub run {
             : sort keys %{ $self->{xd}{depotmap} } );
         my @newarg;
         foreach my $arg (@arg) {
+	    my $path;
             my $orig_arg = $arg;
-            $arg = "/$arg/" if $arg !~ m{/};
-            $arg = "$arg/" unless $arg =~ m{/$};
-
-            my ($depot) = eval { $self->arg_depotname($arg) };
+            ($arg, $path) = $arg =~ m{^/?([^/]*)/?(.*)?$};
+            my ($depot) = eval { $self->{xd}->find_depot($arg) };
             unless ( defined $depot ) {
                 if ( $arg =~ m{^/[^/]+/$} ) {
-                    print loc( "%1 is not a valid depotname\n", $arg );
+                    print loc( "%1 is not a valid depotname\n", $orig_arg );
                 }
                 else {
                     print loc( "%1 does not contain a valid depotname\n",
-                        $arg );
+                        $orig_arg );
                 }
                 next;
             }
 
-            my $target = eval { $self->arg_depotpath($arg) };
-            unless ($target) {
-                print $@;
-                next;
-            }
-
-            my $arg_re     = qr/^\Q$arg\E/;
+            my $arg_re     = qr{^\Q/$arg/$path\E};
+	    my %entries = $depot->mirror->entries;
             my @tempnewarg =
                 map {
-                "/$depot$_/" =~ /$arg_re/
-                    ? $self->arg_depotpath("/$depot$_")
+                ("/".$depot->depotname."$_") =~ /$arg_re/
+                    ? $self->arg_depotpath("/".$depot->depotname."$_")
                     : ()
-                } SVN::Mirror::list_mirror( $target->repos );
+                } sort keys %entries;
 
-            unless ( @tempnewarg
-                || !exists $arg{$orig_arg}
-                || $arg =~ m{^/[^/]*/$} )
+            if ( !@tempnewarg && $arg{$orig_arg} && ($path)  )
             {
-                print loc( "no mirrors found underneath %1\n", $arg );
+                print loc( "no mirrors found underneath %1\n", $orig_arg );
                 next;
             }
             push @newarg, @tempnewarg;
@@ -106,7 +96,7 @@ sub run {
 
     for my $target (@arg) {
         my $fs    = $target->repos->fs;
-        my $m     = $target->depot->mirror->load_from_path($target->path_anchor);
+        my $m     = $target->depot->mirror->load_from_path($target->path_anchor) or next;
 
 	my $run_sync = sub {
 	    if ($self->{skip_to}) {

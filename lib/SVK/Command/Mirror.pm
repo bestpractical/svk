@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR is_uri get_prompt traverse_history );
+use SVK::Util qw( is_uri get_prompt traverse_history );
 
 use constant narg => undef;
 
@@ -21,7 +21,6 @@ sub lock {} # override commit's locking
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
 
     @arg = ('//') if $self->{upgrade} and !@arg;
     return if !@arg;
@@ -100,7 +99,7 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    SVN::Mirror::upgrade ($target->repos);
+    print loc("nothing to upgrade\n");
     return;
 }
 
@@ -118,14 +117,12 @@ sub run {
 }
 
 package SVK::Command::Mirror::list;
-use SVK::Util qw( HAS_SVN_MIRROR );
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 use List::Util qw( max );
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
     return (@arg ? @arg : undef);
 }
 
