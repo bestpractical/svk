@@ -80,6 +80,7 @@ lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
 lib/SVK/Editor/Composite.pm
 lib/SVK/Editor/Copy.pm
+lib/SVK/Editor/CopyHandler.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/InteractiveCommitter.pm
