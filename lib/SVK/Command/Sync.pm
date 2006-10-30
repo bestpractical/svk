@@ -26,45 +26,39 @@ sub run {
         if $self->{skip_to} && ( $self->{sync_all} || $#arg > 0 );
 
     if ( $self->{sync_all} ) {
-	my %explicit = defined $arg[0] ? (map { $_ => 1} @arg) : ();
+        my %explicit = defined $arg[0] ? ( map { $_ => 1 } @arg ) : ();
         @arg = sort keys %{ $self->{xd}{depotmap} }
-	    unless defined $arg[0];
-	my @newarg;
-        foreach my $arg (@arg) {
-	    my $path;
-            my $orig_arg = $arg;
-            ($arg, $path) = $arg =~ m{^/?([^/]*)/?(.*)?$};
+            unless defined $arg[0];
+        for my $orig_arg (@arg) {
+            my ( $arg, $path ) = $orig_arg =~ m{^/?([^/]*)/?(.*)?$};
             my ($depot) = eval { $self->{xd}->find_depot($arg) };
             unless ( defined $depot ) {
-		print loc( "%1 does not contain a valid depotname\n",
-			   $orig_arg );
-		next;
+                print loc( "%1 does not contain a valid depotname\n",
+                    $orig_arg );
+                next;
             }
 
-            my @tempnewarg = map { SVK::Path->real_new({ depot => $depot, path => $_} ) }
-		grep { SVK::Path->_to_pclass("/$path", 'Unix')->subsumes($_) }
-		$depot->mirror->entries;
+            my @tempnewarg = grep { SVK::Path->_to_pclass( "/$path", 'Unix' )->subsumes($_) }
+                $depot->mirror->entries;
 
             if ( $path && $explicit{$orig_arg} && !@tempnewarg ) {
                 print loc( "no mirrors found underneath %1\n", $orig_arg );
                 next;
             }
-            push @newarg, @tempnewarg;
+            push @mirrors, map { $depot->mirror->get($_) } @tempnewarg;
         }
-        @arg = @newarg;
+    } else {
+        @mirrors = map { $_->mirror->get( $_->path ) } @arg;
     }
 
-    for my $target (@arg) {
-        my $fs    = $target->repos->fs;
-        my $m     = $target->depot->mirror->load_from_path($target->path_anchor) or next;
-
+    for my $m (@mirrors) {
 	my $run_sync = sub {
 	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};
 	    $m->run( $self->{torev} );
 	    1;
 	};
         if ( $self->{sync_all} ) {
-            print loc( "Starting to synchronize %1\n", $target->depotpath );
+            print loc( "Starting to synchronize %1\n", $m->get_svkpath->depotpath );
             eval { $run_sync->() };
             if ($@) {
                 warn $@;

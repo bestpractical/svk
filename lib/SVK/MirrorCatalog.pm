@@ -67,13 +67,6 @@ sub get {
     return SVK::Mirror->load( { path => $path, depot => $self->depot, pool => SVN::Pool->new });
 }
 
-sub load_from_path { # DEPRECATED: only used by ::Command::Sync
-    my ($self, $path) = @_;
-    my %mirrors = $self->_entries;
-    return unless $mirrors{$path};
-    return $self->get($path);
-}
-
 sub unlock {
     my ($self, $path) = @_;
     $self->get($path)->unlock('force');
