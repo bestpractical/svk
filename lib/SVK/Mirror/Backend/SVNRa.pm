@@ -429,6 +429,7 @@ sub sync_changeset {
     # ra->replay gives us editor calls based on repos root not
     # base uri, so we need to get the correct subtree.
     my $baton;
+    my $pool = SVN::Pool->new_default;
     if ( length $self->source_path ) {
         my $anchor = substr( $self->source_path, 1 );
         $baton  = $editor->open_root(-1);      # XXX: should use $t->revision
@@ -439,7 +440,6 @@ sub sync_changeset {
             }
         );
     }
-
     $ra->replay( $changeset, 0, 1, $editor );
     $self->_ra_finished($ra);
     if ( length $self->source_path ) {
