@@ -183,9 +183,10 @@ sub get_editor {
     my $callback = $arg{callback};
     if ($m) {
 	my $post_handler;
+	my $notify = $arg{notify};
         my $mcallback = $arg{mcallback} ||= sub {
             my $rev = shift;
-            $arg{notify}->( loc( "Merge back committed as revision %1.\n", $rev ) );
+            $notify->( loc( "Merge back committed as revision %1.\n", $rev ) );
             if ($post_handler) {
                 return unless $post_handler->($rev);
             }
