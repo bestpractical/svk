@@ -106,7 +106,7 @@ sub run {
 
     for my $target (@arg) {
         my $fs    = $target->repos->fs;
-        my $m     = $target->depot->mirror->load_from_path($target->path_anchor)->tmp_svnmirror;
+        my $m     = $target->depot->mirror->load_from_path($target->path_anchor);
 
 	my $run_sync = sub {
 	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};

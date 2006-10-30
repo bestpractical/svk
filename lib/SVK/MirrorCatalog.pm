@@ -37,13 +37,11 @@ sub entries {
 	my ($m, $m2);
 	local $@;
 	eval {
-            $m = $self->svnmirror_object( $_, get_source => 1);
-            $m->init;
             $m2 = SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
 	    1;
 	};
 #	$@ ? () : ($_ => $m)
-        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({svm_object => $m, svk_mirror => $m2 }))
+        $@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({svk_mirror => $m2 }))
     } SVN::Mirror::list_mirror($repos);
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
@@ -91,7 +89,7 @@ sub is_mirrored {
 	keys %mirrors;
     return unless $mpath;
 
-    my $m = $mirrors{$mpath}->tmp_svnmirror;
+    my $m = $mirrors{$mpath};
     $path =~ s/^\Q$mpath\E//;
     return wantarray ? ($m, $path) : $m;
 }
@@ -107,35 +105,15 @@ sub add_mirror {
 
 package SVK::MirrorCatalog::Entry;
 use base 'Class::Accessor::Fast';
-
-__PACKAGE__->mk_accessors(qw(tmp_svnmirror));
-
-sub new {
-    my ($class, $args) = @_;
-    $class->SUPER::new({ tmp_svnmirror => SVK::MirrorCatalog::SVMCompat->new($args) });
-}
-
-sub sync {
-    my ($self, %arg) = @_;
-    for (keys %arg) {
-        next if $_ eq 'torev';
-        my $method = "set_$_";
-        $self->tmp_svnmirror->$method($arg{$_});
-    }
-    $self->tmp_svnmirror->run($arg{torev});
-}
+__PACKAGE__->mk_accessors(qw(svk_mirror));
 
 sub spec {
     my $self = shift;
-    my $m = $self->tmp_svnmirror;
+    my $m = $self;
     return join(':', $m->source_uuid, $m->source_path);
 }
 
-package SVK::MirrorCatalog::SVMCompat;
-use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(svm_object svk_mirror));
-
-for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot refresh detach) {
+for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot refresh detach change_rev_prop) {
     no strict 'refs';
     *$method = sub { my $self=shift; $self->svk_mirror->$method(@_) };
 }
@@ -143,16 +121,14 @@ for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_re
 sub fromrev { $_[0]->svk_mirror->_backend->fromrev }
 sub source_path { $_[0]->svk_mirror->_backend->source_path }
 
+
 our $AUTOLOAD;
 sub AUTOLOAD {
     my $self = shift;
     my $func = $AUTOLOAD;
     $func =~ s/.*:://;
     return if $func =~ m/^[A-Z]/;
-    die $func;
-    my $method = $self->svm_object->can($func);
-    Carp::confess $func unless $method;
-    $method->($self->svm_object, @_);
+    Carp::cluck $func;
 }
 
 =head1 SEE ALSO

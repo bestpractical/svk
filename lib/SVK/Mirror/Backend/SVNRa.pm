@@ -471,5 +471,10 @@ sub get_commit_editor {
     return SVN::Delta::Editor->new($self->{commit_ra}->get_commit_editor($msg, $committed, @lock));
 }
 
+sub change_rev_prop {
+    my $self = shift;
+    $self->_new_ra->change_rev_prop(@_);
+}
+
 1;
 

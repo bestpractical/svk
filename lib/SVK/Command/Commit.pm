@@ -216,8 +216,7 @@ sub get_editor {
 	my $post_handler = $cb{post_handler};
 	if (my $m = $cb{mirror}) {
 	    $$post_handler = sub {
-		$m->_new_ra->change_rev_prop($_[0], 'svk:signature',
-					     $editor->{sig});
+                $m->change_rev_prop( $_[0], 'svk:signature', $editor->{sig} );
 		1;
 	    }
 	}
