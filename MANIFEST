@@ -89,6 +89,7 @@ lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
+lib/SVK/Editor/SubTree.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/TxnCleanup.pm
 lib/SVK/Editor/View.pm

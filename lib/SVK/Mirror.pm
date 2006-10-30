@@ -268,6 +268,8 @@ sub get_merge_back_editor {
 
 sub run {
     my ($self, $torev) = @_;
+    return $self->run_svnmirror_sync({ torev => $torev }) unless $self->_backend->has_replay;
+
     print loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1\n", $self->server_url) : "\n");
 
     $self->mirror_changesets($torev,
@@ -280,6 +282,27 @@ sub run {
     warn $@ if $@;
     warn ${$@} if ref($@);
 }
+
+sub run_svnmirror_sync {
+    my ( $self, $arg ) = @_;
+
+    # XXX: cb_copy_notify
+    require SVN::Mirror;
+    my $svm = SVN::Mirror->new(
+        target_path  => $self->path,
+        repos        => $self->depot->repos,
+        config       => SVK::Config->svnconfig,
+        revprop      => $self->depot->mirror->revprop,
+        lock_message => SVK::Command::Sync::lock_message( $self->depot ),
+        get_source   => 1,
+        pool         => SVN::Pool->new,
+        %$arg
+    );
+    $svm->init;
+
+    $svm->run( $arg->{torev} );
+}
+
 
 =back
 

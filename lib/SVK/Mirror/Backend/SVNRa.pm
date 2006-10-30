@@ -437,18 +437,14 @@ sub sync_changeset {
 =cut
 
 sub mirror_changesets {
-    my ($self, $torev, $callback) = @_;
-    if ( $self->has_replay ) {
-        $self->mirror->with_lock(
-            'mirror',
-            sub {
-                $self->traverse_new_changesets(
-                    sub { $self->sync_changeset( @_, $callback ) }, $torev );
-            }
-        );
-    } else {
+    my ( $self, $torev, $callback ) = @_;
 
-    }
+    $self->mirror->with_lock( 'mirror',
+        sub {
+            $self->traverse_new_changesets(
+                sub { $self->sync_changeset( @_, $callback ) }, $torev );
+        }
+    );
 }
 
 =item get_commit_editor
