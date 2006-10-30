@@ -66,10 +66,11 @@ use SVK::I18N;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    $target->depot->mirror
-	->svnmirror_object($target->path_anchor,
-			   source => $source, options => \@options)
-	->relocate;
+
+    # FIXME: add tests and implement
+    my $m = $target->is_mirrored;
+    $m->relocate($source, @options);
+
     return;
 }
 
@@ -176,10 +177,6 @@ sub run {
     my ($self, $target, $source, @options) = @_;
     die loc("recover not supported.\n");
 
-    $source = ("file://".$target->repospath);
-    my $m = $target->depot->mirror
-	->svnmirror_object($target->path_anchor,
-			   source => $source, options => \@options);
     $self->recover_headrev ($target, $m);
     $self->recover_list_entry ($target, $m);
     return;

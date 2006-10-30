@@ -170,7 +170,7 @@ sub lock {
 }
 
 sub unlock {
-
+    my ($self, $force) = @_;
 }
 
 sub with_lock {

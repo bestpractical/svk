@@ -48,17 +48,6 @@ sub entries {
     return %mirrored;
 }
 
-sub svnmirror_object {
-    my ($self, $path, %arg) = @_;
-    SVN::Mirror->new
-	( target_path    => $path,
-	  repos          => $self->repos,
-	  config         => SVK::Config->svnconfig,
-	  revprop        => $self->revprop,
-	  pool           => SVN::Pool->new,
-	  %arg);
-}
-
 sub load_from_path { # DEPRECATED: only used by ::Command::Sync
     my ($self, $path) = @_;
 
@@ -68,10 +57,8 @@ sub load_from_path { # DEPRECATED: only used by ::Command::Sync
 
 sub unlock {
     my ($self, $path) = @_;
-    my $m = $self->svnmirror_object
-	( $path,  get_source => 1, ignore_lock => 1 );
-    $m->init;
-    $m->unlock('force')
+    my %mirrors = $self->entries;
+    $mirrors{$path}->unlock('force');
 }
 
 sub is_mirrored {
@@ -97,7 +84,7 @@ sub spec {
     return join(':', $m->source_uuid, $m->source_path);
 }
 
-for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot refresh detach change_rev_prop) {
+for my $method qw(url path server_uuid source_uuid find_local_rev find_remote_rev get_merge_back_editor run sync_snapshot refresh detach change_rev_prop unlock) {
     no strict 'refs';
     *$method = sub { my $self=shift; $self->svk_mirror->$method(@_) };
 }
