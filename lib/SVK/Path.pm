@@ -186,18 +186,21 @@ sub get_editor {
 	require SVK::Command::Sync;
 	$m->set_lock_message(SVK::Command::Sync::lock_message($self));
 	my $post_handler;
+        my $mcallback = $arg{mcallback} ||= sub {
+            my $rev = shift;
+            $arg{notify}->( loc( "Merge back committed as revision %1.\n", $rev ) );
+            if ($post_handler) {
+                return unless $post_handler->($rev);
+            }
+            $m->run($rev);
+
+            # XXX: find_local_rev can fail
+            $callback->( $m->find_local_rev($rev), @_ )
+              if $callback;
+        };
+
 	my ($base_rev, $editor) = $m->get_merge_back_editor
-	    ($mpath, $arg{message},
-	     sub { my $rev = shift;
-		   $arg{notify}->(loc("Merge back committed as revision %1.\n", $rev));
-		   if ($post_handler) {
-		       return unless $post_handler->($rev);
-		   }
-		   $m->run($rev);
-		   # XXX: find_local_rev can fail
-		   $callback->($m->find_local_rev($rev), @_)
-		       if $callback }
-	    );
+	    ($mpath, $arg{message}, $mcallback);
 	$editor->{_debug}++ if $main::DEBUG;
 	return ($editor, $inspector,
 		mirror => $m,
