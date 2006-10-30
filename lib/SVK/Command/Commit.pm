@@ -195,9 +195,9 @@ sub get_editor {
 	    print loc("Checking locally against mirror source %1.\n", $m->url);
 	}
 	else {
-	    print loc("Merging back to mirror source %1.\n", $m->url);
 	    print loc("Commit into mirrored path: merging back directly.\n")
 		if ref($self) eq __PACKAGE__; # XXX: output compat
+	    print loc("Merging back to mirror source %1.\n", $m->url);
 	}
     }
 

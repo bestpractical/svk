@@ -175,17 +175,17 @@ sub get_editor {
     my $inspector = $self->inspector;
 
     if ($arg{check_only}) {
-	return (SVN::Delta::Editor->new, $inspector, 
+	return (SVN::Delta::Editor->new, $inspector,
 	        cb_rev => sub { $root_baserev },
 	        mirror => $m);
     }
 
     $arg{notify} ||= sub {};
     my $callback = $arg{callback};
-    my $post_handler;
     if ($m) {
 	require SVK::Command::Sync;
 	$m->set_lock_message(SVK::Command::Sync::lock_message($self));
+	my $post_handler;
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message},
 	     sub { my $rev = shift;
@@ -216,14 +216,13 @@ sub get_editor {
     $txn->change_prop('svk:commit', '*')
 	if $fs->revision_prop(0, 'svk:notify-commit');
 
-    my $editor;
-    ($editor, $post_handler) =
+    my ($editor, $post_handler_ref) =
 	$self->_commit_editor($txn, $callback);
     $editor = SVK::Editor::TxnCleanup->new(_editor => [$editor], txn => $txn);
 
     return ($editor, $inspector,
 	    send_fulltext => 1,
-	    post_handler => $post_handler, # inconsistent!
+	    post_handler => $post_handler_ref,
 	    txn => $txn,
             aborts_txn => 1,
 	    cb_rev => sub { $root_baserev },
