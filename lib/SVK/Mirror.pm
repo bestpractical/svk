@@ -348,15 +348,35 @@ sub _lock_message {
     my $target =
       SVK::Path->real_new( { depot => $self->depot, path => $self->path } )
       ->refresh_revision;
-    return SVK::Command::Sync::lock_message($target);
+    my $i = 0;
+    sub {
+	my ($mirror, $who) = @_;
+	print loc("Waiting for lock on %1: %2.\n", $target->depotpath, $who);
+	if (++$i % 3 == 0) {
+	    print loc ("
+The mirror is currently locked. This might be because the mirror is
+in the middle of a sensitive operation or because a process holding
+the lock hung or died.  To check if the mirror lock is stalled,  see
+if $who is a running, valid process
+
+If the mirror lock is stalled, please interrupt this process and run:
+    svk mirror --unlock %1
+", $target->depotpath);
+	}
+    }
+}
+
+sub _copy_notify {
+    my ($self, $target, $m, undef, $path, $from_path, $from_rev) = @_;
+    # XXX: on anchor, try to get a external copy cache
+    return unless $m->path ne $path;
+    return $target->depot->find_local_mirror($m->server_uuid, $from_path, $from_rev);
 }
 
 sub run_svnmirror_sync {
     my ( $self, $arg ) = @_;
 
-    # XXX: cb_copy_notify
     require SVN::Mirror;
-    require SVK::Command::Sync;
     my $target =
       SVK::Path->real_new( { depot => $self->depot, path => $self->path } )
       ->refresh_revision;
@@ -367,7 +387,7 @@ sub run_svnmirror_sync {
         config         => SVK::Config->svnconfig,
         revprop        => $self->depot->mirror->revprop,
         cb_copy_notify =>
-          sub { SVK::Command::Sync->copy_notify( $target, $self, @_ ) },
+          sub { $self->_copy_notify( $target, $self, @_ ) },
         lock_message => $self->_lock_message,
         get_source   => 1,
         pool         => SVN::Pool->new,

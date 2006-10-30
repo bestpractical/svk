@@ -18,33 +18,6 @@ sub parse_arg {
     return map {$self->arg_uri_maybe ($_)} @arg;
 }
 
-sub copy_notify {
-    my ($self, $target, $m, undef, $path, $from_path, $from_rev) = @_;
-    # XXX: on anchor, try to get a external copy cache
-    return unless $m->path ne $path;
-    return $target->depot->find_local_mirror($m->server_uuid, $from_path, $from_rev);
-}
-
-sub lock_message {
-    my $target = shift;
-    my $i = 0;
-    sub {
-	my ($mirror, $what, $who) = @_;
-	print loc("Waiting for %1 lock on %2: %3.\n", $what, $target->depotpath, $who);
-	if (++$i % 3 == 0) {
-	    print loc ("
-The mirror is currently locked. This might be because the mirror is
-in the middle of a sensitive operation or because a process holding
-the lock hung or died.  To check if the mirror lock is stalled,  see
-if $who is a running, valid process
-
-If the mirror lock is stalled, please interrupt this process and run:
-    svk mirror --unlock %1
-", $target->depotpath);
-	}
-    }
-}
-
 sub run {
     my ( $self, @arg ) = @_;
 
