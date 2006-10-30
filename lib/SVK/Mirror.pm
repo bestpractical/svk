@@ -258,7 +258,7 @@ calls C<$code> with an opaque object and metadata that C<sync_changeset> underst
 =cut
 
 for my $delegate
-    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop )
+    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path )
 {
     no strict 'refs';
     *{$delegate} = sub {
@@ -269,7 +269,7 @@ for my $delegate
     };
 }
 
-# TMP method to be compat with SVK::MirrorCatalog::Entry
+# compat methods
 
 sub spec {
     my $self = shift;
@@ -347,7 +347,6 @@ sub run_svnmirror_sync {
 
     $svm->run( $arg->{torev} );
 }
-
 
 =back
 
