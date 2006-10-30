@@ -43,10 +43,8 @@ $svk->sync (-a => '/what/',
 	    ["No such depot: what."]);
 
 $svk->sync ('//m');
-
 $svk->copy ('-m', 'branch', '//m', '//l');
 $svk->checkout ('//l', $copath);
-
 ok (-e "$corpath/be");
 append_file ("$copath/be", "from local branch of svm'ed directory\n");
 mkdir "$copath/T/";

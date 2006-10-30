@@ -5,8 +5,8 @@ use warnings;
 use SVN::Core;
 use SVN::Ra;
 use SVN::Client ();
-use SVK::Editor::Composite;
 use SVK::I18N;
+use Class::Autouse qw(SVK::Editor::SubTree);
 
 use constant OK => $SVN::_Core::SVN_NO_ERROR;
 
@@ -326,54 +326,93 @@ sub find_rev_from_changeset {
 
 sub traverse_new_changesets {
     my ($self, $code, $torev) = @_;
-    my $from = $self->fromrev || 0;
+    my $from = ($self->fromrev || 0)+1;
     my $to = $torev || -1;
 
     my $ra = $self->_new_ra;
     $to = $ra->get_latest_revnum() if $to == -1;
+    return if $from > $to;
     print "Retrieving log information from $from to $to\n";
     eval {
-    $ra->get_log([''], $from+1, $to, 0,
+    $ra->get_log([''], $from, $to, 0,
 		  0, 1,
 		  sub {
 		      my ($paths, $rev, $author, $date, $msg, $pool) = @_;
-		      $code->($rev, { author => $author, date => $date, msg => $msg });
+		      $code->($rev, { author => $author, date => $date, message => $msg });
 		  });
     };
 }
 
 sub sync_changeset {
-    my ($self, $changeset, $metadata) = @_;
-    warn "==> sync $changeset";
+    my ($self, $changeset, $metadata, $callback) = @_;
     my $t = SVK::Path->real_new({ depot => $self->mirror->depot, path => $self->mirror->path })
         ->refresh_revision;
-    my ($editor) = $t->get_editor( ignore_mirror => 1, caller => '');
+    my ( $editor, undef, %opt ) = $t->get_editor(
+        ignore_mirror => 1,
+        message       => $metadata->{message},
+        author        => $metadata->{author},
+        callback      => sub {
+            $t->repos->fs->change_rev_prop( $_[0], 'svn:date',
+                $metadata->{date} );
+            $self->fromrev( $_[0] );
+            $callback->( $changeset, $_[0] ) if $callback;
+        }
+    );
     my $ra = $self->_new_ra;
+    # XXX: sync relayed revmap as well
+    $opt{txn}->change_prop('svm:headrev', $self->mirror->server_uuid.":$changeset\n");
+
+    if ( my $revprop = $self->mirror->depot->mirror->revprop ) {
+        my $prop = $ra->rev_proplist($changeset);
+        for (@$revprop) {
+            $opt{txn}->change_prop( $_, $prop->{$_} )
+                if exists $prop->{$_};
+        }
+    }
+
     if ( $ra->{session}->can('replay') ) {
         require SVK::Editor::CopyHandler;
-        my $baton      = $editor->open_root('');
-        my $compeditor = SVK::Editor::Composite->new(
-            master_editor => SVK::Editor::CopyHandler->new(
-                _editor => $editor,
-#                  SVN::Delta::Editor->new( _editor => [$editor], _debug => 0 ),
-                cb_copy => sub {
-                    my ( $editor, $path, $rev ) = @_;
-                    return (
-                        $self->{target_path} . '/' . $path,
-                        $self->find_rev_from_changeset($rev)
-                    );
-                }
-            ),
-            anchor       => $self->mirror->path,
-            anchor_baton => $baton
-        );
+#	$editor->{_debug}++;
+	$editor =  SVK::Editor::CopyHandler->new(
+                    _editor => $editor,,
+                    cb_copy => sub {
+                        my ( $editor, $path, $rev ) = @_;
+                        return ( $path, $rev ) if $rev == -1;
+			my $source_path = $self->source_path;
+			$path =~ s/^\Q$self->{source_path}//;
+                        return $t->as_url( 1, $self->mirror->path . $path,
+                            $self->find_rev_from_changeset( $rev ) );
+                    }
+                );
+        # ra->replay gives us editor calls based on repos root not
+        # base uri, so we need to get the correct subtree.
+	my $baton;
+	if ( length $self->source_path ) {
+	    my $anchor = substr( $self->source_path, 1 );
+	    $baton = $editor->open_root(-1); # XXX: should use $t->revision
+	    $editor = SVK::Editor::SubTree->new(
+            {   master_editor => $editor,
+                anchor       => $anchor,
+                anchor_baton => $baton
+            }
+						      );
+	}
 
-#        $editor->{_debug}++;
-        warn $editor;
+#        $ra->replay( $changeset, 0, 1, SVK::Editor->new({_debug=>1}) );
         $ra->replay( $changeset, 0, 1, $editor );
+	if ( length $self->source_path ) {
 #            SVN::Delta::Editor->new( _debug => 0, _editor => [$compeditor] ) );
-        $editor->close_directory($baton);
-        $editor->close_edit;
+	    $editor->close_directory($baton);
+	    if ($editor->needs_touch) {
+		$editor->change_dir_prop($baton, 'svk:mirror' => undef);
+	    }
+	}
+	if ($editor->isa('SVK::Editor::SubTree') && !$editor->changes) {
+	    $editor->abort_edit;
+	}
+	else {
+	    $editor->close_edit;
+	}
         return;
     }
     die 'no replay'
@@ -385,9 +424,9 @@ sub sync_changeset {
 =cut
 
 sub mirror_changesets {
-    my ($self, $torev) = @_;
+    my ($self, $torev, $callback) = @_;
     $self->mirror->with_lock('mirror', sub {
-        $self->traverse_new_changesets(sub { $self->sync_changeset(@_) }, $torev);
+        $self->traverse_new_changesets(sub { $self->sync_changeset(@_, $callback) }, $torev);
     });
 }
 

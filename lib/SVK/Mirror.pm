@@ -5,6 +5,7 @@ use warnings;
 use SVN::Core;
 
 use Sys::Hostname;
+use SVK::I18N;
 use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
@@ -263,6 +264,21 @@ sub find_remote_rev {
 sub get_merge_back_editor {
     my $self = shift;
     return ($self->_backend->fromrev, $self->get_commit_editor(@_));
+}
+
+sub run {
+    my ($self, $torev) = @_;
+    print loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1\n", $self->server_url) : "\n");
+
+    $self->mirror_changesets($torev,
+        sub {
+            my ( $changeset, $rev ) = @_;
+            print "Committed revision $rev from revision $changeset.\n";
+        }
+    );
+    die $@ if $@;
+    warn $@ if $@;
+    warn ${$@} if ref($@);
 }
 
 =back
