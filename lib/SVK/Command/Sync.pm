@@ -21,43 +21,31 @@ sub parse_arg {
 sub run {
     my ( $self, @arg ) = @_;
 
+    my @mirrors;
     die loc("argument skipto not allowed when multiple target specified")
         if $self->{skip_to} && ( $self->{sync_all} || $#arg > 0 );
 
     if ( $self->{sync_all} ) {
-        local $@;
-        my %arg = ( !defined( $arg[0] ) ? () : map { $_ => 1 } @arg );
-        @arg = (
-            defined( $arg[0] )
-            ? @arg
-            : sort keys %{ $self->{xd}{depotmap} } );
-        my @newarg;
+	my %explicit = defined $arg[0] ? (map { $_ => 1} @arg) : ();
+        @arg = sort keys %{ $self->{xd}{depotmap} }
+	    unless defined $arg[0];
+	my @newarg;
         foreach my $arg (@arg) {
 	    my $path;
             my $orig_arg = $arg;
             ($arg, $path) = $arg =~ m{^/?([^/]*)/?(.*)?$};
             my ($depot) = eval { $self->{xd}->find_depot($arg) };
             unless ( defined $depot ) {
-                if ( $arg =~ m{^/[^/]+/$} ) {
-                    print loc( "%1 is not a valid depotname\n", $orig_arg );
-                }
-                else {
-                    print loc( "%1 does not contain a valid depotname\n",
-                        $orig_arg );
-                }
-                next;
+		print loc( "%1 does not contain a valid depotname\n",
+			   $orig_arg );
+		next;
             }
 
-            my $arg_re     = qr{^\Q/$arg/$path\E};
-            my @tempnewarg =
-                map {
-                ("/".$depot->depotname."$_") =~ /$arg_re/
-                    ? $self->arg_depotpath("/".$depot->depotname."$_")
-                    : ()
-                } $depot->mirror->entries;
+            my @tempnewarg = map { SVK::Path->real_new({ depot => $depot, path => $_} ) }
+		grep { SVK::Path->_to_pclass("/$path", 'Unix')->subsumes($_) }
+		$depot->mirror->entries;
 
-            if ( !@tempnewarg && $arg{$orig_arg} && ($path)  )
-            {
+            if ( $path && $explicit{$orig_arg} && !@tempnewarg ) {
                 print loc( "no mirrors found underneath %1\n", $orig_arg );
                 next;
             }
