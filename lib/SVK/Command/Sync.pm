@@ -110,6 +110,7 @@ sub run {
 
 	my $run_sync = sub {
 	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};
+	    $m->refresh;
 	    $m->run( $self->{torev} );
 	    1;
 	};

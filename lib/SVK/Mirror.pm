@@ -234,7 +234,7 @@ calls C<$code> with an opaque object and metadata that C<sync_changeset> underst
 =cut
 
 for my $delegate
-    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor )
+    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh )
 {
     no strict 'refs';
     *{$delegate} = sub {

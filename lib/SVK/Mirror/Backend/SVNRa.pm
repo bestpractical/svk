@@ -47,6 +47,11 @@ sub _do_load_fromrev {
     return scalar $self->mirror->find_changeset($changed);
 }
 
+sub refresh {
+    my $self = shift;
+    $self->fromrev($self->_do_load_fromrev);
+}
+
 sub load {
     my ($class, $mirror) = @_;
     Carp::cluck unless ref($mirror) eq 'SVK::Mirror';
@@ -66,8 +71,7 @@ sub load {
     $mirror->server_uuid( $ruuid );
     $mirror->source_uuid( $uuid );
 
-    # XXX: locking etc
-    $self->fromrev($self->_do_load_fromrev);
+    $self->refresh;
 
     die loc("%1 is not a mirrored path.\n", $t->path) unless defined $self->fromrev;
 
