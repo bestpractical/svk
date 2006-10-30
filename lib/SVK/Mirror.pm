@@ -347,6 +347,7 @@ sub run_svnmirror_sync {
 
     # XXX: cb_copy_notify
     require SVN::Mirror;
+    require SVK::Command::Sync;
     my $target =
       SVK::Path->real_new( { depot => $self->depot, path => $self->path } )
       ->refresh_revision;

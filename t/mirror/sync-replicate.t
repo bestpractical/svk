@@ -2,9 +2,9 @@
 use strict;
 use Test::More;
 use SVK::Test;
-eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
+use SVN::Ra;
+plan skip_all => "no replay" unless _p_svn_ra_session_t->can('replay');
 plan tests => 3;
-
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('sync-replicate');
 

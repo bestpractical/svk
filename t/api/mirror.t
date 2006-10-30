@@ -83,6 +83,6 @@ $m = SVK::Mirror->load(
     is_deeply(\@revs, [1,2]);
 }
 
-$m->mirror_changesets();
-warn $@;
-
+$m->run();
+#$m->mirror_changesets();
+# XXX: check committed revisions
