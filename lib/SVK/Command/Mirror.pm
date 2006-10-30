@@ -143,10 +143,9 @@ sub run {
             warn loc( "Depot /%1/ not loadable.\n", $depot );
             next DEPOT;
         }
-        my %mirrors = $target->depot->mirror->entries;
         my $depot_name = $target->depotname;
-        foreach my $path ( sort keys %mirrors ) {
-            my $m = $mirrors{$path};
+        foreach my $path ( $target->depot->mirror->entries ) {
+            my $m = $target->depot->mirror->get($path);
             push @mirror_columns, [ "/$depot_name$path", $m->url ];
         }
     }

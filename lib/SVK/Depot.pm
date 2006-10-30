@@ -50,12 +50,13 @@ sub find_local_mirror {
 
 sub _has_local {
     my ($self, $spec) = @_;
-    my %mirrored = $self->mirror->entries;
-    while (my ($path, $m) = each(%mirrored)) {
+    for my $path ($self->mirror->entries) {
+	my $m = $self->mirror->get($path);
 	my $mspec = $m->spec;
 	my $mpath = $spec;
-	next unless $mpath =~ s/^\Q$mspec\E//;
-	$mpath = '' if $mpath eq '/';
+	return ($m, '') if $mpath eq $mspec;
+	next unless $mpath =~ s{^\Q$mspec\E/}{/};
+	$mpath = '' if $mpath eq '/'; # XXX: why still need this?
 	return ($m, $mpath);
     }
     return;

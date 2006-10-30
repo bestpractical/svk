@@ -25,24 +25,29 @@ my %mirror_cached;
 
 sub entries {
     my $self = shift;
+    my %mirrors = $self->_entries;
+    return sort keys %mirrors;
+}
+
+sub _entries {
+    my $self = shift;
     my $repos  = $self->repos;
     my $rev = $repos->fs->youngest_rev;
     delete $mirror_cached{$repos}
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
     return %{$mirror_cached{$repos}{hash}}
 	if exists $mirror_cached{$repos};
-    my @mirrors
-        = ( $repos->fs->revision_root($rev)->node_prop( '/', 'svm:mirror' )
+    my @mirrors = grep length,
+        ( $repos->fs->revision_root($rev)->node_prop( '/', 'svm:mirror' )
             || '' ) =~ m/^(.*)$/mg;
 
     my %mirrored = map {
-	my $m;
 	local $@;
 	eval {
-            $m = SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
+            SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
 	    1;
 	};
-        $@ ? () : ($_ => $m)
+        $@ ? () : ($_ => 1)
 
     } @mirrors;
 
@@ -50,28 +55,31 @@ sub entries {
     return %mirrored;
 }
 
+sub get {
+    my ($self, $path) = @_;
+    Carp::cluck if ref($path);
+    return SVK::Mirror->load( { path => $path, depot => $self->depot, pool => SVN::Pool->new });
+}
+
 sub load_from_path { # DEPRECATED: only used by ::Command::Sync
     my ($self, $path) = @_;
-
-    my %mirrors = $self->entries;
-    return $mirrors{$path};
+    my %mirrors = $self->_entries;
+    return unless $mirrors{$path};
+    return $self->get($path);
 }
 
 sub unlock {
     my ($self, $path) = @_;
-    my %mirrors = $self->entries;
-    $mirrors{$path}->unlock('force');
+    $self->get($path)->unlock('force');
 }
 
 sub is_mirrored {
     my ($self, $path) = @_;
-    my %mirrors = $self->entries;
     # XXX: check there's only one
-    my ($mpath) = grep { SVK::Path->_to_pclass($_, 'Unix')->subsumes($path) }
-	keys %mirrors;
+    my ($mpath) = grep { SVK::Path->_to_pclass($_, 'Unix')->subsumes($path) } $self->entries;
     return unless $mpath;
 
-    my $m = $mirrors{$mpath};
+    my $m = $self->get($mpath);
     $path =~ s/^\Q$mpath\E//;
     return wantarray ? ($m, $path) : $m;
 }

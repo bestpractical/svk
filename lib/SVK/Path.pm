@@ -352,8 +352,7 @@ sub universal {
 sub contains_mirror {
     my ($self) = @_;
     my $path = $self->_to_pclass($self->path_anchor, 'Unix');
-    my %mirrors = $self->mirror->entries;
-    return grep { $path->subsumes($_) } sort keys %mirrors;
+    return grep { $path->subsumes($_) } $self->mirror->entries;
 }
 
 =head2 depotpath

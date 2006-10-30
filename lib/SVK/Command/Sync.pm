@@ -76,13 +76,12 @@ sub run {
             }
 
             my $arg_re     = qr{^\Q/$arg/$path\E};
-	    my %entries = $depot->mirror->entries;
             my @tempnewarg =
                 map {
                 ("/".$depot->depotname."$_") =~ /$arg_re/
                     ? $self->arg_depotpath("/".$depot->depotname."$_")
                     : ()
-                } sort keys %entries;
+                } $depot->mirror->entries;
 
             if ( !@tempnewarg && $arg{$orig_arg} && ($path)  )
             {

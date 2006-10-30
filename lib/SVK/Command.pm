@@ -351,9 +351,8 @@ sub arg_uri_maybe {
     my $map = $self->{xd}{depotmap};
     foreach my $depotname (sort keys %$map) {
         my $depot = eval { $self->{xd}->find_depot($depotname) } or next;
-	my %mirrors = $depot->mirror->entries;
-	foreach my $path (sort keys %mirrors) {
-	    my $m = $mirrors{$path};
+	foreach my $path ($depot->mirror->entries) {
+	    my $m = $depot->mirror->get($path);
             my $rel_uri = $uri->rel(URI->new($m->url."/")->canonical) or next;
             next if $rel_uri->eq($uri);
             next if $rel_uri =~ /^\.\./;

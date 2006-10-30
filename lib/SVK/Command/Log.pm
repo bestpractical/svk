@@ -26,7 +26,7 @@ sub _log_remote_rev {
     my ( $target, $remoteonly ) = @_;
 
     # don't bother if this repository has no mirror
-    return if !$target->mirror->entries;
+    return if !$target->mirror->_entries;
 
     # we might be running log on a path containing mirrors.
     # FIXME: resolve when log outside mirror anchor
