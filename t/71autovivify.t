@@ -38,7 +38,7 @@ is_output($svk, 'cp', ["$uri/C", "$uri/D"],
 $answer = ['', 'C', ''];
 is_output($svk, 'checkout', ["$uri/C"], [
             "New URI encountered: $uri/C/",
-            "Committed revision 5.",
+            "Mirror initialized.  Run svk sync //mirror/C to start mirroring.",
             "",
             "svk needs to mirror the remote repository so you can work locally.",
             "If you're mirroring a single branch, it's safe to use any of the options",

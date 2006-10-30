@@ -43,7 +43,7 @@ my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
 my $uri = uri($srepospath.($spath eq '/' ? '' : $spath));
 
 is_output($svk, mirror => ['//m', $uri],
-          ["Committed revision 1."]);
+          ["Mirror initialized.  Run svk sync //m to start mirroring."]);
 
 is_output($svk, 'sync', [-t6 => '//m'],
 	  ["Syncing $uri",

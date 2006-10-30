@@ -66,23 +66,25 @@ sub create {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 
+    $self->{url} =~ s{/+$}{}g;
+
     $self->pool( SVN::Pool->new(undef) )
         unless $self->pool;
-
-    $self->_backend(
-        $self->_create_backend( $args->{backend}, $args->{backend_options} )
-    );
-
-    weaken( $self->{_backend}{mirror} );
 
     my $t = SVK::Path->real_new( { depot => $self->depot, path => '/' } )
         ->refresh_revision;
 
-    my ($editor) = $t->get_dynamic_editor(
+    my ($editor, %opt) = $t->get_dynamic_editor(
         ignore_mirror => 1,
-        message       => 'init mirror',
+        message       => loc('Mirror initialized for %1', $self->url),
         author        => $ENV{USER},
     );
+
+    $self->_backend(
+        $self->_create_backend( $args->{backend}, $args->{backend_options}, $opt{txn}, $editor )
+    );
+
+    weaken( $self->{_backend}{mirror} );
 
     my %mirrors = map { ( $_ => 1 ) } $self->path,
         split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
@@ -95,13 +97,14 @@ sub create {
 }
 
 sub _create_backend {
-    my ($self, $backend, $args) = @_;
+    my $self = shift;
+    my ($backend) = @_;
     die unless $backend eq 'SVNRa';
 
     # put svm:mirror prop
 
     # actually initialise the mirror on mirror path
-    return SVK::Mirror::Backend::SVNRa->create( $self );
+    return SVK::Mirror::Backend::SVNRa->create( $self, @_ );
 
 }
 

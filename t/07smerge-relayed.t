@@ -24,6 +24,9 @@ is_output ($svk, 'sync', ['/server/trunk'],
 	    'Committed revision 43 from revision 202.',
 	    'Committed revision 44 from revision 203.']);
 
+TODO: {
+local $TODO = 'relayed mirror';
+
 $svk->mirror ('//trunk', uri($repospath).'/trunk');
 is_output ($svk, 'sync', ['//trunk'],
 	   ["Syncing ".uri($srepospath)."/trunk via ".uri($repospath)."/trunk",
@@ -39,3 +42,4 @@ is_output_like ($svk, 'sm', [-m => 'merge down', -t => '//local'],
 		qr{New merge ticket: $suuid:/trunk:203});
 is_output_like ($svk, 'info', ['//local'],
 		qr'Merged From: /trunk, Rev. 65');
+}

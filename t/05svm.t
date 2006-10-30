@@ -18,7 +18,7 @@ $svk->copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for 
 
 my $uri = uri($srepospath);
 is_output ($svk, 'mirror', ['//m', $uri.($spath eq '/' ? '' : $spath)],
-	   ['Committed revision 1.']);
+	   ['Mirror initialized.  Run svk sync //m to start mirroring.']);
 
 is_output ($svk, 'mirror', [$uri.($spath eq '/' ? '' : $spath), '//m'],
 	   ['/m already exists.']);

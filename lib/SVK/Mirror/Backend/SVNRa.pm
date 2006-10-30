@@ -83,7 +83,7 @@ sub load {
 =cut
 
 sub create {
-    my ($class, $mirror) = @_;
+    my ($class, $mirror, $backend, $args, $txn, $editor) = @_;
 
     my $self = $class->SUPER::new({ mirror => $mirror });
 
@@ -102,20 +102,26 @@ sub create {
 
     $self->_check_overlap;
 
-    # note that the ->source is splitted with '!' and put into source_root and source_path (or something)
-
-    my $t = SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )->refresh_revision;
-    my ($editor, %cb) = $t->get_dynamic_editor(
-        ignore_mirror => 1,
-        author        => $ENV{USER},
-    );
-    $cb{txn}->change_prop( 'svm:headrev', "$uuid:0" );
+    unless ($txn) {
+        my $t =
+          SVK::Path->real_new( { depot => $mirror->depot, path => '/' } )
+          ->refresh_revision;
+        my %opt;
+        ( $editor, %opt ) = $t->get_dynamic_editor(
+            ignore_mirror => 1,
+            author        => $ENV{USER},
+        );
+        $opt{txn}->change_prop( 'svm:headrev', "$uuid:0" );
+    }
+    else {
+        $txn->change_prop( 'svm:headrev', "$uuid:0" );
+    }
     my $dir_baton = $editor->add_directory( substr($self->mirror->path, 1), 0, undef, -1 );
     $editor->change_dir_prop( $dir_baton, 'svm:uuid', $uuid);
     $editor->change_dir_prop( $dir_baton, 'svm:source', $source_root.'!'.$source_path );
     $editor->close_directory($dir_baton);
     $editor->adjust;
-    $editor->close_edit;
+    $editor->close_edit unless $txn;
 
     $mirror->server_uuid( $uuid );
 

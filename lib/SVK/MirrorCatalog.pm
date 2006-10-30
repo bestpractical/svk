@@ -66,13 +66,6 @@ sub load_from_path { # DEPRECATED: only used by ::Command::Sync
     return $mirrors{$path};
 }
 
-sub add_entry {
-    my ($self, $path, $source, @options) = @_;
-    my $m = $self->svnmirror_object
-	( $path, source => $source, options => \@options );
-    $m->init;
-}
-
 sub unlock {
     my ($self, $path) = @_;
     my $m = $self->svnmirror_object
@@ -93,15 +86,6 @@ sub is_mirrored {
     $path =~ s/^\Q$mpath\E//;
     return wantarray ? ($m, $path) : $m;
 }
-
-sub add_mirror {
-    my ($self, $mirror) = @_;
-    # SVNMIRROR XXX: switch away from svnmirror
-    my $m = $self->svnmirror_object
-	( $mirror->path, source => $mirror->url );
-    $m->init;
-}
-
 
 package SVK::MirrorCatalog::Entry;
 use base 'Class::Accessor::Fast';

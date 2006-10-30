@@ -211,7 +211,8 @@ sub get_editor {
 		      return ($path, scalar $m->find_remote_rev($rev)); });
     }
 
-    my $txn = $self->repos->fs_begin_txn_for_commit
+    warn "has $arg{txn}" if $arg{txn};
+    my $txn = $arg{txn} || $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
 
     $txn->change_prop('svk:commit', '*')
@@ -225,7 +226,7 @@ sub get_editor {
 	    send_fulltext => 1,
 	    post_handler => $post_handler_ref,
 	    txn => $txn,
-            aborts_txn => 1,
+            aborts_txn => $arg{txn} ? 0 : 1,
 	    cb_rev => sub { $root_baserev },
 	    cb_copyfrom => sub { $self->as_url(1, @_) });
 }

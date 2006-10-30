@@ -41,12 +41,22 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $target, $source, @options) = @_;
-    die loc ("%1 already exists.\n", $target->path)
-	if $target->root->check_path ($target->path);
-    $target->mirror->add_entry($target->path_anchor, $source, @options)
-        or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
-		   $target->depotpath);
+    my ( $self, $target, $source, @options ) = @_;
+    die loc( "%1 already exists.\n", $target->path )
+      if $target->root->check_path( $target->path );
+
+    SVK::Mirror->create(
+        {
+            depot   => $target->depot,
+            path    => $target->path,
+            backend => 'SVNRa',
+            url     => "$source", # this can be an URI object
+            pool    => SVN::Pool->new
+        }
+    );
+
+    print loc("Mirror initialized.  Run svk sync %1 to start mirroring.\n", $target->report);
+
     return;
 }
 
