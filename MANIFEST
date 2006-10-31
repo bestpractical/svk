@@ -53,6 +53,7 @@ lib/SVK/Command/Info.pm
 lib/SVK/Command/List.pm
 lib/SVK/Command/Log.pm
 lib/SVK/Command/Merge.pm
+lib/SVK/Command/Mirror.pm
 lib/SVK/Command/Mkdir.pm
 lib/SVK/Command/Move.pm
 lib/SVK/Command/Patch.pm
