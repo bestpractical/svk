@@ -161,6 +161,44 @@ sub _check_overlap {
     }
 }
 
+=item relocate($newurl)
+
+=cut
+
+sub relocate {
+    my ($self, $source, $options) = @_;
+
+    $source =~ s{/+$}{}g;
+    my $ra = $self->_new_ra(url => $source);
+    my $ra_uuid = $ra->get_uuid;
+    my $mirror = $self->mirror;
+    die loc("Mirror source UUIDs differ.\n")
+	unless $ra_uuid eq $mirror->server_uuid;
+    $self->source_root( $ra->get_repos_root );
+    $mirror->url($source);
+
+    $self->_do_relocate;
+}
+
+sub _do_relocate {
+    my ($self) = @_;
+    my $mirror = $self->mirror;
+    my $t = $mirror->get_svkpath;
+
+    my ( $editor, %opt ) = $t->get_dynamic_editor(
+        ignore_mirror => 1,
+        message       => loc( 'Mirror relocated to %1', $mirror->url ),
+        author        => $ENV{USER},
+    );
+    $opt{txn}->change_prop( 'svm:headrev', join(':', $mirror->server_uuid, $self->fromrev ) );
+    $opt{txn}->change_prop( 'svm:incomplete', '*');
+
+    $editor->change_dir_prop( 0, 'svm:source', $self->source_root.'!'.$self->source_path );
+    $editor->adjust;
+    $editor->close_edit;
+}
+
+
 sub has_replay {
     my $self = shift;
     return $self->_has_replay if defined $self->_has_replay;

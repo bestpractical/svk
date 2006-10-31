@@ -43,6 +43,11 @@ sub _init_state {
     return $self;
 }
 
+sub _do_relocate {
+    my ($self) = @_;
+    $self->mirror->depot->reposfs->change_rev_prop( 0, 'svn:svnsync:from-url',  $self->mirror->url );
+}
+
 sub find_rev_from_changeset {
     return $_[0];
 }

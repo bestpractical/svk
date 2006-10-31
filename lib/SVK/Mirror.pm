@@ -285,7 +285,7 @@ sub get_svkpath {
 }
 
 for my $delegate
-    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path )
+    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path relocate )
 {
     no strict 'refs';
     *{$delegate} = sub {

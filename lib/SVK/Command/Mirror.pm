@@ -63,11 +63,8 @@ use SVK::I18N;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-
-    # FIXME: add tests and implement
-    my $m = $target->is_mirrored;
-    $m->relocate($source, @options);
-
+    $target->is_mirrored->relocate($source, @options);
+    print loc("Mirror relocated.\n");
     return;
 }
 
