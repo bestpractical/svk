@@ -56,6 +56,8 @@ sub load {
     my ($class, $mirror) = @_;
     my $self = $class->SUPER::new( { mirror => $mirror } );
     my $t = $mirror->get_svkpath;
+    die loc( "%1 is not a mirrored path.\n", $t->depotpath )
+        unless $t->root->check_path( $mirror->path );
 
     my $uuid = $t->root->node_prop($t->path, 'svm:uuid');
     my $ruuid = $t->root->node_prop($t->path, 'svm:ruuid') || $uuid;

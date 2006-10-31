@@ -35,7 +35,7 @@ local $TODO = 'better message';
 is_output ($svk, 'sync', ['//'],
 	   ['// is not a mirrored path.']);
 is_output ($svk, 'sync', ['//what'],
-	   ['// is not a mirrored path.']);
+	   ['//what is not a mirrored path.']);
 }
 is_output ($svk, 'sync', ['/what/'],
 	   ["No such depot: what."]);

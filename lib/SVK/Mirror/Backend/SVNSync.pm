@@ -1,6 +1,7 @@
 package SVK::Mirror::Backend::SVNSync;
 use strict;
 use base 'SVK::Mirror::Backend::SVNRa';
+use SVK::I18N;
 
 sub _do_load_fromrev {
     my $self = shift;
@@ -15,6 +16,8 @@ sub load {
     $mirror->server_uuid( $fs->revision_prop( 0, 'svn:svnsync:from-uuid' ) );
     $mirror->source_uuid( $fs->revision_prop( 0, 'svn:svnsync:from-uuid' ) );
 
+    die loc("%1 is not a mirrored path.\n", "/".$self->mirror->depot->depotname."/")
+	unless $mirror->url;
     $self->source_root( $mirror->url );
     $self->source_path('');
 
@@ -28,8 +31,11 @@ sub _init_state {
     die loc( "Must replicate whole repository at %1.\n", $mirror->url )
         if $self->source_path;
 
-    # XXX: die on existing state
     my $fs = $mirror->depot->repos->fs;
+    if ( my $from = $fs->revision_prop( 0, 'svn:svnsync:from-url' ) ) {
+        die loc( "%1 is already a mirror of %2.\n",
+            "/" . $mirror->depot->depotname . "/", $from );
+    }
     $fs->change_rev_prop( 0, 'svn:svnsync:from-url',  $mirror->url );
     $fs->change_rev_prop( 0, 'svn:svnsync:from-uuid', $mirror->server_uuid );
 
