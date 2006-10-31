@@ -30,13 +30,11 @@ is_output ($svk, 'mirror', ['--upgrade'],
 is_output ($svk, 'mirror', ['--upgrade', '//m'],
 	   ['nothing to upgrade']);
 
-TODO: {
-local $TODO = 'better message';
 is_output ($svk, 'sync', ['//'],
 	   ['// is not a mirrored path.']);
 is_output ($svk, 'sync', ['//what'],
 	   ['//what is not a mirrored path.']);
-}
+
 is_output ($svk, 'sync', ['/what/'],
 	   ["No such depot: what."]);
 $svk->sync (-a => '/what/',
