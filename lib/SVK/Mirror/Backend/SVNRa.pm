@@ -198,24 +198,47 @@ sub _do_relocate {
     $editor->close_edit;
 }
 
+=item has_replay_api
+
+Returns if the svn client library has replay capability
+
+=cut
+
+sub has_replay_api {
+    my $self = shift;
+    return unless _p_svn_ra_session_t->can('replay');
+
+    # The Perl bindings shipped with 1.4.0 has broken replay support
+    return $SVN::Core::VERSION gt '1.4.0';
+}
+
+=item has_replay
+
+Returns if we can do ra_replay with the mirror source url.
+
+=cut
 
 sub has_replay {
     my $self = shift;
     return $self->_has_replay if defined $self->_has_replay;
 
-    return $self->_has_replay(0) unless _p_svn_ra_session_t->can('replay');
+    return $self->_has_replay(0) unless $self->has_replay_api;
 
     my $ra = $self->_new_ra;
+
+    my $err;
+    {
+    local $SVN::Error::handler = sub { $err = $_[0]; die \'error handled' };
     if (eval { $ra->replay(0, 0, 0, SVK::Editor->new); 1}) {
 	$self->_ra_finished($ra);
 	return $self->_has_replay(1);
     }
-
+}
     $self->_ra_finished($ra);
     return $self->_has_replay(0)
-        if $@ =~ m/not implemented/ || $@ =~ m/unsupported feature/;
-
-    die $@;
+      if $err->apr_err == $SVN::Error::RA_NOT_IMPLEMENTED      # ra_svn
+      || $err->apr_err == $SVN::Error::UNSUPPORTED_FEATURE;    # ra_dav
+    die $err->expanded_message;
 }
 
 sub _new_ra {
