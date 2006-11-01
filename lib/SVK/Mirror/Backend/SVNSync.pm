@@ -68,6 +68,7 @@ sub sync_changeset {
     );
 
     my $ra = $self->_new_ra;
+    my $pool = SVN::Pool->new_default;
     if ( my $revprop = $self->mirror->depot->mirror->revprop ) {
         my $prop = $ra->rev_proplist($changeset);
         for (@$revprop) {
