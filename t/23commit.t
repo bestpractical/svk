@@ -293,7 +293,6 @@ is_output(
     $svk, 'pl', ['-r' => 22, '--revprop'],
     ['Unversioned properties on revision 22:',
      '  fnord',
-     '  svk:copy_cache_prev',
      '  svn:author',
      '  svn:date',
      '  svn:log',

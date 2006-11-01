@@ -52,7 +52,7 @@ sub _do_info {
 	# XXX: last changed date
     }
 
-    print loc("Mirrored From: %1, Rev. %2\n",$m->{source},$m->{fromrev})
+    print loc("Mirrored From: %1, Rev. %2\n",$m->url, $m->fromrev)
 	if $m;
 
     for ($target->copy_ancestors) {

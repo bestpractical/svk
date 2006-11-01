@@ -6,7 +6,7 @@ SVN::Repos->can ('get_commit_editor2')
 eval { require Text::Thread; 1 }
     or plan (skip_all => "Text::Thread required for testing patchset");
 
-plan_svm tests => 3;
+plan tests => 3;
 our $output;
 
 # build another tree to be mirrored ourself

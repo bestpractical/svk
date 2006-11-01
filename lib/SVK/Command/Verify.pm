@@ -16,10 +16,10 @@ sub parse_arg {
 }
 
 sub _verify {
-    my ($repos, $sig, $chg) = @_;
-    my $fs = $repos->fs;
-    my $editor = SVK::VerifyEditor->new ( sig => $sig,
-					  repos => $repos );
+    my ($depot, $sig, $chg) = @_;
+    my $fs = $depot->repos->fs;
+    my $editor = SVK::VerifyEditor->new ({ sig => $sig,
+					   depot => $depot });
 
     # should really just use paths_changed
     SVN::Repos::dir_delta ($fs->revision_root ($chg-1), '/', '',
@@ -38,7 +38,7 @@ sub run {
     my $target = $self->arg_depotpath ("/$depot/");
     my $fs = $target->repos->fs;
     my $sig = $fs->revision_prop ($chg, 'svk:signature');
-    return _verify ($target->repos, $sig, $chg)
+    return _verify($target->depot, $sig, $chg)
 	if $sig;
     print "No signature found for change $chg at /$depot/.\n";
     return;
@@ -46,9 +46,8 @@ sub run {
 
 # XXX: Don't need this editor once root->paths_changed is available.
 package SVK::VerifyEditor;
-use autouse 'SVK::Util' => qw(resolve_svm_source);
-require SVN::Delta;
-our @ISA = ('SVN::Delta::Editor');
+use base 'SVK::Editor';
+__PACKAGE__->mk_accessors(qw(depot sig));
 
 sub add_file {
     my ($self, $path, @arg) = @_;
@@ -67,7 +66,7 @@ sub close_file {
 
 sub close_edit {
     my ($self, $baton) = @_;
-    my $sig = $self->{sig};
+    my $sig = $self->sig;
     local *D;
     # verify the signature
     my $pgp = $ENV{SVKPGP} || 'gpg';
@@ -84,7 +83,9 @@ sub close_edit {
     my $header = '-----BEGIN PGP SIGNED MESSAGE-----';
     $sig =~ s/^.*$header/$header/s;
     my ($anchor) = $sig =~ m/^ANCHOR: (.*)$/m;
-    my ($path) = resolve_svm_source ($self->{repos}, split (':', $anchor));
+    my ($path) = $self->depot->find_local_mirror(split(':', $anchor));
+    $path ||= (split(':', $anchor))[1];
+
     while ($sig =~ m/^MD5\s(.*?)\s(.*?)$/gm) {
 	my ($md5, $filename) = ($1, $2);
 	my $checksum = delete $self->{checksum}{"$path/$filename"};

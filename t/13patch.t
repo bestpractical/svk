@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 49;
+plan tests => 49;
 
 use File::Copy qw( copy );
 our $output;

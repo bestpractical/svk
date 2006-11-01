@@ -7,11 +7,12 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
+use SVK::Editor::Dynamic;
 use SVK::Command::Sync;
 use SVK::Editor::InteractiveCommitter;
 use SVK::Editor::InteractiveStatus;
 
-use SVK::Util qw( HAS_SVN_MIRROR get_buffer_from_editor slurp_fh read_file
+use SVK::Util qw( get_buffer_from_editor slurp_fh read_file
 		  tmpfile abs2rel find_prev_copy from_native to_native
 		  get_encoder get_anchor );
 
@@ -51,7 +52,7 @@ sub message_prompt {
 sub under_mirror {
     my ($self, $target) = @_;
     return if $self->{direct};
-    HAS_SVN_MIRROR and $target->is_mirrored;
+    return $target->is_mirrored;
 }
 
 sub fill_commit_message {
@@ -97,26 +98,25 @@ sub decode_commit_message {
 sub get_dynamic_editor {
     my ($self, $target) = @_;
     my $m = $self->under_mirror ($target);
-    my $anchor = $m ? $m->{target_path} : '/';
+    my $anchor = $m ? $m->path : '/';
     my ($storage, %cb) = $self->get_editor ($target->new (path => $anchor));
-    
-    my $editor = SVK::Editor::Rename->new
-	( editor => $storage,
-	  inspector => $self->{parent} ? $cb{inspector} : undef);
-     $editor->{_root_baton} = $editor->open_root ($cb{cb_rev}->(''));
+
+    my $editor = SVK::Editor::Dynamic->new
+	( editor => $storage, root_rev => $cb{cb_rev}->(''),
+	  inspector => $self->{parent} ? $cb{inspector} : undef );
+
     return ($anchor, $editor);
 }
 
 sub finalize_dynamic_editor {
     my ($self, $editor) = @_;
-    $editor->close_directory ($editor->{_root_baton});
     $editor->close_edit;
     delete $self->{save_message};
 }
 
 sub adjust_anchor {
     my ($self, $editor) = @_;
-    $editor->adjust_last_anchor;
+    $editor->adjust;
 }
 
 sub save_message {
@@ -135,7 +135,7 @@ sub _editor_for_patch {
     require SVK::Patch;
     my ($m);
     if (($m) = $target->is_mirrored) {
-	print loc("Patching locally against mirror source %1.\n", $m->{source});
+	print loc("Patching locally against mirror source %1.\n", $m->url);
     }
     die loc ("Illegal patch name: %1.\n", $self->{patch})
 	if $self->{patch} =~ m!/!;
@@ -155,9 +155,18 @@ sub _editor_for_patch {
     $target->refresh_revision;
     my %cb = SVK::Editor::Merge->cb_for_root
 	($target->root, $target->path_anchor,
-	 $m ? $m->{fromrev} : $target->revision);
+	 $m ? $m->fromrev : $target->revision);
     return ($patch->commit_editor ($fname),
 	    %cb, send_fulltext => 0);
+}
+
+sub _commit_callback {
+    my ($self, $callback) = @_;
+
+    return sub {
+	print loc("Committed revision %1.\n", $_[0]);
+	$callback->(@_) if $callback,
+    }
 }
 
 sub get_editor {
@@ -166,12 +175,29 @@ sub get_editor {
     return $self->_editor_for_patch($target, $source)
 	if defined $self->{patch};
 
+    if (   !$target->isa('SVK::Path::Checkout')
+        && !$self->{direct}
+        && ( my $m = $target->is_mirrored ) ) {
+        if ( $self->{check_only} ) {
+            print loc( "Checking locally against mirror source %1.\n", $m->url )
+		unless $self->{incremental};
+        }
+        else {
+            print loc("Commit into mirrored path: merging back directly.\n")
+                if ref($self) eq __PACKAGE__;    # XXX: output compat
+            print loc( "Merging back to mirror source %1.\n", $m->url );
+        }
+    }
+    else {
+	$callback = $self->_commit_callback($callback)
+    }
+
     my ($editor, $inspector, %cb) = $target->get_editor
 	( ignore_mirror => $self->{direct},
-	  caller => ref($self),
 	  check_only => $self->{check_only},
 	  callback => $callback,
 	  message => $self->{message},
+	  notify  => sub { print @_ },
 	  author => $ENV{USER} );
 
     # Note: the case that the target is an xd is actually only used in merge.
@@ -193,8 +219,7 @@ sub get_editor {
 	my $post_handler = $cb{post_handler};
 	if (my $m = $cb{mirror}) {
 	    $$post_handler = sub {
-		$m->_new_ra->change_rev_prop($_[0], 'svk:signature',
-					     $editor->{sig});
+                $m->change_rev_prop( $_[0], 'svk:signature', $editor->{sig} );
 		1;
 	    }
 	}
@@ -235,7 +260,7 @@ sub get_editor {
 
 sub exclude_mirror {
     my ($self, $target) = @_;
-    return () if $self->{direct} or !HAS_SVN_MIRROR;
+    return () if $self->{direct};
 
     ( exclude => {
 	map { substr ($_, length($target->path_anchor)) => 1 }

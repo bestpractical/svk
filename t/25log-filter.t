@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 24;
+plan tests => 24;
 
 # working copy initialization
 our $output;

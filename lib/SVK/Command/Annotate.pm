@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( traverse_history HAS_SVN_MIRROR );
+use SVK::Util qw( traverse_history );
 use Algorithm::Annotate;
 
 sub options {

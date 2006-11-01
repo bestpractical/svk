@@ -40,8 +40,8 @@ sub lock {
 sub do_delete_direct {
     my ($self, $target) = @_;
     my $m = $self->under_mirror ($target);
-    if ($m && $m->{target_path} eq $target->path) {
-	$m->delete;
+    if ($m && $m->path eq $target->path) {
+	$m->detach;
 	$target->refresh_revision;
 	undef $m;
     }

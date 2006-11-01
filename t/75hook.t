@@ -2,7 +2,7 @@
 use strict;
 use SVK::Util qw( is_executable );
 use SVK::Test;
-plan_svm tests => 2;
+plan tests => 2;
 our $output;
 
 mkpath ["t/checkout/repos-hook"], 0, 0700 unless -d "t/checkout/repos-hook";

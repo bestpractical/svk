@@ -2,7 +2,7 @@
 
 use strict;
 use SVK::Test;
-plan_svm tests => 12;
+plan tests => 12;
 
 our ($output, $answer);
 my ($xd, $svk) = build_test();

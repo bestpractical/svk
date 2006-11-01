@@ -22,6 +22,16 @@ sub new {
     return $self;
 }
 
+sub baton_at {
+    my ($self, $func) = @_;
+    Carp::cluck unless defined $func;
+    return -1
+	if $func eq 'set_target_revision' || $func eq 'open_root' ||
+	    $func eq 'close_edit' || $func eq 'abort_edit';
+    return 2 if $func eq 'delete_entry';
+    return $func =~ m/^(?:add|open|absent)/ ? 1 : 0;
+}
+
 # XXX: original behaviour of svn::delta::editor is "don't care" on
 # methods not implemented.  we shuold probably do warn and fix them.
 sub AUTOLOAD {}

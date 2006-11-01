@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 9;
+plan_svm tests => 11;
 
 our $output;
 # build another tree to be mirrored ourself
@@ -100,20 +100,25 @@ is_output_like($svk, 'log', [-r7 => '//m'],
 $svk->mkdir ('-m', 'fnord', '/new/A');
 
 ($srepospath, $spath, $srepos) = $xd->find_repos ('/new/A', 1);
-$svk->mirror ('//new', uri($srepospath).($spath eq '/' ? '' : $spath));
-$svk->sync ('//new');
+my $suri = uri($srepospath).($spath eq '/' ? '' : $spath);
+$svk->mirror ('//new', $suri);
+is_output($svk, 'sync', ['//new'],
+	  ['Syncing '.$suri,
+	   'Retrieving log information from 1 to 1',
+	   'Committed revision 10 from revision 1.']);
+
 is_output_like ($svk, 'smerge', ['-CI', '//m', '//new'],
 		qr"Can't find merge base for /m and /new");
 $svk->smerge ('-BCI', '//m', '//new');
 $svk->smerge ('-BI', '--remoterev', '--host', 'source', '//m', '//new');
 is ($srepos->fs->youngest_rev, 5);
 
-
 $svk->smerge ('-m', 'sync before simultaneous changes - pull', '//m', '//l');
 $svk->smerge ('-I', '//l', '//m');
 
 append_file ("$copath/Q/qu", "foo\n");
-$svk->commit ($copath, "-m", "simultaneous changes - local");
+is_output($svk, 'commit', [$copath, "-m", "simultaneous changes - local"],
+	  ['Committed revision 15.']);
 $svk->switch ('//m', $copath);
 append_file ("$copath/Q/qz", "bar\n");
 $svk->commit ($copath, "-m", "simultaneous changes - remote");

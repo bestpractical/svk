@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 use SVK::Test;
-plan_svm tests => 2;
+plan tests => 2;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -23,9 +23,11 @@ $svk->sync ('-a');
 $svk->mirror ('//m-branches', $uri.'/branches');
 $svk->sync ('-a');
 
+TODO: {
+local $TODO = "replay-based sync doesn't support this yet";
 is_ancestor ($svk, '//m-branches/hate',
 	     '/m-trunk', 4);
-
+}
 
 TODO: {
 local $TODO = 'mirror anchor being initialized with copy';

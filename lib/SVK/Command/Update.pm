@@ -6,7 +6,6 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR );
 
 sub options {
     ('r|revision=s'    => 'rev',
@@ -66,12 +65,10 @@ sub run {
         delete $self->{merge} if !$copied_from;
 
         if ($self->{sync}) {
-            die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
-
             # Because syncing under the mirror anchor is impossible,
             # we always sync from the mirror anchor.
-            my ($m, $mpath) = $sync_target->is_mirrored;
-            $m->run if $m->{source};
+            my $m = $sync_target->is_mirrored;
+            $m->run if $m;
         }
 
         if ($self->{merge}) {

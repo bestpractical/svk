@@ -2,9 +2,11 @@ package SVK::Path;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel HAS_SVN_MIRROR 
+use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel
 			       IS_WIN32 find_prev_copy get_depot_anchor );
-use SVK::Editor::TxnCleanup;
+use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup);
+use SVN::Delta;
+
 use SVK::Depot;
 use base 'SVK::Accessor';
 
@@ -21,7 +23,7 @@ use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
 
 for my $proxy (qw/depotname repos repospath mirror/) {
     no strict 'refs';
-    *{$proxy} = sub { my $self = shift; $self->depot->$proxy(@_) }
+    *{$proxy} = sub { my $self = shift; $self->depot; $self->depot->$proxy(@_) }
 }
 
 =head1 NAME
@@ -92,13 +94,12 @@ Returns true if all C<@other> targets are mirrored from the same source
 
 sub same_source {
     my ($self, @other) = @_;
-    return 0 unless HAS_SVN_MIRROR;
     return 0 unless $self->same_repos (@other);
     my $mself = $self->is_mirrored;
     for (@other) {
 	my $m = $_->is_mirrored;
 	return 0 if $m xor $mself;
-	return 0 if $m && $m->{target_path} ne $m->{target_path};
+	return 0 if $m && $m->path ne $m->path;
     }
     return 1;
 }
@@ -110,12 +111,16 @@ path component if used in array context.
 
 =cut
 
-
 sub is_mirrored {
     my ($self) = @_;
-    return unless HAS_SVN_MIRROR;
 
     return $self->mirror->is_mirrored($self->path_anchor);
+}
+
+sub mirror_source {
+    my ($self) = @_;
+
+    return $self->mirror->is_mirrored($self->path);
 }
 
 sub _commit_editor {
@@ -125,13 +130,9 @@ sub _commit_editor {
 	( $self->repos->get_commit_editor2
 	  ( $txn, "file://".$self->repospath,
 	    $self->path_anchor, undef, undef, # author and log already set
-	    sub { print loc("Committed revision %1.\n", $_[0]);
-		  if ($post_handler) {
+	    sub { if ($post_handler) {
 		      return unless $post_handler->($_[0]);
 		  }
-		  # build the copy cache as early as possible
-		  # XXX: don't need this when there's fs_closest_copy
-		  find_prev_copy ($self->repos->fs, $_[0]);
 		  $callback->(@_) if $callback; }, $pool
 	  ));
     return ($editor, \$post_handler);
@@ -169,39 +170,36 @@ sub get_editor {
     my $fs = $self->repos->fs;
     my $yrev = $fs->youngest_rev;
 
-    my $root_baserev = $m ? $m->{fromrev} : $yrev;
+    my $root_baserev = $m ? $m->fromrev : $yrev;
 
     my $inspector = $self->inspector;
 
-    # compat for old output
-    print loc("Commit into mirrored path: merging back directly.\n")
-	if $arg{caller} eq 'SVK::Command::Commit' && $m && !$arg{check_only};
     if ($arg{check_only}) {
-	print loc("Checking locally against mirror source %1.\n", $m->{source})
-	    if $m;
-	return (SVN::Delta::Editor->new, $inspector, 
+	return (SVN::Delta::Editor->new, $inspector,
 	        cb_rev => sub { $root_baserev },
 	        mirror => $m);
     }
 
+    $arg{notify} ||= sub {};
     my $callback = $arg{callback};
-    my $post_handler;
     if ($m) {
-	require SVK::Command::Sync;
-	print loc("Merging back to mirror source %1.\n", $m->{source});
-	$m->{lock_message} = SVK::Command::Sync::lock_message($self);
+	my $post_handler;
+	my $notify = $arg{notify};
+        my $mcallback = $arg{mcallback} ||= sub {
+            my $rev = shift;
+            $notify->( loc( "Merge back committed as revision %1.\n", $rev ) );
+            if ($post_handler) {
+                return unless $post_handler->($rev);
+            }
+            $m->run($rev);
+
+            # XXX: find_local_rev can fail
+            $callback->( $m->find_local_rev($rev), @_ )
+              if $callback;
+        };
+
 	my ($base_rev, $editor) = $m->get_merge_back_editor
-	    ($mpath, $arg{message},
-	     sub { my $rev = shift;
-		   print loc("Merge back committed as revision %1.\n", $rev);
-		   if ($post_handler) {
-		       return unless $post_handler->($rev);
-		   }
-		   $m->run($rev);
-		   # XXX: find_local_rev can fail
-		   $callback->($m->find_local_rev($rev), @_)
-		       if $callback }
-	    );
+	    ($mpath, $arg{message}, $mcallback);
 	$editor->{_debug}++ if $main::DEBUG;
 	return ($editor, $inspector,
 		mirror => $m,
@@ -209,29 +207,44 @@ sub get_editor {
 		cb_rev => sub { $root_baserev }, #This is the inspector baserev
 		cb_copyfrom =>
 		sub { my ($path, $rev) = @_;
-		      $path =~ s|^\Q$m->{target_path}\E|$m->{source}|;
+                      my ($m_path, $m_url) = ($m->path, $m->url);
+		      $path =~ s|^\Q$m_path\E|$m_url|;
 		      return ($path, scalar $m->find_remote_rev($rev)); });
     }
 
-    my $txn = $self->repos->fs_begin_txn_for_commit
+    warn "has $arg{txn}" if $arg{txn};
+    my $txn = $arg{txn} || $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
 
     $txn->change_prop('svk:commit', '*')
 	if $fs->revision_prop(0, 'svk:notify-commit');
 
-    my $editor;
-    ($editor, $post_handler) =
+    my ($editor, $post_handler_ref) =
 	$self->_commit_editor($txn, $callback);
     $editor = SVK::Editor::TxnCleanup->new(_editor => [$editor], txn => $txn);
 
     return ($editor, $inspector,
 	    send_fulltext => 1,
-	    post_handler => $post_handler, # inconsistent!
+	    post_handler => $post_handler_ref,
 	    txn => $txn,
-            aborts_txn => 1,
+            aborts_txn => $arg{txn} ? 0 : 1,
 	    cb_rev => sub { $root_baserev },
 	    cb_copyfrom => sub { $self->as_url(1, @_) });
 }
+
+sub get_dynamic_editor {
+    my $self = shift;
+
+    my ($editor, $inspector, %cb) = $self->get_editor( @_ );
+    $editor = SVK::Editor::Dynamic->new(
+        {   editor    => $editor,
+            root_rev  => $self->revision,
+            inspector => $inspector
+        }
+    );
+    return ($editor, %cb);
+}
+
 
 sub _to_pclass {
     my ($self, $path, $what) = @_;
@@ -264,6 +277,7 @@ sub normalize {
     my $root = $fs->revision_root($self->revision);
     $self->revision( ($root->node_history ($self->path)->prev(0)->location)[1] )
 	unless $self->revision == $root->node_created_rev ($self->path);
+    return $self;
 }
 
 =head2 as_depotpath
@@ -317,15 +331,30 @@ Returns corresponding L<SVK::Target::Universal> object.
 =cut
 
 sub universal {
-    SVK::Target::Universal->new ($_[0]);
+    my $self = shift;
+    $self = $self->clone->normalize if $self->revision;
+    my $path = $self->path;
+    my ($uuid, $rev);
+    my ($m, $mpath) = $self->mirror_source;
+
+    if ($m) {
+	$rev = $m->find_remote_rev($self->revision);
+	$uuid = $m->source_uuid;
+	$path = $m->source_path.$mpath;
+	$path ||= '/';
+    }
+    else {
+	$uuid = $self->repos->fs->get_uuid;
+        $rev = $self->revision;
+    }
+
+    return SVK::Target::Universal->new($uuid, $path, $rev);
 }
 
 sub contains_mirror {
-    require SVN::Mirror;
     my ($self) = @_;
     my $path = $self->_to_pclass($self->path_anchor, 'Unix');
-    my %mirrors = $self->mirror->entries;
-    return grep { $path->subsumes($_) } sort keys %mirrors;
+    return grep { $path->subsumes($_) } $self->mirror->entries;
 }
 
 =head2 depotpath
@@ -516,9 +545,9 @@ sub copied_from {
 	}
 
 	# Check for mirroredness.
-	if ($want_mirror and HAS_SVN_MIRROR) {
+	if ($want_mirror) {
 	    my ($m, $mpath) = $target->is_mirrored;
-	    $m->{source} or next;
+	    $m or next;
 	}
 
 	# It works!  Let's update it to the latest revision and return
@@ -690,7 +719,8 @@ sub as_url {
     my ($path, $rev) = ($_[2] || $self->path_anchor, $_[3] || $self->revision);
 
     if (!$local_only && (my $m = $self->is_mirrored)) {
-	$path =~ s/^\Q$m->{target_path}\E/$m->{source}/;
+        my ($m_path, $m_url) = ($m->path, $m->url);
+	$path =~ s/^\Q$m_path\E/$m_url/;
 	$path =~ s/%/%25/g;
         if (my $remote_rev = $m->find_remote_rev($rev)) {
             $rev = $remote_rev;

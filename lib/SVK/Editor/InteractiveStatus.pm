@@ -354,7 +354,7 @@ sub AUTOLOAD {
         add_file open_file add_directory open_directory apply_textdelta
         change_file_prop close_file change_dir_prop close_directory);
 
-    my $pos = SVK::Editor::Patch->baton_at($name);
+    my $pos = SVK::Editor->baton_at($name);
     if ($pos >= 0) {
         *$AUTOLOAD = sub {
             my ($action, $editor, @args) = @_;

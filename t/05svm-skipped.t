@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 use SVK::Test;
-plan_svm tests => 3;
+plan tests => 3;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -31,7 +31,6 @@ $svk->copy (-pm => 'here', '/test/trunk/foo' => '/test/trunk/bar');
 
 
 $svk->mirror ('//m-main', "$uri/trunk");
-
 $svk->sync('-a');
 
 is_ancestor($svk, '//m-main/bar', '/m-main/foo', 2);

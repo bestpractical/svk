@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 4;
+plan tests => 5;
 
 our ($output, $answer);
 # build another tree to which we want to mirror ourselves.
@@ -17,7 +17,11 @@ my ($drepospath, $dpath, $drepos) = $xd->find_repos ('/svm-empty/trunk', 1);
 my $uri = uri($drepospath);
 $svk->mirror ('//remote', $uri.($dpath eq '/' ? '' : $dpath));
 
-$svk->sync ('//remote');
+is_output($svk, 'sync', ['//remote'],
+	  ["Syncing $uri/trunk",
+	   'Retrieving log information from 1 to 2',
+	   'Committed revision 5 from revision 1.',
+	   'Committed revision 6 from revision 2.']);
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('//remote', 1);
 my $old_srev = $srepos->fs->youngest_rev;
 $svk->sync ('//remote');

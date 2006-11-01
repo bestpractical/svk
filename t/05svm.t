@@ -2,7 +2,7 @@
 use strict;
 use Test::More;
 use SVK::Test;
-plan_svm tests => 29;
+plan tests => 29;
 our ($output, $answer);
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('test');
@@ -18,7 +18,7 @@ $svk->copy ('-m', 'just make some more revisions', '/test/A', "/test/A-$_") for 
 
 my $uri = uri($srepospath);
 is_output ($svk, 'mirror', ['//m', $uri.($spath eq '/' ? '' : $spath)],
-	   ['Committed revision 1.']);
+	   ['Mirror initialized.  Run svk sync //m to start mirroring.']);
 
 is_output ($svk, 'mirror', [$uri.($spath eq '/' ? '' : $spath), '//m'],
 	   ['/m already exists.']);
@@ -30,23 +30,19 @@ is_output ($svk, 'mirror', ['--upgrade'],
 is_output ($svk, 'mirror', ['--upgrade', '//m'],
 	   ['nothing to upgrade']);
 
-TODO: {
-local $TODO = 'better message';
 is_output ($svk, 'sync', ['//'],
 	   ['// is not a mirrored path.']);
 is_output ($svk, 'sync', ['//what'],
-	   ['// is not a mirrored path.']);
-}
+	   ['//what is not a mirrored path.']);
+
 is_output ($svk, 'sync', ['/what/'],
 	   ["No such depot: what."]);
 $svk->sync (-a => '/what/',
 	    ["No such depot: what."]);
 
 $svk->sync ('//m');
-
 $svk->copy ('-m', 'branch', '//m', '//l');
 $svk->checkout ('//l', $copath);
-
 ok (-e "$corpath/be");
 append_file ("$copath/be", "from local branch of svm'ed directory\n");
 mkdir "$copath/T/";
@@ -163,7 +159,6 @@ is_output_like ($svk, 'mirror', ['--detach', '//m/T'],
             qr"inside", '--detach inside a mirrored path');
 
 is_output ($svk, 'mirror', ['--detach', '//m'], [
-            "Committed revision 19.",
             "Mirror path '//m' detached.",
             ], '--detach on mirrored path');
 
@@ -191,7 +186,9 @@ is_output($svk, 'smerge', ['-m', '', '--sync', '--from', $copath4], [
         ]);
 
 is_output ($svk, 'delete', ['-m', 'die!', '//m-99'],
-        ['Committed revision 21.', 'Committed revision 22.']);
+        ['Committed revision 22.']);
+SKIP:{
+skip 'recover not implemented.', 4;
 
 $answer = 'y';
 is_output ($svk, 'mirror', ['--recover', '//m'],
@@ -228,3 +225,4 @@ is_output ($svk, 'ps', ['foo' => 'bar', -m => 'ps on mirror', '//m/Q-moved'],
 	    'Retrieving log information from 32 to 32',
 	    'Committed revision 27 from revision 32.']);
 
+}

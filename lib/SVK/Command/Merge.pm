@@ -93,7 +93,7 @@ sub run {
     if ($self->{sync}) {
         my $sync = $self->command ('sync');
 	if (my $m = $src->is_mirrored) {
-            $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->{target_path}));
+            $sync->run($self->arg_depotpath('/' . $src->depotname .  $m->path));
             $src->refresh_revision;
         }
     }
@@ -160,7 +160,6 @@ sub run {
                 return 1;
             },
         );
-
 	my $spool = SVN::Pool->new_default;
 	my $previous_base;
 	if ($self->{check_only}) {

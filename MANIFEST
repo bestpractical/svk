@@ -81,6 +81,7 @@ lib/SVK/Editor/Combine.pm
 lib/SVK/Editor/Combiner.pm
 lib/SVK/Editor/Composite.pm
 lib/SVK/Editor/Copy.pm
+lib/SVK/Editor/CopyHandler.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/InteractiveCommitter.pm
@@ -90,6 +91,7 @@ lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
+lib/SVK/Editor/SubTree.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/TxnCleanup.pm
 lib/SVK/Editor/View.pm
@@ -124,6 +126,9 @@ lib/SVK/MimeDetect/FileLibMagic.pm
 lib/SVK/MimeDetect/FileMMagic.pm
 lib/SVK/MimeDetect/FileType.pm
 lib/SVK/MimeDetect/Internal.pm
+lib/SVK/Mirror.pm
+lib/SVK/Mirror/Backend/SVNRa.pm
+lib/SVK/Mirror/Backend/SVNSync.pm
 lib/SVK/MirrorCatalog.pm
 lib/SVK/Notify.pm
 lib/SVK/Patch.pm
@@ -273,6 +278,7 @@ t/mirror/sync-escape.t
 t/mirror/sync-failed-hook.t
 t/mirror/sync-replaced-nocopy.t
 t/mirror/sync-replaced.t
+t/mirror/sync-replicate.t
 t/svk-sec.gpg
 t/svk.gpg
 utils/extract-docs

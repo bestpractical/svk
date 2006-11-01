@@ -2,11 +2,11 @@ package SVK::MirrorCatalog;
 use strict;
 
 use base 'Class::Accessor::Fast';
-use SVK::Util qw( HAS_SVN_MIRROR );
 use SVK::Path;
+use SVK::Mirror;
 use SVK::Config;
 
-__PACKAGE__->mk_accessors(qw(repos cb_lock revprop));
+__PACKAGE__->mk_accessors(qw(depot repos cb_lock revprop));
 
 =head1 NAME
 
@@ -25,90 +25,62 @@ my %mirror_cached;
 
 sub entries {
     my $self = shift;
-    return unless HAS_SVN_MIRROR;
+    my %mirrors = $self->_entries;
+    return sort keys %mirrors;
+}
+
+sub _entries {
+    my $self = shift;
     my $repos  = $self->repos;
     my $rev = $repos->fs->youngest_rev;
     delete $mirror_cached{$repos}
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
     return %{$mirror_cached{$repos}{hash}}
 	if exists $mirror_cached{$repos};
+
+    if ($repos->fs->revision_prop(0, 'svn:svnsync:from-url')) {
+	$mirror_cached{$repos} = { rev => $rev, hash => { '/' => 1 } };
+	return ( '/' => 1 );
+    }
+
+    my @mirrors = grep length,
+        ( $repos->fs->revision_root($rev)->node_prop( '/', 'svm:mirror' )
+            || '' ) =~ m/^(.*)$/mg;
+
     my %mirrored = map {
-	my $m;
 	local $@;
 	eval {
-	    $m = $self->svnmirror_object( $_, get_source => 1);
-	    $m->init;
+            SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
 	    1;
 	};
-	$@ ? () : ($_ => SVK::MirrorCatalog::Entry->new({mirror => $m}))
-    } SVN::Mirror::list_mirror($repos);
+        $@ ? () : ($_ => 1)
+
+    } @mirrors;
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
     return %mirrored;
 }
 
-sub svnmirror_object {
-    my ($self, $path, %arg) = @_;
-    SVN::Mirror->new
-	( target_path    => $path,
-	  repos          => $self->repos,
-	  config         => SVK::Config->svnconfig,
-	  revprop        => $self->revprop,
-	  pool           => SVN::Pool->new,
-	  %arg);
-}
-
-sub load_from_path {
+sub get {
     my ($self, $path) = @_;
-    my $m = $self->svnmirror_object
-	( $path,  get_source => 1 );
-    $m->init;
-    return SVK::MirrorCatalog::Entry->new({ mirror => $m });
-}
-
-sub add_entry {
-    my ($self, $path, $source, @options) = @_;
-    my $m = $self->svnmirror_object
-	( $path, source => $source, options => \@options );
-    $m->init;
+    Carp::cluck if ref($path);
+    return SVK::Mirror->load( { path => $path, depot => $self->depot, pool => SVN::Pool->new });
 }
 
 sub unlock {
     my ($self, $path) = @_;
-    my $m = $self->svnmirror_object
-	( $path,  get_source => 1, ignore_lock => 1 );
-    $m->init;
-    $m->unlock('force')
+    $self->get($path)->unlock('force');
 }
 
 sub is_mirrored {
     my ($self, $path) = @_;
-    my %mirrors = $self->entries;
     # XXX: check there's only one
-    my ($mpath) = grep { SVK::Path->_to_pclass($_, 'Unix')->subsumes($path) }
-	keys %mirrors;
+    my ($mpath) = grep { SVK::Path->_to_pclass($_, 'Unix')->subsumes($path) } $self->entries;
     return unless $mpath;
 
-    my $m = $mirrors{$mpath}->mirror;
+    my $m = $self->get($mpath);
     $path =~ s/^\Q$mpath\E//;
     return wantarray ? ($m, $path) : $m;
-}
-
-package SVK::MirrorCatalog::Entry;
-use base 'Class::Accessor::Fast';
-
-__PACKAGE__->mk_accessors(qw(mirror));
-
-sub sync {
-    my ($self, %arg) = @_;
-    $self->mirror->{$_} = $arg{$_} for keys %arg;
-    $self->mirror->run($arg{torev});
-}
-
-sub spec {
-    my $self = shift;
-    my $m = $self->mirror;
-    return join(':', $m->{source_uuid}, $m->{source_path});
 }
 
 =head1 SEE ALSO

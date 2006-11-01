@@ -15,9 +15,11 @@ my $uri = uri($srepospath);
 
 $svk->mirror ('//test-A', "$uri/A");
 is_output ($svk, 'sync', ['--skipto', 'HEAD', '//test-A'],
-	   ["Syncing $uri/A",
+	   [(map {qr/.*/} (1..8)),
+	    "Syncing $uri/A",
 	    'Retrieving log information from 2 to 2',
-	    'Committed revision 2 from revision 2.']);
+	    'Committed revision 2 from revision 2.',
+	    "Syncing $uri/A"]);
 
 $svk->rm ('-m', 'redo mirror', '//test-A/');
 $svk->mirror ('//test-A', "$uri/A");
@@ -26,9 +28,12 @@ $svk->mkdir ('-m', 'oh ya', '/test/Z');
 
 # find the proper HEAD
 is_output ($svk, 'sync', ['--skipto', 'HEAD', '//test-A'],
-	   ["Syncing $uri/A",
+	   [(map {qr/.*/} (1..8)),
+	    "Syncing $uri/A",
 	    'Retrieving log information from 2 to 2',
-	    'Committed revision 6 from revision 2.']);
+	    'Committed revision 6 from revision 2.',
+	    "Syncing $uri/A",
+	    'Retrieving log information from 3 to 3']);
 
 $svk->mirror ('//test-Z', "$uri/Z");
 

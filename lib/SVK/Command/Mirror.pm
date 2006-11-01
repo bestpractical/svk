@@ -4,7 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
-use SVK::Util qw( HAS_SVN_MIRROR is_uri get_prompt traverse_history );
+use SVK::Util qw( is_uri get_prompt traverse_history );
 
 use constant narg => undef;
 
@@ -21,7 +21,6 @@ sub lock {} # override commit's locking
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
 
     @arg = ('//') if $self->{upgrade} and !@arg;
     return if !@arg;
@@ -41,12 +40,20 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $target, $source, @options) = @_;
-    die loc ("%1 already exists.\n", $target->path)
-	if $target->root->check_path ($target->path);
-    $target->mirror->add_entry($target->path_anchor, $source, @options)
-        or die loc("%1 already mirrored, use 'svk mirror --detach' to remove it first.\n",
-		   $target->depotpath);
+    my ( $self, $target, $source, @options ) = @_;
+
+    SVK::Mirror->create(
+        {
+            depot   => $target->depot,
+            path    => $target->path,
+            backend => 'SVNRa',
+            url     => "$source", # this can be an URI object
+            pool    => SVN::Pool->new
+        }
+    );
+
+    print loc("Mirror initialized.  Run svk sync %1 to start mirroring.\n", $target->report);
+
     return;
 }
 
@@ -56,10 +63,8 @@ use SVK::I18N;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    $target->depot->mirror
-	->svnmirror_object($target->path_anchor,
-			   source => $source, options => \@options)
-	->relocate;
+    $target->is_mirrored->relocate($source, @options);
+    print loc("Mirror relocated.\n");
     return;
 }
 
@@ -76,7 +81,7 @@ sub run {
     die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
     die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
 
-    $m->delete(1); # remove svm:source and svm:uuid too
+    $m->detach(1); # remove svm:source and svm:uuid too
     print loc("Mirror path '%1' detached.\n", $target->depotpath);
     return;
 }
@@ -89,7 +94,7 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    SVN::Mirror::upgrade ($target->repos);
+    print loc("nothing to upgrade\n");
     return;
 }
 
@@ -107,14 +112,12 @@ sub run {
 }
 
 package SVK::Command::Mirror::list;
-use SVK::Util qw( HAS_SVN_MIRROR );
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 use List::Util qw( max );
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    die loc("cannot load SVN::Mirror") unless HAS_SVN_MIRROR;
     return (@arg ? @arg : undef);
 }
 
@@ -135,11 +138,10 @@ sub run {
             warn loc( "Depot /%1/ not loadable.\n", $depot );
             next DEPOT;
         }
-        my %mirrors = $target->depot->mirror->entries;
         my $depot_name = $target->depotname;
-        foreach my $path ( sort keys %mirrors ) {
-            my $m = $mirrors{$path};
-            push @mirror_columns, [ "/$depot_name$path", $m->mirror->{source} ];
+        foreach my $path ( $target->depot->mirror->entries ) {
+            my $m = $target->depot->mirror->get($path);
+            push @mirror_columns, [ "/$depot_name$path", $m->url ];
         }
     }
 
@@ -164,10 +166,9 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    $source = ("file://".$target->repospath);
-    my $m = $target->depot->mirror
-	->svnmirror_object($target->path_anchor,
-			   source => $source, options => \@options);
+    die loc("recover not supported.\n");
+    my ($m, $mpath) = $target->is_mirrored;
+
     $self->recover_headrev ($target, $m);
     $self->recover_list_entry ($target, $m);
     return;
@@ -176,7 +177,7 @@ sub run {
 sub recover_headrev {
     my ($self, $target, $m) = @_;
 
-    my $fs = $m->{fs};
+    my $fs = $target->repos->fs;
     my ($props, $headrev, $rev, $firstrev, $skipped, $uuid, $rrev);
 
     traverse_history (
