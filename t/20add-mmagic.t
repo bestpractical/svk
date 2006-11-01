@@ -17,6 +17,7 @@ create_mime_samples('mime');
 SKIP: {
     eval { require File::MMagic };
     skip 'File::MMagic is not installed', 2 if $@;
+    diag 'File::MMagic version ' . File::MMagic->VERSION;
 
     local $ENV{SVKMIME} = 'File::MMagic';
     is_output ($svk, 'add', ['mime'],

@@ -17,6 +17,7 @@ create_mime_samples('mime');
 SKIP: {
     eval { require File::Type };
     skip 'File::Type is not installed', 2 if $@;
+    diag "File::Type version " . File::Type->VERSION;
 
     local $ENV{SVKMIME} = 'File::Type';
     is_output ($svk, 'add', ['mime'],
