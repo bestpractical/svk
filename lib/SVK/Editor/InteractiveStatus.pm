@@ -543,9 +543,14 @@ sub on_apply_textdelta {
 
     {
         # XXX: some swig build doesn't like like mg $/ used in
-        # SVN::Stream::readline
-        local $/ = "$/";
-        $self->{old_content} = [<$fh1>];
+        # SVN::Stream::readline, so we have to deal with the complicated last newline
+        local $/;
+        my $buf = <$fh1>;
+        if (length $buf) {
+            $self->{old_content} = [map { "$_\n" } $buf =~ m/^.*$/mg ];
+            substr($self->{old_content}[-1], -1, 1, '')
+                if substr($buf, -1, 1) ne "\n";
+        }
     }
     $self->{new_content} = '';
     open my $fh2, '>', \$self->{new_content};
