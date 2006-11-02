@@ -64,6 +64,7 @@ print bless(
     'SVN::Dump::Record'
 )->as_string;
 
+my $prev;
 for my $rev (@revs) {
     $pool->clear;
 
@@ -79,6 +80,13 @@ for my $rev (@revs) {
     while ( my $record = $dump->next_record() ) {
         next if exists $record->{headers}{'SVN-fs-dump-format-version'};
         next if exists $record->{headers}{'UUID'};
+	# padding
+	if ($prev) {
+	    for my $pad ($prev+1 .. $rrev-1) {
+		print pad_rev($pad)->as_string;
+		++$prev;
+	    }
+	}
 
         my $translate = sub {
             my $rec = shift;
@@ -110,8 +118,17 @@ for my $rev (@revs) {
 
         print $record->as_string;
     }
+    $prev = $rrev;
 
     printf STDERR "%d/%d\r", ++$i, scalar @revs;
+}
+
+sub pad_rev {
+    my $rev = shift;
+    my $pad = SVN::Dump::Record->new;
+    $pad->set_headers(SVN::Dump::Headers->new);
+    $pad->{headers}{ 'Revision-number' } = $rev;
+    return $pad;
 }
 
 sub recal_header {
