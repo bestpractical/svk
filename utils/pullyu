@@ -4,6 +4,11 @@ use SVK;
 use SVK::XD;
 use SVN::Repos;
 use SVK::Util 'traverse_history';
+use Getopt::Long;
+
+my $revspec;
+
+die unless GetOptions ("r|revision=s@" => \$revspec);
 
 # XXX: requires patch to svn::dump 0.01
 use SVN::Dump;
@@ -11,15 +16,17 @@ use SVN::Dump;
 my $repospath = shift or die "repospath required.\n";
 my $path      = shift or die "path required.\n";
 
-my $repos = SVN::Repos::open($repospath);
-
-my $xd = SVK::XD->new;
-my $t  = SVK::Path->real_new(
-    { repos => $repos, path => $path, mirror => $xd->mirror($repos) } )
+my $repos = SVN::Repos::open($repospath) or die $!;
+my $depot = SVK::Depot->new({ depotname => '', repos => $repos, repospath => $repospath});
+my $t  = SVK::Path->real_new({ depot => $depot, path => $path })
     ->refresh_revision;
+
+my $r = $revspec ? (bless { revspec => $revspec}, 'SVK::Command')->parse_revlist($t) : [0];
+$r->[1] ||= $t->revision;
 
 my ( $m, $mpath ) = $t->is_mirrored;
 die "only whole repository mirrors are supported.\n" if length($mpath);
+$t->revision($r->[1]);
 $t->normalize;
 
 my @revs;
@@ -30,6 +37,7 @@ traverse_history(
     cross    => 0,
     callback => sub {
         my ( $path, $rev ) = @_;
+	return 0 if $rev < $r->[0];
         unshift @revs, $rev;
         1;
     }
@@ -39,7 +47,7 @@ autoflush STDERR 1;
 my $i    = 0;
 my $pool = SVN::Pool->new_default;
 
-my $prefix = substr( $m->{target_path}, 1 );
+my $prefix = substr( $m->path, 1 );
 
 print bless(
     {   headers => bless(
@@ -51,7 +59,7 @@ print bless(
 )->as_string;
 print bless(
     {   headers =>
-            bless( { 'UUID' => $m->{rsource_uuid} }, 'SVN::Dump::Headers' )
+            bless( { 'UUID' => $m->source_uuid }, 'SVN::Dump::Headers' )
     },
     'SVN::Dump::Record'
 )->as_string;
