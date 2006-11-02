@@ -228,6 +228,7 @@ sub unlock {
     my $fs = $self->repos->fs;
     if ($force) {
         for ( keys %{ $fs->revision_proplist(0) } ) {
+            next unless m/^svm:lock:/;
             $fs->change_rev_prop( 0, $_, undef );
         }
         return;
