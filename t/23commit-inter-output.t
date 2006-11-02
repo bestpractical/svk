@@ -252,6 +252,8 @@ is_output ($svk, 'commit', ['--interactive', '-m', 'foo2'],
      'Committed revision 2.'],
     'file modifications - output');
 
+exit;
+
 $svk->rm("A/deep/la");
 $svk->propset('one', "multi\nline", 'A/deep');
 

@@ -551,6 +551,7 @@ sub on_apply_textdelta {
             substr($self->{old_content}[-1], -1, 1, '')
                 if substr($buf, -1, 1) ne "\n";
         }
+	warn join(',', @{$self->{old_content}});
     }
     $self->{new_content} = '';
     open my $fh2, '>', \$self->{new_content};
