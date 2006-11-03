@@ -287,7 +287,7 @@ prevent other instances from modifying locked paths.
 
 sub lock {
     my ($self, $path) = @_;
-    if ($self->{checkout}->get ($path)->{lock}) {
+    if ($self->{checkout}->get ($path, 1)->{lock}) {
 	die loc("%1 already locked, use 'svk cleanup' if lock is stalled\n", $path);
     }
     $self->{checkout}->store ($path, {lock => $$});
@@ -604,7 +604,7 @@ sub create_xd_root {
     # In the simple case - only one revision entry found, it can be
     # for some descendents.  If so we actually need to construct
     # txnroot.
-    my ($simple, @bases) = $self->{checkout}->get($paths[0] || $copath);
+    my ($simple, @bases) = $self->{checkout}->get($paths[0] || $copath, 1);
     # XXX this isn't really right: we aren't guaranteed that $revbase
     # actually has the revision, it might just have a lock or
     # something
@@ -615,7 +615,7 @@ sub create_xd_root {
 
     my $pool = SVN::Pool->new;
     for (@paths) {
-	my $cinfo = $self->{checkout}->get ($_);
+	my $cinfo = $self->{checkout}->get ($_, 1);
 	my $path = abs2rel($_, $copath => $arg{path}, '/');
 	unless ($root) {
 	    my $base_rev = $cinfo->{revision};
@@ -752,7 +752,7 @@ sub do_delete {
 	     return if m/$ignore/;
 	     my $cpath = catdir($File::Find::dir, $_);
 	     no warnings 'uninitialized';
-	     return if $self->{checkout}->get ($cpath)->{'.schedule'}
+	     return if $self->{checkout}->get($cpath, 1)->{'.schedule'}
 		 eq 'delete';
 
 	     push @deleted, $cpath; 
@@ -1538,14 +1538,14 @@ Returns the L<Data::Hierarchy> entry and the schedule of the entry.
 =cut
 
 sub get_entry {
-    my ($self, $copath) = @_;
-    my $entry = $self->{checkout}->get($copath);
+    my ($self, $copath, $dont_clone) = @_;
+    my $entry = $self->{checkout}->get($copath, $dont_clone);
     return ($entry, $entry->{'.schedule'} || '');
 }
 
 sub resolved_entry {
     my ($self, $entry) = @_;
-    my $val = $self->{checkout}->get ($entry);
+    my $val = $self->{checkout}->get ($entry, 1);
     return unless $val && $val->{'.conflict'};
     $self->{checkout}->store ($entry, {%$val, '.conflict' => undef});
     print loc("%1 marked as resolved.\n", $entry);
@@ -1737,7 +1737,7 @@ sub _copy_source {
     my ($self, $entry, $copath, $root) = @_;
     return unless $entry->{scheduleanchor};
     my $descendent = abs2rel($copath, $entry->{scheduleanchor}, '', '/');
-    $entry = $self->{checkout}->get ($entry->{scheduleanchor})
+    $entry = $self->{checkout}->get ($entry->{scheduleanchor}, 1)
 	if $entry->{scheduleanchor} ne $copath;
     my $from = $entry->{'.copyfrom'} or return;
     $from .= $descendent;
@@ -1748,7 +1748,7 @@ sub _copy_source {
 sub get_props {
     my ($self, $root, $path, $copath, $entry) = @_;
     my $props = {};
-    $entry ||= $self->{checkout}->get ($copath) if $copath;
+    $entry ||= $self->{checkout}->get ($copath, 1) if $copath;
     my $schedule = $entry->{'.schedule'} || '';
 
     if (my ($source_path, $source_root) = $self->_copy_source ($entry, $copath, $root)) {

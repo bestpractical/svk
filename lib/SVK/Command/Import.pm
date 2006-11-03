@@ -35,7 +35,7 @@ sub parse_arg {
 
 sub lock {
     my ($self, $target, $source) = @_;
-    unless ($self->{xd}{checkout}->get ($source)->{depotpath}) {
+    unless ($self->{xd}{checkout}->get ($source, 1)->{depotpath}) {
 	$self->{xd}->lock ($source) if $self->{to_checkout};
 	return;
     }
@@ -79,7 +79,7 @@ sub run {
 	}
     }
 
-    unless (exists $self->{xd}{checkout}->get ($copath)->{depotpath}) {
+    unless (exists $self->{xd}{checkout}->get ($copath, 1)->{depotpath}) {
 	$self->{xd}{checkout}->store
 	    ($copath, {depotpath => '/'.$target->depotname.$target->path_anchor,
 		       '.newprop' => undef,

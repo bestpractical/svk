@@ -52,8 +52,7 @@ sub run {
 
     if (-e $report) {
 	my $copath = abs_path($report);
-	my ($entry, @where) = $self->{xd}{checkout}->get($copath);
-
+	my ($entry, @where) = $self->{xd}{checkout}->get($copath, 1);
         return $self->SUPER::run
 	    ( SVK::Path::Checkout->real_new
 	      ({ source => $target->mclone(revision => $entry->{revision}),
@@ -77,7 +76,7 @@ sub run {
 
     # abs_path doesn't work until the parent is created.
     my $copath = abs_path ($report);
-    my ($entry, @where) = $self->{xd}{checkout}->get ($copath);
+    my ($entry, @where) = $self->{xd}{checkout}->get ($copath, 1);
     die loc("Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n", $where[0])
 	if exists $entry->{depotpath} && $#where > 0;
 

@@ -739,7 +739,7 @@ sub lock_coroot {
     return unless @tgt;
     my %roots;
     for (@tgt) {
-	my (undef, $coroot) = $self->{xd}{checkout}->get($_);
+	my (undef, $coroot) = $self->{xd}{checkout}->get($_, 1);
 	$roots{$coroot}++;
     }
     $self->{xd}->lock($_)
