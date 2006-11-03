@@ -300,7 +300,7 @@ sub _schedule_entry {
 		  '.copyfrom_rev' => $copyfrom_rev );
     }
 
-    my (undef, $schedule) = $self->{xd}->get_entry($copath);
+    my (undef, $schedule) = $self->{xd}->get_entry($copath, 1);
     $self->{xd}{checkout}->store
 	($copath, { %copy, '.schedule' => $schedule eq 'delete' ? 'replace' : 'add' }, {override_descendents => 0});
 }

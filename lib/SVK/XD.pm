@@ -489,13 +489,13 @@ sub target_condensed {
 	    $anchor = $path->clone;
 	    $anchor->copath_anchor(Path::Class::dir($anchor->copath_anchor));
 	}
-	my ($cinfo, $schedule) = $self->get_entry($anchor->copath_anchor);
+	my ($cinfo, $schedule) = $self->get_entry($anchor->copath_anchor, 1);
 	while ($cinfo->{scheduleanchor} || !-d $anchor->copath_anchor ||
 	       $schedule eq 'add' || $schedule eq 'delete' || $schedule eq 'replace' ||
 	       !( $anchor->copath_anchor->subsumes($path->copath_anchor)) ) {
 	    $anchor->anchorify;
 	    $anchor->copath_anchor(Path::Class::dir($anchor->copath_anchor));
-	    ($cinfo, $schedule) = $self->get_entry($anchor->copath_anchor);
+	    ($cinfo, $schedule) = $self->get_entry($anchor->copath_anchor, 1);
 	}
 	push @{$anchor->source->{targets}}, abs2rel($path->copath, $anchor->copath => undef, '/') unless $anchor->path eq $path->path;
     }
@@ -1346,7 +1346,7 @@ sub _delta_dir {
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	$copath = SVK::Path::Checkout->copath ($arg{copath}, $copath);
-	my ($ccinfo, $ccschedule) = $self->get_entry($copath);
+	my ($ccinfo, $ccschedule) = $self->get_entry($copath, 1);
 	# a replace with history node requires handling the copy anchor in the
 	# latter direntries loop.  we should really merge the two.
 	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
@@ -1435,7 +1435,7 @@ sub _delta_dir {
 			 targets => $newtarget, base_kind => $SVN::Node::none);
 	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
 	    $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none;
-	my ($ccinfo, $sche) = $self->get_entry($newpaths{copath});
+	my ($ccinfo, $sche) = $self->get_entry($newpaths{copath}, 1);
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	# If we are not at intermediate path, process ignore
 	# for unknowns, as well as the case of auto_add (import)
@@ -1518,7 +1518,7 @@ sub checkout_delta {
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
 	: sub { my $path = $_[0]; $path =~ s/%/%25/g; ("file://$repospath$path", $_[1]) };
-    my ($entry) = $self->get_entry($arg{copath});
+    my ($entry) = $self->get_entry($arg{copath}, 1);
     my $rev = $arg{cb_resolve_rev}->($arg{path}, $entry->{revision});
     local $SIG{INT} = sub {
 	$arg{editor}->abort_edit;

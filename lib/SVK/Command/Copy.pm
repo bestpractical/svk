@@ -74,7 +74,7 @@ sub handle_co_item {
     my ($copath, $report) = ($dst->copath, $dst->report);
     die loc ("Path %1 already exists.\n", $copath)
 	if -e $copath;
-    my ($entry, $schedule) = $self->{xd}->get_entry($copath);
+    my ($entry, $schedule) = $self->{xd}->get_entry($copath, 1);
     $src->normalize; $src->anchorify;
     $self->ensure_parent($dst);
     $dst->anchorify;
