@@ -189,9 +189,9 @@ sub with_lock {
     my ( $self, $lock, $code ) = @_;
 
     $self->lock;
-    $code->();
+    eval { $code->() };
     $self->unlock;
-
+    die $@ if $@;
 }
 
 sub _lock_token {
