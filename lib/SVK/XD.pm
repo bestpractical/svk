@@ -1117,7 +1117,7 @@ sub _node_deleted_or_absent {
     }
     else {
 	# deleted during base_root -> xdroot
-	if ($arg{xdroot} ne $arg{base_root} && $arg{kind} == $SVN::Node::none) {
+	if (!$arg{base_root_is_xd} && $arg{kind} == $SVN::Node::none) {
 	    $self->_node_deleted (%arg);
 	    return 1;
 	}
@@ -1170,7 +1170,7 @@ sub _node_props {
     if (!$arg{base} or $arg{in_copy}) {
 	$newprops = $fullprop;
     }
-    elsif ($arg{base_root} ne $arg{xdroot} && $arg{base}) {
+    elsif (!$arg{base_root_is_xd} && $arg{base}) {
 	$newprops = _prop_delta ($arg{base_root}->node_proplist ($arg{base_path}), $fullprop)
 	    if $arg{kind} && $arg{base_kind} && _prop_changed (@arg{qw/base_root base_path xdroot path/});
     }
@@ -1264,7 +1264,6 @@ sub _delta_file {
 
 sub _delta_dir {
     my ($self, %arg) = @_;
-    # warn "===> $arg{entry} ".join(',',(caller)[0..2]) if $ENV{SVKDEBUG};
     if ($arg{entry} && $arg{exclude} && exists $arg{exclude}{$arg{entry}}) {
 	$arg{cb_exclude}->($arg{path}, $arg{copath}) if $arg{cb_exclude};
 	return;
@@ -1329,7 +1328,7 @@ sub _delta_dir {
     if ($descend) {
 
     my $signature;
-    if ($self->{signature} && $arg{xdroot} eq $arg{base_root}) {
+    if ($self->{signature} && $arg{base_root_is_xd}) {
 	$signature = $self->{signature}->load ($arg{copath});
 	# if we are not iterating over all entries, keep the old signatures
 	$signature->{keepold} = 1 if defined $targets
@@ -1380,7 +1379,7 @@ sub _delta_dir {
 			base => !$obs,
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			entry => $newentry,
-			kind => $arg{xdroot} eq $arg{base_root} ? $kind : $arg{xdroot}->check_path ($newpath),
+			kind => $arg{base_root_is_xd} ? $kind : $arg{xdroot}->check_path ($newpath),
 			base_kind => $kind,
 			targets => $newtarget,
 			baton => $baton,
@@ -1434,7 +1433,7 @@ sub _delta_dir {
 			 path => $arg{path} eq '/' ? "/$entry" : "$arg{path}/$entry",
 			 base_path => $arg{base_path} eq '/' ? "/$entry" : "$arg{base_path}/$entry",
 			 targets => $newtarget, base_kind => $SVN::Node::none);
-	$newpaths{kind} = $arg{xdroot} eq $arg{base_root} ? $SVN::Node::none :
+	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
 	    $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none;
 	my ($ccinfo, $sche) = $self->get_entry($newpaths{copath});
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
@@ -1462,7 +1461,7 @@ sub _delta_dir {
 	my ($type, $st) = _node_type ($newpaths{copath}) or next;
 	my $delta = $type eq 'directory' ? \&_delta_dir : \&_delta_file;
 	my $copyfrom = $ccinfo->{'.copyfrom'};
-	my $fromroot = $copyfrom ? $arg{repos}->fs->revision_root ($ccinfo->{'.copyfrom_rev'}) : undef;
+	my ($fromroot) = $copyfrom ? $arg{xdroot}->get_revision_root($newpaths{path}, $ccinfo->{'.copyfrom_rev'}) : undef;
 	$self->$delta ( %arg, %newpaths, add => 1, baton => $baton,
 			root => 0, base => 0, cinfo => $ccinfo,
 			type => $type,
@@ -1473,6 +1472,7 @@ sub _delta_dir {
 			  _really_in_copy => 1,
 			  in_copy => $arg{expand_copy},
 			  base_kind => $fromroot->check_path ($copyfrom),
+			  base_root_is_xd => 0,
 			  base_root => $fromroot,
 			  base_path => $copyfrom) : (),
 		      );
@@ -1504,7 +1504,8 @@ sub checkout_delta {
     $arg{encoder} = get_encoder;
     Carp::cluck unless defined $arg{base_path};
     my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
-    $arg{kind} = $arg{base_root} eq $arg{xdroot} ? $kind : $arg{xdroot}->check_path ($arg{path});
+    $arg{base_root_is_xd} = $arg{base_root}->same_root($arg{xdroot});
+    $arg{kind} = $arg{base_root_is_xd} ? $kind : $arg{xdroot}->check_path ($arg{path});
     die "checkout_delta called with non-dir node"
 	   unless $kind == $SVN::Node::dir;
     my ($copath, $repospath) = @arg{qw/copath repospath/};

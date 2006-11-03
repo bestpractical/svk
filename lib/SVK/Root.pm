@@ -49,4 +49,14 @@ sub txn_root {
     return $self->new({ txn => $txn, root => $txn->root($pool) });
 }
 
+sub same_root {
+    my ($self, $other) = @_;
+    return 1 if $self eq $other;
+    return unless ref($self) eq __PACKAGE__ && ref($other) eq __PACKAGE__;
+    if ($self->txn) {
+	return $other->txn ? $self->txn->name eq $other->txn->name : 0;
+    }
+    return $self->revision_root_revision == $other->revision_root_revision;
+}
+
 1;
