@@ -123,7 +123,6 @@ sub mirror_changesets {
     );
 }
 
-use Digest::MD5 'md5_hex';
 sub emit {
     my ($self, $editor, $func, $pool, @arg) = @_;
     my ($ret, $baton_at);
@@ -153,12 +152,11 @@ sub read_msg {
     return \$msg;
 }
 
-my $baton_map = {};
-my $baton_pool = {};
-
 sub _read_evil_replay {
     my ($self, $editor, $fh) = @_;
-    my $pool;
+    my $baton_map = {};
+    my $baton_pool = {};
+
     while (my $data = read_msg($fh)) {
 	my $x = thaw($$data);
 	my ($next, $func, @arg) = @$x;
@@ -168,7 +166,7 @@ sub _read_evil_replay {
 	    $arg[$baton_at] = $baton_map->{$baton};
 	}
 
-	my $ret = $self->emit($editor, $func, $pool, @arg);
+	my $ret = $self->emit($editor, $func, undef, @arg);
 
 	last if $func eq 'close_edit';
 
@@ -263,8 +261,7 @@ sub try_flush {
 
     }
     my $i = 0;
-    while ( 
-	    $#{$buf} >= 0 || length($unsent_buf) ) {
+    while ( $#{$buf} >= 0 || length($unsent_buf) ) {
 	if (my $len = length $unsent_buf) {
 	    if (my $ret = syswrite($fh, $unsent_buf)) {
 		substr($unsent_buf, 0, $ret, '');
@@ -316,12 +313,10 @@ sub new {
     while (my $changeset = $gen->()) {
 	$pool->clear;
 	while ($current_editors > $max_editor_in_buf) {
-	    warn "waiting for flush for $changeset.. ($current_editors).";
 	    try_flush($p, 1);
 	}
 
 	++$current_editors;
-	warn "replay $changeset ($current_editors)";
 	$ra->replay($changeset, 0, 1,# SVK::Editor->new(_debug=>1));
 		    SVK::Editor::Serialize->new({ cb_serialize_entry =>
 						  sub { entry(@_); try_flush($p) } }));
