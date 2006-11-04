@@ -135,16 +135,15 @@ sub run {
 sub _find_copath {
     my ($self, $path) = @_;
     my $abs_path = abs_path_noexist($path);
-    my $map = $self->{xd}{checkout}{hash};
+    my $hierarchy = $self->{xd}{checkout};
 
     # Check if this is a checkout path
-    return $abs_path if defined $abs_path and $map->{$abs_path};
+    return $abs_path if defined $abs_path
+      and $hierarchy->defines($abs_path, 'depotpath');
 
     # Find all copaths that matches this depotpath
-    return sort grep {
-        defined $map->{$_}{depotpath}
-            and $map->{$_}{depotpath} eq $path
-    } keys %$map;
+    return sort $hierarchy->find('/',
+                                 { depotpath => qr/^\Q$path\E$/ });
 }
 
 sub _not_if_floating {
@@ -165,11 +164,12 @@ sub lock {}
 
 sub run {
     my ($self) = @_;
-    my $map = $self->{xd}{checkout}{hash};
+    my $hierarchy = $self->{xd}{checkout};
+    my @checkouts = $hierarchy->find('/', { depotpath => qr/.*/ });
     my $fmt = "%1s %-30s\t%-s\n";
     printf $fmt, ' ', loc('Depot Path'), loc('Path');
     print '=' x 72, "\n";
-    print sort(map sprintf($fmt, -e $_ ? ' ' : '?', $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
+    print sort(map sprintf($fmt, -e $_ ? ' ' : '?', $hierarchy->get($_)->{depotpath}, $_), @checkouts);
     return;
 }
 
@@ -205,19 +205,15 @@ sub run {
     }
 
     # Manually relocate all paths
-    my $map = $self->{xd}{checkout}{hash};
+    my $hierarchy = $self->{xd}{checkout};
 
     my $abs_path = abs_path($path);
-    if ($map->{$abs_path} and -d $abs_path) {
+    if ($hierarchy->defines($abs_path, 'depotpath') and -d $abs_path) {
         move_path($path => $report);
         $target = abs_path ($report);
     }
 
-    my $prefix = $copath[0].$SEP;
-    my $length = length($copath[0]);
-    foreach my $key (sort grep { index("$_$SEP", $prefix) == 0 } keys %$map) {
-        $map->{$target . substr($key, $length)} = delete $map->{$key};
-    }
+    $hierarchy->move($copath[0] => $target);
 
     print loc("Checkout '%1' relocated to '%2'.\n", $path, $target);
 
@@ -269,16 +265,17 @@ sub lock { ++$_[0]->{hold_giant} }
 
 sub run {
     my ($self) = @_;
-    my $map = $self->{xd}{checkout}{hash};
 
     $self->_not_if_floating('--purge');
 
+    my $hierarchy = $self->{xd}{checkout};
+    my @checkouts = $hierarchy->find('/', { depotpath => qr/.*/ });
     $self->rebless('checkout::detach');
 
-    for my $path (sort grep $map->{$_}{depotpath}, keys %$map) {
+    for my $path (@checkouts) {
 	next if -e $path;
 
-	my $depotpath = $map->{$path}{depotpath};
+	my $depotpath = $hierarchy->get($path)->{depotpath};
 
 	get_prompt(loc(
 	    "Purge checkout of %1 to non-existing directory %2? (y/n) ",
