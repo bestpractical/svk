@@ -26,7 +26,7 @@ sub check_path {
     return $SVN::Node::none unless -e _;
 
     return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
-	if $self->path->xd->{checkout}->get($copath)->{'.schedule'} or
+	if $self->path->xd->{checkout}->get($copath, 1)->{'.schedule'} or
 	    $root->check_path($path, $pool);
     return $SVN::Node::unknown;
 }
@@ -53,7 +53,7 @@ sub node_created_rev {
 sub closest_copy {
     my ($self, $path, $pool) = @_;
     my ($copath, $root) = $self->_get_copath($path, $pool);
-    my $entry = $self->path->xd->{checkout}->get($copath);
+    my $entry = $self->path->xd->{checkout}->get($copath, 1);
     my $kind = $entry->{'.schedule'} || '';
 
     return $root->closest_copy($path, $pool) unless $kind eq 'add';
@@ -64,7 +64,7 @@ sub closest_copy {
 sub copied_from {
     my ($self, $path, $pool) = @_;
     my ($copath, $root) = $self->_get_copath($path, $pool);
-    my $entry = $self->path->xd->{checkout}->get($copath);
+    my $entry = $self->path->xd->{checkout}->get($copath, 1);
     my $kind = $entry->{'.schedule'};
 
     return $root->copied_from($path, $pool) unless $kind eq 'add';
@@ -75,7 +75,7 @@ sub copied_from {
 sub node_history {
     my ($self, $path, $pool) = @_;
     my ($copath, $root) = $self->_get_copath($path, $pool);
-    my $entry = $self->path->xd->{checkout}->get($copath);
+    my $entry = $self->path->xd->{checkout}->get($copath, 1);
     my $kind = $entry->{'.schedule'} || '';
 
     return $root->node_history($path, $pool) unless $kind eq 'add';
@@ -106,7 +106,7 @@ sub dir_entries {
 	else {
 	    # Do we know about the node?
 	    $coentries->{$_} = SVK::Root::Checkout::Entry->new
-		({ kind => $self->path->xd->{checkout}->get($copath)->{'.schedule'} ?
+		({ kind => $self->path->xd->{checkout}->get($copath, 1)->{'.schedule'} ?
 		   $kind : $SVN::Node::unknown });
 	}
     }
@@ -133,7 +133,7 @@ sub _get_copath {
     my $copath = abs2rel($path, $self->path->path_anchor => $self->path->copath);
     my $root;
     ($root, $_[1]) = $self->path->source->root->get_revision_root
-	($path, $self->path->xd->{checkout}->get($copath)->{revision}, $pool);
+	($path, $self->path->xd->{checkout}->get($copath, 1)->{revision}, $pool);
     return ($copath, $root);
 }
 

@@ -403,12 +403,12 @@ sub committed_commit {
     my $fs = $target->repos->fs;
     sub {
 	my $rev = shift;
-	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}));
+	my ($entry, $dataroot) = $self->{xd}{checkout}->get($target->copath($target->{copath_target}), 1);
 	my (undef, $coanchor) = $self->{xd}->find_repos ($entry->{depotpath});
 	my $oldroot = $fs->revision_root ($rev-1);
 	# optimize checkout map
 	for my $copath ($self->{xd}{checkout}->find ($dataroot, {revision => qr/.*/})) {
-	    my $coinfo = $self->{xd}{checkout}->get ($copath);
+	    my $coinfo = $self->{xd}{checkout}->get ($copath, 1);
 	    next if $coinfo->{'.deleted'};
 	    my $orev = eval { $oldroot->node_created_rev (abs2rel ($copath, $dataroot => $coanchor, '/')) };
 	    defined $orev or next;
@@ -422,7 +422,7 @@ sub committed_commit {
 	    $self->{xd}{checkout}->store ($path,
                                           { $self->_schedule_empty },
                                           {override_sticky_descendents => $self->{recursive}});
-            if (($action eq 'D') and $self->{xd}{checkout}->get ($path)->{revision} == $rev ) {
+            if (($action eq 'D') and $self->{xd}{checkout}->get ($path, 1)->{revision} == $rev ) {
                 # Fully merged, remove the special node
                 $self->{xd}{checkout}->store (
                     $path, { revision => undef, $self->_schedule_empty }

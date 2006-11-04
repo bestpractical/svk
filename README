@@ -3,7 +3,7 @@ system.
 
 The latest version could be found at
 
-    svn://svn.clkao.org/svk/trunk
+    http://svn.bestpractical.com/svk/trunk
 
 You need Module::Install if you are not installing from release tarballs.
 

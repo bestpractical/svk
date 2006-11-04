@@ -5,18 +5,6 @@ contrib/bench-mime-detect.pl
 contrib/svk-completion.pl
 contrib/svkopendiff
 contrib/update-copyright.pl
-doc/talks/images/bowing.jpg
-doc/talks/images/hate-wall.jpg
-doc/talks/images/img33.png
-doc/talks/images/img34.png
-doc/talks/images/svk_pony.jpg
-doc/talks/images/we_hate_software.jpg
-doc/talks/images/we_love_software.jpg
-doc/talks/takahashi.css
-doc/talks/takahashi.js
-doc/talks/yapcna.2006.xul
-doc/user_stories/dconway
-doc/user_stories/simon_cozens
 inc/ExtUtils/AutoInstall.pm
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
@@ -84,6 +72,7 @@ lib/SVK/Editor/Copy.pm
 lib/SVK/Editor/CopyHandler.pm
 lib/SVK/Editor/Delay.pm
 lib/SVK/Editor/Diff.pm
+lib/SVK/Editor/Dynamic.pm
 lib/SVK/Editor/InteractiveCommitter.pm
 lib/SVK/Editor/InteractiveStatus.pm
 lib/SVK/Editor/Merge.pm
@@ -162,6 +151,7 @@ lib/SVK/View.pm
 lib/SVK/XD.pm
 Makefile.PL
 MANIFEST
+MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
 pkg/win32/LICENSE.txt
 pkg/win32/maketest.bat
@@ -269,6 +259,7 @@ t/74view-mirror.t
 t/74view.t
 t/75hook.t
 t/76ignore.t
+t/api/mirror.t
 t/copy-escape.t
 t/copy-replace.t
 t/mirror/dav-authz.t
@@ -283,4 +274,5 @@ t/svk-sec.gpg
 t/svk.gpg
 utils/extract-docs
 utils/extract-message-catalog
+utils/pullyu
 utils/svk-ediff.el

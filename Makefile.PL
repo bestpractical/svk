@@ -15,7 +15,7 @@ clean_files	('t/checkout', 't/apache_svn');
 requires(
     # 'SVN::Core'                => $required_svn,
     'Algorithm::Annotate'      => '0',
-    'Algorithm::Diff'          => '0',
+    'Algorithm::Diff'          => '1.1901',
     'YAML::Syck'               => '0.60',
     'Data::Hierarchy'          => '0.30',
     'PerlIO::via::dynamic'     => '0.11',

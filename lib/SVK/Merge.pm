@@ -275,7 +275,7 @@ sub find_merge_sources {
     my $pool = SVN::Pool->new_default;
     my $info = $self->merge_info ($target->new);
 
-    $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath)->{revision})
+    $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath. 1)->{revision})
 	if $target->isa('SVK::Path::Checkout');
     $info->add_target ($target, $self->{xd}) unless $noself;
 

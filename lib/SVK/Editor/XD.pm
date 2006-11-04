@@ -134,7 +134,7 @@ sub close_file {
 	# editor in the future, or to update the cache in cb_localmod
 	# for modified entries.
 	$self->{cursignature}[-1]->changed ($file)
-	    if $self->{added}{$path};
+	    if $added;
 	$self->{xd}{checkout}->store ($copath, {revision => $self->{revision}}, {override_descendents => 0});
 	$self->{xd}->fix_permission ($copath, $self->{exe}{$path})
 	    if exists $self->{exe}{$path};
@@ -300,7 +300,7 @@ sub _schedule_entry {
 		  '.copyfrom_rev' => $copyfrom_rev );
     }
 
-    my (undef, $schedule) = $self->{xd}->get_entry($copath);
+    my (undef, $schedule) = $self->{xd}->get_entry($copath, 1);
     $self->{xd}{checkout}->store
 	($copath, { %copy, '.schedule' => $schedule eq 'delete' ? 'replace' : 'add' }, {override_descendents => 0});
 }

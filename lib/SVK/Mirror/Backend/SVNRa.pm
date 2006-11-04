@@ -228,12 +228,12 @@ sub has_replay {
 
     my $err;
     {
-    local $SVN::Error::handler = sub { $err = $_[0]; die \'error handled' };
-    if (eval { $ra->replay(0, 0, 0, SVK::Editor->new); 1}) {
-	$self->_ra_finished($ra);
-	return $self->_has_replay(1);
+        local $SVN::Error::handler = sub { $err = $_[0]; die \'error handled' };
+        if ( eval { $ra->replay( 0, 0, 0, SVK::Editor->new ); 1 } ) {
+            $self->_ra_finished($ra);
+            return $self->_has_replay(1);
+        }
     }
-}
     $self->_ra_finished($ra);
     return $self->_has_replay(0)
       if $err->apr_err == $SVN::Error::RA_NOT_IMPLEMENTED      # ra_svn
@@ -559,6 +559,7 @@ sub get_commit_editor {
     $self->{commit_ra} = $self->_new_ra( url => $self->mirror->url.$path );
 
     my @lock = $SVN::Core::VERSION ge '1.2.0' ? (undef, 0) : ();
+    # XXX: add error check for get_commit_editor here, auth error happens here
     return SVN::Delta::Editor->new(
         $self->{commit_ra}->get_commit_editor(
             $msg,

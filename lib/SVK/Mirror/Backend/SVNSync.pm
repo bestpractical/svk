@@ -26,7 +26,8 @@ sub load {
 
 sub _init_state {
     my ( $self, $txn, $editor ) = @_;
-    die "Requires newer svn for replay support.\n" unless $self->has_replay;
+    die loc("Requires newer svn for replay support when mirroring to /.\n")
+	unless $self->has_replay;
     my $mirror = $self->mirror;
     die loc( "Must replicate whole repository at %1.\n", $mirror->url )
         if $self->source_path;
