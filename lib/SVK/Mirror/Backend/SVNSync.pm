@@ -98,9 +98,15 @@ sub sync_changeset {
 
 =cut
 
+sub get_pipeline_editor_fh {
+    my ($self, $gen) = @_;
+    my $ra = $self->_new_ra;
+
+    return SVK::Mirror::Backend::SVNSync::Async->new($self, $ra, $gen);
+}
+
 sub mirror_changesets {
     my ( $self, $torev, $callback ) = @_;
-
     $self->mirror->with_lock( 'mirror',
         sub {
 	    $self->refresh;
@@ -108,11 +114,8 @@ sub mirror_changesets {
 	    my $ra = $self->_new_ra;
 	    $torev ||= $ra->get_latest_revnum;
 	    $self->_ra_finished($ra);
-	    warn $self->mirror->depot->repospath;
-	    warn "$from $torev";
-	    open my $fh, '-|', "perl -Ilib utils/replay-pipeline.pl ".$self->mirror->depot->repospath." / $from $torev 2>stderr " or die $!;
-	    require IO::Handle;
-#	    $fh->blocking(0);
+	    my @revs = ($from..$torev);
+	    my $fh = $self->get_pipeline_editor_fh(sub { shift @revs });
             $self->traverse_new_changesets(
                 sub { $self->evil_sync_changeset( @_, $fh, $callback ) }, $torev );
         }
@@ -124,11 +127,9 @@ sub emit {
     my ($self, $editor, $func, $pool, @arg) = @_;
     my ($ret, $baton_at);
     if ($func eq 'apply_textdelta') {
-#	$pool->default;
 	my $svndiff = pop @arg;
 	$ret = $editor->apply_textdelta(@arg, $pool);
 	if ($ret && $#$ret > 0) {
-#	    warn md5_hex($svndiff);
 	    my $stream = SVN::TxDelta::parse_svndiff(@$ret, 1, $pool);
 	    print $stream $svndiff;
 	    close $stream;
@@ -159,7 +160,6 @@ sub _read_evil_replay {
     my $pool;
     while (my $data = read_msg($fh)) {
 	my $x = thaw($$data);
-#	Carp::cluck (length $$data ) unless defined $x;
 	my ($next, $func, @arg) = @$x;
 	my $baton_at = SVK::Editor->baton_at($func);
 	my $baton = $arg[$baton_at];
@@ -181,7 +181,6 @@ sub _read_evil_replay {
 	    $baton_pool->{$next} = SVN::Pool->new_default;
 	    $baton_map->{$next} = $ret
 	}
-#	warn "==> close edit" if $func eq 'close_edit';
     }
 }
 
@@ -220,15 +219,121 @@ sub evil_sync_changeset {
         }
     );
 
-#    warn "==> begin evil $changeset";
     $self->_read_evil_replay($editor, $fh);
     $self->_ra_finished($ra);
-#die;
     return;
 
 }
 
-
 sub _relayed { }
+
+package SVK::Mirror::Backend::SVNSync::Async;
+use SVK::Editor::Serialize;
+use Socket;
+
+my $max_editor_in_buf = 5;
+my $current_editors = 0;
+my $unsent_buf = '';
+
+my $buf;
+my $max;
+
+use IO::Handle;
+use Storable 'nfreeze';
+use POSIX 'EPIPE';
+
+sub on_close_edit {
+    --$current_editors;
+}
+
+sub try_flush {
+    my $fh = shift;
+    my $wait = shift;
+    my $max_write = $wait ? -1 : 10;
+    if ($wait) {
+	$fh->blocking(1);
+    }
+    else {
+	$fh->blocking(0);
+	my $wstate = '';
+	vec($wstate,fileno($fh),1) = 1;
+	select(undef, $wstate, undef, 0);;
+	return unless vec($wstate,fileno($fh),1);
+
+    }
+    my $i = 0;
+    while ( 
+	    $#{$buf} >= 0 || length($unsent_buf) ) {
+	if (my $len = length $unsent_buf) {
+	    if (my $ret = syswrite($fh, $unsent_buf)) {
+		substr($unsent_buf, 0, $ret, '');
+		last if $ret != $len;
+	    }
+	    else {
+		die if $! == EPIPE;
+		return;
+	    }
+	}
+	last if $#{$buf} < 0;
+	use Carp;
+	Carp::cluck unless defined $buf->[0];
+	my $msg = nfreeze($buf->[0]);
+	$msg = pack('N', length($msg)).$msg;
+
+	if (my $ret = syswrite($fh, $msg)) {
+	    $unsent_buf .= substr($msg, $ret)  if length($msg) != $ret;
+	    on_close_edit() if (shift @$buf)->[1] eq 'close_edit';
+	}
+	else {
+	    die if $! == EPIPE;
+	    # XXX: check $! for fatal
+	    last;
+	}
+    }
+}
+
+sub entry {
+    my $entry = shift;
+    push @$buf, $entry;
+}
+
+sub new {
+    my ($self, $svnsync, $ra, $gen) = @_;
+    socketpair(my $c, my $p, AF_UNIX, SOCK_STREAM, PF_UNSPEC)
+	or  die "socketpair: $!";
+
+    if (my $pid = fork) {
+	close $p;
+	return $c;
+    }
+    else {
+	die "cannot fork: $!" unless defined $pid;
+	close $c;
+    }
+
+    my $pool = SVN::Pool->new_default;
+    while (my $changeset = $gen->()) {
+	$pool->clear;
+	while ($current_editors > $max_editor_in_buf) {
+	    warn "waiting for flush for $changeset.. ($current_editors).";
+	    try_flush($p, 1);
+	}
+
+	++$current_editors;
+	warn "replay $changeset ($current_editors)";
+	$ra->replay($changeset, 0, 1,# SVK::Editor->new(_debug=>1));
+		    SVK::Editor::Serialize->new({ cb_serialize_entry =>
+						  sub { entry(@_); try_flush($p) } }));
+	entry([undef, 'close_edit']);
+	try_flush($p);
+    }
+
+    while ($#{$buf} >= 0) {
+	try_flush($p, 1) ;
+    }
+    exit;
+}
+
+
 
 1;
