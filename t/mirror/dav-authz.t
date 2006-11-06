@@ -49,7 +49,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn and mod_authz_svn";
 }
 
-plan tests => 2;
+plan tests => 3;
 
 my $utf8 = SVK::Util::get_encoding;
 
@@ -80,6 +80,35 @@ my $uri = 'http://'.$server->{name}.'/svn';
 #our $DEBUG=1;
 #$ENV{DEBUG_INTERACTIVE}=1;
 
+no warnings 'redefine';
+*SVK::Mirror::Backend::SVNRa::_initialize_auth = sub {
+    my $self = shift;
+    # create a subpool that is not automatically destroyed
+    my $auth_pool = SVN::Pool::create(${ $self->mirror->pool });
+    $auth_pool->default;
+
+    my ($baton, $ref) = SVN::Core::auth_open_helper([
+        SVN::Client::get_simple_provider (),
+        SVN::Client::get_ssl_server_trust_file_provider (),
+        SVN::Client::get_username_provider (),
+        SVN::Client::get_simple_prompt_provider( __PACKAGE__->can('_my_prompt'), 2),
+    ]);
+
+    $self->_auth_baton($baton);
+    $self->_auth_ref($ref);
+};
+
+my $prompt_called = 0;
+
+sub _my_prompt {
+    my ($cred, $realm, $default_username, $may_save, $pool) = @_;
+    ++$prompt_called;
+    $cred->username('test');
+    $cred->password('test');
+    $cred->may_save(0);
+    return $SVN::_Core::SVN_NO_ERROR;
+}
+
 $svk->mirror ('//remote', "$uri/A");
 
 is_output ($svk, 'sync', ['//remote'],
@@ -87,6 +116,7 @@ is_output ($svk, 'sync', ['//remote'],
 	    'Retrieving log information from 1 to 2',
 	    'Committed revision 2 from revision 1.',
 	    'Committed revision 3 from revision 2.']);
+ok($prompt_called, "prompt called");
 
-$server->stop;
-print "\n";
+$svk->mirror('--detach', '//remote');
+
