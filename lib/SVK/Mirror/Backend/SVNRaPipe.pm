@@ -2,7 +2,7 @@ package SVK::Mirror::Backend::SVNRaPipe;
 use strict;
 
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(ra requests fh unsent_buf buf_call current_editors));
+__PACKAGE__->mk_accessors(qw(ra requests fh unsent_buf buf_call current_editors pid));
 
 use POSIX 'EPIPE';
 use Socket;
@@ -98,6 +98,7 @@ sub new {
 
     if (my $pid = fork) {
 	close $p;
+	$self->pid($pid);
 	return $self;
     }
     else {
@@ -106,6 +107,7 @@ sub new {
     }
 
     $self->fh($p);
+    $File::Temp::KEEP_ALL = 1;
     # Begin external process for buffered ra requests.
     my $max_editor_in_buf = 5;
     my $pool = SVN::Pool->new_default;
@@ -161,7 +163,7 @@ sub ensure_client_cmd {
 	    die unless UNIVERSAL::isa($arg, 'SVK::Editor');
 	    return $arg;
 	}
-	die if ($_ cmp $arg);
+	Carp::confess "pipeline ra error: got $arg but expecting $_" if ($_ cmp $arg);
     }
     die join(',',@arg) if @arg;
 }
@@ -221,9 +223,16 @@ sub emit_editor_call {
 	}
     }
     else {
+	return if $func eq 'close_edit';
 	$ret = $editor->$func(@arg, $pool);
     }
     return $ret;
+}
+
+sub DESTROY {
+    my $self = shift;
+    return unless $self->pid;
+    wait;
 }
 
 1;

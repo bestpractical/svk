@@ -55,7 +55,9 @@ sub get_editor {
     }
 
     my ($editor, $inspector, %extra) = $self->source->new(path => $actual_anchor)->get_editor(%arg);
-
+    # XXX: view has txns, not very happy with forked processes.
+    $extra{mirror}->_backend->use_pipeline(0)
+        if $extra{mirror} && $extra{mirror}->_backend->isa('SVK::Mirror::Backend::SVNRa');
     my $prefix = abs2rel($self->source->path_anchor,
 			 $actual_anchor => undef, '/');
 
