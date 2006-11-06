@@ -129,7 +129,8 @@ $svk->sync ('//foo-remote');
 $svk->update ($copath);
 
 is_output ($svk, 'cp', ['//V/new', '//foo-remote/new'],
-	   ['Different sources.']);
+	   ['You are trying to copy across different mirrors.',
+	    'Try create an empty directory //foo-remote/new, and run smerge --baseless //V/new //foo-remote/new.']);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/me-dcopied'],
 	   ['Committed revision 15.']);
@@ -151,7 +152,7 @@ rmtree ([$copath]);
 $svk->checkout ('//foo-remote', $copath);
 
 is_output ($svk, 'cp', ['//V/me', "$copath/me-rcopied"],
-	   ['Different sources.']);
+	   ['You are trying to copy across different mirrors.']);
 $svk->copy ('-m', 'from co', "$copath/me", '//foo-remote/me-rcopied.again');
 is_copied_from ("//foo-remote/me-rcopied.again", '/foo-remote/me', 14);
 is_copied_from ("/foo/me-rcopied.again", '/me', 2);
