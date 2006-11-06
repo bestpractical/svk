@@ -217,6 +217,7 @@ SVK::Command::Merge - Apply differences between two sources
  -s [--sync]            : synchronize mirrored sources before operation
  -t [--to]              : merge to the specified path
  -f [--from]            : merge from the specified path
+ --summary              : display related logs in this merge
  --verbatim             : verbatim merge log without indents and header
  --no-ticket            : do not record this merge point
  --track-rename         : track changes made to renamed node
