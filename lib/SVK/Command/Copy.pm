@@ -8,7 +8,7 @@ use SVK::I18N;
 sub options {
     ($_[0]->SUPER::options,
      'q|quiet'         => 'quiet',
-     'r|revision=i' => 'rev');
+     'r|revision=s' => 'rev');
 }
 
 sub parse_arg {
@@ -140,8 +140,8 @@ sub _unmodified {
 sub check_src {
     my ($self, @src) = @_;
     for my $src (@src) {
-	# XXX: respect copath rev
-	$src->revision($self->{rev}) if defined $self->{rev};
+	$src->revision($self->resolve_revision($src, $self->{rev})) if defined $self->{rev};
+	$self->apply_revision($src);
 	next unless $src->isa('SVK::Path::Checkout');
 	$self->_unmodified ($src->new);
     }
