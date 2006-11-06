@@ -459,6 +459,10 @@ sub traverse_new_changesets {
     die $@ if $@;
 }
 
+=item sync_changeset($changeset, $metadata, $ra, $extra_prop, $callback )
+
+=cut
+
 sub sync_changeset {
     my ( $self, $changeset, $metadata, $ra, $extra_prop, $callback ) = @_;
     my $t = $self->mirror->get_svkpath;

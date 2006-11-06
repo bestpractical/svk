@@ -6,11 +6,12 @@ __PACKAGE__->mk_accessors(qw(ra requests fh unsent_buf buf_call current_editors 
 
 use POSIX 'EPIPE';
 use Socket;
-
+use Storable qw(nfreeze thaw);
+use SVK::Editor::Serialize;
 
 =head1 NAME
 
-SVK::Mirror::Backend::SVNRaPipe - 
+SVK::Mirror::Backend::SVNRaPipe - Transparent SVN::Ra requests pipelining
 
 =head1 SYNOPSIS
 
@@ -27,7 +28,68 @@ SVK::Mirror::Backend::SVNRaPipe -
 
 =cut
 
-sub entry {
+sub new {
+    my ($class, $ra , $gen) = @_;
+
+    socketpair(my $c, my $p, AF_UNIX, SOCK_STREAM, PF_UNSPEC)
+	or  die "socketpair: $!";
+
+    my $self = $class->SUPER::new(
+        {
+            ra              => $ra,
+            requests        => $gen,
+            fh              => $c,
+            current_editors => 0,
+            buf_call        => [],
+            unsent_buf      => ''
+        }
+    );
+
+    if (my $pid = fork) {
+	close $p;
+	$self->pid($pid);
+	return $self;
+    }
+    else {
+	die "cannot fork: $!" unless defined $pid;
+	close $c;
+    }
+
+    $self->fh($p);
+    $File::Temp::KEEP_ALL = 1;
+    # Begin external process for buffered ra requests and send response to parent.
+    my $max_editor_in_buf = 5;
+    my $pool = SVN::Pool->new_default;
+    while (my $req = $gen->()) {
+	$pool->clear;
+	my ($cmd, @arg) = @$req;
+	@arg = map { $_ eq 'EDITOR' ? SVK::Editor::Serialize->new({ cb_serialize_entry =>
+								    sub { $self->_enqueue(@_); $self->try_flush } })
+			            : $_ } @arg;
+
+	# Note that we might want to switch to bandwidth based buffering,
+	while ($self->current_editors > $max_editor_in_buf) {
+	    $self->try_flush(1);
+	}
+
+	my $ret = $self->ra->$cmd(@arg);
+	if ($cmd eq 'replay') { # XXX support other requests using editors
+	    ++$self->{current_editors};
+	    $self->_enqueue([undef, 'close_edit']);
+	}
+	else {
+	    $self->_enqueue([$ret, $cmd]);
+	}
+	$self->try_flush();
+    }
+
+    while ($#{$self->buf_call} >= 0) {
+	$self->try_flush($p, 1) ;
+    }
+    exit;
+}
+
+sub _enqueue {
     my ($self, $entry) = @_;
     push @{$self->buf_call}, $entry;
 }
@@ -45,7 +107,6 @@ sub try_flush {
 	vec($wstate,fileno($self->fh),1) = 1;
 	select(undef, $wstate, undef, 0);;
 	return unless vec($wstate,fileno($self->fh),1);
-
     }
     my $i = 0;
     my $buf = $self->buf_call;
@@ -78,71 +139,7 @@ sub try_flush {
     }
 }
 
-
-sub new {
-    my ($class, $ra , $gen) = @_;
-
-    socketpair(my $c, my $p, AF_UNIX, SOCK_STREAM, PF_UNSPEC)
-	or  die "socketpair: $!";
-
-    my $self = $class->SUPER::new(
-        {
-            ra              => $ra,
-            requests        => $gen,
-            fh              => $c,
-            current_editors => 0,
-            buf_call        => [],
-            unsent_buf      => ''
-        }
-    );
-
-    if (my $pid = fork) {
-	close $p;
-	$self->pid($pid);
-	return $self;
-    }
-    else {
-	die "cannot fork: $!" unless defined $pid;
-	close $c;
-    }
-
-    $self->fh($p);
-    $File::Temp::KEEP_ALL = 1;
-    # Begin external process for buffered ra requests.
-    my $max_editor_in_buf = 5;
-    my $pool = SVN::Pool->new_default;
-    while (my $req = $gen->()) {
-	$pool->clear;
-	my ($cmd, @arg) = @$req;
-	require SVK::Editor::Serialize;
-	@arg = map { $_ eq 'EDITOR' ? SVK::Editor::Serialize->new({ cb_serialize_entry =>
-								    sub { $self->entry(@_); $self->try_flush } })
-			            : $_ } @arg;
-
-	while ($self->current_editors > $max_editor_in_buf) {
-	    $self->try_flush(1);
-	}
-
-	my $ret = $self->ra->$cmd(@arg);
-	if ($cmd eq 'replay') { # XXX or other requests using editors
-	    ++$self->{current_editors};
-	    $self->entry([undef, 'close_edit']);
-	}
-	else {
-	    $self->entry([$ret, $cmd]);
-	}
-	$self->try_flush();
-    }
-
-    while ($#{$self->buf_call} >= 0) {
-	$self->try_flush($p, 1) ;
-    }
-    exit;
-}
-
 # Client code reading pipelined responses
-
-use Storable qw(nfreeze thaw);
 
 sub read_msg {
     my $self = shift;
@@ -173,7 +170,7 @@ sub rev_proplist {
     $self->ensure_client_cmd('rev_proplist', @_);
     # read synchronous msg
     my $data = thaw( ${$self->read_msg} );
-    # XXX: ensure $data->[1] is rev_proplist
+    die 'inconsistent response' unless $data->[1] eq 'rev_proplist';
     return $data->[0];
 }
 
@@ -223,8 +220,11 @@ sub emit_editor_call {
 	}
     }
     else {
-	return if $func eq 'close_edit';
-	$ret = $editor->$func(@arg, $pool);
+	# do not emit the fabricated close_edit, as replay doesn't
+	# give us that.  We need that in the stream so the client code
+	# of replay knows the end of response has reached.
+	$ret = $editor->$func(@arg, $pool)
+	    unless $func eq 'close_edit';
     }
     return $ret;
 }
