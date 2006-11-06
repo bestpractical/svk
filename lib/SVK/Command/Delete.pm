@@ -26,9 +26,6 @@ sub parse_arg {
 	return $self->{xd}->target_condensed(@arg);
     }
 
-    die loc("Delete for more than one depotpath is not supported yet.\n")
-	if scalar @arg > 1;
-
     return @arg;
 }
 
@@ -38,22 +35,28 @@ sub lock {
 }
 
 sub do_delete_direct {
-    my ($self, $target) = @_;
-    my $m = $self->under_mirror ($target);
-    if ($m && $m->path eq $target->path) {
-	$m->detach;
-	$target->refresh_revision;
-	undef $m;
+    my ( $self, @args ) = @_;
+    my $target = $args[0];
+    my $m      = $self->under_mirror($target);
+    if ( $m && $m->path eq $target->path ) {
+        $m->detach;
+        $target->refresh_revision;
+        undef $m;
     }
 
-    $self->get_commit_message ();
+    $self->get_commit_message;
     $target->normalize;
-    my ($anchor, $editor) = $self->get_dynamic_editor ($target);
-    my $rev = $target->revision;
-    $rev = $m->find_remote_rev ($rev) if $m;
-    $editor->delete_entry (abs2rel ($target->path, $anchor => undef, '/'), $rev, 0);
-    $self->adjust_anchor ($editor);
-    $self->finalize_dynamic_editor ($editor);
+    my ( $anchor, $editor ) = $self->get_dynamic_editor($target);
+    for (@args) {
+        my $rev = $target->revision;
+        $rev = $m->find_remote_rev($rev)
+          if
+          $m; # XXX: why do we need this? path->get_editor shuold do translation
+        $editor->delete_entry( abs2rel( $_->path, $anchor => undef, '/' ),
+            $rev, 0 );
+        $self->adjust_anchor($editor);
+    }
+    $self->finalize_dynamic_editor($editor);
 }
 
 sub _ensure_mirror {
@@ -69,16 +72,20 @@ sub _ensure_mirror {
 }
 
 sub run {
-    my ($self, $target) = @_;
+    my ($self, @args) = @_;
 
-    $self->_ensure_mirror($target);
 
-    if ($target->isa('SVK::Path::Checkout')) {
+    if ($args[0]->isa('SVK::Path::Checkout')) {
+	my $target = $args[0]; # already condensed
+	$self->_ensure_mirror($target);
 	$self->{xd}->do_delete( $target, no_rm => $self->{keep}, 
 		'force_delete' => $self->{force} );
     }
     else {
-	$self->do_delete_direct ( $target );
+	$self->_ensure_mirror($_) for @args;
+	die loc("Different source.\n") unless
+	    $args[0]->same_source(@args);
+	$self->do_delete_direct( @args );
     }
 
     return;

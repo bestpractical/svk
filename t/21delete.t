@@ -236,8 +236,8 @@ overwrite_file ('A/stalled', "foo");
 is_output ($svk, 'rm', ['A/stalled'],
 	   [__("A/stalled is not under version control; use '--force' to go ahead.")]);
 
-is_output ($svk, 'rm', ['//A/deep', '//A/bad'],
-	   [qr'not supported']);
+is_output ($svk, 'rm', [-m => 'fnord', '//A/something', '//A/bar'],
+	   ['Committed revision 4.']);
 
 is_output ($svk, 'rm', ['A/deep', '//A/bad'],
 	   [qr'not supported']);
