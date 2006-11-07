@@ -17,7 +17,7 @@ requires(
     'Algorithm::Annotate'      => '0',
     'Algorithm::Diff'          => '1.1901',
     'YAML::Syck'               => '0.60',
-    'Data::Hierarchy'          => '0.30',
+    'Data::Hierarchy'          => '0.40',
     'PerlIO::via::dynamic'     => '0.11',
     'PerlIO::via::symlink'     => '0.02',
     'IO::Digest'               => '0',

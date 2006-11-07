@@ -162,8 +162,7 @@ sub load {
 	}
         elsif ($info) {
             $info->{checkout}{sep} = $SEP;
-            $info->{checkout} = $info->{checkout}->to_absolute($self->{floating})
-                if $self->{floating};
+            $self->_loadify_checkout($info);
         }
     }
 
@@ -226,8 +225,8 @@ sub _store_config {
     my $ancient_backup = $file.".bak.".$$;
 
     my $tmphash = { map { $_ => $hash->{$_}} qw/checkout depotmap/ };
-    $tmphash->{checkout} = $tmphash->{checkout}->to_relative($self->{floating})
-        if $self->{floating};
+    $self->_savify_checkout($tmphash);
+
     DumpFile ($tmpfile, $tmphash);
 
     if (not -f $tmpfile ) {
@@ -252,6 +251,30 @@ sub _store_config {
     }
 }
 
+sub _savify_checkout {
+    my ($self, $hash) = @_;
+    if ($self->{floating}) {
+        $hash->{checkout} = $hash->{checkout}->to_relative($self->{floating});
+    } else {
+        $hash->{checkout} = $hash->{checkout}->save;
+    }
+}
+
+sub _loadify_checkout {
+    my ($self, $hash) = @_;
+    if ($self->{floating}) {
+        $hash->{checkout} = $hash->{checkout}->to_absolute($self->{floating});
+    } else {
+        # This should be a Data::Hierarchy::Savable, but in case
+        # somebody was using an older svk with DH 0.3 and upgraded
+        # both svk and DH and still has a serialized Data::Hierarchy
+        # in their config file, don't call ->load unless the method is
+        # there (and let DH _autoupgrade do its trick).
+        $hash->{checkout} = $hash->{checkout}->load
+          if $hash->{checkout}->can('load');
+    }
+}
+
 sub store {
     my ($self) = @_;
     $self->{updated} = 1;
@@ -268,8 +291,7 @@ sub store {
         # the changes from the paths we locked, and write it out.
 	$self->giant_lock ();
 	my $info = LoadFile ($self->{statefile});
-	$info->{checkout} = $info->{checkout}->to_absolute($self->{floating})
-	    if $self->{floating};
+        $self->_loadify_checkout($info);
 	my @paths = $info->{checkout}->find ('', {lock => $$});
 	$info->{checkout}->merge ($self->{checkout}, $_)
 	    for @paths;
