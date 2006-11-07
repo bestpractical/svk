@@ -77,7 +77,7 @@ sub run {
     $ceditor->replay (SVN::Delta::Editor->new
 		      (_debug => 0,
 		       _editor => [ $repos->get_commit_editor
-				    ("file://$src->{repospath}",
+				    ('file://' . $src->depot->repospath,
 				     $tmpbranch,
 				     $ENV{USER}, "merge $self->{chgspec} from $src->{path}",
 				     sub { print loc("Committed revision %1.\n", $_[0]) })
