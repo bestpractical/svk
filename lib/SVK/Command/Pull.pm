@@ -23,7 +23,8 @@ sub parse_arg {
     $self->{incremental} = !$self->{lump};
 
     if ($self->{all}) {
-        @arg = $self->{xd}{checkout}->find('/', { depotpath => qr/.*/ });
+        my $checkout = $self->{xd}{checkout}{hash};
+        @arg = sort grep $checkout->{$_}{depotpath}, keys %$checkout;
     } 
     elsif ( @arg == 1 and !$self->arg_co_maybe($arg[0])->isa('SVK::Path::Checkout')) {
         # If the last argument is a depot path, rather than a copath
