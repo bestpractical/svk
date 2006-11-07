@@ -8,7 +8,7 @@ use SVK::I18N;
 sub options {
     ($_[0]->SUPER::options,
      'q|quiet'         => 'quiet',
-     'r|revision=i' => 'rev');
+     'r|revision=s' => 'rev');
 }
 
 sub parse_arg {
@@ -140,8 +140,8 @@ sub _unmodified {
 sub check_src {
     my ($self, @src) = @_;
     for my $src (@src) {
-	# XXX: respect copath rev
-	$src->revision($self->{rev}) if defined $self->{rev};
+	$src->revision($self->resolve_revision($src, $self->{rev})) if defined $self->{rev};
+	$self->apply_revision($src);
 	next unless $src->isa('SVK::Path::Checkout');
 	$self->_unmodified ($src->new);
     }
@@ -151,10 +151,15 @@ sub run {
     my ($self, @src) = @_;
     my $dst = pop @src;
 
-    return loc("Different depots.\n") unless $dst->same_repos (@src);
-    my $m = $self->under_mirror ($dst);
-    return loc("Different sources.\n")
-	if $m && !$dst->same_source (@src);
+    return loc("Different depots.\n") unless $dst->same_repos(@src);
+    my $m = $self->under_mirror($dst);
+    if ( $m && !$dst->same_source(@src) ) {
+        print loc("You are trying to copy across different mirrors.\n");
+        die loc( "Try create an empty directory %1, and run smerge --baseless %2 %3.\n",
+            $dst->report, $src[0]->report, $dst->report )
+          if $#src == 0 && $dst->isa('SVK::Path');
+        return 1;
+    }
     $self->check_src (@src);
     # XXX: check dst to see if the copy is obstructured or missing parent
     my $fs = $dst->repos->fs;

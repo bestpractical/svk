@@ -40,7 +40,6 @@ requires(
 );
 build_requires(
     'Test::More'               => '0.42',
-    'Clone'                    => 0,
 );
 features(
     'Localized messages' => [

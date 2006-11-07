@@ -44,7 +44,6 @@ use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
 require Storable;
 use SVK::Path::Checkout;
-use Clone;
 
 # Fake standard input
 our $answer = [];

@@ -4,7 +4,7 @@ use Test::More;
 
 use SVK::Test;
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 9;
+plan tests => 11;
 
 # build another tree to be mirrored ourself
 my ($xd, $svk) = build_test('svmrm');
@@ -51,3 +51,22 @@ is_output($svk, 'mi', ['--detach', '//rm/m'],
 
 is_output ($svk, 'propget', ['svm:mirror', '//'], []);
 }
+
+# reset tests
+$svk->ps(-m => 'bandaid.', 'svm:mirror', '', '//');
+
+$svk->mirror('//rm/m2', "$uri/A");
+$svk->mirror('//rm/m1', "$uri/B");
+$svk->sync('-a');
+
+
+is_output($svk, 'rm', [-m => 'try delete', '//rm/m2/Q', '///rm/m1/S/P'],
+	  ['Different source.']);
+
+is_output($svk, 'rm', [-m => 'try delete', '//rm/m2/Q/qu', '///rm/m2/Q/qz'],
+	  ["Merging back to mirror source $uri/A.",
+	   'Merge back committed as revision 3.',
+	   "Syncing $uri/A",
+	   'Retrieving log information from 3 to 3',
+	   'Committed revision 13 from revision 3.']);
+

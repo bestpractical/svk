@@ -12,8 +12,8 @@ my $tree = create_basic_tree ($xd, '//');
 my ($copath, $corpath) = get_copath ('switch');
 
 is_output_like ($svk, 'switch', [], qr'SYNOPSIS');
-$svk->cp ('-r1m', 'copy', '//A', '//A-branch');
 
+$svk->cp ('-r1', '-m', 'copy', '//A', '//A-branch');
 $svk->checkout ('//A-branch', $copath);
 
 is_output_like ($svk, 'switch', ['//A-branch', '.', 'foo'], qr'SYNOPSIS');

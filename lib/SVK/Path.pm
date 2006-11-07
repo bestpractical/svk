@@ -99,7 +99,7 @@ sub same_source {
     for (@other) {
 	my $m = $_->is_mirrored;
 	return 0 if $m xor $mself;
-	return 0 if $m && $m->path ne $m->path;
+	return 0 if $m && $mself->path ne $m->path;
     }
     return 1;
 }
