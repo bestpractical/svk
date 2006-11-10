@@ -6,6 +6,8 @@ use SVN::Core;
 use SVN::Ra;
 use SVK::I18N;
 use SVK::Editor;
+use SVK::Mirror::Backend::SVNRaPipe;
+
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler);
 
 ## class SVK::Mirror::Backend::SVNRa;
@@ -19,7 +21,7 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra));
+__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra use_pipeline));
 
 =head1 NAME
 
@@ -51,7 +53,7 @@ sub refresh {
 
 sub load {
     my ($class, $mirror) = @_;
-    my $self = $class->SUPER::new( { mirror => $mirror } );
+    my $self = $class->SUPER::new( { mirror => $mirror, use_pipeline => 1 } );
     my $t = $mirror->get_svkpath;
     die loc( "%1 is not a mirrored path.\n", $t->depotpath )
         unless $t->root->check_path( $mirror->path );
@@ -82,7 +84,7 @@ sub load {
 sub create {
     my ($class, $mirror, $backend, $args, $txn, $editor) = @_;
 
-    my $self = $class->SUPER::new({ mirror => $mirror });
+    my $self = $class->SUPER::new({ mirror => $mirror, use_pipeline => 1 });
 
     my $ra = $self->_new_ra;
 
@@ -253,6 +255,7 @@ sub _new_ra {
 sub _ra_finished {
     my ($self, $ra) = @_;
     return if $self->_cached_ra;
+    return if ref($ra) eq 'SVK::Mirror::Backend::SVNRaPipe';
     $self->_cached_ra( $ra );
 }
 
@@ -326,8 +329,12 @@ sub traverse_new_changesets {
     die $@ if $@;
 }
 
+=item sync_changeset($changeset, $metadata, $ra, $extra_prop, $callback )
+
+=cut
+
 sub sync_changeset {
-    my ($self, $changeset, $metadata, $callback) = @_;
+    my ( $self, $changeset, $metadata, $ra, $extra_prop, $callback ) = @_;
     my $t = $self->mirror->get_svkpath;
     my ( $editor, undef, %opt ) = $t->get_editor(
         ignore_mirror => 1,
@@ -340,18 +347,41 @@ sub sync_changeset {
             $callback->( $changeset, $_[0] ) if $callback;
         }
     );
-    # XXX: sync relayed revmap as well
-    $opt{txn}->change_prop('svm:headrev', $self->mirror->server_uuid.":$changeset\n");
 
-    my $ra = $self->_new_ra;
-    if ( my $revprop = $self->mirror->depot->mirror->revprop ) {
-        my $prop = $ra->rev_proplist($changeset);
-        for (@$revprop) {
-            $opt{txn}->change_prop( $_, $prop->{$_} )
-                if exists $prop->{$_};
+    for (keys %$extra_prop) {
+	$opt{txn}->change_prop( $_, $extra_prop->{$_} );
+    }
+    $self->_revmap_prop( $opt{txn}, $changeset );
+
+    $editor = $self->_get_sync_editor($editor, $t);
+    $ra->replay( $changeset, 0, 1, $editor );
+    $self->_after_replay($ra, $editor);
+
+    return;
+
+}
+
+sub _after_replay {
+    my ($self, $ra, $editor) = @_;
+    if ( $editor->isa('SVK::Editor::SubTree') ) {
+	my $baton = $editor->anchor_baton;
+        if ( $editor->needs_touch ) {
+            $editor->change_dir_prop( $baton, 'svk:mirror' => undef );
         }
+	if (!$editor->changes) {
+	    $editor->abort_edit;
+	    return;
+	}
+        $editor->close_directory($baton);
     }
 
+    $editor->close_edit;
+    return;
+
+}
+
+sub _get_sync_editor {
+    my ($self, $editor, $target) = @_;
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
         cb_copy => sub {
@@ -359,7 +389,7 @@ sub sync_changeset {
             return ( $path, $rev ) if $rev == -1;
             my $source_path = $self->source_path;
             $path =~ s/^\Q$self->{source_path}//;
-            return $t->as_url(
+            return $target->as_url(
                 1,
                 $self->mirror->path . $path,
                 $self->find_rev_from_changeset($rev)
@@ -370,7 +400,6 @@ sub sync_changeset {
     # ra->replay gives us editor calls based on repos root not
     # base uri, so we need to get the correct subtree.
     my $baton;
-    my $pool = SVN::Pool->new_default;
     if ( length $self->source_path ) {
         my $anchor = substr( $self->source_path, 1 );
         $baton  = $editor->open_root(-1);      # XXX: should use $t->revision
@@ -381,22 +410,14 @@ sub sync_changeset {
             }
         );
     }
-    $ra->replay( $changeset, 0, 1, $editor );
-    $self->_ra_finished($ra);
-    if ( length $self->source_path ) {
-        $editor->close_directory($baton);
-        if ( $editor->needs_touch ) {
-            $editor->change_dir_prop( $baton, 'svk:mirror' => undef );
-        }
-    }
-    if ( $editor->isa('SVK::Editor::SubTree') && !$editor->changes ) {
-        $editor->abort_edit;
-    } else {
-        $editor->close_edit;
-    }
-    return;
-
+    return $editor;
 }
+
+sub _revmap_prop {
+    my ($self, $txn, $changeset) = @_;
+    $txn->change_prop('svm:headrev', $self->mirror->server_uuid.":$changeset\n");
+}
+
 
 =item mirror_changesets
 
@@ -404,11 +425,40 @@ sub sync_changeset {
 
 sub mirror_changesets {
     my ( $self, $torev, $callback ) = @_;
-
     $self->mirror->with_lock( 'mirror',
         sub {
-            $self->traverse_new_changesets(
-                sub { $self->sync_changeset( @_, $callback ) }, $torev );
+	    $self->refresh;
+	    my @revs;
+            $self->traverse_new_changesets( sub { push @revs, [@_] }, $torev );
+	    # prepare generator for pipelined ra
+	    my @gen;
+	    my $revprop = $self->mirror->depot->mirror->revprop; # XXX: this is so wrong
+	    return unless @revs;
+	    my $ra = $self->_new_ra;
+	    if ($self->use_pipeline) {
+		for (@revs) {
+		    push @gen, ['rev_proplist', $_->[0]] if $revprop;
+		    push @gen, ['replay', $_->[0], 0, 1, 'EDITOR'];
+		}
+		$ra = SVK::Mirror::Backend::SVNRaPipe->new($ra, sub { shift @gen });
+	    }
+	    my $pool = SVN::Pool->new_default;
+	    for (@revs) {
+		$pool->clear;
+		my ($changeset, $metadata) = @$_;
+		my $extra_prop = {};
+		if ( $revprop ) {
+		    my $prop = $ra->rev_proplist($changeset);
+		    for (@$revprop) {
+			$extra_prop->{$_}= $prop->{$_}
+			    if exists $prop->{$_};
+		    }
+		}
+		$self->sync_changeset( $changeset, $metadata, $ra,
+				       $extra_prop,
+				       $callback );
+	    }
+	    $self->_ra_finished($ra);
         }
     );
 }

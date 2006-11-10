@@ -49,50 +49,26 @@ sub _do_relocate {
     $self->mirror->depot->reposfs->change_rev_prop( 0, 'svn:svnsync:from-url',  $self->mirror->url );
 }
 
-sub find_rev_from_changeset {
-    return $_[0];
-}
+sub find_rev_from_changeset { $_[0] }
 
-sub sync_changeset {
-    my ( $self, $changeset, $metadata, $callback ) = @_;
-    my $t = $self->mirror->get_svkpath('/');
-    my ( $editor, undef, %opt ) = $t->get_editor(
-        ignore_mirror => 1,
-        message       => $metadata->{message},
-        author        => $metadata->{author},
-        callback      => sub {
-            $t->repos->fs->change_rev_prop( $_[0], 'svn:date',
-                $metadata->{date} );
-            $self->fromrev( $_[0] );
-            $callback->( $changeset, $_[0] ) if $callback;
-        }
-    );
+sub _revmap_prop { }
 
-    my $ra = $self->_new_ra;
-    my $pool = SVN::Pool->new_default;
-    if ( my $revprop = $self->mirror->depot->mirror->revprop ) {
-        my $prop = $ra->rev_proplist($changeset);
-        for (@$revprop) {
-            $opt{txn}->change_prop( $_, $prop->{$_} )
-                if exists $prop->{$_};
-        }
-    }
-
-    $editor = SVK::Editor::CopyHandler->new(
+sub _get_sync_editor {
+    my ($self, $editor, $target) = @_;
+    return SVK::Editor::CopyHandler->new(
         _editor => $editor,
         cb_copy => sub {
             my ( $editor, $path, $rev ) = @_;
             return ( $path, $rev ) if $rev == -1;
             $path =~ s{^\Q/}{};
-            return $t->as_url( 1, $path, $rev );
+            return $target->as_url( 1, $path, $rev );
         }
-    );
+    )
+}
 
-    $ra->replay( $changeset, 0, 1, $editor );
-    $self->_ra_finished($ra);
+sub _after_replay {
+    my ($self, $ra, $editor) = @_;
     $editor->close_edit;
-    return;
-
 }
 
 sub _relayed { }
