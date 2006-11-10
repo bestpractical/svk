@@ -49,7 +49,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn and mod_authz_svn";
 }
 
-plan tests => 3;
+plan tests => 5;
 
 my $utf8 = SVK::Util::get_encoding;
 
@@ -80,27 +80,16 @@ my $uri = 'http://'.$server->{name}.'/svn';
 #our $DEBUG=1;
 #$ENV{DEBUG_INTERACTIVE}=1;
 
-no warnings 'redefine';
-*SVK::Mirror::Backend::SVNRa::_initialize_auth = sub {
-    my $self = shift;
-    # create a subpool that is not automatically destroyed
-    my $auth_pool = SVN::Pool::create(${ $self->mirror->pool });
-    $auth_pool->default;
-
-    my ($baton, $ref) = SVN::Core::auth_open_helper([
-        SVN::Client::get_simple_provider (),
-        SVN::Client::get_ssl_server_trust_file_provider (),
-        SVN::Client::get_username_provider (),
-        SVN::Client::get_simple_prompt_provider( __PACKAGE__->can('_my_prompt'), 2),
-    ]);
-
-    $self->_auth_baton($baton);
-    $self->_auth_ref($ref);
-};
+use SVK::Config;
+SVK::Config->auth_providers(
+    sub {
+        [ SVN::Client::get_simple_prompt_provider( \&my_prompt, 2 ) ]
+    }
+);
 
 my $prompt_called = 0;
 
-sub _my_prompt {
+sub my_prompt {
     my ($cred, $realm, $default_username, $may_save, $pool) = @_;
     ++$prompt_called;
     $cred->username('test');
@@ -110,7 +99,6 @@ sub _my_prompt {
 }
 
 $svk->mirror ('//remote', "$uri/A");
-
 is_output ($svk, 'sync', ['//remote'],
 	   ["Syncing $uri/A",
 	    'Retrieving log information from 1 to 2',
@@ -120,3 +108,27 @@ ok($prompt_called, "prompt called");
 
 $svk->mirror('--detach', '//remote');
 
+###### readable root, C requires authz
+overwrite_file($policy, "
+[/]
+* = r
+test = rw
+[/C]
+* =
+test = rw
+");
+$svk->mkdir(-pm => 'something restricited', '/test/C/lala');
+
+$prompt_called = 0;
+$svk->mirror ('//remote-full', "$uri");
+ok($prompt_called, "prompt called");
+
+is_output ($svk, 'sync', ['//remote-full'],
+	   ["Syncing $uri",
+	    'Retrieving log information from 1 to 3',
+	    'Committed revision 6 from revision 1.',
+	    'Committed revision 7 from revision 2.',
+	    'Committed revision 8 from revision 3.']);
+
+$server->stop;
+print "\n";
