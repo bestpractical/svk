@@ -215,6 +215,7 @@ LOCKED:
     {
         while (1) {
             my $who = $fs->revision_prop( 0, $token ) or last LOCKED;
+	    last if $who eq $content;
 	    $lock_message->($self, $who);
             sleep 1;
         }
