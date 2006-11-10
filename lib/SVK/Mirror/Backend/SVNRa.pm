@@ -484,7 +484,9 @@ sub get_commit_editor {
         $self->{commit_ra}->get_commit_editor(
             $msg,
             sub {
-		$self->_ra_finished($self->{commit_ra});
+		# only recycle the ra if we are committing from root
+		$self->_ra_finished($self->{commit_ra})
+		    unless length $path;
                 $committed->(@_);
             },
             @lock ) );

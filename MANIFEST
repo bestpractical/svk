@@ -229,6 +229,7 @@ t/23commit-inter-nav.t
 t/23commit-inter-output.t
 t/23commit-mirror.t
 t/23commit-multi.t
+t/23commit-subdir.t
 t/23commit.t
 t/24diff.t
 t/25log-filter.t
