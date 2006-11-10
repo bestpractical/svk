@@ -232,6 +232,7 @@ sub has_replay {
         }
     }
     $self->_ra_finished($ra);
+    # FIXME: if we do ^c here $err would be empty. do something else.
     return $self->_has_replay(0)
       if $err->apr_err == $SVN::Error::RA_NOT_IMPLEMENTED      # ra_svn
       || $err->apr_err == $SVN::Error::UNSUPPORTED_FEATURE;    # ra_dav

@@ -8,10 +8,15 @@ __PACKAGE__->mk_classdata('_svnconfig');
 __PACKAGE__->mk_classdata('auth_providers');
 
 # XXX: this is 1.3 api. use SVN::Auth::* for 1.4 and we don't have to load ::Client anymore
+# (well, fix svn perl bindings to wrap the prompt functions correctly first.
 require SVN::Client;
 __PACKAGE__->auth_providers(
     sub {
+	my $keychain = SVN::_Core->can('svn_auth_get_keychain_simple_provider');
+	my $win32 = SVN::_Core->can('svn_auth_get_windows_simple_provider');
         [
+	    $keychain ? $keychain : (),
+	    $win32    ? $win32    : (),
             SVN::Client::get_simple_provider(),
             SVN::Client::get_ssl_server_trust_file_provider(),
             SVN::Client::get_username_provider(),
