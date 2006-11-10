@@ -49,7 +49,7 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn and mod_authz_svn";
 }
 
-plan tests => 2;
+plan tests => 5;
 
 my $utf8 = SVK::Util::get_encoding;
 
@@ -80,13 +80,55 @@ my $uri = 'http://'.$server->{name}.'/svn';
 #our $DEBUG=1;
 #$ENV{DEBUG_INTERACTIVE}=1;
 
-$svk->mirror ('//remote', "$uri/A");
+use SVK::Config;
+SVK::Config->auth_providers(
+    sub {
+        [ SVN::Client::get_simple_prompt_provider( \&my_prompt, 2 ) ]
+    }
+);
 
+my $prompt_called = 0;
+
+sub my_prompt {
+    my ($cred, $realm, $default_username, $may_save, $pool) = @_;
+    ++$prompt_called;
+    $cred->username('test');
+    $cred->password('test');
+    $cred->may_save(0);
+    return $SVN::_Core::SVN_NO_ERROR;
+}
+
+$svk->mirror ('//remote', "$uri/A");
 is_output ($svk, 'sync', ['//remote'],
 	   ["Syncing $uri/A",
 	    'Retrieving log information from 1 to 2',
 	    'Committed revision 2 from revision 1.',
 	    'Committed revision 3 from revision 2.']);
+ok($prompt_called, "prompt called");
+
+$svk->mirror('--detach', '//remote');
+
+###### readable root, C requires authz
+overwrite_file($policy, "
+[/]
+* = r
+test = rw
+[/C]
+* =
+test = rw
+");
+$svk->mkdir(-pm => 'something restricited', '/test/C/lala');
+
+$prompt_called = 0;
+$svk->mirror ('//remote-full', "$uri");
+ok($prompt_called, "prompt called");
+
+is_output ($svk, 'sync', ['//remote-full'],
+	   ["Syncing $uri",
+	    'Retrieving log information from 1 to 3',
+	    'Committed revision 6 from revision 1.',
+	    'Committed revision 7 from revision 2.',
+	    'Committed revision 8 from revision 3.']);
 
 $server->stop;
 print "\n";
