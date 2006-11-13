@@ -31,7 +31,7 @@ requires(
     'Class::Data::Inheritable' => '0',
     'Path::Class'              => '0.15',
     'UNIVERSAL::require'       => '0',
-    'File::Temp'               => '0.14',    # in core since 5.8.1
+    'File::Temp'               => '0.17',    # in core since 5.8.1
     'Encode'                   => '2.10',    # in core since 5.8.7
     'Getopt::Long'             => '2.35',    # in core since 5.8.8
     'Pod::Escapes'             => '0',       # in core since 5.9.3
