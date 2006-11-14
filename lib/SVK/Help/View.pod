@@ -4,7 +4,10 @@ SVK::Help::View - Introduction to svk view support
 
 =head1 DESCRIPTION
 
-svk allows you to define a different I<view> for the existing
+[Views are a BETA-quality feature. We're very interested in bug reports 
+and feeback about them.]
+
+svk allows you to define multiple different I<view>s for an existing
 repository.
 
 =head2 DEFINING A VIEW

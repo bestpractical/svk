@@ -4,8 +4,8 @@ SVK::Help::Index - SVK Documentation - Main index
 
 =head1 DESCRIPTION
 
-If you've never used SVK before, you should start by reading the B<intro>,
-a getting started guide for svk. To do that, type:
+If this is your first time using SVK, you should start by reading a 
+brief tutorial. When you're ready, type:
 
     svk help intro
 
@@ -15,8 +15,8 @@ Once you've done that, more in-depth help is available:
     svk help commands       A list of all available commands
     svk help view           svk view support
     svk help <command-name> Help for a specific command
-    svk help                This page
 
-Additional documentation is available on the web at L<http://svk.bestpractical.com/>.
+For commercial support, contact sales@bestpractical.com.  For up to date 
+information about SVK, visit L<http://svk.bestpractical.com/>.
 
 =cut
