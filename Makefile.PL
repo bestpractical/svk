@@ -27,6 +27,7 @@ requires(
     'Class::Autouse'           => '1.15',
     'App::CLI'                 => '0',
     'List::MoreUtils'          => '0',
+    'Log::Log4perl'            => '0',
     'Class::Accessor::Fast'    => '0',
     'Class::Data::Inheritable' => '0',
     'Path::Class'              => '0.15',
