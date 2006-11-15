@@ -29,6 +29,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 
 use Config ();
+use SVK::Logger;
 use SVK::I18N;
 use SVN::Core;
 use autouse 'Encode'            => qw(resolve_alias($) decode encode);
@@ -36,6 +37,7 @@ use File::Glob qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
 use autouse 'File::Spec::Functions' => 
                                qw(catdir catpath splitpath splitdir tmpdir);
+
 
 
 =head1 NAME
@@ -202,7 +204,7 @@ sub edit_file {
 			: DEFAULT_EDITOR; # fall back to something
     my @editor = split (/ /, $editor);
 
-    print loc("Waiting for editor...\n");
+    $logger->info(loc("Waiting for editor..."));
 
     # XXX: check $?
     system {$editor[0]} (@editor, $file) and die loc("Aborted: %1\n", $!);
@@ -773,10 +775,10 @@ sub move_path {
         File::Copy::move ($source => $target) and return;
     }
 
-    print loc(
-        "Cannot rename %1 to %2; please move it manually.\n",
+    $logger->error(loc(
+        "Cannot rename %1 to %2; please move it manually.",
         catfile($source), catfile($target),
-    );
+    ));
 }
 
 =head3 traverse_history (root => $fs_root, path => $path,

@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use SVN::Core;
+use SVK::Logger;
 
 use Sys::Hostname;
 use SVK::I18N;
@@ -323,12 +324,12 @@ sub run {
     my ($self, $torev) = @_;
     return $self->run_svnmirror_sync({ torev => $torev }) unless $self->_backend->has_replay;
 
-    print loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1\n", $self->server_url) : "\n");
+    $logger->info(loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1", $self->server_url) : ""));
 
     $self->mirror_changesets($torev,
         sub {
             my ( $changeset, $rev ) = @_;
-            print "Committed revision $rev from revision $changeset.\n";
+            $logger->info("Committed revision $rev from revision $changeset.");
         }
     );
     die $@ if $@;
@@ -336,7 +337,7 @@ sub run {
 
 sub sync_snapshot {
     my ($self, $snapshot) = @_;
-    print loc("
+    $logger->warn(loc("
 svk is now taking a snapshot of the repository at:
   %1
 
@@ -344,7 +345,7 @@ This is essentially making a checkout of the url, and is bad if the
 url contains directories like trunk and branches.  If this isn't what
 you mean, please hit ^C.
 
-", $self->url);
+", $self->url));
 
     $self->run_svnmirror_sync( { skip_to => $snapshot });
 }
@@ -355,9 +356,9 @@ sub _lock_message {
     my $i = 0;
     sub {
 	my ($mirror, $who) = @_;
-	print loc("Waiting for lock on %1: %2.\n", $target->depotpath, $who);
+	$logger->warn(loc("Waiting for lock on %1: %2.", $target->depotpath, $who));
 	if (++$i % 3 == 0) {
-	    print loc ("
+	    $logger->error(loc ("
 The mirror is currently locked. This might be because the mirror is
 in the middle of a sensitive operation or because a process holding
 the lock hung or died.  To check if the mirror lock is stalled,  see
@@ -365,7 +366,7 @@ if $who is a running, valid process
 
 If the mirror lock is stalled, please interrupt this process and run:
     svk mirror --unlock %1
-", $target->depotpath);
+", $target->depotpath));
 	}
     }
 }

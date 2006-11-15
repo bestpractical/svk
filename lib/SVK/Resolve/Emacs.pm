@@ -3,6 +3,7 @@ use strict;
 use base 'SVK::Resolve';
 use SVK::I18N;
 use SVK::Util qw( devnull );
+use SVK::Logger;
 
 sub commands { 'gnuclient-emacs' }
 
@@ -47,7 +48,7 @@ sub run_resolver {
     my ($self, $cmd, @args) = @_;
 
     local $SIG{$self->{signal}} = sub {
-        print loc("Emerge %1 done.\n");
+        $logger->info(loc("Emerge %1 done."));
         $self->{finished} = 1;
     };
 
@@ -56,10 +57,10 @@ sub run_resolver {
         die loc("Cannot fork: %1", $!);
     }
     elsif ($pid) {
-        print loc(
-            "Started %1, Try 'kill -%2 %3' to terminate if things mess up.\n",
+        $logger->warn(loc(
+            "Started %1, Try 'kill -%2 %3' to terminate if things mess up.",
             $pid, $self->{signal}, $$,
-        );
+        ));
         sleep 1 until $self->{finished};
     }
     else {

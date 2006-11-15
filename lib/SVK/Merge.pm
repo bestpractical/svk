@@ -6,6 +6,7 @@ use SVK::Editor::Merge;
 use SVK::Editor::Rename;
 use SVK::Editor::Translate;
 use SVK::Editor::Delay;
+use SVK::Logger;
 use List::Util qw(min);
 
 =head1 NAME
@@ -301,7 +302,7 @@ sub get_new_ticket {
     my $newinfo = $dstinfo->union ($srcinfo)->del_target ($self->{dst});
     unless ($self->{quiet}) {
 	for (sort keys %$newinfo) {
-	    print loc("New merge ticket: %1:%2\n", $_, $newinfo->{$_}{rev})
+	    $logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
 		if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
 	}
     }
@@ -563,10 +564,10 @@ sub run {
 	      no_recurse => $self->{no_recurse}, editor => $editor,
 	    );
     unless ($self->{quiet}) {
-	print loc("%*(%1,conflict) found.\n", $meditor->{conflicts})
+	$logger->warn(loc("%*(%1,conflict) found.", $meditor->{conflicts}))
 	    if $meditor->{conflicts};
-	print loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.\n",
-		  $meditor->{skipped}) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
+	$logger->warn(loc("%*(%1,file) skipped, you might want to rerun merge with --track-rename.",
+		  $meditor->{skipped})) if $meditor->{skipped} && !$self->{track_rename} && !$self->{auto};
     }
 
     return $meditor->{conflicts};
