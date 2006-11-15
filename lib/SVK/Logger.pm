@@ -4,8 +4,18 @@ use warnings;
 
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use Log::Log4perl;
+use Log::Log4perl qw(get_logger :levels);
 
+my $conf = q{
+  log4perl.rootLogger=INFO, Screen
+  log4perl.appender.Screen = Log::Log4perl::Appender::Screen
+  log4perl.appender.Screen.layout = PatternLayout
+  log4perl.appender.Screen.layout.ConversionPattern = %m%n
+};
+
+# ... passed as a reference to init()
+Log::Log4perl::init( \$conf );
+    
 sub import {
   my $class = shift;
   my $var = shift || 'logger';
@@ -26,8 +36,6 @@ sub import {
     *{ $caller . "::$var" } = \$logger;
   }
 }
-
-
 
 1;
 
@@ -69,5 +77,21 @@ $SUPPORTADDRESS":
 On Windows, the same can be achieved by doing:
 
   XXX - somebody clueful please fill in -- I don't know Windows
+
+=head1 AUTHORS
+
+Stig Brautaset E<lt>stig@brautaset.orgE<gt>
+
+Chia-liang Kao E<lt>clkao@clkao.orgE<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2003-2006 by Chia-liang Kao E<lt>clkao@clkao.orgE<gt>.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
+
 
 =cut
