@@ -159,8 +159,8 @@ sub load {
 	$info = eval {LoadFile ($self->{statefile})};
 	if ($@) {
 	    rename ($self->{statefile}, "$self->{statefile}.backup");
-	    print loc ("Can't load statefile, old statefile saved as %1\n",
-		     "$self->{statefile}.backup");
+	    $logger->warn(loc ("Can't load statefile, old statefile saved as %1",
+		     "$self->{statefile}.backup"));
 	}
         elsif ($info) {
             $info->{checkout}{sep} = $SEP;
@@ -220,7 +220,7 @@ sub _store_config {
     $self->{giantlock_handle} or
         die "Internal error: trying to save config without a lock!\n";
 
-    local $SIG{INT} = sub { $logger->warn( loc("Please hold on a moment. SVK is writing out a critical configuration file.\n"))};
+    local $SIG{INT} = sub { $logger->warn( loc("Please hold on a moment. SVK is writing out a critical configuration file."))};
 
     my $file = $self->{statefile};
     my $tmpfile = $file."-$$";
@@ -1042,11 +1042,11 @@ ENTRY:	for my $entry (@{$arg{targets}}) {
 		$seen{$copath} = 1;
 		lstat $copath;
 		unless (-e _) {
-		    $logger->warn( loc ("Unknown target: %1.\n", $copath));
+		    $logger->warn( loc ("Unknown target: %1.", $copath));
 		    next ENTRY;
 		}
 		unless (-r _) {
-		    $logger->warn( loc ("Warning: %1 is unreadable.\n", $copath));
+		    $logger->warn( loc ("Warning: %1 is unreadable.", $copath));
 		    next ENTRY;
 		}
 		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
@@ -1487,7 +1487,7 @@ sub _delta_dir {
 	    for sort keys %$newprops;
     }
     if (defined $targets) {
-	print loc ("Unknown target: %1.\n", $_) for sort keys %$targets;
+	$logger->warn(loc ("Unknown target: %1.", $_)) for sort keys %$targets;
     }
 
     $arg{editor}->close_directory ($baton, $pool)
@@ -1550,7 +1550,7 @@ sub resolved_entry {
     my $val = $self->{checkout}->get ($entry, 1);
     return unless $val && $val->{'.conflict'};
     $self->{checkout}->store ($entry, {%$val, '.conflict' => undef});
-    print loc("%1 marked as resolved.\n", $entry);
+    $logger->warn(loc("%1 marked as resolved.", $entry));
 }
 
 sub do_resolved {
