@@ -23,6 +23,8 @@ use Fcntl qw(:flock);
 use SVK::Depot;
 use SVK::Config;
 
+use SVK::Logger;
+
 =head1 NAME
 
 SVK::XD - svk depot and checkout handling.
@@ -218,7 +220,7 @@ sub _store_config {
     $self->{giantlock_handle} or
         die "Internal error: trying to save config without a lock!\n";
 
-    local $SIG{INT} = sub { warn loc("Please hold on a moment. SVK is writing out a critical configuration file.\n")};
+    local $SIG{INT} = sub { $logger->warn( loc("Please hold on a moment. SVK is writing out a critical configuration file.\n"))};
 
     my $file = $self->{statefile};
     my $tmpfile = $file."-$$";
@@ -664,7 +666,7 @@ sub _load_svn_autoprop {
 	    enumerate ('auto-props',
 		       sub { $self->{svnautoprop}{compile_apr_fnmatch($_[0])} = $_[1]; 1} );
     };
-    warn "Your svn is too old, auto-prop in svn config is not supported: $@\n" if $@;
+    $logger->warn("Your svn is too old, auto-prop in svn config is not supported: $@") if $@;
 }
 
 sub auto_prop {
@@ -1040,11 +1042,11 @@ ENTRY:	for my $entry (@{$arg{targets}}) {
 		$seen{$copath} = 1;
 		lstat $copath;
 		unless (-e _) {
-		    print loc ("Unknown target: %1.\n", $copath);
+		    $logger->warn( loc ("Unknown target: %1.\n", $copath));
 		    next ENTRY;
 		}
 		unless (-r _) {
-		    print loc ("Warning: %1 is unreadable.\n", $copath);
+		    $logger->warn( loc ("Warning: %1 is unreadable.\n", $copath));
 		    next ENTRY;
 		}
 		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
@@ -1182,12 +1184,12 @@ sub _node_type {
     my $st = [lstat ($copath)];
     return '' if !-e _;
     unless (-r _) {
-	print loc ("Warning: $copath is unreadable.\n");
+	$logger->warn( loc ("Warning: $copath is unreadable."));
 	return;
     }
     return ('file', $st) if -f _ or is_symlink;
     return ('directory', $st) if -d _;
-    print loc ("Warning: unsupported node type $copath.\n");
+    $logger->warn( loc ("Warning: unsupported node type $copath."));
     return ('', $st);
 }
 

@@ -9,6 +9,7 @@ use Log::Log4perl qw(get_logger :levels);
 my $conf = q{
   log4perl.rootLogger=INFO, Screen
   log4perl.appender.Screen = Log::Log4perl::Appender::Screen
+  log4perl.appender.Screen.stderr = 0
   log4perl.appender.Screen.layout = PatternLayout
   log4perl.appender.Screen.layout.ConversionPattern = %m%n
 };
