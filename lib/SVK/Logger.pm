@@ -2,6 +2,36 @@ package SVK::Logger;
 use strict;
 use warnings;
 
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+use Log::Log4perl;
+
+sub import {
+  my $class = shift;
+  my $var = shift || 'logger';
+  
+  # it's ok if people add a sigil; we can get rid of that.
+  $var =~ s/^\$*//;
+  
+  # Find out which package we'll export into.
+  my $caller = caller() . '';
+
+  my $logger = Log::Log4perl->get_logger(caller().'');
+  {
+    # As long as we don't use a package variable, each module we export
+    # into will get their own object. Also, this allows us to decide on 
+    # the exported variable name. Hope it isn't too bad form...
+    no strict 'refs';
+    *{ $caller . "::$var" } = \$logger;
+  }
+}
+
+
+
+1;
+
+__END__
+
 =head1 NAME
 
 SVK::Logger - logging framework for SVK
@@ -35,10 +65,8 @@ $SUPPORTADDRESS":
 
   env SVKDEBUG=1 svk <command that failed> 2>&1 | mail $SUPPORTADDRESS
 
+On Windows, the same can be achieved by doing:
 
-
-
+  XXX - somebody clueful please fill in -- I don't know Windows
 
 =cut
-
-1;
