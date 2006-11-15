@@ -16,7 +16,8 @@ sub import {
   # Find out which package we'll export into.
   my $caller = caller() . '';
 
-  my $logger = Log::Log4perl->get_logger(caller().'');
+  (my $name = $caller) =~ s/::/./g;
+  my $logger = Log::Log4perl->get_logger(lc($name));
   {
     # As long as we don't use a package variable, each module we export
     # into will get their own object. Also, this allows us to decide on 
