@@ -53,6 +53,13 @@ the following merge tools:
 If you want svk to spawn a specific merge tool, set this variable to
 the tool's name.
 
+=item $SVKLOGLEVEL
+
+The lowest log level that svk will present to the user. The log levels
+are: DEBUG, INFO, WARN, ERROR and FATAL. The default log level is INFO;
+this includes progress messages for long-running commands (such as
+sync). For non-interactive use (such as for cron jobs) it might be
+useful to set $SVKLOGLEVEL to WARN.
 
 =item $SVKRESOLVE
 

@@ -8,7 +8,7 @@ use Log::Log4perl qw(get_logger :levels);
 
 my $level = {
     map { $_ => uc $_ } qw( debug info warn error fatal )
-}->{ lc $ENV{SVKDEBUG} } || 'INFO';
+}->{ lc $ENV{SVKLOGLEVEL} } || 'INFO';
 
 my $conf = qq{
   log4perl.rootLogger=$level, Screen
@@ -74,14 +74,10 @@ category based on the name of the calling module.
 
 Ideally, for support requests, if something is not going the way it
 should be we should be able to tell people: "rerun the command with the
-SVKDEBUG=1 environment variable set and mail the output to
-$SUPPORTADDRESS":
+SVKLOGLEVEL environment variable set to DEBUG and mail the output to
+$SUPPORTADDRESS". On Unix, this could be accomplished in one command like so:
 
-  env SVKDEBUG=1 svk <command that failed> 2>&1 | mail $SUPPORTADDRESS
-
-On Windows, the same can be achieved by doing:
-
-  XXX - somebody clueful please fill in -- I don't know Windows
+  env SVKLOGLEVEL=DEBUG svk <command that failed> 2>&1 | mail $SUPPORTADDRESS
 
 =head1 AUTHORS
 
