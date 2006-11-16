@@ -6,8 +6,12 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use Log::Log4perl qw(get_logger :levels);
 
-my $conf = q{
-  log4perl.rootLogger=INFO, Screen
+my $level = {
+    map { $_ => uc $_ } qw( debug info warn error fatal )
+}->{ lc $ENV{SVKDEBUG} } || 'INFO';
+
+my $conf = qq{
+  log4perl.rootLogger=$level, Screen
   log4perl.appender.Screen = Log::Log4perl::Appender::Screen
   log4perl.appender.Screen.stderr = 0
   log4perl.appender.Screen.layout = PatternLayout

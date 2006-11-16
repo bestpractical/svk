@@ -519,8 +519,7 @@ sub run {
 		      }) or die loc("Can't find the first revision of %1.\n", $src->path);
 	    }
 	}
-	warn "==> got $boundry_rev as copyboundry, add $self->{fromrev} as boundry as well"
-	    if $main::DEBUG;
+	$logger->debug("==> got $boundry_rev as copyboundry, add $self->{fromrev} as boundry as well");
 
 	if (defined $boundry_rev) {
 	  require SVK::Editor::Copy;
@@ -576,7 +575,7 @@ sub run {
  # translate to (path, rev) for dst
 sub resolve_copy {
     my ($self, $srcinfo, $dstinfo, $cp_path, $cp_rev) = @_;
-    warn "==> to resolve $cp_path $cp_rev" if $main::DEBUG;
+    $logger->debug("==> to resolve $cp_path $cp_rev");
     my $path = $cp_path;
     my $src = $self->{src};
     my $srcpath = $src->path;

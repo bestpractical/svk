@@ -2,7 +2,7 @@ package SVK::Path::View;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
-
+use SVK::Logger;
 use base 'SVK::Path';
 
 __PACKAGE__->mk_clonable_accessors(qw(source));
@@ -70,7 +70,7 @@ sub get_editor {
 	    );
     }
     $editor = SVN::Delta::Editor->new(_debug => 1, _editor => [$editor])
-	if $main::DEBUG;
+	if $logger->is_debug();
     return ($editor, $inspector, %extra);
 }
 

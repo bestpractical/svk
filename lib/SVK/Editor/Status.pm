@@ -1,6 +1,7 @@
 package SVK::Editor::Status;
 use strict;
 use SVN::Delta;
+use SVK::Logger;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base 'SVK::Editor';
 
@@ -13,7 +14,7 @@ sub new {
 		   (defined $self->report ? $self->report : '') ) unless $self->notify;
     $self->tree(Data::Hierarchy->new) unless $self->tree;
     use Data::Dumper;
-    warn Dumper($self) if $main::DEBUG;
+    $logger->debug(Dumper($self));
     return $self;
 }
 

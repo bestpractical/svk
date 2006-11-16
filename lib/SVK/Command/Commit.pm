@@ -5,6 +5,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Editor::Dynamic;
@@ -551,7 +552,7 @@ sub run_delta {
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
-	  debug => $main::DEBUG,
+	  debug => $logger->is_debug(),
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},
