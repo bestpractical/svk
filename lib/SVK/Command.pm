@@ -4,6 +4,7 @@ use base qw(App::CLI App::CLI::Command);
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
+use SVK::Logger;
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
 		  find_svm_source $SEP IS_WIN32 catdepot traverse_history);
 use SVK::I18N;
@@ -366,7 +367,7 @@ sub arg_uri_maybe {
     die loc ("URI not allowed here: %1.\n", $no_new_mirror)
 	if $no_new_mirror;
 
-    print loc("New URI encountered: %1\n", $uri);
+    $logger->info(loc("New URI encountered: %1\n", $uri));
 
     my $depots = join('|', map quotemeta, sort keys %$map);
     my ($base_uri, $rel_uri);
@@ -988,7 +989,7 @@ svk use the default.
 
 	my $target = $self->arg_depotpath ($path);
 	last if $allow_exist or $target->root->check_path ($target->path) == $SVN::Node::none;
-	print loc ("Path %1 already exists.\n", $path);
+	$logger->warn(loc ("Path %1 already exists.", $path));
     }
 
     return $path;

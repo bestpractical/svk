@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Merge );
 use SVK::XD;
+use SVK::Logger;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -17,7 +18,7 @@ sub run {
     my ($self, @arg) = @_;
     $self->{auto}++;
     if ($self->{baserev}) {
-	print loc("--baserev is deprecated, use --base instead\n");
+	$logger->warn(loc("--baserev is deprecated, use --base instead"));
 	$self->{base} ||= $self->{baserev};
     }
     $self->SUPER::run (@arg);

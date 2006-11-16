@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ('s|skipto=s'	=> 'skip_to',
@@ -33,8 +34,8 @@ sub run {
             my ( $arg, $path ) = $orig_arg =~ m{^/?([^/]*)/?(.*)?$};
             my ($depot) = eval { $self->{xd}->find_depot($arg) };
             unless ( defined $depot ) {
-                print loc( "%1 does not contain a valid depotname\n",
-                    $orig_arg );
+                $logger->error(loc( "%1 does not contain a valid depotname",
+                    $orig_arg ));
                 next;
             }
 
@@ -42,7 +43,7 @@ sub run {
                 $depot->mirror->entries;
 
             if ( $path && $explicit{$orig_arg} && !@tempnewarg ) {
-                print loc( "no mirrors found underneath %1\n", $orig_arg );
+                $logger->warn(loc( "no mirrors found underneath %1", $orig_arg ));
                 next;
             }
             push @mirrors, map { $depot->mirror->get($_) } @tempnewarg;
@@ -58,7 +59,7 @@ sub run {
 	    1;
 	};
         if ( $self->{sync_all} ) {
-            print loc( "Starting to synchronize %1\n", $m->get_svkpath->depotpath );
+            $logger->info(loc( "Starting to synchronize %1", $m->get_svkpath->depotpath ));
             eval { $run_sync->() };
             if ($@) {
                 warn $@;

@@ -161,6 +161,7 @@ package SVK::Command::Mirror::recover;
 use base qw(SVK::Command::Mirror);
 use SVK::Util qw( traverse_history get_prompt );
 use SVK::I18N;
+use SVK::Logger;
 
 use constant narg => 1;
 
@@ -187,9 +188,9 @@ sub recover_headrev {
         callback    => sub {
             $rev = $_[1];
             $firstrev ||= $rev;
-            print loc("Analyzing revision %1...\n", $rev),
+            $logger->info(loc("Analyzing revision %1...\n", $rev),
                   ('-' x 70),"\n",
-                  $fs->revision_prop ($rev, 'svn:log'), "\n";
+                  $fs->revision_prop ($rev, 'svn:log'));
 
             if ( $headrev = $fs->revision_prop ($rev, 'svm:headrev') ) {
                 ($uuid, $rrev) = split(/[:\n]/, $headrev);
@@ -210,7 +211,7 @@ sub recover_headrev {
     }
 
     if (!$skipped) {
-        print loc("No need to revert; it is already the head revision.\n");
+        $logger->warn(loc("No need to revert; it is already the head revision."));
         return;
     }
 

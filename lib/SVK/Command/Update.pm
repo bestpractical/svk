@@ -6,6 +6,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ('r|revision=s'    => 'rev',
@@ -112,9 +113,9 @@ sub do_update {
 
     my $content_revision = $update_target->isa('SVK::Path::View') ?
 	$update_target->source->revision : $update_target->revision;
-    print loc("Syncing %1(%2) in %3 to %4.\n", $cotarget->depotpath,
+    $logger->info(loc("Syncing %1(%2) in %3 to %4.", $cotarget->depotpath,
 	      $cotarget->path_anchor, $cotarget->copath,
-	      $content_revision);
+	      $content_revision));
 
     if ($kind == $SVN::Node::file ) {
 	$cotarget->anchorify;

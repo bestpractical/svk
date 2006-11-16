@@ -95,14 +95,15 @@ package SVK::Command::Patch::test;
 
 use base qw/SVK::Command::Patch::FileRequired/;
 use SVK::I18N;
+use SVK::Logger;
 
 sub run {
     my ($self, $patch, $not_applicable) = @_;
 
     return $not_applicable if $not_applicable;
     if (my $conflicts = $patch->apply (1)) {
-	print loc("%*(%1,conflict) found.\n", $conflicts);
-	print loc("Please do a merge to resolve conflicts and regen the patch.\n");
+	$logger->error(loc("%*(%1,conflict) found.", $conflicts));
+	$logger->error(loc("Please do a merge to resolve conflicts and regen the patch."));
     }
 
     return;

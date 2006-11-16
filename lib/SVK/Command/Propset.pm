@@ -6,6 +6,7 @@ use constant opt_recursive => 0;
 use SVK::Util qw ( abs2rel );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -38,11 +39,11 @@ sub do_propset_direct {
         $fs->change_rev_prop ($rev, $propname => $propvalue);
 	unless ($self->{quiet}) {
 	    if (defined $propvalue) {
-		print loc("Property '%1' set on repository revision %2.\n",
-		    $propname, $rev);
+		$logger->info(loc("Property '%1' set on repository revision %2.",
+		    $propname, $rev));
 	    } else {
-		print loc("Property '%1' deleted from repository revision %2.\n",
-		    $propname, $rev);
+		$logger->info(loc("Property '%1' deleted from repository revision %2.",
+		    $propname, $rev));
 	    }
 	}
         return;

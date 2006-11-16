@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
 use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri make_path );
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -154,7 +155,7 @@ sub run {
     return loc("Different depots.\n") unless $dst->same_repos(@src);
     my $m = $self->under_mirror($dst);
     if ( $m && !$dst->same_source(@src) ) {
-        print loc("You are trying to copy across different mirrors.\n");
+        $logger->error(loc("You are trying to copy across different mirrors."));
         die loc( "Try create an empty directory %1, and run smerge --baseless %2 %3.\n",
             $dst->report, $src[0]->report, $dst->report )
           if $#src == 0 && $dst->isa('SVK::Path');
@@ -179,7 +180,7 @@ sub run {
 		    die loc("Invalid argument: copying directory %1 into itself.\n", $_->report);
 		}
 		if ($_->path_anchor eq $cpdst->path_anchor) {
-		    print loc("Ignoring %1 as source.\n", $_->report);
+		    $logger->warn(loc("Ignoring %1 as source.", $_->report));
 		    next;
 		}
 		$cpdst->descend ($_->path_anchor =~ m|/([^/]+)/?$|)
