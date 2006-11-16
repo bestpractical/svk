@@ -280,3 +280,4 @@ utils/extract-docs
 utils/extract-message-catalog
 utils/pullyu
 utils/svk-ediff.el
+utils/verify-mirror

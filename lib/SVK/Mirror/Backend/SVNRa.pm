@@ -256,6 +256,11 @@ sub _ra_finished {
     my ($self, $ra) = @_;
     return if $self->_cached_ra;
     return if ref($ra) eq 'SVK::Mirror::Backend::SVNRaPipe';
+    if ($ra->{url} ne $self->mirror->url) {
+	return unless _p_svn_ra_session_t->can('reparent');
+	$ra->reparent($self->mirror->url);
+    }
+
     $self->_cached_ra( $ra );
 }
 
@@ -485,8 +490,7 @@ sub get_commit_editor {
             $msg,
             sub {
 		# only recycle the ra if we are committing from root
-		$self->_ra_finished($self->{commit_ra})
-		    unless length $path;
+		$self->_ra_finished($self->{commit_ra});
                 $committed->(@_);
             },
             @lock ) );

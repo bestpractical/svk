@@ -130,7 +130,7 @@ $svk->update ($copath);
 
 is_output ($svk, 'cp', ['//V/new', '//foo-remote/new'],
 	   ['You are trying to copy across different mirrors.',
-	    'Try create an empty directory //foo-remote/new, and run smerge --baseless //V/new //foo-remote/new.']);
+	    'Create an empty directory //foo-remote/new, and run smerge --baseless //V/new //foo-remote/new.']);
 
 is_output ($svk, 'cp', ['-m', 'copy directly', '//V/me', '//V/me-dcopied'],
 	   ['Committed revision 15.']);
