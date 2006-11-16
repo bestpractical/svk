@@ -155,7 +155,7 @@ sub run {
     my $m = $self->under_mirror($dst);
     if ( $m && !$dst->same_source(@src) ) {
         print loc("You are trying to copy across different mirrors.\n");
-        die loc( "Try create an empty directory %1, and run smerge --baseless %2 %3.\n",
+        die loc( "Create an empty directory %1, and run smerge --baseless %2 %3.\n",
             $dst->report, $src[0]->report, $dst->report )
           if $#src == 0 && $dst->isa('SVK::Path');
         return 1;
