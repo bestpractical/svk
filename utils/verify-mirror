@@ -1,0 +1,117 @@
+#!/usr/bin/perl -w
+# XXX: This requires newer svn api do make do_status work
+
+# usage: verify-mirror repospath path revision
+use strict;
+no warnings 'once';
+use SVK;
+use SVK::XD;
+
+my ($repospath, $path, $revision) = @ARGV;
+
+my $repos = SVN::Repos::open($repospath) or die $!;
+my $depot = SVK::Depot->new( {repos => $repos, repospath => $repospath} );
+
+my $t = SVK::Path->real_new( { depot => $depot, revision => $revision, path => $path } );
+
+my ($m, $mpath) = $t->is_mirrored;
+my $rabackend = $m->_backend;
+
+my $changed = $t->root->paths_changed;
+my $rev = $m->find_changeset($t->revision);
+my $ra = $rabackend->_new_ra;
+
+require SVK::Command::Log;
+$ra->get_log([''], $rev, $rev, 0,
+	    1, 1,
+    sub {
+        my ( $paths, $r, $author, $date, $log, $ppool ) = @_;
+        my $pool = SVN::Pool->new($ppool);
+        for my $remotepath ( keys %$paths ) {
+            $pool->clear;
+            my $localpath = $path . $remotepath;
+            my $local     = delete $changed->{$localpath}
+                or die "$localpath is not in changes";
+            my $action = $SVK::Command::Log::chg->[ $local->change_kind ];
+            die "different change action for $remotepath "
+                . $paths->{$remotepath}->action
+                . " and $action"
+                unless $paths->{$remotepath}->action eq $action;
+
+            next if $action eq 'D';
+
+            # XXX: option to turn off strict on copies.
+            if ( defined( my $from = $paths->{$remotepath}->copyfrom_path ) )
+            {
+                my ( $lfrom_rev, $lfrom ) = $t->root->copied_from($localpath);
+                die "copy from rev different for $localpath"
+                    unless $m->find_changeset($lfrom_rev)
+                    == $paths->{$remotepath}->copyfrom_rev;
+                die "copy from path different for $localpath"
+                    unless $path . $from eq $lfrom;
+
+            }
+
+            if ( $t->root->check_path($localpath) == $SVN::Node::file ) {
+                my $p = Path::Class::File->new_foreign( 'Unix', $remotepath );
+                my ( $parent, $target ) = ( $p->parent, $p->basename );
+
+                # do md5 comparison
+
+                my $fra = $rabackend->_new_ra(
+                    url => $m->url . ( $parent eq '/' ? '' : $parent ) );
+
+                # XXX: do_status requires svn trunk, and the required
+                # changed should be merged to 1.4.3
+                my $md5;
+                my $reporter = $fra->do_status(
+                    "$target",
+                    $rev, 1,
+                    MD5Collect::Editor->new(
+                           cb_md5 => sub { $md5->{ $_[0] } = $_[1] },
+#                            _debug => 1
+#                        }
+                    )
+                );
+
+                # my $reporter = $fra->do_update( $rev, "$target", 0,
+                #                    SVK::Editor->new( { _debug => 1 } ) );
+                $reporter->set_path( '', $rev - 1, 0, undef );
+                # $reporter->set_path( $target, $rev-1, 1, '' );
+                $reporter->finish_report;
+
+                die "no md5 found from server for $remotepath ($target)"
+                    unless $md5->{$target};
+
+                die "md5 for $localpath is different"
+                    unless $md5->{$target} eq
+                    $t->root->file_md5_checksum($localpath);
+            }
+
+        }
+    } );
+
+use Data::Dumper;
+die "not in remote: ".join(',', keys %$changed)
+    if keys %$changed;
+
+package MD5Collect::Editor;
+use base 'SVK::Editor';
+__PACKAGE__->mk_accessors(qw(cb_md5));
+
+sub add_file {
+    my $self = shift;
+    my $path = shift;
+    return $path;
+}
+
+sub open_file {
+    my $self = shift;
+    my $path = shift;
+    return $path;
+}
+
+sub close_file {
+    my ($self, $path, $md5) = @_;
+    $self->{cb_md5}->($path, $md5);
+}
