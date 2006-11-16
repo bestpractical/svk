@@ -83,7 +83,7 @@ sub get_commit_message {
 	$self->{message} = get_buffer_from_editor
 	    (loc('log message'), $self->message_prompt,
 	     join ("\n", $self->{message} || '', $self->message_prompt, ''), 'commit');
-	++$self->{save_message};
+	$self->{save_message} = $$;
     }
     $self->decode_commit_message;
 }
@@ -122,6 +122,7 @@ sub adjust_anchor {
 sub save_message {
     my $self = shift;
     return unless $self->{save_message};
+    return unless $self->{save_message} == $$;
     local $@;
     my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
     print $fh $self->{message};
@@ -360,7 +361,7 @@ sub get_committable {
 	    get_buffer_from_editor (loc('log message'), $self->target_prompt,
 				    undef, $file, $target->copath, $target->source->{targets});
 	die loc("No targets to commit.\n") if $#{$targets} < 0;
-	++$self->{save_message};
+	$self->{save_message} = $$;
 	unlink $file;
     }
 
