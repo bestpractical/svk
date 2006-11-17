@@ -1,5 +1,10 @@
 package SVK::Test;
 use strict;
+
+# When running tests, don't let the user's .subversion/config
+# affect results.
+BEGIN { $ENV{SVKNOSVNCONFIG} = 1; }
+
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base 'Exporter';
 
