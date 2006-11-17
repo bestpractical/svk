@@ -263,8 +263,6 @@ is_output ($svk, 'commit', ['-m', 'commit copied file in mirrored path', $copath
 	    'Retrieving log information from 7 to 7',
 	    'Committed revision 23 from revision 7.']);
 
-TODO: {
-local $TODO = 'BUG - fix copy with -r 2@';
 is_output ($svk, 'cp', ['-m', 'copy for remote', -r => '2@', '//foo-remote/me', '//foo-remote/me-rcopied-wr'],
 	   [
 	    "Merging back to mirror source $uri.",
@@ -272,7 +270,6 @@ is_output ($svk, 'cp', ['-m', 'copy for remote', -r => '2@', '//foo-remote/me', 
 	    "Syncing $uri",
 	    'Retrieving log information from 8 to 8',
 	    'Committed revision 24 from revision 8.']);
-}
 
 is_output($svk, 'rm', ["$copath/B/fe"],
 	  [__("D   $copath/B/fe")]);
