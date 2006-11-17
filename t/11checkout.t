@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 65;
+use Test::More tests => 66;
 use strict;
 use SVK::Test;
 our($output, $answer);
@@ -39,6 +39,9 @@ ok (-e 'foo/bar/Q/qu');
 
 is_output ($svk, 'update', ['foo/bar/oz'], ["Path //V-3.1/A/oz does not exist."]);
 is_output ($svk, 'update', ['foo/bar'], ["Syncing //V-3.1/A(/V-3.1/A) in ".__"$corpath/foo/bar to 6."]);
+is_output ($svk, 'update', [-N => -r5 => 'foo/bar/P'],
+	   ['Non-recursive update not supported.']);
+
 is_output ($svk, 'update', [-r5 => 'foo/bar/P'],
 	   ["Syncing //V-3.1/A/P(/V-3.1/A/P) in ".__"$corpath/foo/bar/P to 5.",
 	    __('A   foo/bar/P/pe'),
