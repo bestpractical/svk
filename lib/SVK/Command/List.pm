@@ -25,40 +25,23 @@ sub run {
     my ($self, @arg) = @_;
     my $exception = '';
 
-    while (my $arg = shift @arg) {
-	$arg = $arg->as_depotpath;
-        eval { _do_list($self, 0, $self->apply_revision($arg));
-	       print "\n" if @arg };
+    my $enc = get_encoder;
+    while ( my $arg = shift @arg ) {
+        $arg = $arg->as_depotpath;
+        eval {
+            $self->run_command_recursively(
+                $self->apply_revision($arg),
+                sub {
+                    my ( $target, $kind, $level ) = @_;
+                    $self->_print_item( $target, $kind, $level, $enc );
+                }
+            );
+            print "\n" if @arg;
+        };
         $exception .= "$@" if $@;
     }
 
     die($exception) if($exception);
-}
-
-sub _do_list {
-    my ($self, $level, $target) = @_;
-    my $root = $target->root;
-    unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
-       die loc("Path %1 is not a versioned directory\n", $target->path_anchor)
-           unless $kind == $SVN::Node::file;
-       $self->_print_item( $target, $SVN::Node::file, 0, get_encoder);
-       return;
-    }
-
-    my $entries = $root->dir_entries ($target->path_anchor);
-    my $enc = get_encoder;
-    my $pool = SVN::Pool->new_default;
-    for (sort keys %$entries) {
-	$pool->clear;
-	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
-	my $child = $target->new->descend($_);
-	$self->_print_item($child, $entries->{$_}->kind, $level, $enc);
-
-	if ($isdir && ($self->{recursive}) &&
-	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
-	    _do_list($self, $level+1, $child);
-	}
-    }
 }
 
 sub _print_item {

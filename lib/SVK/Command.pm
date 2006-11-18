@@ -1008,6 +1008,40 @@ svk use the default.
     return $path;
 }
 
+
+=head3 run_command_recursively($target, $code, [$level])
+
+Traverse C<$target> and and invoke C<$code> with each node.
+
+=cut
+
+sub run_command_recursively {
+    my ($self, $target, $code, $level) = @_;
+    $level ||= 0;
+    my $root = $target->root;
+
+    unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
+       die loc("Path %1 is not versioned.\n", $target->path_anchor)
+           unless $kind == $SVN::Node::file;
+       $code->($target, $SVN::Node::file, 0);
+       return;
+    }
+
+    my $entries = $root->dir_entries ($target->path_anchor);
+    my $pool = SVN::Pool->new_default;
+    for (sort keys %$entries) {
+	$pool->clear;
+	my $child = $target->new->descend($_);
+	$code->($child, $entries->{$_}->kind, $level);
+
+	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
+	if ($isdir && $self->{recursive} && (!$self->{'depth'} || ( $level < $self->{'depth'}))) {
+	    $self->run_command_recursively($child, $code, $level+1);
+	}
+    }
+}
+
+
 ## Resolve the correct revision numbers given by "-c"
 sub resolve_chgspec {
     my ($self,$target) = @_;
