@@ -36,7 +36,7 @@ use File::Glob qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
 use autouse 'File::Spec::Functions' => 
                                qw(catdir catpath splitpath splitdir tmpdir);
-use autouse 'List::Util'        => qw(max);
+use autouse 'List::Util'        => qw( max(@) );
 
 =head1 NAME
 
