@@ -587,64 +587,6 @@ sub create_path_object {
     return $path;
 }
 
-sub xdroot {
-    SVK::XD::Root->new (create_xd_root (@_));
-}
-
-sub create_xd_root {
-    my ($self, %arg) = @_;
-    Carp::cluck;
-    Carp::confess unless $arg{repos};
-    my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
-    $copath = File::Spec::Unix->catdir($copath, $arg{copath_target})
-	if defined $arg{copath_target};
-    my ($txn, $root);
-
-    my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});
-
-    # In the simple case - only one revision entry found, it can be
-    # for some descendents.  If so we actually need to construct
-    # txnroot.
-    my ($simple, @bases) = $self->{checkout}->get($paths[0] || $copath, 1);
-    # XXX this isn't really right: we aren't guaranteed that $revbase
-    # actually has the revision, it might just have a lock or
-    # something
-    my $revbase = $bases[-1];
-    unshift @paths, $revbase unless $revbase eq $copath;
-    return (undef, $fs->revision_root($simple->{revision}))
-	if $#paths <= 0;
-
-    my $pool = SVN::Pool->new;
-    for (@paths) {
-	my $cinfo = $self->{checkout}->get ($_, 1);
-	my $path = abs2rel($_, $copath => $arg{path}, '/');
-	unless ($root) {
-	    my $base_rev = $cinfo->{revision};
-	    $txn = $fs->begin_txn ($base_rev, $arg{pool});
-	    $root = $txn->root($arg{pool});
-	    if ($base_rev == 0) {
-		# for interrupted checkout, the anchor will be at rev 0
-		my @path = ();
-		for my $dir (File::Spec::Unix->splitdir($path)) {
-		    push @path, $dir;
-		    next unless length $dir;
-		    $root->make_dir(File::Spec::Unix->catdir(@path));
-		}
-	    }
-	    next;
-	}
-	my ($parent) = get_anchor(0, $path);
-	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
-	$root->delete ($path, $pool)
-	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
-	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
-				$root, $path, $pool)
-		unless $cinfo->{'.deleted'};
-	$pool->clear;
-    }
-    return ($txn, $root);
-}
-
 =head2 Checkout handling
 
 =over
