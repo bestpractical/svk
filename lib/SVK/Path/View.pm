@@ -99,4 +99,10 @@ sub depotpath {
     return '/'.$self->depotname.$self->view->spec;
 }
 
+sub universal { $_[0]->source->universal }
+
+sub normalize {  # SVK::Path normalize is not view safe
+    return $_[0];
+}
+
 1;
