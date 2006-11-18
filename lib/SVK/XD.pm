@@ -593,6 +593,7 @@ sub xdroot {
 
 sub create_xd_root {
     my ($self, %arg) = @_;
+    Carp::cluck;
     Carp::confess unless $arg{repos};
     my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
     $copath = File::Spec::Unix->catdir($copath, $arg{copath_target})
@@ -785,34 +786,35 @@ sub do_delete {
 }
 
 sub do_propset {
-    my ($self, %arg) = @_;
-    my ($xdroot, %values);
-    my ($entry, $schedule) = $self->get_entry($arg{copath});
+    my ($self, $target, %arg) = @_;
+    my ($entry, $schedule) = $self->get_entry($target->copath);
     $entry->{'.newprop'} ||= {};
 
-    unless ($schedule eq 'add' || !$arg{repos}) {
-	$xdroot = $self->xdroot (%arg);
-	my ($source_path, $source_root) = $self->_copy_source ($entry, $arg{copath}, $xdroot);
-	$source_path ||= $arg{path}; $source_root ||= $xdroot;
-	die loc("%1 is not under version control.\n", $arg{report})
-	    if $xdroot->check_path ($source_path) == $SVN::Node::none;
+    unless ( $schedule eq 'add' ) {
+        my $xdroot = $target->create_xd_root;
+        my ( $source_path, $source_root )
+            = $self->_copy_source( $entry, $target->copath, $xdroot );
+        $source_path ||= $target->path_anchor;
+        $source_root ||= $xdroot;
+        die loc( "%1 is not under version control.\n", $target->report )
+            if $xdroot->check_path($source_path) == $SVN::Node::none;
     }
 
     #XXX: support working on multiple paths and recursive
-    die loc("%1 is already scheduled for delete.\n", $arg{report})
+    die loc("%1 is already scheduled for delete.\n", $target->report)
 	if $schedule eq 'delete';
-    %values = %{$entry->{'.newprop'}}
+    my %values = %{$entry->{'.newprop'}}
 	if exists $entry->{'.schedule'};
     my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
 
-    $self->{checkout}->store ($arg{copath},
+    $self->{checkout}->store ($target->copath,
 			      { '.schedule' => $schedule || 'prop',
 				'.newprop' => {%values,
 					    $arg{propname} => $pvalue
 					      }});
-    print " M  $arg{report}\n" unless $arg{quiet};
+    print " M  ".$target->report."\n" unless $arg{quiet};
 
-    $self->fix_permission ($arg{copath}, $arg{propvalue})
+    $self->fix_permission($target->copath, $arg{propvalue})
 	if $arg{propname} eq 'svn:executable';
 }
 

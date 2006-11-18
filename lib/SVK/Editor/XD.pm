@@ -248,11 +248,17 @@ sub change_file_prop {
 	    if $name eq 'svn:executable';
     }
     else {
-	$self->{xd}->do_propset ( quiet => 1,
-				  copath => $copath,
-				  propname => $name,
-				  propvalue => $value,
-				);
+        $self->{get_path}($path);
+        $self->{xd}->do_propset(
+            $self->{xd}->create_path_object(
+                copath_anchor => $copath,
+                path          => $path,
+                repos         => $self->{repos}
+            ),
+            quiet     => 1,
+            propname  => $name,
+            propvalue => $value,
+        );
     }
 }
 

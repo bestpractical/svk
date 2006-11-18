@@ -42,8 +42,7 @@ sub do_ignore {
         $svn_ignore .= "$filename\n";
 
         $self->{xd}->do_propset
-          (
-           $target->for_checkout_delta,
+          ( $target,
            propname => 'svn:ignore',
            propvalue => $svn_ignore,
           );
