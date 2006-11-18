@@ -321,7 +321,7 @@ Makes target descend into C<$entry>
 
 sub descend {
     my ($self, $entry) = @_;
-    $self->{path} .= "/$entry";
+    $self->{path} .= $self->{path} eq '/' ? $entry : "/$entry";
     return $self;
 }
 

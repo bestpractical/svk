@@ -37,7 +37,7 @@ use File::Glob qw(bsd_glob);
 use autouse 'File::Basename' 	=> qw(dirname);
 use autouse 'File::Spec::Functions' => 
                                qw(catdir catpath splitpath splitdir tmpdir);
-
+use autouse 'List::Util'        => qw( max(@) );
 
 
 =head1 NAME
@@ -786,8 +786,9 @@ sub move_path {
 
 Traverse the history of $path in $fs_root backwards until the first
 copy, unless $cross is true.  We do cross renames regardless of the
-value of $cross.  We invoke $cb for each $path, $revision we
-encounter.  If cb returns a nonzero value we stop traversing as well.
+value of $cross being non-zero, but not -1.  We invoke $cb for each
+$path, $revision we encounter.  If cb returns a nonzero value we stop
+traversing as well.
 
 =cut
 
@@ -813,7 +814,7 @@ sub traverse_history {
 
     while (1) {
         my $ohist = $hist;
-        $hist = $hist->prev(($args{cross} || 0), $new_pool);
+        $hist = $hist->prev(max(0, $args{cross} || 0), $new_pool);
         if (!$hist) {
             last if $args{cross};
             last unless $hist = $ohist->prev((1), $new_pool);

@@ -589,63 +589,6 @@ sub create_path_object {
     return $path;
 }
 
-sub xdroot {
-    SVK::XD::Root->new (create_xd_root (@_));
-}
-
-sub create_xd_root {
-    my ($self, %arg) = @_;
-    Carp::confess unless $arg{repos};
-    my ($fs, $copath) = ($arg{repos}->fs, $arg{copath});
-    $copath = File::Spec::Unix->catdir($copath, $arg{copath_target})
-	if defined $arg{copath_target};
-    my ($txn, $root);
-
-    my @paths = $self->{checkout}->find ($copath, {revision => qr'.*'});
-
-    # In the simple case - only one revision entry found, it can be
-    # for some descendents.  If so we actually need to construct
-    # txnroot.
-    my ($simple, @bases) = $self->{checkout}->get($paths[0] || $copath, 1);
-    # XXX this isn't really right: we aren't guaranteed that $revbase
-    # actually has the revision, it might just have a lock or
-    # something
-    my $revbase = $bases[-1];
-    unshift @paths, $revbase unless $revbase eq $copath;
-    return (undef, $fs->revision_root($simple->{revision}))
-	if $#paths <= 0;
-
-    my $pool = SVN::Pool->new;
-    for (@paths) {
-	my $cinfo = $self->{checkout}->get ($_, 1);
-	my $path = abs2rel($_, $copath => $arg{path}, '/');
-	unless ($root) {
-	    my $base_rev = $cinfo->{revision};
-	    $txn = $fs->begin_txn ($base_rev, $arg{pool});
-	    $root = $txn->root($arg{pool});
-	    if ($base_rev == 0) {
-		# for interrupted checkout, the anchor will be at rev 0
-		my @path = ();
-		for my $dir (File::Spec::Unix->splitdir($path)) {
-		    push @path, $dir;
-		    next unless length $dir;
-		    $root->make_dir(File::Spec::Unix->catdir(@path));
-		}
-	    }
-	    next;
-	}
-	my ($parent) = get_anchor(0, $path);
-	next if $cinfo->{revision} == $root->node_created_rev($parent, $pool);
-	$root->delete ($path, $pool)
-	    if eval { $root->check_path ($path, $pool) != $SVN::Node::none };
-	SVN::Fs::revision_link ($fs->revision_root ($cinfo->{revision}, $pool),
-				$root, $path, $pool)
-		unless $cinfo->{'.deleted'};
-	$pool->clear;
-    }
-    return ($txn, $root);
-}
-
 =head2 Checkout handling
 
 =over
@@ -787,34 +730,35 @@ sub do_delete {
 }
 
 sub do_propset {
-    my ($self, %arg) = @_;
-    my ($xdroot, %values);
-    my ($entry, $schedule) = $self->get_entry($arg{copath});
+    my ($self, $target, %arg) = @_;
+    my ($entry, $schedule) = $self->get_entry($target->copath);
     $entry->{'.newprop'} ||= {};
 
-    unless ($schedule eq 'add' || !$arg{repos}) {
-	$xdroot = $self->xdroot (%arg);
-	my ($source_path, $source_root) = $self->_copy_source ($entry, $arg{copath}, $xdroot);
-	$source_path ||= $arg{path}; $source_root ||= $xdroot;
-	die loc("%1 is not under version control.\n", $arg{report})
-	    if $xdroot->check_path ($source_path) == $SVN::Node::none;
+    unless ( $schedule eq 'add' ) {
+        my $xdroot = $target->create_xd_root;
+        my ( $source_path, $source_root )
+            = $self->_copy_source( $entry, $target->copath, $xdroot );
+        $source_path ||= $target->path_anchor;
+        $source_root ||= $xdroot;
+        die loc( "%1 is not under version control.\n", $target->report )
+            if $xdroot->check_path($source_path) == $SVN::Node::none;
     }
 
     #XXX: support working on multiple paths and recursive
-    die loc("%1 is already scheduled for delete.\n", $arg{report})
+    die loc("%1 is already scheduled for delete.\n", $target->report)
 	if $schedule eq 'delete';
-    %values = %{$entry->{'.newprop'}}
+    my %values = %{$entry->{'.newprop'}}
 	if exists $entry->{'.schedule'};
     my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
 
-    $self->{checkout}->store ($arg{copath},
+    $self->{checkout}->store ($target->copath,
 			      { '.schedule' => $schedule || 'prop',
 				'.newprop' => {%values,
 					    $arg{propname} => $pvalue
 					      }});
-    print " M  $arg{report}\n" unless $arg{quiet};
+    print " M  ".$target->report."\n" unless $arg{quiet};
 
-    $self->fix_permission ($arg{copath}, $arg{propvalue})
+    $self->fix_permission($target->copath, $arg{propvalue})
 	if $arg{propname} eq 'svn:executable';
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 54;
+use Test::More tests => 55;
 use strict;
 use File::Temp;
 use SVK::Test;
@@ -58,6 +58,8 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 
 is_output ($svk, 'pg', ['myprop', "$copath/A"],
 	   ['myvalue']);
+is_output ($svk, 'pg', [-R => 'myprop', "$copath"],
+	   ['t/checkout/prop/A - myvalue']);
 
 $svk->commit ('-m', 'commit', $copath);
 

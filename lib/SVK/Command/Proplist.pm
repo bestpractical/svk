@@ -22,23 +22,30 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, @arg) = @_;
-    die loc ("Revision required.\n")
-	if $self->{revprop} && !defined $self->{rev};
+    my ( $self, @arg ) = @_;
+    if ( $self->{revprop} ) {
+        die loc("Revision required.\n")
+            unless defined $self->{rev};
 
-    for my $target (@arg) {
-        if ($self->{revprop}) {
-            $self->_show_props
-		( $target,
-		  $target->repos->fs->revision_proplist($self->{rev}),
-		  $self->{rev}
-		);
-            next;
+        for my $target (@arg) {
+            $self->_show_props( $target,
+                $target->repos->fs->revision_proplist( $self->{rev} ),
+                $self->{rev} );
         }
+        return;
 
-	$target = $target->as_depotpath ($self->{rev}) if defined $self->{rev};
-        $self->_show_props( $target, $target->root->node_proplist($target->path) );
     }
+
+    $self->run_command_recursively(
+        $_,
+        sub {
+            my $target = shift;
+            $target = $target->as_depotpath( $self->{rev} )
+                if defined $self->{rev};
+            $self->_show_props( $target,
+                $target->root->node_proplist( $target->path ) );
+        }
+    ) for @arg;
 
     return;
 }

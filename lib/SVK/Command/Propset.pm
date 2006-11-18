@@ -106,7 +106,7 @@ sub do_propset {
 	}
 
 	$self->{xd}->do_propset
-	    ( $target->for_checkout_delta,
+	    ( $target,
 	      propname => $pname,
 	      propvalue => $pvalue,
 	      quiet => $self->{quiet},

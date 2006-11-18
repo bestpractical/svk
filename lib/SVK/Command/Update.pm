@@ -38,6 +38,9 @@ sub run {
     die loc ("--revision cannot be used in conjunction with --sync or --merge.\n")
 	if defined $self->{rev} && ($self->{merge} || $self->{sync});
 
+    die loc("Non-recursive update not supported.\n")
+	unless $self->{recursive};
+
     for my $target (@arg) {
 	my $update_target = $target->source->new;
 	$update_target->path($self->{update_target_path})

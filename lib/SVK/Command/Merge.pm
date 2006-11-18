@@ -152,7 +152,7 @@ sub run {
         traverse_history (
             root        => $src->root,
             path        => $src->path_anchor,
-            cross       => 0,
+            cross       => -1,
             callback    => sub {
                 my $rev = $_[1];
                 return 0 if $rev <= $merge->{fromrev}; # last

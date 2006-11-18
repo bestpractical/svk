@@ -367,6 +367,9 @@ sub arg_uri_maybe {
     die loc ("URI not allowed here: %1.\n", $no_new_mirror)
 	if $no_new_mirror;
 
+    # this is going to take a while, release giant lock
+    $self->{xd}->giant_unlock;
+
     $logger->info(loc("New URI encountered: %1\n", $uri));
 
     my $depots = join('|', map quotemeta, sort keys %$map);
@@ -459,6 +462,8 @@ break history-sensitive merging within the mirrored path.
         $answer = 'a';
     }
 
+    eval {
+
     $self->command(
         sync => {
             skip_to => (
@@ -470,7 +475,16 @@ break history-sensitive merging within the mirrored path.
         }
     )->run ($target);
 
+    $self->{xd}->giant_lock;
+
+    };
+
     my $depotpath = length ($rel_uri) ? $target->depotpath."/$rel_uri" : $target->depotpath;
+    if (my $err = $@) {
+	print loc("Unable to complete initial sync: %1", $err);
+	die loc("Run svk sync %1, and run the %2 command again.\n", $depotpath, lc((ref($self) =~ m/::([^:]*)$/)[0]));
+    }
+
     return $self->arg_depotpath($depotpath);
 }
 
@@ -995,6 +1009,54 @@ svk use the default.
     return $path;
 }
 
+
+=head3 run_command_recursively($target, $code)
+
+Traverse C<$target> and and invoke C<$code> with each node.
+
+=cut
+
+sub _run_code {
+    my ($self, $target, $code, $level, $errs, $kind) = @_;
+    eval { $code->( $target, $kind, $level ) };
+    if ($@) {
+	print $@;
+	push @$errs, "$@";
+    }
+}
+
+sub run_command_recursively {
+    my ( $self, $target, $code, $errs, $newline, $level ) = @_;
+    my $root = $target->root;
+    my $kind = $root->check_path( $target->path_anchor );
+    $self->_run_code($target, $code, -1, $errs, $kind);
+    $self->_descend_with( $target, $code, $errs, 1 )
+        if $kind == $SVN::Node::dir
+        && $self->{recursive}
+        && ( !$self->{depth} || 0 < $self->{depth} );
+    print "\n" if $newline;
+}
+
+sub _descend_with {
+    my ($self, $target, $code, $errs, $level) = @_;
+    my $root = $target->root;
+    my $entries = $root->dir_entries ($target->path_anchor);
+    my $pool = SVN::Pool->new_default;
+    for (sort keys %$entries) {
+	$pool->clear;
+	my $kind = $entries->{$_}->kind;
+	next if $kind == $SVN::Node::unknown;
+	my $child = $target->new->descend($_);
+
+        $self->_run_code($child, $code, $level, $errs, $kind);
+	my $isdir = ($kind == $SVN::Node::dir);
+	if ($isdir && $self->{recursive} && (!$self->{'depth'} || ( $level  < $self->{'depth'}))) {
+	    $self->_descend_with($child, $code, $errs, $level+1);
+	}
+    }
+}
+
+
 ## Resolve the correct revision numbers given by "-c"
 sub resolve_chgspec {
     my ($self,$target) = @_;
@@ -1013,7 +1075,13 @@ sub resolve_chgspec {
 	    else {
 		eval { $torev = $self->resolve_revision($target,$_); };
 		die loc("Change spec %1 not recognized.\n", $_) if($@);
-		$fromrev = $torev - 1;
+		if ($torev < 0) {
+		    $fromrev = -$torev;
+		    $torev = $fromrev - 1;
+		}
+		else {
+		    $fromrev = $torev - 1;
+		}
 	    }
 	    push @revlist , [$fromrev, $torev];
 	}
@@ -1069,12 +1137,13 @@ sub resolve_revision {
     } elsif ($revstr =~ /\{(\d\d\d\d-\d\d-\d\d)\}/) { 
         my $date = $1; $date =~ s/-//g;
         $rev = $self->find_date_rev($target,$date);
-    } elsif ((my ($rrev) = $revstr =~ m'^(\d+)@$')) {
+    } elsif ((my ($minus, $rrev) = $revstr =~ m'^(-)?(\d+)@$')) {
 	if (my $m = $target->is_mirrored) {
-	    $rev = $m->find_local_rev ($rrev);
+	    $rev = $m->find_local_rev($rrev);
 	}
 	die loc ("Can't find local revision for %1 on %2.\n", $rrev, $target->path)
 	    unless defined $rev;
+	$rev *= $minus ? -1 : 1;
     } elsif ($revstr =~ /^-\d+$/) {
         $rev = $self->find_head_rev($target) + $revstr;
     } elsif ($revstr =~ /\D/) {

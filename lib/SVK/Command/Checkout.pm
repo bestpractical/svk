@@ -205,19 +205,25 @@ sub run {
     }
 
     # Manually relocate all paths
-    my $map = $self->{xd}{checkout}{hash};
+    my $hmap = $self->{xd}{checkout}{hash};
 
     my $abs_path = abs_path($path);
-    if ($map->{$abs_path} and -d $abs_path) {
+    if ($hmap->{$abs_path} and -d $abs_path) {
         move_path($path => $report);
         $target = abs_path ($report);
     }
 
     my $prefix = $copath[0].$SEP;
     my $length = length($copath[0]);
-    foreach my $key (sort grep { index("$_$SEP", $prefix) == 0 } keys %$map) {
-        $map->{$target . substr($key, $length)} = delete $map->{$key};
-    }
+    my $relocate = sub {
+        my $map = shift;
+        for my $key ( sort grep { index( "$_$SEP", $prefix ) == 0 }
+            keys %$map ) {
+            $map->{ $target . substr( $key, $length ) } = delete $map->{$key};
+        }
+    };
+    $relocate->($hmap);
+    $relocate->($self->{xd}{checkout}{sticky});
 
     print loc("Checkout '%1' relocated to '%2'.\n", $path, $target);
 

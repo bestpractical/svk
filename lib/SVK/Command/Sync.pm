@@ -52,6 +52,7 @@ sub run {
         @mirrors = map { $_->mirror->get( $_->path ) } @arg;
     }
 
+    my $error;
     for my $m (@mirrors) {
 	my $run_sync = sub {
 	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};
@@ -62,6 +63,7 @@ sub run {
             $logger->info(loc( "Starting to synchronize %1", $m->get_svkpath->depotpath ));
             eval { $run_sync->() };
             if ($@) {
+		++$error;
                 warn $@;
                 last if ( $@ =~ /^Interrupted\.$/m );
             }
@@ -71,7 +73,7 @@ sub run {
 	    $run_sync->();
         }
     }
-    return;
+    return $error ? 1 : 0;
 }
 
 1;

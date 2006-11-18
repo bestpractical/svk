@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 65;
+use Test::More tests => 69;
 use strict;
 use SVK::Test;
 our($output, $answer);
@@ -39,6 +39,9 @@ ok (-e 'foo/bar/Q/qu');
 
 is_output ($svk, 'update', ['foo/bar/oz'], ["Path //V-3.1/A/oz does not exist."]);
 is_output ($svk, 'update', ['foo/bar'], ["Syncing //V-3.1/A(/V-3.1/A) in ".__"$corpath/foo/bar to 6."]);
+is_output ($svk, 'update', [-N => -r5 => 'foo/bar/P'],
+	   ['Non-recursive update not supported.']);
+
 is_output ($svk, 'update', [-r5 => 'foo/bar/P'],
 	   ["Syncing //V-3.1/A/P(/V-3.1/A/P) in ".__"$corpath/foo/bar/P to 5.",
 	    __('A   foo/bar/P/pe'),
@@ -331,3 +334,21 @@ is_output ($svk, 'checkout', ['--detach', __("$corpath/qu"), __("$corpath/Q"), _
             __("Checkout path '$corpath/Q' detached."),
             __("Checkout path '$corpath/3.1' detached."),
             ]);
+
+chdir("$corpath/co-root-deep/there");
+$svk->mkdir("newdir");
+is_output($svk, 'st', [], ['A   newdir']);
+
+chdir($corpath);
+rename("$corpath/co-root-deep/there", "$corpath/tmp");
+unlink("$corpath/co-root-deep");
+rename("$corpath/tmp", "$corpath/co-root-deep");
+
+is_output ($svk, 'checkout', ['--relocate', __("$corpath/co-root-deep/there"), __("$corpath/co-root-deep")], [
+            __("Checkout '$corpath/co-root-deep/there' relocated to '$corpath/co-root-deep'."),
+            ]);
+
+chdir("$corpath/co-root-deep");
+is_output($svk, 'st', [], ['A   newdir']);
+
+
