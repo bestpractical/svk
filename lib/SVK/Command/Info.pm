@@ -3,6 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
+use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
@@ -22,15 +23,18 @@ sub run {
     my ($self, @arg) = @_;
     my $exception='';
     my $pool = SVN::Pool->new_default;
-    for my $target (@arg) {
-	$pool->clear;
-	eval { $self->_do_info($target) };
-	if($@) {
-	    $exception .= "$@";
-	    $exception .= "\n" unless $exception =~ m/\n$/;
-	    next;
-	}
-    }
+    $self->run_command_recursively(
+        $_,
+        sub {
+            $pool->clear;
+            eval { $self->_do_info( $_[0] ) };
+            if ($@) {
+                $exception .= "$@";
+                $exception .= "\n" unless $exception =~ m/\n$/;
+                next;
+            }
+        }
+    ) for @arg;
     die($exception) if($exception);
 }
 
@@ -81,7 +85,7 @@ SVK::Command::Info - Display information about a file or directory
 
 =head1 OPTIONS
 
- None
+ -R [--recursive]       : descend recursively
 
 =head1 DESCRIPTION
 
