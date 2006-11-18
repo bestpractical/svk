@@ -33,6 +33,12 @@ sub run {
                 $self->apply_revision($arg),
                 sub {
                     my ( $target, $kind, $level ) = @_;
+                    if ( $level == -1 ) {
+                        return if $kind == $SVN::Node::dir;
+                        die loc( "Path %1 is not versioned.\n",
+                            $target->path_anchor )
+                            unless $kind == $SVN::Node::file;
+                    }
                     $self->_print_item( $target, $kind, $level, $enc );
                 }
             );

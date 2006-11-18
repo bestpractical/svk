@@ -21,16 +21,21 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $pname, @targets) = @_;
+    my ( $self, $pname, @targets ) = @_;
 
-    foreach my $target (@targets) {
-        my $proplist = $self->_proplist($target);
-        exists $proplist->{$pname} or next;
+    $self->run_command_recursively(
+        $_,
+        sub {
+            my $target   = shift;
+            my $proplist = $self->_proplist($target);
+            exists $proplist->{$pname} or return;
 
-        print $target->report, ' - ' if @targets > 1 and !$self->{strict};
-        print $proplist->{$pname};
-        print "\n" if !$self->{strict};
-    }
+            print $target->report, ' - '
+                if !$self->{strict} && ( $self->{recursive} || @targets > 1 );
+            print $proplist->{$pname};
+            print "\n" if !$self->{strict};
+        }
+    ) for @targets;
 
     return;
 }

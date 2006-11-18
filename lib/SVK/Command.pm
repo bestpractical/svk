@@ -1009,7 +1009,7 @@ svk use the default.
 }
 
 
-=head3 run_command_recursively($target, $code, [$level])
+=head3 run_command_recursively($target, $code)
 
 Traverse C<$target> and and invoke C<$code> with each node.
 
@@ -1017,26 +1017,29 @@ Traverse C<$target> and and invoke C<$code> with each node.
 
 sub run_command_recursively {
     my ($self, $target, $code, $level) = @_;
-    $level ||= 0;
     my $root = $target->root;
-
     unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
-       die loc("Path %1 is not versioned.\n", $target->path_anchor)
-           unless $kind == $SVN::Node::file;
-       $code->($target, $SVN::Node::file, 0);
        return;
     }
+    $code->($target, $target->root->check_path($target->path_anchor), -1);
+    $self->_descend_with($target, $code, 0)
+}
 
+sub _descend_with {
+    my ($self, $target, $code, $level) = @_;
+    my $root = $target->root;
     my $entries = $root->dir_entries ($target->path_anchor);
     my $pool = SVN::Pool->new_default;
     for (sort keys %$entries) {
 	$pool->clear;
+	my $kind = $entries->{$_}->kind;
+	next if $kind == $SVN::Node::unknown;
 	my $child = $target->new->descend($_);
-	$code->($child, $entries->{$_}->kind, $level);
+	$code->($child, $kind, $level);
 
-	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
+	my $isdir = ($kind == $SVN::Node::dir);
 	if ($isdir && $self->{recursive} && (!$self->{'depth'} || ( $level < $self->{'depth'}))) {
-	    $self->run_command_recursively($child, $code, $level+1);
+	    $self->_descend_with($child, $code, $level+1);
 	}
     }
 }
