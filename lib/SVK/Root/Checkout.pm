@@ -68,7 +68,7 @@ sub copied_from {
     my $kind = $entry->{'.schedule'};
 
     return $root->copied_from($path, $pool) unless $kind eq 'add';
-    my ($source_path, $source_rev) = SVK::XD::_copy_source($entry, $copath);
+    my ($source_path, $source_rev) = $self->path->xd->_copy_source($entry, $copath);
     return ($source_rev, $source_path);
 }
 
