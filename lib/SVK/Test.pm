@@ -8,6 +8,8 @@ BEGIN { $ENV{SVKNOSVNCONFIG} = 1; }
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base 'Exporter';
 
+use SVK::Logger;
+
 our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
 		 get_copath append_file overwrite_file
 		 overwrite_file_raw is_file_content
@@ -63,11 +65,11 @@ BEGIN {
     *SVK::Util::get_prompt = *SVK::XD::get_prompt = sub {
 	local $| = 1;
 	print "$_[0]\n" if $show_prompt;
-	print STDOUT "$_[0]\n" if $main::DEBUG;
+	$logger->debug("$_[0]");
 	return $answer unless ref($answer); # compat
 	die "expecting input" unless @$answer;
 	my $ans = shift @$answer;
-	print STDOUT "-> $answer->[0]\n" if $main::DEBUG;
+	$logger->debug("-> ".($answer->[0]||''));
 	return $ans unless ref($ans);
 	
 	if (ref($ans->[0]) eq 'Regexp') {

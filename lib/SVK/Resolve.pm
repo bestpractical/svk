@@ -6,6 +6,7 @@ use SVK::Util qw(
     read_file can_run is_executable bsd_glob
 );
 use File::Copy ();
+use SVK::Logger;
 
 use constant Actions => {qw(
     a   accept      e   edit        d   diff
@@ -122,12 +123,12 @@ sub merge {
     ) : $self->get_resolver);
 
     if (!$resolver) {
-        print loc("Cannot launch an external merge tool for %1.\n", $path);
+        $logger->error(loc("Cannot launch an external merge tool for %1.", $path));
         return;
     }
 
     # maybe some message here
-    print loc("Invoking merge tool '%1' for %2.\n", $resolver->name, $path);
+    $logger->info(loc("Invoking merge tool '%1' for %2.", $resolver->name, $path));
 
     if ($resolver->run_resolver($cmd, @args)) {
         $self->{has_conflict} = (

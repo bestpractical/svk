@@ -5,6 +5,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Merge SVK::Command::Copy SVK::Command::Propset );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Editor::Combine;
 use SVK::Inspector::Compat;
 
@@ -29,8 +30,8 @@ sub run {
     if ($0 =~ /svk$/) { 
         # Only warn about deprecation if the user is running svk. 
         # (Don't warn when running tests)                 
-        print loc("%1 cmerge is deprecated, pending improvements to the Subversion API",$0) ."\n";
-        print loc("'Use %1 merge -c' to obtain similar functionality.",$0)."\n\n";
+        $logger->warn(loc("%1 cmerge is deprecated, pending improvements to the Subversion API",$0));
+        $logger->warn(loc("'Use %1 merge -c' to obtain similar functionality.",$0)."\n");
     }
     my @revlist = $self->parse_revlist($src);
     for my $r (@revlist) {
@@ -61,8 +62,8 @@ sub run {
     my $inspector = SVK::Inspector::Compat->new({$ceditor->callbacks});
     for (@revlist) {
 	my ($fromrev, $torev) = @$_;
-	print loc("Merging with base %1 %2: applying %3 %4:%5.\n",
-		  @{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev);
+	$logger->info(loc("Merging with base %1 %2: applying %3 %4:%5.",
+		  @{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev));
 
 	SVK::Merge->new (%$self, repos => $repos,
 			 base => $src->new (revision => $fromrev),
@@ -80,7 +81,7 @@ sub run {
 				    ('file://' . $src->depot->repospath,
 				     $tmpbranch,
 				     $ENV{USER}, "merge $self->{chgspec} from $src->{path}",
-				     sub { print loc("Committed revision %1.\n", $_[0]) })
+				     sub { $logger->info(loc("Committed revision %1.", $_[0])) })
 				  ]),
 		      $fs->youngest_rev);
     my $newrev = $fs->youngest_rev;

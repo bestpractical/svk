@@ -7,6 +7,7 @@ use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel
 use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup);
 use SVN::Delta;
 
+use SVK::Logger;
 use SVK::Depot;
 use base 'SVK::Accessor';
 
@@ -200,7 +201,7 @@ sub get_editor {
 
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message}, $mcallback);
-	$editor->{_debug}++ if $main::DEBUG;
+	$editor->{_debug}++ if $logger->is_debug();
 	return ($editor, $inspector,
 		mirror => $m,
 		post_handler => \$post_handler,
@@ -620,7 +621,7 @@ sub merged_from {
     $self = $self->new->as_depotpath;
     my $usrc = $src->universal;
     my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
-    warn "trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path" if $main::DEBUG;
+    $logger->debug("trying to look for the revision on $self->{path} that was merged from $srckey\@$src->{revision} at $path");
 
     my %copies = map { join(':', $_->{uuid}, $_->{path}) => $_ }
 	reverse $merge->copy_ancestors($self);
@@ -628,7 +629,7 @@ sub merged_from {
     $self->search_revision
 	( cmp => sub {
 	      my $rev = shift;
-	      warn "==> look at $rev" if $main::DEBUG;
+	      $logger->debug("==> look at $rev");
 	      my $search = $self->new(revision => $rev);
 	      my $minfo = { %copies,
 			    %{$merge->merge_info($search)} };
@@ -658,7 +659,7 @@ sub merged_from {
 	      }
 
 	      # see if prev got different merge info about srckey.
-	      warn "==> to compare with $prev" if $main::DEBUG;
+	      $logger->debug("==> to compare with $prev");
 	      my $uret = $merge->merge_info_with_copy
 		  ($self->new(revision => $prev))->{$srckey}
 		      or return 0;

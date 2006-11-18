@@ -4,6 +4,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base 'SVK::Editor';
 use SVK::I18N;
+use SVK::Logger;
 use autouse 'SVK::Util'
     => qw( slurp_fh md5_fh tmpfile devnull abs2rel );
 
@@ -941,7 +942,7 @@ sub close_edit {
 	$self->{storage}->close_edit(@arg);
     }
     else {
-	print loc("Empty merge.\n") unless $self->{notify}{quiet};
+	$logger->warn(loc("Empty merge.")) unless $self->{notify}{quiet};
 	$self->{storage}->abort_edit(@arg);
     }
 }

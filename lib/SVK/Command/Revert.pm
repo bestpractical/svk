@@ -7,6 +7,7 @@ use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::Util qw( slurp_fh is_symlink to_native );
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ("q|quiet"    => 'quiet');
@@ -53,8 +54,8 @@ sub run {
                           return $self->do_revert($target, $copath, $dpath, $xdroot);
                       } elsif ($st eq '?') {
 			  return unless $target->contains_copath ($copath);
-			  print loc("%1 is not versioned; ignored.\n",
-			      $target->report_copath ($copath));
+			  $logger->warn(loc("%1 is not versioned; ignored.",
+			      $target->report_copath ($copath)));
 			  return;
 		      }
 
@@ -98,7 +99,7 @@ sub do_unschedule {
     my ($self, $target, $copath) = @_;
     $self->{xd}{checkout}->store($copath, { $self->_schedule_empty,
 					    '.conflict' => undef }, {override_descendents => 0});
-    print loc("Reverted %1\n", $target->report_copath ($copath))
+    $logger->info(loc("Reverted %1", $target->report_copath ($copath)))
 	unless $self->{quiet};
 
 }

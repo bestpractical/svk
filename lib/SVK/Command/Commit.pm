@@ -5,6 +5,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Editor::Status;
 use SVK::Editor::Sign;
 use SVK::Editor::Dynamic;
@@ -126,7 +127,7 @@ sub save_message {
     local $@;
     my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
     print $fh $self->{message};
-    print loc ("Commit message saved in %1.\n", $file);
+    $logger->warn(loc ("Commit message saved in %1.", $file));
 }
 
 # Return the editor according to copath, path, and is_mirror (path)
@@ -136,7 +137,7 @@ sub _editor_for_patch {
     require SVK::Patch;
     my ($m);
     if (($m) = $target->is_mirrored) {
-	print loc("Patching locally against mirror source %1.\n", $m->url);
+	$logger->info(loc("Patching locally against mirror source %1.", $m->url));
     }
     die loc ("Illegal patch name: %1.\n", $self->{patch})
 	if $self->{patch} =~ m!/!;
@@ -165,7 +166,7 @@ sub _commit_callback {
     my ($self, $callback) = @_;
 
     return sub {
-	print loc("Committed revision %1.\n", $_[0]);
+	$logger->info(loc("Committed revision %1.", $_[0]));
 	$callback->(@_) if $callback,
     }
 }
@@ -180,13 +181,13 @@ sub get_editor {
         && !$self->{direct}
         && ( my $m = $target->is_mirrored ) ) {
         if ( $self->{check_only} ) {
-            print loc( "Checking locally against mirror source %1.\n", $m->url )
+            $logger->info(loc( "Checking locally against mirror source %1.", $m->url ))
 		unless $self->{incremental};
         }
         else {
-            print loc("Commit into mirrored path: merging back directly.\n")
+            $logger->warn(loc("Commit into mirrored path: merging back directly."))
                 if ref($self) eq __PACKAGE__;    # XXX: output compat
-            print loc( "Merging back to mirror source %1.\n", $m->url );
+            $logger->info(loc( "Merging back to mirror source %1.", $m->url ));
         }
     }
     else {
@@ -552,14 +553,14 @@ sub run_delta {
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
-	  debug => $main::DEBUG,
+	  debug => $logger->is_debug(),
 	  xdroot => $xdroot,
 	  editor => $editor,
 	  send_delta => !$cb{send_fulltext},
 	  nodelay => $cb{send_fulltext},
 	  $self->exclude_mirror ($target),
-	  cb_exclude => sub { print loc ("%1 is a mirrored path, please commit separately.\n",
-					 abs2rel ($_[1], $target->copath => $target->report)) },
+	  cb_exclude => sub { $logger->error(loc ("%1 is a mirrored path, please commit separately.",
+					 abs2rel ($_[1], $target->copath => $target->report))) },
 	  $self->{import} ?
 	  ( auto_add => 1,
 	    obstruct_as_replace => 1,

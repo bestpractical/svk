@@ -23,6 +23,8 @@ use Fcntl qw(:flock);
 use SVK::Depot;
 use SVK::Config;
 
+use SVK::Logger;
+
 =head1 NAME
 
 SVK::XD - svk depot and checkout handling.
@@ -157,8 +159,8 @@ sub load {
 	$info = eval {LoadFile ($self->{statefile})};
 	if ($@) {
 	    rename ($self->{statefile}, "$self->{statefile}.backup");
-	    print loc ("Can't load statefile, old statefile saved as %1\n",
-		     "$self->{statefile}.backup");
+	    $logger->warn(loc ("Can't load statefile, old statefile saved as %1",
+		     "$self->{statefile}.backup"));
 	}
         elsif ($info) {
             $info->{checkout}{sep} = $SEP;
@@ -218,7 +220,7 @@ sub _store_config {
     $self->{giantlock_handle} or
         die "Internal error: trying to save config without a lock!\n";
 
-    local $SIG{INT} = sub { warn loc("Please hold on a moment. SVK is writing out a critical configuration file.\n")};
+    local $SIG{INT} = sub { $logger->warn( loc("Please hold on a moment. SVK is writing out a critical configuration file."))};
 
     my $file = $self->{statefile};
     my $tmpfile = $file."-$$";
@@ -607,7 +609,7 @@ sub _load_svn_autoprop {
 	    enumerate ('auto-props',
 		       sub { $self->{svnautoprop}{compile_apr_fnmatch($_[0])} = $_[1]; 1} );
     };
-    warn "Your svn is too old, auto-prop in svn config is not supported: $@\n" if $@;
+    $logger->warn("Your svn is too old, auto-prop in svn config is not supported: $@") if $@;
 }
 
 sub auto_prop {
@@ -984,11 +986,11 @@ ENTRY:	for my $entry (@{$arg{targets}}) {
 		$seen{$copath} = 1;
 		lstat $copath;
 		unless (-e _) {
-		    print loc ("Unknown target: %1.\n", $copath);
+		    $logger->warn( loc ("Unknown target: %1.", $copath));
 		    next ENTRY;
 		}
 		unless (-r _) {
-		    print loc ("Warning: %1 is unreadable.\n", $copath);
+		    $logger->warn( loc ("Warning: %1 is unreadable.", $copath));
 		    next ENTRY;
 		}
 		$arg{cb_unknown}->($arg{editor}, catdir($arg{entry}, $now), $arg{baton});
@@ -1126,12 +1128,12 @@ sub _node_type {
     my $st = [lstat ($copath)];
     return '' if !-e _;
     unless (-r _) {
-	print loc ("Warning: $copath is unreadable.\n");
+	$logger->warn( loc ("Warning: $copath is unreadable."));
 	return;
     }
     return ('file', $st) if -f _ or is_symlink;
     return ('directory', $st) if -d _;
-    print loc ("Warning: unsupported node type $copath.\n");
+    $logger->warn( loc ("Warning: unsupported node type $copath."));
     return ('', $st);
 }
 
@@ -1429,7 +1431,7 @@ sub _delta_dir {
 	    for sort keys %$newprops;
     }
     if (defined $targets) {
-	print loc ("Unknown target: %1.\n", $_) for sort keys %$targets;
+	$logger->warn(loc ("Unknown target: %1.", $_)) for sort keys %$targets;
     }
 
     $arg{editor}->close_directory ($baton, $pool)
@@ -1492,7 +1494,7 @@ sub resolved_entry {
     my $val = $self->{checkout}->get ($entry, 1);
     return unless $val && $val->{'.conflict'};
     $self->{checkout}->store ($entry, {%$val, '.conflict' => undef});
-    print loc("%1 marked as resolved.\n", $entry);
+    $logger->warn(loc("%1 marked as resolved.", $entry));
 }
 
 sub do_resolved {

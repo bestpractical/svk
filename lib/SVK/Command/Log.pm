@@ -7,6 +7,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( traverse_history get_encoding reformat_svn_date );
 use List::Util qw(max min);
+use SVK::Logger;
 
 sub options {
     (
@@ -57,7 +58,7 @@ sub run {
     # establish the output argument (presentation filter)
     my ( $presentation_filter, $filter_xml ) = @{$self}{qw/present_filter xml/};
     if ($filter_xml) {
-        print loc("Ignoring --output $presentation_filter. Using --xml.\n")
+        $logger->warn(loc("Ignoring --output $presentation_filter. Using --xml."))
             if $presentation_filter;
         $presentation_filter = 'xml';
     }
@@ -80,7 +81,7 @@ sub run {
     my $get_remoterev = _log_remote_rev($target);
 
     if ($target->revision < max ($fromrev, $torev)) {
-	print loc ("Revision too large, show log from %1.\n", $target->revision);
+	$logger->warn(loc ("Revision too large, show log from %1.", $target->revision));
 	$fromrev = min ($target->revision, $fromrev);
 	$torev = min ($target->revision, $torev);
     }

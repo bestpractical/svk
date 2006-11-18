@@ -3,6 +3,7 @@ use strict;
 use SVK::I18N;
 use SVK::Util qw( read_file write_file );
 use SVK::Version;  our $VERSION = $SVK::VERSION;
+use SVK::Logger;
 
 =head1 NAME
 
@@ -262,7 +263,7 @@ sub update {
 				     SVK::Editor::Merge->cb_for_root
 				     ($target->root, $target->path, $target->revision))) {
 
-	print loc("Conflicts.\n");
+	$logger->error(loc("Conflicts."));
 	return $conflict;
     }
 
@@ -277,7 +278,7 @@ sub regen {
     my $target = $self->{_target}
 	or die loc("Target not local nor mirrored, unable to regen patch.\n");
     unless ($self->{level} == 0 || $self->{_source_updated}) {
-	print loc("Source of patch %1 not updated or not local, no need to regen patch.\n", $self->{name});
+	$logger->warn(loc("Source of patch %1 not updated or not local, no need to regen patch.", $self->{name}));
 	return;
     }
     my $source = $self->{_source}->new->refresh_revision;
@@ -330,6 +331,7 @@ sub commit_editor {
 package SVK::Patch::CommitEditor;
 use base qw(SVK::Editor::Patch);
 use SVK::I18N;
+use SVK::Logger;
 
 sub close_edit {
     my $self = shift;
@@ -340,7 +342,7 @@ sub close_edit {
     ++$patch->{level};
     $patch->store ($filename);
     return if $filename eq '-';
-    print loc ("Patch %1 created.\n", $patch->{name});
+    $logger->warn(loc ("Patch %1 created.", $patch->{name}));
 }
 
 =head1 AUTHORS

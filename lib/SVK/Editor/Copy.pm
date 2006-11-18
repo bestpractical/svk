@@ -2,6 +2,7 @@ package SVK::Editor::Copy;
 use strict;
 use warnings;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
+use SVK::Logger;
 
 require SVN::Delta;
 use base 'SVK::Editor::ByPass';
@@ -85,7 +86,7 @@ sub find_copy {
 	$pool->clear;
 	my ($toroot, $fromroot, $src_frompath) =
 	    SVK::Path::nearest_copy($cur_root, $cur_path, $ppool);
-	warn "===> $cur_path => $src_frompath" if $main::DEBUG;
+	$logger->debug("===> $cur_path => ".($src_frompath||''));
 	return unless defined $src_frompath;
 
 	# don't use the same copy twice
@@ -148,13 +149,12 @@ sub find_copy {
 	}
 
 	# GRR! cleanup this!
-	warn "==> $path(:$to) is copied from $src_frompath:$src_from" if $main::DEBUG;
+	$logger->debug("==> $path(:$to) is copied from $src_frompath:$src_from");
 	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
 				       fromrev => $src_from,
 				       frompath => $src_frompath };
-	    warn "==> resolved to $frompath:$from"
-		if $main::DEBUG;
+	    $logger->debug("==> resolved to $frompath:$from");
 	    return $self->copy_source($src_frompath, $src_from);
 	}
 	else {
@@ -212,7 +212,7 @@ sub open_directory {
     my ($self, $path, $pbaton, @arg) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
     if (my @ret = $self->find_copy($path, 1)) {
-	warn "==> turn $path into replace: ".join(',',@ret) if $main::DEBUG;
+	$logger->debug("==> turn $path into replace: ".join(',',@ret));
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
 	return $self->replay_add_history('directory', $path, $pbaton, @ret, $arg[1])
     }
@@ -224,7 +224,7 @@ sub open_file {
     my ($self, $path, $pbaton, @arg) = @_;
     return $self->{ignore_baton} if $self->should_ignore($path, $pbaton);
     if (my @ret = $self->find_copy($path, 1)) {
-	warn "==> turn file $path into replace" if $main::DEBUG;
+	$logger->debug("==> turn file $path into replace");
 	$self->SUPER::delete_entry($path, $arg[0], $pbaton, $arg[1]);
 	return $self->replay_add_history('file', $path, $pbaton, @ret, $arg[1])
     }
@@ -307,8 +307,8 @@ sub replay_add_history {
 	 translate => sub { $_[0] =~ s/^\Q$src_target/$target/ })
 	    if $type eq 'file';
 
-    warn "****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{fromrev} vs $self->{src}{path} / $path" if $main::DEBUG;;
-    warn "==> sample" if $main::DEBUG;
+    $logger->debug("****==> to delta $src_anchor / $src_target @ $self->{incopy}[-1]{fromrev} vs $self->{src}{path} / $path");
+    $logger->debug("==> sample");
     require SVK::Editor::Delay;
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
@@ -316,8 +316,8 @@ sub replay_add_history {
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
-	      editor => SVN::Delta::Editor->new(_debug => 1)) if $main::DEBUG;
-    warn "==> done sample" if $main::DEBUG;
+	      editor => SVN::Delta::Editor->new(_debug => 1)) if $logger->is_debug();
+    $logger->debug("==> done sample");
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
 	      revision_root($self->{incopy}[-1]{fromrev}),
@@ -325,7 +325,7 @@ sub replay_add_history {
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
 	      editor => SVK::Editor::Delay->new(_editor => [$editor]) );
-    warn "***=>done delta" if $main::DEBUG;
+    $logger->debug("***=>done delta");
     # close file is done by the delta;
     return bless { path => $path,
 		   baton => $baton,
