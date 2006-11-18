@@ -173,6 +173,15 @@ sub relocate {
     my $mirror = $self->mirror;
     die loc("Mirror source UUIDs differ.\n")
 	unless $ra_uuid eq $mirror->server_uuid;
+    my $source_root = $ra->get_repos_root;
+    my $source_path = $source;
+    die "source url not under source root"
+	if substr($source_path, 0, length($source_root), '') ne $source_root;
+
+    die loc( "Can't relocate: mirror subdirectory changed from %1 to %2.\n",
+        $self->source_path, $source_path )
+        unless $self->source_path eq $source_path;
+
     $self->source_root( $ra->get_repos_root );
     $mirror->url($source);
 

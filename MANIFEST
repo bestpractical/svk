@@ -267,6 +267,7 @@ t/api/mirror.t
 t/copy-escape.t
 t/copy-replace.t
 t/mirror/dav-authz.t
+t/mirror/relocate.t
 t/mirror/sync-crazy-replace.t
 t/mirror/sync-empty.t
 t/mirror/sync-escape.t
