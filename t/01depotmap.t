@@ -3,7 +3,7 @@ use strict;
 use SVK::Util qw( catdir tmpdir );
 use File::Spec;
 use SVK::Test;
-plan tests => 17;
+plan tests => 18;
 
 our ($answer, $output, @TOCLEAN);
 my $xd = SVK::XD->new (depotmap => {},
@@ -50,6 +50,9 @@ is_output ($svk, 'depotmap', ['//', $repospath],
 	   ['New depot map saved.'], 'depotpath - add again');
 is_output ($svk, 'depotmap', ['//', $repospath],
 	   ["Depot '' already exists; use 'svk depotmap --detach' to remove it first."], 'depotpath - add again');
+
+is_output ($svk, 'depotmap', ['--relocate', '//'],
+	   ["Need to specify a path name for depot."]);
 
 $answer = 'n';
 is_output ($svk, 'depotmap', ['--relocate', '//', "$repospath.new"],

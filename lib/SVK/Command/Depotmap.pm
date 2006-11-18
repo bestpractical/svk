@@ -25,10 +25,11 @@ sub parse_arg {
     return undef
 	unless $self->{add} or $self->{detach} or $self->{relocate};
 
-        @arg or die loc("Need to specify a depot name");
+        @arg or die loc("Need to specify a depot name.\n");
 
         my $depot = shift(@arg);
-        @arg or die loc("Need to specify a path name") unless $self->{detach};
+        @arg or die loc("Need to specify a path name for depot.\n")
+            unless $self->{detach};
 
         my $map = $self->{xd}{depotmap};
         my $path = $depot;
