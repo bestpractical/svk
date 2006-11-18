@@ -366,6 +366,9 @@ sub arg_uri_maybe {
     die loc ("URI not allowed here: %1.\n", $no_new_mirror)
 	if $no_new_mirror;
 
+    # this is going to take a while, release giant lock
+    $self->{xd}->giant_unlock;
+
     print loc("New URI encountered: %1\n", $uri);
 
     my $depots = join('|', map quotemeta, sort keys %$map);
@@ -458,6 +461,8 @@ break history-sensitive merging within the mirrored path.
         $answer = 'a';
     }
 
+    eval {
+
     $self->command(
         sync => {
             skip_to => (
@@ -469,7 +474,16 @@ break history-sensitive merging within the mirrored path.
         }
     )->run ($target);
 
+    $self->{xd}->giant_lock;
+
+    };
+
     my $depotpath = length ($rel_uri) ? $target->depotpath."/$rel_uri" : $target->depotpath;
+    if (my $err = $@) {
+	print loc("Unable to complete initial sync: %1", $err);
+	die loc("Run svk sync %1, and run the %2 command again.\n", $depotpath, lc((ref($self) =~ m/::([^:]*)$/)[0]));
+    }
+
     return $self->arg_depotpath($depotpath);
 }
 
