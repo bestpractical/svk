@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 68;
+use Test::More tests => 69;
 use strict;
 use SVK::Test;
 our($output, $answer);
@@ -335,7 +335,11 @@ is_output ($svk, 'checkout', ['--detach', __("$corpath/qu"), __("$corpath/Q"), _
             __("Checkout path '$corpath/3.1' detached."),
             ]);
 
+chdir("$corpath/co-root-deep/there");
+$svk->mkdir("newdir");
+is_output($svk, 'st', [], ['A   newdir']);
 
+chdir($corpath);
 rename("$corpath/co-root-deep/there", "$corpath/tmp");
 unlink("$corpath/co-root-deep");
 rename("$corpath/tmp", "$corpath/co-root-deep");
@@ -343,4 +347,8 @@ rename("$corpath/tmp", "$corpath/co-root-deep");
 is_output ($svk, 'checkout', ['--relocate', __("$corpath/co-root-deep/there"), __("$corpath/co-root-deep")], [
             __("Checkout '$corpath/co-root-deep/there' relocated to '$corpath/co-root-deep'."),
             ]);
-is_output($svk, 'st', ["$corpath/co-root-deep"], []);
+
+chdir("$corpath/co-root-deep");
+is_output($svk, 'st', [], ['A   newdir']);
+
+
