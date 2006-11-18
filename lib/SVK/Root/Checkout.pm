@@ -106,7 +106,7 @@ sub dir_entries {
 	else {
 	    # Do we know about the node?
 	    $coentries->{$_} = SVK::Root::Checkout::Entry->new
-		({ kind => $self->path->xd->{checkout}->get($copath, 1)->{'.schedule'} ?
+		({ kind => $self->path->xd->{checkout}->get("$copath/$_", 1)->{'.schedule'} ?
 		   $kind : $SVN::Node::unknown });
 	}
     }
