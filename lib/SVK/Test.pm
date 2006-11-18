@@ -164,6 +164,7 @@ sub build_floating_test {
 
     my $svkpath = File::Spec->catfile($directory, '.svk');
     my $xd = SVK::XD->new (statefile => File::Spec->catfile($svkpath, 'config'),
+			   giantlock => File::Spec->catfile($svkpath, 'lock'),
 			   svkpath => $svkpath,
 			   floating => $directory);
     $xd->load;

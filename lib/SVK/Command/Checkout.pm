@@ -95,7 +95,7 @@ sub run {
 			     depotmap => { $depotname => $depotpath },
 			     floating => $copath,
 			   );
-
+	$xd->giant_lock;
 	my $magic = catfile($svkpath, 'floating');
 	open my $magic_fh, '>', $magic or die $!;
 	print $magic_fh "This is an SVK floating checkout.";
