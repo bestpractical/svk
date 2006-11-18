@@ -24,10 +24,10 @@ foreach my $depot ('','bob') {
 
     is_output ($svk, 'ls', [], ['A/']);
     is_output ($svk, 'ls', ['-r1', 'A'], ['foo']);
-    is_output ($svk, 'ls', ['A/foo'], []);
+    is_output ($svk, 'ls', ['A/foo'], ['foo']);
     is_output ($svk, 'ls', ['-R', 'A'], ['B/', ' foo', 'foo']);
     is_output ($svk, 'ls', ['-R', '-d1'], ['A/', ' B/', ' foo']);
-    is_output ($svk, 'ls', ['-f','A/foo'], []);
+    is_output ($svk, 'ls', ['-f','A/foo'], ["/$depot/A/foo"]);
     is_output ($svk, 'ls', ["/$depot/"], ['A/']);
     is_output ($svk, 'ls', ['-f',"/$depot/"], ["/$depot/A/"]);
     is_output ($svk, 'ls', ['-f',"/$depot/A"],  ["/$depot/A/B/", "/$depot/A/foo"]);
@@ -51,7 +51,8 @@ foreach my $depot ('','bob') {
                [qr"      2 $re_user          $re_date A/"]);
     is_output ($svk, 'ls', ['-v', '-r1'],
                [qr"      1 $re_user          $re_date A/"]);
-    is_output ($svk, 'ls', ['-v', 'A/foo'], []);
+    is_output ($svk, 'ls', ['-v', 'A/foo'],
+               [qr"      1 $re_user        $size $re_date foo"]);
     is_output ($svk, 'ls', ['-v', '-r1', '-R'],
                [qr"      1 $re_user          $re_date A/",
                 qr"      1 $re_user        $size $re_date  foo"]);
@@ -66,7 +67,8 @@ foreach my $depot ('','bob') {
                 qr"      1 $re_user        $size $re_date  foo"]);
     is_output ($svk, 'ls', ['-v', '-f'],
                [qr"      2 $re_user          $re_date /$depot/A/"]);
-    is_output ($svk, 'ls', ['-v', '-f', 'A/foo'], []);
+    is_output ($svk, 'ls', ['-v', '-f', 'A/foo'],
+               [qr"      1 $re_user        $size $re_date /$depot/A/foo"]);
     is_output ($svk, 'ls', ['-v', '-f', "/$depot/"],
                [qr"      2 $re_user          $re_date /$depot/A/"]);
     is_output ($svk, 'ls', ['-v', '-f', "/$depot/A/"],

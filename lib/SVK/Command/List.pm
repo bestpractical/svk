@@ -37,53 +37,62 @@ sub run {
 
 sub _do_list {
     my ($self, $level, $target) = @_;
-    my $pool = SVN::Pool->new_default;
     my $root = $target->root;
     unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
        die loc("Path %1 is not a versioned directory\n", $target->path_anchor)
            unless $kind == $SVN::Node::file;
+       $self->_print_item( $target, $SVN::Node::file, 0, get_encoder);
        return;
     }
 
     my $entries = $root->dir_entries ($target->path_anchor);
     my $enc = get_encoder;
+    my $pool = SVN::Pool->new_default;
     for (sort keys %$entries) {
+	$pool->clear;
 	my $isdir = ($entries->{$_}->kind == $SVN::Node::dir);
-
-        if ($self->{verbose}) {
-	    my $rev = $root->node_created_rev ($target->path."/$_");
-            my $fs = $target->repos->fs;
-
-            my $svn_date =
-                $fs->revision_prop ($rev, 'svn:date');
-
-	    # The author name may be undef
-            no warnings 'uninitialized';
-
-	    # Additional fields for verbose: revision author size datetime
-            printf "%7ld %-8.8s %10s %12s ", $rev,
-                $fs->revision_prop ($rev, 'svn:author'),
-                ($isdir) ? "" : $root->file_length ($target->path."/$_"),
-                reformat_svn_date("%b %d %H:%M", $svn_date);
-        }
-
-        if ($self->{'fullpath'}) {
-	    my $dpath = $target->path_anchor;
-	    to_native ($dpath, 'path', $enc);
-	    $dpath .= '/' unless $dpath eq '/';
-            print '/'.$target->depotname.$dpath;
-        } else {
-            print " " x ($level);
-        }
-	my $path = $_;
-	to_native ($path, 'path', $enc);
-        print $path.($isdir ? '/' : '')."\n";
+	my $child = $target->new->descend($_);
+	$self->_print_item($child, $entries->{$_}->kind, $level, $enc);
 
 	if ($isdir && ($self->{recursive}) &&
 	    (!$self->{'depth'} ||( $level < $self->{'depth'} ))) {
-	    _do_list($self, $level+1, $target->new->descend($_));
+	    _do_list($self, $level+1, $child);
 	}
     }
+}
+
+sub _print_item {
+    my ( $self, $target, $kind, $level, $enc ) = @_;
+    my $root = $target->root;
+    if ( $self->{verbose} ) {
+        my $rev = $root->node_created_rev( $target->path );
+        my $fs  = $target->repos->fs;
+
+        my $svn_date = $fs->revision_prop( $rev, 'svn:date' );
+
+        # The author name may be undef
+        no warnings 'uninitialized';
+
+        # Additional fields for verbose: revision author size datetime
+        printf "%7ld %-8.8s %10s %12s ", $rev,
+            $fs->revision_prop( $rev, 'svn:author' ),
+            ($kind == $SVN::Node::dir) ? "" : $root->file_length( $target->path ),
+            reformat_svn_date( "%b %d %H:%M", $svn_date );
+    }
+
+    my $output_path;
+    if ( $self->{'fullpath'} ) {
+        $output_path = $target->report;
+    }
+    else {
+        print " " x ($level);
+        $output_path = Path::Class::File->new_foreign( 'Unix', $target->path )
+            ->basename;
+    }
+    to_native( $output_path, 'path', $enc );
+    print $output_path;
+    print( ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n" );
+
 }
 
 1;
