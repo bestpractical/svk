@@ -1018,11 +1018,9 @@ Traverse C<$target> and and invoke C<$code> with each node.
 sub run_command_recursively {
     my ($self, $target, $code, $level) = @_;
     my $root = $target->root;
-    unless ((my $kind = $root->check_path ($target->path_anchor)) == $SVN::Node::dir) {
-       return;
-    }
-    $code->($target, $target->root->check_path($target->path_anchor), -1);
-    $self->_descend_with($target, $code, 0)
+    my $kind = $root->check_path($target->path_anchor);
+    $code->($target, $kind, -1);
+    $self->_descend_with($target, $code, 1) if $kind == $SVN::Node::dir && $self->{recursive} && (!$self->{depth} || 0 < $self->{depth});
 }
 
 sub _descend_with {

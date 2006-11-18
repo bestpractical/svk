@@ -26,6 +26,13 @@ sub run {
     my $exception = '';
 
     my $enc = get_encoder;
+    if ($self->{recursive}) {
+	$self->{depth}++ if $self->{depth};
+    }
+    else {
+        $self->{recursive}++;
+        $self->{depth} = 1;
+    }
     while ( my $arg = shift @arg ) {
         $arg = $arg->as_depotpath;
         eval {
@@ -74,7 +81,7 @@ sub _print_item {
         $output_path = $target->report;
     }
     else {
-        print " " x ($level);
+        print " " x ($level-1);
         $output_path = Path::Class::File->new_foreign( 'Unix', $target->path )
             ->basename;
     }
