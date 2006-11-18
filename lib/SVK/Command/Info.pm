@@ -20,22 +20,17 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, @arg) = @_;
-    my $exception='';
-    my $pool = SVN::Pool->new_default;
+    my ( $self, @arg ) = @_;
+    my $exception = '';
+    my $errs      = [];
     $self->run_command_recursively(
         $_,
         sub {
-            $pool->clear;
-            eval { $self->_do_info( $_[0] ) };
-            if ($@) {
-                $exception .= "$@";
-                $exception .= "\n" unless $exception =~ m/\n$/;
-                next;
-            }
-        }
+            $self->_do_info( $_[0] );
+        }, $errs, $#arg,
     ) for @arg;
-    die($exception) if($exception);
+
+    return scalar @$errs;
 }
 
 sub _do_info {

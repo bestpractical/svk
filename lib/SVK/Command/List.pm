@@ -26,35 +26,27 @@ sub run {
     my $exception = '';
 
     my $enc = get_encoder;
-    if ($self->{recursive}) {
-	$self->{depth}++ if $self->{depth};
-    }
-    else {
+    if ( $self->{recursive} ) {
+        $self->{depth}++ if $self->{depth};
+    } else {
         $self->{recursive}++;
         $self->{depth} = 1;
     }
-    while ( my $arg = shift @arg ) {
-        $arg = $arg->as_depotpath;
-        eval {
-            $self->run_command_recursively(
-                $self->apply_revision($arg),
-                sub {
-                    my ( $target, $kind, $level ) = @_;
-                    if ( $level == -1 ) {
-                        return if $kind == $SVN::Node::dir;
-                        die loc( "Path %1 is not versioned.\n",
-                            $target->path_anchor )
-                            unless $kind == $SVN::Node::file;
-                    }
-                    $self->_print_item( $target, $kind, $level, $enc );
-                }
-            );
-            print "\n" if @arg;
-        };
-        $exception .= "$@" if $@;
-    }
+    my $errs = [];
+    $self->run_command_recursively(
+        $self->apply_revision($_),
+        sub {
+            my ( $target, $kind, $level ) = @_;
+            if ( $level == -1 ) {
+                return if $kind == $SVN::Node::dir;
+                die loc( "Path %1 is not versioned.\n", $target->path_anchor )
+                    unless $kind == $SVN::Node::file;
+            }
+            $self->_print_item( $target, $kind, $level, $enc );
+        }, $errs, $#arg
+    ) for map { $_->as_depotpath } @arg;
 
-    die($exception) if($exception);
+    return scalar @$errs;
 }
 
 sub _print_item {

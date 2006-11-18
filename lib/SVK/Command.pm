@@ -1015,16 +1015,29 @@ Traverse C<$target> and and invoke C<$code> with each node.
 
 =cut
 
+sub _run_code {
+    my ($self, $target, $code, $level, $errs, $kind) = @_;
+    eval { $code->( $target, $kind, $level ) };
+    if ($@) {
+	print $@;
+	push @$errs, "$@";
+    }
+}
+
 sub run_command_recursively {
-    my ($self, $target, $code, $level) = @_;
+    my ( $self, $target, $code, $errs, $newline, $level ) = @_;
     my $root = $target->root;
-    my $kind = $root->check_path($target->path_anchor);
-    $code->($target, $kind, -1);
-    $self->_descend_with($target, $code, 1) if $kind == $SVN::Node::dir && $self->{recursive} && (!$self->{depth} || 0 < $self->{depth});
+    my $kind = $root->check_path( $target->path_anchor );
+    $self->_run_code($target, $code, -1, $errs, $kind);
+    $self->_descend_with( $target, $code, $errs, 1 )
+        if $kind == $SVN::Node::dir
+        && $self->{recursive}
+        && ( !$self->{depth} || 0 < $self->{depth} );
+    print "\n" if $newline;
 }
 
 sub _descend_with {
-    my ($self, $target, $code, $level) = @_;
+    my ($self, $target, $code, $errs, $level) = @_;
     my $root = $target->root;
     my $entries = $root->dir_entries ($target->path_anchor);
     my $pool = SVN::Pool->new_default;
@@ -1033,11 +1046,11 @@ sub _descend_with {
 	my $kind = $entries->{$_}->kind;
 	next if $kind == $SVN::Node::unknown;
 	my $child = $target->new->descend($_);
-	$code->($child, $kind, $level);
 
+        $self->_run_code($child, $code, $level, $errs, $kind);
 	my $isdir = ($kind == $SVN::Node::dir);
-	if ($isdir && $self->{recursive} && (!$self->{'depth'} || ( $level < $self->{'depth'}))) {
-	    $self->_descend_with($child, $code, $level+1);
+	if ($isdir && $self->{recursive} && (!$self->{'depth'} || ( $level  < $self->{'depth'}))) {
+	    $self->_descend_with($child, $code, $errs, $level+1);
 	}
     }
 }

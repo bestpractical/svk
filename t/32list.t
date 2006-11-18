@@ -37,10 +37,10 @@ foreach my $depot ('','bob') {
     is_output ($svk, 'ls', ['-f',"/$depot/crap/"], ['Path /crap is not versioned.']);
     ok ($svk->ls ('-f', "/$depot/crap/") == 1, "ls -f /$depot/crap/ [exit status]");
     is_output ($svk, 'ls', ['-f',"/$depot/", "/$depot/A"],
-               ["/$depot/A/", '', "/$depot/A/B/","/$depot/A/foo"]);
+               ["/$depot/A/", '', "/$depot/A/B/","/$depot/A/foo", '']);
     ok ($svk->ls ('-f', "/$depot/", "/$depot/A") == 0, "ls -f /$depot/ /$depot/A [exit status]");
     is_output ($svk, 'ls', ['-f',"/$depot/A", "/$depot/crap/"],
-               ["/$depot/A/B/","/$depot/A/foo", '', 'Path /crap is not versioned.']);
+               ["/$depot/A/B/","/$depot/A/foo", '', 'Path /crap is not versioned.', '']);
     ok ($svk->ls ('-f', "/$depot/A", "/$depot/crap/") == 1, "ls -f /$depot/A /$depot/crap/ [exit status]");
 
     use POSIX qw( strftime );
@@ -85,13 +85,13 @@ foreach my $depot ('','bob') {
                [qr"      2 $re_user          $re_date /$depot/A/",
                   '',
                 qr"      2 $re_user          $re_date /$depot/A/B/",
-                qr"      1 $re_user        $size $re_date /$depot/A/foo"]);
+                qr"      1 $re_user        $size $re_date /$depot/A/foo", '']);
     ok ($svk->ls ('-v', '-f', "/$depot/", "/$depot/A") == 0, "ls -v -f /$depot/ /$depot/A [exit status]");
     is_output ($svk, 'ls', ['-v', '-f', "/$depot/A/", "/$depot/crap/"],
                [qr"      2 $re_user          $re_date /$depot/A/B/",
                 qr"      1 $re_user        $size $re_date /$depot/A/foo",
                   '',
-                  'Path /crap is not versioned.']);
+                  'Path /crap is not versioned.', '']);
     ok ($svk->ls ('-v', '-f', "/$depot/A", "/$depot/crap/") == 1, "ls -f /$depot/A /$depot/crap/ [exit status]");
 
     chdir("..");
