@@ -41,6 +41,6 @@ is_output($svk, 'cp', ['//info-root@1', 'blah'],
 
 # XXX: schedule info etc
 is_output($svk, 'info', ['blah'],
-	  [__('Checkout Path: /home/clkao/work/svk/t/checkout/info/blah'),
+	  [__("Checkout Path: $corpath/blah"),
 	   'Depot Path: //info-root/blah',
 	   'Revision: 1', '']);
