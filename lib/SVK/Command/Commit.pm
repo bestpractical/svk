@@ -14,7 +14,7 @@ use SVK::Editor::InteractiveCommitter;
 use SVK::Editor::InteractiveStatus;
 
 use SVK::Util qw( get_buffer_from_editor slurp_fh read_file
-		  tmpfile abs2rel find_prev_copy from_native to_native
+		  tmpfile abs2rel from_native to_native
 		  get_encoder get_anchor );
 
 use Class::Autouse qw( SVK::Editor::Rename SVK::Editor::Merge );
