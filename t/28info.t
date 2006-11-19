@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 15;
+use Test::More tests => 17;
 use strict;
 use SVK::Test;
 our $output;
@@ -35,3 +35,12 @@ is_output($svk, 'info', ['blah'],
 	  ['Path //info-root/blah does not exist.']);
 is_output($svk, 'info', ['//info-root@1'],
 	   \@depot_info);
+
+is_output($svk, 'cp', ['//info-root@1', 'blah'],
+	  ['A   blah']);
+
+# XXX: schedule info etc
+is_output($svk, 'info', ['blah'],
+	  [__('Checkout Path: /home/clkao/work/svk/t/checkout/info/blah'),
+	   'Depot Path: //info-root/blah',
+	   'Revision: 1', '']);
