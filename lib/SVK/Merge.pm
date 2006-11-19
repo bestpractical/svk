@@ -1,6 +1,6 @@
 package SVK::Merge;
 use strict;
-use SVK::Util qw(traverse_history);
+use SVK::Util qw(traverse_history is_path_inside);
 use SVK::I18N;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;
@@ -376,7 +376,7 @@ sub _collect_renamed {
 	$entries->{$_} = [$action , $action eq 'D' ? (-1) : $root->copied_from ($_)];
 	# anchor is copied
 	if ($action eq 'A' && $entries->{$_}[1] != -1 &&
-	    ($path eq $_ || "$_/" eq substr ($path, 0, length($_)+1))) {
+	    (is_path_inside($path, $_))) {
 	    $path =~ s/^\Q$_\E/$entries->{$_}[2]/;
 	    $$pathref = $path;
 	}

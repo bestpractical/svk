@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(
     move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
     catdepot abs_path_noexist 
 
-    is_symlink is_executable is_uri can_run
+    is_symlink is_executable is_uri can_run is_path_inside
 
     str2time time2str reformat_svn_date
 
@@ -924,6 +924,19 @@ sub find_dotsvk {
     }
 
     return
+}
+
+=head3 is_path_inside($path, $parent)
+
+Returns true if unix path C<$path> is inside C<$parent>.
+If they are the same, return true as well.
+
+=cut
+
+sub is_path_inside {
+    my ($path, $parent) = @_;
+    return 1 if $path eq $parent;
+    return substr ($path, 0, length ($parent)+1) eq "$parent/";
 }
 
 1;

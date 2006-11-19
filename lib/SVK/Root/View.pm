@@ -7,6 +7,7 @@ use base qw{ SVK::Root };
 __PACKAGE__->mk_accessors(qw(view));
 
 use Scalar::Util 'weaken';
+use SVK::Util 'is_path_inside';
 
 sub txn_root {
     my ($self, $pool) = @_;
@@ -28,18 +29,11 @@ sub get_revision_root {
 	     $path );
 }
 
-# XXX: stolen from Editor::Rename, kill these
-sub _path_inside {
-    my ($path, $parent) = @_;
-    return 1 if $path eq $parent;
-    return substr ($path, 0, length ($parent)+1) eq "$parent/";
-}
-
 sub rename_check {
     my ($self, $path, $map) = @_;
     for (@$map) {
 	my ($from, $to) = @$_;
-	if (_path_inside ($path, $from)) {
+	if (is_path_inside($path, $from)) {
 	    my $newpath = $path;
 	    $newpath =~ s/^\Q$from\E/$to/;
 	    return $newpath;

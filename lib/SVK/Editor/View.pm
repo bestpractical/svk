@@ -3,8 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw(SVK::Editor::Rename);
 use SVK::I18N;
-
-*_path_inside = *SVK::Editor::Rename::_path_inside;
+use SVK::Util 'is_path_inside';
 
 sub rename_check {
     my ($self, $path) = @_;
@@ -12,7 +11,7 @@ sub rename_check {
 	if length $self->{prefix};
     for (@{$self->{rename_map}}) {
 	my ($from, $to) = @$_;
-	if (_path_inside ($path, $from)) {
+	if (is_path_inside($path, $from)) {
 	    my $newpath = $path;
 	    $newpath =~ s/^\Q$from\E/$to/;
 	    return $newpath;

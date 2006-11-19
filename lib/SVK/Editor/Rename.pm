@@ -3,6 +3,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw(SVK::Editor::Patch);
 use SVK::I18N;
+use SVK::Util 'is_path_inside';
 
 =head1 NAME
 
@@ -35,19 +36,13 @@ proper parent directory before calls are emitted to C<$next_editor>.
 
 =cut
 
-sub _path_inside {
-    my ($path, $parent) = @_;
-    return 1 if $path eq $parent;
-    return substr ($path, 0, length ($parent)+1) eq "$parent/";
-}
-
 sub rename_check {
     my ($self, $path, $nocache) = @_;
     return $self->{rename_cache}{$path}
 	if exists $self->{rename_cache}{$path};
     for (@{$self->{rename_map}}) {
 	my ($from, $to) = @$_;
-	if (_path_inside ($path, $from)) {
+	if (is_path_inside($path, $from)) {
 	    my $newpath = $path;
 	    $newpath =~ s/^\Q$from\E/$to/;
 	    $newpath = $self->rename_check ($newpath, 1);

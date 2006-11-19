@@ -2,7 +2,7 @@ package SVK::Command::Copy;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
-use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri make_path );
+use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri make_path is_path_inside);
 use SVK::I18N;
 use SVK::Logger;
 
@@ -175,13 +175,12 @@ sub run {
 	    my $cpdst = $dst->new;
 	    # implicit target for "cp x y z dir/"
 	    if (-d $cpdst->copath) {
-		# XXX: _path_inside should be refactored in to SVK::Util
-		if ( substr($cpdst->path_anchor, 0, length($_->path_anchor)+1) eq $_->path_anchor."/") {
-		    die loc("Invalid argument: copying directory %1 into itself.\n", $_->report);
-		}
 		if ($_->path_anchor eq $cpdst->path_anchor) {
 		    $logger->warn(loc("Ignoring %1 as source.", $_->report));
 		    next;
+		}
+		if ( is_path_inside($cpdst->path_anchor, $_->path_anchor) ) {
+		    die loc("Invalid argument: copying directory %1 into itself.\n", $_->report);
 		}
 		$cpdst->descend ($_->path_anchor =~ m|/([^/]+)/?$|)
 	    }
