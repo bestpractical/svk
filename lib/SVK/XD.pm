@@ -195,9 +195,8 @@ sub create_depots {
 
         make_path(dirname($path));
 
-        $ENV{SVNFSTYPE} ||= (($SVN::Core::VERSION =~ /^1\.0/) ? 'bdb' : 'fsfs');
 	SVN::Repos::create($path, undef, undef, undef,
-			   {'fs-type' => $ENV{SVNFSTYPE},
+			   {'fs-type' => $ENV{SVNFSTYPE} || 'fsfs',
 			    'bdb-txn-nosync' => '1',
 			    'bdb-log-autoremove' => '1'});
     }

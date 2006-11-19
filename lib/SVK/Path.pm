@@ -411,11 +411,7 @@ path.
 
 =cut
 
-use SVN::Fs;
-*nearest_copy = SVN::Fs->can('closest_copy')
-  ? *_nearest_copy_svn : *_nearest_copy_svk;
-
-sub _nearest_copy_svn {
+sub nearest_copy {
     my ($root, $path, $ppool) = @_;
     if (ref($root) =~ m/^SVK::Path/) {
         ($root, $path) = ($root->root, $root->path);
@@ -436,61 +432,6 @@ sub _nearest_copy_svn {
 	unless $copyfrom_root->revision_root_revision == $copyfrom_rev;
 
     return ($toroot, $root->fs->revision_root($copyfrom_rev, $ppool), $path);
-}
-
-sub _nearest_copy_svk {
-    my ($root, $path, $ppool) = @_;
-    if (ref($root) =~ m/^SVK::Path/) {
-        ($root, $path) = ($root->root, $root->path);
-    }
-    my $fs = $root->fs;
-    my $spool = SVN::Pool->new_default;
-    my ($old_pool, $new_pool) = (SVN::Pool->new, SVN::Pool->new);
-
-    # XXX: this is duplicated as svk::util, maybe we should use
-    # traverse_history directly
-    if ($root->can('txn') && $root->txn) {
-	($root, $path) = $root->get_revision_root
-	    ($path, $root->txn->base_revision );
-    }
-    # normalize
-    my $hist = $root->node_history ($path)->prev(0);
-    my $rev = ($hist->location)[1];
-    $root = $fs->revision_root ($rev, $ppool);
-
-    while ($hist = $hist->prev(1, $new_pool)) {
-	# Find history_prev revision, if the path is different, bingo.
-	my ($hppath, $hprev) = $hist->location;
-	if ($hppath ne $path) {
-	    $hist = $root->node_history ($path, $new_pool)->prev(0);
-	    $root = $fs->revision_root (($hist->location($new_pool))[1],
-					$ppool);
-	    return ($root, $fs->revision_root ($hprev, $ppool), $hppath);
-	}
-
-	# Find nearest copy of the current revision (up to but *not*
-	# including the revision itself). If the copy contains us, bingo.
-	my $copy;
-	($root, $copy) = find_prev_copy ($fs, $hprev, $new_pool) or last; # no more copies
-	$rev = $root->revision_root_revision;
-	if (my ($fromrev, $frompath) = _copies_contain_path ($copy, $path)) {
-	    # there were copy, but the descendent might not exist there
-	    my $proot = $fs->revision_root ($fromrev, $ppool);
-	    last unless $proot->check_path ($frompath, $old_pool);
-	    return ($fs->revision_root($root->revision_root_revision, $ppool),
-		    $proot, $frompath);
-	}
-
-	if ($rev < $hprev) {
-	    # Reset the hprev root to this earlier revision to avoid infinite looping
-	    local $@;
-	    $hist = eval { $root->node_history ($path, $new_pool)->prev(0, $new_pool) } or last;
-	}
-        $old_pool->clear;
-	$spool->clear;
-        ($old_pool, $new_pool) = ($new_pool, $old_pool);
-    }
-    return;
 }
 
 sub _copies_contain_path {

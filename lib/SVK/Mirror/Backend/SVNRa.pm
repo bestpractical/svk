@@ -492,7 +492,6 @@ sub get_commit_editor {
     die loc("relayed merge back not supported yet.\n") if $self->_relayed;
     $self->{commit_ra} = $self->_new_ra( url => $self->mirror->url.$path );
 
-    my @lock = $SVN::Core::VERSION ge '1.2.0' ? (undef, 0) : ();
     # XXX: add error check for get_commit_editor here, auth error happens here
     return SVN::Delta::Editor->new(
         $self->{commit_ra}->get_commit_editor(
@@ -501,8 +500,7 @@ sub get_commit_editor {
 		# only recycle the ra if we are committing from root
 		$self->_ra_finished($self->{commit_ra});
                 $committed->(@_);
-            },
-            @lock ) );
+            }, undef, 0 ) );
 }
 
 sub change_rev_prop {

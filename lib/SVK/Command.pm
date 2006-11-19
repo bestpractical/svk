@@ -116,13 +116,7 @@ sub invoke {
     $ofh = select STDERR unless $output;
     print $ret if $ret && $ret !~ /^\d+$/;
     unless (ref($@)) {
-	if ($SVN::Core::VERSION gt '1.2.2') {
-	    print $@ if $@;
-	}
-	else {
-	    # if an error handler terminates editor call, there will be stack trace
-	    print $@ if $@ && $@ !~ m/\n.+\n.+\n/
-	}
+	print $@ if $@;
     }
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
 
