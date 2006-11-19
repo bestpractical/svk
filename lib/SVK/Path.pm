@@ -372,12 +372,12 @@ sub depotpath {
     return '/'.$self->depotname.$self->{path};
 }
 
-# depotpath only for now
-# cache revprop:
-# svk:copy_cache
+=head2 copy_ancestors
 
-# svk:copy_cache_prev points to the revision in the depot that the
-# previous copy happens.
+Returns a list of C<(path, rev)> pairs, which are ancestors of the
+current node.
+
+=cut
 
 sub copy_ancestors {
     my $self = shift;
