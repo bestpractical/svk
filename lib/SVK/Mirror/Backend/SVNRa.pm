@@ -62,7 +62,7 @@ sub load {
     my $ruuid = $t->root->node_prop($t->path, 'svm:ruuid') || $uuid;
     die loc("%1 is not a mirrored path.\n", $t->path) unless $uuid;
     my ( $root, $path ) = split('!',  $t->root->node_prop($t->path, 'svm:source'));
-
+    $path = '' unless defined $path;
     $self->source_root( $root );
     $self->source_path( $path );
 
