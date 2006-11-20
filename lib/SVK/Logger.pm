@@ -62,8 +62,10 @@ $level = { map { $_ => ++$i } reverse qw( debug info warn error fatal ) };
 $current_level = $level->{lc $ENV{SVKLOGLEVEL}} || $level->{info};
 
 my $ignore  = sub { return };
-my $warn    = sub { shift; $_[0] .= "\n"; print $_[0] };
-#my $die     = sub { shift; $_[0] .= "\n" unless ref($_[0]); goto \&CORE::GLOBAL::die };
+my $warn = sub {
+    $_[1] .= "\n" unless substr( $_[1], -1, 1 ) eq "\n";
+    print $_[1];
+};
 my $die     = sub { shift; die $_[0]."\n"; };
 my $carp    = sub { shift; goto \&Carp::carp };
 my $confess = sub { shift; goto \&Carp::confess };
