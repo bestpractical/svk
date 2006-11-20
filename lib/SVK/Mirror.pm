@@ -344,7 +344,6 @@ svk is now taking a snapshot of the repository at:
 This is essentially making a checkout of the url, and is bad if the
 url contains directories like trunk and branches.  If this isn't what
 you mean, please hit ^C.
-
 ", $self->url));
 
     $self->run_svnmirror_sync( { skip_to => $snapshot });

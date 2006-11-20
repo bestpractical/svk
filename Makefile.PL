@@ -27,7 +27,6 @@ requires(
     'Class::Autouse'           => '1.15',
     'App::CLI'                 => '0',
     'List::MoreUtils'          => '0',
-    'Log::Log4perl'            => '0',
     'Class::Accessor::Fast'    => '0',
     'Class::Data::Inheritable' => '0',
     'Path::Class'              => '0.15',
@@ -52,7 +51,12 @@ features(
         -default => 1,
         'IO::Pager'             => '0',
     ],
+    'Log4perl support' => [
+        -default => 0,
+        'Log::Log4perl'         => '0',
+    ]
 );
+
 
 if( eval{ require SVN::Mirror } ) {
     requires( 'SVN::Mirror' => $required_svm );

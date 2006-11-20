@@ -364,7 +364,7 @@ sub arg_uri_maybe {
     # this is going to take a while, release giant lock
     $self->{xd}->giant_unlock;
 
-    $logger->info(loc("New URI encountered: %1\n", $uri));
+    $logger->info(loc("New URI encountered: %1", $uri));
 
     my $depots = join('|', map quotemeta, sort keys %$map);
     my ($base_uri, $rel_uri);
