@@ -766,5 +766,6 @@ Document the merge and ticket tracking mechanism.
 
 L<SVK::Editor::Merge>, L<SVK::Command::Merge>, Star-merge from GNU Arch
 
+=cut
 
 1;

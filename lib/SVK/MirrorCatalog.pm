@@ -137,5 +137,6 @@ sub is_mirrored {
 
 L<SVN::Mirror>
 
+=cut
 
 1;

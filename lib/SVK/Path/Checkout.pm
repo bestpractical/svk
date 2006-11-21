@@ -48,6 +48,37 @@
 # distribute those contributions and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
+package SVK::Path::Checkout;
+use strict;
+use SVK::Version;  our $VERSION = $SVK::VERSION;
+
+use base 'SVK::Accessor';
+
+use SVK::Path;
+
+__PACKAGE__->mk_shared_accessors(qw(xd));
+__PACKAGE__->mk_clonable_accessors(qw(report source copath_anchor copath_target));
+__PACKAGE__->mk_accessors(qw(_pool _inspector));
+
+use Class::Autouse qw(SVK::Editor::XD SVK::Root::Checkout);
+
+use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel get_encoder to_native );
+
+=head1 NAME
+
+SVK::Path::Checkout - SVK path class associating a checkout
+
+=head1 SYNOPSIS
+
+ See below
+
+=head1 DESCRIPTION
+
+The class represents a node in svk depot, associated with a checkout
+copy.
+
+=cut
+
 sub real_new {
     my $class = shift;
     my $self = $class->SUPER::real_new(@_);
@@ -337,5 +368,6 @@ sub prev {
 
 L<SVK::Path>
 
+=cut
 
 1;

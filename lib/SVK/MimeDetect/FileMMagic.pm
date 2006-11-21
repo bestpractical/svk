@@ -48,6 +48,21 @@
 # distribute those contributions and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
+package SVK::MimeDetect::FileMMagic;
+use strict;
+use warnings;
+use base qw( File::MMagic );
+
+use SVK::Util qw( is_binary_file );
+
+=for Workaround:
+
+File::MMagic 1.27 doesn't correctly handle subclassing.  The object returned by
+new is blessed into 'File::MMagic' instead of the subclass.  The author has
+accepted a patch to correct this behavior.  Once the patched version is
+released on CPAN, new() should be removed and the fixed version required.
+
+=cut
 sub new {
     my $pkg = shift;
     my $new_self = $pkg->SUPER::new(@_);
@@ -83,4 +98,3 @@ SVK::MimeDetect::FileMMagic
 =head1 DESCRIPTION
 
 Implement MIME type detection using the module File::MMagic.
-
