@@ -732,5 +732,6 @@ sub as_url {
 
 L<SVK::Path::Checkout>
 
+=cut
 
 1;

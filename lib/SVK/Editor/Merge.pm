@@ -1007,5 +1007,6 @@ still very primitive, have to handle lots of cases
 
 =back
 
+=cut
 
 1;
