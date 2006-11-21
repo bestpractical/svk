@@ -39,13 +39,13 @@
 # by submitting them to Best Practical Solutions, LLC.)
 # 
 # By intentionally submitting any modifications, corrections or
-# derivatives to this work, or any other work intended for use with
-# Request Tracker, to Best Practical Solutions, LLC, you confirm that
-# you are the copyright holder for those contributions and you grant
-# Best Practical Solutions, LLC a nonexclusive, worldwide,
-# irrevocable, royalty-free, perpetual, license to use, copy, create
-# derivative works based on those contributions, and sublicense and
-# distribute those contributions and any derivatives thereof.
+# derivatives to this work, or any other work intended for use with SVK,
+# to Best Practical Solutions, LLC, you confirm that you are the
+# copyright holder for those contributions and you grant Best Practical
+# Solutions, LLC a nonexclusive, worldwide, irrevocable, royalty-free,
+# perpetual, license to use, copy, create derivative works based on
+# those contributions, and sublicense and distribute those contributions
+# and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Resolve::Vim;
