@@ -1,3 +1,4 @@
+ARTISTIC
 bin/svk
 CHANGES
 COMMITTERS
@@ -5,6 +6,7 @@ contrib/bench-mime-detect.pl
 contrib/svk-completion.pl
 contrib/svkopendiff
 contrib/update-copyright.pl
+COPYING
 inc/ExtUtils/AutoInstall.pm
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
@@ -99,7 +101,6 @@ lib/SVK/I18N/zh_tw.po
 lib/SVK/Inspector.pm
 lib/SVK/Inspector/Compat.pm
 lib/SVK/Inspector/Root.pm
-lib/SVK/Logger.pm
 lib/SVK/Log/ChangedPath.pm
 lib/SVK/Log/ChangedPaths.pm
 lib/SVK/Log/Filter.pm
@@ -111,6 +112,7 @@ lib/SVK/Log/Filter/Selection.pm
 lib/SVK/Log/Filter/Std.pm
 lib/SVK/Log/Filter/XML.pm
 lib/SVK/Log/FilterPipeline.pm
+lib/SVK/Logger.pm
 lib/SVK/Merge.pm
 lib/SVK/MimeDetect.pm
 lib/SVK/MimeDetect/FileLibMagic.pm
@@ -281,6 +283,7 @@ t/svk-sec.gpg
 t/svk.gpg
 utils/extract-docs
 utils/extract-message-catalog
+utils/license_tag
 utils/pullyu
 utils/svk-ediff.el
 utils/verify-mirror

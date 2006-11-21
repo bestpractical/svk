@@ -24,3 +24,4 @@ t/checkout/*
 t/apache*
 tmp/*
 ^SVK-
+^cover*
