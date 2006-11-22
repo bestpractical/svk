@@ -12,7 +12,7 @@ is_output_like ($svk, 'info', [], qr'not a checkout path');
 ok ($svk->info () > 0);
 chdir ($copath);
 
-my @depot_info = ("Depot Path: //info-root", "Revision: 1", "Last Changed Rev.: 1", "");
+my @depot_info = ("Depot Path: //info-root", "Revision: 1", "Last Changed Rev.: 1", qr{\ALast Changed Date: \d+-\d+-\d+\z}, "");
 my @co_info = ("Checkout Path: $corpath", @depot_info);
 
 ok ($svk->info () == 0);

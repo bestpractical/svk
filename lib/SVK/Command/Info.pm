@@ -58,6 +58,7 @@ use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
 use YAML::Syck;
+use autouse 'SVK::Util' => qw( reformat_svn_date );
 
 # XXX: provide -r which walks peg to the specified revision based on
 # the root.
@@ -96,9 +97,14 @@ sub _do_info {
 	if $target->isa('SVK::Path::Checkout');
     print loc("Depot Path: %1\n", $target->depotpath);
     print loc("Revision: %1\n", $target->revision);
-    if (defined (my $lastchanged = $target->root->node_created_rev($target->path))) {
-	print loc("Last Changed Rev.: %1\n", $lastchanged);
-	# XXX: last changed date
+    if (defined( my $lastchanged = $target->root->node_created_rev( $target->path ))) {
+        print loc( "Last Changed Rev.: %1\n", $lastchanged );
+        my $date
+            = $target->root->fs->revision_prop( $lastchanged, 'svn:date' );
+        print loc(
+            "Last Changed Date: %1\n",
+            reformat_svn_date( "%F", $date )
+        );
     }
 
     print loc("Mirrored From: %1, Rev. %2\n",$m->url, $m->fromrev)
