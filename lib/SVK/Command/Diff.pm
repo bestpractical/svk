@@ -81,7 +81,7 @@ sub run {
     my $yrev = $fs->youngest_rev;
     my ($cb_llabel, $report);
     my ($r1, $r2) = $self->resolve_revspec($target,$target2);
-
+    my $oldroot;
     # translate to target and target2
     if ($target2) {
 	if ($target->isa('SVK::Path::Checkout')) {
@@ -106,6 +106,8 @@ sub run {
 	    $target = $target->as_depotpath;
 	    $target = $target->seek_to($r1) if $r1;
 	    $target2 = $target->as_depotpath->seek_to($r2) if $r2;
+	    # if no revision is specified, use the xdroot as target1's root
+	    $oldroot = $target2->create_xd_root unless $r1 || $r2;
 	    $cb_llabel =
 		sub { my ($rpath) = @_;
 		      'revision '.($self->{xd}{checkout}->get ($target2->copath ($rpath))->{revision}) } unless $r1;
@@ -135,7 +137,7 @@ sub run {
 	  base_target => $target, base_root => $target->root,
 	);
 
-    my $oldroot = $target->root;
+    $oldroot ||= $target->root;
     my $kind = $oldroot->check_path($target->path_anchor);
     if ($target2->isa('SVK::Path::Checkout')) {
 	if ($kind != $SVN::Node::dir) {
