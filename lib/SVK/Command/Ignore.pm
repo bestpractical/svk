@@ -129,23 +129,3 @@ results are undefined -- specifically, the result of the check to see
 if the entry is already there may not be what you expected.  Currently
 it will not try to escape any such entries before adding them.)
 
-
-# 15:09 < glasser> ok, syntax:
-# 15:09 < glasser> svk ignore FILE [FILE...], only working on a co
-# 15:10 < obra> there should also be a way to svk ignore a pattern
-# 15:10 < glasser> adds each argument to the svn:ignore of its parent directory
-# 15:10  * glasser nods
-# 15:10 < glasser> i'm thinking for now just svk ignore some/dir/'*.foo'
-# 15:10 < glasser> and not support svk ignore some/dir/*/and/bla 
-# 15:10 < obra> nod
-# 15:10 < glasser> (yet)
-# 15:11 < obra> svk ignore --list
-# 15:11 < obra> svk ignore --remove ?
-# 15:11 < glasser> ie, the only parsing that is done is "find the directory"
-# 15:11 < glasser> later we can act directly on depotpaths, etc
-# 15:11  * glasser nods
-# 15:12 < glasser> i think it's reasonable to (even once we have --list --remove etc) just allow "svk ignore foo bar" to work
-#             (without requiring --add or whatever)
-# 15:12 < glasser> also svk ignore --edit
-# 15:13 < obra> yes
-# 15:14 < glasser> these are good ideas, and will be stuck into a comment in Ignore.pm, but for now i'm just going to do the bare minimum
