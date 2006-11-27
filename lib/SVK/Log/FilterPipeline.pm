@@ -153,17 +153,17 @@ sub build_filter_object {
     if ( $type eq 'output' ) {
         die loc(
               qq(Cannot use the selection filter "%1" as an output filter.\n)
-            . qq(Perhaps you meant "--filter '%1 ...'".  If not, take a look at\n)
+            . qq(Perhaps you meant "--filter '%2 ...'".  If not, take a look at\n)
             . qq("svk help log" for examples of using log filters.\n),
-            lc($class),
+            lc($class), lc($class),
         ) if !$found->isa('SVK::Log::Filter::Output');
     }
     elsif ( $type eq 'selection' ) {
         die loc(
               qq(Cannot use the output filter "%1" in a selection pipeline.\n)
-            . qq(Perhaps you meant "--output %1".  If not, take a look at\n)
+            . qq(Perhaps you meant "--output %2".  If not, take a look at\n)
             . qq("svk help log" for examples of using log filters.\n),
-            lc($class),
+            lc($class), lc($class),
         ) if !$found->isa('SVK::Log::Filter::Selection');
     }
 
