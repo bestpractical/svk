@@ -147,6 +147,7 @@ For example, here's the way to display the info of a checkout path:
  Depot Path: //svk/local
  Revision: 447
  Last Changed Rev.: 447
+ Last Changed Date: 2006-11-28
  Copied From: /svk/trunk, Rev. 434
  Merge From: /svk/trunk, Rev. 445
 
