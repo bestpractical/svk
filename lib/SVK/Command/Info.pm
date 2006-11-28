@@ -172,6 +172,6 @@ look like this:
  Last Changed Rev.: 445
  Mirrored From: svn://svn.clkao.org/svk, Rev. 1744
 
-So you can see this depot path is mirror from a remote repository,
-and so far mirrored up to revision 1774.
+So you can see this depot path is mirrored from a remote repository,
+and so far mirrored up to revision 1744.
 
