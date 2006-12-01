@@ -99,7 +99,10 @@ sub _do_relocate {
     $self->mirror->depot->reposfs->change_rev_prop( 0, 'svn:svnsync:from-url',  $self->mirror->url );
 }
 
-sub find_rev_from_changeset { $_[0] }
+sub find_rev_from_changeset { $_[1] }
+
+sub find_changeset { $_[1] }
+
 
 sub _revmap_prop { }
 

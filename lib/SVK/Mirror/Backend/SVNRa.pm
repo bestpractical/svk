@@ -93,7 +93,7 @@ sub _do_load_fromrev {
     my $fs = $self->mirror->repos->fs;
     my $root = $fs->revision_root($fs->youngest_rev);
     my $changed = $root->node_created_rev($self->mirror->path);
-    return scalar $self->mirror->find_changeset($changed);
+    return scalar $self->find_changeset($changed);
 }
 
 sub refresh {
@@ -362,10 +362,31 @@ sub find_rev_from_changeset {
 	( cmp => sub {
 	      my $rev = shift;
 	      my $search = $t->mclone(revision => $rev);
-              my $s_changeset = scalar $self->mirror->find_changeset($rev);
+              my $s_changeset = scalar $self->find_changeset($rev);
               return $s_changeset <=> $changeset;
           } );
 }
+
+=item find_changeset( $local_rev )
+
+=cut
+
+sub find_changeset {
+    my ($self, $rev) = @_;
+    return $self->_find_remote_rev($rev, $self->mirror->repos);
+}
+
+sub _find_remote_rev {
+    my ($self, $rev, $repos) = @_;
+    $repos ||= $self->mirror->repos;
+    my $fs = $repos->fs;
+    my $prop = $fs->revision_prop($rev, 'svm:headrev') or return;
+    my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
+    return %rev if wantarray;
+    # XXX: needs to be more specific
+    return $rev{ $self->mirror->source_uuid } || $rev{ $self->mirror->server_uuid };
+}
+
 
 =item traverse_new_changesets()
 
