@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 7;
+plan tests => 8;
 
 my ($xd, $svk) = build_test('test');
 
@@ -42,7 +42,16 @@ is_output ($svk, 'commit', ['-m', 'modify A', $copath],
 
 append_file ("$copath/remote/A/direct-file", "modified on A\n");
 $svk->add ("$copath/remote/A/direct-file");
+$svk->up(-r6 => "$copath/local/A/be");
+is_output($svk, 'ci', [-m => 'commit from mixed-revision checkout', "$copath/remote"],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri.",
+	   'Merge back committed as revision 4.',
+	   "Syncing $uri",
+	   'Retrieving log information from 4 to 4',
+	   'Committed revision 8 from revision 4.']);
 
+append_file ("$copath/remote/A/direct-file", "more modification on A\n");
 # this ruins the mirror state
 is_output ($svk, 'commit', ['--direct', '-m', 'modify A directly', "$copath/remote"],
-	   ['Committed revision 8.']);
+	   ['Committed revision 9.']);

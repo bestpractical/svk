@@ -54,7 +54,7 @@ use warnings;
 
 use base qw{ Class::Accessor::Fast };
 
-__PACKAGE__->mk_accessors(qw(root txn pool));
+__PACKAGE__->mk_accessors(qw(root txn pool cleanup_pid));
 
 sub AUTOLOAD {
     my $func = our $AUTOLOAD;
@@ -76,12 +76,20 @@ sub AUTOLOAD {
     goto &$func;
 }
 
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->{createdby} = join(' ', (caller(2))[0..2]);
+    return $self;
+}
+
 sub DESTROY {
     return unless $_[0]->txn;
     # if this destructor is called upon the pool cleanup which holds the
     # txn also, we need to use a new pool, otherwise it segfaults for
     # doing allocation in a pool that is being destroyed.
-    $_[0]->txn->abort(SVN::Pool->new) if $_[0]->txn;
+    $_[0]->txn->abort( SVN::Pool->new )
+        if $_[0]->txn && ( $_[0]->cleanup_pid || $$ ) == $$;
 }
 
 # return the root and path on the given revnum, the returned path is
@@ -96,7 +104,7 @@ sub get_revision_root {
 sub txn_root {
     my ($self, $pool) = @_;
     my $txn = $self->fs->begin_txn($self->revision_root_revision, $pool);
-    return $self->new({ txn => $txn, root => $txn->root($pool) });
+    return $self->new({ txn => $txn, root => $txn->root($pool), cleanup_pid => $$ });
 }
 
 sub same_root {
