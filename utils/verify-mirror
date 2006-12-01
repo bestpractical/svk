@@ -9,6 +9,10 @@ use SVK::XD;
 
 my ($repospath, $path, $revision) = @ARGV;
 
+die "repospath required.\n" unless $repospath;
+die "path required.\n" unless $path;
+die "revision.\n" unless $revision;
+
 my $repos = SVN::Repos::open($repospath) or die $!;
 my $depot = SVK::Depot->new( {repos => $repos, repospath => $repospath} );
 
@@ -18,7 +22,7 @@ my ($m, $mpath) = $t->is_mirrored;
 my $rabackend = $m->_backend;
 
 my $changed = $t->root->paths_changed;
-my $rev = $m->find_changeset($t->revision);
+my $rev = $m->find_changeset($t->revision) or die "Can't find remote revision for ".$t->revision;
 my $ra = $rabackend->_new_ra;
 
 require SVK::Command::Log;
@@ -29,7 +33,7 @@ $ra->get_log([''], $rev, $rev, 0,
         my $pool = SVN::Pool->new($ppool);
         for my $remotepath ( keys %$paths ) {
             $pool->clear;
-            my $localpath = $path . $remotepath;
+            my $localpath = Path::Class::Dir->new_foreign('Unix', $path)->subdir( $remotepath );
             my $local     = delete $changed->{$localpath}
                 or die "$localpath is not in changes";
             my $action = $SVK::Command::Log::chg->[ $local->change_kind ];
