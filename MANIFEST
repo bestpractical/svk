@@ -228,6 +228,7 @@ t/20add-nomime.t
 t/20add.t
 t/21delete.t
 t/22status.t
+t/22status-conflict.t
 t/23commit-file.t
 t/23commit-inter-nav.t
 t/23commit-inter-output.t
