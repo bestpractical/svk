@@ -52,7 +52,7 @@ $ra->get_log([''], $rev, $rev, 0,
                     unless $m->find_changeset($lfrom_rev)
                     == $paths->{$remotepath}->copyfrom_rev;
                 die "copy from path different for $localpath"
-                    unless $path . $from eq $lfrom;
+                    unless Path::Class::Dir->new_foreign('Unix', $path)->subdir( $from ) eq $lfrom;
 
             }
 
