@@ -31,7 +31,7 @@ $ra->get_log([''], $rev, $rev, 0,
     sub {
         my ( $paths, $r, $author, $date, $log, $ppool ) = @_;
         my $pool = SVN::Pool->new($ppool);
-        for my $remotepath ( keys %$paths ) {
+        for my $remotepath ( sort keys %$paths ) {
             $pool->clear;
             my $localpath = Path::Class::Dir->new_foreign('Unix', $path)->subdir( $remotepath );
             my $local     = delete $changed->{$localpath}
@@ -61,7 +61,6 @@ $ra->get_log([''], $rev, $rev, 0,
                 my ( $parent, $target ) = ( $p->parent, $p->basename );
 
                 # do md5 comparison
-
                 my $fra = $rabackend->_new_ra(
                     url => $m->url . ( $parent eq '/' ? '' : $parent ) );
 
@@ -83,6 +82,8 @@ $ra->get_log([''], $rev, $rev, 0,
                 $reporter->set_path( '', $rev - 1, 0, undef );
                 # $reporter->set_path( $target, $rev-1, 1, '' );
                 $reporter->finish_report;
+
+                $rabackend->_ra_finished($fra);
 
                 die "no md5 found from server for $remotepath ($target)"
                     unless $md5->{$target};

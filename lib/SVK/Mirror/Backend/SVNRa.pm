@@ -301,25 +301,31 @@ sub has_replay {
 }
 
 sub _new_ra {
-    my ($self, %args) = @_;
+    my ( $self, %args ) = @_;
 
-    return delete $self->{_cached_ra} if $self->_cached_ra;
-
+    if ( $self->_cached_ra ) {
+        my $ra = delete $self->{_cached_ra};
+        my $url = $args{url} || $self->mirror->url;
+        return $ra if $ra->{url} eq $url;
+        if ( _p_svn_ra_session_t->can('reparent') ) {
+            $ra->reparent($url);
+            $ra->{url} = $url;
+            return $ra;
+        }
+    }
     $self->_initialize_svn;
-    return SVN::Ra->new( url => $self->mirror->url,
-                         auth => $self->_auth_baton,
-                         config => $self->_config, %args );
+    return SVN::Ra->new(
+        url    => $self->mirror->url,
+        auth   => $self->_auth_baton,
+        config => $self->_config,
+        %args
+    );
 }
 
 sub _ra_finished {
     my ($self, $ra) = @_;
     return if $self->_cached_ra;
     return if ref($ra) eq 'SVK::Mirror::Backend::SVNRaPipe';
-    if ($ra->{url} ne $self->mirror->url) {
-	return unless _p_svn_ra_session_t->can('reparent');
-	$ra->reparent($self->mirror->url);
-    }
-
     $self->_cached_ra( $ra );
 }
 
