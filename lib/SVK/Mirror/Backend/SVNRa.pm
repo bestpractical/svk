@@ -57,6 +57,7 @@ use SVN::Ra;
 use SVK::I18N;
 use SVK::Editor;
 use SVK::Mirror::Backend::SVNRaPipe;
+use SVK::Editor::MapRev;
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler);
 
@@ -473,6 +474,15 @@ sub _after_replay {
 
 sub _get_sync_editor {
     my ($self, $editor, $target) = @_;
+    $editor = SVK::Editor::MapRev->new(
+        {   _editor        => [$editor],
+            cb_resolve_rev => sub {
+                my ( $func, $rev ) = @_;
+                return $func =~ m/^add/ ? $rev : $target->revision;
+                }
+        }
+    );
+
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
         cb_copy => sub {
