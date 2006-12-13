@@ -526,42 +526,46 @@ sub _revmap_prop {
 
 sub mirror_changesets {
     my ( $self, $torev, $callback ) = @_;
-    $self->mirror->with_lock( 'mirror',
-        sub {
-	    $self->refresh;
-	    my @revs;
-            $self->traverse_new_changesets( sub { push @revs, [@_] }, $torev );
-	    # prepare generator for pipelined ra
-	    my @gen;
-	    my $revprop = $self->mirror->depot->mirror->revprop; # XXX: this is so wrong
-	    return unless @revs;
-	    my $ra = $self->_new_ra;
-	    if ($self->use_pipeline) {
-		for (@revs) {
-		    push @gen, ['rev_proplist', $_->[0]] if $revprop;
-		    push @gen, ['replay', $_->[0], 0, 1, 'EDITOR'];
-		}
-		$ra = SVK::Mirror::Backend::SVNRaPipe->new($ra, sub { shift @gen });
-	    }
-	    my $pool = SVN::Pool->new_default;
-	    for (@revs) {
-		$pool->clear;
-		my ($changeset, $metadata) = @$_;
-		my $extra_prop = {};
-		if ( $revprop ) {
-		    my $prop = $ra->rev_proplist($changeset);
-		    for (@$revprop) {
-			$extra_prop->{$_}= $prop->{$_}
-			    if exists $prop->{$_};
-		    }
-		}
-		$self->sync_changeset( $changeset, $metadata, $ra,
-				       $extra_prop,
-				       $callback );
-	    }
-	    $self->_ra_finished($ra);
+    $self->mirror->with_lock(
+        'mirror',
+        sub { $self->_mirror_changesets( $torev, $callback ) } );
+}
+
+sub _mirror_changesets {
+    my ( $self, $torev, $callback ) = @_;
+    $self->refresh;
+    my @revs;
+    $self->traverse_new_changesets( sub { push @revs, [@_] }, $torev );
+    return unless @revs;
+
+    # prepare generator for pipelined ra
+    my @gen;
+    # XXX: this is so wrong
+    my $revprop = $self->mirror->depot->mirror->revprop;
+    my $ra = $self->_new_ra;
+    if ( $self->use_pipeline ) {
+        for (@revs) {
+            push @gen, [ 'rev_proplist', $_->[0] ] if $revprop;
+            push @gen, [ 'replay', $_->[0], 0, 1, 'EDITOR' ];
         }
-    );
+        $ra = SVK::Mirror::Backend::SVNRaPipe->new( $ra, sub { shift @gen } );
+    }
+    my $pool = SVN::Pool->new_default;
+    for (@revs) {
+        $pool->clear;
+        my ( $changeset, $metadata ) = @$_;
+        my $extra_prop = {};
+        if ($revprop) {
+            my $prop = $ra->rev_proplist($changeset);
+            for (@$revprop) {
+                $extra_prop->{$_} = $prop->{$_}
+                    if exists $prop->{$_};
+            }
+        }
+        $self->sync_changeset( $changeset, $metadata, $ra, $extra_prop,
+            $callback );
+    }
+    $self->_ra_finished($ra);
 }
 
 =item get_commit_editor
