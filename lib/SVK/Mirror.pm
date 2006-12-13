@@ -252,11 +252,13 @@ sub _lock_token {
     return "svm:lock:$token";
 }
 
+sub _lock_content { hostname . ':' . $$ };
+
 sub lock {
     my ($self)  = @_;
     my $fs      = $self->repos->fs;
     my $token   = $self->_lock_token;
-    my $content = hostname . ':' . $$;
+    my $content = $self->_lock_content;
     my $where = join( ' ', ( caller(0) )[ 0 .. 2 ] );
 
     my $lock_message = $self->_lock_message;
