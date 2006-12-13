@@ -19,7 +19,7 @@ my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 
 my $hook = "$srepospath/hooks/pre-commit".($^O eq 'MSWin32' ? '.bat' : '');
 open FH, '>', $hook or die "$hook: $!";
-print FH ($^O eq 'MSWin32' ? '@echo off' : "#!$^X") . "\nexit 1\n";
+print FH ($^O eq 'MSWin32' ? '@echo off' : "#!$^X") . "\nwarn \"foo\\n\";\nexit 1\n";
 close FH;
 chmod (0755, $hook);
 
@@ -38,8 +38,8 @@ $svk->add ("$copath/newfile");
 is_output ($svk, 'ci', ['-m', 'test commit', $copath],
 	   ['Commit into mirrored path: merging back directly.',
 	    "Merging back to mirror source $uri/A.",
-	    "A repository hook failed: 'pre-commit' hook failed with error output:",
-	    '',
+	    qr"A repository hook failed: 'pre-commit' hook failed .* error output.*:",
+	    'foo', ''
 	   ]);
 
 1;

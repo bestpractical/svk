@@ -44,7 +44,7 @@ $svk->mkdir('-m', 'A/X', '/test/A/X');
 is_output($svk, 'sync', ['//m'],
 	  ["Syncing $uri",
 	   'Retrieving log information from 2 to 2',
-	   "A repository hook failed: 'pre-commit' hook failed with error output:",
+	   qr"A repository hook failed: 'pre-commit' hook failed .* error output.*:",
 	   'hate']);
 
 __DATA__
