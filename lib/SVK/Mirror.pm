@@ -266,7 +266,9 @@ sub lock {
     # without corrupting repository.
 LOCKED:
     {
+	my $pool = SVN::Pool->new_default;
         while (1) {
+	    $pool->clear;
             my $who = $fs->revision_prop( 0, $token ) or last LOCKED;
 	    last if $who eq $content;
 	    $lock_message->($self, $who);
