@@ -147,7 +147,7 @@ $answer = 'a'; # accept
 
 set_editor(<< "TMP");
 \$_ = shift;
-open _, ">\$_" or die $!;
+open _, ">\$_" or die \$!;
 print _ "edited\\n";
 TMP
 
@@ -168,7 +168,7 @@ is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
 
 set_editor(<< "TMP");
 \$_ = \$ARGV[6];
-open _, ">\$_" or die $!;
+open _, ">\$_" or die \$!;
 print _ "merged\\n";
 TMP
 
@@ -243,7 +243,7 @@ $ENV{SVKRESOLVE} = 'e'; # thiers
 $answer = 'a';
 set_editor(<< "TMP");
 \$_ = shift;
-open _, ">\$_" or die $!;
+open _, ">\$_" or die \$!;
 print _ "merged\\n";
 TMP
 is_output_like ($svk, 'sm', ['-C', '//trunk', '//local'],
