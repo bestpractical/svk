@@ -48,6 +48,7 @@
 # and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
+
 =head1 NAME
 
 SVK::Help::Index - SVK 说明索引
@@ -66,6 +67,7 @@ SVK::Help::Index - SVK 说明索引
     svk help 指令名称       显示某项指令的说明
     svk help                这份说明索引
 
-L<http://svk.bestpractical.com/> 有完整的说明文件.
+如需商业服务与支援(commercial support)，请联络 sales@bestpractical.com。
+L<http://svk.bestpractical.com/> 有最新的讯息。
 
 =cut
