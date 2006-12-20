@@ -287,7 +287,7 @@ sub emit_editor_call {
 		open my $fh, '<', $svndiff or die $!;
 		slurp_fh($fh, $stream);
 		close $fh;
-		unlink $fh;
+		unlink $svndiff;
 	    }
 	    close $stream;
 	}
