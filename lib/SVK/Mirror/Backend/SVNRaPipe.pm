@@ -58,6 +58,7 @@ use POSIX 'EPIPE';
 use Socket;
 use Storable qw(nfreeze thaw);
 use SVK::Editor::Serialize;
+use SVK::Util qw(slurp_fh);
 
 =head1 NAME
 
@@ -258,14 +259,22 @@ sub replay {
 
 sub emit_editor_call {
     my ($self, $editor, $func, $pool, @arg) = @_;
-    my ($ret, $baton_at);
+    my $ret;
     if ($func eq 'apply_textdelta') {
 	my $svndiff = pop @arg;
 	$ret = $editor->apply_textdelta(@arg, $pool);
 
 	if ($ret && $#$ret > 0) {
 	    my $stream = SVN::TxDelta::parse_svndiff(@$ret, 1, $pool);
-	    print $stream $svndiff;
+	    if (ref $svndiff) { # inline
+		print $stream $$svndiff;
+	    }
+	    else { # filename
+		open my $fh, '<', $svndiff or die $!;
+		slurp_fh($fh, $stream);
+		close $fh;
+		unlink $fh;
+	    }
 	    close $stream;
 	}
     }
