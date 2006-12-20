@@ -52,7 +52,7 @@ package SVK::Editor::Serialize;
 use strict;
 use base 'SVK::Editor';
 
-__PACKAGE__->mk_accessors(qw(cb_serialize_entry));
+__PACKAGE__->mk_accessors(qw(cb_serialize_entry textdelta_threshold));
 
 use SVK::Util qw(tmpfile slurp_fh);
 
@@ -84,7 +84,10 @@ sub close_file {
     if (my $entry = $apply_textdelta_entry) {
 	my $fh = $entry->[-1];
 	close $fh;
-	if (-s $fh->filename < 1024 * 1024 * 2) {
+	if (defined $self->textdelta_threshold && -s $fh->filename >= $self->textdelta_threshold) {
+	    $entry->[-1] = $fh->filename;
+	}
+	else {
 	    # it appears using $entry->[-1] = \$buf and open $entry->[-1]
 	    # breaks in 5.8.4
 	    my $buf = '';
@@ -93,9 +96,6 @@ sub close_file {
 	    slurp_fh($ifh, $svndiff);
 	    unlink $fh->filename;
 	    $entry->[-1] = \$buf;
-	}
-	else {
-	    $entry->[-1] = $fh->filename;
 	}
 	$self->cb_serialize_entry->($entry);
 	$apply_textdelta_entry = undef;
