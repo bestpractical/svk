@@ -1,6 +1,7 @@
 ARTISTIC
 bin/svk
 CHANGES
+CHANGES-1.0
 COMMITTERS
 contrib/bench-mime-detect.pl
 contrib/svk-completion.pl
@@ -77,6 +78,7 @@ lib/SVK/Editor/Diff.pm
 lib/SVK/Editor/Dynamic.pm
 lib/SVK/Editor/InteractiveCommitter.pm
 lib/SVK/Editor/InteractiveStatus.pm
+lib/SVK/Editor/MapRev.pm
 lib/SVK/Editor/Merge.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
@@ -227,6 +229,7 @@ t/20add-mmagic.t
 t/20add-nomime.t
 t/20add.t
 t/21delete.t
+t/22status-conflict.t
 t/22status.t
 t/23commit-file.t
 t/23commit-inter-nav.t
@@ -288,3 +291,4 @@ utils/license_tag
 utils/pullyu
 utils/svk-ediff.el
 utils/verify-mirror
+

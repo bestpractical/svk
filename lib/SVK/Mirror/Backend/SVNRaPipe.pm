@@ -58,6 +58,8 @@ use POSIX 'EPIPE';
 use Socket;
 use Storable qw(nfreeze thaw);
 use SVK::Editor::Serialize;
+use SVK::Util qw(slurp_fh);
+use SVK::Config;
 
 =head1 NAME
 
@@ -108,14 +110,27 @@ sub new {
     $self->fh($p);
     $File::Temp::KEEP_ALL = 1;
     # Begin external process for buffered ra requests and send response to parent.
-    my $max_editor_in_buf = 5;
+    my $config = SVK::Config->svnconfig;
+    my $max_editor_in_buf
+        = $config ? $config->{config}->get( 'svk', 'ra-pipeline-buffer', '5' ) : 5;
     my $pool = SVN::Pool->new_default;
-    while (my $req = $gen->()) {
-	$pool->clear;
-	my ($cmd, @arg) = @$req;
-	@arg = map { $_ eq 'EDITOR' ? SVK::Editor::Serialize->new({ cb_serialize_entry =>
-								    sub { $self->_enqueue(@_); $self->try_flush } })
-			            : $_ } @arg;
+    while ( my $req = $gen->() ) {
+        $pool->clear;
+        my ( $cmd, @arg ) = @$req;
+
+        my $default_threshold = 2 * 1024 * 1024;
+        @arg = map {
+            $_ eq 'EDITOR'
+                ? SVK::Editor::Serialize->new(
+                  { textdelta_threshold => $config ? $config->{config}->get(
+                        'svk', 'ra-pipeline-delta-threshold',
+                        "$default_threshold"
+                    ) : $default_threshold,
+                    cb_serialize_entry =>
+                        sub { $self->_enqueue(@_); $self->try_flush }
+                  } )
+                : $_
+        } @arg;
 
 	# Note that we might want to switch to bandwidth based buffering,
 	while ($self->current_editors > $max_editor_in_buf) {
@@ -258,14 +273,22 @@ sub replay {
 
 sub emit_editor_call {
     my ($self, $editor, $func, $pool, @arg) = @_;
-    my ($ret, $baton_at);
+    my $ret;
     if ($func eq 'apply_textdelta') {
 	my $svndiff = pop @arg;
 	$ret = $editor->apply_textdelta(@arg, $pool);
 
 	if ($ret && $#$ret > 0) {
 	    my $stream = SVN::TxDelta::parse_svndiff(@$ret, 1, $pool);
-	    print $stream $svndiff;
+	    if (ref $svndiff) { # inline
+		print $stream $$svndiff;
+	    }
+	    else { # filename
+		open my $fh, '<', $svndiff or die $!;
+		slurp_fh($fh, $stream);
+		close $fh;
+		unlink $svndiff;
+	    }
 	    close $stream;
 	}
     }

@@ -65,7 +65,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/SVK/Command.pm:397
+#: lib/SVK/Command.pm:441
 msgid ""
 "\n"
 "Before svk start mirroring a remote repository, we would like to\n"
@@ -87,7 +87,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:973
+#: lib/SVK/Command.pm:1017
 #. ($1)
 msgid ""
 "\n"
@@ -105,7 +105,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: lib/SVK/Mirror.pm:361
+#: lib/SVK/Mirror.pm:411
 #. ($target->depotpath)
 msgid ""
 "\n"
@@ -118,7 +118,7 @@ msgid ""
 "    svk mirror --unlock %1\n"
 msgstr ""
 
-#: lib/SVK/Mirror.pm:340
+#: lib/SVK/Mirror.pm:390
 #. ($self->url)
 msgid ""
 "\n"
@@ -131,7 +131,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:438
+#: lib/SVK/Command.pm:482
 msgid ""
 "\n"
 "svk needs to mirror the remote repository so you can work locally.\n"
@@ -509,19 +509,19 @@ msgid ""
 "    like this:"
 msgstr ""
 
-#: lib/SVK/Command.pm:452
+#: lib/SVK/Command.pm:496
 msgid "  -count   : At most 'count' recent revisions\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:450
+#: lib/SVK/Command.pm:494
 msgid "  a        : Retrieve all revisions (default)\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:451
+#: lib/SVK/Command.pm:495
 msgid "  h        : Only the most recent revision\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:453
+#: lib/SVK/Command.pm:497
 msgid "  revision : Start from the specified revision\n"
 msgstr ""
 
@@ -529,7 +529,7 @@ msgstr ""
 msgid " Standard Filters"
 msgstr ""
 
-#: lib/SVK/Mirror.pm:327
+#: lib/SVK/Mirror.pm:377
 #. ($self->server_url)
 msgid " via %1"
 msgstr ""
@@ -558,123 +558,123 @@ msgstr ""
 msgid "% svk info ~/dev/svk"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:346
+#: lib/SVK/Command/Commit.pm:396
 #. ($conflicts)
 msgid "%*(%1,conflict) detected. Use 'svk resolved' after resolving them.\n"
 msgstr ""
 
-#: lib/SVK/Command/Patch.pm:121
+#: lib/SVK/Command/Patch.pm:171
 #. ($conflicts)
 msgid "%*(%1,conflict) found, patch aborted.\n"
 msgstr ""
 
-#: lib/SVK/Command/Patch.pm:138
+#: lib/SVK/Command/Patch.pm:188
 #. ($conflicts)
 msgid "%*(%1,conflict) found, update aborted.\n"
 msgstr ""
 
-#: lib/SVK/Command/Patch.pm:105 lib/SVK/Merge.pm:566
+#: lib/SVK/Command/Patch.pm:155 lib/SVK/Merge.pm:616
 #. ($meditor->{conflicts})
 #. ($conflicts)
 msgid "%*(%1,conflict) found."
 msgstr ""
 
-#: lib/SVK/Merge.pm:569
+#: lib/SVK/Merge.pm:619
 #. ($meditor->{skipped})
 msgid "%*(%1,file) skipped, you might want to rerun merge with --track-rename."
 msgstr ""
 
-#: lib/SVK/Notify.pm:36
+#: lib/SVK/Notify.pm:86
 #. ($path)
 msgid "%1 - skipped\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:254
+#: lib/SVK/Command/Mirror.pm:304
 #. ($target->report)
 msgid "%1 added back to the list of mirrored paths.\n"
 msgstr ""
 
-#: lib/SVK/Command/Add.pm:53
+#: lib/SVK/Command/Add.pm:103
 #. ($report)
 msgid "%1 already added.\n"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNRa.pm:113
+#: lib/SVK/Mirror/Backend/SVNRa.pm:163
 #. ($mirror->path)
 msgid "%1 already exists.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:292
+#: lib/SVK/XD.pm:341
 #. ($path)
 msgid "%1 already locked, use 'svk cleanup' if lock is stalled\n"
 msgstr ""
 
-#: lib/SVK/Command/Add.pm:27
+#: lib/SVK/Command/Add.pm:77
 #. ($target->report)
 msgid "%1 already under version control.\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:88
+#: lib/SVK/Command/Merge.pm:138
 #. ($dst->report)
 msgid "%1 can not be used as merge target, because it contains mirrored path: "
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:33
+#: lib/SVK/Command/Cmerge.pm:83
 #. ($0)
 msgid "%1 cmerge is deprecated, pending improvements to the Subversion API"
 msgstr ""
 
-#: lib/SVK/Command/Delete.pm:70
+#: lib/SVK/Command/Delete.pm:120
 #. ("/$depotname".$target->path_anchor)
 msgid "%1 contains mirror, remove explicitly: "
 msgstr ""
 
-#: lib/SVK/Command/Sync.pm:38
+#: lib/SVK/Command/Sync.pm:88
 #. ($orig_arg)
 msgid "%1 does not contain a valid depotname"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:563
+#: lib/SVK/Command/Commit.pm:613
 #. (abs2rel ($_[1], $target->copath => $target->report)
 msgid "%1 is a mirrored path, please commit separately."
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNSync.pm:37
+#: lib/SVK/Mirror/Backend/SVNSync.pm:87
 #. ("/" . $mirror->depot->depotname . "/", $from)
 msgid "%1 is already a mirror of %2.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:747
+#: lib/SVK/XD.pm:796
 #. ($target->report)
 msgid "%1 is already scheduled for delete.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:81
+#: lib/SVK/Command/Mirror.pm:131
 #. ($target->depotpath)
 msgid "%1 is inside a mirrored path.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:685
+#: lib/SVK/XD.pm:734
 #. ($target->report_copath($_)
 msgid "%1 is modified"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:134
+#: lib/SVK/Command/Copy.pm:184
 #. ($target->report_copath ($_)
 msgid "%1 is modified.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:396 lib/SVK/XD.pm:408
+#: lib/SVK/XD.pm:445 lib/SVK/XD.pm:457
 #. ($depotpath)
 msgid "%1 is not a depot path.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:167 lib/SVK/Command/Mkdir.pm:39
+#: lib/SVK/Command/Copy.pm:217 lib/SVK/Command/Mkdir.pm:89
 #. ($dst->report)
 msgid "%1 is not a directory.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:80 lib/SVK/Mirror/Backend/SVNRa.pm:57 lib/SVK/Mirror/Backend/SVNRa.pm:62 lib/SVK/Mirror/Backend/SVNRa.pm:74 lib/SVK/Mirror/Backend/SVNSync.pm:18
+#: lib/SVK/Command/Mirror.pm:130 lib/SVK/Mirror/Backend/SVNRa.pm:107 lib/SVK/Mirror/Backend/SVNRa.pm:112 lib/SVK/Mirror/Backend/SVNRa.pm:124 lib/SVK/Mirror/Backend/SVNSync.pm:68
 #. ($target->depotpath)
 #. ($t->depotpath)
 #. ($t->path)
@@ -682,72 +682,72 @@ msgstr ""
 msgid "%1 is not a mirrored path.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1149
+#: lib/SVK/Command.pm:1193
 #. ($revstr)
 msgid "%1 is not a number.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:350
+#: lib/SVK/Command.pm:394
 #. ($arg)
 msgid "%1 is not a valid URI.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:169
+#: lib/SVK/Command/Copy.pm:219
 #. ($dst->report)
 msgid "%1 is not a versioned directory.\n"
 msgstr ""
 
-#: lib/SVK/Command/Switch.pm:44
+#: lib/SVK/Command/Switch.pm:94
 #. ($cotarget->{report}, $target->{report})
 msgid "%1 is not related to %2.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:153
+#: lib/SVK/Command/Checkout.pm:203
 #. ($op)
 msgid "%1 is not supported inside a floating checkout.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:684
+#: lib/SVK/XD.pm:733
 #. ($target->report_copath($_)
 msgid "%1 is not under version control"
 msgstr ""
 
-#: lib/SVK/XD.pm:742
+#: lib/SVK/XD.pm:791
 #. ($target->report)
 msgid "%1 is not under version control.\n"
 msgstr ""
 
-#: lib/SVK/Command/Revert.pm:58
+#: lib/SVK/Command/Revert.pm:108
 #. ($target->report_copath ($copath)
 msgid "%1 is not versioned; ignored."
 msgstr ""
 
-#: lib/SVK/XD.pm:686
+#: lib/SVK/XD.pm:735
 #. ($target->report_copath($_)
 msgid "%1 is scheduled"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:135
+#: lib/SVK/Command/Copy.pm:185
 #. ($target->report_copath ($_)
 msgid "%1 is unknown.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:1497
+#: lib/SVK/XD.pm:1546
 #. ($entry)
 msgid "%1 marked as resolved."
 msgstr ""
 
-#: lib/SVK/MimeDetect.pm:24
+#: lib/SVK/MimeDetect.pm:74
 #. ( .        "Read the documentation of SVK::MimeDetect for details\n",        $pkg)
 msgid "%1 needs to implement checktype_filename().\n"
 msgstr ""
 
-#: lib/SVK/MimeDetect.pm:13
+#: lib/SVK/MimeDetect.pm:63
 #. ( .        "Read the documentation of SVK::MimeDetect for details\n",        $pkg)
 msgid "%1 needs to implement new().\n"
 msgstr ""
 
-#: lib/SVK/Util.pm:247
+#: lib/SVK/Util.pm:296
 #. (ucfirst($what)
 msgid "%1 not modified: a)bort, e)dit, c)ommit?"
 msgstr ""
@@ -768,12 +768,12 @@ msgstr ""
 msgid "'!' item is missing (removed by non-svk command) or incomplete"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:195 lib/SVK/Command/Checkout.pm:253
+#: lib/SVK/Command/Checkout.pm:245 lib/SVK/Command/Checkout.pm:303
 #. ($path)
 msgid "'%1' is not a checkout path.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:197
+#: lib/SVK/Command/Checkout.pm:247
 #. ($path)
 msgid "'%1' maps to multiple checkout paths.\n"
 msgstr ""
@@ -810,7 +810,7 @@ msgstr ""
 msgid "'R' Replaced"
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:34
+#: lib/SVK/Command/Cmerge.pm:84
 #. ($0)
 msgid "'Use %1 merge -c' to obtain similar functionality."
 msgstr ""
@@ -827,29 +827,29 @@ msgstr ""
 msgid "(always enabled by default for now)"
 msgstr ""
 
-#: lib/SVK/Log/Filter/Std.pm:96
+#: lib/SVK/Log/Filter/Std.pm:146
 #. ($copyfrom_path, $copyfrom_rev)
 msgid "(from %1:%2)"
 msgstr ""
 
-#: lib/SVK/Log/Filter/Std.pm:40
+#: lib/SVK/Log/Filter/Std.pm:90
 msgid "(no author)"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:236
+#: lib/SVK/Resolve.pm:286
 #. ('SVKMERGE',)
 msgid "(to skip this question, set the %1 environment variable to one of them)\n"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:240
+#: lib/SVK/Resolve.pm:290
 msgid ", "
 msgstr ""
 
-#: lib/SVK/Command/Smerge.pm:21
+#: lib/SVK/Command/Smerge.pm:71
 msgid "--baserev is deprecated, use --base instead"
 msgstr ""
 
-#: lib/SVK/Command/Update.pm:34
+#: lib/SVK/Command/Update.pm:84
 msgid "--check-only cannot be used in conjunction with --merge.\n"
 msgstr ""
 
@@ -933,7 +933,7 @@ msgstr ""
 msgid "--remoterev: use remote revision numbers in merge log"
 msgstr ""
 
-#: lib/SVK/Command/Update.pm:37
+#: lib/SVK/Command/Update.pm:87
 msgid "--revision cannot be used in conjunction with --sync or --merge.\n"
 msgstr ""
 
@@ -1121,7 +1121,7 @@ msgstr ""
 msgid "-m [--message] MESSAGE: specify commit message MESSAGE"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:148
+#: lib/SVK/Command/Merge.pm:198
 msgid "-m ignored in incremental merge\n"
 msgstr ""
 
@@ -1173,7 +1173,7 @@ msgstr ""
 msgid "-r [--revision] arg: act on revision ARG instead of the head revision"
 msgstr ""
 
-#: lib/SVK/Command/Propedit.pm:24 lib/SVK/Command/Propset.pm:89
+#: lib/SVK/Command/Propedit.pm:74 lib/SVK/Command/Propset.pm:139
 msgid "-r not allowed for propset copath.\n"
 msgstr ""
 
@@ -1233,11 +1233,11 @@ msgstr ""
 msgid "53       51 harry        wc/foo.c"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:50
+#: lib/SVK/Command/Commit.pm:100
 msgid "=== Please enter your commit message above this line ==="
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:46
+#: lib/SVK/Command/Commit.pm:96
 msgid "=== Targets to commit (you may delete items from it) ==="
 msgstr ""
 
@@ -1257,11 +1257,11 @@ msgstr ""
 msgid "A revision argument can be one of:"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:220 lib/SVK/Util.pm:251
+#: lib/SVK/Command/Mirror.pm:270 lib/SVK/Util.pm:300
 msgid "Aborted.\n"
 msgstr ""
 
-#: lib/SVK/Util.pm:209
+#: lib/SVK/Util.pm:258
 #. ($!)
 msgid "Aborted: %1\n"
 msgstr ""
@@ -1270,35 +1270,35 @@ msgstr ""
 msgid "Accept:"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:190
+#: lib/SVK/Command/Mirror.pm:240
 #. ($rev)
 msgid "Analyzing revision %1...\n"
 msgstr ""
 
-#: lib/SVK/Command/Annotate.pm:43
+#: lib/SVK/Command/Annotate.pm:93
 #. ($target->path, scalar @paths)
 msgid "Annotations for %1 (%2 active revisions):\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:339
+#: lib/SVK/XD.pm:388
 #. ($self->{giantlock})
 msgid "Another svk might be running; remove %1 if not.\n"
 msgstr ""
 
-#: lib/SVK/Log/Filter/Author.pm:13
+#: lib/SVK/Log/Filter/Author.pm:63
 msgid "Author: at least one author name is required.\n"
 msgstr ""
 
-#: lib/SVK/Merge.pm:360
+#: lib/SVK/Merge.pm:410
 #. ($self->{fromrev}, $self->{src}->revision, $self->{src}->path,	       $self->{dst}->path,	       $self->{base}->isa('SVK::Path::Txn')
 msgid "Auto-merging (%1, %2) %3 to %4 (base %5%6:%7).\n"
 msgstr ""
 
-#: lib/SVK/Command/Help.pm:26
+#: lib/SVK/Command/Help.pm:76
 msgid "Available commands:\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1183
+#: lib/SVK/Command.pm:1227
 msgid "BASE can only be issued with a check-out path\n"
 msgstr ""
 
@@ -1306,173 +1306,173 @@ msgstr ""
 msgid "C  Conflict"
 msgstr ""
 
-#: lib/SVK/Command/Switch.pm:34
+#: lib/SVK/Command/Switch.pm:84
 msgid "Can only switch checkout root.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1098 lib/SVK/Command.pm:710
+#: lib/SVK/Command.pm:1142 lib/SVK/Command.pm:754
 msgid "Can't assign --revision and --change at the same time.\n"
 msgstr ""
 
-#: lib/SVK/Path/View.pm:49
+#: lib/SVK/Path/View.pm:99
 msgid "Can't commit a view with changes in multiple mirror sources.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:72
+#: lib/SVK/Command/Checkout.pm:122
 #. ($anchor, $!)
 msgid "Can't create checkout path %1: %2\n"
 msgstr ""
 
-#: lib/SVK/Command/Update.pm:137
+#: lib/SVK/Command/Update.pm:187
 #. ($cotarget->report, $!)
 msgid "Can't create directory %1 for checkout: %2.\n"
 msgstr ""
 
-#: lib/SVK/Command/Revert.pm:79
+#: lib/SVK/Command/Revert.pm:129
 #. ($copath)
 msgid "Can't create directory while trying to revert %1.\n"
 msgstr ""
 
-#: lib/SVK/Command/Revert.pm:86
+#: lib/SVK/Command/Revert.pm:136
 #. ($copath)
 msgid "Can't create file while trying to revert %1.\n"
 msgstr ""
 
-#: lib/SVK/Util.pm:312
+#: lib/SVK/Util.pm:361
 #. ($_[1], $enc->name)
 msgid "Can't decode %1 as %2.\n"
 msgstr ""
 
-#: lib/SVK/Util.pm:326
+#: lib/SVK/Util.pm:375
 #. ($_[1], $enc->name)
 msgid "Can't encode %1 as %2.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1143
+#: lib/SVK/Command.pm:1187
 #. ($rrev, $target->path)
 msgid "Can't find local revision for %1 on %2.\n"
 msgstr ""
 
-#: lib/SVK/Merge.pm:208
+#: lib/SVK/Merge.pm:258
 #. ($src->path, $dst->path)
 msgid "Can't find merge base for %1 and %2\n"
 msgstr ""
 
-#: lib/SVK/Merge.pm:518
+#: lib/SVK/Merge.pm:568
 #. ($src->path)
 msgid "Can't find the first revision of %1.\n"
 msgstr ""
 
-#: lib/SVK/Log/FilterPipeline.pm:94
+#: lib/SVK/Log/FilterPipeline.pm:144
 msgid "Can't load log filter '$class'.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:163
+#: lib/SVK/XD.pm:213
 #. ("$self->{statefile}.backup")
 msgid "Can't load statefile, old statefile saved as %1"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:36
+#: lib/SVK/Command/Merge.pm:86
 msgid "Can't merge across depots.\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:109
+#: lib/SVK/Command/Merge.pm:159
 msgid "Can't merge with specified revisions with smart merge.\n"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNRa.pm:181
+#: lib/SVK/Mirror/Backend/SVNRa.pm:231
 #. ($self->source_path, $source_path)
 msgid "Can't relocate: mirror subdirectory changed from %1 to %2.\n"
 msgstr ""
 
-#: lib/SVK/Command/Propset.pm:116
+#: lib/SVK/Command/Propset.pm:166
 msgid "Can't set svn:eol-style on depotpath.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:61
+#: lib/SVK/Command/Commit.pm:111
 msgid "Can't use -F with -m.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:210
+#: lib/SVK/Command/Commit.pm:260
 msgid "Can't use set-revprop with remote repository.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:90
+#: lib/SVK/Command/Checkout.pm:140
 #. ($copath, $!)
 msgid "Cannot create checkout directory at '%1': %2\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:126
+#: lib/SVK/XD.pm:176
 #. ($self->{svkpath}, $!)
 msgid "Cannot create svk-config-directory at '%1': %2\n"
 msgstr ""
 
-#: lib/SVK/Editor/Diff.pm:137
+#: lib/SVK/Editor/Diff.pm:187
 msgid "Cannot display: file marked as a binary type.\n"
 msgstr ""
 
-#: lib/SVK/Patch.pm:94
+#: lib/SVK/Patch.pm:144
 #. ($file)
 msgid "Cannot find a patch block in %1.\n"
 msgstr ""
 
-#: lib/SVK/Command/Help.pm:47
+#: lib/SVK/Command/Help.pm:97
 #. ($topic)
 msgid "Cannot find help topic '%1'.\n"
 msgstr ""
 
-#: lib/SVK/Util.pm:260
+#: lib/SVK/Util.pm:309
 msgid "Cannot find separator; aborted.\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:65
+#: lib/SVK/Command/Merge.pm:115
 #. ($arg[0] || '')
 msgid "Cannot find the path which '%1' copied from.\n"
 msgstr ""
 
-#: lib/SVK/Resolve/Emacs.pm:57
+#: lib/SVK/Resolve/Emacs.pm:107
 #. ($!)
 msgid "Cannot fork: %1"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:126
+#: lib/SVK/Resolve.pm:176
 #. ($path)
 msgid "Cannot launch an external merge tool for %1."
 msgstr ""
 
-#: lib/SVK/Util.pm:780
+#: lib/SVK/Util.pm:829
 #. (catfile($source)
 msgid "Cannot rename %1 to %2; please move it manually."
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:41
+#: lib/SVK/Command/Merge.pm:91
 msgid "Cannot specify 'to' or 'from' when specifying a source and destination.\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:45
+#: lib/SVK/Command/Merge.pm:95
 msgid "Cannot specify both 'to' and 'from'.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1076
+#: lib/SVK/Command.pm:1120
 #. ($_)
 msgid "Change spec %1 not recognized.\n"
 msgstr ""
 
-#: lib/SVK/Log/Filter/Std.pm:79
+#: lib/SVK/Log/Filter/Std.pm:129
 msgid "Changed paths:\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:184
+#: lib/SVK/Command/Commit.pm:234
 #. ($m->url)
 msgid "Checking locally against mirror source %1."
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:227
+#: lib/SVK/Command/Checkout.pm:277
 #. ($path, $target)
 msgid "Checkout '%1' relocated to '%2'.\n"
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:44
+#: lib/SVK/Command/Info.pm:94
 #. ($target->copath)
 msgid "Checkout Path: %1\n"
 msgstr ""
@@ -1481,55 +1481,55 @@ msgstr ""
 msgid "Checkout Path: /Users/gugod/dev/svk"
 msgstr ""
 
-#: lib/SVK/Command/Update.pm:134
+#: lib/SVK/Command/Update.pm:184
 #. ($update_target->depotpath, $cotarget->report)
 msgid "Checkout directory gone. Use 'checkout %1 %2' instead.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:63
+#: lib/SVK/Command/Checkout.pm:113
 #. ($report)
 msgid "Checkout path %1 already exists.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:259
+#: lib/SVK/Command/Checkout.pm:309
 #. ($copath)
 msgid "Checkout path '%1' detached.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:380
+#: lib/SVK/Command.pm:424
 #. ($uri)
 msgid "Choose a base URI to mirror from (press enter to use the full URI): "
 msgstr ""
 
-#: lib/SVK/Command/Cleanup.pm:24
+#: lib/SVK/Command/Cleanup.pm:74
 msgid "Cleaned up all stalled locks.\n"
 msgstr ""
 
-#: lib/SVK/Command/Cleanup.pm:30
+#: lib/SVK/Command/Cleanup.pm:80
 #. ($_->copath_anchor)
 msgid "Cleaned up stalled lock on %1.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:189
+#: lib/SVK/Command.pm:233
 #. ($0)
 msgid "Command not recognized, try %1 help.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:188
+#: lib/SVK/Command/Commit.pm:238
 msgid "Commit into mirrored path: merging back directly."
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:130
+#: lib/SVK/Command/Commit.pm:180
 #. ($file)
 msgid "Commit message saved in %1."
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:84 lib/SVK/Command/Commit.pm:169
+#: lib/SVK/Command/Cmerge.pm:134 lib/SVK/Command/Commit.pm:219
 #. ($_[0])
 msgid "Committed revision %1."
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:33 lib/SVK/Editor/InteractiveStatus.pm:37
+#: lib/SVK/Editor/InteractiveStatus.pm:83 lib/SVK/Editor/InteractiveStatus.pm:87
 #. (.                "file. Do you want to skip it and commit other changes? (y/n)
 #. (.                "files. Do you want to skip those and commit other changes? (y/n)
 msgid ""
@@ -1537,18 +1537,18 @@ msgid ""
 "%1\n"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:59
+#: lib/SVK/Resolve.pm:109
 #. ($self->{path}, $default)
 msgid ""
 "Conflict found in %1:\n"
 "e)dit, d)iff, m)erge, s)kip, t)heirs, y)ours, h)elp? [%2] "
 msgstr ""
 
-#: lib/SVK/Patch.pm:266
+#: lib/SVK/Patch.pm:316
 msgid "Conflicts."
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:57
+#: lib/SVK/Command/Info.pm:107
 #. ($_->[0], $_->[1])
 msgid "Copied From: %1, Rev. %2\n"
 msgstr ""
@@ -1557,44 +1557,44 @@ msgstr ""
 msgid "Copied From: /svk/trunk, Rev. 434"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:21
+#: lib/SVK/Command/Copy.pm:71
 msgid "Copy destination can't be URI.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:195
+#: lib/SVK/Command/Copy.pm:244
 #. ($dst->report)
 msgid "Copying more than one source requires %1 to be directory.\n"
 msgstr ""
 
-#: lib/SVK/Command/Admin.pm:41 lib/SVK/Editor/Diff.pm:188 lib/SVK/Resolve/Emacs.pm:67
+#: lib/SVK/Command/Admin.pm:91 lib/SVK/Editor/Diff.pm:238 lib/SVK/Resolve/Emacs.pm:117
 #. ($cmd, $!)
 #. ($self->{external}, $?)
 #. ('svnadmin', $?)
 msgid "Could not run %1: %2"
 msgstr ""
 
-#: lib/SVK/XD.pm:241 lib/SVK/XD.pm:252
+#: lib/SVK/XD.pm:290 lib/SVK/XD.pm:301
 #. ($oldfile)
 #. ($ancient_backup)
 msgid "Couldn't remove your old backup configuration file %1 while writing the new one."
 msgstr ""
 
-#: lib/SVK/XD.pm:245
+#: lib/SVK/XD.pm:294
 #. ($file)
 msgid "Couldn't remove your old configuration file %1 while writing the new one."
 msgstr ""
 
-#: lib/SVK/XD.pm:248
+#: lib/SVK/XD.pm:297
 #. ($file, $tmpfile)
 msgid "Couldn't write your new configuration file %1. A backup has been stored in %2. Please replace %1 with %2 immediately."
 msgstr ""
 
-#: lib/SVK/XD.pm:236
+#: lib/SVK/XD.pm:285
 #. ($tmpfile)
 msgid "Couldn't write your new configuration file to %1. Please try again."
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:159
+#: lib/SVK/Command/Copy.pm:209
 #. ($dst->report, $src[0]->report, $dst->report)
 msgid "Create an empty directory %1, and run smerge --baseless %2 %3.\n"
 msgstr ""
@@ -1607,45 +1607,45 @@ msgstr ""
 msgid "DESCRIPTION"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:126
+#: lib/SVK/Command/Depotmap.pm:176
 msgid "Depot"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:77
+#: lib/SVK/Command/Depotmap.pm:127
 #. ($depot)
 msgid "Depot '%1' already exists; use 'svk depotmap --detach' to remove it first.\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:111
+#: lib/SVK/Command/Depotmap.pm:161
 #. ($depot)
 msgid "Depot '%1' detached.\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:109 lib/SVK/Command/Depotmap.pm:93
+#: lib/SVK/Command/Depotmap.pm:143 lib/SVK/Command/Depotmap.pm:159
 #. ($depot)
 msgid "Depot '%1' does not exist in the depot map.\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:98
+#: lib/SVK/Command/Depotmap.pm:148
 #. ($depot, $path)
 msgid "Depot '%1' relocated to '%2'.\n"
 msgstr ""
 
-#: lib/SVK/Command/Describe.pm:41
+#: lib/SVK/Command/Describe.pm:91
 #. ($target_root->depotname, $rev)
 msgid "Depot /%1/ has no revision %2\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:137
+#: lib/SVK/Command/Mirror.pm:187
 #. ($depot)
 msgid "Depot /%1/ not loadable.\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:170
+#: lib/SVK/Command/Checkout.pm:220
 msgid "Depot Path"
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:46
+#: lib/SVK/Command/Info.pm:96
 #. ($target->depotpath)
 msgid "Depot Path: %1\n"
 msgstr ""
@@ -1658,7 +1658,7 @@ msgstr ""
 msgid "Depot Path: //svk/trunk"
 msgstr ""
 
-#: lib/SVK/Command.pm:423
+#: lib/SVK/Command.pm:467
 #. ($default)
 msgid "Depot path: [//mirror/%1] "
 msgstr ""
@@ -1667,30 +1667,30 @@ msgstr ""
 msgid "Diff:"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:154
+#: lib/SVK/Command/Copy.pm:204
 msgid "Different depots.\n"
 msgstr ""
 
-#: lib/SVK/Command/Delete.pm:85
+#: lib/SVK/Command/Delete.pm:135
 msgid "Different source.\n"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:94
+#: lib/SVK/Command/Import.pm:144
 #. ($copath, $target->depotpath, $yrev)
 msgid "Directory %1 imported to depotpath %2 as revision %3.\n"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:125
+#: lib/SVK/Command/Import.pm:175
 #. ($copath, $target->depotpath)
 msgid "Directory %1 will be imported to depotpath %2.\n"
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:913
+#: lib/SVK/Editor/InteractiveStatus.pm:963
 #. ($self->{path})
 msgid "Directory '%1' is marked for addition"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:182
+#: lib/SVK/Command/Checkout.pm:232
 #. ($arg[0])
 msgid "Do you mean svk switch %1?\n"
 msgstr ""
@@ -1703,24 +1703,24 @@ msgstr ""
 msgid "Edit:"
 msgstr ""
 
-#: lib/SVK/Resolve/Emacs.pm:51
+#: lib/SVK/Resolve/Emacs.pm:101
 msgid "Emerge %1 done."
 msgstr ""
 
-#: lib/SVK/Editor/Merge.pm:945
+#: lib/SVK/Editor/Merge.pm:995
 msgid "Empty merge."
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:138
+#: lib/SVK/Command/Merge.pm:188
 msgid "Empty merge.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:993
+#: lib/SVK/Command.pm:1037
 #. (loc($action)
 msgid "Enter a depot path to %1 into (under // if no leading '/'): "
 msgstr ""
 
-#: lib/SVK/Command.pm:988
+#: lib/SVK/Command.pm:1032
 #. (loc($action)
 msgid "Enter a depot path to %1 into: [%2] "
 msgstr ""
@@ -1729,26 +1729,26 @@ msgstr ""
 msgid "Environment variables:"
 msgstr ""
 
-#: lib/SVK/Command/Propset.pm:100
+#: lib/SVK/Command/Propset.pm:150
 #. ($target->report)
 msgid "File %1 has inconsistent newlines.\n"
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:481
+#: lib/SVK/Editor/InteractiveStatus.pm:531
 #. ($self->{path})
 msgid "File '%1' is marked for addition"
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:786
+#: lib/SVK/Editor/InteractiveStatus.pm:836
 #. ($self->{path})
 msgid "File or directory '%1' is marked for deletion"
 msgstr ""
 
-#: lib/SVK/Command/Patch.pm:69
+#: lib/SVK/Command/Patch.pm:119
 msgid "Filename required.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:201
+#: lib/SVK/Command/Mirror.pm:251
 #. ($rev, $rrev)
 msgid "Found merge ticket at revision %1 (remote %2); use it? (y/n) "
 msgstr ""
@@ -1761,12 +1761,12 @@ msgstr ""
 msgid "Given negative NUMBER means \"HEAD\"+NUMBER."
 msgstr ""
 
-#: lib/SVK/Log/Filter/Grep.pm:12
+#: lib/SVK/Log/Filter/Grep.pm:62
 #. ($search)
 msgid "Grep: Invalid regular expression '%1'.\n"
 msgstr ""
 
-#: lib/SVK/Log/Filter/Head.pm:11
+#: lib/SVK/Log/Filter/Head.pm:61
 #. ($argument)
 msgid "Head: '%1' is not numeric.\n"
 msgstr ""
@@ -1775,72 +1775,72 @@ msgstr ""
 msgid "INTRODUCTION"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:183
+#: lib/SVK/Command/Copy.pm:229
 #. ($_->report)
 msgid "Ignoring %1 as source."
 msgstr ""
 
-#: lib/SVK/Command/Log.pm:61
+#: lib/SVK/Command/Log.pm:111
 msgid "Ignoring --output $presentation_filter. Using --xml."
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:141
+#: lib/SVK/Command/Commit.pm:191
 #. ($self->{patch})
 msgid "Illegal patch name: %1.\n"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:56
+#: lib/SVK/Command/Import.pm:106
 #. ($target->depotpath)
 msgid "Import path %1 initialized.\n"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:71
+#: lib/SVK/Command/Import.pm:121
 #. ($target->depotpath)
 msgid "Import path %1 will be created.\n"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:44
+#: lib/SVK/Command/Import.pm:94
 #. ($target->path_anchor, $source->path_anchor)
 msgid "Import path (%1) is different from the copath (%2)\n"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:42
+#: lib/SVK/Command/Import.pm:92
 #. ($source->copath)
 msgid "Import source (%1) is a checkout path; use --from-checkout.\n"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:125
+#: lib/SVK/Command/Merge.pm:175
 msgid "Incremental merge not supported\n"
 msgstr ""
 
-#: bin/svk:85 lib/SVK/Util.pm:158 lib/SVK/XD.pm:1470
+#: bin/svk:135 lib/SVK/Util.pm:207 lib/SVK/XD.pm:1519
 msgid "Interrupted.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1102
+#: lib/SVK/Command.pm:1146
 msgid "Invalid -r.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:179
+#: lib/SVK/Command/Copy.pm:232
 #. ($_->report)
 msgid "Invalid argument: copying directory %1 into itself.\n"
 msgstr ""
 
-#: lib/SVK/Command/Diff.pm:37 lib/SVK/Command/Diff.pm:43
+#: lib/SVK/Command/Diff.pm:87 lib/SVK/Command/Diff.pm:93
 msgid "Invalid arguments.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:540
+#: lib/SVK/Command.pm:584
 #. (sprintf("0x%02X", ord($1)
 msgid "Invalid control character '%1' in path '%2'\n"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:131
+#: lib/SVK/Resolve.pm:181
 #. ($resolver->name, $path)
 msgid "Invoking merge tool '%1' for %2."
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:49
+#: lib/SVK/Command/Info.pm:99
 #. ($lastchanged)
 msgid "Last Changed Rev.: %1\n"
 msgstr ""
@@ -1865,66 +1865,66 @@ msgstr ""
 msgid "Merge From: /svk/trunk, Rev. 445"
 msgstr ""
 
-#: lib/SVK/Path.pm:190
+#: lib/SVK/Path.pm:240
 #. ($rev)
 msgid "Merge back committed as revision %1.\n"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:66
+#: lib/SVK/Resolve.pm:116
 #. ($self->{path}, $default)
 msgid ""
 "Merged %1:\n"
 "a)ccept, e)dit, d)iff, m)erge, s)kip, t)heirs, y)ours, h)elp? [%2] "
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:63
+#: lib/SVK/Command/Info.pm:113
 #. ((split/:/)
 msgid "Merged From: %1, Rev. %2\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:190
+#: lib/SVK/Command/Commit.pm:240
 #. ($m->url)
 msgid "Merging back to mirror source %1."
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:66
+#: lib/SVK/Command/Cmerge.pm:116
 #. (@{$base}{qw/path revision/}, $src->{path}, $fromrev, $torev)
 msgid "Merging with base %1 %2: applying %3 %4:%5."
 msgstr ""
 
-#: lib/SVK/Mirror.pm:88
+#: lib/SVK/Mirror.pm:138
 #. ($self->url)
 msgid "Mirror initialized for %1"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:54
+#: lib/SVK/Command/Mirror.pm:104
 #. ($target->report)
 msgid "Mirror initialized.  Run svk sync %1 to start mirroring.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:84
+#: lib/SVK/Command/Mirror.pm:134
 #. ($target->depotpath)
 msgid "Mirror path '%1' detached.\n"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNRa.pm:198
+#: lib/SVK/Mirror/Backend/SVNRa.pm:248
 #. ($mirror->url)
 msgid "Mirror relocated to %1"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:66
+#: lib/SVK/Command/Mirror.pm:116
 msgid "Mirror relocated.\n"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNRa.pm:173
+#: lib/SVK/Mirror/Backend/SVNRa.pm:223
 msgid "Mirror source UUIDs differ.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:238
+#: lib/SVK/Command/Mirror.pm:288
 msgid "Mirror state successfully recovered.\n"
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:53
+#: lib/SVK/Command/Info.pm:103
 #. ($m->url, $m->fromrev)
 msgid "Mirrored From: %1, Rev. %2\n"
 msgstr ""
@@ -1937,33 +1937,33 @@ msgstr ""
 msgid "Misc:"
 msgstr ""
 
-#: lib/SVK/Command/Delete.pm:22
+#: lib/SVK/Command/Delete.pm:72
 msgid "Mixed depotpath and checkoutpath not supported.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mkdir.pm:63
+#: lib/SVK/Command/Mkdir.pm:113
 msgid "Mkdir for more than one depotpath is not supported yet.\n"
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:621
+#: lib/SVK/Editor/InteractiveStatus.pm:671
 #. ($self->{path})
 msgid "Modification to '%1' file"
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:755
+#: lib/SVK/Editor/InteractiveStatus.pm:805
 #. ($self->{path})
 msgid "Modifications to binary file '%1'"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:24
+#: lib/SVK/Command/Copy.pm:74
 msgid "More than one URI found.\n"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:232
+#: lib/SVK/Resolve.pm:282
 msgid "Multiple merge tools found, choose one:\n"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNSync.pm:31
+#: lib/SVK/Mirror/Backend/SVNSync.pm:81
 #. ($mirror->url)
 msgid "Must replicate whole repository at %1.\n"
 msgstr ""
@@ -1988,52 +1988,52 @@ msgstr ""
 msgid "NUMBER@      interpret as remote revision number"
 msgstr ""
 
-#: lib/SVK/Editor/Diff.pm:275
+#: lib/SVK/Editor/Diff.pm:325
 #. ($_)
 msgid "Name: %1\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:27
+#: lib/SVK/Command/Depotmap.pm:77
 msgid "Need to specify a depot name.\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:30
+#: lib/SVK/Command/Depotmap.pm:80
 msgid "Need to specify a path name for depot.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:372
+#: lib/SVK/Command.pm:416
 #. ($uri)
 msgid "New URI encountered: %1\n"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:63 lib/SVK/Command/Depotmap.pm:82
+#: lib/SVK/Command/Depotmap.pm:113 lib/SVK/Command/Depotmap.pm:132
 msgid "New depot map saved.\n"
 msgstr ""
 
-#: lib/SVK/Merge.pm:305
+#: lib/SVK/Merge.pm:355
 #. ($_, $newinfo->{$_}{rev})
 msgid "New merge ticket: %1:%2"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:209
+#: lib/SVK/Command/Mirror.pm:259
 msgid "No mirror history found; cannot recover.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:214
+#: lib/SVK/Command/Mirror.pm:264
 msgid "No need to revert; it is already the head revision."
 msgstr ""
 
-#: lib/SVK/XD.pm:399 lib/SVK/XD.pm:416
+#: lib/SVK/XD.pm:448 lib/SVK/XD.pm:465
 #. ($depot)
 #. ($depotname)
 msgid "No such depot: %1.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:345 lib/SVK/Command/Commit.pm:363
+#: lib/SVK/Command/Commit.pm:395 lib/SVK/Command/Commit.pm:413
 msgid "No targets to commit.\n"
 msgstr ""
 
-#: lib/SVK/Command/Update.pm:40
+#: lib/SVK/Command/Update.pm:90
 msgid "Non-recursive update not supported.\n"
 msgstr ""
 
@@ -2041,7 +2041,7 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-#: lib/SVK/Command/Merge.pm:146
+#: lib/SVK/Command/Merge.pm:196
 msgid "Not possible to do incremental merge without a merge ticket.\n"
 msgstr ""
 
@@ -2053,47 +2053,47 @@ msgstr ""
 msgid "Output: std, xml"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:202 lib/SVK/Command/Checkout.pm:79
+#: lib/SVK/Command/Checkout.pm:129 lib/SVK/Command/Checkout.pm:252
 #. ($where[0])
 msgid "Overlapping checkout path is not supported (%1); use 'svk checkout --detach' to remove it first.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:112 lib/SVK/Command/Mkdir.pm:31
+#: lib/SVK/Command/Copy.pm:162 lib/SVK/Command/Mkdir.pm:81
 #. ($dst->report)
 msgid "Parent directory %1 doesn't exist, use -p.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mkdir.pm:43
+#: lib/SVK/Command/Mkdir.pm:93
 #. ($dst->report)
 msgid "Parent directory %1 is unknown, add first.\n"
 msgstr ""
 
-#: lib/SVK/Patch.pm:345
+#: lib/SVK/Patch.pm:395
 #. ($patch->{name})
 msgid "Patch %1 created."
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:140
+#: lib/SVK/Command/Commit.pm:190
 #. ($m->url)
 msgid "Patching locally against mirror source %1."
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:170 lib/SVK/Command/Depotmap.pm:126 lib/SVK/Command/Mirror.pm:152
+#: lib/SVK/Command/Checkout.pm:220 lib/SVK/Command/Depotmap.pm:176 lib/SVK/Command/Mirror.pm:202
 msgid "Path"
 msgstr ""
 
-#: lib/SVK/Command.pm:1006
+#: lib/SVK/Command.pm:1050
 #. ($path)
 msgid "Path %1 already exists."
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:187 lib/SVK/Command/Copy.pm:75
+#: lib/SVK/Command/Copy.pm:125 lib/SVK/Command/Copy.pm:236
 #. ($copath)
 #. ($cpdst->report)
 msgid "Path %1 already exists.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:72 lib/SVK/Command/Import.pm:62 lib/SVK/Command/Info.pm:40 lib/SVK/Command/Switch.pm:40 lib/SVK/Command/Update.pm:105
+#: lib/SVK/Command/Copy.pm:122 lib/SVK/Command/Import.pm:112 lib/SVK/Command/Info.pm:90 lib/SVK/Command/Switch.pm:90 lib/SVK/Command/Update.pm:155
 #. ($copath)
 #. ($target->report)
 #. ($src->path_anchor)
@@ -2102,107 +2102,107 @@ msgstr ""
 msgid "Path %1 does not exist.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mkdir.pm:28
+#: lib/SVK/Command/Mkdir.pm:78
 #. ($dst->report)
 msgid "Path %1 is not a checkout path.\n"
 msgstr ""
 
-#: lib/SVK/Command/List.pm:41
+#: lib/SVK/Command/List.pm:91
 #. ($target->path_anchor)
 msgid "Path %1 is not versioned.\n"
 msgstr ""
 
-#: lib/SVK/Command/Cleanup.pm:34
+#: lib/SVK/Command/Cleanup.pm:84
 #. ($_->copath_anchor)
 msgid "Path %1 was not locked.\n"
 msgstr ""
 
-#: lib/SVK/Command/Add.pm:33
+#: lib/SVK/Command/Add.pm:83
 #. ($parent)
 msgid "Please add the parent directory '%1' first.\n"
 msgstr ""
 
-#: lib/SVK/Command/Patch.pm:106
+#: lib/SVK/Command/Patch.pm:156
 msgid "Please do a merge to resolve conflicts and regen the patch."
 msgstr ""
 
-#: lib/SVK/XD.pm:223
+#: lib/SVK/XD.pm:272
 msgid "Please hold on a moment. SVK is writing out a critical configuration file."
 msgstr ""
 
-#: lib/SVK/Command/Proplist.pm:61
+#: lib/SVK/Command/Proplist.pm:111
 #. (length $target->report ? $target->report : '.')
 msgid "Properties on %1:\n"
 msgstr ""
 
-#: lib/SVK/Editor/Merge.pm:871
+#: lib/SVK/Editor/Merge.pm:921
 #. ($propname, $path)
 msgid "Property %1 of %2"
 msgstr ""
 
-#: lib/SVK/Command/Propset.pm:46
+#: lib/SVK/Command/Propset.pm:96
 #. ($propname, $rev)
 msgid "Property '%1' deleted from repository revision %2."
 msgstr ""
 
-#: lib/SVK/Command/Propset.pm:43
+#: lib/SVK/Command/Propset.pm:93
 #. ($propname, $rev)
 msgid "Property '%1' set on repository revision %2."
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:965
+#: lib/SVK/Editor/InteractiveStatus.pm:1015
 #. ($path)
 msgid "Property change on '%1' directory requested"
 msgstr ""
 
-#: lib/SVK/Editor/InteractiveStatus.pm:851
+#: lib/SVK/Editor/InteractiveStatus.pm:901
 #. ($self->{path})
 msgid "Property change on '%1' file requested"
 msgstr ""
 
-#: lib/SVK/Editor/Diff.pm:273
+#: lib/SVK/Editor/Diff.pm:323
 #. ($rpath)
 msgid "Property changes on: %1\n"
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:292
+#: lib/SVK/Command/Checkout.pm:342
 #. ($depotpath, $path)
 msgid "Purge checkout of %1 to non-existing directory %2? (y/n) "
 msgstr ""
 
-#: lib/SVK/XD.pm:191
+#: lib/SVK/XD.pm:241
 #. ($path)
 msgid "Repository %1 does not exist, create? (y/n)"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNSync.pm:28
+#: lib/SVK/Mirror/Backend/SVNSync.pm:78
 msgid "Requires newer svn for replay support when mirroring to /.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:219
+#: lib/SVK/Command/Mirror.pm:269
 #. ($rev, $skipped)
 msgid "Revert to revision %1 and discard %*(%2,revision)? (y/n) "
 msgstr ""
 
-#: lib/SVK/Command/Revert.pm:102
+#: lib/SVK/Command/Revert.pm:152
 #. ($target->report_copath ($copath)
 msgid "Reverted %1"
 msgstr ""
 
-#: lib/SVK/Command.pm:709 lib/SVK/Command/Diff.pm:63 lib/SVK/Command/Proplist.pm:26
+#: lib/SVK/Command.pm:753 lib/SVK/Command/Diff.pm:115 lib/SVK/Command/Proplist.pm:76
 msgid "Revision required.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:722
+#: lib/SVK/Command.pm:766
 msgid "Revision spec must be N:M.\n"
 msgstr ""
 
-#: lib/SVK/Command/Log.pm:84
+#: lib/SVK/Command/Log.pm:134
 #. ($target->revision)
 msgid "Revision too large, show log from %1."
 msgstr ""
 
-#: lib/SVK/Command/Info.pm:47
+#: lib/SVK/Command/Info.pm:97
 #. ($target->revision)
 msgid "Revision: %1\n"
 msgstr ""
@@ -2211,12 +2211,12 @@ msgstr ""
 msgid "Revision: 447"
 msgstr ""
 
-#: lib/SVK/Command.pm:484
+#: lib/SVK/Command.pm:528
 #. ($depotpath, lc((ref($self)
 msgid "Run svk sync %1, and run the %2 command again.\n"
 msgstr ""
 
-#: lib/SVK/Command/Help.pm:63
+#: lib/SVK/Command/Help.pm:113
 msgid "SVK::Help"
 msgstr ""
 
@@ -2240,25 +2240,25 @@ msgstr ""
 msgid "Selection: grep, head, author"
 msgstr ""
 
-#: lib/SVK/Command/Verify.pm:30
+#: lib/SVK/Command/Verify.pm:80
 msgid "Signature verification failed.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:152
+#: lib/SVK/Command/Mirror.pm:202
 msgid "Source"
 msgstr ""
 
-#: lib/SVK/Patch.pm:281
+#: lib/SVK/Patch.pm:331
 #. ($self->{name})
 msgid "Source of patch %1 not updated or not local, no need to regen patch."
 msgstr ""
 
-#: lib/SVK/Resolve/Emacs.pm:63
+#: lib/SVK/Resolve/Emacs.pm:113
 #. ($pid, $self->{signal}, $$,)
 msgid "Started %1, Try 'kill -%2 %3' to terminate if things mess up."
 msgstr ""
 
-#: lib/SVK/Command/Sync.pm:63
+#: lib/SVK/Command/Sync.pm:113
 #. ($m->get_svkpath->depotpath)
 msgid "Starting to synchronize %1"
 msgstr ""
@@ -2267,42 +2267,42 @@ msgstr ""
 msgid "Subversion API. In the meantime, use C<svk merge -c> to obtain"
 msgstr ""
 
-#: lib/SVK/Command.pm:449
+#: lib/SVK/Command.pm:493
 msgid "Synchronizing the mirror for the first time:\n"
 msgstr ""
 
-#: lib/SVK/Mirror.pm:327
+#: lib/SVK/Mirror.pm:377
 #. ($self->url)
 msgid "Syncing %1"
 msgstr ""
 
-#: lib/SVK/Command/Update.pm:121
+#: lib/SVK/Command/Update.pm:171
 #. ($cotarget->depotpath,	      $cotarget->path_anchor, $cotarget->copath,	      $content_revision)
 msgid "Syncing %1(%2) in %3 to %4."
 msgstr ""
 
-#: lib/SVK/Patch.pm:278
+#: lib/SVK/Patch.pm:328
 msgid "Target not local nor mirrored, unable to regen patch.\n"
 msgstr ""
 
-#: lib/SVK/Patch.pm:229
+#: lib/SVK/Patch.pm:279
 msgid "Target not local nor mirrored, unable to test patch.\n"
 msgstr ""
 
-#: lib/SVK/Patch.pm:252
+#: lib/SVK/Patch.pm:302
 msgid "Target not local nor mirrored, unable to update patch.\n"
 msgstr ""
 
-#: lib/SVK/Patch.pm:184
+#: lib/SVK/Patch.pm:234
 msgid "Target not local nor mirrored, unable to view patch.\n"
 msgstr ""
 
-#: lib/SVK/Command/Mkdir.pm:68
+#: lib/SVK/Command/Mkdir.pm:118
 #. ($target->depotpath)
 msgid "The path %1 already exists.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:1116
+#: lib/SVK/Command.pm:1160
 msgid "There is no change 0.\n"
 msgstr ""
 
@@ -2310,7 +2310,7 @@ msgstr ""
 msgid "This command is currently deprecated, pending improvements to the"
 msgstr ""
 
-#: bin/svk:58
+#: bin/svk:108
 #. ($VERSION, SVN::Core->VERSION)
 msgid "This is svk, version %1 (using Subversion bindings %2)\n"
 msgstr ""
@@ -2319,26 +2319,26 @@ msgstr ""
 msgid "U  Updated"
 msgstr ""
 
-#: lib/SVK/Command.pm:366
+#: lib/SVK/Command.pm:410
 #. ($no_new_mirror)
 msgid "URI not allowed here: %1.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:484
+#: lib/SVK/Command.pm:528
 #. ($err)
 msgid "Unable to complete initial sync: %1"
 msgstr ""
 
-#: lib/SVK/Command.pm:591 lib/SVK/Command.pm:596
+#: lib/SVK/Command.pm:635 lib/SVK/Command.pm:640
 #. ($viewname, $viewbase, $rev)
 msgid "Unable to create view '%1' from on %2 for revision %3.\n"
 msgstr ""
 
-#: lib/SVK/Command.pm:208
+#: lib/SVK/Command.pm:252
 msgid "Unknown options.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:1434 lib/SVK/XD.pm:989
+#: lib/SVK/XD.pm:1038 lib/SVK/XD.pm:1483
 #. ($copath)
 #. ($_)
 msgid "Unknown target: %1."
@@ -2348,7 +2348,7 @@ msgstr ""
 msgid "Unlike other commands,  negative NUMBER has no"
 msgstr ""
 
-#: lib/SVK/Command/Proplist.pm:58
+#: lib/SVK/Command/Proplist.pm:108
 #. ($rev)
 msgid "Unversioned properties on revision %1:\n"
 msgstr ""
@@ -2361,33 +2361,33 @@ msgstr ""
 msgid "Update your local branch from the remote master repository."
 msgstr ""
 
-#: lib/SVK/Util.pm:207
+#: lib/SVK/Util.pm:256
 msgid "Waiting for editor..."
 msgstr ""
 
-#: lib/SVK/Mirror.pm:359
+#: lib/SVK/Mirror.pm:409
 #. ($target->depotpath, $who)
 msgid "Waiting for lock on %1: %2."
 msgstr ""
 
-#: lib/SVK/XD.pm:1131
+#: lib/SVK/XD.pm:1180
 msgid "Warning: $copath is unreadable."
 msgstr ""
 
-#: lib/SVK/XD.pm:993
+#: lib/SVK/XD.pm:1042
 #. ($copath)
 msgid "Warning: %1 is unreadable."
 msgstr ""
 
-#: lib/SVK/XD.pm:1136
+#: lib/SVK/XD.pm:1185
 msgid "Warning: unsupported node type $copath."
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:158
+#: lib/SVK/Command/Copy.pm:208
 msgid "You are trying to copy across different mirrors."
 msgstr ""
 
-#: lib/SVK/Command.pm:457
+#: lib/SVK/Command.pm:501
 msgid "a)ll, h)ead, -count, revision? [a] "
 msgstr ""
 
@@ -2479,33 +2479,33 @@ msgstr ""
 msgid "annotate [PATH][@REV]"
 msgstr ""
 
-#: lib/SVK/Command/Sync.pm:26
+#: lib/SVK/Command/Sync.pm:76
 msgid "argument skipto not allowed when multiple target specified"
 msgstr ""
 
-#: lib/SVK/Merge.pm:170
+#: lib/SVK/Merge.pm:220
 #. ($merge_base, (join '', map "\n    $_", sort keys %allowed)
 msgid ""
 "base '%1' is not allowed without revision specification.\n"
 "Use one of the next or provide revision:%2\n"
 msgstr ""
 
-#: lib/SVK/Editor/Sign.pm:48
+#: lib/SVK/Editor/Sign.pm:98
 #. ($sigfile)
 msgid "cannot find %1, signing aborted"
 msgstr ""
 
-#: lib/SVK/Command/Cmerge.pm:46
+#: lib/SVK/Command/Cmerge.pm:96
 msgid "cannot find a path for temporary branch"
 msgstr ""
 
-#: lib/SVK/Command/Admin.pm:30 lib/SVK/Editor/Sign.pm:51
+#: lib/SVK/Command/Admin.pm:80 lib/SVK/Editor/Sign.pm:101
 #. ($sigfile, $!)
 #. ($dir, $!)
 msgid "cannot open %1: %2"
 msgstr ""
 
-#: lib/SVK/Patch.pm:78
+#: lib/SVK/Patch.pm:128
 #. ($file, $!)
 msgid "cannot open %1: %2\n"
 msgstr ""
@@ -2582,7 +2582,7 @@ msgstr ""
 msgid "copy DEPOTPATH1 DEPOTPATH2"
 msgstr ""
 
-#: lib/SVK/Editor/Sign.pm:42
+#: lib/SVK/Editor/Sign.pm:92
 #. ($!)
 msgid "could not call gpg: %1"
 msgstr ""
@@ -2603,7 +2603,7 @@ msgstr ""
 msgid "delete [PATH...]"
 msgstr ""
 
-#: lib/SVK/Command/Depotmap.pm:59
+#: lib/SVK/Command/Depotmap.pm:109
 msgid "depot map"
 msgstr ""
 
@@ -2667,7 +2667,7 @@ msgstr ""
 msgid "diff [-r REV] [PATH...]"
 msgstr ""
 
-#: lib/SVK/Command/Switch.pm:32
+#: lib/SVK/Command/Switch.pm:82
 msgid "different depot"
 msgstr ""
 
@@ -2675,7 +2675,7 @@ msgstr ""
 msgid "dm: See merged changes."
 msgstr ""
 
-#: lib/SVK/Command/Checkout.pm:32
+#: lib/SVK/Command/Checkout.pm:82
 #. ($src)
 msgid "don't know where to checkout %1\n"
 msgstr ""
@@ -2696,7 +2696,7 @@ msgstr ""
 msgid "export SVKPAGER='/usr/bin/less'"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:151
+#: lib/SVK/Command/Commit.pm:201
 #. ($fname)
 msgid "file %1 already exists.\n"
 msgstr ""
@@ -2737,7 +2737,7 @@ msgstr ""
 msgid "import [PATH] DEPOTPATH"
 msgstr ""
 
-#: lib/SVK/Command/Import.pm:67
+#: lib/SVK/Command/Import.pm:117
 msgid "import destination cannot be a file"
 msgstr ""
 
@@ -2777,7 +2777,7 @@ msgstr ""
 msgid "log PATH"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:362 lib/SVK/Command/Commit.pm:85
+#: lib/SVK/Command/Commit.pm:135 lib/SVK/Command/Commit.pm:412
 msgid "log message"
 msgstr ""
 
@@ -2849,7 +2849,7 @@ msgstr ""
 msgid "mirror cvs::pserver:user@host:/cvsroot:module/... DEPOTPATH"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:109
+#: lib/SVK/Command/Mirror.pm:159
 #. ($target->report)
 msgid "mirror locks on %1 removed.\n"
 msgstr ""
@@ -2878,16 +2878,16 @@ msgstr ""
 msgid "move DEPOTPATH1 DEPOTPATH2"
 msgstr ""
 
-#: lib/SVK/XD.pm:395 lib/SVK/XD.pm:407
+#: lib/SVK/XD.pm:444 lib/SVK/XD.pm:456
 msgid "no depot spec"
 msgstr ""
 
-#: lib/SVK/Command/Sync.pm:46
+#: lib/SVK/Command/Sync.pm:96
 #. ($orig_arg)
 msgid "no mirrors found underneath %1"
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:96
+#: lib/SVK/Command/Mirror.pm:146
 msgid "nothing to upgrade\n"
 msgstr ""
 
@@ -2919,31 +2919,31 @@ msgstr ""
 msgid "patch --up    [--update]     PATCHNAME"
 msgstr ""
 
-#: lib/SVK/Editor/Checkout.pm:158 lib/SVK/Editor/Checkout.pm:65
+#: lib/SVK/Editor/Checkout.pm:115 lib/SVK/Editor/Checkout.pm:208
 #. ($path)
 #. ($copath)
 msgid "path %1 already exists"
 msgstr ""
 
-#: lib/SVK/Editor/Checkout.pm:75
+#: lib/SVK/Editor/Checkout.pm:125
 #. ($path)
 msgid "path %1 does not exist"
 msgstr ""
 
-#: lib/SVK/Command/Diff.pm:109 lib/SVK/Command/Diff.pm:47 lib/SVK/Command/Diff.pm:70 lib/SVK/Command/Propset.pm:55
+#: lib/SVK/Command/Diff.pm:122 lib/SVK/Command/Diff.pm:161 lib/SVK/Command/Diff.pm:97 lib/SVK/Command/Propset.pm:105
 #. ($target->report)
 #. ($target2->report)
 #. ($target->path)
 msgid "path %1 does not exist.\n"
 msgstr ""
 
-#: lib/SVK/XD.pm:436 lib/SVK/XD.pm:439 lib/SVK/XD.pm:524
+#: lib/SVK/XD.pm:485 lib/SVK/XD.pm:488 lib/SVK/XD.pm:573
 #. ($report)
 #. ($copath)
 msgid "path %1 is not a checkout path.\n"
 msgstr ""
 
-#: lib/SVK/Command/Copy.pm:34
+#: lib/SVK/Command/Copy.pm:84
 #. ($dst->report)
 msgid "path '%1' is already a checkout"
 msgstr ""
@@ -2964,7 +2964,7 @@ msgstr ""
 msgid "propedit PROPNAME [DEPOTPATH | PATH...]"
 msgstr ""
 
-#: lib/SVK/Command/Propedit.pm:31
+#: lib/SVK/Command/Propedit.pm:81
 #. ($pname)
 msgid "property %1"
 msgstr ""
@@ -3017,19 +3017,19 @@ msgstr ""
 msgid "push [DEPOTPATH | PATH]"
 msgstr ""
 
-#: lib/SVK/Resolve.pm:242
+#: lib/SVK/Resolve.pm:292
 msgid "q)uit? "
 msgstr ""
 
-#: lib/SVK/Command/Mirror.pm:169
+#: lib/SVK/Command/Mirror.pm:219
 msgid "recover not supported.\n"
 msgstr ""
 
-#: lib/SVK/Mirror/Backend/SVNRa.pm:491
+#: lib/SVK/Mirror/Backend/SVNRa.pm:541
 msgid "relayed merge back not supported yet.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:492 lib/SVK/Editor/Checkout.pm:93 lib/SVK/Editor/XD.pm:95
+#: lib/SVK/Command/Commit.pm:542 lib/SVK/Editor/Checkout.pm:143 lib/SVK/Editor/XD.pm:145
 #. ($copath, $basename, $!)
 msgid "rename %1 to %2 failed: %3"
 msgstr ""
@@ -3042,7 +3042,7 @@ msgstr ""
 msgid "resolved PATH..."
 msgstr ""
 
-#: lib/SVK/Editor/Checkout.pm:141
+#: lib/SVK/Editor/Checkout.pm:191
 msgid "result checksum mismatch"
 msgstr ""
 
@@ -3082,7 +3082,7 @@ msgstr ""
 msgid "smerge [--to|--from] [PATH]"
 msgstr ""
 
-#: lib/SVK/Editor/Checkout.pm:103 lib/SVK/Editor/XD.pm:100
+#: lib/SVK/Editor/Checkout.pm:153 lib/SVK/Editor/XD.pm:150
 msgid "source checksum mismatch"
 msgstr ""
 
@@ -3190,11 +3190,11 @@ msgstr ""
 msgid "the DEPOTNAME/DEPOTPATH(s) provided"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:94
+#: lib/SVK/Command/Commit.pm:144
 msgid "try --encoding.\n"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:543
+#: lib/SVK/Command/Commit.pm:593
 msgid "unexpected error: commit to mirrored path but no mirror object"
 msgstr ""
 
@@ -3206,7 +3206,7 @@ msgstr ""
 msgid "update [PATH...]"
 msgstr ""
 
-#: lib/SVK/Command/Commit.pm:152
+#: lib/SVK/Command/Commit.pm:202
 #. ($self->{patch})
 msgid "use 'svk patch regen %1' instead.\n"
 msgstr ""

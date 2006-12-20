@@ -81,6 +81,8 @@ requires(
     'Class::Data::Inheritable' => '0',
     'Path::Class'              => '0.15',
     'UNIVERSAL::require'       => '0',
+    'Term::ReadKey'            => '0',
+    'Time::HiRes'              => '0',       # in core since 5.7.3
     'File::Temp'               => '0.17',    # in core since 5.8.1
     'Encode'                   => '2.10',    # in core since 5.8.7
     'Getopt::Long'             => '2.35',    # in core since 5.8.8

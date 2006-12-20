@@ -99,12 +99,24 @@ sub _do_relocate {
     $self->mirror->depot->reposfs->change_rev_prop( 0, 'svn:svnsync:from-url',  $self->mirror->url );
 }
 
-sub find_rev_from_changeset { $_[0] }
+sub find_rev_from_changeset { $_[1] }
+
+sub find_changeset { $_[1] }
 
 sub _revmap_prop { }
 
 sub _get_sync_editor {
     my ($self, $editor, $target) = @_;
+
+    $editor = SVK::Editor::MapRev->new(
+        {   _editor        => [$editor],
+            cb_resolve_rev => sub {
+                my ( $func, $rev ) = @_;
+                return $func =~ m/^add/ ? $rev : $target->revision;
+                }
+        }
+    );
+
     return SVK::Editor::CopyHandler->new(
         _editor => $editor,
         cb_copy => sub {

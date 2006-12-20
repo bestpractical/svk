@@ -177,6 +177,8 @@ sub run {
 	my @revlist = $self->parse_revlist($src);
 	die "multi-merge not yet" if $#revlist > 0;
 	my ($baserev, $torev) = @{$revlist[0]};
+	die loc("Merge requires a range of revision.\n")
+	    unless defined $baserev && defined $torev;
 	$merge = SVK::Merge->new
 	    (%$self, repos => $repos, src => $src->new (revision => $torev),
 	     dst => $dst,

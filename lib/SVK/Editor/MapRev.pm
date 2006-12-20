@@ -48,26 +48,36 @@
 # and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
+package SVK::Editor::MapRev;
+use strict;
+use warnings;
 
-=head1 NAME
+use base 'SVK::Editor::ByPass';
 
-SVK::Help::Index - SVK 说明索引
+__PACKAGE__->mk_accessors(qw(cb_resolve_rev));
 
-=head1 DESCRIPTION
+sub rev_at {
+    my ($self, $method) = @_;
+    return 0 if $method eq 'open_root';
+    return 1 if $method eq 'delete_entry';
+    return 2 if $method =~ m'^open_';
+    return 3 if $method =~ m'^add_';
+    return -1;
+}
 
-如果您是初次使用 SVK, 请先键入下列指令, 来阅读 B<intro> 这份入门文件:
+sub AUTOLOAD {
+    my ($self, @arg) = @_;
+    my $func = our $AUTOLOAD;
+    $func =~ s/^.*:://;
+    return if $func =~ m/^[A-Z]+$/;
 
-    svk help intro
+    my $rev = $self->rev_at($func);
+    unless ($rev == -1) {
+	$arg[$rev] = $self->cb_resolve_rev->($func, $arg[$rev]);
+    }
 
-您也可以查阅其它的说明主题:
+    $func = "SUPER::$func";
+    $self->$func(@arg);
+}
 
-    svk help environment    与操作相关的环境变数
-    svk help commands       列出所有指令
-    svk help view           视界 (view) 功能简介
-    svk help 指令名称       显示某项指令的说明
-    svk help                这份说明索引
-
-如需商业服务与支援(commercial support)，请联络 sales@bestpractical.com。
-L<http://svk.bestpractical.com/> 有最新的讯息。
-
-=cut
+1;

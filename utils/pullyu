@@ -10,8 +10,7 @@ my $revspec;
 
 die unless GetOptions ("r|revision=s@" => \$revspec);
 
-# XXX: requires patch to svn::dump 0.01
-use SVN::Dump;
+use SVN::Dump 0.03;
 
 my $repospath = shift or die "repospath required.\n";
 my $path      = shift or die "path required.\n";
@@ -49,22 +48,10 @@ my $pool = SVN::Pool->new_default;
 
 my $prefix = substr( $m->path, 1 );
 
-print bless(
-    {   headers => bless(
-            { 'SVN-fs-dump-format-version' => 3 },
-            'SVN::Dump::Headers'
-        )
-    },
-    'SVN::Dump::Record'
-)->as_string;
-print bless(
-    {   headers =>
-            bless( { 'UUID' => $m->source_uuid }, 'SVN::Dump::Headers' )
-    },
-    'SVN::Dump::Record'
-)->as_string;
-
-my $prev;
+print SVN::Dump::Headers->new(
+            { 'SVN-fs-dump-format-version' => 3 } )->as_string;
+print SVN::Dump::Headers->new({ 'UUID' => $m->source_uuid })->as_string;
+my $prev = $r->[0] ? 0 : undef;
 for my $rev (@revs) {
     $pool->clear;
 
@@ -78,11 +65,10 @@ for my $rev (@revs) {
     seek $buf, 0, 0;
     my $dump = SVN::Dump->new( { fh => $buf } );
     while ( my $record = $dump->next_record() ) {
-        next if exists $record->{headers}{'SVN-fs-dump-format-version'};
-        next if exists $record->{headers}{'UUID'};
+        next if $record->type eq 'format' || $record->type eq 'uuid';
 	# padding
-	if ($prev) {
-	    for my $pad ($prev+1 .. $rrev-1) {
+	if (!defined $prev || $prev) {
+	    for my $pad (($prev||0)+1 .. $rrev-1) {
 		print pad_rev($pad)->as_string;
 		++$prev;
 	    }
@@ -90,26 +76,27 @@ for my $rev (@revs) {
 
         my $translate = sub {
             my $rec = shift;
-            $rec->{headers}{'Revision-number'} = $rrev
-                if exists $rec->{headers}{'Revision-number'};
+            $rec->set_header('Revision-number' => $rrev)
+                if $rec->get_header('Revision-number');
 
-            $rec->{headers}{'Node-copyfrom-rev'}
-                = $m->find_remote_rev( $rec->{headers}{'Node-copyfrom-rev'} )
-                if exists $rec->{headers}{'Node-copyfrom-rev'};
+	    if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
+		$rec->set_header('Node-copyfrom-rev' =>
+				 scalar $m->find_remote_rev( $rev ) );
+	    }
 
-            $rec->{headers}{'Node-copyfrom-path'} =~ s{^\Q$prefix\E/?}{}
-                if exists $rec->{headers}{'Node-copyfrom-path'};
+	    if (my $path = $rec->get_header('Node-copyfrom-path')) {
+		$path =~ s{^\Q$prefix\E/?}{} or die "$path untranslatable";
+		$rec->set_header('Node-copyfrom-path' => $path );
+	    }
 
-            if ( exists $rec->{property} ) {
-                my $prop = $rec->{property};
-                delete $prop->{hash}{'svm:headrev'};
-                $prop->{keys}
-                    = [ grep { $_ ne 'svm:headrev' } @{ $prop->{keys} } ];
+            if ( my $prop = $rec->get_property_block ) {
+                $prop->delete('svm:headrev');
             }
 
-            if ( $rec->{headers}{'Node-path'} ) {
-                $rec->{headers}{'Node-path'} =~ s{^\Q$prefix\E/?}{}
-                    or die $rec->{headers}{'Node-path'};
+            if ( my $path = $rec->get_header('Node-path') ) {
+		$path =~ s{^\Q$prefix\E/?}{}
+                    or die "$path not translatable";
+                $rec->set_header('Node-path' => $path);
             }
 
         };
@@ -126,26 +113,7 @@ for my $rev (@revs) {
 sub pad_rev {
     my $rev = shift;
     my $pad = SVN::Dump::Record->new;
-    $pad->set_headers(SVN::Dump::Headers->new);
-    $pad->{headers}{ 'Revision-number' } = $rev;
+    $pad->set_headers_block(SVN::Dump::Headers->new( { 'Revision-number' => $rev }) );
     return $pad;
 }
 
-sub recal_header {
-    my $record = shift;
-    my ( $proplength, $textlength ) = ( 0, 0 );
-    if ( exists $record->{property} ) {
-        $record->{headers}{'Prop-content-length'}
-            = length( $record->{property}->as_string );
-    }
-    if ( exists $record->{text} ) {
-        $record->{headers}{'Text-content-length'}
-            = length( $record->{property}->as_string );
-    }
-    recal_header($record->{included})
-	if exists $record->{included};
-
-    if ( $record->{headers}{'Content-length'} ) {
-        $record->{headers}{'Content-length'} = $textlength + $proplength;
-    }
-}

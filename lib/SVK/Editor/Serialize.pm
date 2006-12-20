@@ -49,9 +49,12 @@
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Editor::Serialize;
+use strict;
 use base 'SVK::Editor';
 
-__PACKAGE__->mk_accessors(qw(cb_serialize_entry));
+__PACKAGE__->mk_accessors(qw(cb_serialize_entry textdelta_threshold));
+
+use SVK::Util qw(tmpfile slurp_fh);
 
 sub AUTOLOAD {
     my ($self, @arg) = @_;
@@ -78,8 +81,23 @@ my $apply_textdelta_entry;
 
 sub close_file {
     my ($self, $baton, $checksum) = @_;
-    if ($apply_textdelta_entry) {
-	$self->cb_serialize_entry->($apply_textdelta_entry);
+    if (my $entry = $apply_textdelta_entry) {
+	my $fh = $entry->[-1];
+	close $fh;
+	if (defined $self->textdelta_threshold && -s $fh->filename >= $self->textdelta_threshold) {
+	    $entry->[-1] = $fh->filename;
+	}
+	else {
+	    # it appears using $entry->[-1] = \$buf and open $entry->[-1]
+	    # breaks in 5.8.4
+	    my $buf = '';
+	    open my ($svndiff), '>', \$buf or die $!;
+	    open my $ifh, '<', $fh->filename or die $!;
+	    slurp_fh($ifh, $svndiff);
+	    unlink $fh->filename;
+	    $entry->[-1] = \$buf;
+	}
+	$self->cb_serialize_entry->($entry);
 	$apply_textdelta_entry = undef;
     }
     $self->cb_serialize_entry->([undef, 'close_file', $baton, $checksum]);
@@ -88,9 +106,8 @@ sub close_file {
 sub apply_textdelta {
     my ($self, $baton, @arg) = @_;
     pop @arg if ref ($arg[-1]) =~ m/^(?:SVN::Pool|_p_apr_pool_t)$/;
-    my $entry = [undef, 'apply_textdelta', $baton, @arg, ''];
-    open my ($svndiff), '>', \$entry->[-1];
-#    $self->cb_serialize_entry->($entry);
+    my $svndiff = tmpfile('serial-svndiff-', UNLINK => 0);
+    my $entry = [undef, 'apply_textdelta', $baton, @arg, $svndiff];
     $apply_textdelta_entry = $entry;
     return [SVN::TxDelta::to_svndiff($svndiff)];
 }

@@ -9,6 +9,10 @@ use SVK::XD;
 
 my ($repospath, $path, $revision) = @ARGV;
 
+die "repospath required.\n" unless $repospath;
+die "path required.\n" unless $path;
+die "revision.\n" unless $revision;
+
 my $repos = SVN::Repos::open($repospath) or die $!;
 my $depot = SVK::Depot->new( {repos => $repos, repospath => $repospath} );
 
@@ -18,7 +22,7 @@ my ($m, $mpath) = $t->is_mirrored;
 my $rabackend = $m->_backend;
 
 my $changed = $t->root->paths_changed;
-my $rev = $m->find_changeset($t->revision);
+my $rev = $m->find_changeset($t->revision) or die "Can't find remote revision for ".$t->revision;
 my $ra = $rabackend->_new_ra;
 
 require SVK::Command::Log;
@@ -27,9 +31,9 @@ $ra->get_log([''], $rev, $rev, 0,
     sub {
         my ( $paths, $r, $author, $date, $log, $ppool ) = @_;
         my $pool = SVN::Pool->new($ppool);
-        for my $remotepath ( keys %$paths ) {
+        for my $remotepath ( sort keys %$paths ) {
             $pool->clear;
-            my $localpath = $path . $remotepath;
+            my $localpath = Path::Class::Dir->new_foreign('Unix', $path)->subdir( $remotepath );
             my $local     = delete $changed->{$localpath}
                 or die "$localpath is not in changes";
             my $action = $SVK::Command::Log::chg->[ $local->change_kind ];
@@ -48,7 +52,7 @@ $ra->get_log([''], $rev, $rev, 0,
                     unless $m->find_changeset($lfrom_rev)
                     == $paths->{$remotepath}->copyfrom_rev;
                 die "copy from path different for $localpath"
-                    unless $path . $from eq $lfrom;
+                    unless Path::Class::Dir->new_foreign('Unix', $path)->subdir( $from ) eq $lfrom;
 
             }
 
@@ -57,7 +61,6 @@ $ra->get_log([''], $rev, $rev, 0,
                 my ( $parent, $target ) = ( $p->parent, $p->basename );
 
                 # do md5 comparison
-
                 my $fra = $rabackend->_new_ra(
                     url => $m->url . ( $parent eq '/' ? '' : $parent ) );
 
@@ -79,6 +82,8 @@ $ra->get_log([''], $rev, $rev, 0,
                 $reporter->set_path( '', $rev - 1, 0, undef );
                 # $reporter->set_path( $target, $rev-1, 1, '' );
                 $reporter->finish_report;
+
+                $rabackend->_ra_finished($fra);
 
                 die "no md5 found from server for $remotepath ($target)"
                     unless $md5->{$target};

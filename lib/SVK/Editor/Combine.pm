@@ -77,6 +77,7 @@ SVK::Editor::Combine - An editor combining several editor calls to one
 
 sub replay {
     my ($self, $editor, $base_rev) = @_;
+    require SVN::Simple::Edit;
 	my $edit = SVN::Simple::Edit->new
 	    (_editor => [$editor],
 	     pool => SVN::Pool->new ($self->{pool}),

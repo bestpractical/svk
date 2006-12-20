@@ -252,11 +252,13 @@ sub _lock_token {
     return "svm:lock:$token";
 }
 
+sub _lock_content { hostname . ':' . $$ };
+
 sub lock {
     my ($self)  = @_;
     my $fs      = $self->repos->fs;
     my $token   = $self->_lock_token;
-    my $content = hostname . ':' . $$;
+    my $content = $self->_lock_content;
     my $where = join( ' ', ( caller(0) )[ 0 .. 2 ] );
 
     my $lock_message = $self->_lock_message;
@@ -264,7 +266,9 @@ sub lock {
     # without corrupting repository.
 LOCKED:
     {
+	my $pool = SVN::Pool->new_default;
         while (1) {
+	    $pool->clear;
             my $who = $fs->revision_prop( 0, $token ) or last LOCKED;
 	    last if $who eq $content;
 	    $lock_message->($self, $who);
@@ -299,22 +303,6 @@ Returns an opaque object that C<sync_changeset> understands.
 
 =cut
 
-sub find_changeset {
-    my ($self, $rev) = @_;
-    return $self->_find_remote_rev($rev, $self->repos);
-}
-
-sub _find_remote_rev {
-    my ($self, $rev, $repos) = @_;
-    $repos ||= $self->repos;
-    my $fs = $repos->fs;
-    my $prop = $fs->revision_prop($rev, 'svm:headrev') or return;
-    my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
-    return %rev if wantarray;
-    # XXX: needs to be more specific
-    return $rev{ $self->source_uuid } || $rev{ $self->server_uuid };
-}
-
 =item find_rev_from_changeset($remote_identifier)
 
 =item traverse_new_changesets($code)
@@ -338,11 +326,12 @@ sub get_svkpath {
 }
 
 for my $delegate
-    qw( find_rev_from_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path relocate )
+    qw( find_rev_from_changeset find_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path relocate )
 {
     no strict 'refs';
     *{$delegate} = sub {
         my $self   = shift;
+	Carp::cluck $delegate unless $self->_backend;
         my $method = $self->_backend->can($delegate);
         unshift @_, $self->_backend;
         goto $method;

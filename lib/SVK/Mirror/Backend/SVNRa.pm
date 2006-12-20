@@ -57,6 +57,7 @@ use SVN::Ra;
 use SVK::I18N;
 use SVK::Editor;
 use SVK::Mirror::Backend::SVNRaPipe;
+use SVK::Editor::MapRev;
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler);
 
@@ -93,7 +94,7 @@ sub _do_load_fromrev {
     my $fs = $self->mirror->repos->fs;
     my $root = $fs->revision_root($fs->youngest_rev);
     my $changed = $root->node_created_rev($self->mirror->path);
-    return scalar $self->mirror->find_changeset($changed);
+    return scalar $self->find_changeset($changed);
 }
 
 sub refresh {
@@ -301,25 +302,31 @@ sub has_replay {
 }
 
 sub _new_ra {
-    my ($self, %args) = @_;
+    my ( $self, %args ) = @_;
 
-    return delete $self->{_cached_ra} if $self->_cached_ra;
-
+    if ( $self->_cached_ra ) {
+        my $ra = delete $self->{_cached_ra};
+        my $url = $args{url} || $self->mirror->url;
+        return $ra if $ra->{url} eq $url;
+        if ( _p_svn_ra_session_t->can('reparent') ) {
+            $ra->reparent($url);
+            $ra->{url} = $url;
+            return $ra;
+        }
+    }
     $self->_initialize_svn;
-    return SVN::Ra->new( url => $self->mirror->url,
-                         auth => $self->_auth_baton,
-                         config => $self->_config, %args );
+    return SVN::Ra->new(
+        url    => $self->mirror->url,
+        auth   => $self->_auth_baton,
+        config => $self->_config,
+        %args
+    );
 }
 
 sub _ra_finished {
     my ($self, $ra) = @_;
     return if $self->_cached_ra;
     return if ref($ra) eq 'SVK::Mirror::Backend::SVNRaPipe';
-    if ($ra->{url} ne $self->mirror->url) {
-	return unless _p_svn_ra_session_t->can('reparent');
-	$ra->reparent($self->mirror->url);
-    }
-
     $self->_cached_ra( $ra );
 }
 
@@ -362,10 +369,31 @@ sub find_rev_from_changeset {
 	( cmp => sub {
 	      my $rev = shift;
 	      my $search = $t->mclone(revision => $rev);
-              my $s_changeset = scalar $self->mirror->find_changeset($rev);
+              my $s_changeset = scalar $self->find_changeset($rev);
               return $s_changeset <=> $changeset;
           } );
 }
+
+=item find_changeset( $local_rev )
+
+=cut
+
+sub find_changeset {
+    my ($self, $rev) = @_;
+    return $self->_find_remote_rev($rev, $self->mirror->repos);
+}
+
+sub _find_remote_rev {
+    my ($self, $rev, $repos) = @_;
+    $repos ||= $self->mirror->repos;
+    my $fs = $repos->fs;
+    my $prop = $fs->revision_prop($rev, 'svm:headrev') or return;
+    my %rev = map {split (':', $_, 2)} $prop =~ m/^.*$/mg;
+    return %rev if wantarray;
+    # XXX: needs to be more specific
+    return $rev{ $self->mirror->source_uuid } || $rev{ $self->mirror->server_uuid };
+}
+
 
 =item traverse_new_changesets()
 
@@ -446,6 +474,15 @@ sub _after_replay {
 
 sub _get_sync_editor {
     my ($self, $editor, $target) = @_;
+    $editor = SVK::Editor::MapRev->new(
+        {   _editor        => [$editor],
+            cb_resolve_rev => sub {
+                my ( $func, $rev ) = @_;
+                return $func =~ m/^add/ ? $rev : $target->revision;
+                }
+        }
+    );
+
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
         cb_copy => sub {
@@ -489,42 +526,46 @@ sub _revmap_prop {
 
 sub mirror_changesets {
     my ( $self, $torev, $callback ) = @_;
-    $self->mirror->with_lock( 'mirror',
-        sub {
-	    $self->refresh;
-	    my @revs;
-            $self->traverse_new_changesets( sub { push @revs, [@_] }, $torev );
-	    # prepare generator for pipelined ra
-	    my @gen;
-	    my $revprop = $self->mirror->depot->mirror->revprop; # XXX: this is so wrong
-	    return unless @revs;
-	    my $ra = $self->_new_ra;
-	    if ($self->use_pipeline) {
-		for (@revs) {
-		    push @gen, ['rev_proplist', $_->[0]] if $revprop;
-		    push @gen, ['replay', $_->[0], 0, 1, 'EDITOR'];
-		}
-		$ra = SVK::Mirror::Backend::SVNRaPipe->new($ra, sub { shift @gen });
-	    }
-	    my $pool = SVN::Pool->new_default;
-	    for (@revs) {
-		$pool->clear;
-		my ($changeset, $metadata) = @$_;
-		my $extra_prop = {};
-		if ( $revprop ) {
-		    my $prop = $ra->rev_proplist($changeset);
-		    for (@$revprop) {
-			$extra_prop->{$_}= $prop->{$_}
-			    if exists $prop->{$_};
-		    }
-		}
-		$self->sync_changeset( $changeset, $metadata, $ra,
-				       $extra_prop,
-				       $callback );
-	    }
-	    $self->_ra_finished($ra);
+    $self->mirror->with_lock(
+        'mirror',
+        sub { $self->_mirror_changesets( $torev, $callback ) } );
+}
+
+sub _mirror_changesets {
+    my ( $self, $torev, $callback ) = @_;
+    $self->refresh;
+    my @revs;
+    $self->traverse_new_changesets( sub { push @revs, [@_] }, $torev );
+    return unless @revs;
+
+    # prepare generator for pipelined ra
+    my @gen;
+    # XXX: this is so wrong
+    my $revprop = $self->mirror->depot->mirror->revprop;
+    my $ra = $self->_new_ra;
+    if ( $self->use_pipeline ) {
+        for (@revs) {
+            push @gen, [ 'rev_proplist', $_->[0] ] if $revprop;
+            push @gen, [ 'replay', $_->[0], 0, 1, 'EDITOR' ];
         }
-    );
+        $ra = SVK::Mirror::Backend::SVNRaPipe->new( $ra, sub { shift @gen } );
+    }
+    my $pool = SVN::Pool->new_default;
+    for (@revs) {
+        $pool->clear;
+        my ( $changeset, $metadata ) = @$_;
+        my $extra_prop = {};
+        if ($revprop) {
+            my $prop = $ra->rev_proplist($changeset);
+            for (@$revprop) {
+                $extra_prop->{$_} = $prop->{$_}
+                    if exists $prop->{$_};
+            }
+        }
+        $self->sync_changeset( $changeset, $metadata, $ra, $extra_prop,
+            $callback );
+    }
+    $self->_ra_finished($ra);
 }
 
 =item get_commit_editor
