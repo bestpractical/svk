@@ -26,7 +26,8 @@ is_output ($svk, 'sm', ['-t'],
 is_output ($svk, 'st', [],
 	   ['A + A-cp',
 	    ' M  .']);
-
+warn $output;
+exit;
 is_output ($svk, 'ci', [-m => 'commit the smerge from checkout'],
 	   ['Committed revision 6.']);
 

@@ -341,7 +341,7 @@ is_output($svk, 'st', [], ['A   newdir']);
 
 chdir($corpath);
 rename("$corpath/co-root-deep/there", "$corpath/tmp");
-unlink("$corpath/co-root-deep");
+rmtree ["$corpath/co-root-deep"] or die $!;
 rename("$corpath/tmp", "$corpath/co-root-deep");
 
 is_output ($svk, 'checkout', ['--relocate', __("$corpath/co-root-deep/there"), __("$corpath/co-root-deep")], [
