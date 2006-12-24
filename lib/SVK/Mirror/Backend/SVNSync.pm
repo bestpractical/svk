@@ -60,7 +60,7 @@ sub _do_load_fromrev {
 
 sub load {
     my ( $class, $mirror ) = @_;
-    my $self = $class->SUPER::new( { mirror => $mirror, use_pipeline => 1 } );
+    my $self = $class->new( { mirror => $mirror } );
     my $fs = $mirror->depot->repos->fs;
     $mirror->url( $fs->revision_prop( 0,         'svn:svnsync:from-url' ) );
     $mirror->server_uuid( $fs->revision_prop( 0, 'svn:svnsync:from-uuid' ) );

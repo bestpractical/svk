@@ -58,6 +58,7 @@ use SVK::I18N;
 use SVK::Editor;
 use SVK::Mirror::Backend::SVNRaPipe;
 use SVK::Editor::MapRev;
+use SVK::Util 'IS_WIN32';
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler);
 
@@ -89,6 +90,14 @@ SVK::Mirror::Backend::SVNRa -
 
 =cut
 
+sub new {
+    my ( $class, $args ) = @_;
+    unless ( defined $args->{use_pipeline} ) {
+        $args->{use_pipeline} = IS_WIN32 ? 0 : 1;
+    }
+    return $class->SUPER::new($args);
+}
+
 sub _do_load_fromrev {
     my $self = shift;
     my $fs = $self->mirror->repos->fs;
@@ -104,7 +113,7 @@ sub refresh {
 
 sub load {
     my ($class, $mirror) = @_;
-    my $self = $class->SUPER::new( { mirror => $mirror, use_pipeline => 1 } );
+    my $self = $class->new( { mirror => $mirror } );
     my $t = $mirror->get_svkpath;
     die loc( "%1 is not a mirrored path.\n", $t->depotpath )
         unless $t->root->check_path( $mirror->path );
@@ -135,7 +144,7 @@ sub load {
 sub create {
     my ($class, $mirror, $backend, $args, $txn, $editor) = @_;
 
-    my $self = $class->SUPER::new({ mirror => $mirror, use_pipeline => 1 });
+    my $self = $class->new({ mirror => $mirror });
 
     my $ra = $self->_new_ra;
 
