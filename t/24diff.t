@@ -374,10 +374,12 @@ is_output ($svk, 'diff', ['-c-4'],
 $svk->cp ('-m', 'blah', '//B', '//A/B-cp');
 $svk->cp ('//A', 'C');
 append_file ("C/foo", "copied and modified on C\n");
+TODO: {
+local $TODO = 'path sep issues on win32' if IS_WIN32;
 is_output($svk, 'diff', ['C'],
-	  [__("=== C\t(new directory; copied from /A\@5)"),
+	  [__("=== C\t(new directory; copied from ").'/A@5)',
 	    '==================================================================',
-           __("=== C/foo\t(copied from /A/foo\@5)"),
+           __("=== C/foo\t(copied from ").'/A/foo@5)',
 	   '==================================================================',
 	   __("--- C/foo\t(revision 4)"),
 	   __("+++ C/foo\t(local)"),
@@ -479,7 +481,7 @@ is_output ($svk, 'diff', ['--non-recursive', '-X', 'C'],
 	    '+newline',
 	    '+fnord',
 	    '+copied and modified on C']);
-
+}
 $svk->revert ('-R', '.');
 $svk->resolved ('-R', '.');
 $svk->update;

@@ -71,7 +71,7 @@ our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
 		 not_l uri set_editor replace_file glob_mime_samples
 		 create_mime_samples chmod_probably_useless
 
-		 catdir HAS_SVN_MIRROR IS_WIN32
+		 catdir HAS_SVN_MIRROR IS_WIN32 install_perl_hook
 
 		 rmtree mkpath @TOCLEAN $output $answer $show_prompt);
 
@@ -606,6 +606,22 @@ sub create_mime_samples {
 
 sub chmod_probably_useless {
     return $^O eq 'MSWin32' || Cwd::cwd() =~ m!^/afs/!;
+}
+
+sub install_perl_hook {
+    my ($repospath, $hook, $content) = @_;
+    $hook = "$repospath/hooks/$hook".(IS_WIN32 ? '.bat' : '');
+    open my $fh, '>', $hook or die $!;
+    if (IS_WIN32) {
+        print $fh "\@rem = '--*-Perl-*--\n";
+        print $fh '@echo off'."\n$^X".' -x -S %0 %*'."\n";
+        print $fh 'if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul'."\n";
+	print $fh "goto endofperl\n\@rem ';\n";
+    }
+    print $fh "#!$^X\n" . $content;
+    print $fh "\n__END__\n:endofperl\n" if IS_WIN32;
+    chmod(0755, $hook);
+    return $hook;
 }
 
 END {

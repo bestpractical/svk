@@ -50,7 +50,7 @@
 # END BPS TAGGED BLOCK }}}
 package SVK;
 
-our $VERSION = '1.99_05';
+our $VERSION = '1.99_90';
 
 =head1 NAME
 

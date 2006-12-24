@@ -17,11 +17,7 @@ my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 
 # install pre-commit hook
 
-my $hook = "$srepospath/hooks/pre-commit".($^O eq 'MSWin32' ? '.bat' : '');
-open FH, '>', $hook or die "$hook: $!";
-print FH ($^O eq 'MSWin32' ? '@echo off' : "#!$^X") . "\nwarn \"foo\\n\";\nexit 1\n";
-close FH;
-chmod (0755, $hook);
+my $hook = install_perl_hook($srepospath, 'pre-commit', "warn \"foo\\n\";\nexit 1\n");
 
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 
@@ -41,5 +37,4 @@ is_output ($svk, 'ci', ['-m', 'test commit', $copath],
 	    qr"A repository hook failed: 'pre-commit' hook failed .* error output.*:",
 	    'foo', ''
 	   ]);
-
 1;

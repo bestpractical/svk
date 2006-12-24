@@ -29,16 +29,13 @@ is_output($svk, 'sync', ['//m'],
 is_output($svk, 'sync', ['//m'],
 	  ["Syncing $uri"]);
 
+my $hook;
 {
-    open my $fh, '>', "$repospath/hooks/pre-commit" or die $!;
     local $/;
-    my $buf = <DATA>;
-    $buf =~ s|PERL|$^X|;
-    print $fh $buf;
+    $hook = install_perl_hook($repospath, 'pre-commit', <DATA>);
 }
-chmod 0755, "$repospath/hooks/pre-commit";
-
-skip "Can't run hooks", 1 unless -x "$repospath/hooks/pre-commit";
+SKIP: {
+skip "Can't run hooks", 1 unless -x $hook;
 
 $svk->mkdir('-m', 'A/X', '/test/A/X');
 is_output($svk, 'sync', ['//m'],
@@ -46,8 +43,7 @@ is_output($svk, 'sync', ['//m'],
 	   'Retrieving log information from 2 to 2',
 	   qr"A repository hook failed: 'pre-commit' hook failed .* error output.*:",
 	   'hate']);
-
+}
 __DATA__
-#!PERL
 print STDERR "hate";
-exit -1;
+exit 1;

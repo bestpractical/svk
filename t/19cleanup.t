@@ -2,6 +2,7 @@
 use Test::More tests => 15;
 use strict;
 use SVK::Test;
+use SVK::Util 'IS_WIN32';
 require Storable;
 
 my ($xd, $svk) = build_test();
@@ -15,7 +16,10 @@ $xd->{statefile} = __("$repospath/svk.config");
 $xd->{giantlock} = __("$repospath/svk.giant");
 
 $xd->giant_lock;
+SKIP: {
+skip 'lock prevents file being read on win32', 1 if IS_WIN32;
 is_file_content ($xd->{giantlock}, $$, 'giant locked');
+}
 ok ($xd->{giantlock_handle}, 'giant locked');
 $xd->store;
 ok ($xd->{updated}, 'marked as updated');

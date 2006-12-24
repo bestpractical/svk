@@ -92,7 +92,7 @@ sub _copyfrom_uri_to_path {
     my ($self, $from_path) = @_;
 
     my $repospath_start = "file://" . $self->{base_target}->repospath;
-    $from_path =~ s/^$repospath_start//;
+    $from_path =~ s/^\Q$repospath_start//;
 
     return $from_path;
 }
