@@ -29,7 +29,7 @@ is_output($svk, 'up', [-r => 0],
 
 is_output($svk, 'st', [],
 	  ['C   A',
-	   'C   A/something']);
+	   __('C   A/something')]);
 
 is_output($svk, 'up', [],
 	  ['Syncing //(/) in '.__($corpath).' to 1.',
