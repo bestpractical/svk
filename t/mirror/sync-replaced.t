@@ -51,7 +51,7 @@ is_output($svk, 'log', [-vr5 => '//m'],
 $svk->cat('/test/A/Q/qu');
 my $expected = $output;
 
-is_output($svk, 'cat', ['//m/A/Q/qu'], [split(/\n/,$expected)], 'content is the same');
+is_output($svk, 'cat', ['//m/A/Q/qu'], [split(/\r?\n/,$expected)], 'content is the same');
 
 $svk->cp(-m => 'b cp', '/test/B' => '/test/B.cp');
 $svk->up($copath);
