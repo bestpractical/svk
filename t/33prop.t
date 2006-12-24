@@ -59,7 +59,7 @@ is_output ($svk, 'pl', ['-v', "$copath/A"],
 is_output ($svk, 'pg', ['myprop', "$copath/A"],
 	   ['myvalue']);
 is_output ($svk, 'pg', [-R => 'myprop', "$copath"],
-	   ['t/checkout/prop/A - myvalue']);
+	   [__('t/checkout/prop/A - myvalue')]);
 
 $svk->commit ('-m', 'commit', $copath);
 

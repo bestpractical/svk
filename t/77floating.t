@@ -35,9 +35,8 @@ use YAML::Syck;
 my $loaded = LoadFile("$copath/.svk/config");
 ok(ref($loaded->{checkout}) eq "Data::Hierarchy::Relative",
    'stored config is relative');
-my $checkout = $loaded->{checkout}->to_absolute('/nowhere');
-ok(exists $checkout->get("/nowhere/A/foo")->{revision}, 'relative lookup');
-
+my $checkout = $loaded->{checkout}->to_absolute(Path::Class::Dir->new('/nowhere'));
+ok(exists $checkout->get(Path::Class::Dir->new("/nowhere/A/foo"))->{revision}, 'relative lookup');
 my ($copath2, $corpath2) = get_copath ('floating2');
 rename ($corpath, $corpath2);
 ($xd, $svk) = build_floating_test($corpath2);
