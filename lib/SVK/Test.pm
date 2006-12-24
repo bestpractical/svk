@@ -621,7 +621,7 @@ sub install_perl_hook {
     print $fh "#!$^X\n" . $content;
     print $fh "\n__END__\n:endofperl\n" if IS_WIN32;
     chmod(0755, $hook);
-    warn $hook;
+    return $hook;
 }
 
 END {
