@@ -79,7 +79,7 @@ requires(
     'List::MoreUtils'          => '0',
     'Class::Accessor::Fast'    => '0',
     'Class::Data::Inheritable' => '0',
-    'Path::Class'              => '0.15',
+    'Path::Class'              => '0.16',
     'UNIVERSAL::require'       => '0',
     'Term::ReadKey'            => '0',
     'Time::HiRes'              => '0',       # in core since 5.7.3
