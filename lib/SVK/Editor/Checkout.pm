@@ -128,7 +128,7 @@ sub open_file {
 
 sub get_fh {
     my ($self, $path, $copath) = @_;
-    open my $fh, '>', $copath or warn "can't open $path: $!", return;
+    open my $fh, '>:raw', $copath or warn "can't open $path: $!", return;
     $self->{iod}{$path} = IO::Digest->new ($fh, 'MD5')
 	unless $self->{ignore_checksum};
     return $fh;
