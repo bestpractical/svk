@@ -52,6 +52,7 @@ package SVK::Merge;
 use strict;
 use SVK::Util qw(traverse_history is_path_inside);
 use SVK::I18N;
+use SVK::Merge::Info;
 use SVK::Editor::Merge;
 use SVK::Editor::Rename;
 use SVK::Editor::Translate;
@@ -678,93 +679,14 @@ sub resolver {
 			      external => $ENV{SVKMERGE});
 }
 
-package SVK::Merge::Info;
-
-sub new {
-    my ($class, $merge) = @_;
-    my $minfo = { map { my ($uuid, $path, $rev) = m/(.*?):(.*):(\d+$)/;
-			("$uuid:$path" => SVK::Target::Universal->new ($uuid, $path, $rev))
-		    } grep { length $_ } split (/\n/, $merge || '') };
-    bless $minfo, $class;
-    return $minfo;
-}
-
-sub add_target {
-    my ($self, $target) = @_;
-    $target = $target->universal
-	if $target->can('universal');
-    $self->{$target->ukey} = $target;
-    return $self;
-}
-
-sub del_target {
-    my ($self, $target) = @_;
-    $target = $target->universal
-	if $target->can('universal');
-    delete $self->{$target->ukey};
-    return $self;
-}
-
-sub remove_duplicated {
-    my ($self, $other) = @_;
-    for (keys %$other) {
-	if ($self->{$_} && $self->{$_}{rev} <= $other->{$_}{rev}) {
-	    delete $self->{$_};
-	}
-    }
-    return $self;
-}
-
-sub subset_of {
-    my ($self, $other) = @_;
-    my $subset = 1;
-    for (keys %$self) {
-	return unless exists $other->{$_} && $self->{$_}{rev} <= $other->{$_}{rev};
-    }
-    return 1;
-}
-
-sub union {
-    my ($self, $other) = @_;
-    # bring merge history up to date as from source
-    my $new = SVK::Merge::Info->new;
-    for (keys %{ { %$self, %$other } }) {
-	if ($self->{$_} && $other->{$_}) {
-	    $new->{$_} = $self->{$_}{rev} > $other->{$_}{rev}
-		? $self->{$_} : $other->{$_};
-	}
-	else {
-	    $new->{$_} = $self->{$_} ? $self->{$_} : $other->{$_};
-	}
-    }
-    return $new;
-}
-
-sub resolve {
-    my ($self, $depot) = @_;
-    my $uuid = $depot->repos->fs->get_uuid;
-    return { map { my $local = $self->{$_}->local($depot);
-		   $local ? ("$uuid:".$local->path_anchor => $local->revision) : ()
-	       } keys %$self };
-}
-
-sub verbatim {
-    my ($self) = @_;
-    return { map { $_ => $self->{$_}{rev} } keys %$self };
-}
-
-sub as_string {
-    my $self = shift;
-    return join ("\n", map {"$_:$self->{$_}{rev}"} sort keys %$self);
-}
-
 =head1 TODO
 
 Document the merge and ticket tracking mechanism.
 
 =head1 SEE ALSO
 
-L<SVK::Editor::Merge>, L<SVK::Command::Merge>, Star-merge from GNU Arch
+L<SVK::Editor::Merge>, L<SVK::Command::Merge>, L<SVK::Merge::Info>, Star-merge
+from GNU Arch
 
 =cut
 

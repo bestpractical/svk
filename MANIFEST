@@ -116,6 +116,7 @@ lib/SVK/Log/Filter/XML.pm
 lib/SVK/Log/FilterPipeline.pm
 lib/SVK/Logger.pm
 lib/SVK/Merge.pm
+lib/SVK/Merge/Info.pm
 lib/SVK/MimeDetect.pm
 lib/SVK/MimeDetect/FileLibMagic.pm
 lib/SVK/MimeDetect/FileMMagic.pm
