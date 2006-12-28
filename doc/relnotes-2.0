@@ -1,6 +1,6 @@
 Hi all,
 
-On behave of the SVK team, I'm pleased to announce SVK 2.0.0.  This is
+On behalf of the SVK team, I'm pleased to announce SVK 2.0.0.  This is
 the first major release after 18 months of development since SVK 1.0
 was released in May 2005.  Although we didn't make it by Christmas, we
 hope you had a great holiday and wish you a productive year in 2007
@@ -10,7 +10,7 @@ We have been testing the release for daily development and recommend
 upgrading from 1.0, particularly because 2.0 gives more correct
 results on merges in various cases.
 
-The details changelogs are at the end.  Here are some of the major new
+The detailed changelogs are at the end.  Here are some of the major new
 features:
 
 * Interactive commits
@@ -55,6 +55,11 @@ features:
 
   You should notice significant sync performance improvements if you
   have both Subversion 1.4 on the client and the server.
+
+* pullyu
+
+  An utility "pullyu" is included.  It can generate svn dump from a
+  svk mirror for the original repository.
 
 * Startup time improvements
 
