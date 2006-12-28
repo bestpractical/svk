@@ -64,6 +64,7 @@ install_script	('bin/svk');
 clean_files	('t/checkout', 't/apache_svn');
 requires(
     # 'SVN::Core'                => $required_svn,
+    'version'                  => '0.68',
     'Algorithm::Annotate'      => '0',
     'Algorithm::Diff'          => '1.1901',
     'YAML::Syck'               => '0.60',
