@@ -1,15 +1,17 @@
 Hi all,
 
-I'm glad to announce svk 2.0 technology preview 1 (tp1); we are on the
-way to our 2.0 release, scheduled by Christmas.
+On behalf of the SVK team, I'm pleased to announce SVK 2.0.0.  This is
+the first major release after 18 months of development since SVK 1.0
+was released in May 2005.  Although we didn't make it by Christmas, we
+hope you had a great holiday and wish you a productive year in 2007
+with new SVK.
 
-Although this is not a stable release, we have been using this version
-for daily development without issues.  So please upgrade if you'd like
-to help with testing and to try out the new features below.
+We have been testing the release for daily development and recommend
+upgrading from 1.0, particularly because 2.0 gives more correct
+results on merges in various cases.
 
-This is the first major release after 18 months of development since
-svk 1.0 was released in May 2005, and there have been exciting
-improvements and features since then.  Here are some highlights:
+The detailed changelogs are at the end.  Here are some of the major new
+features:
 
 * Interactive commits
 
@@ -20,7 +22,7 @@ improvements and features since then.  Here are some highlights:
 * Floating checkout
 
   You can now use "svk checkout --float" to have the checkout metadata
-  stored in the toplevel directory of the checkout copy.  This allows
+  stored in the top-level directory of the checkout copy.  This allows
   you to move the checkout copy around without having to use "svk
   checkout --relocate".
 
@@ -31,9 +33,9 @@ improvements and features since then.  Here are some highlights:
   repository. You can then check out the "view" and work with it as if
   it's just an ordinary svk checkout path.
 
-  Please note that this feature is still of beta-quality; some
-  commands do not work properly in view checkouts.  We plan to fix
-  them before the tp2 release.
+  Please note that this feature is still not recommended for
+  production use, as some commands do not work properly in view
+  checkouts.
 
 * Log filter plugins
 
@@ -49,10 +51,18 @@ improvements and features since then.  Here are some highlights:
 
   http://svn.haxx.se/dev/archive-2005-08/0712.shtml
 
+* Pipelined sync support
+
+  You should notice significant sync performance improvements if you
+  have both Subversion 1.4 on the client and the server.
+
+* pullyu
+
+  An utility "pullyu" is included.  It can generate svn dump from a
+  svk mirror for the original repository.
+
 * Startup time improvements
 
 * Many, many bugfixes and tiny features
 
-
-Cheers,
-CLK
+[CHANGES]

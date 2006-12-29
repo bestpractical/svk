@@ -21,12 +21,10 @@ is_output ($svk, 'sm', ['-t'],
 	   ['Auto-merging (3, 5) /trunk to /local (base /trunk:3).',
 	    'A + A-cp',
 	    qr'New merge ticket: .*:/trunk:5']);
-TODO: {
-local $TODO = 'defult layers should be applied to editor::xd files added with history' if IS_WIN32;
 is_output ($svk, 'st', [],
 	   ['A + A-cp',
 	    ' M  .']);
-}
+
 is_output ($svk, 'ci', [-m => 'commit the smerge from checkout'],
 	   ['Committed revision 6.']);
 

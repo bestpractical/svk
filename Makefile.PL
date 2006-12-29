@@ -64,6 +64,7 @@ install_script	('bin/svk');
 clean_files	('t/checkout', 't/apache_svn');
 requires(
     # 'SVN::Core'                => $required_svn,
+    'version'                  => '0.68',
     'Algorithm::Annotate'      => '0',
     'Algorithm::Diff'          => '1.1901',
     'YAML::Syck'               => '0.60',
@@ -79,7 +80,7 @@ requires(
     'List::MoreUtils'          => '0',
     'Class::Accessor::Fast'    => '0',
     'Class::Data::Inheritable' => '0',
-    'Path::Class'              => '0.15',
+    'Path::Class'              => '0.16',
     'UNIVERSAL::require'       => '0',
     'Term::ReadKey'            => '0',
     'Time::HiRes'              => '0',       # in core since 5.7.3

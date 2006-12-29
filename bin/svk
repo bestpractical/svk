@@ -106,7 +106,7 @@ if (!$cmd or $cmd =~ /^-{0,2}[Hh](?:elp)?$/) {
 
     if ($show_version || ($cmd && $cmd eq 'version')) {
 	print loc("This is svk, version %1 (using Subversion bindings %2)\n",
-        $VERSION, SVN::Core->VERSION);
+        $VERSION, $SVN::Core::VERSION);
 	exit 0;
     }
 }
