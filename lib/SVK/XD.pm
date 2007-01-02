@@ -242,15 +242,19 @@ sub create_depots {
 	    qr/^[yn]/i,
 	);
 	next if $ans =~ /^n/i;
-
-        make_path(dirname($path));
-
-	SVN::Repos::create($path, undef, undef, undef,
-			   {'fs-type' => $ENV{SVNFSTYPE} || 'fsfs',
-			    'bdb-txn-nosync' => '1',
-			    'bdb-log-autoremove' => '1'});
+        $self->_create_depot($path)
     }
     return;
+}
+
+sub _create_depot {
+    my ($self, $path) = @_;
+    make_path(dirname($path));
+
+    SVN::Repos::create($path, undef, undef, undef,
+                       {'fs-type' => $ENV{SVNFSTYPE} || 'fsfs',
+                        'bdb-txn-nosync' => '1',
+                        'bdb-log-autoremove' => '1'});
 }
 
 
