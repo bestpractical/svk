@@ -122,6 +122,8 @@ sub unlock {
     $self->get($path)->unlock('force');
 }
 
+
+# note that the additional path returned is to be concat to mirror url
 sub is_mirrored {
     my ($self, $path) = @_;
     # XXX: check there's only one
@@ -129,8 +131,12 @@ sub is_mirrored {
     return unless $mpath;
 
     my $m = $self->get($mpath);
-    $path =~ s/^\Q$mpath\E//;
-    return wantarray ? ($m, $path) : $m;
+    if ( $mpath eq '/' ) {
+	$path = '' if $path eq '/';
+    } else {
+        $path =~ s/^\Q$mpath\E//;
+    }
+    return wantarray ? ( $m, $path ) : $m;
 }
 
 =head1 SEE ALSO

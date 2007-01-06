@@ -96,7 +96,7 @@ sub _init_state {
 
 sub _do_relocate {
     my ($self) = @_;
-    $self->mirror->depot->reposfs->change_rev_prop( 0, 'svn:svnsync:from-url',  $self->mirror->url );
+    $self->mirror->depot->repos->fs->change_rev_prop( 0, 'svn:svnsync:from-url',  $self->mirror->url );
 }
 
 sub find_rev_from_changeset { $_[1] }
