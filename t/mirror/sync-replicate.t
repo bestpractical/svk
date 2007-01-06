@@ -5,7 +5,7 @@ use SVK::Test;
 use SVN::Ra;
 use SVK::Mirror::Backend::SVNSync;
 plan skip_all => "no replay" unless SVK::Mirror::Backend::SVNSync->has_replay_api;
-plan tests => 3;
+plan tests => 4;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('sync-replicate');
 
@@ -42,3 +42,18 @@ is_output($svk, 'mkdir', [-m => 'fnord', '//fnord'],
 	  'Syncing '.$uri,
 	  'Retrieving log information from 7 to 7',
 	  'Committed revision 7 from revision 7.']);
+
+$svk->co('//fnord', $copath);
+
+
+overwrite_file("$copath/addedfile.txt", "fnord\n");
+
+$svk->add("$copath/addedfile.txt");
+is_output($svk, 'ci', [-m => 'fnord', $copath],
+	  ['Commit into mirrored path: merging back directly.',
+	   "Merging back to mirror source $uri.",
+	   'Merge back committed as revision 8.',
+	   "Syncing $uri",
+	   'Retrieving log information from 8 to 8',
+	   'Committed revision 8 from revision 8.']);
+
