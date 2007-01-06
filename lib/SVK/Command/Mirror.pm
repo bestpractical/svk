@@ -195,6 +195,8 @@ sub run {
         }
     }
 
+    return unless @mirror_columns;
+
     my $max_depot_path = max map { length $_->[0] } @mirror_columns;
     my $max_uri        = max map { length $_->[1] } @mirror_columns;
 
