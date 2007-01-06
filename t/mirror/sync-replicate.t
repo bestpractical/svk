@@ -5,9 +5,11 @@ use SVK::Test;
 use SVN::Ra;
 use SVK::Mirror::Backend::SVNSync;
 plan skip_all => "no replay" unless SVK::Mirror::Backend::SVNSync->has_replay_api;
-plan tests => 4;
+plan tests => 6;
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('sync-replicate');
+unlink('t/checkout/sync-replicate-repo');
+my ($ropath, $rorpath) = get_copath ('sync-replicate-repo');
 
 our $output;
 
@@ -57,3 +59,12 @@ is_output($svk, 'ci', [-m => 'fnord', $copath],
 	   'Retrieving log information from 8 to 8',
 	   'Committed revision 8 from revision 8.']);
 
+SKIP: {
+skip 'No symlinks on win32', 2 if $^O eq 'MSWin32';
+symlink($srepospath, $rorpath);
+
+is_output($svk, 'mi', ['--relocate', '//', uri($rorpath)],
+	  ['Mirror relocated.']);
+is_output($svk, 'sync', ['//'],
+	  ['Syncing '.uri($rorpath)]);
+}
