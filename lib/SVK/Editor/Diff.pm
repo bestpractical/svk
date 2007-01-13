@@ -164,8 +164,8 @@ sub retrieve_base_prop {
     $basepath = $self->{base_target}->path_anchor."/$path"
 	if $basepath !~ m{^/};
 
-    return $root->check_path($path, $pool) == $SVN::Node::none ?
-	undef : $root->node_prop($path, $prop, $pool);
+    return $root->check_path($basepath, $pool) == $SVN::Node::none ?
+	undef : $root->node_prop($basepath, $prop, $pool);
 }
 
 sub apply_textdelta {
