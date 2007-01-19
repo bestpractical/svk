@@ -6,6 +6,7 @@ use strict;
 no warnings 'once';
 use SVK;
 use SVK::XD;
+use URI::Escape 'uri_escape';
 
 my ($repospath, $path, $revision) = @ARGV;
 
@@ -62,7 +63,7 @@ $ra->get_log([''], $rev, $rev, 0,
 
                 # do md5 comparison
                 my $fra = $rabackend->_new_ra(
-                    url => $m->url . ( $parent eq '/' ? '' : $parent ) );
+                    url => uri_escape( $m->url . ( $parent eq '/' ? '' : $parent ), '^A-Za-z0-9\-_.!~*\'():/' ) );
 
                 # XXX: do_status requires svn trunk, and the required
                 # changed should be merged to 1.4.3
