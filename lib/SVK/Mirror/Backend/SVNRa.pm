@@ -306,7 +306,8 @@ sub has_replay {
     # FIXME: if we do ^c here $err would be empty. do something else.
     return $self->_has_replay(0)
       if $err->apr_err == $SVN::Error::RA_NOT_IMPLEMENTED      # ra_svn
-      || $err->apr_err == $SVN::Error::UNSUPPORTED_FEATURE;    # ra_dav
+      || $err->apr_err == $SVN::Error::UNSUPPORTED_FEATURE     # ra_dav
+      || $err->apr_err == $SVN::Error::RA_DAV_REQUEST_FAILED;  # ra_dav (googlecode)
     die $err->expanded_message;
 }
 
@@ -374,6 +375,9 @@ sub _initialize_auth {
 sub find_rev_from_changeset {
     my ($self, $changeset) = @_;
     my $t = $self->mirror->get_svkpath;
+
+    no warnings 'uninitialized'; # $s_changeset below may be undef
+
     return $t->search_revision
 	( cmp => sub {
 	      my $rev = shift;
