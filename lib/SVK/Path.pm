@@ -506,9 +506,7 @@ sub related_to {
 
     # XXX: defer to $other->related_to if it is SVK::Path::Checkout,
     # when we need to use it.
-    return SVN::Fs::check_related
-	($self->root->node_id ($self->path),
-	 $other->root->node_id ($other->path));
+    return SVN::Fs::check_related($self->node_id, $other->node_id);
 }
 
 =head2 copied_from ($want_mirror)
@@ -558,7 +556,7 @@ sub search_revision {
     my ($self, %arg) = @_;
     my $root = $self->root;
     my @rev = ($arg{start} || 1, $self->revision);
-    my $id = $root->node_id($self->path);
+    my $id = $self->node_id;
     my $pool = SVN::Pool->new_default;
 
     while ($rev[0] <= $rev[1]) {
@@ -726,6 +724,17 @@ sub as_url {
     }
 
     return ($path, $rev);
+}
+
+=head2 node_id ()
+
+Returns the node id of this path object.
+
+=cut
+
+sub node_id {
+    my ($self) = @_;
+    $self->root->node_id($self->path);
 }
 
 =head1 SEE ALSO
