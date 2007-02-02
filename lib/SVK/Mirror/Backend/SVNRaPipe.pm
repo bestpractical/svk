@@ -254,7 +254,8 @@ sub replay {
 	    $arg[$baton_at] = $baton_map->{$baton};
 	}
 
-	my $ret = $self->emit_editor_call($editor, $func, undef, @arg);
+	my $pool = SVN::Pool->new;
+	my $ret = $self->emit_editor_call($editor, $func, $pool, @arg);
 
 	last if $func eq 'close_edit';
 
@@ -265,7 +266,10 @@ sub replay {
 	}
 
 	if ($next) {
-	    $baton_pool->{$next} = SVN::Pool->new_default;
+	    # if we are keeping this parent baton, set the pool as the
+	    # default pool as well.
+	    $pool->default if $pool;
+	    $baton_pool->{$next} = $pool if $pool;
 	    $baton_map->{$next} = $ret
 	}
     }
