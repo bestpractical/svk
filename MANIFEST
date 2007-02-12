@@ -211,6 +211,7 @@ t/07smerge-multi.t
 t/07smerge-prop.t
 t/07smerge-relayed.t
 t/07smerge-rename.t
+t/07smerge-rename-dest.t
 t/07smerge-to-from.t
 t/07smerge-tree.t
 t/07smerge-upload.t
