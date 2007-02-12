@@ -404,14 +404,14 @@ sub _retrieve_base
 }
 
 sub apply_textdelta {
-    my ($self, $path, $checksum, $pool) = @_;
+    my ($self, $path, $checksum, $ppool) = @_;
     return unless $path;
 
     my $info = $self->{info}{$path};
     my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
     my $fh = $info->{fh} = {};
-    if (($pool = $info->{fpool}) &&
-	($fh->{local} = $self->inspector->localmod($basepath, $checksum || '', $pool))) {
+    my $pool = $info->{fpool};
+    if ($pool && ($fh->{local} = $self->inspector->localmod($basepath, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
 	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
@@ -426,7 +426,7 @@ sub apply_textdelta {
     $self->ensure_open ($path);
 
     my $handle = $self->{storage}->apply_textdelta ($self->{storage_baton}{$path},
-						    $checksum, $pool);
+						    $checksum, $ppool);
 
     if ($self->{storage_has_unwritable} && !$handle) {
 	delete $self->{notify}{status}{$path};
