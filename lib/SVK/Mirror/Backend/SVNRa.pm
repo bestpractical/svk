@@ -301,6 +301,7 @@ sub has_replay {
             $self->_ra_finished($ra);
             return $self->_has_replay(1);
         }
+        die $@ unless $err;
     }
     $self->_ra_finished($ra);
     # FIXME: if we do ^c here $err would be empty. do something else.
