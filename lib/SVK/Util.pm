@@ -969,7 +969,7 @@ sub find_dotsvk {
     while ( $p && $p ne $prev && -r $p ) {
 	$prev = $p;
 	my $svk = $p->subdir('.svk');
-	return $svk if -e $svk;
+	return $svk if -e $svk && -e $svk->file('floating');
 	$p = $p->parent();
     }
 
