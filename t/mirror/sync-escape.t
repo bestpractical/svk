@@ -4,7 +4,7 @@ use Test::More;
 use SVK::Test;
 #plan skip_all => 'blah';
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 7;
+plan tests => 8;
 
 my ($xd, $svk) = build_test('test');
 my ($copath, $corpath) = get_copath ('sync-escape');
@@ -70,3 +70,10 @@ is_output($svk, 'sync', [-t9 => '//m'],
 	   'Retrieving log information from 9 to 9',
 	   'Committed revision 10 from revision 9.']);
 
+
+$svk->mkdir(-m => 'dir with space', '/test/Project Space');
+
+is_output($svk, 'sync', [-t10 => '//m'],
+	  ["Syncing $uri",
+	   'Retrieving log information from 10 to 10',
+	   'Committed revision 11 from revision 10.']);
