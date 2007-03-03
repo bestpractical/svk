@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 15;
+use Test::More tests => 16;
 use SVK::Test;
 use File::Path;
 
@@ -66,4 +66,7 @@ is_output ($svk, 'switch', ['//A-branch-renamed/P', $corpath],
 	   ["Path //A-branch-renamed/P does not exist."]);
 is_output ($svk, 'switch', ['//A-branch-renamed/P@6', $corpath],
 	   ["Syncing //A-branch-new/P(/A-branch-new/P) in $corpath to 6."]);
+
+is_output ($svk, 'switch', [-r => 4, '//A-branch/P', $corpath],
+	   ["Syncing //A-branch-renamed/P(/A-branch-renamed/P) in $corpath to 4."]);
 
