@@ -248,9 +248,6 @@ sub replay {
     my $baton_map = {};
     my $baton_pool = {};
 
-    local $SIG{INT} = sub { kill 15, $self->pid;
-			    waitpid($self->pid, 0);
-			    die loc("Interrupted.\n") };
     eval {
 
     while ((my $data = $self->read_msg )) {
@@ -282,9 +279,16 @@ sub replay {
     }
     };
 
+    if ($@) {
+	kill 15, $self->pid;
+	waitpid $self->pid, 0;
+	$self->pid(undef);
+    }
+
     # destroy the remaining pool that became default pools in order.
     delete $baton_pool->{$_} 
         for reverse sort keys %$baton_pool;
+
     die $@ if $@;
 }
 
