@@ -147,7 +147,7 @@ sub get_base {
     my $base = SVK::XD::get_fh ($self->{oldroot}, '<', $dpath, $basename);
     if (!$self->{ignore_checksum} && $checksum) {
 	my $md5 = md5_fh ($base);
-	die loc("source checksum mismatch") if $md5 ne $checksum;
+	die loc("source checksum mismatch for %1 (%2 vs %3)", $path, $md5, $checksum) if $md5 ne $checksum;
 	seek $base, 0, 0;
     }
 
@@ -209,6 +209,11 @@ sub add_file {
 		  target => $target, target_baton => $ret );
 	}
 	$self->_schedule_entry($copath, $editor, @arg);
+	if (defined $arg[0]) {
+	    # special treatment to turn this node into something with base
+	    delete $self->{added}{$path};
+	    delete $self->{iod}{$path};
+	}
     }
     return $ret;
 }
@@ -325,22 +330,24 @@ sub abort_edit {
     my ($self) = @_;
 }
 
+# XXX: this should be splitted to prepare base and schedule entry
 sub _schedule_entry {
     my ($self, $copath, $editor, $copyfrom, $copyfrom_rev) = @_;
     my %copy;
     if (defined $copyfrom) {
+	# Note that the delta run through $self here is for preparing
+	# the base for subsequent editor calls that operates on top of
+	# these.
 	my $fs = $self->{oldroot}->fs;
 	my $from_root = $fs->revision_root($copyfrom_rev);
 	$editor->{master_editor} = SVK::Editor::Checkout->new(%$self);
 	if (defined $editor->{target}) {
 	    # XXX: depot_delta can't generate single file fulltext.
-	    my $handle = $editor->apply_textdelta($editor->{target_baton},
-						  $from_root->file_md5_checksum($copyfrom));
+	    my $handle = $editor->apply_textdelta($editor->{target_baton}, '');
 		if ($handle && $#{$handle} >= 0) {
-		    if ($self->{send_fulltext}) {
-			SVN::TxDelta::send_stream($from_root->file_content($copyfrom),
-						  @$handle);
-		    }
+		    SVN::TxDelta::send_stream($from_root->file_contents($copyfrom),
+					      @$handle);
+		    $editor->close_file($editor->{target_baton}, $from_root->file_md5_checksum($copyfrom));
 		}
 	}
 	else {

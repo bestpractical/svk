@@ -188,7 +188,7 @@ sub close_file {
     my ($self, $path, $checksum) = @_;
     my $copath = $path;
     $self->{get_copath}($copath);
-    die loc("result checksum mismatch")
+    die loc("result checksum mismatch for %1 (%2 vs %3)", $path, $self->{iod}{$path}->hexdigest, $checksum)
 	if $self->{iod}{$path} && $self->{iod}{$path}->hexdigest ne $checksum;
 
     if ((my $base = $self->{base}{$path})) {

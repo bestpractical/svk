@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 2;
+use Test::More tests => 4;
 use strict;
 use File::Path;
 use Cwd;
@@ -7,7 +7,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge-moved');
+my ($copath, $corpath) = get_copath ('smerge-rename');
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->checkout ('//trunk', $copath);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
@@ -54,4 +54,42 @@ is_output ($svk, 'smerge', ['--track-rename', '-C', '//trunk', '//local'],
 	    'U   test.pl - A/deep/test.pl',
 	    qr'New merge ticket: .*:/trunk:8',
 	    'Empty merge.',
+	    '2 conflicts found.']);
+
+$ENV{SVKRESOLVE} = 's';
+is_output ($svk, 'smerge', ['--track-rename', '//trunk', '//local', -m => 'merge with renames'],
+	   ['Auto-merging (2, 8) /trunk to /local (base /trunk:2).',
+	    'Collecting renames, this might take a while.',
+	    'A + A/deep.new',
+	    'U   A/deep.new/foo',
+	    'A + A/deep.new/bar',
+	    'U   A/normal',
+	    'A + A/foo.new',
+	    'D   A/bar',
+	    'C   A/deep',
+	    'D   A/deep/foo',
+	    'C   A/deep/test.pl',
+	    'D   A/foo',
+	    'U   test.pl - A/deep/test.pl',
+	    qr'New merge ticket: .*:/trunk:8',
+	    'Empty merge.',
+	    '2 conflicts found.']);
+
+my ($lcopath, $lcorpath) = get_copath ('smerge-moved');
+$svk->checkout ('//local', $lcopath);
+is_output ($svk, 'smerge', ['--track-rename', '//trunk', $lcopath],
+	   ['Auto-merging (2, 8) /trunk to /local (base /trunk:2).',
+	    'Collecting renames, this might take a while.',
+	    __("A + $lcopath/A/deep.new"),
+	    __("U   $lcopath/A/deep.new/foo"),
+	    __("A + $lcopath/A/deep.new/bar"),
+	    __("U   $lcopath/A/normal"),
+	    __("A + $lcopath/A/foo.new"),
+	    __("D   $lcopath/A/bar"),
+	    __("C   $lcopath/A/deep"),
+	    __("D   $lcopath/A/deep/foo"),
+	    __("C   $lcopath/A/deep/test.pl"),
+	    __("D   $lcopath/A/foo"),
+	    __("U   $lcopath/test.pl - A/deep/test.pl"),
+	    "New merge ticket: $uuid:/trunk:8",
 	    '2 conflicts found.']);
