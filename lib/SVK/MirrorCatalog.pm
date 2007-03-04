@@ -56,7 +56,7 @@ use SVK::Path;
 use SVK::Mirror;
 use SVK::Config;
 
-__PACKAGE__->mk_accessors(qw(depot repos cb_lock revprop));
+__PACKAGE__->mk_accessors(qw(depot repos cb_lock revprop _cached_mirror));
 
 =head1 NAME
 
@@ -75,8 +75,8 @@ my %mirror_cached;
 
 sub entries {
     my $self = shift;
-    my %mirrors = $self->_entries;
-    return sort keys %mirrors;
+    return sort keys %{$self->_entries} if wantarray;
+    return scalar keys %{$self->_entries};
 }
 
 sub _entries {
@@ -85,12 +85,12 @@ sub _entries {
     my $rev = $repos->fs->youngest_rev;
     delete $mirror_cached{$repos}
 	unless ($mirror_cached{$repos}{rev} || -1) == $rev;
-    return %{$mirror_cached{$repos}{hash}}
+    return $mirror_cached{$repos}{hash}
 	if exists $mirror_cached{$repos};
 
     if ($repos->fs->revision_prop(0, 'svn:svnsync:from-url')) {
-	$mirror_cached{$repos} = { rev => $rev, hash => { '/' => 1 } };
-	return ( '/' => 1 );
+	$mirror_cached{$repos} = { rev => $rev, hash => { '/' => undef } };
+	return { '/' => undef };
     }
 
     my @mirrors = grep length,
@@ -99,22 +99,20 @@ sub _entries {
 
     my %mirrored = map {
 	local $@;
-	eval {
+	my $m = eval {
             SVK::Mirror->load( { path => $_, depot => $self->depot, pool => SVN::Pool->new });
-	    1;
 	};
-        $@ ? () : ($_ => 1)
+        $@ ? () : ($_ => $m)
 
     } @mirrors;
 
     $mirror_cached{$repos} = { rev => $rev, hash => \%mirrored};
-    return %mirrored;
+    return \%mirrored;
 }
 
 sub get {
     my ($self, $path) = @_;
-    Carp::cluck if ref($path);
-    return SVK::Mirror->load( { path => $path, depot => $self->depot, pool => SVN::Pool->new });
+    return $self->_entries->{$path} || SVK::Mirror->load( { path => $path, depot => $self->depot, pool => SVN::Pool->new });;
 }
 
 sub unlock {
