@@ -334,7 +334,7 @@ sub _schedule_entry {
 	$editor->{master_editor} = SVK::Editor::Checkout->new(%$self);
 	if (defined $editor->{target}) {
 	    # XXX: depot_delta can't generate single file fulltext.
-	    my $handle = $editor->apply_textdelta($editor->{target},
+	    my $handle = $editor->apply_textdelta($editor->{target_baton},
 						  $from_root->file_md5_checksum($copyfrom));
 		if ($handle && $#{$handle} >= 0) {
 		    if ($self->{send_fulltext}) {
