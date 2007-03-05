@@ -16,7 +16,7 @@ my $quoted = quotemeta($repospath);
 
 set_editor(<< "TMP");
 \$_ = shift;
-open _, ">\$_" or die $!;
+open _, ">\$_" or die \$!;
 print _ << "EOF";
 '': '$quoted/'
 
