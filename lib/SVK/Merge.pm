@@ -534,7 +534,7 @@ sub run {
 			    }
 			},
 	    ticket => 
-	    sub { $self->get_new_ticket ($self->merge_info ($src)->add_target ($src)) }
+	    sub { $self->get_new_ticket ($self->merge_info_with_copy ($src)->add_target ($src)) }
 	  ) :
 	  ( prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} # skip
 			     }),

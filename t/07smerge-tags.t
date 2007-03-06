@@ -13,9 +13,6 @@ $svk->cp ('-m', 'branch', '//trunk', '//branch');
 my $tree = create_basic_tree ($xd, '//trunk');
 $svk->cp ('-m', 'tag1', '//trunk', '//tag1');
 
-TODO: {
-local $TODO = "Copy source isn't tracked in merge ticket.";
-
 is_output($svk, 'sm', ['-m', 'merge tag1 to branch', '//tag1', '//branch'],
 	  ['Auto-merging (0, 5) /tag1 to /branch (base /trunk:1).',
 	   'A   A',
@@ -62,4 +59,3 @@ is_output($svk, 'sm', ['-m', 'merge tag2 to branch', '//tag2', '//branch'],
 is_output($svk, 'sm', ['-m', 'merge trunk to branch', '//trunk', '//branch'],
 	  ['Auto-merging (7, 7) /trunk to /branch (base /trunk:7).',
 	   'Empty merge.']);
-}

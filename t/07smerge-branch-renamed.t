@@ -19,5 +19,6 @@ is_output($svk, 'push', ['//local-foo'],
 	  ['Auto-merging (0, 6) /local-foo to /trunk (base /trunk:3).',
 	   '===> Auto-merging (0, 6) /local-foo to /trunk (base /trunk:3).',
 	   'A   somedir',
+	   qr'New merge ticket: .*:/local:5',
 	   qr'New merge ticket: .*:/local-foo:6',
 	   'Committed revision 7.']);

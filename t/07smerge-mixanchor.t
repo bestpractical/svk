@@ -20,6 +20,7 @@ my ($copath, $corpath) = get_copath ('smerge-mixanchor');
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/', 1);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
+my $suuid = $srepos->fs->get_uuid;
 my $uri = uri($srepospath);
 
 $svk->mirror ('//mirror', $uri.($spath eq '/' ? '' : $spath));
@@ -47,13 +48,18 @@ is_output ($svk, 'smerge', ['-m', 'merge back local to remote', '-f', '//local']
 
 is_output ($svk, 'pg', ['svk:merge', '//local/3.3-TESTING', '//mirror/3.3-TESTING'],
 	   ["//local/3.3-TESTING - $uuid:/3.3-exp:11",
-	    "//mirror/3.3-TESTING - $uuid:/3.3-exp:11"]);
+	    "$suuid:/3.3-TESTING:7",
+	    "$suuid:/trunk:3",
+	    "//mirror/3.3-TESTING - $uuid:/3.3-exp:11",
+	    "$suuid:/3.3-TESTING:7",
+	    "$suuid:/trunk:3"]);
 
 is_output ($svk, 'smerge', ['-m', 'merge back 3.3-another to remote directly', '//3.3-another', '//mirror/3.3-TESTING'],
 	   ['Auto-merging (0, 13) /3.3-another to /mirror/3.3-TESTING (base /3.3-exp:11).',
 	    "Merging back to mirror source $uri.",
 	    'A   local-3.3-only/yay',
 	    "New merge ticket: $uuid:/3.3-another:13",
+	    "New merge ticket: $uuid:/local/3.3-TESTING:9",
 	    'Merge back committed as revision 9.',
 	    "Syncing $uri",
 	    'Retrieving log information from 9 to 9',
