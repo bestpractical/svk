@@ -155,12 +155,14 @@ sub do_update {
 	# something that exist.
 	die loc("Path %1 does not exist.\n", $update_target->depotpath)
 	    unless $xdroot->check_path($cotarget->path);
-
 	$cotarget->anchorify;
-	$update_target->anchorify;
 	# still in the checkout
 	if ($self->{xd}{checkout}->get($cotarget->copath)->{depotpath}) {
+	    $update_target->anchorify;
 	    $kind = $newroot->check_path($update_target->path_anchor);
+	}
+	else {
+	    die loc("Path %1 no longer exists.\n", $update_target->depotpath);
 	}
     }
 
