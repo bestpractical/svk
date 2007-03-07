@@ -484,15 +484,6 @@ sub nearest_copy {
     return ($toroot, $root->fs->revision_root($copyfrom_rev, $ppool), $path);
 }
 
-sub _copies_contain_path {
-    my ($copy, $path) = @_;
-    my ($match) = grep { index ("$path/", "$_/") == 0 }
-	sort { length $b <=> length $a } keys %$copy;
-    return unless $match;
-    $path =~ s/^\Q$match\E/$copy->{$match}[1]/;
-    return ($copy->{$match}[0], $path);
-}
-
 =head2 related_to
 
 Check if C<$self> is related to another target.

@@ -1902,14 +1902,4 @@ sub flush {
     $self->write;
 }
 
-package SVK::XD::Root;
-require SVK::Root;
-
-sub new {
-    my ($class, @arg) = @_;
-    unshift @arg, undef if $#arg == 0;
-    return SVK::Root->new({ txn => $arg[0], root => $arg[1]});
-}
-
-
 1;
