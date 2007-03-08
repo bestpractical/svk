@@ -59,6 +59,7 @@ use SVN::Delta;
 
 use SVK::Logger;
 use SVK::Depot;
+use SVK::Root;
 use base 'SVK::Accessor';
 
 __PACKAGE__->mk_shared_accessors
