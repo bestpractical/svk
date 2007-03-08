@@ -6,6 +6,7 @@ use strict;
 no warnings 'once';
 use SVK;
 use SVK::XD;
+use SVK::Util 'abs2rel';
 use URI::Escape 'uri_escape';
 
 my ($repospath, $path, $revision) = @ARGV;
@@ -26,7 +27,6 @@ my $changed = $t->root->paths_changed;
 my $rev = $m->find_changeset($t->revision) or die "Can't find remote revision for ".$t->revision;
 my $ra = $rabackend->_new_ra;
 my $md5;
-
 require SVK::Command::Log;
 $ra->get_log([''], $rev, $rev, 0,
 	    1, 1,
@@ -44,7 +44,7 @@ $ra->get_log([''], $rev, $rev, 0,
 
         for my $remotepath ( sort keys %$paths ) {
             $pool->clear;
-            my $localpath = Path::Class::Dir->new_foreign('Unix', $path)->subdir( $remotepath );
+	    my $localpath = abs2rel($remotepath, $m->source_path => $path, '/');
             my $local     = delete $changed->{$localpath}
                 or die "$localpath is not in changes";
             my $action = $SVK::Command::Log::chg->[ $local->change_kind ];
