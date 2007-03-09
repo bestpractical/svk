@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 3;
+plan tests => 4;
 
 our $output;
 # build another tree to be mirrored ourself
@@ -46,11 +46,13 @@ is_output ($svk, 'smerge', ['-m', 'merge back local to remote', '-f', '//local']
 	    'Retrieving log information from 8 to 8',
 	    'Committed revision 15 from revision 8.']);
 
-is_output ($svk, 'pg', ['svk:merge', '//local/3.3-TESTING', '//mirror/3.3-TESTING'],
-	   ["//local/3.3-TESTING - $uuid:/3.3-exp:11",
+is_sorted_output ($svk, 'pg', ['svk:merge', '//local/3.3-TESTING'],
+	   ["$uuid:/3.3-exp:11",
 	    "$suuid:/3.3-TESTING:7",
-	    "$suuid:/trunk:3",
-	    "//mirror/3.3-TESTING - $uuid:/3.3-exp:11",
+	    "$suuid:/trunk:3"]);
+
+is_sorted_output ($svk, 'pg', ['svk:merge', '//mirror/3.3-TESTING'],
+	   ["$uuid:/3.3-exp:11",
 	    "$suuid:/3.3-TESTING:7",
 	    "$suuid:/trunk:3"]);
 
