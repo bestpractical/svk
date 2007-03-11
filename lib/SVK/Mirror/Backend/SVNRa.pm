@@ -386,9 +386,7 @@ sub find_rev_from_changeset {
               return $s_changeset <=> $changeset;
           } );
 
-    if (!$seekback) {
-	return defined $r ? $r : ();
-    }
+    return defined $r ? $r : () if $r || !$seekback;
 
     my $result;
     $r = $t->search_revision
