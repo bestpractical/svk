@@ -303,7 +303,7 @@ sub open_file {
     # modified but rm locally - tag for conflict?
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
-    if ($self->inspector->exist($basepath, $pool) == $SVN::Node::file) {
+    if (defined $pdir && $self->inspector->exist($basepath, $pool) == $SVN::Node::file) {
 	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
 	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
@@ -593,7 +593,10 @@ sub add_directory {
     return undef unless defined $pdir;
     my $pool = pop @arg;
     my $touched = $self->{notify}->node_status($path);
-    undef $touched if $touched && $touched eq 'C';
+    # This comes from R (D+A) where the D has conflict
+    if ($touched && $touched eq 'C') {
+	return undef;
+    }
     # Don't bother calling cb_exist (which might be expensive if the parent is
     # already added.
     if (!$self->{added}{$pdir} && !$touched &&
