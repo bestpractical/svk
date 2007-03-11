@@ -200,6 +200,7 @@ t/07smerge-branch-renamed.t
 t/07smerge-copy-co.t
 t/07smerge-copy.t
 t/07smerge-delete.t
+t/07smerge-dir-replaced.t
 t/07smerge-external.t
 t/07smerge-file.t
 t/07smerge-foreign.t
