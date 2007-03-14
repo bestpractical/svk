@@ -59,6 +59,7 @@ use SVN::Delta;
 
 use SVK::Logger;
 use SVK::Depot;
+use SVK::Root;
 use base 'SVK::Accessor';
 
 __PACKAGE__->mk_shared_accessors
@@ -482,15 +483,6 @@ sub nearest_copy {
 	unless $copyfrom_root->revision_root_revision == $copyfrom_rev;
 
     return ($toroot, $root->fs->revision_root($copyfrom_rev, $ppool), $path);
-}
-
-sub _copies_contain_path {
-    my ($copy, $path) = @_;
-    my ($match) = grep { index ("$path/", "$_/") == 0 }
-	sort { length $b <=> length $a } keys %$copy;
-    return unless $match;
-    $path =~ s/^\Q$match\E/$copy->{$match}[1]/;
-    return ($copy->{$match}[0], $path);
 }
 
 =head2 related_to
