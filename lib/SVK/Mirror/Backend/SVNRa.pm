@@ -373,18 +373,38 @@ sub _initialize_auth {
 =cut
 
 sub find_rev_from_changeset {
-    my ($self, $changeset) = @_;
+    my ($self, $changeset, $seekback) = @_;
     my $t = $self->mirror->get_svkpath;
 
     no warnings 'uninitialized'; # $s_changeset below may be undef
 
-    return $t->search_revision
+    my $r = $t->search_revision
 	( cmp => sub {
 	      my $rev = shift;
-	      my $search = $t->mclone(revision => $rev);
               my $s_changeset = scalar $self->find_changeset($rev);
               return $s_changeset <=> $changeset;
           } );
+
+    return defined $r ? $r : () if $r || !$seekback;
+
+    my $result;
+    $r = $t->search_revision
+	( cmp => sub {
+	      my $rev = shift;
+
+              my $s_changeset = scalar $self->find_changeset($rev);
+
+	      if ($s_changeset > $changeset) {
+		  my $prev = $t->mclone(revision => $rev)->prev;
+		  $result = $prev
+		      if scalar $self->find_changeset($prev->revision) < $changeset;
+	      }
+	      return $s_changeset <=> $changeset;
+          } );
+
+    return unless $result;
+
+    return $result->revision;
 }
 
 =item find_changeset( $local_rev )
@@ -506,7 +526,7 @@ sub _get_sync_editor {
             return $target->as_url(
                 1,
                 $self->mirror->path . $path,
-                $self->find_rev_from_changeset($rev)
+                $self->find_rev_from_changeset($rev, 1)
             );
         }
     );
