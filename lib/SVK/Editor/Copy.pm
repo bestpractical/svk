@@ -154,9 +154,10 @@ sub find_copy {
 	my ($src_from, $to) = map {$_->revision_root_revision}
 	    ($fromroot, $toroot);
 
-	# don't care, too early
+	# Make sure the copy happens not solely within the range of this merge.
 	my ($base_rev);
 	for my $try (@$copyboundry_rev) {
+	    $logger->debug("to $to, from $src_from, try $try");
 	    if ($try < $to) {
 		$base_rev = $try;
 		last;
@@ -164,6 +165,7 @@ sub find_copy {
 	}
 	return unless $base_rev;
 
+	{ # if the copy source is out side of our branch
 	my $hate_path = $self->{src}->path_anchor;
 	if ($src_frompath !~ m{^\Q$hate_path/}) {
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
@@ -176,6 +178,7 @@ sub find_copy {
 	}
 
 	return unless $src_frompath =~ m{^\Q$hate_path/};
+        }
 
 	if ($self->{merge}->_is_merge_from
 	    ($self->{src}->path, $self->{dst}, $to)) {

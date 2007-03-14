@@ -593,7 +593,8 @@ sub run {
 		  my ($dst_from, $dst_fromrev) =
 		      $self->resolve_copy($srcinfo, $dstinfo, @_);
 		  return unless defined $dst_from;
-
+		  # ensure the dst from path exists
+		  return unless $self->{dst}->root->fs->revision_root($dst_fromrev)->check_path($dst_from);
 		  # Because the delta still need to carry the copy
 		  # information of the source, make merge editor note
 		  # the mapping so it can do the translation
