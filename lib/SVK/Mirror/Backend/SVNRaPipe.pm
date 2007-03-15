@@ -60,6 +60,7 @@ use Storable qw(nfreeze thaw);
 use SVK::Editor::Serialize;
 use SVK::Util qw(slurp_fh);
 use SVK::Config;
+use SVK::I18N;
 
 =head1 NAME
 
@@ -114,6 +115,7 @@ sub new {
     my $max_editor_in_buf
         = $config ? $config->{config}->get( 'svk', 'ra-pipeline-buffer', '5' ) : 5;
     my $pool = SVN::Pool->new_default;
+    local $SIG{INT} = 'IGNORE';
     while ( my $req = $gen->() ) {
         $pool->clear;
         my ( $cmd, @arg ) = @$req;
@@ -209,7 +211,7 @@ sub try_flush {
 sub read_msg {
     my $self = shift;
     my ($len, $msg);
-    read $self->fh, $len, 4 or die $!;
+    read $self->fh, $len, 4 or Carp::confess $!;
     $len = unpack ('N', $len);
     my $rlen = read $self->fh, $msg, $len or die $!;
     return \$msg;
@@ -246,7 +248,9 @@ sub replay {
     my $baton_map = {};
     my $baton_pool = {};
 
-    while (my $data = $self->read_msg) {
+    eval {
+
+    while ((my $data = $self->read_msg )) {
 	my ($next, $func, @arg) = @{thaw($$data)};
 	my $baton_at = SVK::Editor->baton_at($func);
 	my $baton = $arg[$baton_at];
@@ -273,6 +277,19 @@ sub replay {
 	    $baton_map->{$next} = $ret
 	}
     }
+    };
+
+    if ($@) {
+	kill 15, $self->pid;
+	waitpid $self->pid, 0;
+	$self->pid(undef);
+    }
+
+    # destroy the remaining pool that became default pools in order.
+    delete $baton_pool->{$_} 
+        for reverse sort keys %$baton_pool;
+
+    die $@ if $@;
 }
 
 sub emit_editor_call {
