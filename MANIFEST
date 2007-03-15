@@ -294,5 +294,6 @@ utils/extract-message-catalog
 utils/license_tag
 utils/pullyu
 utils/svk-ediff.el
+utils/vc-svk.el
 utils/verify-mirror
 
