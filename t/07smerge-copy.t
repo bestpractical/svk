@@ -213,6 +213,7 @@ is_output($svk, 'push', ['-l'],
 	   'A   D/new-in-local',
 	   'D   D/de',
 	   qr'New merge ticket: .*:/local-many:40',
+	   qr'New merge ticket: .*:/trunk:3',
 	   'Committed revision 41.']);
 
 is_output($svk, 'diff', ['-sr40:41', '//'],
@@ -230,6 +231,7 @@ is_output($svk, 'pull', ['//local-many'],
 	   'U   B/de',
 	   'U   b-s/de',
 	   'A + b-s-cp',
+	   qr'New merge ticket: .*:/trunk:3',
 	   qr'New merge ticket: .*:/trunk-3:42',
 	   'Committed revision 43.']);
 

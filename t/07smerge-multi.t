@@ -69,7 +69,7 @@ $svk->update ($copath);
 
 system {$^X} ($^X, "-pi.bak", "-e", "s|#!/usr/bin/|#!env |", "$copath/trunk/test.pl");
 
-$svk->commit ('-m', 'mod on trunk before branch to featre', "$copath/trunk");
+$svk->commit ('-m', 'mod on trunk before branch to feature', "$copath/trunk");
 
 $svk->copy ('-m', 'branch //feature', '//trunk', '//feature');
 $svk->update ($copath);
@@ -89,7 +89,7 @@ $svk->commit ('-m', 'some new feature', "$copath/feature");
 is_output_like ($svk, 'smerge', ['-m', 'merge from //feature', '//feature', '//work'],
 		qr|base /trunk:9|);
 is_output_like ($svk, 'smerge', ['-m', 'merge from //work to //trunk', '//work', '//trunk'],
-		qr|base /trunk:9|);
+		qr|base /trunk:11|);
 is_output_like ($svk, 'smerge', ['-m', 'merge from //trunk to //feature', '//trunk', '//feature'],
 	        qr|base /feature:14|);
 

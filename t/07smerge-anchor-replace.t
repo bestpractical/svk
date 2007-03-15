@@ -34,4 +34,5 @@ is_output ($svk, 'sm', [-Ct => '//local'],
 	   ['Auto-merging (6, 8) /trunk to /local (base /trunk:6).',
 	    'U   B/fe',
 	    'U   newfile',
-	    "New merge ticket: $uuid:/trunk:8"]);
+	    "New merge ticket: $uuid:/trunk:8",
+	    "New merge ticket: $uuid:/trunk-foo:4"]);
