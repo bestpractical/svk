@@ -99,6 +99,18 @@ sub root {
     return $root;
 }
 
+sub _mkpath {
+    my ($root, $path) = @_;
+    my @path = ();
+    for my $dir (File::Spec::Unix->splitdir($path)) {
+	push @path, $dir;
+	next unless length $dir;
+	my $cur = File::Spec::Unix->catdir(@path);
+	$root->make_dir($cur)
+	    unless $root->check_path($cur);
+    }
+}
+
 sub create_xd_root {
     my $self = shift;
     my $copath = $self->copath($self->copath_target);
@@ -125,19 +137,20 @@ sub create_xd_root {
 	my $path = abs2rel($_, $coroot => $coroot_path, '/');
 	unless ($root) {
 	    $root = $base_root->txn_root($self->pool);;
-	    $base_rev = $base_root->node_created_rev($path, $pool);
-	    if ($base_rev == 0) {
+	    if ($base_root->revision_root_revision == 0) {
 		# for interrupted checkout, the anchor will be at rev 0
-		my @path = ();
-		for my $dir (File::Spec::Unix->splitdir($path)) {
-		    push @path, $dir;
-		    next unless length $dir;
-		    $root->make_dir(File::Spec::Unix->catdir(@path));
-		}
+		_mkpath($root, $path);
+		$base_rev = 0;
+	    }
+	    else {
+		$base_rev = $base_root->node_created_rev($path, $pool);
 	    }
 	    next;
 	}
 	my $parent = Path::Class::File->new_foreign('Unix', $path)->parent;
+	if ($base_rev ==0 && !$root->check_path("$parent", $pool)) {
+	    _mkpath($root, "$parent");
+	}
 	next if $cinfo->{revision} == $root->node_created_rev("$parent", $pool);
 	my ($fromroot, $frompath) = $base_root->get_revision_root($path, $cinfo->{revision}, $pool);
 	$root->delete($path, $pool)
