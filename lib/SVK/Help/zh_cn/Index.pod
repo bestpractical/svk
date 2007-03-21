@@ -68,6 +68,6 @@ SVK::Help::Index - SVK 说明索引
     svk help                这份说明索引
 
 如需商业服务与支援(commercial support)，请联络 sales@bestpractical.com。
-L<http://svk.bestpractical.com/> 有最新的讯息。
+L<http://bestpractical.com/svk> 有最新的讯息。
 
 =cut
