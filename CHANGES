@@ -1,3 +1,43 @@
+[Changes for 2.0.1 - 23 Mar, 2007]
+
+  Mirror subsystem
+    * Fix a bug when mirroring partial repository with copies, the from
+      revision number might not be exactly the ones we have mirrored.
+    * In the pipelined sync editor, use pool more wisely for invoking
+      editor calls.  This fixes the memory bloat for syncing revisions
+      with large number of deleted files.
+    * In pipelined replay, make perl don't segfault on SIGINT.
+    * Fix the bug committing to subdirs of mirrors that are on /.
+    * Fix a bug preventing mirror --relocate to work on mirrors on '/'.
+    * Fix a problem replaying failing with RA_DAV_REQUEST_FAILED in some
+      servers.
+
+  Merge subsystem
+    * Fix a pool usage in Editor::Merge::apply_textdelta, which has a
+      side-effect causing rename-tracking smerge on a new file inside a
+      renamed directory to fail with SWIG-runtime error.
+    * Prevent unwanted repeated merges when repeatedly merging tags to a
+      branch.  We now also record the copy source(s) of the path being
+      merged from in the merge ticket.
+    * Fix a bug in merging moved files that are modified.
+    * Fix a bug that smerge to checkout with changes to a copied file is
+      causing incomplete svn delta string.
+    * When merging the replaced directory, do not ignore the fact when
+      the delete part is already conflicting.
+    * Fix a bug when merging a copy that happened on an intermediate
+      branch, which might not map back to the merge destination.
+
+  Tools
+    * verify-mirror improvements.
+    * Ship vc-svk.el with the distribution.
+
+  Others
+    * Make updating a checkout that no longer exists in the depot give
+      proper message.
+    * Check for .svk/floating before assuming floating checkout.
+    * Fix a regression which caused binary files to sometimes be
+      displayed as text during an "svk diff".
+
 [Changes for 2.0.0 - 28 Dec, 2006]
 
   Dependency
