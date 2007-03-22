@@ -34,6 +34,7 @@
   Others
     * Make updating a checkout that no longer exists in the depot give
       proper message.
+    * Make checkout more robust when resuming a interrupted checkout.
     * Check for .svk/floating before assuming floating checkout.
     * Fix a regression which caused binary files to sometimes be
       displayed as text during an "svk diff".
