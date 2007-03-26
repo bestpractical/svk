@@ -1,6 +1,8 @@
-[Changes for 2.0.1 - 23 Mar, 2007]
+[Changes for 2.0.1 - 26 Mar, 2007]
 
   Mirror subsystem
+    * You can now use $SVKNORAREPLAY forcing svk to use old SVN::Mirror
+      for sync.
     * Fix a bug when mirroring partial repository with copies, the from
       revision number might not be exactly the ones we have mirrored.
     * In the pipelined sync editor, use pool more wisely for invoking
