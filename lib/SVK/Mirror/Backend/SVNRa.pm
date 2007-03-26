@@ -274,6 +274,9 @@ Returns if the svn client library has replay capability
 
 sub has_replay_api {
     my $self = shift;
+
+    return if $ENV{SVKNORAREPLAY};
+
     return unless _p_svn_ra_session_t->can('replay');
 
     # The Perl bindings shipped with 1.4.0 has broken replay support
