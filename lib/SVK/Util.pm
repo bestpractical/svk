@@ -953,6 +953,11 @@ sub str2time {
 
 sub time2str {
     my ($format, $time) = @_;
+    if (IS_WIN32) {
+	require Date::Format;
+	goto \&Date::Format::time2str;
+    }
+
     require POSIX;
     return POSIX::strftime($format, localtime($time) );
 }
