@@ -225,12 +225,6 @@ sub copy_source {
     return @arg;
 }
 
-sub incopy {
-    my ($self, $path) = @_;
-    return unless exists $self->{incopy}[-1];
-    return $path =~ m{^\Q$self->{incopy}[-1]{path}\E/};
-}
-
 sub outcopy {
     my ($self, $path) = @_;
     return unless exists $self->{incopy}[-1];
