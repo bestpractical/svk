@@ -96,7 +96,6 @@ requires(
 ) if ($^O eq 'MSWin32');
 build_requires(
     'Test::More'               => '0.42',
-    'Test::Exception'          => '0.25',
 );
 features(
     'Localized messages' => [
