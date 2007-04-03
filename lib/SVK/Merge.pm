@@ -611,12 +611,14 @@ sub run {
 		      $self->resolve_copy($srcinfo, $dstinfo, @_);
 		  return unless defined $dst_from;
 		  # ensure the dst from path exists
-		  return unless $self->{dst}->root->fs->revision_root($dst_fromrev)->check_path($dst_from);
+		  my $dst_path = SVK::Path->real_new({depot => $self->{dst}->depot, path => $dst_from, revision => $dst_fromrev});
+		  return unless $dst_path->root->check_path($dst_path->path);
+		  $dst_path->normalize;
 		  # Because the delta still need to carry the copy
 		  # information of the source, make merge editor note
 		  # the mapping so it can do the translation
 		  $meditor->copy_info($src_from, $src_fromrev,
-				     $dst_from, $dst_fromrev);
+				      $dst_path->path, $dst_path->revision);
 
 		  return ($src_from, $src_fromrev);
 	      } );
