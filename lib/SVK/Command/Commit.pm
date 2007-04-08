@@ -598,9 +598,7 @@ sub run {
 
 sub run_delta {
     my ($self, $target, $xdroot, $editor, %cb) = @_;
-    my $fs = $target->repos->fs;
-    my %revcache;
-    my $mirror = $cb{mirror};
+
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
