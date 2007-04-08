@@ -86,8 +86,8 @@ sub wrap_without_copy {
         {   _editor        => [$editor],
             cb_resolve_rev => sub {
                 my ( $func, $rev ) = @_;
-                return $func =~ m/^add/ ? $rev : $target->revision;
-                }
+                return $func =~ m/^add/ ? $rev : $revision;
+	    }
         }
     );
 }

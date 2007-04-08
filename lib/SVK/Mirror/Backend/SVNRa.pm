@@ -511,7 +511,7 @@ sub _after_replay {
 
 sub _get_sync_editor {
     my ($self, $editor, $target) = @_;
-    $editor = SVK::Editor::MapRev->wrap_without_copy($editor $target->revision);
+    $editor = SVK::Editor::MapRev->wrap_without_copy($editor, $target->revision);
 
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
