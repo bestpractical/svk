@@ -522,8 +522,13 @@ sub run {
     $storage = $self->track_rename ($storage, \%cb)
 	if $self->{track_rename};
 
-    $cb{inspector} = $self->{dst}->inspector
-	unless ref($cb{inspector}) eq 'SVK::Inspector::Compat' ;
+    # XXX: this should be removed when cmerge is gone. also we should
+    # use the inspector of the txn we are working on, rather than of
+    # the (static) target
+
+    # $cb{inspector} = $self->{dst}->inspector
+    # unless ref($cb{inspector}) eq 'SVK::Inspector::Compat' ;
+
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->path_anchor,
 	  repospath => $src->repospath, # for stupid copyfrom url

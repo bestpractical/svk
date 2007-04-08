@@ -58,8 +58,17 @@ use base qw {
 	SVK::Inspector
 };
 
-__PACKAGE__->mk_accessors(qw{root anchor});
+__PACKAGE__->mk_accessors(qw{txn anchor});
 
+
+my $root_accessor = __PACKAGE__->make_accessor('root');
+
+sub root {
+    if ($_[0]{txn}) {
+	return $_[0]{txn}->root;
+    }
+    goto $root_accessor;
+}
 
 sub exist {
     my ($self, $path, $pool) = @_;

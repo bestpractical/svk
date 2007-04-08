@@ -224,10 +224,10 @@ sub get_editor {
 
     my $root_baserev = $m ? $m->fromrev : $yrev;
 
-    my $inspector = $self->inspector;
 
     if ($arg{check_only}) {
-	return (SVN::Delta::Editor->new, $inspector,
+	# XXX: use txn-based inspector as well.
+	return (SVN::Delta::Editor->new, $self->inspector,
 	        cb_rev => sub { $root_baserev },
 	        mirror => $m);
     }
@@ -253,7 +253,8 @@ sub get_editor {
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message}, $mcallback);
 	$editor->{_debug}++ if $logger->is_debug();
-	return ($editor, $inspector,
+	# XXX: fix me, need local knowledge about txn as well
+	return ($editor, $self->inspector,
 		mirror => $m,
 		post_handler => \$post_handler,
 		cb_rev => sub { $root_baserev }, #This is the inspector baserev
@@ -267,6 +268,14 @@ sub get_editor {
     warn "has $arg{txn}" if $arg{txn};
     my $txn = $arg{txn} || $self->repos->fs_begin_txn_for_commit
 	($yrev, $arg{author}, $arg{message});
+
+    # for some reasons, we can't use the txn root got here in
+    # inspector, the modified nodes aren't reflected.  Instead, we
+    # need to recreate the root from txn every time.
+    my $inspector = SVK::Inspector::Root->new
+	({ txn    => $txn,
+	   _pool  => $self->pool,
+	   anchor => $self->path_anchor });
 
     $txn->change_prop('svk:commit', '*')
 	if $fs->revision_prop(0, 'svk:notify-commit');
