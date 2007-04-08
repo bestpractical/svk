@@ -1523,7 +1523,7 @@ sub checkout_delta {
     };
 
     my ($entry) = $self->get_entry($arg{copath}, 1);
-    my $baton = $arg{editor}->open_root ($entry->{revision})
+    my $baton = $arg{editor}->open_root ($entry->{revision});
     $self->_delta_dir (%arg, baton => $baton, root => 1, base => 1, type => 'directory');
     $arg{editor}->close_directory ($baton);
     $arg{editor}->close_edit ();

@@ -80,4 +80,16 @@ sub AUTOLOAD {
     $self->$func(@arg);
 }
 
+sub wrap_without_copy {
+    my ($class, $editor, $revision) = @_;
+    return $class->new(
+        {   _editor        => [$editor],
+            cb_resolve_rev => sub {
+                my ( $func, $rev ) = @_;
+                return $func =~ m/^add/ ? $rev : $target->revision;
+                }
+        }
+    );
+}
+
 1;
