@@ -600,6 +600,7 @@ sub run_delta {
     my ($self, $target, $xdroot, $editor, %cb) = @_;
     my $fs = $target->repos->fs;
     my %revcache;
+    my $mirror = $cb{mirror};
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
@@ -616,16 +617,8 @@ sub run_delta {
 	    obstruct_as_replace => 1,
 	    absent_as_delete => 1) :
 	  ( absent_ignore => 1),
-	  cb_copyfrom => $cb{cb_copyfrom},
-	  $cb{mirror} ?
-	  (cb_resolve_rev => sub {
-	       my ($source_path, $source_rev) = @_;
-	       return $revcache{$source_rev} if exists $revcache{$source_rev};
-	       my ($rroot, $rsource_path) = $xdroot->get_revision_root($source_path, $source_rev);
-	       my $rev = ($rroot->node_history($rsource_path)->prev(0)->location)[1];
-
-	       $revcache{$source_rev} = $cb{mirror}->find_remote_rev($rev);
-	   }) : ());
+	  cb_copyfrom => $cb{cb_copyfrom}
+	);
     delete $self->{save_message};
     return;
 }

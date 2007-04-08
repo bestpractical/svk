@@ -253,6 +253,14 @@ sub get_editor {
 	my ($base_rev, $editor) = $m->get_merge_back_editor
 	    ($mpath, $arg{message}, $mcallback);
 	$editor->{_debug}++ if $logger->is_debug();
+	$editor = SVK::Editor::MapRev->new(
+          {   _editor        => [$editor],
+              cb_resolve_rev => sub {
+                  my ( $func, $rev ) = @_;
+                  return $func =~ m/^add/ ? $rev : $root_baserev;
+	      }
+          });
+
 	# XXX: fix me, need local knowledge about txn as well
 	return ($editor, $self->inspector,
 		mirror => $m,

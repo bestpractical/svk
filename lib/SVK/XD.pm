@@ -993,7 +993,7 @@ sub _delta_rev {
     my $entry = $arg->{cinfo};
     my $schedule = $entry->{'.schedule'} || '';
     # XXX: uncomment this as mutation coverage test
-    # return $cb_resolve_rev->($arg->{path}, $entry->{revision});
+    # return  $entry->{revision};
 
     # Lookup the copy source rev for the case of open_directory inside
     # add_directotry with history.  But shouldn't do so for replaced
@@ -1002,7 +1002,7 @@ sub _delta_rev {
 	$self->_copy_source($entry, $arg->{copath}) : ();
     ($source_path, $source_rev) = ($arg->{path}, $entry->{revision})
 	unless defined $source_path;
-    return $arg->{cb_resolve_rev}->($source_path, $source_rev);
+    return $source_rev;
 }
 
 sub _delta_content {
@@ -1514,18 +1514,16 @@ sub checkout_delta {
     $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
 	   unless $arg{nodelay};
 
-    my $cb_resolve_rev = $arg{cb_resolve_rev} ||= sub { $_[1] };
     # XXX: translate $repospath to use '/'
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
 	: sub { my $path = $_[0]; $path =~ s/%/%25/g; ("file://$repospath$path", $_[1]) };
-    my ($entry) = $self->get_entry($arg{copath}, 1);
-    my $rev = $arg{cb_resolve_rev}->($arg{path}, $entry->{revision});
     local $SIG{INT} = sub {
 	$arg{editor}->abort_edit;
 	die loc("Interrupted.\n");
     };
 
-    my $baton = $arg{editor}->open_root ($rev);
+    my ($entry) = $self->get_entry($arg{copath}, 1);
+    my $baton = $arg{editor}->open_root ($entry->{revision})
     $self->_delta_dir (%arg, baton => $baton, root => 1, base => 1, type => 'directory');
     $arg{editor}->close_directory ($baton);
     $arg{editor}->close_edit ();
