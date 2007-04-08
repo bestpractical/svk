@@ -511,7 +511,6 @@ sub _after_replay {
 
 sub _get_sync_editor {
     my ($self, $editor, $target) = @_;
-    $editor = SVK::Editor::MapRev->wrap_without_copy($editor, $target->revision);
 
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
@@ -520,11 +519,8 @@ sub _get_sync_editor {
             return ( $path, $rev ) if $rev == -1;
             my $source_path = $self->source_path;
             $path =~ s/^\Q$self->{source_path}//;
-            return $target->as_url(
-                1,
-                $self->mirror->path . $path,
-                $self->find_rev_from_changeset($rev, 1)
-            );
+            return ($self->mirror->path . $path,
+		    $self->find_rev_from_changeset($rev, 1) );
         }
     );
 

@@ -162,7 +162,7 @@ sub handle_direct_item {
     if (!$self->{parent} && $dst->{targets} && !$dst->root->check_path ($dst->path_anchor)) {
 	die loc ("Parent directory %1 doesn't exist, use -p.\n", $dst->report);
     }
-    my ($path, $rev) = $src->as_url(!$m);
+    my ($path, $rev) = ($src->path, $src->revision);
     my $baton = $editor->add_directory (abs2rel ($dst->path, $anchor => undef, '/'), 0, $path, $rev);
     $other_call->($baton) if $other_call;
     $editor->close_directory($baton);

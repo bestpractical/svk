@@ -40,7 +40,7 @@ my $path = SVK::Path->real_new( { depot => $depot, path => '/A'})->refresh_revis
 	$path->get_editor( callback => sub { ok(1, 'committed with api') },
 			   author => 'svktest', message => 'creating copy with revhole');
     my $rb = $editor->open_root($path->revision);
-    $editor->close_file( $editor->add_file('qu-from-a', $rb, uri($srepospath."/A/Q/qu"), 4), undef);
+    $editor->close_file( $editor->add_file('qu-from-a', $rb, "/A/Q/qu", 4), undef);
     $editor->close_directory($rb);
     $editor->close_edit;
 }

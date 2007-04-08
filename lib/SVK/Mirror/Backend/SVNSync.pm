@@ -108,15 +108,13 @@ sub _revmap_prop { }
 sub _get_sync_editor {
     my ($self, $editor, $target) = @_;
 
-    $editor = SVK::Editor::MapRev->wrap_without_copy($editor, $target->revision);
-
     return SVK::Editor::CopyHandler->new(
         _editor => $editor,
         cb_copy => sub {
             my ( $editor, $path, $rev ) = @_;
             return ( $path, $rev ) if $rev == -1;
             $path =~ s{^\Q/}{};
-            return $target->as_url( 1, $path, $rev );
+            return ( $path, $rev );
         }
     )
 }

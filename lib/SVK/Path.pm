@@ -253,16 +253,20 @@ sub get_editor {
 	    ($mpath, $arg{message}, $mcallback);
 	$editor->{_debug}++ if $logger->is_debug();
 	$editor = SVK::Editor::MapRev->wrap_without_copy($editor, $root_baserev);
+	$editor = SVK::Editor::CopyHandler->new(
+            _editor => $editor,
+            cb_copy => sub {
+                my ( $editor, $path, $rev ) = @_;
+		return ( $path, $rev ) if $rev == -1;
+		return $self->as_url(0, $path, $rev);
+	    });
+
 	# XXX: fix me, need local knowledge about txn as well
 	return ($editor, $self->inspector,
 		mirror => $m,
 		post_handler => \$post_handler,
 		cb_rev => sub { $root_baserev }, #This is the inspector baserev
-		cb_copyfrom =>
-		sub { my ($path, $rev) = @_;
-                      my ($m_path, $m_url) = ($m->path, $m->url);
-		      $path =~ s|^\Q$m_path\E|$m_url|;
-		      return ($path, scalar $m->find_remote_rev($rev)); });
+		cb_copyfrom => sub { @_ })
     }
 
     warn "has $arg{txn}" if $arg{txn};
@@ -284,13 +288,21 @@ sub get_editor {
 	$self->_commit_editor($txn, $callback);
     $editor = SVK::Editor::TxnCleanup->new(_editor => [$editor], txn => $txn);
 
+    $editor = SVK::Editor::CopyHandler->new(
+        _editor => $editor,
+        cb_copy => sub {
+	    my ( $editor, $path, $rev ) = @_;
+	    return ( $path, $rev ) if $rev == -1;
+	    return $self->as_url(1, $path, $rev);
+	});
+
     return ($editor, $inspector,
 	    send_fulltext => 1,
 	    post_handler => $post_handler_ref,
 	    txn => $txn,
             aborts_txn => $arg{txn} ? 0 : 1,
 	    cb_rev => sub { $root_baserev },
-	    cb_copyfrom => sub { $self->as_url(1, @_) });
+	    cb_copyfrom => sub { @_ });
 }
 
 sub get_dynamic_editor {
