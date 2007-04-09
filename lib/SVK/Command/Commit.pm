@@ -249,7 +249,6 @@ sub get_editor {
 	  check_only => $self->{check_only},
 	  callback => $callback,
 	  message => $self->{message},
-	  notify  => sub { print @_ },
 	  author => $ENV{USER} );
 
     # Note: the case that the target is an xd is actually only used in merge.

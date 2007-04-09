@@ -98,12 +98,8 @@ sub do_delete_direct {
     $target->normalize;
     my ( $anchor, $editor ) = $self->get_dynamic_editor($target);
     for (@args) {
-        my $rev = $target->revision;
-        $rev = $m->find_remote_rev($rev)
-          if
-          $m; # XXX: why do we need this? path->get_editor shuold do translation
         $editor->delete_entry( abs2rel( $_->path, $anchor => undef, '/' ),
-            $rev, 0 );
+            $target->revision, 0 );
         $self->adjust_anchor($editor);
     }
     $self->finalize_dynamic_editor($editor);

@@ -406,7 +406,7 @@ sub find_rev_from_changeset {
 	      return $s_changeset <=> $changeset;
           } );
 
-    return unless $result;
+    return $t->revision unless $result;
 
     return $result->revision;
 }
@@ -440,7 +440,7 @@ sub traverse_new_changesets {
     my ($self, $code, $torev) = @_;
     $self->refresh;
     my $from = ($self->fromrev || 0)+1;
-    my $to = $torev || -1;
+    my $to = defined $torev ? $torev : -1;
 
     my $ra = $self->_new_ra;
     $to = $ra->get_latest_revnum() if $to == -1;
@@ -551,17 +551,17 @@ sub _revmap_prop {
 =cut
 
 sub mirror_changesets {
-    my ( $self, $torev, $callback ) = @_;
+    my ( $self, $torev, $callback, $fake_last ) = @_;
     $self->mirror->with_lock(
         'mirror',
-        sub { $self->_mirror_changesets( $torev, $callback ) } );
+        sub { $self->_mirror_changesets( $torev, $callback, $fake_last ) } );
 }
 
 sub _mirror_changesets {
-    my ( $self, $torev, $callback ) = @_;
+    my ( $self, $torev, $callback, $fake_last ) = @_;
     $self->refresh;
     my @revs;
-    $self->traverse_new_changesets( sub { push @revs, [@_] }, $torev );
+    $self->traverse_new_changesets( sub { push @revs, [@_] unless $fake_last && $torev && $_[0] == $torev}, $torev );
     return unless @revs;
 
     # prepare generator for pipelined ra

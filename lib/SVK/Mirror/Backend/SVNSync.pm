@@ -71,6 +71,8 @@ sub load {
     $self->source_root( $mirror->url );
     $self->source_path('');
 
+    $self->refresh;
+
     return $self;
 }
 

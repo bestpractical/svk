@@ -86,6 +86,7 @@ lib/SVK/Editor/Serialize.pm
 lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/SubTree.pm
+lib/SVK/Editor/Tee.pm
 lib/SVK/Editor/Translate.pm
 lib/SVK/Editor/TxnCleanup.pm
 lib/SVK/Editor/View.pm

@@ -360,7 +360,7 @@ sub get_merge_back_editor {
 }
 
 sub run {
-    my ($self, $torev) = @_;
+    my ($self, $torev, $fake_last) = @_;
     return $self->run_svnmirror_sync({ torev => $torev }) unless $self->_backend->has_replay;
 
     $logger->info(loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1", $self->server_url) : ""));
@@ -369,7 +369,7 @@ sub run {
         sub {
             my ( $changeset, $rev ) = @_;
             $logger->info("Committed revision $rev from revision $changeset.");
-        }
+        }, $fake_last
     );
     die $@ if $@;
 }
