@@ -268,7 +268,8 @@ sub get_editor {
     my $use_tee;
     my $post_handler;
     if ($m) {
-	$use_tee = SVN::Delta->can('invoke_window_handler') &&
+	$use_tee = !$arg{notee} &&
+	    SVN::Delta->can('invoke_window_handler') &&
 	    $m->_backend->has_replay;
         my $mcallback = sub {
             my $rev = shift;
