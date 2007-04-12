@@ -113,7 +113,14 @@ use SVK::I18N;
 
 sub run {
     my ($self, $target, $source, @options) = @_;
-    $target->is_mirrored->relocate($source, @options);
+
+    my ($m, $mpath) = $target->is_mirrored;
+
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
+
+    $m->relocate($source, @options);
+
     print loc("Mirror relocated.\n");
     return;
 }

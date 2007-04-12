@@ -5,7 +5,7 @@ use SVK::Test;
 use SVK::Util qw(HAS_SYMLINK);
 
 plan(skip_all => 'symlink not supported') if !HAS_SYMLINK;
-plan tests => 3;
+plan tests => 5;
 
 my ($xd, $svk) = build_test('test', 'test2');
 my ($copath, $corpath) = get_copath ('sync-replicate');
@@ -30,3 +30,9 @@ is_output($svk, 'mirror', ['--relocate', '//m', "$uri2/B"],
 
 is_output($svk, 'mirror', ['--relocate', '//m', "$uri2/A"],
 	  ['Mirror relocated.']);
+
+is_output($svk, 'mirror', ['--relocate','//bogus_mirror', "$uri2/B"],
+      ['//bogus_mirror is not a mirrored path.']);
+
+is_output($svk, 'mirror', ['--relocate','//m/bogus_mirror', "$uri2/B"],
+      ['//m/bogus_mirror is inside a mirrored path.']);
