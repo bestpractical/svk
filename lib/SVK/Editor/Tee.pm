@@ -57,7 +57,7 @@ sub window_handler {
     my ($self, $handlers, $window) = @_;
     for (@$handlers) {
 	next unless $_;
-	SVN::Delta::invoke_window_handler($_->[0], $_->[1], $window);
+	SVN::TxDelta::invoke_window_handler($_->[0], $window, $_->[1]);
     }
 }
 

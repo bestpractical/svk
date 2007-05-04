@@ -269,8 +269,9 @@ sub get_editor {
     my $post_handler;
     if ($m) {
 	$use_tee = !$arg{notee} &&
-	    SVN::Delta->can('invoke_window_handler') &&
+	    SVN::TxDelta->can('invoke_window_handler') &&
 	    $m->_backend->has_replay;
+	warn 'use tee' if $use_tee;
         my $mcallback = sub {
             my $rev = shift;
             $logger->info( loc( "Merge back committed as revision %1.\n", $rev ) );
