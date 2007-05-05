@@ -604,6 +604,10 @@ sub run {
 ),
 	      src => $src,
 	      dst => $self->{dst},
+	      cb_query_copy => sub {
+		  my ($from, $rev) = @_;
+		  return @{$meditor->{copy_info}{$from}{$rev}};
+	      },
 	      cb_resolve_copy => sub {
 		  my $path = shift;
 		  my $replace = shift;
@@ -622,10 +626,12 @@ sub run {
 		  # Because the delta still need to carry the copy
 		  # information of the source, make merge editor note
 		  # the mapping so it can do the translation
+		  my ($dst_from, $dst_fromrev) =
+		      ($dst_path->path, $dst_path->revision);
 		  $meditor->copy_info($src_from, $src_fromrev,
-				      $dst_path->path, $dst_path->revision);
+				      $dst_from, $dst_fromrev);
 
-		  return ($src_from, $src_fromrev);
+		  return ($dst_from, $dst_fromrev);
 	      } );
 	  $editor = SVK::Editor::Delay->new ($editor);
 	}

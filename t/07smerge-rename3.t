@@ -84,29 +84,22 @@ $svk->ci(-m => "test 4");
 # Merge changes w/rename from trunk to branch
 # NOTE: This expected output might not be completely correct!
 
-#$answer = ['d', 's'];
-#$answer = 's'; # skip
-#$ENV{SVKRESOLVE} = 'd'; # diff
-TODO: {
-$TODO = "merging renamed change back should have proper base.";
-
 is_output ($svk, 'smerge', ['//branches/newbranch', '//trunk', '--track-rename', '-m', 'merge back'], [
     'Auto-merging (0, 10) /branches/newbranch to /trunk (base /trunk:8).',
     'Collecting renames, this might take a while.',
     'A + module2',
     'U   module2/test.txt',
     'D   module',
-    "New merge ticket: $uuid:/trunk:9",
-    'Committed revision 9.',
+    "New merge ticket: $uuid:/branches/newbranch:10",
+    'Committed revision 11.',
 ]);
-}
-
-TODO: {
-todo_skip 'not working', 5;
 
 chdir($co_trunk_path);
 $svk->update();
 is_file_content('module2/test.txt', '34');
+
+TODO: {
+todo_skip 'not working', 4;
 
 
 # adding a new dir on trunk

@@ -141,7 +141,7 @@ sub find_copy {
 
 	# don't use the same copy twice
 	if (exists $self->{incopy}[-1]) {
-	    if ($src_frompath =~ m{^\Q$self->{incopy}[-1]{frompath}/}) {
+	    if ($src_frompath =~ m{^\Q$self->{incopy}[-1]{src_frompath}/}) {
 		return;
 		# XXX: It doesn't seem right to fallback to previous
 		# copies from the one we don't want.  But make sure
@@ -170,8 +170,9 @@ sub find_copy {
 	if ($src_frompath !~ m{^\Q$hate_path/}) {
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
 		push @{$self->{incopy}}, { path => $path,
-					   fromrev => $src_from,
-					   frompath => $src_frompath };
+					   fromrev => $from,
+					   src_frompath => $src_frompath,
+					   frompath => $frompath };
 		return $self->copy_source($src_frompath, $src_from);
 	    }
 	    return;
@@ -205,8 +206,9 @@ sub find_copy {
 	$logger->debug("==> $path(:$to) is copied from $src_frompath:$src_from");
 	if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
 	    push @{$self->{incopy}}, { path => $path,
-				       fromrev => $src_from,
-				       frompath => $src_frompath };
+				       fromrev => $from,
+				       src_frompath => $src_frompath,
+				       frompath => $frompath };
 	    $logger->debug("==> resolved to $frompath:$from");
 	    return $self->copy_source($src_frompath, $src_from);
 	}
@@ -363,7 +365,7 @@ sub replay_add_history {
 	      newroot => $self->{src}->root,
 	      oldpath => [$src_anchor, $src_target],
 	      newpath => File::Spec::Unix->catdir($self->{src}->path_anchor, $path),
-	      editor => SVN::Delta::Editor->new(_debug => 1)) if $logger->is_debug();
+	      editor => SVK::Editor->new(_debug => 1)) if $logger->is_debug();
     $logger->debug("==> done sample");
     SVK::XD->depot_delta
 	    ( oldroot => $self->{copyboundry_root}->fs->
