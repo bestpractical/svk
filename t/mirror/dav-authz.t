@@ -46,7 +46,6 @@ plan skip_all => "apache 2.2 changed auth directives."
     if $cfg->server->{version} =~ m|Apache/2\.2|;
 
 unless ($cfg->can('find_and_load_module') and
-	$cfg->find_and_load_module ('mod_auth_basic.so') and
 	$cfg->find_and_load_module ('mod_dav.so') and
 	$cfg->find_and_load_module ('mod_dav_svn.so') and
         $cfg->find_and_load_module ('mod_authz_svn.so')) {
