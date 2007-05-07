@@ -108,7 +108,7 @@ sub find_changeset { $_[1] }
 sub _revmap_prop { }
 
 sub _get_sync_editor {
-    my ($self, $editor, $target) = @_;
+    my ($self, $editor, $changeset) = @_;
 
     return SVK::Editor::CopyHandler->new(
         _editor => $editor,

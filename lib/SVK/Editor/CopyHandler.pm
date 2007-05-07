@@ -64,18 +64,25 @@ SVK::Editor::CopyHandler - intercept copies in editor calls
 
 =cut
 
-sub add_directory {
-    my ($self, $path, $pbaton, $from_path, $from_rev, $pool) = @_;
+sub _mk_method {
+    my $method = shift;
 
-    ($from_path, $from_rev) = $self->{cb_copy}->($self, $from_path, $from_rev);
-    $self->SUPER::add_directory( $path, $pbaton, $from_path, $from_rev, $pool );
+    sub {
+        my ( $self, $path, $pbaton, $from_path, $from_rev, $pool ) = @_;
+        my $cb;
+
+        ( $from_path, $from_rev, $cb )
+            = $self->{cb_copy}
+            ->( $self, $from_path, $from_rev, $path, $pbaton );
+
+        my $func = "SUPER::".$method;
+        my $ret = $self->$func( $path, $pbaton, $from_path, $from_rev, $pool );
+        $cb->($method, $ret) if $cb;
+        return $ret;
+    }
 }
 
-sub add_file {
-    my ($self, $path, $pbaton, $from_path, $from_rev, $pool) = @_;
-
-    ($from_path, $from_rev) = $self->{cb_copy}->($self, $from_path, $from_rev);
-    $self->SUPER::add_file( $path, $pbaton, $from_path, $from_rev, $pool );
-}
+*add_directory = _mk_method("add_directory");
+*add_file      = _mk_method("add_file");
 
 1;

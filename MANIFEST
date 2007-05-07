@@ -294,6 +294,7 @@ t/mirror/sync-replaced-nocopy.t
 t/mirror/sync-replaced.t
 t/mirror/sync-replicate.t
 t/mirror/sync-revhole.t
+t/mirror/sync-snapshot.t
 t/update-gone.t
 t/svk-sec.gpg
 t/svk.gpg
