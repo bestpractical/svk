@@ -291,14 +291,14 @@ sub _store_config {
 
     if (-f $oldfile ) { 
       rename ( $oldfile => $ancient_backup ) ||
-	die loc("Couldn't remove your old backup configuration file %1 while writing the new one.", $oldfile);
+	die loc("Couldn't remove your old backup configuration file %1 while writing the new one: %2.\n", $oldfile, $!);
     }
     if (-f $file ) {
         rename ($file => $oldfile) ||
-        	die loc("Couldn't remove your old configuration file %1 while writing the new one.", $file);
+        	die loc("Couldn't remove your old configuration file %1 while writing the new one: %2.\n", $file, $!);
     }
     rename ($tmpfile => $file) ||
-	die loc("Couldn't write your new configuration file %1. A backup has been stored in %2. Please replace %1 with %2 immediately.", $file, $tmpfile);
+	die loc("Couldn't write your new configuration file %1. A backup has been stored in %2. Please replace %1 with %2 immediately: %3.\n", $file, $tmpfile, $!);
 
     if (-f $ancient_backup ) {
       unlink ($ancient_backup) ||
