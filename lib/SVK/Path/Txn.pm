@@ -100,7 +100,12 @@ sub as_depotpath {
 
 sub prev {
     my ($self) = shift;
-    $self->as_depotpath;
+
+    my $base = $self->as_depotpath;
+    unless (%{ $self->root->paths_changed }) {
+	$base = $base->prev;
+    }
+    return $base;
 }
 
 1;
