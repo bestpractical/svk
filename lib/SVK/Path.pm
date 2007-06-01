@@ -362,6 +362,13 @@ sub get_editor {
 	    my $proplist = $txn->proplist;
 	    $ktxn->change_prop($_ => $proplist->{$_}) for keys %$proplist;
 
+	    $keditor = SVK::Editor::CopyHandler->new
+		( _editor => $keditor,
+		  cb_copy => sub {
+		      my ( $editor, $path, $rev ) = @_;
+		      return ( $path, $rev ) if $rev == -1;
+		      return $self->as_url(1, $path, $rev);
+		  });
 	    SVN::Repos::replay2($txn->root, '/', 0, 1, $keditor, undef);
 	    $txn = $ktxn;
 	    $tee->{editors}[1]->abort_edit;

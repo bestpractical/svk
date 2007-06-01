@@ -285,6 +285,7 @@ t/api/mirror.t
 t/copy-escape.t
 t/copy-replace.t
 t/diff/mixed-checkout.t
+t/mirror/commit-copy.t
 t/mirror/dav-authz.t
 t/mirror/relocate.t
 t/mirror/sync-crazy-replace.t
