@@ -101,7 +101,8 @@ for my $rev (@revs) {
 
         };
         $translate->( $record );
-	$translate->( $record->{included} ) if $record->{included};
+        my $inc = $record->get_included_record;
+        $translate->( $inc ) if $inc;
 
         print $record->as_string;
     }
