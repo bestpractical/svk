@@ -314,8 +314,16 @@ sub get_buffer_from_editor {
 
     # Compare targets in commit message
     my $old_targets = (split (/\n\Q$sep\E\n/, $content, 2))[1];
-    my @new_targets = map {s/^\s+//; # proponly change will have leading spacs
-			   [split(/[\s\+]+/, $_, 2)]} grep /\S/, split(/\n+/, $ret[1]);
+    $old_targets =~ s/^\?.*//mg; # remove unversioned files
+
+    my @new_targets =
+               map {
+                   s/^\s+//; # proponly change will have leading spacs
+			       [split(/[\s\+]+/, $_, 2)]}
+               grep {!/^\?/m} # remove unversioned fils
+               grep {/\S/}
+               split(/\n+/, $ret[1]);
+
     if ($old_targets ne $ret[1]) {
         # Assign new targets 
 	@$targets_ref = map abs2rel($_->[1], $anchor, undef, '/'), @new_targets;

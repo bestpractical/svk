@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 56;
+plan tests => 69;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -10,6 +10,8 @@ my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 
 our $answer = 'c';
 
+sub set_editor_foo
+{
 set_editor(<< 'TMP');
 $_ = shift;
 open _ or die $!;
@@ -25,6 +27,54 @@ print _ @_;
 close _;
 print @_;
 TMP
+}
+
+sub set_editor_verbose
+{
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+# remove foo from the targets
+@_ = grep !/foo/, <_>;
+
+die "Doesn't include unversioned file"
+    unless grep {/verbose/} @_;
+
+# simulate some editing, for --template test
+s/monkey/gorilla/g for @_;
+s/birdie/parrot/g for @_;
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+}
+
+sub set_editor_verbose_add
+{
+set_editor(<< 'TMP');
+$_ = shift;
+open _ or die $!;
+# remove foo from the targets
+@_ = grep !/foo/, <_>;
+
+# transparently add anything with verbose in the filename
+for (@_) { s/^\? (?= .* verbose $ )/A/mx }
+
+# simulate some editing, for --template test
+s/monkey/gorilla/g for @_;
+s/birdie/parrot/g for @_;
+close _;
+unlink $_;
+open _, '>', $_ or die $!;
+print _ @_;
+close _;
+print @_;
+TMP
+}
+set_editor_foo();
 
 $svk->checkout ('//', $copath);
 is_output_like ($svk, 'commit', [], qr'not a checkout path');
@@ -209,6 +259,84 @@ is_output ($svk, 'st', [],
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    'No targets to commit.'], 'target edited to empty');
+is_output ($svk, 'st', [],
+	   [__('M   A/foo')]);
+
+# test verbose with one unversioned file {{{
+set_editor_verbose();
+
+overwrite_file("A/verbose", "this is for testing that verbose commits (those including ? files) work");
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+        __('?   A/verbose')]);
+
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'No targets to commit.'], 'target edited to empty');
+
+overwrite_file("A/oof", "ouchies!");
+$svk->add("A/oof");
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Committed revision 16.'], 'commit message included unversioned A/verbose');
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+        __('?   A/verbose')]);
+unlink "A/verbose";
+# }}}
+# test verbose with an unversioned subdirectory {{{
+mkdir ('A/deep/verbose');
+overwrite_file("A/deep/verbose/uno", "fun fun");
+overwrite_file("A/deep/verbose/dos", "fun *squared*");
+
+is_output ($svk, 'status', [],
+	   [ __('?   A/deep/verbose'),
+         __('M   A/foo')]);
+
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'No targets to commit.'], 'target edited to empty');
+
+overwrite_file("A/oof", "oh ok");
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Committed revision 17.'], 'commit message included unversioned subdir A/verbose/ and its two unversioned files');
+
+is_output ($svk, 'status', [],
+	   [__('?   A/deep/verbose'),
+        __('M   A/foo')]);
+
+unlink "A/deep/verbose/uno";
+unlink "A/deep/verbose/dos";
+rmdir "A/deep/verbose/";
+# }}}
+
+# test transparent adds with verbose commits {{{
+set_editor_verbose_add();
+
+overwrite_file("A/verbose", "this is for testing that verbose commits (those including ? files) work");
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+        __('?   A/verbose')]);
+
+is_output ($svk, 'commit', [],
+	   ['Waiting for editor...',
+	    'Committed revision 18.'], 'we got a commit by replacing a ? with an A');
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
+
+overwrite_file("A/verbose", "you know the drill");
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+        __('M   A/verbose')]);
+$svk->revert('A/verbose');
+# }}}
+
+set_editor_foo();
 
 append_file ("A/foo", "foobar2");
 is_output ($svk, 'status', [],
@@ -241,7 +369,7 @@ $svk->revert ('-R');
 append_file ("A/bar", "foobar2");
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
-	    'Committed revision 18.'], 'buffer unmodified');
+	    'Committed revision 21.'], 'buffer unmodified');
 $answer = 'a';
 append_file ("A/bar", "foobar2");
 is_output ($svk, 'commit', [],
@@ -254,20 +382,20 @@ is_output ($svk, 'commit', [-F => 'svk-commit', -m => 'hate'],
 	   ["Can't use -F with -m."]);
 
 is_output ($svk, 'commit', [-F => 'svk-commit'],
-	   ['Committed revision 19.'], 'commit with -F');
+	   ['Committed revision 22.'], 'commit with -F');
 
-is_output_like ($svk, 'log', [-r => 19],
+is_output_like ($svk, 'log', [-r => 22],
 		qr/my log message/);
 
 append_file ("A/bar", "please be changed");
 is_output($svk, 'commit', [-m => "i like a monkey\nand a birdie", '--template'],
           ["Waiting for editor...",
-	   "Committed revision 20."], 'commit with -m and --template');
+	   "Committed revision 23."], 'commit with -m and --template');
 
-is_output_like ($svk, 'log', [-r => 20],
+is_output_like ($svk, 'log', [-r => 23],
 		qr/i like a gorilla/, 'first line successfully edited from template');
 
-is_output_like ($svk, 'log', [-r => 20],
+is_output_like ($svk, 'log', [-r => 23],
 		qr/and a parrot/, 'second line successfully edited from template');
 
 append_file ("A/bar", "changed some more");
@@ -275,23 +403,23 @@ overwrite_file ('svk-commit', "this time it's a birdie\nalso a monkey");
 
 is_output($svk, 'commit', [-F => 'svk-commit', '--template'],
           ["Waiting for editor...",
-	   "Committed revision 21."], 'commit with -F and --template');
+	   "Committed revision 24."], 'commit with -F and --template');
 
-is_output_like ($svk, 'log', [-r => 21],
+is_output_like ($svk, 'log', [-r => 24],
 		qr/this time it's a parrot/, 'first line successfully edited from template');
 
-is_output_like ($svk, 'log', [-r => 21],
+is_output_like ($svk, 'log', [-r => 24],
 		qr/also a gorilla/, 'second line successfully edited from template');
 
 overwrite_file("changeme", 'to be committed with revprop');
 $svk->add("changeme");
 
 is_output($svk, 'commit', [-m => 'with revprop', '--set-revprop', 'fnord=baz'],
-          ["Committed revision 22."], 'fnord');
+          ["Committed revision 25."], 'fnord');
 
 is_output(
-    $svk, 'pl', ['-r' => 22, '--revprop'],
-    ['Unversioned properties on revision 22:',
+    $svk, 'pl', ['-r' => 25, '--revprop'],
+    ['Unversioned properties on revision 25:',
      '  fnord',
      '  svn:author',
      '  svn:date',
