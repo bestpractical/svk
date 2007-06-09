@@ -285,6 +285,8 @@ t/api/mirror.t
 t/copy-escape.t
 t/copy-replace.t
 t/diff/mixed-checkout.t
+t/i18n/big5dirname.t
+t/i18n/checkout.t
 t/mirror/commit-copy.t
 t/mirror/dav-authz.t
 t/mirror/relocate.t

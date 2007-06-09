@@ -56,7 +56,7 @@ require SVN::Delta;
 use base 'SVK::Editor';
 
 use SVK::I18N;
-use autouse 'SVK::Util' => qw( slurp_fh tmpfile mimetype_is_text catfile abs2rel );
+use autouse 'SVK::Util' => qw( slurp_fh tmpfile mimetype_is_text catfile abs2rel from_native);
 
 =head1 NAME
 
@@ -211,8 +211,10 @@ sub apply_textdelta {
 sub _report_path {
     my ($self, $path) = @_;
 
-    return (defined $self->{report} && length $self->{report})
-	? catfile($self->{report}, $path) : $path;
+    return $path if !(defined $self->{report} && length $self->{report});
+    my $report = $self->{report}; $report = "$report";
+    from_native($report);
+    return catfile($report, $path);
 }
 
 sub close_file {
