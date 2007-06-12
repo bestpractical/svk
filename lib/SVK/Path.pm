@@ -539,7 +539,7 @@ current node.
 
 sub copy_ancestors {
     my $self = shift;
-    @{ $self->{copy_ancesotrs}{$self->path}{$self->revision} ||=
+    @{ $self->{copy_ancestors}{$self->path}{$self->revision} ||=
 	   [$self->_copy_ancestors] };
 }
 
