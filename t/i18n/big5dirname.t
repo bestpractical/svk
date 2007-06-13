@@ -8,7 +8,7 @@ use POSIX qw(setlocale LC_CTYPE);
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
     or plan skip_all => 'cannot set locale to zh_TW.Big5';
 
-plan tests => 8;
+plan tests => 10;
 our $output;
 
 my $big5dir = "\x{b7}\x{7c}\x{b1}\x{e0}"; # meeting , contains a '|' character
@@ -84,3 +84,12 @@ is_output($svk, 'diff', ["$big5dir/$file2"],
            ' new file2 to add',
            '+big5 filename: '.$file2,
           ]);
+is_output($svk, 'ci', [-m => 'commit diff checkout', $big5dir],
+          ['Committed revision 3.']);
+
+chdir('../../../');
+$svk->update ('-r', 2, $copath);
+append_file("$copath/$file2", "big5 filename: $file2\n");
+$svk->update ($copath); 
+warn $output;
+ok ($output =~ m#g   t/checkout/filenames/$big5dir/$file2#, 'merged');

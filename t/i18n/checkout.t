@@ -8,7 +8,7 @@ use POSIX qw(setlocale LC_CTYPE);
 setlocale (LC_CTYPE, $ENV{LC_CTYPE} = 'zh_TW.Big5')
     or plan skip_all => 'cannot set locale to zh_TW.Big5';
 
-plan tests => 6;
+plan tests => 7;
 our $output;
 
 mkpath ["t/checkout/filenames"], 0, 0700 unless -d "t/checkout/filenames";
@@ -54,11 +54,16 @@ is_file_content (copath("$file"), "new file to add\n");
 
 overwrite_file (copath("$file"),
                 "hihi\n");
-$ENV{SVKRESOLVE} = undef;
-our $answer = [ 'd', 'y' ];
 $svk->update ($copath); # XXX use is_ouptut to compare conflict diff header
 warn $output;
 ok ($output =~ m/1 conflict found\./, 'conflict');
 
-$svk->revert ($copath);
-$svk->resolved ($copath);
+$svk->update ('-r', 1, $copath);
+overwrite_file (copath("$file"),
+                "hihi\n");
+
+$ENV{SVKRESOLVE} = "";
+our $answer = [ 'd', 'y' ];
+$svk->update ($copath); # XXX use is_ouptut to compare conflict diff header
+warn $output;
+ok ($output =~ m#G   t/checkout/filenames/$file#, 'diff');
