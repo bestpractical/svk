@@ -219,10 +219,8 @@ sub run {
 	next if $file =~ /^\./;
 	$file =~ s/\.patch$// or next;
 	my ($patch, $not_applicable) = $self->_load ($file);
-	$logger->info( "$patch->{name}\@$patch->{level}: ");
-	$logger->info( "[n/a]")
-	    if $not_applicable;
-	$logger->info( "\n");
+	$logger->info( "$patch->{name}\@$patch->{level}: ".
+	    ( $not_applicable ? "[n/a]" : '' ) );
     }
     return;
 }
