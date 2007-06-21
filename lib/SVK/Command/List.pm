@@ -57,6 +57,7 @@ use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( to_native get_encoder reformat_svn_date );
+use SVK::Logger;
 
 sub options {
     ('r|revision=s'  => 'rev',
@@ -112,10 +113,10 @@ sub _print_item {
         no warnings 'uninitialized';
 
         # Additional fields for verbose: revision author size datetime
-        printf "%7ld %-8.8s %10s %12s ", $rev,
+        $logger->info(sprintf ("%7ld %-8.8s %10s %12s ", $rev,
             $fs->revision_prop( $rev, 'svn:author' ),
             ($kind == $SVN::Node::dir) ? "" : $root->file_length( $target->path ),
-            reformat_svn_date( "%b %d %H:%M", $svn_date );
+            reformat_svn_date( "%b %d %H:%M", $svn_date )));
     }
 
     my $output_path;
@@ -123,13 +124,13 @@ sub _print_item {
         $output_path = $target->report;
     }
     else {
-        print " " x ($level-1);
+        $logger->info( " " x ($level-1));
         $output_path = Path::Class::File->new_foreign( 'Unix', $target->path )
             ->basename;
     }
     to_native( $output_path, 'path', $enc );
-    print $output_path;
-    print( ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n" );
+    $logger->info( $output_path);
+    $logger->info( ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n" );
 
 }
 

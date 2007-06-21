@@ -53,6 +53,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 
+use SVK::Logger;
 use SVK::Util qw ( abs2rel );
 
 sub parse_arg {
@@ -85,7 +86,7 @@ sub do_ignore {
 
     my $current_ignore_re = $self->{xd}->ignore($svn_ignore);
     if ($filename =~ m/$current_ignore_re/) {
-        print "Already ignoring '$report'\n";
+        $logger->info( "Already ignoring '$report'\n");
     } else {
         $svn_ignore .= "\n"
           if length $svn_ignore and substr($svn_ignore, -1, 1) ne "\n";
