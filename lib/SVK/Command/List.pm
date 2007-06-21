@@ -124,13 +124,12 @@ sub _print_item {
         $output_path = $target->report;
     }
     else {
-        $logger->info( " " x ($level-1));
+        $logger->info( " " x ($level-1) ) unless $level == 1;
         $output_path = Path::Class::File->new_foreign( 'Unix', $target->path )
             ->basename;
     }
     to_native( $output_path, 'path', $enc );
-    $logger->info( $output_path);
-    $logger->info( ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n" );
+    $logger->info( $output_path. ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n" );
 
 }
 
