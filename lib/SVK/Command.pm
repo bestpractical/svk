@@ -165,7 +165,7 @@ sub invoke {
 
     $ofh = select STDERR unless $output;
     $logger->info( $ret) if $ret && $ret !~ /^\d+$/;
-    if ($@ && ref($@)) {
+    if ($@ && !ref($@)) {
         $logger->info("$@");
     }
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
