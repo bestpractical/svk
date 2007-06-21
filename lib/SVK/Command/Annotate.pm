@@ -93,8 +93,7 @@ sub run {
     );
 
     $logger->info(loc("Annotations for %1 (%2 active revisions):\n", $target->path, scalar @paths));
-    $logger->info( '*' x 16);
-    $logger->info("\n");
+    $logger->info( '*' x 16 );
     for my $t (@paths) {
 	local $/;
 	my $content = $t->root->file_contents($t->path);
