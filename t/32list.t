@@ -45,7 +45,7 @@ foreach my $depot ('','bob') {
 
     use POSIX qw( strftime );
     my $re_date = join '|', map { quotemeta strftime( "%b", 0, 0, 0, 1, $_, 96) } 0 .. 11;
-    $re_date = "(?:$re_date) \\d{2} \\d{2}:\\d{2}";
+    $re_date = " ?(?:$re_date) \\d{2} \\d{2}:\\d{2}";
     my $re_user = "(?:\\S*\\s+)";
     is_output ($svk, 'ls', ['-v'],
                [qr"      2 $re_user          $re_date A/"]);
