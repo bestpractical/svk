@@ -189,7 +189,7 @@ sub run {
 
     $merge->{notice_copy} = 1;
     if ($merge->{fromrev} == $merge->{src}->revision) {
-	$logger->info( loc ("Empty merge.\n"));
+	$logger->info( loc ("Empty merge."));
 	return;
     }
 
@@ -199,7 +199,7 @@ sub run {
     if ($self->{incremental}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")
 	    if $self->{no_ticket};
-	$logger->info( loc ("-m ignored in incremental merge\n")) if $self->{message};
+	$logger->info( loc ("-m ignored in incremental merge")) if $self->{message};
 	my @rev;
 
         traverse_history (

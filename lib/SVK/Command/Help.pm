@@ -75,7 +75,7 @@ sub run {
             my @cmd;
             my $dir = $INC{'SVK/Command.pm'};
             $dir =~ s/\.pm$//;
-            $logger->info( loc("Available commands:\n"));
+            $logger->info( loc("Available commands:"));
             find (
                 sub { push @cmd, $File::Find::name if m/\.pm$/ }, $dir,
             );

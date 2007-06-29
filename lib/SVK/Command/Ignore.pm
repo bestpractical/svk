@@ -86,7 +86,7 @@ sub do_ignore {
 
     my $current_ignore_re = $self->{xd}->ignore($svn_ignore);
     if ($filename =~ m/$current_ignore_re/) {
-        $logger->info( "Already ignoring '$report'\n");
+        $logger->info( "Already ignoring '$report'");
     } else {
         $svn_ignore .= "\n"
           if length $svn_ignore and substr($svn_ignore, -1, 1) ne "\n";

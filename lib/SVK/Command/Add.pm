@@ -141,7 +141,7 @@ sub _do_add {
         $bin = ' - (bin)' if !mimetype_is_text( $newprop->{'svn:mime-type'} );
     }
 
-    $logger->info( "$st   $report$bin\n");
+    $logger->info( "$st   $report$bin");
 }
 
 1;

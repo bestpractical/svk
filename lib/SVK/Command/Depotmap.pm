@@ -110,9 +110,9 @@ sub run {
               get_buffer_from_editor( loc('depot map'), $sep, "$map\n$sep\n",
                 'depotmap' );
             $new = eval { YAML::Syck::Load($map) };
-            $logger->info("$@\n") if $@;
+            $logger->info("$@") if $@;
         } while ($@);
-        $logger->info( loc("New depot map saved.\n"));
+        $logger->info( loc("New depot map saved."));
         $self->{xd}{depotmap} = $new;
     }
     $self->{xd}->create_depots;
@@ -132,7 +132,7 @@ sub run {
 
     $self->{xd}{depotmap}{$depot} = $path;
 
-    $logger->info(loc("New depot map saved.\n"));
+    $logger->info(loc("New depot map saved."));
     $self->{xd}->create_depots;
 }
 

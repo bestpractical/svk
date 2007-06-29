@@ -123,7 +123,7 @@ sub run {
 
     $m->relocate($source, @options);
 
-    $logger->info( loc("Mirror relocated.\n"));
+    $logger->info( loc("Mirror relocated."));
     return;
 }
 
@@ -155,7 +155,7 @@ use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    $logger->info( loc("nothing to upgrade\n"));
+    $logger->info( loc("nothing to upgrade"));
     return;
 }
 
@@ -215,7 +215,7 @@ sub run {
 
     my $fmt = "%-${max_depot_path}s   %-s\n";
     $logger->info(sprintf $fmt, loc('Path'), loc('Source'));
-    $logger->info( '=' x ( $max_depot_path + $max_uri + 3 ), "\n");
+    $logger->info( '=' x ( $max_depot_path + $max_uri + 3 ));
 
     $logger->info(sprintf $fmt, @$_ )for @mirror_columns;
 
@@ -301,7 +301,7 @@ sub recover_headrev {
         propset => { direct  => 1, revprop => 1 },
     )->run($_ => $props->{$_}, $target) for sort grep {m/^sv[nm]/} keys %$props;
 
-    $logger->info( loc("Mirror state successfully recovered.\n"));
+    $logger->info( loc("Mirror state successfully recovered."));
     return;
 }
 

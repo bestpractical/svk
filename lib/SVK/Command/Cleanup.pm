@@ -73,7 +73,7 @@ sub run {
 
     if ($self->{all}) {
         $self->{xd}{checkout}->store ('', {lock => undef});
-        $logger->info( loc("Cleaned up all stalled locks.\n"));
+        $logger->info( loc("Cleaned up all stalled locks."));
         return;
     }
 

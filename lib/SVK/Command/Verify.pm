@@ -90,7 +90,7 @@ sub run {
     my $sig = $fs->revision_prop ($chg, 'svk:signature');
     return _verify($target->depot, $sig, $chg)
 	if $sig;
-    $logger->info( "No signature found for change $chg at /$depot/.\n");
+    $logger->info( "No signature found for change $chg at /$depot/.");
     return;
 }
 
@@ -127,7 +127,7 @@ sub close_edit {
 
     if ($?) {
         warn "Self is $self";
-        $logger->info( "Can't verify signature\n");
+        $logger->info( "Can't verify signature");
 	$self->{fail} = 1;
 	return;
     }
@@ -142,14 +142,14 @@ sub close_edit {
 	my ($md5, $filename) = ($1, $2);
 	my $checksum = delete $self->{checksum}{"$path/$filename"};
 	if ($checksum ne $md5) {
-	    $logger->info( "checksum for $path/$filename mismatched: $checksum vs $md5\n");
+	    $logger->info( "checksum for $path/$filename mismatched: $checksum vs $md5");
 	    $self->{fail} = 1;
 	    return;
 	}
     }
     # unsigned change
     if (my @unsig = keys %{$self->{checksum}}) {
-	$logger->info("Checksum for changed path ".join (',', @unsig)." not signed.\n");
+	$logger->info("Checksum for changed path ".join (',', @unsig)." not signed.");
 	$self->{fail} = 1;
     }
 }
