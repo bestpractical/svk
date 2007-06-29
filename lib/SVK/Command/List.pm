@@ -103,9 +103,7 @@ sub run {
 sub _print_item {
     my ( $self, $target, $kind, $level, $enc ) = @_;
     my $root = $target->root;
-    my $origlayout = $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout;
-    my $verbatimlayout = Log::Log4perl::Layout::PatternLayout->new("%m");
-    $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout($verbatimlayout);
+    my $info_msg = '';
     if ( $self->{verbose} ) {
         my $rev = $root->node_created_rev( $target->path );
         my $fs  = $target->repos->fs;
@@ -116,10 +114,10 @@ sub _print_item {
         no warnings 'uninitialized';
 
         # Additional fields for verbose: revision author size datetime
-        $logger->info(sprintf ("%7ld %-8.8s %10s %12s ", $rev,
+        $info_msg .= sprintf ("%7ld %-8.8s %10s %12s ", $rev,
             $fs->revision_prop( $rev, 'svn:author' ),
             ($kind == $SVN::Node::dir) ? "" : $root->file_length( $target->path ),
-            reformat_svn_date( "%b %d %H:%M", $svn_date )));
+            reformat_svn_date( "%b %d %H:%M", $svn_date ));
     }
 
     my $output_path;
@@ -127,13 +125,13 @@ sub _print_item {
         $output_path = $target->report;
     }
     else {
-        $logger->info( " " x ($level-1) );
+        $info_msg .= " " x ($level-1);
         $output_path = Path::Class::File->new_foreign( 'Unix', $target->path )
             ->basename;
     }
     to_native( $output_path, 'path', $enc );
-    $logger->info( $output_path. ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n");
-    $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout($origlayout);
+    $info_msg .= $output_path. ( $kind == $SVN::Node::dir ? '/' : '' ); 
+    $logger->info( $info_msg );
 }
 
 1;
