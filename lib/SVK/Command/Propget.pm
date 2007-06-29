@@ -81,10 +81,14 @@ sub run {
             my $proplist = $self->_proplist($target);
             exists $proplist->{$pname} or return;
 
+            my $origlayout = $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout;
+            my $verbatimlayout = Log::Log4perl::Layout::PatternLayout->new("%m");
+            $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout($verbatimlayout);
             $logger->info( $target->report, ' - ')
                 if !$self->{strict} && ( $self->{recursive} || @targets > 1 );
             $logger->info( $proplist->{$pname});
             $logger->info( "\n" )if !$self->{strict};
+            $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout($origlayout);
         }, $errs, 0,
     ) for @targets;
 

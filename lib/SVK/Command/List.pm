@@ -103,6 +103,9 @@ sub run {
 sub _print_item {
     my ( $self, $target, $kind, $level, $enc ) = @_;
     my $root = $target->root;
+    my $origlayout = $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout;
+    my $verbatimlayout = Log::Log4perl::Layout::PatternLayout->new("%m");
+    $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout($verbatimlayout);
     if ( $self->{verbose} ) {
         my $rev = $root->node_created_rev( $target->path );
         my $fs  = $target->repos->fs;
@@ -124,13 +127,13 @@ sub _print_item {
         $output_path = $target->report;
     }
     else {
-        $logger->info( " " x ($level-1) ) unless $level == 1;
+        $logger->info( " " x ($level-1) );
         $output_path = Path::Class::File->new_foreign( 'Unix', $target->path )
             ->basename;
     }
     to_native( $output_path, 'path', $enc );
-    $logger->info( $output_path. ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n" );
-
+    $logger->info( $output_path. ( $kind == $SVN::Node::dir ? '/' : '' ) . "\n");
+    $Log::Log4perl::Logger::APPENDER_BY_NAME{'Screen'}->layout($origlayout);
 }
 
 1;
