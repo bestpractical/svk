@@ -500,7 +500,7 @@ sub find_repos_from_co {
 =item find_repos_from_co_maybe
 
 Like C<find_repos_from_co>, but falls back to see if the given path is
-a depotpath. In that case, the checkout paths returned iwll be undef.
+a depotpath. In that case, the checkout paths returned will be undef.
 
 =cut
 
