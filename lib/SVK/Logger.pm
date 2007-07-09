@@ -64,12 +64,12 @@ if (eval {
 
     my $conf_file = $ENV{SVKLOGCONFFILE};
     my $conf;
-    if ( -e $conf_file ) {
-	my $FH;
-	open ($FH, $conf_file) or die $!;
+    if ( defined($conf_file) and -e $conf_file ) {
+	my $fh;
+	open $fh, $conf_file or die $!;
 	local $/;
-	$conf = <$FH>;
-	close $FH;
+	$conf = <$fh>;
+	close $fh;
     }
     #warn $conf unless $Log::Log4perl::Logger::INITIALIZED;
     $conf ||= qq{
