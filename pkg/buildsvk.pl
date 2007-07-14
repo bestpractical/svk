@@ -63,7 +63,7 @@ sub prepare_build_dir {
 sub new {
     my $class = shift;
     if ($^O eq 'MSWin32') {
-	$class = 'Win32';
+	$class .= '::Win32';
     }
 
     my $self = bless {}, $class;
@@ -121,6 +121,7 @@ sub perldest {
 }
 
 package SVK::Build::Win32;
+use base 'SVK::Build';
 use Cwd 'abs_path';
 use File::Spec;
 
@@ -142,7 +143,7 @@ sub perldest {
 
 sub prepare_perl {
     my $self = shift;
-    Env::Path->PATH->Assign( map { abs_path(File::Spec->catfile($build_dir, 'strawberry-perl', $_, 'bin')) } qw(perl dmake mingw));
+    Env::Path->PATH->Assign( map { abs_path(File::Spec->catfile($self->build_dir, 'strawberry-perl', $_, 'bin')) } qw(perl dmake mingw));
 
     if (-d $self->perldest) {
 	warn "found strawberry perl, remove ".$self->perldest." for clean build.\n";
