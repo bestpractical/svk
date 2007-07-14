@@ -62,7 +62,8 @@ is($A->kind, $SVN::Node::dir, "A is a directory");
 
 
 # reading files
-my $expected = "first line in me$/2nd line in me - mod$/";
+my $eol = $SVK::Util::EOL;
+my $expected = "first line in me${eol}2nd line in me - mod${eol}";
 is($root->file_length("/trunk/me"), length($expected),
    "meesa right length");
 is($root->file_md5_checksum("/trunk/me"),
