@@ -41,6 +41,8 @@ diag "create mirror of 2.0 in //" if $ENV{'TEST_VERBOSE'};
 }
 $svk->sync ('-a', '//');
 
+TODO: {
+local $TODO = 'annotated copy info.';
 is_output ($svk, 'info', ['//2.0'],
     ['Depot Path: //2.0',
     'Revision: 4',
@@ -52,3 +54,5 @@ is_output ($svk, 'info', ['//2.0'],
     '',]
 ) or diag $output;
 
+
+}
