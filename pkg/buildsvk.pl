@@ -189,19 +189,19 @@ sub prepare_dist {
 sub build_archive {
     my $self = shift;
     my $path = shift;
-    my $olddir = `pwd`;
-    chomp($olddir);
-    chdir($self->build_base);
-    warn "In ".$self->build_base . " looking for ". $path;
-    my @cmd = ( 'tar', 'czvf' , "$olddir/$path.tgz", $path);
-    system( @cmd);
-    if ($!) { die "Failed to create tarball: ". $! .  join (' ',@cmd);}
-    chdir($olddir);
+    my $olddir = $CWD;
+    {
+	local $CWD = $self->build_base;
+	warn "In ".$self->build_base . " looking for ". $path;
+	my @cmd = ( 'tar', 'czvf' , "$olddir/$path.tgz", $path);
+	system( @cmd);
+	if ($!) { die "Failed to create tarball: ". $! .  join (' ',@cmd);}
+    }
     if (-f "$path.tgz" ) {
 
         print "Congratulations! You have a new build of $path in ".$olddir."/".$path.".tgz\n";
     } else { 
-        print "Couldn't build ".$self->build_base."/$path into a tarball\n";
+        warn "Couldn't build ".$self->build_base."/$path into a tarball\n";
     }
 }
 
