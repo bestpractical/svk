@@ -24,7 +24,7 @@ is_output($svk, cp => ["$copath/A", "$copath/A-copy"],
            __("A   $copath/A-copy/be"),
           ]);
 
-is_output($svk, rm => ["$copath/A-copy/Q"],
+is_sorted_output($svk, rm => ["$copath/A-copy/Q"],
           [
            __("D   $copath/A-copy/Q"),
            __("D   $copath/A-copy/Q/qu"),
@@ -59,7 +59,7 @@ is_output($svk, 'sync', ['//m'],
 	   'Committed revision 3 from revision 2.',
            'Committed revision 4 from revision 3.']);
 
-is_output($svk, rm => ["$copath/A-copy"],
+is_sorted_output($svk, rm => ["$copath/A-copy"],
           [
            __("D   $copath/A-copy"),
 	   __("D   $copath/A-copy/be"),
