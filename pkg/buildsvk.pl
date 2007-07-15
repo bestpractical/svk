@@ -43,7 +43,7 @@ if ($svkroot) {
 }
 else {
     $build->build_module('SVK');
-    $svkroot = glob($build->build_dir.'/SVK-*');
+    ($svkroot) = glob($build->build_dir.'/SVK-*');
 }
 
 $build->prepare_dist($svkroot);
