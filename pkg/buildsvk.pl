@@ -7,6 +7,8 @@ use File::Copy 'move';
 
 use File::Spec;
 
+
+
 =head1 NAME
 
 buildsvk.pl - packaging svk
@@ -52,10 +54,14 @@ exit 0;
 
 package SVK::Build;
 use Archive::Extract;
+           use Archive::Tar;
 use Env::Path;
 use File::Path (qw(mkpath rmtree));
 use File::chdir;
 use File::Copy 'copy';
+use File::Temp 'tempdir';
+
+our $BUILD_BASE;
 
 sub prepare_perl { 1 };
 sub prepare_svn_core {
@@ -71,11 +77,11 @@ sub prepare_svn_core {
 }
 
 sub build_dir {
-    '/tmp/svk-build/dest';
+    shift->build_base ."/dest";
 }
 
 sub build_base {
-    '/tmp/svk-build';
+    $BUILD_BASE ||= tempdir(); 
 }
 
 sub prepare_build_dir {
@@ -87,6 +93,8 @@ sub new {
     my $class = shift;
     if ($^O eq 'MSWin32') {
 	$class .= '::Win32';
+    } elsif ($^O eq 'darwin') {
+        $class .= "::Darwin";
     }
 
     my $self = bless {}, $class;
@@ -153,7 +161,7 @@ sub prepare_dist {
     copy('svk-wrapper' => $self->build_dir."/svk");
     chmod 0755, $self->build_dir."/svk";
 
-    open my $fh, "$toplevel/MANIFEST" or die $!;
+    open my $fh, "$toplevel/MANIFEST" or die "Could not create $toplevel/MANIFEST: ".$!;
     while (<$fh>) {
 	chomp;
 	next unless m{^t/};
@@ -172,6 +180,29 @@ sub prepare_dist {
     };
 
     rename($self->build_dir => $self->build_base.'/svk-'.$version);
+
+    $self->build_archive( 'svk-'.$version);
+
+
+}
+
+sub build_archive {
+    my $self = shift;
+    my $path = shift;
+    my $olddir = `pwd`;
+    chomp($olddir);
+    chdir($self->build_base);
+    warn "In ".$self->build_base . " looking for ". $path;
+    my @cmd = ( 'tar', 'czvf' , "$olddir/$path.tgz", $path);
+    system( @cmd);
+    if ($!) { die "Failed to create tarball: ". $! .  join (' ',@cmd);}
+    chdir($olddir);
+    if (-f "$path.tgz" ) {
+
+        print "Congratulations! You have a new build of $path in ".$olddir."/".$path.".tgz\n";
+    } else { 
+        print "Couldn't build ".$self->build_base."/$path into a tarball\n";
+    }
 }
 
 package SVK::Build::Win32;
@@ -233,3 +264,20 @@ sub prepare_svn_core {
 
 sub prepare_dist {
 }
+
+sub build_archive {}
+
+package SVK::Build::Darwin;
+use base 'SVK::Build';
+use File::Copy 'copy';
+sub prepare_svn_core {
+    my $self = shift;
+    my $output = `otool -L \`which svn\``;
+    for ($output =~ m/^.*$/mg) {
+	my ($lib) = m/^\s*(.*?)\s/ or next;
+    next if $lib =~ /^\/(?:System|usr\/lib)/;
+        warn $lib;
+	    copy($lib, $self->build_dir);
+    }
+}
+
