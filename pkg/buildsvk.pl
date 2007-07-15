@@ -38,10 +38,13 @@ $build->build_module($_) for qw(FreezeThaw);
 
 if (shift) {
     $build->perlmake_install("..");
+    $build->prepare_dist("..");
 }
 else {
     $build->build_module('SVK');
+    $build->prepare_dist(glob($build->build_dir.'/SVK-*'));
 }
+
 
 warn 'build finished - '.(time() - $t);
 
@@ -68,6 +71,10 @@ sub prepare_svn_core {
 }
 
 sub build_dir {
+    '/tmp/svk-build/dest';
+}
+
+sub build_base {
     '/tmp/svk-build';
 }
 
@@ -92,7 +99,7 @@ sub extract {
     my $self = shift;
     my $ae = Archive::Extract->new( archive => shift );
 
-    $ae->extract( to => $self->build_dir )
+    $ae->extract( to => $self->build_base )
 	or die $ae->error;
 }
 
@@ -110,11 +117,10 @@ sub build_module {
     my ($file) = glob("src/$module-*");
     $self->extract($file);
 
-    ($dir) = glob($self->build_dir."/$module-*");
+    ($dir) = glob($self->build_base."/$module-*");
     $dir .= "/$subdir" if $subdir;
 
     $self->perlmake_install( $subdir ? "$dir/$subdir" : $dir );
-    rmtree [$dir];
 }
 
 sub perlmake_install {
@@ -141,12 +147,36 @@ sub perldest {
     $self->build_dir.'/perl';
 }
 
+sub prepare_dist {
+    my $self = shift;
+    my $toplevel = shift;
+    copy('svk-wrapper' => $self->build_dir."/svk");
+    chmod 0755, $self->build_dir."/svk";
+
+    open my $fh, "$toplevel/MANIFEST" or die $!;
+    while (<$fh>) {
+	chomp;
+	next unless m{^t/};
+	my $file = $_;
+	my (undef, $dir, undef) = File::Spec->splitpath($file);
+	mkpath [ $self->build_dir."/$dir" ];
+	copy($toplevel.'/'.$file => $self->build_dir."/$file");
+    }
+    
+    copy('maketest' => $self->build_dir."/maketest");
+    chmod 0755, $self->build_dir."/maketest";
+}
+
 package SVK::Build::Win32;
 use base 'SVK::Build';
 use Cwd 'abs_path';
 use File::Spec;
 
 sub build_dir {
+    'c:/tmp/svk-build';
+}
+
+sub build_base {
     'c:/tmp/svk-build';
 }
 
@@ -192,4 +222,8 @@ sub prepare_svn_core {
 
     move($_ => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin'))
 	for glob($self->build_dir."/svn-win32-1.4.4/bin/*.dll");
+}
+
+sub prepare_dist {
+
 }
