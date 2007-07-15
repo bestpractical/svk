@@ -23,7 +23,6 @@ directory with everything installed under it.
 =cut
 
 my $build = SVK::Build->new;
-
 my $t = time();
 
 $build->prepare_perl();
@@ -36,15 +35,16 @@ $build->build_module($_) for qw(Locale-Maketext-Lexicon TermReadKey IO-Pager);
 $build->build_module($_) for qw(File-chdir SVN-Mirror);
 $build->build_module($_) for qw(FreezeThaw);
 
-if (shift) {
-    $build->perlmake_install("..");
-    $build->prepare_dist("..");
+my $svkroot = shift;
+if ($svkroot) {
+    $build->perlmake_install($svkroot);
 }
 else {
     $build->build_module('SVK');
-    $build->prepare_dist(glob($build->build_dir.'/SVK-*'));
+    $svkroot = glob($build->build_dir.'/SVK-*');
 }
 
+$build->prepare_dist($svkroot);
 
 warn 'build finished - '.(time() - $t);
 
@@ -165,6 +165,13 @@ sub prepare_dist {
     
     copy('maketest' => $self->build_dir."/maketest");
     chmod 0755, $self->build_dir."/maketest";
+
+    my $version = eval {
+	local @INC = @INC; unshift @INC, "$toplevel/lib"; require SVK::Version;
+	SVK->VERSION;
+    };
+
+    rename($self->build_dir => $self->build_base.'/svk-'.$version);
 }
 
 package SVK::Build::Win32;
@@ -225,5 +232,4 @@ sub prepare_svn_core {
 }
 
 sub prepare_dist {
-
 }
