@@ -285,6 +285,7 @@ sub prepare_dist {
          -a => "$toplevel/lib/SVK/I18N;lib/SVK/I18N",
          -a => $self->perldest."/auto/POSIX;lib/auto/POSIX",
          -I => "$toplevel/lib",
+         -I => $self->perldest,
          (map { (-a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin', $_).";bin/$_") }
               qw(perl.exe perl58.dll prove.bat intl3_svn.dll libapr.dll libapriconv.dll libaprutil.dll libdb44.dll libeay32.dll ssleay32.dll) ),
          -a => "$toplevel/blib/script/svk;bin/svk",
@@ -303,8 +304,6 @@ sub prepare_dist {
          -a => "$toplevel/COPYING;COPYING";
 
 
-    move($_ => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin'))
-	for glob($self->build_dir."/svn-win32-1.4.4/bin/*.dll");
 
     rmtree ['build'] if -d 'build';
     mkdir('build');
