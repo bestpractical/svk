@@ -17,14 +17,13 @@ OutFile "..\${MUI_NAME}-${MUI_VERSION}.exe"
 InstallDir "$PROGRAMFILES\${MUI_NAME}"
 ShowInstDetails hide
 InstProgressFlags smooth
-Var ALREADY_INSTALLED
 
   !define MUI_ABORTWARNING
 
 ;--------------------------------
 ;Pages
 
-  !insertmacro MUI_PAGE_LICENSE "License.txt"
+  !insertmacro MUI_PAGE_LICENSE "..\ARTISTIC"
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   
@@ -59,10 +58,6 @@ Section "modern.exe" SecCopyUI
     FileClose $1
 
     WriteUninstaller "$INSTDIR\Uninstall.exe"
-
-new_installation:
-
-	!insertmacro InstallLib DLL $ALREADY_INSTALLED REBOOT_NOTPROTECTED "shared\msvcr71.dll" "$SYSDIR\msvcr71.dll" $SYSDIR
 
 Libeay32:
     IfFileExists "$SYSDIR\libeay32.dll" RenameLibeay32 SSLeay32
