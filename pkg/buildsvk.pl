@@ -36,7 +36,12 @@ $build->build_module($_) for qw(Locale-Maketext-Lexicon TermReadKey IO-Pager);
 $build->build_module($_) for qw(File-chdir SVN-Mirror);
 $build->build_module($_) for qw(FreezeThaw);
 
-$build->build_module('SVK');
+if (shift) {
+    $build->perlmake_install("..");
+}
+else {
+    $build->build_module('SVK');
+}
 
 warn 'build finished - '.(time() - $t);
 
@@ -47,9 +52,20 @@ use Archive::Extract;
 use Env::Path;
 use File::Path (qw(mkpath rmtree));
 use File::chdir;
+use File::Copy 'copy';
 
 sub prepare_perl { 1 };
-sub prepare_svn_core { 1 };
+sub prepare_svn_core {
+    my $self = shift;
+    my $output = `ldd \`which svn\``;
+    for ($output =~ m/^.*$/mg) {
+	my ($lib, $file) = m/(\S.*?) => (\S.*?)\s/ or next;
+	if ($lib =~ m/libsvn_*/) {
+	warn "$lib $file";
+	    copy($file, $self->build_dir);
+	}
+    }
+}
 
 sub build_dir {
     '/tmp/svk-build';
@@ -94,15 +110,21 @@ sub build_module {
     my ($file) = glob("src/$module-*");
     $self->extract($file);
 
+    ($dir) = glob($self->build_dir."/$module-*");
+    $dir .= "/$subdir" if $subdir;
+
+    $self->perlmake_install( $subdir ? "$dir/$subdir" : $dir );
+    rmtree [$dir];
+}
+
+sub perlmake_install {
+    my ($self, $dir) = @_;
     my $PERLDEST = $self->perldest;
     my $PERLDESTARCH = $PERLDEST;
-    ($dir) = glob($self->build_dir."/$module-*");
-    #	warn $ENV{PATH};
-    #	my $perl = 'perl';
-    {
-	local $CWD = $subdir ? "$dir/$subdir" : $dir;
-	warn "$CWD\n";
-	system @{$self->perl}, qw(Makefile.PL INSTALLDIRS=perl),
+
+    local $CWD = $dir;
+    warn "$CWD\n";
+    system @{$self->perl}, qw(Makefile.PL INSTALLDIRS=perl),
 	    "INSTALLARCHLIB=$PERLDESTARCH",
 	    "INSTALLPRIVLIB=$PERLDEST",
 	    "INSTALLBIN=$PERLDEST/../bin",
@@ -110,9 +132,8 @@ sub build_module {
 	    "INSTALLMAN1DIR=$PERLDEST/../man/man1",
 	    "INSTALLMAN3DIR=$PERLDEST/../man/man3";
 
-	$ENV{PERL_EXTUTILS_AUTOINSTALL} = '--skipdeps';
-	system $self->make, qw( all install ) ;
-    }
+    $ENV{PERL_EXTUTILS_AUTOINSTALL} = '--skipdeps';
+    system $self->make, qw( all install ) ;
 }
 
 sub perldest {
