@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use Cwd 'abs_path';
-use File::Copy 'move';
 
 use File::Spec;
 
@@ -126,7 +125,6 @@ sub build_module {
     $self->extract($file);
 
     ($dir) = glob($self->build_base."/$module-*");
-    $dir .= "/$subdir" if $subdir;
 
     $self->perlmake_install( $subdir ? "$dir/$subdir" : $dir );
 }
@@ -174,15 +172,21 @@ sub prepare_dist {
     copy('maketest' => $self->build_dir."/maketest");
     chmod 0755, $self->build_dir."/maketest";
 
-    my $version = eval {
-	local @INC = @INC; unshift @INC, "$toplevel/lib"; require SVK::Version;
-	SVK->VERSION;
-    };
+    my $version = $self->get_svk_version($toplevel);
 
     rename($self->build_dir => $self->build_base.'/svk-'.$version);
 
     $self->build_archive( 'svk-'.$version);
 
+
+}
+
+sub get_svk_version {
+    my ($self, $toplevel) = @_;
+    my $version = eval {
+	local @INC = @INC; unshift @INC, "$toplevel/lib"; require SVK::Version;
+	SVK->VERSION;
+    };
 
 }
 
@@ -208,7 +212,9 @@ sub build_archive {
 package SVK::Build::Win32;
 use base 'SVK::Build';
 use Cwd 'abs_path';
+use File::Path (qw(rmtree));
 use File::Spec;
+use File::Copy 'move';
 
 sub build_dir {
     'c:/tmp/svk-build';
@@ -226,13 +232,19 @@ sub perl {
 
 sub make { 'dmake' }
 
+sub perlmake_install {
+    my $self = shift;
+    local %ENV = %ENV;
+    Env::Path->PATH->Assign( map { abs_path(File::Spec->catfile($self->build_dir, 'strawberry-perl', $_, 'bin')) } qw(perl dmake mingw));
+    return $self->SUPER::perlmake_install(@_);
+}
+
 sub perldest {
-    abs_path(File::Spec->catfile($_[0]->build_dir, qw(strawberry-perl perl lib)));
+    File::Spec->catdir(abs_path($_[0]->build_dir), qw(strawberry-perl perl lib));
 }
 
 sub prepare_perl {
     my $self = shift;
-    Env::Path->PATH->Assign( map { abs_path(File::Spec->catfile($self->build_dir, 'strawberry-perl', $_, 'bin')) } qw(perl dmake mingw));
 
     if (-d $self->perldest) {
 	warn "found strawberry perl, remove ".$self->perldest." for clean build.\n";
@@ -263,9 +275,53 @@ sub prepare_svn_core {
 }
 
 sub prepare_dist {
+    my $self = shift;
+    my $toplevel = shift;
+    my @paroptions;
+    open my $fh, 'win32/paroptions.txt' or die $!;
+    while (<$fh>) { next if m/^#/; chomp; push @paroptions, split(/ /,$_) };
+    push @paroptions,
+         -a => "$toplevel/lib/SVK/Help;lib/SVK/Help",
+         -a => "$toplevel/lib/SVK/I18N;lib/SVK/I18N",
+         -a => $self->perldest."/auto/POSIX;lib/auto/POSIX",
+         -I => "$toplevel/lib",
+         (map { (-a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin', $_).";bin/$_") }
+              qw(perl.exe perl58.dll prove.bat intl3_svn.dll libapr.dll libapriconv.dll libaprutil.dll libdb44.dll libeay32.dll ssleay32.dll) ),
+         -a => "$toplevel/blib/script/svk;bin/svk",
+         -a => "$toplevel/blib/script/svk.bat;bin/svk.bat",
+         -a => "$toplevel/pkg/win32/maketest.bat;win32/maketest.bat",
+         -a => "$toplevel/pkg/win32/svk.ico;win32/svk.ico",
+         -a => "$toplevel/pkg/win32/svk-uninstall.ico;win32/svk-uninstall.ico",
+         -a => "$toplevel/pkg/win32/svk.nsi;win32/svk.nsi",
+         -a => "$toplevel/pkg/win32/Path.nsh;win32/Path.nsh",
+         -a => "$toplevel/contrib;site/contrib",
+         -a => "$toplevel/utils;site/utils",
+         -a => "$toplevel/t;site/t",
+         -a => "$toplevel/README;README",
+         -a => "$toplevel/CHANGES;CHANGES",
+         -a => "$toplevel/ARTISTIC;ARTISTIC",
+         -a => "$toplevel/COPYING;COPYING";
+
+
+    move($_ => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin'))
+	for glob($self->build_dir."/svn-win32-1.4.4/bin/*.dll");
+
+    rmtree ['build'] if -d 'build';
+    mkdir('build');
+    system('pp', @paroptions, "$toplevel/blib/script/svk");
+
+    system('zip', qw(-d build\SVK.par lib\SVK));
+    system('zip', qw(-d build\t\checkout lib\SVK));
+    system('unzip', qw(-o -d build build/SVK.par));
+    $self->build_archive($self->get_svk_version($toplevel));
 }
 
-sub build_archive {}
+sub build_archive {
+    my ($self, $version) = @_;
+    Env::Path->PATH->Prepend("C:/Program Files/NSIS");
+    system('makensis', "/X !define MUI_VERSION $version", 'build/win32/svk.nsi');
+}
+
 
 package SVK::Build::Darwin;
 use base 'SVK::Build';

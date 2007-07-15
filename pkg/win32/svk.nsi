@@ -2,13 +2,16 @@ SetCompressor bzip2
 
 !define MUI_COMPANY "Best Practical Solutions, LLC"
 !define MUI_PRODUCT "SVK"
-!define MUI_VERSION "2.0.1-1"
+!ifndef MUI_VERSION
+!define MUI_VERSION "unknown"
+!endif
 !define MUI_NAME    "svk"
 !define MUI_ICON "${MUI_NAME}.ico"
 !define MUI_UNICON "${MUI_NAME}-uninstall.ico"
 
 !include "MUI.nsh"
 !include "Path.nsh"
+
 !include "Library.nsh"
 
 XPStyle On
@@ -75,10 +78,10 @@ Done:
     Push "$INSTDIR\bin"
     Call AddToPath
 SectionEnd
-
+ 
 Section "Uninstall"
-    Push $INSTDIR
-    Call un.RemoveFromPath
-    RMDir /r $INSTDIR
-    DeleteRegKey HKLM "SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}"
+  Push $INSTDIR
+  Call un.RemoveFromPath
+  RMDir /r $INSTDIR
+  DeleteRegKey HKLM "SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}"
 SectionEnd
