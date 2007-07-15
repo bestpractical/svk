@@ -50,7 +50,6 @@ is_file_content (copath("$file"), "new file to add\n");
 overwrite_file (copath("$file"),
 		"hihi\n");
 $svk->update ($copath);
-warn $output;
 ok ($output =~ m/1 conflict found\./, 'conflict');
 
 $svk->revert ($copath);
