@@ -2,13 +2,16 @@ SetCompressor bzip2
 
 !define MUI_COMPANY "Best Practical Solutions, LLC"
 !define MUI_PRODUCT "SVK"
-!define MUI_VERSION "2.0.1-1"
+!ifndef MUI_VERSION
+!define MUI_VERSION "unknown"
+!endif
 !define MUI_NAME    "svk"
 !define MUI_ICON "${MUI_NAME}.ico"
 !define MUI_UNICON "${MUI_NAME}-uninstall.ico"
 
 !include "MUI.nsh"
 !include "Path.nsh"
+
 !include "Library.nsh"
 
 XPStyle On
@@ -17,14 +20,13 @@ OutFile "..\${MUI_NAME}-${MUI_VERSION}.exe"
 InstallDir "$PROGRAMFILES\${MUI_NAME}"
 ShowInstDetails hide
 InstProgressFlags smooth
-Var ALREADY_INSTALLED
 
   !define MUI_ABORTWARNING
 
 ;--------------------------------
 ;Pages
 
-  !insertmacro MUI_PAGE_LICENSE "License.txt"
+  !insertmacro MUI_PAGE_LICENSE "..\ARTISTIC"
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   
@@ -60,10 +62,6 @@ Section "modern.exe" SecCopyUI
 
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-new_installation:
-
-	!insertmacro InstallLib DLL $ALREADY_INSTALLED REBOOT_NOTPROTECTED "shared\msvcr71.dll" "$SYSDIR\msvcr71.dll" $SYSDIR
-
 Libeay32:
     IfFileExists "$SYSDIR\libeay32.dll" RenameLibeay32 SSLeay32
 RenameLibeay32:
@@ -80,10 +78,10 @@ Done:
     Push "$INSTDIR\bin"
     Call AddToPath
 SectionEnd
-
+ 
 Section "Uninstall"
-    Push $INSTDIR
-    Call un.RemoveFromPath
-    RMDir /r $INSTDIR
-    DeleteRegKey HKLM "SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}"
+  Push $INSTDIR
+  Call un.RemoveFromPath
+  RMDir /r $INSTDIR
+  DeleteRegKey HKLM "SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}"
 SectionEnd

@@ -12,7 +12,11 @@
 # create a log
 -L pp.log
 # include some missed modules
+-M Log::Log4perl::Appender::Screen
 -M Encode::TW
+-M Encode::JP
+-M Encode::KR
+-M Encode::CN
 -M POSIX
 # exclude some not-needed dependencies
 -X ExtUtils::CBuilder
