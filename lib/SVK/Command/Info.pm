@@ -103,7 +103,7 @@ sub _do_info {
             = $target->root->fs->revision_prop( $lastchanged, 'svn:date' );
         print loc(
             "Last Changed Date: %1\n",
-            reformat_svn_date( "%F", $date )
+            reformat_svn_date( "%Y-%m-%d", $date )
         );
     }
 
