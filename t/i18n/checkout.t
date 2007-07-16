@@ -55,7 +55,6 @@ is_file_content (copath("$file"), "new file to add\n");
 overwrite_file (copath("$file"),
                 "hihi\n");
 $svk->update ($copath); # XXX use is_ouptut to compare conflict diff header
-warn $output;
 ok ($output =~ m/1 conflict found\./, 'conflict');
 
 $svk->update ('-r', 1, $copath);
@@ -65,5 +64,4 @@ overwrite_file (copath("$file"),
 $ENV{SVKRESOLVE} = "";
 our $answer = [ 'd', 'y' ];
 $svk->update ($copath); # XXX use is_ouptut to compare conflict diff header
-warn $output;
 ok ($output =~ m#G   t/checkout/filenames/$file#, 'diff');
