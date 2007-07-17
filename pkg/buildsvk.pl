@@ -27,7 +27,6 @@ my $build = SVK::Build->new;
 my $t = time();
 
 $build->prepare_perl();
-$build->prepare_dist('..'); exit;
 $build->prepare_svn_core();
 
 $build->build_module('libwin32', 'Console') if $^O eq 'MSWin32';
