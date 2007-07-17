@@ -52,7 +52,7 @@ Section "modern.exe" SecCopyUI
     ; Generate bootstrap batch file on the fly using $INSTDIR
     FileOpen $1 "$INSTDIR\svk.bat" w
     FileWrite $1 "@echo off$\n"
-    FileWrite $1 "set APR_ICONV_PATH=$\"$INSTDIR\iconv$\"$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$INSTDIR\iconv$\n"
     FileWrite $1 "set OLDPATH=%PATH%$\n"
     FileWrite $1 "set PATH=$INSTDIR\bin;%PATH%$\n"
     FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
@@ -70,7 +70,7 @@ Section "modern.exe" SecCopyUI
     ; Generate bootstrap batch file on the fly using $INSTDIR
     FileOpen $1 "$INSTDIR\site\maketest.bat" w
     FileWrite $1 "@echo off$\n"
-    FileWrite $1 "set APR_ICONV_PATH=$\"$INSTDIR\iconv$\"$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$INSTDIR\iconv$\n"
     FileWrite $1 "cd $\"$INSTDIR\bin$\"$\n"
     FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
     FileWrite $1 "goto endofperl$\n"
