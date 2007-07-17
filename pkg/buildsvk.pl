@@ -27,6 +27,7 @@ my $build = SVK::Build->new;
 my $t = time();
 
 $build->prepare_perl();
+$build->prepare_dist('..'); exit;
 $build->prepare_svn_core();
 
 $build->build_module('libwin32', 'Console') if $^O eq 'MSWin32';
@@ -272,6 +273,8 @@ sub prepare_svn_core {
 
     move($_ => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin'))
 	for glob($self->build_dir."/svn-win32-1.4.4/bin/*.dll");
+
+    move($self->build_dir."/svn-win32-1.4.4/iconv" => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv'))
 }
 
 sub prepare_dist {
@@ -289,12 +292,12 @@ sub prepare_dist {
          (map { (-a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin', $_).";bin/$_") }
               qw(perl.exe perl58.dll prove.bat intl3_svn.dll libapr.dll libapriconv.dll libaprutil.dll libdb44.dll libeay32.dll ssleay32.dll) ),
          -a => "$toplevel/blib/script/svk;bin/svk",
-         -a => "$toplevel/blib/script/svk.bat;bin/svk.bat",
          -a => "$toplevel/pkg/win32/maketest.bat;win32/maketest.bat",
          -a => "$toplevel/pkg/win32/svk.ico;win32/svk.ico",
          -a => "$toplevel/pkg/win32/svk-uninstall.ico;win32/svk-uninstall.ico",
          -a => "$toplevel/pkg/win32/svk.nsi;win32/svk.nsi",
          -a => "$toplevel/pkg/win32/Path.nsh;win32/Path.nsh",
+         -a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv').";iconv",
          -a => "$toplevel/contrib;site/contrib",
          -a => "$toplevel/utils;site/utils",
          -a => "$toplevel/t;site/t",
@@ -310,7 +313,6 @@ sub prepare_dist {
     system('pp', @paroptions, "$toplevel/blib/script/svk");
 
     system('zip', qw(-d build\SVK.par lib\SVK));
-    system('zip', qw(-d build\t\checkout lib\SVK));
     system('unzip', qw(-o -d build build/SVK.par));
     $self->build_archive($self->get_svk_version($toplevel));
 }
