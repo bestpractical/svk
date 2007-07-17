@@ -67,6 +67,22 @@ Section "modern.exe" SecCopyUI
     FileWrite $1 "set APR_ICONV=$\n"
     FileClose $1
 
+    ; Generate bootstrap batch file on the fly using $INSTDIR
+    FileOpen $1 "$INSTDIR\site\maketest.bat" w
+    FileWrite $1 "@echo off$\n"
+    FileWrite $1 "set APR_ICONV=$\"$INSTDIR\iconv$\"$\n"
+    FileWrite $1 "cd $\"$INSTDIR\bin$\"$\n"
+    FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
+    FileWrite $1 "goto endofperl$\n"
+    FileWrite $1 ":WinNT$\n"
+    FileWrite $1 "if NOT $\"%COMSPEC%$\" == $\"%SystemRoot%\system32\cmd.exe$\" goto endofperl$\n"
+    FileWrite $1 "if %errorlevel% == 9009 echo You do not have SVK installed correctly.$\n"
+    FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
+    FileWrite $1 ".\perl -I..\site prove.bat ..\site\t$\n"
+    FileWrite $1 "set APR_ICONV=$\n"
+    FileClose $1
+
+
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
 Libeay32:
