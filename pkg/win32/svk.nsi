@@ -52,7 +52,7 @@ Section "modern.exe" SecCopyUI
     ; Generate bootstrap batch file on the fly using $INSTDIR
     FileOpen $1 "$INSTDIR\svk.bat" w
     FileWrite $1 "@echo off$\n"
-    FileWrite $1 "set APR_ICONV=$\"$INSTDIR\iconv$\"$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$\"$INSTDIR\iconv$\"$\n"
     FileWrite $1 "set OLDPATH=%PATH%$\n"
     FileWrite $1 "set PATH=$INSTDIR\bin;%PATH%$\n"
     FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
@@ -64,13 +64,13 @@ Section "modern.exe" SecCopyUI
     FileWrite $1 "if %errorlevel% == 9009 echo You do not have SVK installed correctly.$\n"
     FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
     FileWrite $1 "set PATH=%OLDPATH%$\n"
-    FileWrite $1 "set APR_ICONV=$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$\n"
     FileClose $1
 
     ; Generate bootstrap batch file on the fly using $INSTDIR
     FileOpen $1 "$INSTDIR\site\maketest.bat" w
     FileWrite $1 "@echo off$\n"
-    FileWrite $1 "set APR_ICONV=$\"$INSTDIR\iconv$\"$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$\"$INSTDIR\iconv$\"$\n"
     FileWrite $1 "cd $\"$INSTDIR\bin$\"$\n"
     FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
     FileWrite $1 "goto endofperl$\n"
@@ -79,7 +79,7 @@ Section "modern.exe" SecCopyUI
     FileWrite $1 "if %errorlevel% == 9009 echo You do not have SVK installed correctly.$\n"
     FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
     FileWrite $1 ".\perl -I..\site prove.bat -r ..\site\t$\n"
-    FileWrite $1 "set APR_ICONV=$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$\n"
     FileClose $1
     ; XXX: try to cd back to where we are please
 
