@@ -614,7 +614,7 @@ sub install_perl_hook {
     open my $fh, '>', $hook or die $!;
     if (IS_WIN32) {
         print $fh "\@rem = '--*-Perl-*--\n";
-        print $fh '@echo off'."\n$^X".' -x -S %0 %*'."\n";
+        print $fh '@echo off'."\n\"$^X\"".' -x -S %0 %*'."\n";
         print $fh 'if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul'."\n";
 	print $fh "goto endofperl\n\@rem ';\n";
     }
