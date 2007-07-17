@@ -58,7 +58,7 @@ use SVK::Logger;
 
 sub options {
     ($_[0]->SUPER::options,
-     'B|baseless'	=> 'baseless',
+     'B|baseless'       => 'baseless',
      'b|base=s'         => 'merge_base',
      'baserev=i'        => 'rev',
     );

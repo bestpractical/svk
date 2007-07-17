@@ -463,7 +463,24 @@ sub track_rename {
     print "Collecting renames, this might take a while.\n";
     $self->_collect_rename_for($renamed, $self->{base}, $base, 0)
 	unless $self->{track_rename} eq 'dst';
-    $self->_collect_rename_for($renamed, $self->{dst}, $base, 1);
+
+    { # different base lookup logic for smerge
+	if ($self->{track_rename} eq 'dst') {
+	    my $usrc = $self->{src}->universal;
+	    my $dstkey = $self->{dst}->universal->ukey;
+	    my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
+
+	    use Data::Dumper;
+	    if ($srcinfo->{$dstkey}) {
+		$base = $srcinfo->{$dstkey}->local($self->{src}->depot);
+	    }
+	    else {
+		$base = $base->mclone(revision => 0);
+	    }
+	}
+	$self->_collect_rename_for($renamed, $self->{dst}, $base, 1);
+    }
+
     return $editor unless @$renamed;
 
     my $rename_editor = SVK::Editor::Rename->new (editor => $editor, rename_map => $renamed);
