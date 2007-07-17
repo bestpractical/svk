@@ -41,24 +41,48 @@ Section "modern.exe" SecCopyUI
     SetOutPath $INSTDIR
     File /r ..\bin
     File /r ..\lib
-    File /r /x checkout ..\site
+    File /r ..\iconv
+    File /r /x t\checkout ..\site
     File /r ..\win32
-
+ 
+    ; in case of old installation
+    Delete "$INSTDIR\bin\svk.bat"
     Delete "$INSTDIR\svk.bat"
 
     ; Generate bootstrap batch file on the fly using $INSTDIR
-    FileOpen $1 "$INSTDIR\bin\svk.bat" w
+    FileOpen $1 "$INSTDIR\svk.bat" w
     FileWrite $1 "@echo off$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$INSTDIR\iconv$\n"
+    FileWrite $1 "set OLDPATH=%PATH%$\n"
+    FileWrite $1 "set PATH=$INSTDIR\bin;%PATH%$\n"
     FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
-    FileWrite $1 "$\"$INSTDIR\bin\perl.exe$\" $\"$INSTDIR\bin\svk$\" %1 %2 %3 %4 %5 %6 %7 %8 %9$\n"
-    FileWrite $1 "goto endofsvk$\n"
+    FileWrite $1 "$\"$INSTDIR\bin\perl$\" $\"$INSTDIR\bin\svk$\" %1 %2 %3 %4 %5 %6 %7 %8 %9$\n"
+    FileWrite $1 "goto endofperl$\n"
     FileWrite $1 ":WinNT$\n"
-    FileWrite $1 "$\"%~dp0perl.exe$\" $\"%~dp0svk$\" %*$\n"
+    FileWrite $1 "$\"$INSTDIR\bin\perl$\" $\"$INSTDIR\bin\svk$\" %*$\n"
     FileWrite $1 "if NOT $\"%COMSPEC%$\" == $\"%SystemRoot%\system32\cmd.exe$\" goto endofperl$\n"
-    FileWrite $1 "if %errorlevel% == 9009 echo You do not have Perl in your PATH.$\n"
+    FileWrite $1 "if %errorlevel% == 9009 echo You do not have SVK installed correctly.$\n"
     FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
-    FileWrite $1 ":endofperl$\n"
+    FileWrite $1 "set PATH=%OLDPATH%$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$\n"
     FileClose $1
+
+    ; Generate bootstrap batch file on the fly using $INSTDIR
+    FileOpen $1 "$INSTDIR\site\maketest.bat" w
+    FileWrite $1 "@echo off$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$INSTDIR\iconv$\n"
+    FileWrite $1 "cd $\"$INSTDIR\bin$\"$\n"
+    FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
+    FileWrite $1 "goto endofperl$\n"
+    FileWrite $1 ":WinNT$\n"
+    FileWrite $1 "if NOT $\"%COMSPEC%$\" == $\"%SystemRoot%\system32\cmd.exe$\" goto endofperl$\n"
+    FileWrite $1 "if %errorlevel% == 9009 echo You do not have SVK installed correctly.$\n"
+    FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
+    FileWrite $1 ".\perl -I..\site prove.bat -r ..\site\t$\n"
+    FileWrite $1 "set APR_ICONV_PATH=$\n"
+    FileClose $1
+    ; XXX: try to cd back to where we are please
+
 
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
@@ -74,8 +98,8 @@ RenameSSLeay32:
 
 
 Done:
-    ; Add \bin directory to the PATH for svk.bat and DLLs
-    Push "$INSTDIR\bin"
+    ; Add  directory to the PATH for svk.bat and DLLs
+    Push $INSTDIR
     Call AddToPath
 SectionEnd
  
