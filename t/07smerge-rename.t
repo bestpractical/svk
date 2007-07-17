@@ -90,6 +90,6 @@ is_output ($svk, 'smerge', ['--track-rename', '//trunk', $lcopath],
 	    __("D   $lcopath/A/deep/foo"),
 	    __("C   $lcopath/A/deep/test.pl"),
 	    __("D   $lcopath/A/foo"),
-	    __("U   $lcopath/test.pl - A/deep/test.pl"),
+	    __("U   $lcopath/test.pl")." - A/deep/test.pl",
 	    "New merge ticket: $uuid:/trunk:8",
 	    '2 conflicts found.']);
