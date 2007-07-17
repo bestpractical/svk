@@ -8,12 +8,26 @@ use Getopt::Long;
 
 my $revspec;
 
+sub usage {
+        print <<EOUSAGE;
+Usage:  pullyu [-r=revision] repopath mirrorpath
+    Prints out a svn dump file from a complete mirrored svk depot.  
+    repopath is the path to your local svk repository, usually ~/.svk/local
+    mirrorpath is the path to the mirror, such as /mirrors/myproject
+    
+    Example: ./pullyu ~/.svk/local /mirrors/myproject > myproject-svn-dumpfile
+    
+EOUSAGE
+exit;
+}
+
+
 die unless GetOptions ("r|revision=s@" => \$revspec);
 
 use SVN::Dump 0.03;
 
-my $repospath = shift or die "repospath required.\n";
-my $path      = shift or die "path required.\n";
+my $repospath = shift or usage();
+my $path      = shift or usage();
 
 my $repos = SVN::Repos::open($repospath) or die $!;
 my $depot = SVK::Depot->new({ depotname => '', repos => $repos, repospath => $repospath});
@@ -101,7 +115,8 @@ for my $rev (@revs) {
 
         };
         $translate->( $record );
-	$translate->( $record->{included} ) if $record->{included};
+        my $inc = $record->get_included_record;
+        $translate->( $inc ) if $inc;
 
         print $record->as_string;
     }
