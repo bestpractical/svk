@@ -165,9 +165,10 @@ sub find_copy {
 	}
 	return unless $base_rev;
 
-	{ # if the copy source is out side of our branch
+	{ # if the copy source is out side of our branch, and is in the same source
 	my $hate_path = $self->{src}->path_anchor;
-	if ($src_frompath !~ m{^\Q$hate_path/}) {
+	if ($src_frompath !~ m{^\Q$hate_path/} &&
+	    $self->{dst}->same_source($self->{dst}->mclone( path_anchor => $src_frompath))) {
 	    if (my ($frompath, $from) = $self->{cb_resolve_copy}->($path, $replace, $src_frompath, $src_from)) {
 		push @{$self->{incopy}}, { path => $path,
 					   fromrev => $from,
