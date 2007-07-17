@@ -14,12 +14,38 @@ buildsvk.pl - packaging svk
 
 =head1 SYNOPSIS
 
+  buildsvk.pl    # build svk from src/SVK-version.tar.gz dist file
+  buildsvk.pl .. # build svk from the toplevel tree of current checkout
 
 
 =head1 DESCRIPTION
 
-Put the dist files under src and C<buildsvk.pl> will create a build
-directory with everything installed under it.
+Put the CPAN dist files under src and C<buildsvk.pl> will create a build tarball
+which bundles the svn libraries.  To use, just untar and symlink C<svk> under it
+to a bin path.  There will also be a maketest script for you to run the included
+tests.
+
+If you are on win32, This will build a bundled installer for you including svn
+libraries and all necessary perl core modules.  you need the strawberry-perl.zip
+and svn-win*{,_pl}.zip under current directory before you run buildsvk.pl.
+strawberry-perl.zip can be obtained by zipping the freshly installed
+strawberry-perl for the moment.  You will also need NSIS installed under
+$PATH or C:\program files\nsis.
+
+=head1 TODO
+
+=over 4
+
+=item *
+
+README file in the build.
+
+=item *
+
+cleanup win32 build code to be more like unix build.
+
+=back
+
 
 =cut
 
