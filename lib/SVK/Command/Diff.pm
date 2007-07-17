@@ -104,7 +104,7 @@ sub run {
 	    $target2 = $target->new;
 	    $report = $target->report; # get the report before it turns to depotpath
 	    $target = $target->as_depotpath;
-	    $target = $target->seek_to($r1) if $r1;
+	    $target = $target->seek_to($r1) if defined $r1;
 	    $target2 = $target->as_depotpath->seek_to($r2) if $r2;
 	    # if no revision is specified, use the xdroot as target1's root
 	    $oldroot = $target2->create_xd_root unless $r1 || $r2;

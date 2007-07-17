@@ -1147,6 +1147,8 @@ sub resolve_revspec {
             die loc ("Invalid -r.\n");
         } else {
             $revspec = [map {split /:/} @$revspec];
+            # reject -r :123
+            die loc ("Invalid -r.\n") unless length $revspec->[0];
             ($r1, $r2) = map {
                 $self->resolve_revision($target,$_);
             } @$revspec;
