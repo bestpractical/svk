@@ -1,0 +1,10 @@
+#!/bin/sh
+BASE=`readlink $0`
+if [ "x${BASE}" = x ]; then
+	BASE=$0
+fi
+
+BASE=`echo $BASE | sed s/maketest$//`;
+PROVE=`which prove`
+chdir /tmp
+LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl "$PROVE" ${BASE}t

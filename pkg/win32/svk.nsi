@@ -1,8 +1,10 @@
 SetCompressor bzip2
 
-!define MUI_COMPANY "OurInternet"
+!define MUI_COMPANY "Best Practical Solutions, LLC"
 !define MUI_PRODUCT "SVK"
-!define MUI_VERSION "0.26-1"
+!ifndef MUI_VERSION
+!define MUI_VERSION "unknown"
+!endif
 !define MUI_NAME    "svk"
 !define MUI_ICON "${MUI_NAME}.ico"
 !define MUI_UNICON "${MUI_NAME}-uninstall.ico"
@@ -10,10 +12,12 @@ SetCompressor bzip2
 !include "MUI.nsh"
 !include "Path.nsh"
 
+!include "Library.nsh"
+
 XPStyle On
 Name "${MUI_PRODUCT}"
-OutFile "${MUI_NAME}-${MUI_VERSION}.exe"
-InstallDir "C:\Program Files\${MUI_NAME}"
+OutFile "..\${MUI_NAME}-${MUI_VERSION}.exe"
+InstallDir "$PROGRAMFILES\${MUI_NAME}"
 ShowInstDetails hide
 InstProgressFlags smooth
 
@@ -22,7 +26,7 @@ InstProgressFlags smooth
 ;--------------------------------
 ;Pages
 
-  !insertmacro MUI_PAGE_LICENSE "License.txt"
+  !insertmacro MUI_PAGE_LICENSE "..\ARTISTIC"
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   
@@ -35,10 +39,9 @@ Section "modern.exe" SecCopyUI
 		"SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}" "" "$INSTDIR"
     SetOverwrite on
     SetOutPath $INSTDIR
-    File /r ..\svk.bat
     File /r ..\bin
     File /r ..\lib
-    File /r ..\site
+    File /r /x checkout ..\site
     File /r ..\win32
 
     Delete "$INSTDIR\svk.bat"
@@ -47,11 +50,14 @@ Section "modern.exe" SecCopyUI
     FileOpen $1 "$INSTDIR\bin\svk.bat" w
     FileWrite $1 "@echo off$\n"
     FileWrite $1 "if $\"%OS%$\" == $\"Windows_NT$\" goto WinNT$\n"
-    FileWrite $1 "$\"$INSTDIR\bin\perl.exe$\" $\"$INSTDIR\site\bin\svk$\" %1 %2 %3 %4 %5 %6 %7 %8 %9$\n"
+    FileWrite $1 "$\"$INSTDIR\bin\perl.exe$\" $\"$INSTDIR\bin\svk$\" %1 %2 %3 %4 %5 %6 %7 %8 %9$\n"
     FileWrite $1 "goto endofsvk$\n"
     FileWrite $1 ":WinNT$\n"
-    FileWrite $1 "$\"%~dp0perl.exe$\" $\"%~dp0..\site\bin\svk$\" %*$\n"
-    FileWrite $1 ":endofsvk\n"
+    FileWrite $1 "$\"%~dp0perl.exe$\" $\"%~dp0svk$\" %*$\n"
+    FileWrite $1 "if NOT $\"%COMSPEC%$\" == $\"%SystemRoot%\system32\cmd.exe$\" goto endofperl$\n"
+    FileWrite $1 "if %errorlevel% == 9009 echo You do not have Perl in your PATH.$\n"
+    FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
+    FileWrite $1 ":endofperl$\n"
     FileClose $1
 
     WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -66,15 +72,16 @@ SSLeay32:
 RenameSSLeay32:
     Rename "$SYSDIR\ssleay32.dll" "$SYSDIR\ssleay32.dll.old"
 
+
 Done:
     ; Add \bin directory to the PATH for svk.bat and DLLs
     Push "$INSTDIR\bin"
     Call AddToPath
 SectionEnd
-
+ 
 Section "Uninstall"
-    Push $INSTDIR
-    Call un.RemoveFromPath
-    RMDir /r $INSTDIR
-    DeleteRegKey HKLM "SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}"
+  Push $INSTDIR
+  Call un.RemoveFromPath
+  RMDir /r $INSTDIR
+  DeleteRegKey HKLM "SOFTWARE\${MUI_COMPANY}\${MUI_PRODUCT}"
 SectionEnd
