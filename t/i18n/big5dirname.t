@@ -63,13 +63,11 @@ overwrite_file ("$file",
 our $answer = [ 'd', 'y' ];
 chdir ('../../../../');
 $svk->update ($copath); # XXX use is_ouptut to compare conflict diff header
-warn $output;
 ok ($output =~ m/1 conflict found\./, 'conflict');
 
 $svk->revert ($copath);
 $svk->resolved ($copath);
 $svk->update ($copath); # XXX use is_ouptut to compare conflict diff header
-warn $output;
 append_file("$copath/$file2", "big5 filename: $file2\n");
 chdir($copath);
 chdir('..');
@@ -91,5 +89,4 @@ chdir('../../../');
 $svk->update ('-r', 2, $copath);
 append_file("$copath/$file2", "big5 filename: $file2\n");
 $svk->update ($copath); 
-warn $output;
 ok ($output =~ m#g   t/checkout/filenames/$big5dir/$file2#, 'merged');
