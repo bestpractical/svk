@@ -224,6 +224,7 @@ SVK::Command::Diff - Display diff between revisions or checkout copies
                           A revision argument can be one of:
 
                           "HEAD"       latest in repository
+                          {DATE}       revision at start of the date
                           NUMBER       revision number
                           NUMBER@      interpret as remote revision number
                           NUM1:NUM2    revision range
