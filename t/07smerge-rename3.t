@@ -84,30 +84,19 @@ $svk->ci(-m => "test 4");
 # Merge changes w/rename from trunk to branch
 # NOTE: This expected output might not be completely correct!
 
-#$answer = ['d', 's'];
-#$answer = 's'; # skip
-#$ENV{SVKRESOLVE} = 'd'; # diff
-TODO: {
-$TODO = "merging renamed change back should have proper base.";
-
 is_output ($svk, 'smerge', ['//branches/newbranch', '//trunk', '--track-rename', '-m', 'merge back'], [
     'Auto-merging (0, 10) /branches/newbranch to /trunk (base /trunk:8).',
     'Collecting renames, this might take a while.',
     'A + module2',
     'U   module2/test.txt',
     'D   module',
-    "New merge ticket: $uuid:/trunk:9",
-    'Committed revision 9.',
+    "New merge ticket: $uuid:/branches/newbranch:10",
+    'Committed revision 11.',
 ]);
-}
-
-TODO: {
-todo_skip 'not working', 5;
 
 chdir($co_trunk_path);
 $svk->update();
 is_file_content('module2/test.txt', '34');
-
 
 # adding a new dir on trunk
 $svk->mkdir('foo');
@@ -117,12 +106,12 @@ $svk->ci(-m => "new module added");
 
 # Merge changes w/rename from trunk to branch
 is_output ($svk, 'smerge', ['//trunk', '//branches/newbranch', '--track-rename', '-m', 'merge 3'], [
-    'Auto-merging (6, 10) /trunk to /branches/newbranch (base /trunk:6).',
+    'Auto-merging (8, 12) /trunk to /branches/newbranch (base /branches/newbranch:10).',
     'Collecting renames, this might take a while.',
     'A   foo',
     'A   foo/test.txt',
-    "New merge ticket: $uuid:/trunk:10",
-    'Committed revision 11.',
+    "New merge ticket: $uuid:/trunk:12",
+    'Committed revision 13.',
 ]);
 
 chdir($co_branch_path);
@@ -134,16 +123,16 @@ overwrite_file('bar/test.txt', 'b');
 $svk->ci(-m => "test 6 - renamed and changed");
 
 is_output ($svk, 'smerge', ['//branches/newbranch', '//trunk', '--track-rename', '-m', 'merge back'], [
-    'Auto-merging (0, 12) /branches/newbranch to /trunk (base /trunk:10).',
+    'Auto-merging (10, 14) /branches/newbranch to /trunk (base /trunk:12).',
     'Collecting renames, this might take a while.',
-    'A   bar',
-    'A   bar/test.txt',
+    'A + bar',
+    'U   bar/test.txt',
     'D   foo',
-    "New merge ticket: $uuid:/trunk:10",
-    'Committed revision 13.',
+    "New merge ticket: $uuid:/branches/newbranch:14",
+    'Committed revision 15.',
 ]);
 
 chdir($co_trunk_path);
 $svk->update();
 is_file_content('bar/test.txt', 'b');
-}
+

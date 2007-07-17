@@ -183,7 +183,7 @@ sub run {
 	      src => $target2,
 	      dst => $target2,
 	      cb_resolve_copy => sub {
-		  my ($cp_path, $cp_rev) = @_;
+		  my (undef, undef, $cp_path, $cp_rev) = @_;
 		  return ($cp_path, $cp_rev);
 	      }) unless $self->{expand};
 
