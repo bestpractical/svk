@@ -677,9 +677,9 @@ sub resolve_copy {
     # now the hard part, reoslve the revision
     my $usrc = $src->universal;
     my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    my $udst = $self->{dst}->universal;
+    my $dstkey = join(':', $udst->{uuid}, $udst->{path});
     unless ($dstinfo->{$srckey}) {
-	my $udst = $self->{dst}->universal;
-	my $dstkey = join(':', $udst->{uuid}, $udst->{path});
 	return $srcinfo->{$dstkey}{rev} ?
 	    ($path, $srcinfo->{$dstkey}->local($self->{dst}->depot)->revision) : ();
     }
@@ -687,9 +687,15 @@ sub resolve_copy {
 	# same as re-base in editor::copy
 	my $rev = $self->{src}->merged_from
 	    ($self->{base}, $self, $self->{base}->path_anchor);
-	# XXX: compare rev and cp_rev
-	return ($path, $rev) if defined $rev;
-	return;
+
+	return unless defined $rev;
+	$rev = $self->merge_info_with_copy(
+	  $self->{src}->mclone(revision => $rev)
+        )->{$dstkey}
+         ->local($self->{dst}->depot)
+         ->revision;
+
+	return ($path, $rev);
     }
     # XXX: get rid of the merge context needed for
     # merged_from(); actually what the function needs is
