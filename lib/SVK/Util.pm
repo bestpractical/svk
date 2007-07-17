@@ -468,21 +468,24 @@ is missing on the system.
 
 =cut
 
+{ my $mm; # C<state $mm>, yuck
+
 sub mimetype {
     my ($filename) = @_;
-    my $mm if 0;  # C<state $mm>, yuck
 
     # find an implementation module if necessary
-    if ( !$mm ) {
+    $mm ||= do {
         my $module = $ENV{SVKMIME} || 'Internal';
         $module =~ s/:://;
         $module = "SVK::MimeDetect::$module";
         eval "require $module";
         die $@ if $@;
-        $mm = $module->new();
-    }
+        $module->new();
+    };
 
     return $mm->checktype_filename($filename);
+}
+
 }
 
 =head3 mimetype_is_text ($mimetype)
