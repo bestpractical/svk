@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan_svm tests => 11;
+plan_svm tests => 15;
 
 our $output;
 # build another tree to be mirrored ourself
@@ -124,8 +124,15 @@ append_file ("$copath/Q/qz", "bar\n");
 $svk->commit ($copath, "-m", "simultaneous changes - remote");
 
 $svk->smerge ('-m', 'simultaneous changes - pull', '//m', '//l');
-is_output ($svk, 'smerge', ['-I', '//l', '//m'],
+is_output ($svk, 'smerge', ['-IC', '//l', '//m'],
 	   ['Auto-merging (6, 17) /l to /m (base /m:16).',
+	    '===> Auto-merging (6, 15) /l to /m (base /l:6).',
+	    "U   Q/qu",
+	    "New merge ticket: $uuid:/l:15",
+	    '===> Auto-merging (15, 17) /l to /m (base */l:15).',
+	    'Empty merge.']);
+is_output ($svk, 'smerge', ['-I', '//l@15', '//m'],
+	   ['Auto-merging (6, 15) /l to /m (base /l:6).',
 	    '===> Auto-merging (6, 15) /l to /m (base /l:6).',
 	    "Merging back to mirror source $uri/A.",
 	    "U   Q/qu",
@@ -133,8 +140,17 @@ is_output ($svk, 'smerge', ['-I', '//l', '//m'],
 	    'Merge back committed as revision 6.',
 	    "Syncing $uri/A",
 	    'Retrieving log information from 6 to 6',
-	    'Committed revision 18 from revision 6.',
+	    'Committed revision 18 from revision 6.']);
+is_output ($svk, 'smerge', ['-C', '//l', '//m'],
+	   ['Auto-merging (15, 17) /l to /m (base */l:15).',
+	    "Checking locally against mirror source $uri/A.",
+	    'Empty merge.']);
+is_output ($svk, 'smerge', ['-IC', '//l', '//m'],
+	   ['Auto-merging (15, 17) /l to /m (base */l:15).',
+	    '===> Auto-merging (15, 17) /l to /m (base */l:15).',
+	    'Empty merge.']);
+is_output ($svk, 'smerge', ['-I', '//l', '//m'],
+	   ['Auto-merging (15, 17) /l to /m (base */l:15).',
 	    '===> Auto-merging (15, 17) /l to /m (base */l:15).',
 	    "Merging back to mirror source $uri/A.",
 	    'Empty merge.']);
-
