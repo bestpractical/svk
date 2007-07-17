@@ -199,6 +199,7 @@ sub build_archive {
 	local $CWD = $self->build_base;
 	warn "In ".$self->build_base . " looking for ". $path;
 	my @cmd = ( 'tar', 'czvf' , "$olddir/$path.tgz", $path);
+	$ENV{PAR_VERBATIM} = 1; # dynloader gets upset and gives warnings if it has #line
 	system( @cmd);
 	if ($!) { die "Failed to create tarball: ". $! .  join (' ',@cmd);}
     }

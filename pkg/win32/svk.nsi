@@ -78,9 +78,10 @@ Section "modern.exe" SecCopyUI
     FileWrite $1 "if NOT $\"%COMSPEC%$\" == $\"%SystemRoot%\system32\cmd.exe$\" goto endofperl$\n"
     FileWrite $1 "if %errorlevel% == 9009 echo You do not have SVK installed correctly.$\n"
     FileWrite $1 "if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul$\n"
-    FileWrite $1 ".\perl -I..\site prove.bat ..\site\t$\n"
+    FileWrite $1 ".\perl -I..\site prove.bat -r ..\site\t$\n"
     FileWrite $1 "set APR_ICONV=$\n"
     FileClose $1
+    ; XXX: try to cd back to where we are please
 
 
     WriteUninstaller "$INSTDIR\Uninstall.exe"
