@@ -24,7 +24,7 @@ my $client = SVN::Client->new
      sub { ${$_[0]} = "svn doesn't normalise copy source" }
     );
 
-$client->copy("$uri/trunk/foo", -1, "$uri/trunk/bar2");
+$client->copy("$uri/trunk/foo", $srepos->fs->youngest_rev, "$uri/trunk/bar2");
 is_ancestor($svk, '/test/trunk/bar2', '/trunk/foo', 1);
 
 $svk->copy (-pm => 'here', '/test/trunk/foo' => '/test/trunk/bar');
