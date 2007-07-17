@@ -188,7 +188,6 @@ t/03import.t
 t/04merge-rename.t
 t/04merge.t
 t/05svm-all.t
-t/05svm-branches.t
 t/05svm-copy.t
 t/05svm-empty.t
 t/05svm-head.t
@@ -292,7 +291,6 @@ t/diff/mixed-checkout.t
 t/i18n/big5dirname.t
 t/i18n/checkout.t
 t/i18n/win32filename.t
-t/mirror/commit-copy.t
 t/mirror/dav-authz.t
 t/mirror/relocate.t
 t/mirror/sync-crazy-replace.t

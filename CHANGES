@@ -1,3 +1,38 @@
+[Changes for 2.0.2 - 20 Jul, 2007]
+
+  Mirror subsystem
+    * be more friendly when trying to relocating incorrect mirror
+      path.
+
+  Merge subsystem
+    * Fix a problem when repeatedly merging renames tracked with
+      --track-renames, and when merging back such files.
+    * Fix the "file not found at revision 0" bug when smerge to a
+      mirror where copy source is not normalized.
+    * Fix a bug that deletes inside copies aren't properly merged
+      across branches even the status output says so.
+    * Fix a bug when merging copies across branches we be using
+      incorrect dst revision causing "file not found at revision 0".
+    * Fix a bug where copies outside the mirror source across merge
+      are not expanded as non-copies.
+    * Fix an inconsistency for smerge -IC behaviour when the base is
+      a txn path.
+
+  Pullyu
+    * properly translate to local path when mirroring remote root.
+    * Fix pullyu for translating "included" records, which are
+      replaced entries.
+
+  Others
+    * Improve error reporting when failed to save config.
+    * Perl 5.9.5 compatibility fixes.
+    * Work around a problem that push -P might be using outdated
+      memory pool.
+    * svk diff -r:123 should report invalid -r rather than blow up.
+    * Add -i as shorthand for --interactive in svk ci.
+    * Various win32 fixes.
+    * Various i18n fixes.
+
 [Changes for 2.0.1 - 26 Mar, 2007]
 
   Mirror subsystem
