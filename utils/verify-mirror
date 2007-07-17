@@ -44,7 +44,7 @@ $ra->get_log([''], $rev, $rev, 0,
 
         for my $remotepath ( sort keys %$paths ) {
             $pool->clear;
-	    my $localpath = abs2rel($remotepath, $m->source_path => $path, '/');
+	    my $localpath = abs2rel($remotepath, ($m->source_path || '/') => $path, '/');
             my $local     = delete $changed->{$localpath}
                 or die "$localpath is not in changes";
             my $action = $SVK::Command::Log::chg->[ $local->change_kind ];
