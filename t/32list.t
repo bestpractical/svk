@@ -2,6 +2,7 @@
 use Test::More tests => 69;
 use strict;
 use SVK::Test;
+use SVK::Util qw( time2str );
 our $output;
 
 my ($xd, $svk) = build_test('bob');
@@ -43,9 +44,11 @@ foreach my $depot ('','bob') {
                ["/$depot/A/B/","/$depot/A/foo", '', 'Path /crap is not versioned.', '']);
     ok ($svk->ls ('-f', "/$depot/A", "/$depot/crap/") == 1, "ls -f /$depot/A /$depot/crap/ [exit status]");
 
-    use POSIX qw( strftime );
-    my $re_date = join '|', map { quotemeta strftime( "%b", 0, 0, 0, 1, $_, 96) } 0 .. 11;
-    $re_date = "(?:$re_date) \\d{2} \\d{2}:\\d{2}";
+    use POSIX qw( mktime );
+    my $re_date = join '|', map { 
+	quotemeta time2str( "%b", mktime(0, 0, 0, 1, $_, 96) ) 
+    } 0 .. 11;
+    $re_date = " ?(?:$re_date) \\d{2} \\d{2}:\\d{2}";
     my $re_user = "(?:\\S*\\s+)";
     is_output ($svk, 'ls', ['-v'],
                [qr"      2 $re_user          $re_date A/"]);

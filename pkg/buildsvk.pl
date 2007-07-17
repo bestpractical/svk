@@ -14,12 +14,38 @@ buildsvk.pl - packaging svk
 
 =head1 SYNOPSIS
 
+  buildsvk.pl    # build svk from src/SVK-version.tar.gz dist file
+  buildsvk.pl .. # build svk from the toplevel tree of current checkout
 
 
 =head1 DESCRIPTION
 
-Put the dist files under src and C<buildsvk.pl> will create a build
-directory with everything installed under it.
+Put the CPAN dist files under src and C<buildsvk.pl> will create a build tarball
+which bundles the svn libraries.  To use, just untar and symlink C<svk> under it
+to a bin path.  There will also be a maketest script for you to run the included
+tests.
+
+If you are on win32, This will build a bundled installer for you including svn
+libraries and all necessary perl core modules.  you need the strawberry-perl.zip
+and svn-win*{,_pl}.zip under current directory before you run buildsvk.pl.
+strawberry-perl.zip can be obtained by zipping the freshly installed
+strawberry-perl for the moment.  You will also need NSIS installed under
+$PATH or C:\program files\nsis.
+
+=head1 TODO
+
+=over 4
+
+=item *
+
+README file in the build.
+
+=item *
+
+cleanup win32 build code to be more like unix build.
+
+=back
+
 
 =cut
 
@@ -104,9 +130,10 @@ sub new {
 
 sub extract {
     my $self = shift;
-    my $ae = Archive::Extract->new( archive => shift );
+    my ($arc, $to) = @_;
+    my $ae = Archive::Extract->new( archive => $arc );
 
-    $ae->extract( to => $self->build_base )
+    $ae->extract( to => $to || $self->build_base )
 	or die $ae->error;
 }
 
@@ -153,17 +180,28 @@ sub perldest {
     $self->build_dir.'/perl';
 }
 
+sub test_files {
+    my $self = shift;
+    my $toplevel = shift;
+    my @tests;
+
+    open my $fh, "$toplevel/MANIFEST" or die "Could not create $toplevel/MANIFEST: ".$!;
+    while (<$fh>) {
+	chomp;
+	next unless m{^t/};
+        push @tests, $_;
+    }
+    return @tests;
+}
+
 sub prepare_dist {
     my $self = shift;
     my $toplevel = shift;
     copy('svk-wrapper' => $self->build_dir."/svk");
     chmod 0755, $self->build_dir."/svk";
 
-    open my $fh, "$toplevel/MANIFEST" or die "Could not create $toplevel/MANIFEST: ".$!;
-    while (<$fh>) {
-	chomp;
-	next unless m{^t/};
-	my $file = $_;
+
+    for my $file ($self->test_files($toplevel)) {
 	my (undef, $dir, undef) = File::Spec->splitpath($file);
 	mkpath [ $self->build_dir."/$dir" ];
 	copy($toplevel.'/'.$file => $self->build_dir."/$file");
@@ -272,6 +310,8 @@ sub prepare_svn_core {
 
     move($_ => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin'))
 	for glob($self->build_dir."/svn-win32-1.4.4/bin/*.dll");
+
+    move($self->build_dir."/svn-win32-1.4.4/iconv" => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv'))
 }
 
 sub prepare_dist {
@@ -281,6 +321,7 @@ sub prepare_dist {
     open my $fh, 'win32/paroptions.txt' or die $!;
     while (<$fh>) { next if m/^#/; chomp; push @paroptions, split(/ /,$_) };
     push @paroptions,
+         -o => $self->build_dir."/SVK.par",
          -a => "$toplevel/lib/SVK/Help;lib/SVK/Help",
          -a => "$toplevel/lib/SVK/I18N;lib/SVK/I18N",
          -a => $self->perldest."/auto/POSIX;lib/auto/POSIX",
@@ -289,38 +330,45 @@ sub prepare_dist {
          (map { (-a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin', $_).";bin/$_") }
               qw(perl.exe perl58.dll prove.bat intl3_svn.dll libapr.dll libapriconv.dll libaprutil.dll libdb44.dll libeay32.dll ssleay32.dll) ),
          -a => "$toplevel/blib/script/svk;bin/svk",
-         -a => "$toplevel/blib/script/svk.bat;bin/svk.bat",
          -a => "$toplevel/pkg/win32/maketest.bat;win32/maketest.bat",
          -a => "$toplevel/pkg/win32/svk.ico;win32/svk.ico",
          -a => "$toplevel/pkg/win32/svk-uninstall.ico;win32/svk-uninstall.ico",
          -a => "$toplevel/pkg/win32/svk.nsi;win32/svk.nsi",
          -a => "$toplevel/pkg/win32/Path.nsh;win32/Path.nsh",
+         -a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv').";iconv",
          -a => "$toplevel/contrib;site/contrib",
          -a => "$toplevel/utils;site/utils",
-         -a => "$toplevel/t;site/t",
          -a => "$toplevel/README;README",
          -a => "$toplevel/CHANGES;CHANGES",
          -a => "$toplevel/ARTISTIC;ARTISTIC",
-         -a => "$toplevel/COPYING;COPYING";
+         -a => "$toplevel/COPYING;COPYING",
+         map { -a => "$toplevel/$_;site/$_" } $self->test_files($toplevel);
 
 
 
     rmtree ['build'] if -d 'build';
     mkdir('build');
+    $ENV{PAR_VERBATIM} = 1; # dynloader gets upset and gives warnings if it has #line
     system('pp', @paroptions, "$toplevel/blib/script/svk");
 
-    system('zip', qw(-d build\SVK.par lib\SVK));
-    system('zip', qw(-d build\t\checkout lib\SVK));
-    system('unzip', qw(-o -d build build/SVK.par));
-    $self->build_archive($self->get_svk_version($toplevel));
+    $self->extract( $self->build_dir."/SVK.par" => $self->build_dir."/build" );
+    $self->build_archive( $self->build_dir."/build", $self->get_svk_version($toplevel));
 }
 
 sub build_archive {
-    my ($self, $version) = @_;
+    my ($self, $dir, $version) = @_;
     Env::Path->PATH->Prepend("C:/Program Files/NSIS");
-    system('makensis', "/X !define MUI_VERSION $version", 'build/win32/svk.nsi');
-}
+    system('makensis', "/X !define MUI_VERSION $version", "$dir/win32/svk.nsi");
+    my ($file) = glob($self->build_dir."/build/*.exe");
+    if ($file) {
+        my (undef, $dir, $name) = File::Spec->splitpath($file);
+        rename($file => $name);
 
+        print "Congratulations! You have a new build.\n";
+    } else { 
+        warn "Couldn't build installer.\n";
+    }
+}
 
 package SVK::Build::Darwin;
 use base 'SVK::Build';

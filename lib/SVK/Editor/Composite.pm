@@ -83,7 +83,8 @@ sub AUTOLOAD {
     }
     elsif ($func =~ m/^close_(?:file|directory)/) {
 	if (defined $arg[0]) {
-	    return if $arg[0] eq $self->{anchor_baton};
+	    return if defined $self->{anchor_baton} &&
+		$arg[0] eq $self->{anchor_baton};
 	    return if defined $self->{target_baton} &&
 		$arg[0] eq $self->{target_baton};
 	}
