@@ -7,7 +7,6 @@ our $output;
 
 use Scalar::Util qw(reftype blessed);
 use Digest::MD5 qw(md5_hex);
-use Class::ISA;    # diags only
 use Data::Dumper;  # diags only
 
 
@@ -309,7 +308,7 @@ else {
 
 sub show_isa {
     my $class = ref $_[0] || $_[0];
-
+    require Class::ISA;
 
     diag "$class ISA : ".join(" ", Class::ISA::super_path($class));
 }
@@ -326,7 +325,7 @@ diag("$name is: ".Dumper($what));
 if ( blessed($what) ) {
     diag "methods in ".ref($what).":";
     diag "  $_" for sort keys(%{ref($what)."::"});
-    show_isa($what);
+#    show_isa($what);
 }
     }
     else {
