@@ -70,15 +70,15 @@ use SVK::Util qw( get_buffer_from_editor slurp_fh read_file
 use Class::Autouse qw( SVK::Editor::Rename SVK::Editor::Merge );
 
 sub options {
-    ('m|message=s'  => 'message',
-     'F|file=s'     => 'message_file',
-     'C|check-only' => 'check_only',
-     'S|sign'       => 'sign',
-     'P|patch=s'    => 'patch',
-     'import'       => 'import',
-     'direct'       => 'direct',
-     'template'     => 'template',
-     'interactive'  => 'interactive',
+    ('m|message=s'    => 'message',
+     'F|file=s'       => 'message_file',
+     'C|check-only'   => 'check_only',
+     'S|sign'         => 'sign',
+     'P|patch=s'      => 'patch',
+     'import'         => 'import',
+     'direct'         => 'direct',
+     'template'       => 'template',
+     'i|interactive'  => 'interactive',
      'set-revprop=s@' => 'setrevprop',
     );
 }
