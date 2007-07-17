@@ -200,6 +200,7 @@ t/07smerge-branch-renamed.t
 t/07smerge-copy-co.t
 t/07smerge-copy.t
 t/07smerge-copy2.t
+t/07smerge-cpdelete.t
 t/07smerge-delete.t
 t/07smerge-dir-replaced.t
 t/07smerge-external.t
@@ -214,6 +215,7 @@ t/07smerge-prop.t
 t/07smerge-relayed.t
 t/07smerge-rename.t
 t/07smerge-rename2.t
+t/07smerge-rename3.t
 t/07smerge-rename-dest.t
 t/07smerge-tags.t
 t/07smerge-to-from.t
