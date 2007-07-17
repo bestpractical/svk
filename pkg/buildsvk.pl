@@ -104,9 +104,10 @@ sub new {
 
 sub extract {
     my $self = shift;
-    my $ae = Archive::Extract->new( archive => shift );
+    my ($arc, $to) = @_;
+    my $ae = Archive::Extract->new( archive => $arc );
 
-    $ae->extract( to => $self->build_base )
+    $ae->extract( to => $to || $self->build_base )
 	or die $ae->error;
 }
 
@@ -153,17 +154,28 @@ sub perldest {
     $self->build_dir.'/perl';
 }
 
+sub test_files {
+    my $self = shift;
+    my $toplevel = shift;
+    my @tests;
+
+    open my $fh, "$toplevel/MANIFEST" or die "Could not create $toplevel/MANIFEST: ".$!;
+    while (<$fh>) {
+	chomp;
+	next unless m{^t/};
+        push @tests, $_;
+    }
+    return @tests;
+}
+
 sub prepare_dist {
     my $self = shift;
     my $toplevel = shift;
     copy('svk-wrapper' => $self->build_dir."/svk");
     chmod 0755, $self->build_dir."/svk";
 
-    open my $fh, "$toplevel/MANIFEST" or die "Could not create $toplevel/MANIFEST: ".$!;
-    while (<$fh>) {
-	chomp;
-	next unless m{^t/};
-	my $file = $_;
+
+    for my $file ($self->test_files($toplevel)) {
 	my (undef, $dir, undef) = File::Spec->splitpath($file);
 	mkpath [ $self->build_dir."/$dir" ];
 	copy($toplevel.'/'.$file => $self->build_dir."/$file");
@@ -283,6 +295,7 @@ sub prepare_dist {
     open my $fh, 'win32/paroptions.txt' or die $!;
     while (<$fh>) { next if m/^#/; chomp; push @paroptions, split(/ /,$_) };
     push @paroptions,
+         -o => $self->build_dir."/SVK.par",
          -a => "$toplevel/lib/SVK/Help;lib/SVK/Help",
          -a => "$toplevel/lib/SVK/I18N;lib/SVK/I18N",
          -a => $self->perldest."/auto/POSIX;lib/auto/POSIX",
@@ -299,11 +312,11 @@ sub prepare_dist {
          -a => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv').";iconv",
          -a => "$toplevel/contrib;site/contrib",
          -a => "$toplevel/utils;site/utils",
-         -a => "$toplevel/t;site/t",
          -a => "$toplevel/README;README",
          -a => "$toplevel/CHANGES;CHANGES",
          -a => "$toplevel/ARTISTIC;ARTISTIC",
-         -a => "$toplevel/COPYING;COPYING";
+         -a => "$toplevel/COPYING;COPYING",
+         map { -a => "$toplevel/$_;site/$_" } $self->test_files($toplevel);
 
 
 
@@ -312,17 +325,24 @@ sub prepare_dist {
     $ENV{PAR_VERBATIM} = 1; # dynloader gets upset and gives warnings if it has #line
     system('pp', @paroptions, "$toplevel/blib/script/svk");
 
-    system('zip', qw(-d build\SVK.par lib\SVK));
-    system('unzip', qw(-o -d build build/SVK.par));
-    $self->build_archive($self->get_svk_version($toplevel));
+    $self->extract( $self->build_dir."/SVK.par" => $self->build_dir."/build" );
+    $self->build_archive( $self->build_dir."/build", $self->get_svk_version($toplevel));
 }
 
 sub build_archive {
-    my ($self, $version) = @_;
+    my ($self, $dir, $version) = @_;
     Env::Path->PATH->Prepend("C:/Program Files/NSIS");
-    system('makensis', "/X !define MUI_VERSION $version", 'build/win32/svk.nsi');
-}
+    system('makensis', "/X !define MUI_VERSION $version", "$dir/win32/svk.nsi");
+    my ($file) = glob($self->build_dir."/build/*.exe");
+    if ($file) {
+        my (undef, $dir, $name) = File::Spec->splitpath($file);
+        rename($file => $name);
 
+        print "Congratulations! You have a new build.\n";
+    } else { 
+        warn "Couldn't build installer.\n";
+    }
+}
 
 package SVK::Build::Darwin;
 use base 'SVK::Build';
