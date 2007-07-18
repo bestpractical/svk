@@ -318,6 +318,9 @@ sub prepare_dist {
     my $self = shift;
     my $toplevel = shift;
     my @paroptions;
+    open my $tmpfh, '>test_files.txt' or die $!;
+    print $tmpfh map { "$toplevel/$_;site/$_\n" } $self->test_files($toplevel);
+    close $tmpfh;
     open my $fh, 'win32/paroptions.txt' or die $!;
     while (<$fh>) { next if m/^#/; chomp; push @paroptions, split(/ /,$_) };
     push @paroptions,
@@ -342,7 +345,8 @@ sub prepare_dist {
          -a => "$toplevel/CHANGES;CHANGES",
          -a => "$toplevel/ARTISTIC;ARTISTIC",
          -a => "$toplevel/COPYING;COPYING",
-         map { -a => "$toplevel/$_;site/$_" } $self->test_files($toplevel);
+	 -A => "test_files.txt";
+#         map { -a => "$toplevel/$_;site/$_" } $self->test_files($toplevel);
 
 
 
