@@ -7,4 +7,4 @@ fi
 BASE=`echo $BASE | sed s/maketest$//`;
 PROVE=`which prove`
 cd /tmp
-LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl "$PROVE" ${BASE}t
+LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl "$PROVE" -r ${BASE}t
