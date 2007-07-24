@@ -50,7 +50,7 @@
 # END BPS TAGGED BLOCK }}}
 package SVK;
 
-use version; our $VERSION = qv(2.0.1_91);
+use version; our $VERSION = qv(2.0.2);
 
 =head1 NAME
 
