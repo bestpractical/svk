@@ -173,13 +173,15 @@ sub _unmodified {
     my ($self, $target) = @_;
     my (@modified, @unknown);
     $target = $self->{xd}->target_condensed($target); # anchor
-    $self->{xd}->checkout_delta
-	( $target->for_checkout_delta,
-	  xdroot => $target->create_xd_root,
-	  editor => SVK::Editor::Status->new
-	  ( notify => SVK::Notify->new
-	    ( cb_flush => sub { push @modified, $_[0] })),
-	  cb_unknown => sub { push @unknown, $_[1] } );
+    $target->run_delta(
+        SVK::Editor::Status->new(
+            notify =>
+                SVK::Notify->new( cb_flush => sub { push @modified, $_[0] } )
+        ),
+        {   cb_unknown => sub { push @unknown, $_[1] }
+        }
+    );
+
 
     if (@modified || @unknown) {
 	my @reports = sort map { loc ("%1 is modified.\n", $target->report_copath ($_)) } @modified;

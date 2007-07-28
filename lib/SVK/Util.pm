@@ -73,6 +73,8 @@ our @EXPORT_OK = qw(
     str2time time2str reformat_svn_date
 
     find_dotsvk
+
+    compile_apr_fnmatch
 );
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
@@ -1003,6 +1005,59 @@ sub is_path_inside {
     my ($path, $parent) = @_;
     return 1 if $path eq $parent;
     return substr ($path, 0, length ($parent)+1) eq "$parent/";
+}
+
+# Emulates APR's apr_fnmatch function with flags=0, which is what
+# Subversion uses.  Converts a string in fnmatch format to a Perl regexp.
+# Code is based on Barrie Slaymaker's Regexp::Shellish.
+sub compile_apr_fnmatch {
+    my $re = shift;
+
+    $re =~ s@
+             (  \\.
+             |  \[                       # character class
+                   [!^]?                 # maybe negation (^ and ! are both supported)
+                   (?: (?:\\.|[^\\\]])   # one item
+                     (?: -               # possibly followed by a dash and another
+                       (?:\\.|[^\\\]]))? # item
+                   )*                    # 0 or more entries (zero case will be checked specially below)
+                (\]?)                    # if this ] doesn't match, that means we fell off end of string!
+             |  .
+            )
+             @
+               if ( $1 eq '?' ) {
+                   '.' ;
+               } elsif ( $1 eq '*' ) {
+                   '.*' ;
+               } elsif ( substr($1, 0, 1) eq '[') {
+                   if ($1 eq '[]') { # should never match
+                       '[^\s\S]';
+                   } elsif ($1 eq '[!]' or $1 eq '[^]') { # 0-length match
+                       '';
+                   } else {
+                       my $temp = $1;
+                       my $failed = $2 eq '';
+                       if ($failed) {
+                           '[^\s\S]';
+                       } else {
+                           $temp =~ s/(\\.|.)/$1 eq '-' ? '-' : quotemeta(substr($1, -1))/ges;
+                           # the previous step puts in backslashes at beginning and end; remove them
+                           $temp =~ s/^\\\[/[/;
+                           $temp =~ s/\\\]$/]/;
+                           # if it started with [^ or [!, it now starts with [\^ or [\!; fix.
+                           $temp =~ s/^\[     # literal [
+                                       \\     # literal backslash
+                                       [!^]   # literal ! or ^
+                                     /[^/x;
+                           $temp;
+                       }
+                   }
+               } else {
+                   quotemeta(substr( $1, -1 ) ); # ie, either quote it, or if it's \x, quote x
+               }
+    @gexs ;
+
+    return qr/\A$re\Z/s;
 }
 
 1;

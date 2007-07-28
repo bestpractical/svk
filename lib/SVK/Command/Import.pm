@@ -167,9 +167,15 @@ sub run {
     my ($editor, %cb) = $self->get_editor ($basetarget, $committed);
 
     $self->{import} = 1;
-    $self->run_delta (SVK::Path::Checkout->real_new
-		      ({ source => $basetarget,
-			 copath_anchor => $copath }), $root, $editor, %cb);
+    $self->run_delta(
+        SVK::Path::Checkout->real_new(
+            {   source        => $basetarget,
+                xd            => $self->{xd},
+                copath_anchor => $copath
+            }
+        ),
+        $root, $editor, %cb
+    );
 
     if ($self->{check_only}) {
 	print loc("Directory %1 will be imported to depotpath %2.\n",

@@ -379,6 +379,21 @@ sub prev {
     return $self->source;
 }
 
+=head1 run_delta( $editor, $opt )
+
+Run delta between base of checkout and the checkout through $editor.
+
+=cut
+
+sub run_delta {
+    my ( $self, $editor, $opt ) = @_;
+    require SVK::Delta;
+    my $delta = SVK::Delta->new( { xd => $self->xd, checkout => $self->xd->{checkout} } );
+    $opt->{use_old_delta}
+        ? $delta->checkout_delta1( $self, $editor, $opt )
+	: $delta->checkout_delta2( $self, $editor, $opt );
+}
+
 =head1 SEE ALSO
 
 L<SVK::Path>

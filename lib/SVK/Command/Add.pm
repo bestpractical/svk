@@ -87,37 +87,40 @@ sub run {
 	}
     }
 
-    $self->{xd}->checkout_delta
-	( $target->for_checkout_delta,
-	  xdroot => $target->create_xd_root,
-	  delete_verbose => 1,
-	  unknown_verbose => $self->{recursive},
-	  editor => SVK::Editor::Status->new
-	  ( notify => SVK::Notify->new
-	    ( cb_flush => sub {
-		  my ($path, $status) = @_;
-	          to_native($path, 'path');
-		  my $copath = $target->copath($path);
-		  my $report = $target->report->subdir($path);
+    $target->run_delta(
+        SVK::Editor::Status->new(
+            notify => SVK::Notify->new(
+                cb_flush => sub {
+                    my ( $path, $status ) = @_;
+                    to_native( $path, 'path' );
+                    my $copath = $target->copath($path);
+                    my $report = $target->report->subdir($path);
 
-		  $target->contains_copath ($copath) or return;
-		  die loc ("%1 already added.\n", $report)
-		      if !$self->{recursive} && ($status->[0] eq 'R' || $status->[0] eq 'A');
+                    $target->contains_copath($copath) or return;
+                    die loc( "%1 already added.\n", $report )
+                        if !$self->{recursive}
+                        && ( $status->[0] eq 'R' || $status->[0] eq 'A' );
 
-		  return unless $status->[0] eq 'D';
-		  lstat ($copath);
-		  $self->_do_add ('R', $copath, $report, !-d _)
-		      if -e _;
-	      })),
-	  cb_unknown => sub {
-	      my ($editor, $path) = @_;
-	      to_native($path, 'path');
-	      my $copath = $target->copath($path);
-	      my $report = $target->report->subdir($path);
-	      lstat ($copath);
-	      $self->_do_add ('A', $copath, $report, !-d _);
-	  },
-	);
+                    return unless $status->[0] eq 'D';
+                    lstat($copath);
+                    $self->_do_add( 'R', $copath, $report, !-d _ )
+                        if -e _;
+                }
+            )
+        ),
+        {   delete_verbose  => 1,
+            unknown_verbose => $self->{recursive},
+            cb_unknown      => sub {
+                my ( $editor, $path ) = @_;
+                to_native( $path, 'path' );
+                my $copath = $target->copath($path);
+                my $report = $target->report->subdir($path);
+                lstat($copath);
+                $self->_do_add( 'A', $copath, $report, !-d _ );
+                }
+        },
+    );
+
     return;
 }
 

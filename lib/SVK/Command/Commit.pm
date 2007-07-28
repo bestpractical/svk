@@ -376,21 +376,20 @@ sub get_committable {
         $status_editor = SVK::Editor::Status->new(notify => $notify);
     }
 
-    $self->{xd}->checkout_delta
-	( $target->for_checkout_delta,
-	  depth => $self->{recursive} ? undef : 0,
-	  $self->exclude_mirror ($target),
-	  xdroot => $target->create_xd_root,
-	  nodelay => 1,
-	  delete_verbose => 1,
-	  absent_ignore => 1,
-	  editor => $status_editor,
-	  cb_conflict => sub { shift->conflict(@_) },
-      cb_unknown  => sub {
-          my ($self, $path) = @_;
-          push @unversioned, "?   $path\n";
-      },
-	);
+    $target->run_delta(
+        $status_editor,
+        {   depth => $self->{recursive} ? undef: 0,
+            $self->exclude_mirror($target),
+            nodelay        => 1,
+            delete_verbose => 1,
+            absent_ignore  => 1,
+            cb_conflict    => sub { shift->conflict(@_) },
+            cb_unknown  => sub {
+              my ($self, $path) = @_;
+              push @unversioned, "?   $path\n";
+            },
+        }
+    );
 
     my $conflicts = grep {$_->[0] eq 'C'} @$targets;
 
@@ -635,24 +634,30 @@ sub run {
 sub run_delta {
     my ($self, $target, $xdroot, $editor, %cb) = @_;
 
-    $self->{xd}->checkout_delta
-	( $target->for_checkout_delta,
-	  depth => $self->{recursive} ? undef : 0,
-	  debug => $logger->is_debug(),
-	  xdroot => $xdroot,
-	  editor => $editor,
-	  send_delta => !$cb{send_fulltext},
-	  nodelay => $cb{send_fulltext},
-	  $self->exclude_mirror ($target),
-	  cb_exclude => sub { $logger->error(loc ("%1 is a mirrored path, please commit separately.",
-					 abs2rel ($_[1], $target->copath => $target->report))) },
-	  $self->{import} ?
-	  ( auto_add => 1,
-	    obstruct_as_replace => 1,
-	    absent_as_delete => 1) :
-	  ( absent_ignore => 1),
-	  cb_copyfrom => $cb{cb_copyfrom}
-	);
+    $target->run_delta(
+        $editor,
+        {   depth => $self->{recursive} ? undef: 0,
+            debug      => $logger->is_debug(),
+            send_delta => !$cb{send_fulltext},
+            nodelay    => $cb{send_fulltext},
+            $self->exclude_mirror($target),
+            cb_exclude => sub {
+                $logger->error(
+                    loc("%1 is a mirrored path, please commit separately.",
+                        abs2rel( $_[1], $target->copath => $target->report )
+                    )
+                );
+            },
+            $self->{import}
+            ? ( auto_add            => 1,
+                obstruct_as_replace => 1,
+                absent_as_delete    => 1
+                )
+            : ( absent_ignore => 1 ),
+            cb_copyfrom => $cb{cb_copyfrom},
+            use_old_delta => ($self->{check_only} || $self->{import}),
+        }
+    );
     delete $self->{save_message};
     return;
 }

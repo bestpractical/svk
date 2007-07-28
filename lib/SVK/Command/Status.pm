@@ -121,27 +121,25 @@ sub run {
 		undef, 1)
 	  )
       );
-    $self->{xd}->checkout_delta
-	( $target->for_checkout_delta,
-	  xdroot => $target->create_xd_root,
-	  nodelay => 1,
-	  delete_verbose => 1,
-	  editor => $editor,
-	  cb_conflict => sub { shift->conflict(@_) },
-	  cb_obstruct => sub { shift->obstruct(@_) },
-	  $self->{verbose} ?
-	      (cb_unchanged => sub { shift->unchanged(@_) },
-	      )            :
-	      (),
-	  $self->{recursive} ? () : (depth => 1),
-	  $self->{no_ignore} ?
-              (cb_ignored => sub { shift->ignored(@_) },
-              )              :
-              (),
-	  $self->{quiet} ?
-              ()         :
-              (cb_unknown => sub { shift->unknown(@_) } )
-	);
+
+    $target->run_delta($editor,
+        {   nodelay        => 1,
+            delete_verbose => 1,
+            cb_conflict    => sub { shift->conflict(@_) },
+            cb_obstruct    => sub { shift->obstruct(@_) },
+            $self->{verbose}
+            ? ( cb_unchanged => sub { shift->unchanged(@_) }, )
+            : (),
+            $self->{recursive} ? () : ( depth => 1 ),
+            $self->{no_ignore}
+            ? ( cb_ignored => sub { shift->ignored(@_) },
+                )
+            : (),
+            $self->{quiet} ? ()
+            : ( cb_unknown => sub { shift->unknown(@_) } )
+        }
+    );
+
     return;
 }
 

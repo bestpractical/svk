@@ -79,43 +79,60 @@ sub run {
     my ($self, $target) = @_;
     my $xdroot = $target->create_xd_root;
 
-	$self->{xd}->checkout_delta
-	    ( $target->for_checkout_delta,
-	      xdroot => $xdroot,
-	      depth => $self->{recursive} ? undef : 0,
-	      delete_verbose => 1,
-	      absent_verbose => 1,
-	      nodelay => 1,
-	      cb_conflict => sub { shift->conflict(@_) },
-	      cb_unknown => sub { shift->unknown(@_) },
-	      editor => SVK::Editor::Status->new
-	      ( notify => SVK::Notify->new
-		( cb_flush => sub {
-		      my ($path, $status) = @_;
-		      my $dpath = length $path ? $target->path_anchor."/$path" : $target->path_anchor;
-	              to_native($path);
-		      my $st = $status->[0];
-		      my $copath = $target->copath ($path);
+    $target->run_delta(
+        SVK::Editor::Status->new(
+            notify => SVK::Notify->new(
+                cb_flush => sub {
+                    my ( $path, $status ) = @_;
+                    my $dpath = length $path
+                        ? $target->path_anchor . "/$path"
+                        : $target->path_anchor;
+                    to_native($path);
+                    my $st     = $status->[0];
+                    my $copath = $target->copath($path);
 
-                      if ($st =~ /[DMRC!]/) {
-			  # conflicted items do not necessarily exist
-			  return $self->do_unschedule ($target, $copath)
-			      if ($st eq 'C' || $status->[2]) && !$xdroot->check_path ($dpath);
-                          return $self->do_revert($target, $copath, $dpath, $xdroot);
-                      } elsif ($st eq '?') {
-			  return unless $target->contains_copath ($copath);
-			  $logger->warn(loc("%1 is not versioned; ignored.",
-			      $target->report_copath ($copath)));
-			  return;
-		      }
+                    if ( $st =~ /[DMRC!]/ ) {
 
-		      # Check that we are not reverting parents
-		      $target->contains_copath($copath) or return;
+                        # conflicted items do not necessarily exist
+                        return $self->do_unschedule( $target, $copath )
+                            if ( $st eq 'C' || $status->[2] )
+                            && !$xdroot->check_path($dpath);
+                        return $self->do_revert( $target, $copath, $dpath,
+                            $xdroot );
+                    } elsif ( $st eq '?' ) {
+                        return unless $target->contains_copath($copath);
+                        $logger->warn(
+                            loc("%1 is not versioned; ignored.",
+                                $target->report_copath($copath)
+                            )
+                        );
+                        return;
+                    }
 
-                      $self->do_unschedule($target, $copath);
-		  },
-		),
-	      ));
+                    # Check that we are not reverting parents
+                    $target->contains_copath($copath) or return;
+
+                    $self->do_unschedule( $target, $copath );
+                },
+            ),
+        ),
+        {   depth => $self->{recursive} ? undef: 0,
+            delete_verbose => 1,
+            absent_verbose => 1,
+            nodelay        => 1,
+            cb_conflict    => sub {
+                shift->conflict(@_);
+            },
+            cb_unknown => sub {
+                shift->unknown(@_);
+            },
+	    # XXX: we are unscheduling things a bit too early that
+	    # interferes with the new delta code.  this might be
+	    # solved if we don't flush add_directory as soon as we get
+	    # the editor calls.
+            use_old_delta => 1,
+        }
+    );
 
     return;
 }
