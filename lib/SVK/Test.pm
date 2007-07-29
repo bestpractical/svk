@@ -293,6 +293,10 @@ sub overwrite_file_raw {
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
+    unless (-e $file) {
+	@_ = (undef, $content, $test);
+	goto &is;
+    }
     open my ($fh), '<', $file or confess "Cannot read from $file: $!";
     my $actual_content = do { local $/; <$fh> };
 
