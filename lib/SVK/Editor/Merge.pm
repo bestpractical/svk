@@ -740,6 +740,7 @@ sub _merge_file_delete {
 # Note that empty hash means don't delete - conflict.
 sub _check_delete_conflict {
     my ($self, $path, $rpath, $kind, $pdir, $pool) = @_;
+    $pool->default;
 
     my $localkind = $self->inspector->exist ($path, $pool);
 
@@ -760,8 +761,8 @@ sub _check_delete_conflict {
 
     # it's dir...
 
-    my $dirmodified = $self->inspector->dirdelta ($path, $self->{base_root}, $rpath);
-    my $entries = $self->{base_root}->dir_entries ($rpath);
+    my $dirmodified = $self->inspector->dirdelta ($path, $self->{base_root}, $rpath, $pool);
+    my $entries = $self->{base_root}->dir_entries ($rpath, $pool);
 
     my $baton = $self->{storage_baton}{$path} = $self->{storage}->open_directory (
         $path, $self->{storage_baton}{$pdir}, $self->{cb_rev}->($path), $pool
@@ -777,13 +778,13 @@ sub _check_delete_conflict {
                 $torm->{$name} = undef;
 	    }
             else {
-                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, $pool);
+                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new($pool));
             }
             delete $dirmodified->{$name};
 	}
 	else { # dir or unmodified file
             $torm->{$name} = $self->_check_delete_conflict
-                ($cpath, $crpath, $entry->kind, $path, $pool);
+                ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new($pool));
 	}
     }
 
@@ -791,7 +792,7 @@ sub _check_delete_conflict {
         local $self->{tree_conflict} = 1;
         my ($cpath, $crpath) = ("$path/$node", "$rpath/$node");
         my $kind = $self->{base_root}->check_path ($crpath);
-        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, $pool);
+        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, SVN::Pool->new($pool));
     }
 
     $self->{storage}->close_directory ($baton, $pool);
