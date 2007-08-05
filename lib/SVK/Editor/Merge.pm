@@ -251,9 +251,10 @@ sub add_file {
     return unless defined $pdir;
     my $pool = pop @arg;
     # a replaced node shouldn't be checked with cb_exist
+    my $spool = SVN::Pool->new_default($pool);
     my $touched = $self->{notify}->node_status($path);
     if (!$self->{added}{$pdir} && !$touched &&
-	(my $kind = $self->inspector->exist($path, $pool))) {
+	(my $kind = $self->inspector->exist($path, $spool))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -278,7 +279,9 @@ sub add_file {
 	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
-	$pool->default if $pool && $pool->can ('default');
+	# XXX: Why was this here? All tests pass without it.
+	#$pool->default if $pool && $pool->can ('default');
+
 	# XXX: fpool is used for testing if the file is open rather than add,
 	# so use another field to hold it.
 	$self->{info}{$path}{hold_pool} = $pool;
@@ -740,7 +743,6 @@ sub _merge_file_delete {
 # Note that empty hash means don't delete - conflict.
 sub _check_delete_conflict {
     my ($self, $path, $rpath, $kind, $pdir, $pool) = @_;
-    $pool->default;
 
     my $localkind = $self->inspector->exist ($path, $pool);
 
@@ -778,13 +780,13 @@ sub _check_delete_conflict {
                 $torm->{$name} = undef;
 	    }
             else {
-                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new($pool));
+                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new_default($pool));
             }
             delete $dirmodified->{$name};
 	}
 	else { # dir or unmodified file
             $torm->{$name} = $self->_check_delete_conflict
-                ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new($pool));
+                ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new_default($pool));
 	}
     }
 
@@ -792,7 +794,7 @@ sub _check_delete_conflict {
         local $self->{tree_conflict} = 1;
         my ($cpath, $crpath) = ("$path/$node", "$rpath/$node");
         my $kind = $self->{base_root}->check_path ($crpath);
-        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, SVN::Pool->new($pool));
+        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, SVN::Pool->new_default($pool));
     }
 
     $self->{storage}->close_directory ($baton, $pool);
@@ -830,7 +832,7 @@ sub _partial_delete {
     for (sort keys %$torm) {
 	my $cpath = "$path/$_";
         # check that out
-	my $status = $self->_partial_delete ($torm->{$_}, $cpath, $baton, SVN::Pool->new ($pool), 1);
+	my $status = $self->_partial_delete ($torm->{$_}, $cpath, $baton, SVN::Pool->new_default($pool), 1);
         push @children_stats, [$cpath, $status];
         $skip_children = 0  unless $status eq 'D';
         $summary = 'C' if $status eq 'C';
@@ -870,10 +872,9 @@ sub _partial_delete {
 }
 
 sub delete_entry {
-    my ($self, $path, $revision, $pdir, @arg) = @_;
+    my ($self, $path, $revision, $pdir, $pool) = @_;
     no warnings 'uninitialized';
-    my $pool = $arg[-1];
-    $pool->default;
+    $pool = SVN::Pool->new_default($pool);
     my ($basepath, $fromrev) = $self->_resolve_base($path);
     $basepath = $path unless defined $basepath;
 
@@ -888,10 +889,10 @@ sub delete_entry {
 	# XXX: this is too evil
 	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
 	my $kind = $self->{base_root}->check_path ($rpath);
-        $torm = $self->_check_delete_conflict ($path, $rpath, $kind, $pdir, @arg);
+	$torm = $self->_check_delete_conflict ($path, $rpath, $kind, $pdir, $pool);
     }
 
-    $self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, @arg);
+    $self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, $pool);
     ++$self->{changes};
 }
 
