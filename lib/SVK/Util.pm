@@ -277,6 +277,7 @@ sub get_buffer_from_editor {
 	open $fh, $file or die $!;
 	local $/;
 	$content = <$fh>;
+    close $fh;
     }
 
     my $time = time;
