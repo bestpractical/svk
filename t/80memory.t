@@ -2,7 +2,7 @@
 use strict;
 BEGIN {
   -d '/proc' or
-    eval { use BSD::Resource; } or
+    eval { require BSD::Resource; } or
     plan( skip_all => "No /proc and no BSD::Resources" );
 }
 use SVK::Test;
@@ -17,7 +17,7 @@ if( -d '/proc' ) {
     return $ret;
   }
 } else {
-  use BSD::Resource;
+  require BSD::Resource;
   $curr_mem = sub {
     my @r = BSD::Resource::getrusage();
     return $r[2];
