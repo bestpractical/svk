@@ -41,6 +41,8 @@ my $depot = SVK::Depot->new({ depotname => $depotname, repos => $repos, repospat
 my $t  = SVK::Path->real_new({ depot => $depot, path => $path })
     ->refresh_revision;
 my ( $m, $mpath ) = $t->is_mirrored;
+die $t->depotpath." is not a mirrored path.\n" if !$m;
+die $t->depotpath." is inside a mirrored path.\n" if $mpath;
 die "only whole repository mirrors are supported.\n" if length($mpath);
 
 
