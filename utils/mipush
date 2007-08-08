@@ -16,10 +16,10 @@ my $revspec;
 
 sub usage {
         print <<EOUSAGE;
-Usage:  mipush svn_dump_file
+Usage:  mipush repopath depotpath svn_dump_file
     Reverse version of pullyu
     
-    Example: ./mipush myproject-svn-dumpfile
+    Example: ./mipush ./.svk/local //mirror/svk myproject-svn-dumpfile
     
 EOUSAGE
 exit;
@@ -30,13 +30,13 @@ die unless GetOptions ("r|revision=s@" => \$revspec);
 
 use SVN::Dump 0.03;
 
+my $repospath = shift or usage();
+my $depotpath = shift or usage();
+my ($depotname, $path) = $depotpath =~ m|^/([^/]*)(/.*?)/?$|;
 my $file = shift or usage();
-my $repospath = $ENV{HOME}.'/.svk/misvk';
-my $path = '/mirror/svk';
-my $url = 'http://code.bestpractical.com/svk';
 
 my $repos = SVN::Repos::open($repospath) or die $!;
-my $depot = SVK::Depot->new({ depotname => 'misvk', repos => $repos, repospath => $repospath});
+my $depot = SVK::Depot->new({ depotname => $depotname, repos => $repos, repospath => $repospath});
 # TODO: for exists mirror, maybe we should remove it and create a new one?
 my $t  = SVK::Path->real_new({ depot => $depot, path => $path })
     ->refresh_revision;
