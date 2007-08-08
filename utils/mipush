@@ -64,11 +64,15 @@ while ( my $record = $dump->next_record() ) {
 	    $path = $prefix.$path;
 	    $rec->set_header('Node-copyfrom-path' => $path );
 	}
-
+	if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
+	    $rec->set_header('Node-copyfrom-rev' =>
+		scalar $m->find_local_rev( $rev, $m->source_uuid ) );
+	}
+	
 	if ($rec->get_header('Revision-number')) {
 	    $rev = $rec->get_header('Revision-number');
 	    $prev = $rev if !$prev;
-	    $rec->set_property('svm:headrev',$rec->get_header('Revision-number'));
+	    $rec->set_property('svm:headrev',$m->source_uuid.':'.$rec->get_header('Revision-number'));
 	}
 
 
@@ -85,7 +89,8 @@ while ( my $record = $dump->next_record() ) {
     if ($rev and $prev != $rev) {
 	$buf = $header.$buf;
 	open my $fh, '<', \$buf;
-	my $ret = SVN::Repos::load_fs2( $repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, undef, undef, undef, undef );
+	my $ret = SVN::Repos::load_fs2( $repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+	# (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
 #	warn Dumper($ret);
 	$buf = "";
 	$prev = $rev;
