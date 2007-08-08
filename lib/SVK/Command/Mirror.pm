@@ -61,6 +61,7 @@ use constant narg => undef;
 sub options {
     ('l|list'  => 'list',
      'd|delete|detach'=> 'detach',
+     'b|bootstrap' => 'bootstrap',
      'upgrade' => 'upgrade',
      'relocate'=> 'relocate',
      'unlock'=> 'unlock',
@@ -140,6 +141,24 @@ sub run {
 
     $m->detach(1); # remove svm:source and svm:uuid too
     print loc("Mirror path '%1' detached.\n", $target->depotpath);
+    return;
+}
+
+package SVK::Command::Mirror::bootstrap;
+use base qw(SVK::Command::Mirror);
+use SVK::I18N;
+
+use constant narg => 2;
+
+sub run {
+    my ($self, $target, $dumpfile) = @_;
+    my ($m, $mpath) = $target->is_mirrored;
+
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
+
+    $m->bootstrap($dumpfile); # load from dumpfile
+    print loc("Mirror path '%1' synced from dumpfile.\n", $target->depotpath);
     return;
 }
 

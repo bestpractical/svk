@@ -26,18 +26,19 @@ is_output($svk, mirror => ['/m2/m', $uri],
           ["Mirror initialized.  Run svk sync /m2/m to start mirroring."]);
 $svk->sync('/m2/m');
 
-TODO: {
-
-local $TODO = 'not yet';
 is_output($svk, mirror => ['--bootstrap', '//m', $dump],
-	  []);
+	  ['Mirror path \'//m\' synced from dumpfile.']);
 
+TODO: {
+local $TODO = 'not yet';
 # compare normal mirror result and bootstrap mirror result
 my ($exp_mirror, $boot_mirror);
 open my $exp, '>', \$exp_mirror;
 open my $boot, '>', \$boot_mirror;
 dump_all($xd->find_depot('') => $exp);
 dump_all($xd->find_depot('m2') => $boot);
+$exp_mirror =~ s/UUID: .*//;
+$boot_mirror =~ s/UUID: .*//;
 
 is($exp_mirror, $boot_mirror); # do something with UUID, they should be different
 

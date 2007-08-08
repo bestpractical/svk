@@ -230,6 +230,69 @@ sub detach {
     $editor->close_edit;
 }
 
+=item bootstrap
+
+=cut
+
+sub bootstrap {
+    my ($self, $dumpfile) = @_;
+    use SVN::Dump;
+
+    my $dump = SVN::Dump->new( { file => $dumpfile } );
+    my $prefix = $self->path.'/';
+
+    my $prev = undef;
+    my $rev = 0;
+    my $buf;
+    my $header;
+    while ( my $record = $dump->next_record() ) {
+	if ($record->type eq 'format' || $record->type eq 'uuid') {
+	    $header = $header.$record->as_string;
+	    next;
+	}
+
+	my $translate = sub {
+	    my $rec = shift;
+
+	    if (my $path = $rec->get_header('Node-copyfrom-path')) {
+		$path = $prefix.$path;
+		$rec->set_header('Node-copyfrom-path' => $path );
+	    }
+	    if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
+		$rec->set_header('Node-copyfrom-rev' =>
+		    scalar $self->find_local_rev( $rev, $self->source_uuid ) );
+	    }
+	    
+	    if ($rec->get_header('Revision-number')) {
+		$rev = $rec->get_header('Revision-number');
+		$prev = $rev if !$prev;
+		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rec->get_header('Revision-number'));
+	    }
+
+
+	    if ( my $path = $rec->get_header('Node-path') ) {
+		$path = $prefix.$path;
+		$rec->set_header('Node-path' => $path);
+	    }
+
+	};
+	$translate->( $record );
+	my $inc = $record->get_included_record;
+	$translate->( $inc ) if $inc;
+
+	if ($rev and $prev != $rev) {
+	    $buf = $header.$buf;
+	    open my $fh, '<', \$buf;
+	    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+	    # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+	    $buf = "";
+	    $prev = $rev;
+	}
+
+	$buf = $buf.$record->as_string;
+    }
+}
+
 =item relocate($newurl)
 
 =item with_lock($code)
