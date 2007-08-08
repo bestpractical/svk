@@ -1,0 +1,95 @@
+#!/usr/bin/perl -w
+use strict;
+use SVK;
+use SVK::XD;
+use SVN::Repos;
+use SVK::Util 'traverse_history';
+use Getopt::Long;
+use Data::Dumper::Simple;
+#15:03 <clkao> mirror boot
+#15:03 <clkao> o mirror state initialisation, SVK::Mirror accessible
+#15:03 <clkao> o dump->read_record
+#15:03 <clkao> o translate record, add revprop for svm:head
+#15:03 <clkao> o svn::repos::load_from_dump($record->as_string)
+
+my $revspec;
+
+sub usage {
+        print <<EOUSAGE;
+Usage:  mipush svn_dump_file
+    Reverse version of pullyu
+    
+    Example: ./mipush myproject-svn-dumpfile
+    
+EOUSAGE
+exit;
+}
+
+
+die unless GetOptions ("r|revision=s@" => \$revspec);
+
+use SVN::Dump 0.03;
+
+my $file = shift or usage();
+my $repospath = $ENV{HOME}.'/.svk/misvk';
+my $path = '/mirror/svk';
+my $url = 'http://code.bestpractical.com/svk';
+
+my $repos = SVN::Repos::open($repospath) or die $!;
+my $depot = SVK::Depot->new({ depotname => 'misvk', repos => $repos, repospath => $repospath});
+# TODO: for exists mirror, maybe we should remove it and create a new one?
+my $t  = SVK::Path->real_new({ depot => $depot, path => $path })
+    ->refresh_revision;
+my ( $m, $mpath ) = $t->is_mirrored;
+die "only whole repository mirrors are supported.\n" if length($mpath);
+
+
+my $prev = undef;
+my $rev = 0;
+my $dump = SVN::Dump->new( { file => $file } );
+my $prefix = $m->path.'/';
+my $buf;
+my $header;
+while ( my $record = $dump->next_record() ) {
+    if ($record->type eq 'format' || $record->type eq 'uuid') {
+	$header = $header.$record->as_string;
+	next;
+    }
+    #warn Dumper($record->as_string);
+
+    my $translate = sub {
+	my $rec = shift;
+
+	if (my $path = $rec->get_header('Node-copyfrom-path')) {
+	    $path = $prefix.$path;
+	    $rec->set_header('Node-copyfrom-path' => $path );
+	}
+
+	if ($rec->get_header('Revision-number')) {
+	    $rev = $rec->get_header('Revision-number');
+	    $prev = $rev if !$prev;
+	    $rec->set_property('svm:headrev',$rec->get_header('Revision-number'));
+	}
+
+
+	if ( my $path = $rec->get_header('Node-path') ) {
+	    $path = $prefix.$path;
+	    $rec->set_header('Node-path' => $path);
+	}
+
+    };
+    $translate->( $record );
+    my $inc = $record->get_included_record;
+    $translate->( $inc ) if $inc;
+
+    if ($rev and $prev != $rev) {
+	$buf = $header.$buf;
+	open my $fh, '<', \$buf;
+	my $ret = SVN::Repos::load_fs2( $repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, undef, undef, undef, undef );
+#	warn Dumper($ret);
+	$buf = "";
+	$prev = $rev;
+    }
+
+    $buf = $buf.$record->as_string;
+}
