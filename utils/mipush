@@ -5,7 +5,6 @@ use SVK::XD;
 use SVN::Repos;
 use SVK::Util 'traverse_history';
 use Getopt::Long;
-use Data::Dumper::Simple;
 #15:03 <clkao> mirror boot
 #15:03 <clkao> o mirror state initialisation, SVK::Mirror accessible
 #15:03 <clkao> o dump->read_record
@@ -57,7 +56,6 @@ while ( my $record = $dump->next_record() ) {
 	$header = $header.$record->as_string;
 	next;
     }
-    #warn Dumper($record->as_string);
 
     my $translate = sub {
 	my $rec = shift;
@@ -66,15 +64,16 @@ while ( my $record = $dump->next_record() ) {
 	    $path = $prefix.$path;
 	    $rec->set_header('Node-copyfrom-path' => $path );
 	}
-	if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
-	    $rec->set_header('Node-copyfrom-rev' =>
-		scalar $m->find_local_rev( $rev, $m->source_uuid ) );
-	}
+#	if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
+#	    $rec->set_header('Node-copyfrom-rev' => 0);
+#		scalar $m->find_local_rev( $rev, $m->source_uuid ) - $rev);
+#	    warn "$rev changed to ". (scalar $m->find_local_rev( $rev, $m->source_uuid ) - $rev) ;
+#	}
 	
 	if ($rec->get_header('Revision-number')) {
 	    $rev = $rec->get_header('Revision-number');
 	    $prev = $rev if !$prev;
-	    $rec->set_property('svm:headrev',$m->source_uuid.':'.$rec->get_header('Revision-number'));
+	    $rec->set_property('svm:headrev',$m->source_uuid.':'.$rev."\n");
 	}
 
 
@@ -89,14 +88,23 @@ while ( my $record = $dump->next_record() ) {
     $translate->( $inc ) if $inc;
 
     if ($rev and $prev != $rev) {
-	$buf = $header.$buf;
-	open my $fh, '<', \$buf;
-	my $ret = SVN::Repos::load_fs2( $repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
-	# (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
-#	warn Dumper($ret);
+	import_repos($header,$buf);
 	$buf = "";
 	$prev = $rev;
     }
 
     $buf = $buf.$record->as_string;
 }
+
+if ($rev) {
+    import_repos($header,$buf);
+}
+sub import_repos {
+    my ($header, $buf) = @_;
+    $buf = $header.$buf;
+    open my $fh, '<', \$buf;
+    my $ret = SVN::Repos::load_fs2( $repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+    # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+    return $ret;
+}
+
