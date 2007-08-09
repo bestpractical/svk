@@ -259,8 +259,8 @@ sub bootstrap {
 		$rec->set_header('Node-copyfrom-path' => $path );
 	    }
 	    if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
-		$rec->set_header('Node-copyfrom-rev' =>
-		    scalar $self->find_local_rev( $rev, $self->source_uuid )  - 1);
+#		$rec->set_header('Node-copyfrom-rev' =>
+#		    scalar $self->find_local_rev( $rev, $self->source_uuid )  - 1);
 	    }
 	    
 	    if ($rec->get_header('Revision-number')) {
@@ -281,10 +281,7 @@ sub bootstrap {
 	$translate->( $inc ) if $inc;
 
 	if ($rev and $prev != $rev) {
-	    $buf = $header.$buf;
-	    open my $fh, '<', \$buf;
-	    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
-	    # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+	    $self->_import_repos($header,$buf);
 	    $buf = "";
 	    $prev = $rev;
 	}
@@ -293,11 +290,19 @@ sub bootstrap {
     }
     # last one
     if ($rev) {
-	$buf = $header.$buf;
-	open my $fh, '<', \$buf;
-	my $ret = SVN::Repos::load_fs2( $self->repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+	$self->_import_repos($header, $buf)
     }
 
+}
+
+sub _import_repos {
+    my $self = shift;
+    my ($header, $buf) = @_;
+    $buf = $header.$buf;
+    open my $fh, '<', \$buf;
+    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+    # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+    return $ret;
 }
 
 =item relocate($newurl)

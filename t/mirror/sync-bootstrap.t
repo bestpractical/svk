@@ -29,8 +29,6 @@ $svk->sync('/m2/m');
 is_output($svk, mirror => ['--bootstrap', '//m', $dump],
 	  ['Mirror path \'//m\' synced from dumpfile.']);
 
-TODO: {
-local $TODO = 'not yet';
 # compare normal mirror result and bootstrap mirror result
 my ($exp_mirror, $boot_mirror);
 open my $exp, '>', \$exp_mirror;
@@ -39,10 +37,12 @@ dump_all($xd->find_depot('') => $boot);
 dump_all($xd->find_depot('m2') => $exp);
 $exp_mirror =~ s/UUID: .*//;
 $boot_mirror =~ s/UUID: .*//;
+# remove first svn-date (initial mirro)
+# 2007-08-09T14:43:18.137165Z
+$exp_mirror =~ s/\d{4}-\d{2}-\d{2}T[\d:.]+Z//;
+$boot_mirror =~ s/\d{4}-\d{2}-\d{2}T[\d:.]+Z//;
 
 is($boot_mirror, $exp_mirror); # do something with UUID, they should be different
-
-};
 
 
 sub dump_all {
