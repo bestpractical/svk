@@ -260,13 +260,13 @@ sub bootstrap {
 	    }
 	    if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
 		$rec->set_header('Node-copyfrom-rev' =>
-		    scalar $self->find_local_rev( $rev, $self->source_uuid ) );
+		    scalar $self->find_local_rev( $rev, $self->source_uuid )  - 1);
 	    }
 	    
 	    if ($rec->get_header('Revision-number')) {
 		$rev = $rec->get_header('Revision-number');
 		$prev = $rev if !$prev;
-		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rec->get_header('Revision-number'));
+		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rec->get_header('Revision-number')."\n");
 	    }
 
 
@@ -291,6 +291,13 @@ sub bootstrap {
 
 	$buf = $buf.$record->as_string;
     }
+    # last one
+    if ($rev) {
+	$buf = $header.$buf;
+	open my $fh, '<', \$buf;
+	my $ret = SVN::Repos::load_fs2( $self->repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+    }
+
 }
 
 =item relocate($newurl)
