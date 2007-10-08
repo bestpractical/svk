@@ -472,6 +472,14 @@ sub traverse_new_changesets {
     die $@ if $@;
 }
 
+sub get_latest_revnum {
+    my $self = shift;
+    my $ra = $self->_new_ra;
+    my $latest_rev = $ra->get_latest_revnum();
+    $self->_ra_finished($ra);
+    return $latest_rev;
+}
+
 =item sync_changeset($changeset, $metadata, $ra, $extra_prop, $callback )
 
 =cut
