@@ -58,7 +58,7 @@ use SVK::Logger;
 use autouse 'SVK::Util'
     => qw( slurp_fh md5_fh tmpfile devnull abs2rel );
 
-__PACKAGE__->mk_accessors(qw(inspector notify storage));
+__PACKAGE__->mk_accessors(qw(inspector notify storage ticket cb_merged));
 
 use Class::Autouse qw(SVK::Inspector::Root SVK::Notify
 		      Data::Hierarchy IO::Digest);
@@ -227,21 +227,27 @@ sub set_target_revision {
     $self->{storage}->set_target_revision ($revision);
 }
 
+sub set_ticket {
+    my ($self, $baton, $type, $pool) = @_;
+
+    my $func = "change_${type}_prop";
+
+    $self->{storage}->$func( $baton, 'svk:merge', $self->ticket->as_string, $pool );
+
+}
+
 sub open_root {
-    my ($self, $baserev) = @_;
+    my ($self, $baserev, $pool) = @_;
     $self->{baserev} = $baserev;
     $self->{notify} ||= SVK::Notify->new_with_report ($self->{report}, $self->{target});
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     $self->{notify}->node_status ('', '');
 
-    my $ticket = $self->{ticket};
     $self->{dh} = Data::Hierarchy->new;
-    $self->{cb_merged} =
-	sub { my ($editor, $baton, $type, $pool) = @_;
-	      my $func = "change_${type}_prop";
-	      $editor->$func ($baton, 'svk:merge', $ticket->(), $pool);
-	  } if $ticket;
+
+    $self->set_ticket($self->{storage_baton}{''}, 'dir', $pool)
+	if !length $self->{target} && $self->ticket;
 
     return '';
 }
@@ -326,7 +332,10 @@ sub ensure_open {
 	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
 				     $self->{cb_rev}->($path), $pool);
     ++$self->{changes};
-    delete $self->{info}{$path}{open};
+    delete $self->{info}{$path}{open}; # 
+
+    $self->set_ticket( $self->{storage_baton}{$path}, 'file', $pool )
+	if $path eq $self->{target} && $self->ticket;
 }
 
 sub ensure_close {
@@ -337,9 +346,9 @@ sub ensure_close {
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
 
-    if ($path eq $self->{target} && $self->{changes} && $self->{cb_merged}) {
+    if ($path eq $self->{target} && $self->{changes} && $self->cb_merged) {
 	$self->ensure_open ($path);
-	$self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool);
+	$self->cb_merged->($self->{ticket});
     }
 
     if (my $baton = $self->{storage_baton}{$path}) {
@@ -666,9 +675,12 @@ sub open_directory {
 	}
     }
     $self->{notify}->node_status ($path, '');
-    $self->{storage_baton}{$path} =
+    my $baton = $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);
+    $self->set_ticket->($baton, 'dir', $pool)
+	if $path eq $self->{target} && $self->ticket;
+
     return $path;
 }
 
@@ -681,8 +693,9 @@ sub close_directory {
     $self->{notify}->flush_dir ($path);
 
     my $baton = $self->{storage_baton}{$path};
-    $self->{cb_merged}->($self->{storage}, $baton, 'dir', $pool)
-	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
+    $self->cb_merged->( $self->{ticket} )
+	if $path eq $self->{target} && $self->{changes} && $self->cb_merged;
+
 
     $self->{storage}->close_directory ($baton, $pool);
     delete $self->{storage_baton}{$path}

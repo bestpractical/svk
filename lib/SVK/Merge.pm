@@ -345,18 +345,27 @@ sub find_merge_sources {
     return $minfo;
 }
 
+sub _get_new_ticket {
+    my ($self, $srcinfo) = @_;
+    my $dstinfo = $self->merge_info($self->{dst});
+    # We want the ticket representing src, but not dst.
+    return $dstinfo->union ($srcinfo)->del_target($self->{dst});
+}
+
+# deprecated
 sub get_new_ticket {
     my ($self, $srcinfo) = @_;
-    my $dstinfo = $self->merge_info ($self->{dst});
-    # We want the ticket representing src, but not dst.
-    my $newinfo = $dstinfo->union ($srcinfo)->del_target ($self->{dst});
-    unless ($self->{quiet}) {
-	for (sort keys %$newinfo) {
-	    $logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
-		if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
-	}
-    }
+    my $newinfo = $self->_get_new_ticket($srcinfo);
+    $self->print_new_ticket($newinfo);
     return $newinfo->as_string;
+}
+
+sub print_new_ticket {
+    my ($self, $dstinfo, $newinfo) = @_;
+    for (sort keys %$newinfo) {
+	$logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
+	    if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
+    }
 }
 
 sub log {
@@ -528,6 +537,8 @@ sub run {
     # $cb{inspector} = $self->{dst}->inspector
     # unless ref($cb{inspector}) eq 'SVK::Inspector::Compat' ;
 
+    my $dstinfo = $self->merge_info($self->{dst});
+
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->path_anchor,
 	  repospath => $src->repospath, # for stupid copyfrom url
@@ -554,8 +565,12 @@ sub run {
 					(SVK::Merge::Info->new ($prop->{local}))->as_string);
 			    }
 			},
-	    ticket => 
-	    sub { $self->get_new_ticket ($self->merge_info_with_copy ($src)->add_target ($src)) }
+	    ticket =>
+	    $self->_get_new_ticket($self->merge_info_with_copy($src)->add_target($src)),
+	    cb_merged => sub {
+		my ($ticket) = @_;
+		$self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
+	    }
 	  ) :
 	  ( prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} # skip
 			     }),
