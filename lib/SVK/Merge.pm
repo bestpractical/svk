@@ -568,7 +568,13 @@ sub run {
 	    ticket =>
 	    $self->_get_new_ticket($self->merge_info_with_copy($src)->add_target($src)),
 	    cb_merged => sub {
-		my ($ticket) = @_;
+		my ($changes, $type, $ticket) = @_;
+		if (!$changes) { # rollback all ticket
+		    my $func = "change_${type}_prop";
+		    my $baton = $storage->open_root ($cb{cb_rev}->($cb{target}||''));
+		    $storage->$func( $baton, 'svk:merge', undef );
+		    return;
+		}
 		$self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
 	    }
 	  ) :

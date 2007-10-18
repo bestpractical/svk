@@ -346,9 +346,9 @@ sub ensure_close {
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
 
-    if ($path eq $self->{target} && $self->{changes} && $self->cb_merged) {
+    if ($path eq $self->{target} && $self->cb_merged) {
 	$self->ensure_open ($path);
-	$self->cb_merged->($self->{ticket});
+	$self->cb_merged->($self->{changes},'file', $self->{ticket});
     }
 
     if (my $baton = $self->{storage_baton}{$path}) {
@@ -693,8 +693,8 @@ sub close_directory {
     $self->{notify}->flush_dir ($path);
 
     my $baton = $self->{storage_baton}{$path};
-    $self->cb_merged->( $self->{ticket} )
-	if $path eq $self->{target} && $self->{changes} && $self->cb_merged;
+    $self->cb_merged->( $self->{changes}, 'dir', $self->{ticket})
+	if $path eq $self->{target} && $self->cb_merged;
 
 
     $self->{storage}->close_directory ($baton, $pool);

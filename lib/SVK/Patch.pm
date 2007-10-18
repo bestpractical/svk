@@ -292,6 +292,16 @@ sub apply_to {
 	      : ()
 	  ),
 	  %cb,
+	  cb_merged => sub {
+	      my ($changes, $type, $ticket) = @_;
+	      if (!$changes) { # rollback all ticket
+		  my $func = "change_${type}_prop";
+		  my $baton = $storage->open_root ($cb{cb_rev}->($cb{target}||''));
+		  $storage->$func( $baton, 'svk:merge', undef );
+		  return;
+	      }
+	      SVK::Merge->print_new_ticket( $cb{dstinfo}, $ticket );
+	  }
 	);
     $self->{editor}->drive ($editor);
     return $editor->{conflicts};
