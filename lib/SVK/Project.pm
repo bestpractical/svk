@@ -108,4 +108,47 @@ sub _find_branches {
     return \@branches;
 }
 
+sub create_from_path {
+    my ($self, $xd, $arg) = @_;
+    my $root;
+    my $rev = undef;
+    my ($depot, $path) = $xd->find_depotpath($arg);
+    my $view;
+    if (($view) = $path =~ m{^/\^([\w\-_/]+)$}) {
+	($path, $view) = $self->create_view($depot->repos, $view, $rev);
+    }
+
+    my $path_obj = $xd->create_path_object
+	( depot => $depot,
+	  path => $path,
+	  report => $arg,
+	  revision => $rev,
+	  view => $view,
+	);
+
+    my $depotpath = $path_obj->{path};
+    my ($project_name) = $depotpath =~ m{^/.*/([\w\-_]+)(?:/(?:trunk|branches|tags))?};
+
+    return 0 unless $project_name; # so? 0 means? need to deal with it.
+
+    my $mirror_path = "/mirror";
+    my ($trunk_path, $branch_path, $tag_path) = 
+	map { $mirror_path."/".$project_name."/".$_ } ('trunk', 'branches', 'tags');
+    # check trunk, branch, tag, these should be metadata-ed 
+    for my $_path ($trunk_path, $branch_path, $tag_path) {
+	# we check if the structure of mirror is correct
+	# need more handle here
+	die $! unless $SVN::Node::dir == $path_obj->root->check_path($_path);
+    }
+    return SVK::Project->new(
+	{   
+	    name            => $project_name,
+	    depot           => $path_obj->depot,
+	    trunk           => $trunk_path,
+	    branch_location => $branch_path,
+	    tag_location    => $tag_path,
+	    local_root      => "/local/${project_name}",
+	});
+}
+
 1;
