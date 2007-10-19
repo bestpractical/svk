@@ -135,6 +135,7 @@ lib/SVK/Path.pm
 lib/SVK/Path/Checkout.pm
 lib/SVK/Path/Txn.pm
 lib/SVK/Path/View.pm
+lib/SVK/Project.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
@@ -289,6 +290,7 @@ t/75hook.t
 t/76ignore.t
 t/77floating.t
 t/api/mirror.t
+t/api/project.t
 t/api/root.t
 t/copy-escape.t
 t/copy-replace.t
