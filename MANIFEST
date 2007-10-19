@@ -292,6 +292,7 @@ t/77floating.t
 t/api/mirror.t
 t/api/project.t
 t/api/root.t
+t/bm/basic.t
 t/copy-escape.t
 t/copy-replace.t
 t/diff/mixed-checkout.t
