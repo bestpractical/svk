@@ -17,6 +17,7 @@ my $depot = $xd->find_depot('test');
 my $uri = uri($depot->repospath);
 
 $svk->mirror('//mirror/MyProject', $uri);
+$svk->sync('//mirror/MyProject');
 
 my $proj = SVK::Project->new(
     {   name            => 'MyProject',
@@ -31,10 +32,10 @@ isa_ok($proj, 'SVK::Project');
 
 is_deeply($proj->branches, [], 'no branches yet');
 
-$svk->cp(-m => 'branch Foo', '//mirror/MyProject', '//mirror/branches/Foo');
+$svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/Foo');
 
 is_deeply($proj->branches, ['Foo'], 'found 1 branch');
 
-$svk->cp(-pm => 'feature branch Bar', '//mirror/MyProject', '//mirror/branches/feature/Bar');
+$svk->cp(-pm => 'feature branch Bar', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/feature/Bar');
 
 is_deeply($proj->branches, ['Foo', 'feature/Bar'], 'found deep branches');

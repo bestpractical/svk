@@ -53,7 +53,8 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(name trunk branch_location tag_location local_root));
+__PACKAGE__->mk_accessors(
+    qw(name trunk branch_location tag_location local_root depot));
 
 =head1 NAME
 
@@ -69,10 +70,42 @@ The class represents a project within svk.
 
 =cut
 
-sub branches {
-    my ($self, $match) = @_;
+use List::MoreUtils 'apply';
 
-    return [];
+sub branches {
+    my ( $self, $match ) = @_;
+
+    my $fs              = $self->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my $branch_location = $self->branch_location;
+
+    return [ apply {s{^\Q$branch_location\E/}{}}
+        @{ $self->_find_branches( $root, $self->branch_location ) } ];
+}
+
+sub _find_branches {
+    my ( $self, $root, $path ) = @_;
+    my $pool    = SVN::Pool->new_default;
+    my $entries = $root->dir_entries($path);
+
+    my $trunk = SVK::Path->real_new(
+        {   depot    => $self->depot,
+            revision => $root->revision_root_revision,
+            path     => $self->trunk
+        }
+    );
+
+    my @branches;
+
+    for my $entry ( sort keys %$entries ) {
+        next unless $entries->{$entry}->kind == $SVN::Node::dir;
+        my $b = $trunk->mclone( path => $path . '/' . $entry );
+
+        push @branches, $b->related_to($trunk)
+            ? $b->path
+            : @{ $self->_find_branches( $root, $path . '/' . $entry ) };
+    }
+    return \@branches;
 }
 
 1;
