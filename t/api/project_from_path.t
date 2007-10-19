@@ -21,7 +21,7 @@ $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
 # When the path is mirror path
-my $proj = SVK::Project->create_from_path($xd, '//mirror/MyProject');
+my $proj = SVK::Project->create_from_path($xd->find_depot(''), '//mirror/MyProject');
 isa_ok($proj, 'SVK::Project');
 
 my $proj2 = SVK::Project->new(

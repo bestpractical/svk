@@ -109,22 +109,16 @@ sub _find_branches {
 }
 
 sub create_from_path {
-    my ($self, $xd, $arg) = @_;
+    my ($self, $depot, $path) = @_;
     my $root;
     my $rev = undef;
-    my ($depot, $path) = $xd->find_depotpath($arg);
-    my $view;
-    if (($view) = $path =~ m{^/\^([\w\-_/]+)$}) {
-	($path, $view) = $self->create_view($depot->repos, $view, $rev);
-    }
 
-    my $path_obj = $xd->create_path_object
-	( depot => $depot,
-	  path => $path,
-	  report => $arg,
-	  revision => $rev,
-	  view => $view,
-	);
+    my $path_obj = SVK::Path->real_new(
+        {   depot    => $depot,
+            path     => $path
+        }
+    );
+    $path_obj->refresh_revision;
 
     my $depotpath = $path_obj->{path};
     my ($project_name) = $depotpath =~ m{^/.*/([\w\-_]+)(?:/(?:trunk|branches|tags))?};
