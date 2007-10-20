@@ -35,6 +35,6 @@ my $proj2 = SVK::Project->new(
 
 is_deeply ($proj, $proj2, 'The same project?');
 
-my $proj3 = SVK::Project->create_from_path($xd->find_depot(''), '/mirror/MyProject/trunk/B/S/Q');
+my $proj3 = SVK::Project->create_from_path($xd->find_depot(''), '//mirror/MyProject/trunk/B/S/Q');
 isa_ok($proj3, 'SVK::Project');
 is_deeply ($proj, $proj3, 'The same project?');

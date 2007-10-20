@@ -120,12 +120,12 @@ sub create_from_path {
     );
     $path_obj->refresh_revision;
 
-    my $depotpath = $path_obj->{path};
-    my ($project_name) = $depotpath =~ m{^/.*/([\w\-_]+)(?:/(?:trunk|branches|tags))?};
+    my $depotname = $depot->depotname;
+    my ($mirror_path,$project_name) = 
+	$path_obj->depotpath =~ m{^/$depotname/(.*?)/([\w\-_]+(?=/(?:trunk|branches|tags))|[\w\-_]+$)};
 
     return 0 unless $project_name; # so? 0 means? need to deal with it.
 
-    my $mirror_path = "/mirror";
     my ($trunk_path, $branch_path, $tag_path) = 
 	map { $mirror_path."/".$project_name."/".$_ } ('trunk', 'branches', 'tags');
     # check trunk, branch, tag, these should be metadata-ed 
