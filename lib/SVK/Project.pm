@@ -120,20 +120,10 @@ sub create_from_path {
     );
     $path_obj->refresh_revision;
 
-    my $depotname = $depot->depotname;
-    my ($mirror_path,$project_name) = 
-	$path_obj->depotpath =~ m{^/$depotname/(.*?)/([\w\-_]+(?=/(?:trunk|branches|tags))|[\w\-_]+$)};
+    my ($project_name, $trunk_path, $branch_path, $tag_path) = 
+	$self->_find_project_path($path_obj);
 
-    return 0 unless $project_name; # so? 0 means? need to deal with it.
-
-    my ($trunk_path, $branch_path, $tag_path) = 
-	map { $mirror_path."/".$project_name."/".$_ } ('trunk', 'branches', 'tags');
-    # check trunk, branch, tag, these should be metadata-ed 
-    for my $_path ($trunk_path, $branch_path, $tag_path) {
-	# we check if the structure of mirror is correct
-	# need more handle here
-	die $! unless $SVN::Node::dir == $path_obj->root->check_path($_path);
-    }
+    return undef unless $project_name;
     return SVK::Project->new(
 	{   
 	    name            => $project_name,
@@ -143,6 +133,34 @@ sub create_from_path {
 	    tag_location    => $tag_path,
 	    local_root      => "/local/${project_name}",
 	});
+}
+
+sub _find_project_path {
+    my ($self, $path_obj) = @_;
+
+    my ($mirror_path,$project_name);
+    my ($trunk_path, $branch_path, $tag_path);
+    my $depotname = $path_obj->depot->depotname;
+    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*)/?$};
+    while (!$project_name) {
+	($mirror_path,$project_name) = # always assume the last entry the projectname
+	    $path =~ m{^(.*)/([\w\-_]+)$}; 
+
+	return undef unless $project_name; # can' find any project_name
+
+	($trunk_path, $branch_path, $tag_path) = 
+	    map { $mirror_path."/".$project_name."/".$_ } ('trunk', 'branches', 'tags');
+	# check trunk, branch, tag, these should be metadata-ed 
+	# we check if the structure of mirror is correct, otherwise go again
+	for my $_path ($trunk_path, $branch_path, $tag_path) {
+	    undef $project_name unless $SVN::Node::dir == $path_obj->root->check_path($_path);
+	}
+	# if not the last entry, then the mirror_path should contains
+	# trunk/branches/tags, otherwise no need to test
+	($path) = $mirror_path =~ m{^(.+(?=/(?:trunk|branches|tags)))}
+	    unless $project_name;
+    }
+    return ($project_name, $trunk_path, $branch_path, $tag_path);
 }
 
 1;
