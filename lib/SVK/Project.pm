@@ -159,6 +159,7 @@ sub _find_project_path {
 	# trunk/branches/tags, otherwise no need to test
 	($path) = $mirror_path =~ m{^(.+(?=/(?:trunk|branches|tags)))}
 	    unless $project_name;
+	return undef unless $path;
     }
     return ($project_name, $trunk_path, $branch_path, $tag_path);
 }
