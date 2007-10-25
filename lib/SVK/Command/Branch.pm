@@ -117,7 +117,7 @@ sub run {
 }
 
 package SVK::Command::Branch::create;
-use base qw( SVK::Command::Copy SVK::Command::Branch );
+use base qw( SVK::Command::Copy SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
 
@@ -158,8 +158,11 @@ sub run {
 
     if (!$ret) {
 	print loc("Project branch created: %1.\n",$branch_path);
-	# call SVK::Command::Switch ?
-	# XXX if $self->{switch};
+	# call SVK::Command::Switch here if --switch-to
+	$self->SVK::Command::Switch::run(
+	    $self->arg_uri_maybe($newbranch_path),
+	    $self->arg_copath('')
+	) if $self->{switch};
     }
     return;
 }
