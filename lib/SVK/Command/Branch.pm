@@ -146,7 +146,9 @@ sub run {
     );
 
     my $trunk_path = '//'.$proj->depot->depotname.'/'.$proj->trunk;
-    my $newbranch_path = '//'.$proj->depot->depotname.'/'.$proj->branch_location."/".$branch_path."/";
+    my $newbranch_path = '//'.$proj->depot->depotname.'/'.
+	( $self->{local} ? $proj->local_root : $proj->branch_location ).
+	'/'.$branch_path.'/';
     # XXX if $self->{local};
 
     my $src = $self->arg_uri_maybe($trunk_path);
@@ -157,7 +159,8 @@ sub run {
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
-	print loc("Project branch created: %1.\n",$branch_path);
+	print loc("Project branch created: %1 %2\n",
+	    $branch_path, $self->{local} ? '(in local)' : '');
 	# call SVK::Command::Switch here if --switch-to
 	$self->SVK::Command::Switch::run(
 	    $self->arg_uri_maybe($newbranch_path),

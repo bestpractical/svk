@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 3;
+use Test::More tests => 5;
 use SVK::Test;
 use File::Path;
 
@@ -21,9 +21,18 @@ my ($copath, $corpath) = get_copath ('MyProject');
 $svk->checkout('//mirror/MyProject/trunk',$copath);
 chdir($copath);
 
-is_output_like ($svk, 'branch', ['--create', 'feature/foo'], qr'Project branch created: feature/foo.');
+is_output_like ($svk, 'branch', ['--create', 'feature/foo'], qr'Project branch created: feature/foo');
 $svk->branch('--list');
 is_output_like ($svk, 'branch',
     ['--create', 'feature/bar', '--switch-to'],
-    qr'Project branch created: feature/bar.');
+    qr'Project branch created: feature/bar');
 is_output_like ($svk, 'info', [], qr'Depot Path: //mirror/MyProject/branches/feature/bar');
+
+#is_output_like ($svk, 'switch', ['//mirror/MyProject/trunk'], qr'.*');
+#$svk->info();
+#warn $output;
+
+is_output_like ($svk, 'branch', ['--create', 'feature/foobar', '--switch-to', '--local'],
+    qr'Project branch created: feature/foobar \(in local\)');
+is_output_like ($svk, 'info', [], qr'Copied From: /mirror/MyProject/trunk, Rev. \d+');
+
