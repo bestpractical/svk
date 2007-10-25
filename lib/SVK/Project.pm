@@ -141,7 +141,7 @@ sub _find_project_path {
     my ($mirror_path,$project_name);
     my ($trunk_path, $branch_path, $tag_path);
     my $depotname = $path_obj->depot->depotname;
-    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*)/?$};
+    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches|tags))?/?$};
     while (!$project_name) {
 	($mirror_path,$project_name) = # always assume the last entry the projectname
 	    $path =~ m{^(.*)/([\w\-_]+)$}; 
