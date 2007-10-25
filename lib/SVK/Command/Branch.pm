@@ -104,6 +104,10 @@ sub run {
 	$source->path
     );
 
+    if (!$proj) {
+	print loc("No project branch founded.\n");
+	return;
+    }
     # need to beautify the output
     use Data::Dumper;
     warn Dumper $proj->branches() if $proj; 
@@ -148,6 +152,8 @@ sub run {
     my $src = $self->arg_uri_maybe($trunk_path);
     my $dst = $self->arg_depotpath($newbranch_path);
 
+    $self->{parent} = 1;
+    $self->{message} ||= "- Create branch $branch_path";
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
