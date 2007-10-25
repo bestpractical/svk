@@ -23,11 +23,10 @@ my ($copath, $corpath) = get_copath('basic-trunk');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 
-TODO: {
-local $TODO = 'not implemented yet';
-is_output($svk, 'bm', ['-l'],
+chdir($copath);
+
+is_output($svk, 'br', ['-l'],
           ['Foo'], 'default to guess project of current checkout');
 
-is_output($svk, 'bm', ['-l', '//mirror/MyProject'],
+is_output($svk, 'br', ['-l', '//mirror/MyProject'],
           ['Foo']);
-};

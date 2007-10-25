@@ -98,21 +98,21 @@ use SVK::I18N;
 sub run {
     my ($self, $target) = @_;
 
-    my $source = $target->source;
+    $target = $target->source if $target->isa('SVK::Path::Checkout');
     my $proj = SVK::Project->create_from_path(
-	$source->depot,
-	$source->path
+	$target->depot,
+	$target->path
     );
 
     if (!$proj) {
 	print loc("No project branch founded.\n");
 	return;
     }
-    # need to beautify the output
-    use Data::Dumper;
-    warn Dumper $proj->branches() if $proj; 
 
-    print loc("Project branch listed.\n");
+    my @branches = $proj->branches;
+
+    my $fmt = "%s\n"; # here to change layout
+    printf $fmt, @$_ for @branches;
     return;
 }
 
