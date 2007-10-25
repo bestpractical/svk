@@ -95,6 +95,7 @@ use constant alias =>
             qw( ann		annotate
                 blame		annotate
                 praise		annotate
+		br		branch
 		co		checkout
 		cm		cmerge
 		ci		commit
