@@ -173,12 +173,42 @@ sub run {
 package SVK::Command::Branch::move;
 use base qw( SVK::Command::Move SVK::Command::Branch );
 use SVK::I18N;
+use SVK::Util qw( is_uri );
 
-use constant narg => 1;
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg < 0;
+
+    my $dst = pop(@arg);
+    die loc ("Copy destination can't be URI.\n")
+	if is_uri ($dst);
+
+    my $src = pop(@arg);
+    die loc ("Copy source can't be URI.\n")
+	if is_uri ($src);
+
+    return ($self->arg_co_maybe (''), $src, $dst);
+}
 
 sub run {
-    my ($self, $target) = @_;
-    print loc("nothing to move\n");
+    my ($self, $target, $src, $dst) = @_;
+
+    my $source = $target->source;
+    my $proj = SVK::Project->create_from_path(
+	$source->depot,
+	$source->path
+    );
+
+    my $branch_path = '//'.$proj->depot->depotname.'/'.$proj->branch_location;
+    my $src_branch_path = $branch_path.'/'.$src.'/';
+    my $dst_branch_path = $branch_path.'/'.$dst.'/';
+
+    $src = $self->arg_uri_maybe($src_branch_path);
+    $dst = $self->arg_depotpath($dst_branch_path);
+
+    $self->{parent} = 1;
+    $self->{message} ||= "- Move branch $src_branch_path to $dst_branch_path";
+    my $ret = $self->SUPER::run($src, $dst);
     return;
 }
 
