@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use SVK::Test;
 use File::Path;
 
@@ -23,5 +23,7 @@ chdir($copath);
 
 is_output_like ($svk, 'branch', ['--create', 'feature/foo'], qr'Project branch created: feature/foo');
 is_output_like ($svk, 'branch', ['--list'], qr'feature/foo');
-$svk->br('--move', 'feature/foo', 'release-ready/foo');
-is_output_like ($svk, 'branch', ['--list'], qr'release-ready/foo');
+$svk->br('--move', 'feature/foo', 'release-ready/bar');
+is_output_like ($svk, 'branch', ['--list'], qr'release-ready/bar');
+$svk->br('--move', 'release-ready/bar', 'feature/');
+is_output_like ($svk, 'branch', ['--list'], qr'feature/bar');
