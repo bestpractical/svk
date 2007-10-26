@@ -109,10 +109,10 @@ sub run {
 	return;
     }
 
-    my @branches = $proj->branches;
+    my $branches = $proj->branches;
 
     my $fmt = "%s\n"; # here to change layout
-    printf $fmt, @$_ for @branches;
+    printf $fmt, $_ for @{$branches};
     return;
 }
 

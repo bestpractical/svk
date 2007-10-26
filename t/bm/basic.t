@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 2;
+plan tests => 5;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -30,3 +30,11 @@ is_output($svk, 'br', ['-l'],
 
 is_output($svk, 'br', ['-l', '//mirror/MyProject'],
           ['Foo']);
+
+is_output_like ($svk, 'branch', ['--create', 'feature/foo', '--switch-to'], qr'Project branch created: feature/foo');
+
+is_output($svk, 'br', ['-l', '//mirror/MyProject'],
+          ['Foo','feature/foo']);
+
+is_output($svk, 'br', ['-l'],
+          ['Foo','feature/foo']);
