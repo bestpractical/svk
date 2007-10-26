@@ -177,7 +177,7 @@ use SVK::Util qw( is_uri );
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 0;
+    return if $#arg < 1;
 
     my $dst = pop(@arg);
     die loc ("Copy destination can't be URI.\n")
