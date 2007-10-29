@@ -61,6 +61,7 @@ use constant narg => undef;
 
 sub options {
     ('l|list'  => 'list',
+     'C|check-only'     => 'check_only',
      'move' => 'move',
      'create'=> 'create',
      'switch-to'=> 'switch',
@@ -215,12 +216,50 @@ sub run {
 package SVK::Command::Branch::merge;
 use base qw( SVK::Command::Merge SVK::Command::Branch);
 use SVK::I18N;
+use SVK::Util qw( is_uri );
 
 use constant narg => 1;
 
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg < 1;
+
+    my $dst = pop(@arg);
+    die loc ("Copy destination can't be URI.\n")
+	if is_uri ($dst);
+
+    my $src = pop(@arg);
+    die loc ("Copy source can't be URI.\n")
+	if is_uri ($src);
+
+    return ($self->arg_co_maybe (''), $src, $dst);
+}
+
 sub run {
-    my ($self, $target) = @_;
-    print loc("nothing to merge\n");
+    my ($self, $target, $src, $dst) = @_;
+
+    my $source = $target->source;
+    my $proj = SVK::Project->create_from_path(
+	$source->depot,
+	$source->path
+    );
+
+    my $branch_path = '//'.$proj->depot->depotname.'/'.$proj->branch_location;
+    my $src_branch_path = $branch_path.'/'.$src.'/';
+    my $dst_branch_path = $branch_path.'/'.$dst.'/';
+    $dst_branch_path =  '//'.$proj->trunk if $dst eq 'trunk';
+
+    $src = $self->arg_uri_maybe($src_branch_path);
+    $dst = $self->arg_depotpath($dst_branch_path);
+
+    # extract the fromrev and torev from src
+    my $N = $src->root->node_created_rev( $src->path );
+    my ($m, $mpath) = $src->is_mirrored;
+    my $M = $m->fromrev;
+
+    push @{$self->{revspec}},"$N:$M";
+    $self->{message} ||= "- Merge $src_branch_path to $dst_branch_path";
+    my $ret = $self->SUPER::run($src, $dst);
     return;
 }
 
