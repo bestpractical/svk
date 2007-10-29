@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 3;
 use SVK::Test;
 use File::Path;
 
@@ -21,7 +21,6 @@ $svk->sync('//mirror/MyProject');
 
 my ($copath, $corpath) = get_copath ('MyProject');
 $svk->checkout('//mirror/MyProject/trunk',$copath);
-warn $output;
 chdir($copath);
 
 is_output_like ($svk, 'branch', ['--create', 'feature/foo','--switch-to'], qr'Project branch created: feature/foo');
