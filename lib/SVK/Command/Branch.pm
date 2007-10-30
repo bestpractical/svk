@@ -271,8 +271,7 @@ sub run {
 	    },
 	);
 
-	undef $self->{revspec};
-	push @{$self->{revspec}},"$N:$M";
+	$self->{revspec} = ["$N:$M"];
 	$self->{message} ||= "- Merge $src_branch_path to $dst_branch_path";
 	my $ret = $self->SUPER::run($src, $dst);
     }
