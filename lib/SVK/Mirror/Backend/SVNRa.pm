@@ -420,7 +420,7 @@ sub _find_rev_from_changeset {
 	      return $s_changeset <=> $changeset;
           } );
 
-    return $t->revision unless $result;
+    return $t->normalize->revision unless $result;
 
     return $result->revision;
 }
