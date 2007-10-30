@@ -214,9 +214,9 @@ sub run {
 }
 
 package SVK::Command::Branch::merge;
-use base qw( SVK::Command::Merge SVK::Command::Branch);
+use base qw( SVK::Command::Merge SVK::Command::Switch SVK::Command::Branch);
 use SVK::I18N;
-use SVK::Util qw( is_uri );
+use SVK::Util qw( is_uri traverse_history );
 
 use constant narg => 1;
 
@@ -228,15 +228,16 @@ sub parse_arg {
     die loc ("Copy destination can't be URI.\n")
 	if is_uri ($dst);
 
-    my $src = pop(@arg);
-    die loc ("Copy source can't be URI.\n")
-	if is_uri ($src);
+    for (@arg) {
+	die loc ("Copy source can't be URI.\n")
+	    if is_uri ($_);
+    }
 
-    return ($self->arg_co_maybe (''), $src, $dst);
+    return ($self->arg_co_maybe (''), $dst, @arg);
 }
 
 sub run {
-    my ($self, $target, $src, $dst) = @_;
+    my ($self, $target, $dst, @srcs) = @_;
 
     my $source = $target->source;
     my $proj = SVK::Project->create_from_path(
@@ -244,22 +245,37 @@ sub run {
 	$source->path
     );
 
-    my $branch_path = '//'.$proj->depot->depotname.'/'.$proj->branch_location;
-    my $src_branch_path = $branch_path.'/'.$src.'/';
-    my $dst_branch_path = $branch_path.'/'.$dst.'/';
-    $dst_branch_path =  '//'.$proj->trunk if $dst eq 'trunk';
+    my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
+    my $dst_branch_path = $branch_path.'/'.$dst;
+    $dst_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
+	if $dst eq 'trunk';
 
-    $src = $self->arg_uri_maybe($src_branch_path);
     $dst = $self->arg_depotpath($dst_branch_path);
 
-    # extract the fromrev and torev from src
-    my $N = $src->root->node_created_rev( $src->path );
-    my ($m, $mpath) = $src->is_mirrored;
-    my $M = $m->fromrev;
+    for my $src (@srcs) {
+	my $src_branch_path = $branch_path.'/'.$src;
+	$src = $self->arg_depotpath($src_branch_path);
+	# extract the fromrev and torev from src
 
-    push @{$self->{revspec}},"$N:$M";
-    $self->{message} ||= "- Merge $src_branch_path to $dst_branch_path";
-    my $ret = $self->SUPER::run($src, $dst);
+	my ($m) = $src->is_mirrored;
+	my $N = $src->root->node_created_rev( $src->path );
+
+	my $M = $m->fromrev;
+	traverse_history (
+	    root        => $src->root,
+	    path        => $src->path,
+	    cross       => 0,
+	    callback    => sub {
+		my $rev = $_[1];
+		$M = $rev if $rev < $M;
+	    },
+	);
+
+	undef $self->{revspec};
+	push @{$self->{revspec}},"$N:$M";
+	$self->{message} ||= "- Merge $src_branch_path to $dst_branch_path";
+	my $ret = $self->SUPER::run($src, $dst);
+    }
     return;
 }
 

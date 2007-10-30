@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use SVK::Test;
 use File::Path;
 
@@ -42,7 +42,9 @@ $svk->commit ('-m', 'commit message here (r10)','');
 is_output ($svk, 'branch', ['--merge', '-C', 'feature/bar', 'trunk'], 
     [ "Checking locally against mirror source $uri.", 'g   A/Q/qu']);
 
-is_output ($svk, 'branch', ['--merge', '-C', 'feature/*', 'trunk'], 
+is_output ($svk, 'branch', ['--merge', '-C', 'feature/foo', 'trunk'], 
+    [ "Checking locally against mirror source $uri.", 'gg  A/be']);
+
+is_output ($svk, 'branch', ['--merge', '-C', 'feature/bar', 'feature/foo', 'trunk'], 
     [ "Checking locally against mirror source $uri.", 'g   A/Q/qu',
       "Checking locally against mirror source $uri.", 'gg  A/be']);
-warn $output;
