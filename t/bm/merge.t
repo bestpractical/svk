@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 3;
+use Test::More tests => 6;
 use SVK::Test;
 use File::Path;
 
@@ -27,9 +27,22 @@ is_output_like ($svk, 'branch', ['--create', 'feature/foo','--switch-to'], qr'Pr
 append_file ('A/be', "\nsome more foobar\nzz\n");
 $svk->propset ('someprop', 'propvalue', 'A/be');
 $svk->diff();
-$svk->commit ('-m', 'commit message here (r6)','');
+$svk->commit ('-m', 'commit message here (r8)','');
 is_output ($svk, 'merge',
     ['-C', '-rHEAD:7', '//mirror/MyProject/branches/feature/foo', '//mirror/MyProject/trunk'], 
     [ "Checking locally against mirror source $uri.", 'gg  A/be']);
 is_output ($svk, 'branch', ['--merge', '-C', 'feature/foo', 'trunk'], 
     [ "Checking locally against mirror source $uri.", 'gg  A/be']);
+
+# another branch
+is_output_like ($svk, 'branch', ['--create', 'feature/bar','--switch-to'], qr'Project branch created: feature/bar');
+append_file ('A/Q/qu', "\nonly a bar\nzz\n");
+$svk->diff();
+$svk->commit ('-m', 'commit message here (r10)','');
+is_output ($svk, 'branch', ['--merge', '-C', 'feature/bar', 'trunk'], 
+    [ "Checking locally against mirror source $uri.", 'g   A/Q/qu']);
+
+is_output ($svk, 'branch', ['--merge', '-C', 'feature/*', 'trunk'], 
+    [ "Checking locally against mirror source $uri.", 'g   A/Q/qu',
+      "Checking locally against mirror source $uri.", 'gg  A/be']);
+warn $output;
