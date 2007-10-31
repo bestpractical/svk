@@ -72,7 +72,8 @@ is_output_like ($svk, 'branch', ['--merge', 'feature/bar', 'feature/foo', 'trunk
 $svk->switch ('//mirror/MyProject/trunk');
 is_file_content ('A/Q/qu', "\nonly a bar\nzz\n", 'is the file actually merge?');
 is_file_content ('A/be', "\nsome more foobar\nzz\n", 'is the file actually merge?');
+
 is_output_like ($svk, 'info', [],
-    qr/Merged From: $branch_foo, Rev. 8/);
+    qr/Merged From: $branch_foo, Rev. 8/, 'Merged from feature/foo at rev. 8');
 is_output_like ($svk, 'info', [],
-    qr/Merged From: $branch_bar, Rev. 10/);
+    qr/Merged From: $branch_bar, Rev. 10/, 'Merged from feature/bar at rev. 10');

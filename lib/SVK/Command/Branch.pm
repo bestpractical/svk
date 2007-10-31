@@ -255,10 +255,10 @@ sub run {
     for my $src (@srcs) {
 	my $src_branch_path = $branch_path.'/'.$src;
 	$src = $self->arg_depotpath($src_branch_path);
-	# extract the fromrev and torev from src
 
-	$self->{message} ||= "- Merge $src_branch_path to $dst_branch_path";
+	$self->{message} = "- Merge $src_branch_path to $dst_branch_path";
 	my $ret = $self->SUPER::run($src, $dst);
+	$dst->refresh_revision;
     }
     return;
 }
