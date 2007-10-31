@@ -214,7 +214,7 @@ sub run {
 }
 
 package SVK::Command::Branch::merge;
-use base qw( SVK::Command::Merge SVK::Command::Switch SVK::Command::Branch);
+use base qw( SVK::Command::Smerge SVK::Command::Switch SVK::Command::Branch);
 use SVK::I18N;
 use SVK::Util qw( is_uri traverse_history );
 
@@ -257,21 +257,6 @@ sub run {
 	$src = $self->arg_depotpath($src_branch_path);
 	# extract the fromrev and torev from src
 
-	my ($m) = $src->is_mirrored;
-	my $N = $src->root->node_created_rev( $src->path );
-
-	my $M = $m->fromrev;
-	traverse_history (
-	    root        => $src->root,
-	    path        => $src->path,
-	    cross       => 0,
-	    callback    => sub {
-		my $rev = $_[1];
-		$M = $rev if $rev < $M;
-	    },
-	);
-
-	$self->{revspec} = ["$N:$M"];
 	$self->{message} ||= "- Merge $src_branch_path to $dst_branch_path";
 	my $ret = $self->SUPER::run($src, $dst);
     }
