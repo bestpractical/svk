@@ -146,8 +146,8 @@ sub run {
 	$source->path
     );
 
-    my $trunk_path = '//'.$proj->depot->depotname.'/'.$proj->trunk;
-    my $newbranch_path = '//'.$proj->depot->depotname.'/'.
+    my $trunk_path = '/'.$proj->depot->depotname.'/'.$proj->trunk;
+    my $newbranch_path = '/'.$proj->depot->depotname.'/'.
 	( $self->{local} ? $proj->local_root : $proj->branch_location ).
 	'/'.$branch_path.'/';
     # XXX if $self->{local};
@@ -165,7 +165,7 @@ sub run {
 	# call SVK::Command::Switch here if --switch-to
 	$self->SVK::Command::Switch::run(
 	    $self->arg_uri_maybe($newbranch_path),
-	    $self->arg_copath('')
+	    $target
 	) if $self->{switch};
     }
     return;
@@ -200,7 +200,7 @@ sub run {
 	$source->path
     );
 
-    my $branch_path = '//'.$proj->depot->depotname.'/'.$proj->branch_location;
+    my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
     my $src_branch_path = $branch_path.'/'.$src.'/';
     my $dst_branch_path = $branch_path.'/'.$dst.'/';
 
@@ -260,6 +260,46 @@ sub run {
 	my $ret = $self->SUPER::run($src, $dst);
 	$dst->refresh_revision;
     }
+    return;
+}
+
+package SVK::Command::Branch::switch;
+use base qw( SVK::Command::Switch SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Util qw( is_uri );
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg != 0;
+
+    my $dst = shift(@arg);
+    die loc ("Copy destination can't be URI.\n")
+	if is_uri ($dst);
+
+    die loc ("More than one URI found.\n")
+	if (grep {is_uri($_)} @arg) > 1;
+
+    return ($self->arg_co_maybe (''), $dst);
+}
+
+
+sub run {
+    my ($self, $target, $new_path) = @_;
+
+    my $source = $target->source;
+    my $proj = SVK::Project->create_from_path(
+	$source->depot,
+	$source->path
+    );
+
+    my $newtarget_path = '/'.$proj->depot->depotname.'/'.
+	($new_path ne 'trunk' ?
+	    $proj->branch_location . "/$new_path/" : $proj->trunk);
+
+    $self->SUPER::run(
+	$self->arg_uri_maybe($newtarget_path),
+	$target
+    );
     return;
 }
 
