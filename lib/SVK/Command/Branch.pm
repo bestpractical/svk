@@ -54,7 +54,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
-use SVK::Util qw( is_uri get_prompt traverse_history );
+use SVK::Util qw( is_uri get_prompt );
 use SVK::Project;
 
 use constant narg => undef;
@@ -309,21 +309,21 @@ __DATA__
 
 =head1 NAME
 
-SVK::Command::Branch - Initialize a mirrored depotpath
+SVK::Command::Branch - Manage a project with its branches
 
 =head1 SYNOPSIS
 
  branch --create [BRANCH]
 
- branch --list [DEPOTNAME...]
- branch --create DEPOTPATH [http|svn]://host/path 
- branch --move DEPOTPATH
+ branch --list [BRANCH...]
+ branch --create BRANCH [--switch-to]
+ branch --move BRANCH1 BRANCH2
 
 =head1 OPTIONS
 
  -l [--list]            : list mirrored paths
- --relocate             : change the upstream URI for the mirrored depotpath
- --recover              : recover the state of a mirror path
- --unlock               : forcibly remove stalled locks on a mirror
- --upgrade              : upgrade mirror state to the latest version
+ -C [--check-only]      : try operation but make no changes
+ --create               : create a new branch
+ --switch-to            : also switch to another branch
+ --merge                : automatically merge all changes between branches
 
