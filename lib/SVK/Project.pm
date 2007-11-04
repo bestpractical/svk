@@ -135,17 +135,19 @@ sub create_from_path {
 	});
 }
 
+# this is heuristics guessing of project and should be replaced
+# eventually when we can define project meta data.
 sub _find_project_path {
     my ($self, $path_obj) = @_;
 
     my ($mirror_path,$project_name);
     my ($trunk_path, $branch_path, $tag_path);
     my $depotname = $path_obj->depot->depotname;
-    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches|tags))?/?$};
+    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
+
     while (!$project_name) {
 	($mirror_path,$project_name) = # always assume the last entry the projectname
 	    $path =~ m{^(.*)/([\w\-_]+)$}; 
-
 	return undef unless $project_name; # can' find any project_name
 
 	($trunk_path, $branch_path, $tag_path) = 
@@ -153,7 +155,14 @@ sub _find_project_path {
 	# check trunk, branch, tag, these should be metadata-ed 
 	# we check if the structure of mirror is correct, otherwise go again
 	for my $_path ($trunk_path, $branch_path, $tag_path) {
-	    undef $project_name unless $SVN::Node::dir == $path_obj->root->check_path($_path);
+            unless ($path_obj->root->check_path($_path) == $SVN::Node::dir) {
+                if ($tag_path eq $_path) { # tags directory is optional
+                    undef $tag_path;
+                }
+                else {
+                    undef $project_name;
+                }
+            }
 	}
 	# if not the last entry, then the mirror_path should contains
 	# trunk/branches/tags, otherwise no need to test
