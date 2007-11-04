@@ -122,6 +122,8 @@ use base qw( SVK::Command::Copy SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
 
+sub lock { $_[0]->lock_target ($_[1]); };
+
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
@@ -267,6 +269,8 @@ package SVK::Command::Branch::switch;
 use base qw( SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
+
+sub lock { $_[0]->lock_target ($_[1]); };
 
 sub parse_arg {
     my ($self, @arg) = @_;
