@@ -145,6 +145,12 @@ sub _find_project_path {
     my $depotname = $path_obj->depot->depotname;
     my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
 
+    if ($path =~ m{^local/([^/]+)/?}) { # guess if in local branch
+	# should only be 1 entry
+	($path) = grep {/\/$1$/} $path_obj->depot->mirror->entries;
+	$path =~ s#^/##;
+    }
+
     while (!$project_name) {
 	($mirror_path,$project_name) = # always assume the last entry the projectname
 	    $path =~ m{^(.*)/([\w\-_]+)$}; 
