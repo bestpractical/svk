@@ -299,8 +299,12 @@ sub run {
     );
 
     my $newtarget_path = '/'.$proj->depot->depotname.'/'.
-	($new_path ne 'trunk' ?
-	    $proj->branch_location . "/$new_path/" : $proj->trunk);
+        ($self->{local} ?
+	    $proj->local_root."/$new_path"
+	    :
+	    ($new_path ne 'trunk' ?
+		$proj->branch_location . "/$new_path/" : $proj->trunk)
+	);
 
     $self->SUPER::run(
 	$self->arg_uri_maybe($newtarget_path),
