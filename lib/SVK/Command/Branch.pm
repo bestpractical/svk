@@ -152,7 +152,6 @@ sub run {
     my $newbranch_path = '/'.$proj->depot->depotname.'/'.
 	( $self->{local} ? $proj->local_root : $proj->branch_location ).
 	'/'.$branch_path.'/';
-    # XXX if $self->{local};
 
     my $src = $self->arg_uri_maybe($trunk_path);
     my $dst = $self->arg_depotpath($newbranch_path);
@@ -174,27 +173,30 @@ sub run {
 }
 
 package SVK::Command::Branch::move;
-use base qw( SVK::Command::Move SVK::Command::Branch );
+use base qw( SVK::Command::Copy SVK::Command::Smerge SVK::Command::Move SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
 
+sub lock { $_[0]->lock_coroot ($_[1]); };
+
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 1;
+    return if $#arg < 0;
 
     my $dst = pop(@arg);
     die loc ("Copy destination can't be URI.\n")
 	if is_uri ($dst);
 
     my $src = pop(@arg);
+    $src ||= '';
     die loc ("Copy source can't be URI.\n")
 	if is_uri ($src);
 
-    return ($self->arg_co_maybe (''), $src, $dst);
+    return ($self->arg_co_maybe (''), $dst, $src);
 }
 
 sub run {
-    my ($self, $target, $src, $dst) = @_;
+    my ($self, $target, $dst, $src) = @_;
 
     my $source = $target->source;
     my $proj = SVK::Project->create_from_path(
@@ -205,13 +207,30 @@ sub run {
     my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
     my $src_branch_path = $branch_path.'/'.$src.'/';
     my $dst_branch_path = $branch_path.'/'.$dst.'/';
+    $src_branch_path = '/'.$proj->depot->depotname.$target->source->path
+	unless ($src);
 
     $src = $self->arg_uri_maybe($src_branch_path);
     $dst = $self->arg_depotpath($dst_branch_path);
 
     $self->{parent} = 1;
-    $self->{message} ||= "- Move branch $src_branch_path to $dst_branch_path";
-    my $ret = $self->SUPER::run($src, $dst);
+    if ( !$dst->same_source($src) ) {
+	# branch first, then sm -I
+	my $which_rev_we_branch = ($src->copy_ancestors)[0]->[1];
+	$self->{rev} = $which_rev_we_branch;
+	$src = $self->arg_uri_maybe('/'.$proj->depot->depotname.'/'.$proj->trunk);
+	$self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
+	$self->SVK::Command::Copy::run($src, $dst);
+	# now we do sm -I
+	$src = $self->arg_uri_maybe($src_branch_path);
+	$self->{message} = ''; # incremental does not need message
+	$dst->refresh_revision;
+	$self->{incremental} = 1;
+	my $ret = $self->SVK::Command::Smerge::run($src, $dst);
+	return;
+    }
+    $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
+    my $ret = $self->SVK::Command::Move::run($src, $dst);
     return;
 }
 
