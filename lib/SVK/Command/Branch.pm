@@ -256,6 +256,8 @@ sub run {
 
     for my $src (@srcs) {
 	my $src_branch_path = $branch_path.'/'.$src;
+	$src_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
+	    if $src eq 'trunk';
 	$src = $self->arg_depotpath($src_branch_path);
 
 	$self->{message} = "- Merge $src_branch_path to $dst_branch_path";
