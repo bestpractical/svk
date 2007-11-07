@@ -62,11 +62,13 @@ use constant narg => undef;
 sub options {
     ('l|list'  => 'list',
      'C|check-only'     => 'check_only',
-     'move' => 'move',
      'create'=> 'create',
-     'switch-to'=> 'switch',
      'local'=> 'local',
-     'merge'=> 'merge');
+     'merge'=> 'merge',
+     'move' => 'move',
+     'remove'=> 'remove',
+     'switch-to'=> 'switch',
+    );
 }
 
 sub lock {} # override commit's locking
@@ -148,18 +150,16 @@ sub run {
 	$source->path
     );
 
-    if (grep {/^$branch_path$/} @{$proj->branches}) {
-	print loc("Project branch already exists: %1\n", $branch_path);
-	return;
-    }
-
     my $trunk_path = '/'.$proj->depot->depotname.'/'.$proj->trunk;
     my $newbranch_path = '/'.$proj->depot->depotname.'/'.
 	( $self->{local} ? $proj->local_root : $proj->branch_location ).
 	'/'.$branch_path.'/';
 
     my $src = $self->arg_uri_maybe($trunk_path);
-    my $dst = $self->arg_depotpath($newbranch_path);
+    my $dst = $self->arg_uri_maybe($newbranch_path);
+    $SVN::Node::none == $dst->root->check_path($dst->path)
+	or die loc("Project branch already exists: %1 %2\n",
+	    $branch_path, $self->{local} ? '(in local)' : '');
 
     $self->{parent} = 1;
     $self->{message} ||= "- Create branch $branch_path";
@@ -236,6 +236,52 @@ sub run {
     }
     $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
     my $ret = $self->SVK::Command::Move::run($src, $dst);
+    return;
+}
+
+package SVK::Command::Branch::remove;
+use base qw( SVK::Command::Delete SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Util qw( is_uri );
+
+sub lock { $_[0]->lock_target ($_[1]); };
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg != 0;
+
+    my $dst = shift(@arg);
+    die loc ("Destination can't be URI.\n")
+	if is_uri ($dst);
+
+    return ($self->arg_co_maybe (''), $dst);
+}
+
+
+sub run {
+    my ($self, $target, $dst_path) = @_;
+
+    my $source = $target->source;
+    my $proj = SVK::Project->create_from_path(
+	$source->depot,
+	$source->path
+    );
+
+    my $target_path = '/'.$proj->depot->depotname.'/'.
+        ($self->{local} ?
+	    $proj->local_root."/$dst_path"
+	    :
+	    ($dst_path ne 'trunk' ?
+		$proj->branch_location . "/$dst_path" : $proj->trunk)
+	);
+
+    $target = $self->arg_uri_maybe($target_path);
+    $target->root->check_path($target->path)
+	or die loc("No such branch exists: %1 %2\n",
+	    $dst_path, $self->{local} ? '(in local)' : '');
+
+    $self->{message} = "- Delete branch $target_path";
+    $self->SUPER::run($target);
     return;
 }
 
