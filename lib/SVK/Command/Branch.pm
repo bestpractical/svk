@@ -148,6 +148,11 @@ sub run {
 	$source->path
     );
 
+    if (grep {/^$branch_path$/} @{$proj->branches}) {
+	print loc("Project branch already exists: %1\n", $branch_path);
+	return;
+    }
+
     my $trunk_path = '/'.$proj->depot->depotname.'/'.$proj->trunk;
     my $newbranch_path = '/'.$proj->depot->depotname.'/'.
 	( $self->{local} ? $proj->local_root : $proj->branch_location ).
