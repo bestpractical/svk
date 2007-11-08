@@ -217,6 +217,9 @@ sub run {
 
     $src = $self->arg_uri_maybe($src_branch_path);
     $dst = $self->arg_depotpath($dst_branch_path);
+    $SVN::Node::none == $dst->root->check_path($dst->path)
+	or die loc("Project branch already exists: %1 %2\n",
+	    $branch_path, $self->{local} ? '(in local)' : '');
 
     $self->{parent} = 1;
     if ( !$dst->same_source($src) ) {
@@ -229,7 +232,9 @@ sub run {
 	# now we do sm -I
 	$src = $self->arg_uri_maybe($src_branch_path);
 	$self->{message} = ''; # incremental does not need message
+	# w/o reassign $dst = ..., we will have changes 'XXX - skipped'
 	$dst->refresh_revision;
+	$dst = $self->arg_depotpath($dst_branch_path);
 	$self->{incremental} = 1;
 	my $ret = $self->SVK::Command::Smerge::run($src, $dst);
 	return;
