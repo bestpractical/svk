@@ -178,7 +178,7 @@ sub run {
 }
 
 package SVK::Command::Branch::move;
-use base qw( SVK::Command::Copy SVK::Command::Smerge SVK::Command::Move SVK::Command::Branch );
+use base qw( SVK::Command::Copy SVK::Command::Smerge SVK::Command::Move SVK::Command::Delete SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
 
@@ -236,7 +236,9 @@ sub run {
 	$dst->refresh_revision;
 	$dst = $self->arg_depotpath($dst_branch_path);
 	$self->{incremental} = 1;
-	my $ret = $self->SVK::Command::Smerge::run($src, $dst);
+	$self->SVK::Command::Smerge::run($src, $dst);
+	$self->{message} = "- Delete branch $src_branch_path, because it move to $dst_branch_path";
+	$self->SVK::Command::Delete::run($src, $target);
 	return;
     }
     $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
