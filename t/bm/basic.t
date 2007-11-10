@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 9;
+plan tests => 10;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -38,6 +38,9 @@ is_output($svk, 'br', ['-l', '//mirror/MyProject'],
 
 is_output($svk, 'br', ['-l'],
           ['Foo','feature/foo']);
+
+is_output_like ($svk, 'info', [],
+    qr'Depot Path: //mirror/MyProject/branches/feature/foo', 'Switched');
 
 $svk->branch('--switch', 'trunk'); # switch to trunk
 is_output_like ($svk, 'info', [],
