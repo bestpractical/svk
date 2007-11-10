@@ -299,6 +299,13 @@ use SVK::Util qw( is_uri traverse_history );
 
 use constant narg => 1;
 
+sub expand_branch {
+    my ($self, $proj, $arg) = @_;
+    return $arg unless $arg =~ m/\*/;
+    my $match = SVK::XD::compile_apr_fnmatch($arg);
+    return grep { m/$match/ } @{ $proj->branches };
+}
+
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 1;
@@ -323,6 +330,8 @@ sub run {
 	$source->depot,
 	$source->path
     );
+
+    @srcs = map { $self->expand_branch($proj, $_) } @srcs;
 
     my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
     my $dst_branch_path = $branch_path.'/'.$dst;
