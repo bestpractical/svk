@@ -600,8 +600,18 @@ sub run {
 	    my $usrc = $src->universal;
 	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 	    if ($dstinfo->{$srckey}) {
+                # find which rev on src is merged from the base.
 		$boundry_rev = $src->merged_from
 		    ($self->{base}, $self, $self->{base}{path});
+                # however if src is removed and later copied again
+                # from base, we need the later one as boundry
+                my $t = $src;
+                while (my ($toroot, $fromroot, $path) = $t->nearest_copy) {
+                    if ($path eq $self->{base}->path_anchor) {
+                        $boundry_rev = List::Util::max( $boundry_rev, $toroot->revision_root_revision );
+                    }
+                    $t = $t->mclone( path => $path, revision => $fromroot->revision_root_revision );
+                }
 	    }
 	    else {
 		# when did the branch first got created?
