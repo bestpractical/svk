@@ -218,6 +218,7 @@ sub run {
     $src = $self->arg_uri_maybe($src_branch_path);
     $dst = $self->arg_depotpath($dst_branch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
+	or $SVN::Node::dir == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
 	    $branch_path, $self->{local} ? '(in local)' : '');
 
