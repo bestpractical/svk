@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 8;
 use SVK::Test;
 use File::Path;
 
@@ -30,3 +30,12 @@ is_output_like ($svk, 'branch', ['--list'], qr'feature/bar');
 is_output_like ($svk, 'branch', ['--create', 'feature/moo'], qr'Project branch created: feature/moo');
 $svk->br('--move', 'feature/moo', 'feature/mar');
 is_output_unlike ($svk, 'branch', ['--list'], qr'feature/moo');
+
+# create to local and move back
+is_output_like ($svk, 'branch', ['--create', 'localfoo', '--local', '--switch-to'],
+    qr'Project branch created: localfoo \(in local\)');
+
+$svk->br('--move', 'feature/remotebar');
+$svk->br('--switch', 'feature/remotebar');
+is_output_like ($svk, 'branch', ['--list'], qr'feature/remotebar',
+    'Move localfoo to remotebar, cross depot move');

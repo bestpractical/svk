@@ -178,7 +178,7 @@ sub run {
 }
 
 package SVK::Command::Branch::move;
-use base qw( SVK::Command::Copy SVK::Command::Smerge SVK::Command::Move SVK::Command::Delete SVK::Command::Branch );
+use base qw( SVK::Command::Move SVK::Command::Copy SVK::Command::Smerge SVK::Command::Delete SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
 
@@ -229,6 +229,10 @@ sub run {
 	$self->{rev} = $which_rev_we_branch;
 	$src = $self->arg_uri_maybe('/'.$proj->depot->depotname.'/'.$proj->trunk);
 	$self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
+	local *handle_direct_item = sub {
+	    my $self = shift;
+	    $self->SVK::Command::Copy::handle_direct_item(@_);
+	};
 	$self->SVK::Command::Copy::run($src, $dst);
 	# now we do sm -I
 	$src = $self->arg_uri_maybe($src_branch_path);
@@ -413,7 +417,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create [BRANCH]
 
  branch --list [BRANCH...]
- branch --create BRANCH [--switch-to]
+ branch --create BRANCH [--local] [--switch-to]
  branch --move BRANCH1 BRANCH2
 
 =head1 OPTIONS
@@ -421,6 +425,7 @@ SVK::Command::Branch - Manage a project with its branches
  -l [--list]            : list mirrored paths
  -C [--check-only]      : try operation but make no changes
  --create               : create a new branch
+ --local                : targets in local branch
  --switch-to            : also switch to another branch
  --merge                : automatically merge all changes between branches
 
