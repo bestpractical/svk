@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 6;
 use SVK::Test;
 use File::Path;
 
@@ -27,3 +27,6 @@ $svk->br('--move', 'feature/foo', 'release-ready/bar');
 is_output_like ($svk, 'branch', ['--list'], qr'release-ready/bar');
 $svk->br('--move', 'release-ready/bar', 'feature/');
 is_output_like ($svk, 'branch', ['--list'], qr'feature/bar');
+is_output_like ($svk, 'branch', ['--create', 'feature/moo'], qr'Project branch created: feature/moo');
+$svk->br('--move', 'feature/moo', 'feature/mar');
+is_output_unlike ($svk, 'branch', ['--list'], qr'feature/moo');
