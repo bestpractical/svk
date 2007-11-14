@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use SVK::Test;
 use File::Path;
 
@@ -26,7 +26,6 @@ chdir($copath);
 is_output_like ($svk, 'branch', ['--create', 'feature/foo','--switch-to'], qr'Project branch created: feature/foo');
 overwrite_file ('A/be', "\nsome more foobar\nzz\n");
 $svk->propset ('someprop', 'propvalue', 'A/be');
-$svk->diff();
 $svk->commit ('-m', 'commit message here (r8)','');
 
 my $branch_foo = '/mirror/MyProject/branches/feature/foo';
@@ -77,3 +76,24 @@ is_output_like ($svk, 'info', [],
     qr/Merged From: $branch_foo, Rev. 8/, 'Merged from feature/foo at rev. 8');
 is_output_like ($svk, 'info', [],
     qr/Merged From: $branch_bar, Rev. 10/, 'Merged from feature/bar at rev. 10');
+
+# modify the same file, and merge it
+$svk->branch ('--create', 'smerge/bar', '--switch-to');
+overwrite_file ('B/S/Q/qu', "first line in qu\nblah\n2nd line in qu\n");
+$svk->commit ('-m', 'commit message here (r13)','');
+
+$svk->switch ('//mirror/MyProject/trunk');
+
+$svk->branch ('--create', 'smerge/foo', '--switch-to');
+append_file ('B/S/Q/qu', "\nappend CBA on local branch foo\n");
+$svk->commit ('-m', 'commit message here (r14)','');
+
+$branch_foo = '/mirror/MyProject/branches/smerge/foo';
+$branch_bar = '/mirror/MyProject/branches/smerge/bar';
+is_output ($svk, 'branch', ['--merge', '-C', 'smerge/bar', 'smerge/foo', 'trunk'], 
+    ["Auto-merging (0, 14) $branch_bar to $trunk (base $trunk:12).",
+     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/smerge/bar:13',
+     "Auto-merging (0, 16) $branch_foo to $trunk (base $trunk:12).",
+     "Checking locally against mirror source $uri.", 'G   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/smerge/foo:15']);
