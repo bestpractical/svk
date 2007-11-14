@@ -345,6 +345,14 @@ sub run {
 
     $dst = $self->arg_depotpath($dst_branch_path);
 
+    # see also check_only in incmrental smerge.  this should be a
+    # better api in svk::path
+    if ($self->{check_only}) {
+        require SVK::Path::Txn;
+        $dst = $dst->clone;
+        bless $dst, 'SVK::Path::Txn'; # XXX: need a saner api for this
+    }
+
     for my $src (@srcs) {
 	my $src_branch_path = $branch_path.'/'.$src;
 	$src_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
