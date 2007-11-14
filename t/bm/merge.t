@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 13;
+use Test::More tests => 14;
 use SVK::Test;
 use File::Path;
 
@@ -63,7 +63,8 @@ is_output ($svk, 'branch', ['--merge', '-C', 'feature/bar', 'feature/foo', 'trun
      qr'New merge ticket: [\w\d-]+:/branches/feature/bar:9',
      "Auto-merging (0, 8) $branch_foo to $trunk (base $trunk:6).",
      "Checking locally against mirror source $uri.", 'UU  A/be',
-     qr'New merge ticket: [\w\d-]+:/branches/feature/foo:7']);
+     qr'New merge ticket: [\w\d-]+:/branches/feature/foo:7'],
+    "Check multiple branch merge");
 
 is_output_like ($svk, 'branch', ['--merge', 'feature/bar', 'feature/foo', 'trunk'], 
     qr/Committed revision 12 from revision 11./);
@@ -97,3 +98,25 @@ is_output ($svk, 'branch', ['--merge', '-C', 'smerge/bar', 'smerge/foo', 'trunk'
      "Auto-merging (0, 16) $branch_foo to $trunk (base $trunk:12).",
      "Checking locally against mirror source $uri.", 'G   B/S/Q/qu',
      qr'New merge ticket: [\w\d-]+:/branches/smerge/foo:15']);
+
+is_output ($svk, 'branch', ['--merge', 'smerge/bar', 'smerge/foo', 'trunk'], 
+    ["Auto-merging (0, 14) $branch_bar to $trunk (base $trunk:12).",
+     "Merging back to mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/smerge/bar:13',
+     'Merge back committed as revision 16.', "Syncing $uri",
+     'Retrieving log information from 16 to 16',
+     'Committed revision 17 from revision 16.',
+     "Auto-merging (0, 16) $branch_foo to $trunk (base $trunk:12).",
+     "Merging back to mirror source $uri.", 'G   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/smerge/foo:15',
+     'Merge back committed as revision 17.', "Syncing $uri",
+     'Retrieving log information from 17 to 17',
+     'Committed revision 18 from revision 17.']);
+#$svk->smerge('-m', "blah", "//mirror/MyProject/branches/smerge/bar", "//mirror/MyProject/trunk");
+#$svk->smerge('-C',"//mirror/MyProject/branches/smerge/foo", "//mirror/MyProject/trunk");
+#warn $output;
+#is_output ($svk, 'branch', ['--merge', '-C', 'smerge/foo', 'trunk'], 
+#    ["Auto-merging (0, 16) $branch_foo to $trunk (base $trunk:12).",
+#     "Checking locally against mirror source $uri.", 'G   B/S/Q/qu',
+#     qr'New merge ticket: [\w\d-]+:/branches/smerge/foo:15']);
+#warn $output;

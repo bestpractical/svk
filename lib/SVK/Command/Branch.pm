@@ -298,9 +298,9 @@ sub run {
 }
 
 package SVK::Command::Branch::merge;
-use base qw( SVK::Command::Smerge SVK::Command::Switch SVK::Command::Branch);
+use base qw( SVK::Command::Smerge SVK::Command::Branch);
 use SVK::I18N;
-use SVK::Util qw( is_uri traverse_history );
+use SVK::Util qw( is_uri );
 
 use constant narg => 1;
 
