@@ -72,6 +72,35 @@ The class represents a project within svk.
 
 use List::MoreUtils 'apply';
 
+sub load {
+    my ($self, $pathobj) = @_;
+
+    my $fs              = $pathobj->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my $allprops        = $root->node_proplist($pathobj->depot->depotname);
+    my ($depotroot)     = $pathobj->path =~ m{^(/[^/]+/[^/]+).*$};
+    my @projnames = 
+#	grep { $_ ne $project_name && (($project_name) = $_) }
+	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
+	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
+    
+    return undef unless @projnames;
+    
+    my $project_name = $projnames[0];
+    my %props = 
+	map { $_ => $allprops->{'svk:project:'.$project_name.':'.$_} }
+	    ('path_trunk', 'path_branches', 'path_tags');
+    return SVK::Project->new(
+	{   
+	    name            => $project_name,
+	    depot           => $pathobj->depot,
+	    trunk           => $props{path_trunk},
+	    branch_location => $props{path_branches},
+	    tag_location    => $props{path_tags},
+	    local_root      => "/local/${project_name}",
+	});
+}
+
 sub branches {
     my ( $self, $match ) = @_;
 
@@ -110,7 +139,6 @@ sub _find_branches {
 
 sub create_from_path {
     my ($self, $depot, $path) = @_;
-    my $root;
     my $rev = undef;
 
     my $path_obj = SVK::Path->real_new(

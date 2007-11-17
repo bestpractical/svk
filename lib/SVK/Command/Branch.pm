@@ -83,11 +83,12 @@ sub parse_arg {
 sub run {
     my ( $self, $target, @options ) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     my $source = $target->source;
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$source->depot,
 	$source->path
-    );
+    ) unless $proj;
 
     print loc("Project mapped.  Project name: %1.\n", $proj->name);
 
@@ -101,11 +102,12 @@ use SVK::I18N;
 sub run {
     my ($self, $target) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     $target = $target->source if $target->isa('SVK::Path::Checkout');
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$target->depot,
 	$target->path
-    );
+    ) unless $proj;
 
     if (!$proj) {
 	print loc("No project branch founded.\n");
@@ -144,11 +146,12 @@ sub parse_arg {
 sub run {
     my ($self, $target, $branch_path) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     my $source = $target->source;
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$source->depot,
 	$source->path
-    );
+    ) unless $proj;
 
     my $trunk_path = '/'.$proj->depot->depotname.'/'.$proj->trunk;
     my $newbranch_path = '/'.$proj->depot->depotname.'/'.
@@ -203,11 +206,12 @@ sub parse_arg {
 sub run {
     my ($self, $target, $dst, $src) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     my $source = $target->source;
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$source->depot,
 	$source->path
-    );
+    ) unless $proj;
 
     my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
     my $src_branch_path = $branch_path.'/'.$src.'/';
@@ -273,11 +277,12 @@ sub parse_arg {
 sub run {
     my ($self, $target, $dst_path) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     my $source = $target->source;
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$source->depot,
 	$source->path
-    );
+    ) unless $proj;
 
     my $target_path = '/'.$proj->depot->depotname.'/'.
         ($self->{local} ?
@@ -330,11 +335,12 @@ sub parse_arg {
 sub run {
     my ($self, $target, $dst, @srcs) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     my $source = $target->source;
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$source->depot,
 	$source->path
-    );
+    ) unless $proj;
 
     @srcs = map { $self->expand_branch($proj, $_) } @srcs;
 
@@ -391,11 +397,12 @@ sub parse_arg {
 sub run {
     my ($self, $target, $new_path) = @_;
 
+    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
     my $source = $target->source;
-    my $proj = SVK::Project->create_from_path(
+    $proj = SVK::Project->create_from_path(
 	$source->depot,
 	$source->path
-    );
+    ) unless $proj;
 
     my $newtarget_path = '/'.$proj->depot->depotname.'/'.
         ($self->{local} ?
