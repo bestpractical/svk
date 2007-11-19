@@ -83,12 +83,7 @@ sub parse_arg {
 sub run {
     my ( $self, $target, @options ) = @_;
 
-    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
-    my $source = $target->source;
-    $proj = SVK::Project->create_from_path(
-	$source->depot,
-	$source->path
-    ) unless $proj;
+    my $proj = $self->load_project($target);
 
     print loc("Project mapped.  Project name: %1.\n", $proj->name);
 
@@ -98,7 +93,8 @@ sub run {
 sub load_project {
     my ($self, $target) = @_;
 
-    my $proj = SVK::Project->load($target) if $target->isa('SVK::Path');
+    Carp::cluck unless $target->isa('SVK::Path') or $target->isa('SVK::Path::Checkout');
+    my $proj = SVK::Project->create_from_prop($target) if $target->isa('SVK::Path');
     $target = $target->source if $target->isa('SVK::Path::Checkout');
     $proj = SVK::Project->create_from_path(
 	$target->depot,
