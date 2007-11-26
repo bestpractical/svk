@@ -125,34 +125,46 @@ sub auto {
 sub _rebase {
     my $self = shift;
 
-    return unless $self->{base}->path eq $self->{dst}->path;
+    my $new_base = $self->_rebase2( $self->{src}, $self->{dst}, $self->{base} );
+
+    $self->{base} = $new_base if $new_base;
+    return;
+}
+
+sub _rebase2 {
+    my $self = shift;
+    my ($src, $dst, $base) = @_;
+
+    return unless $base->path eq $dst->path;
 
     $self->{src}->is_merged_from($self->{base})
 	or return;
 
-    my $dst = $self->{src}->prev or return;
-    $dst->root->check_path($dst->path) or return;
+    my $ddst = $src->prev or return;
+    $ddst->root->check_path($ddst->path) or return;
 
     # If the previous source hasn't been merged, use the original base
     # logic.  Otherwise we are merging changes between the alleged
     # merge and actual revision.
-    $self->{dst}->is_merged_from($dst) or return;
+    $dst->is_merged_from($ddst) or return;
 
     require SVK::Path::Txn;
-    $dst = $dst->clone;
-    bless $dst, 'SVK::Path::Txn'; # XXX: need a saner api for this
+    $ddst = $ddst->clone;
+    bless $ddst, 'SVK::Path::Txn'; # XXX: need a saner api for this
 
     my $xmerge = SVK::Merge->auto(%$self, quiet => 1,
-				  src => $self->{base},
-				  dst => $dst);
+				  src => $base,
+				  dst => $ddst);
 
     my ($editor, $inspector, %cb) = $xmerge->{dst}->get_editor();
     local $ENV{SVKRESOLVE} = 's';
     unless ($xmerge->run( $editor, inspector => $inspector, %cb )) {
 	# XXX why isn't the txnroot uptodate??
-	$self->{base} = $xmerge->{dst};
-	$self->{base}->inspector->root($self->{base}->txn->root($self->{base}->pool));
+        my $new_base = $xmerge->{dst};
+	$new_base->inspector->root($new_base->txn->root($new_base->pool));
+        return $new_base;
     }
+    return;
 }
 
 # DEPRECATED
@@ -242,13 +254,13 @@ sub find_merge_base {
 	    next unless $src->related_to($src->as_depotpath->seek_to($rev));
 	}
 
-	if ($path eq $dst->path &&
-	    (my $src_base = $src->is_merged_from($src->mclone(path => $path, revision => $rev)))) {
-	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
-	    last;
-	}
-	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
-	    if !$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date');
+       if ($path eq $dst->path &&
+           (my $src_base = $src->is_merged_from($src->mclone(path => $path, revision => $rev)))) {
+           ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
+           last;
+       }
+       ($basepath, $baserev, $baseentry) = ($path, $rev, $_)
+           if !$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date');
     }
 
     return ($src->new (revision => $merge_baserev), $merge_baserev)
