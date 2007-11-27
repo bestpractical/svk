@@ -255,13 +255,19 @@ sub find_merge_base {
                 $src->is_merged_from($dst->mclone(revision => $rev))) {
 
                 my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
-                $base = $self->_rebase2( $src, $dst, $base) || $base;
-                @preempt_result = ($base, $from);
+                # this takes precedence than other potential base or
+                # rebasable base that is on src.
+                if (my $rebased = $self->_rebase2( $src, $dst, $base)) {
+                    return ($rebased, $from);
+                }
             }
             elsif ($path eq $src->path && $dst->is_merged_from($src->mclone(revision => $rev))) {
                 my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
                 $base = $self->_rebase2( $dst, $src, $base) || $base;
                 @preempt_result = ($base, $from);
+            }
+            else {
+                @preempt_result = ();
             }
         }
     }
@@ -628,8 +634,7 @@ sub run {
                 my $t = $src;
                 while (my ($toroot, $fromroot, $path) = $t->nearest_copy) {
                     if ($path eq $self->{base}->path_anchor) {
-                        Carp::cluck unless defined $boundry_rev;
-                        $boundry_rev = List::Util::max( $boundry_rev, $toroot->revision_root_revision );
+                        $boundry_rev = List::Util::max( grep { defined $_ } $boundry_rev, $toroot->revision_root_revision );
                     }
                     $t = $t->mclone( path => $path, revision => $fromroot->revision_root_revision );
                 }
