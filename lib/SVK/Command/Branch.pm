@@ -298,6 +298,8 @@ use SVK::Util qw( is_uri );
 
 use constant narg => 1;
 
+sub lock { $_[0]->lock_target ($_[1]) if $_[1]; };
+
 sub expand_branch {
     my ($self, $proj, $arg) = @_;
     return $arg unless $arg =~ m/\*/;
@@ -333,7 +335,12 @@ sub run {
     $dst_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
 	if $dst eq 'trunk';
 
-    $dst = $self->arg_depotpath($dst_branch_path);
+    # try to get checkout from copath (if dst is specified PATH)
+    # if failed (SVN::Node::none), get from depotpath
+    $dst = $self->arg_copath($dst);
+    $dst = $dst->source;
+    $dst = $self->arg_depotpath($dst_branch_path)
+        if $SVN::Node::none == $dst->root->check_path($dst->path);
 
     # see also check_only in incmrental smerge.  this should be a
     # better api in svk::path
@@ -413,6 +420,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --list [BRANCH...]
  branch --create BRANCH [--local] [--switch-to]
  branch --move BRANCH1 BRANCH2
+ branch --merge BRANCH1 BRANCH2 ... TARGET
 
 =head1 OPTIONS
 

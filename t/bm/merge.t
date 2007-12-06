@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 14;
+use Test::More tests => 17;
 use SVK::Test;
 use File::Path;
 
@@ -112,11 +112,26 @@ is_output ($svk, 'branch', ['--merge', 'smerge/bar', 'smerge/foo', 'trunk'],
      'Merge back committed as revision 17.', "Syncing $uri",
      'Retrieving log information from 17 to 17',
      'Committed revision 18 from revision 17.']);
-#$svk->smerge('-m', "blah", "//mirror/MyProject/branches/smerge/bar", "//mirror/MyProject/trunk");
-#$svk->smerge('-C',"//mirror/MyProject/branches/smerge/foo", "//mirror/MyProject/trunk");
-#warn $output;
-#is_output ($svk, 'branch', ['--merge', '-C', 'smerge/foo', 'trunk'], 
-#    ["Auto-merging (0, 16) $branch_foo to $trunk (base $trunk:12).",
-#     "Checking locally against mirror source $uri.", 'G   B/S/Q/qu',
-#     qr'New merge ticket: [\w\d-]+:/branches/smerge/foo:15']);
-#warn $output;
+
+# < clkao> cls_bsd: also br --merge foo . should work
+# < clkao> well, at least not die horribly
+$svk->branch ('--create', 'merge/foo', '--switch-to');
+append_file ('B/S/Q/qu', "\nappend CBA on local branch foo\n");
+$svk->commit ('-m', 'commit message here (r20)','');
+$svk->switch ('//mirror/MyProject/trunk');
+$svk->branch ('--merge', '-C', 'merge/foo', 'trunk');
+is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo', 'trunk'],
+    ["Auto-merging (0, 20) /mirror/MyProject/branches/merge/foo to $trunk (base $trunk:18).",
+     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo:19']);
+is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo', '.'], 
+    ["Auto-merging (0, 20) /mirror/MyProject/branches/merge/foo to $trunk (base $trunk:18).",
+     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo:19']);
+is_output ($svk, 'branch', ['--merge', 'merge/foo', '.'], 
+    ["Auto-merging (0, 20) /mirror/MyProject/branches/merge/foo to $trunk (base $trunk:18).",
+     "Merging back to mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo:19',
+     'Merge back committed as revision 20.', "Syncing $uri",
+     'Retrieving log information from 20 to 20',
+     'Committed revision 21 from revision 20.']);
