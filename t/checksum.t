@@ -2,7 +2,7 @@
 use strict;
 use SVK::Util qw( is_executable );
 use SVK::Test;
-plan tests => 2;
+plan tests => 1;
 our $output;
 
 # Basically, trying to merge a revision containing a copy, where the cop source file is removed at the
@@ -13,24 +13,32 @@ my ($xd, $svk) = build_test();
 $svk->mkdir ('-pm', 'init', '//V/A');
 my $tree = create_basic_tree ($xd, '//V/A');
 my ($copath, $corpath) = get_copath ('checksum');
- 
-# branch from r1
-$svk->cp('//V/A' => '//V/B', -m => 'r4 - A => B');
-$svk->checkout('//V',$copath);
+$svk->cp(-m => 'V to X', '//V', '//X');
 
 # r2 - remove file B
-$svk->rm("$copath/B/me");
-$svk->ci(-m => 'r5 - remove file B/me', $copath);
 
+$svk->rm(-m => 'r5 - remove file A/me', "//V/A/me");
+
+$svk->checkout('//V',$copath);
 # r3 - cp B@1 to C with modification,
-$svk->cp('//V/B/me' => '//V/Cme', -r => 4, -m => 'r6 - B/me@4 => C');
-$svk->update($copath);
-append_file("$copath/Cme", "mmmmmm\n");
-$svk->ci(-m => 'r7 - modify Cme', $copath);
-# cp A@2 to B
-$svk->cp('//V/A/D/de' => '//V/B/me', -r => 5, -pm => 'r8 - A@5 => B');
+$svk->cp('//V/A/me' => "$copath/Cme", -r => 4 );
 
-chdir($copath);
-$svk->merge('-r5:8','//V');
-warn $output;
+append_file("$copath/Cme", "mmmmmm\n");
+$svk->ci(-m => 'r8 - modify Cme', $copath);
+# cp A@2 to B
+$svk->cp('//V/A/D/de' => "$copath/A/me", -r => 5);
+append_file("$copath/A/me", "mmmmmm\n");
+
+$svk->ci(-m => 'some copy with mods', $copath);
+
+TODO: {
+    local $TODO = 'not yet';
+is_output($svk, 'smerge', [-m => 'go', '//V', '//X'],
+	  ['Auto-merging (3, 7) /V to /X (base /V:3).',
+	   'R + A/me',
+	   'R + Cme',
+	   qr'New merge ticket: .*:/V:7',
+	   'Committed revision 8']);
+}
+
 1;
