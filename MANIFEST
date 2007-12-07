@@ -210,6 +210,7 @@ t/07smerge-copy-outside.t
 t/07smerge-copy.t
 t/07smerge-copy2.t
 t/07smerge-cpdelete.t
+t/07smerge-cpreplace.t
 t/07smerge-delete.t
 t/07smerge-dir-replaced.t
 t/07smerge-external.t
