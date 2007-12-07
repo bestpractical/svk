@@ -258,36 +258,39 @@ sub lock { $_[0]->lock_target ($_[1]); };
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg != 0;
+    return if $#arg < 0;
 
-    my $dst = shift(@arg);
-    die loc ("Destination can't be URI.\n")
-	if is_uri ($dst);
+    for (@arg) {
+	die loc ("Copy source can't be URI.\n")
+	    if is_uri ($_);
+    }
 
-    return ($self->arg_co_maybe (''), $dst);
+    return ($self->arg_co_maybe (''), @arg);
 }
 
 
 sub run {
-    my ($self, $target, $dst_path) = @_;
+    my ($self, $target, @dst_paths) = @_;
 
     my $proj = $self->load_project($target);
 
-    my $target_path = '/'.$proj->depot->depotname.'/'.
-        ($self->{local} ?
-	    $proj->local_root."/$dst_path"
-	    :
-	    ($dst_path ne 'trunk' ?
-		$proj->branch_location . "/$dst_path" : $proj->trunk)
-	);
+    for my $dst (@dst_paths) {
+	my $target_path = '/'.$proj->depot->depotname.'/'.
+	    ($self->{local} ?
+		$proj->local_root."/$dst"
+		:
+		($dst ne 'trunk' ?
+		    $proj->branch_location . "/$dst" : $proj->trunk)
+	    );
 
-    $target = $self->arg_uri_maybe($target_path);
-    $target->root->check_path($target->path)
-	or die loc("No such branch exists: %1 %2\n",
-	    $dst_path, $self->{local} ? '(in local)' : '');
+	$target = $self->arg_uri_maybe($target_path);
+	$target->root->check_path($target->path)
+	    or die loc("No such branch exists: %1 %2\n",
+		$dst, $self->{local} ? '(in local)' : '');
 
-    $self->{message} = "- Delete branch $target_path";
-    $self->SUPER::run($target);
+	$self->{message} = "- Delete branch $target_path";
+	$self->SUPER::run($target);
+    }
     return;
 }
 
