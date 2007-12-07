@@ -283,23 +283,27 @@ sub run {
 
     @dsts = map { $self->expand_branch($proj, $_) } @dsts;
 
-    for my $dst (@dsts) {
+    @dsts = grep { defined($_) } map { 
 	my $target_path = '/'.$proj->depot->depotname.'/'.
 	    ($self->{local} ?
-		$proj->local_root."/$dst"
+		$proj->local_root."/$_"
 		:
-		($dst ne 'trunk' ?
-		    $proj->branch_location . "/$dst" : $proj->trunk)
+		($_ ne 'trunk' ?
+		    $proj->branch_location . "/$_" : $proj->trunk)
 	    );
 
-	$target = $self->arg_uri_maybe($target_path);
-	$target->root->check_path($target->path)
-	    or die loc("No such branch exists: %1 %2\n",
-		$dst, $self->{local} ? '(in local)' : '');
+	my $target = $self->arg_uri_maybe($target_path);
+	$target = $target->root->check_path($target->path) ? $target : undef;
+	$target ? 
+	    $self->{message} .= "- Delete branch ".$target->path."\n" :
+	    warn loc("No such branch exists: %1 %2\n",
+		$_, $self->{local} ? '(in local)' : '');
 
-	$self->{message} = "- Delete branch $target_path";
-	$self->SUPER::run($target);
-    }
+	$target;
+    } @dsts;
+
+    $self->SUPER::run(@dsts);
+
     return;
 }
 

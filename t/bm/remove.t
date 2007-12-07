@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 7;
+plan tests => 10;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -54,3 +54,23 @@ $svk->branch('--remove', '*');
 
 is_output($svk, 'br', ['-l', '//mirror/MyProject'], []);
 
+#$svk->log('//mirror/MyProject');
+#warn $output;
+$svk->branch('--create', 'foobar5');
+$svk->branch('--create', 'foobar6');
+$svk->branch('--create', 'feature/foobar7');
+$svk->branch('--create', 'bugfix/foobar8');
+
+is_output($svk, 'br', ['-l', '//mirror/MyProject'],
+          ['bugfix/foobar8', 'feature/foobar7', 'foobar5', 'foobar6']);
+
+$svk->branch('--remove', 'fake', 'foobar*');
+
+is_output($svk, 'br', ['-l', '//mirror/MyProject'],
+          ['bugfix/foobar8', 'feature/foobar7']);
+
+$svk->branch('--remove', '*');
+
+is_output($svk, 'br', ['-l', '//mirror/MyProject'], []);
+
+1;
