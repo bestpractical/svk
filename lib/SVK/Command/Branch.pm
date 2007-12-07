@@ -104,6 +104,13 @@ sub load_project {
     return $proj;
 }
 
+sub expand_branch {
+    my ($self, $proj, $arg) = @_;
+    return $arg unless $arg =~ m/\*/;
+    my $match = SVK::XD::compile_apr_fnmatch($arg);
+    return grep { m/$match/ } @{ $proj->branches };
+}
+
 package SVK::Command::Branch::list;
 use base qw(SVK::Command::Branch);
 use SVK::I18N;
@@ -270,11 +277,13 @@ sub parse_arg {
 
 
 sub run {
-    my ($self, $target, @dst_paths) = @_;
+    my ($self, $target, @dsts) = @_;
 
     my $proj = $self->load_project($target);
 
-    for my $dst (@dst_paths) {
+    @dsts = map { $self->expand_branch($proj, $_) } @dsts;
+
+    for my $dst (@dsts) {
 	my $target_path = '/'.$proj->depot->depotname.'/'.
 	    ($self->{local} ?
 		$proj->local_root."/$dst"
@@ -302,13 +311,6 @@ use SVK::Util qw( is_uri );
 use constant narg => 1;
 
 sub lock { $_[0]->lock_target ($_[1]) if $_[1]; };
-
-sub expand_branch {
-    my ($self, $proj, $arg) = @_;
-    return $arg unless $arg =~ m/\*/;
-    my $match = SVK::XD::compile_apr_fnmatch($arg);
-    return grep { m/$match/ } @{ $proj->branches };
-}
 
 sub parse_arg {
     my ($self, @arg) = @_;
