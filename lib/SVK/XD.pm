@@ -1181,12 +1181,12 @@ sub _node_type {
     my $st = [lstat ($copath)];
     return '' if !-e _;
     unless (-r _) {
-	$logger->warn( loc ("Warning: $copath is unreadable."));
+	$logger->warn( loc ("Warning: %1 is unreadable.", $copath));
 	return;
     }
     return ('file', $st) if -f _ or is_symlink;
     return ('directory', $st) if -d _;
-    $logger->warn( loc ("Warning: unsupported node type $copath."));
+    $logger->warn( loc ("Warning: unsupported node type %1.", $copath));
     return ('', $st);
 }
 
