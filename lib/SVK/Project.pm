@@ -73,14 +73,14 @@ The class represents a project within svk.
 use List::MoreUtils 'apply';
 
 sub branches {
-    my ( $self, $match ) = @_;
+    my ( $self, $local ) = @_;
 
     my $fs              = $self->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
-    my $branch_location = $self->branch_location;
+    my $branch_location = $local ? $self->local_root : $self->branch_location;
 
     return [ apply {s{^\Q$branch_location\E/}{}}
-        @{ $self->_find_branches( $root, $self->branch_location ) } ];
+        @{ $self->_find_branches( $root, $branch_location ) } ];
 }
 
 sub _find_branches {

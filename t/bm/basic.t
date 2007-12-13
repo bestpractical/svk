@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 10;
+plan tests => 12;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -57,3 +57,10 @@ is_output_like ($svk, 'info', [],
 $svk->branch('--switch-to', '//mirror/MyProject/branches/feature/foo'); # switch to foo
 is_output_like ($svk, 'info', [],
     qr'Depot Path: //mirror/MyProject/branches/feature/foo', 'Switch to feature/foo branch');
+
+is_output_like ($svk, 'branch', ['--create', 'feature/foobar', '--local'],
+    qr'Project branch created: feature/foobar \(in local\)');
+
+is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
+          ['feature/foobar']);
+
