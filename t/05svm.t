@@ -147,7 +147,7 @@ is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], 
 
 
 is_output_like ($svk, 'mirror', ['--list'],
-            qr"//m.*$uri/A\n//m-99.*$uri/A-99");
+            qr"//m.*\Q$uri\E/A\n//m-99.*\Q$uri\E/A-99");
 
 is_output_like ($svk, 'mirror', ['//m-99', "$uri/A-99"],
             qr"already", 'repeated mirror failed');
