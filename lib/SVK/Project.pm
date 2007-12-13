@@ -113,8 +113,8 @@ sub create_from_prop {
 
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
-    my $allprops        = $root->node_proplist($pathobj->depot->depotname);
-    my ($depotroot)     = $pathobj->path =~ m{^(/[^/]+/[^/]+).*$};
+    my $allprops        = $root->node_proplist('/');
+    my ($depotroot)     = '/';
     my @projnames = 
 #	grep { $_ ne $project_name && (($project_name) = $_) }
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
@@ -125,14 +125,14 @@ sub create_from_prop {
     my $project_name = $projnames[0];
     my %props = 
 	map { $_ => $allprops->{'svk:project:'.$project_name.':'.$_} }
-	    ('path_trunk', 'path_branches', 'path_tags');
+	    ('path-trunk', 'path-branches', 'path-tags');
     return SVK::Project->new(
 	{   
 	    name            => $project_name,
 	    depot           => $pathobj->depot,
-	    trunk           => $props{path_trunk},
-	    branch_location => $props{path_branches},
-	    tag_location    => $props{path_tags},
+	    trunk           => $props{'path-trunk'},
+	    branch_location => $props{'path-branches'},
+	    tag_location    => $props{'path-tags'},
 	    local_root      => "/local/${project_name}",
 	});
 }

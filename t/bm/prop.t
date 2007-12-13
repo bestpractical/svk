@@ -31,12 +31,12 @@ my $proppath = { 'trunk' => '/mirror/MyProject/trunk',
     'hooks' => '/mirror/MyProject/hooks',
 };
 
-$svk->propset('-m', "- project trunk path set", 'svk:project:MyProject:path_trunk',
+$svk->propset('-m', "- project trunk path set", 'svk:project:MyProject:path-trunk',
     $proppath->{trunk}, "//"); 
-$svk->propset('-m', "- project branches path set", 'svk:project:MyProject:path_branches',
+$svk->propset('-m', "- project branches path set", 'svk:project:MyProject:path-branches',
     $proppath->{branches}, "//");
-$svk->propset('-m', "- project tags path set", 'svk:project:MyProject:path_tags',
+$svk->propset('-m', "- project tags path set", 'svk:project:MyProject:path-tags',
     $proppath->{tags}, "//");
-is_output ($svk, 'propget', ['svk:project:MyProject:path_trunk', '//'], [$proppath->{trunk}]);
+is_output ($svk, 'propget', ['svk:project:MyProject:path-trunk', '//'], [$proppath->{trunk}]);
 
 is_output ($svk, 'branch', ['--list','//mirror/MyProject'], ['Foo']);

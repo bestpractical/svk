@@ -94,13 +94,12 @@ sub load_project {
     my ($self, $target) = @_;
 
     Carp::cluck unless $target->isa('SVK::Path') or $target->isa('SVK::Path::Checkout');
-    my $proj = SVK::Project->create_from_prop($target) if $target->isa('SVK::Path');
     $target = $target->source if $target->isa('SVK::Path::Checkout');
-    $proj = SVK::Project->create_from_path(
-	$target->depot,
-	$target->path
-    ) unless $proj;
-
+    my $proj =
+        SVK::Project->create_from_prop($target) ||
+        SVK::Project->create_from_path(
+	    $target->depot,
+	    $target->path );
     return $proj;
 }
 
