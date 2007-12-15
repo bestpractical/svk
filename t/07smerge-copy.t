@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 25;
+use Test::More tests => 26;
 use strict;
 use File::Path;
 use Cwd;
@@ -215,6 +215,11 @@ is_output($svk, 'push', ['-l'],
 	   qr'New merge ticket: .*:/local-many:40',
 	   qr'New merge ticket: .*:/trunk:3',
 	   'Committed revision 41.']);
+is_output($svk, 'cat', ['//trunk-3/B/de'],
+	  ['modify on D/de',
+	   'modify on B/de',
+	   'file de added later',
+	   'modify this on trunk']);
 
 is_output($svk, 'diff', ['-sr40:41', '//'],
 	  ['M + trunk-3/B/de',
