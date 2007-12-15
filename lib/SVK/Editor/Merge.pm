@@ -58,7 +58,7 @@ use SVK::Logger;
 use autouse 'SVK::Util'
     => qw( slurp_fh md5_fh tmpfile devnull abs2rel );
 
-__PACKAGE__->mk_accessors(qw(inspector notify storage ticket cb_merged));
+__PACKAGE__->mk_accessors(qw(inspector static_inspector notify storage ticket cb_merged));
 
 use Class::Autouse qw(SVK::Inspector::Root SVK::Notify
 		      Data::Hierarchy IO::Digest);
@@ -311,11 +311,9 @@ sub resolve_base {
     my ($self, $path, $orig, $pool) = @_;
     my ($basepath, $fromrev) = $self->_resolve_base($path, $orig);
     if ($basepath) {
-	my $inspector =
-	    SVK::Inspector::Root->new({ anchor => $self->inspector->anchor,
-					root => $self->{base_root}->fs->revision_root($fromrev, $pool),
-					path_translations => $self->inspector->path_translations });
-	return ($basepath, $fromrev, $inspector);
+	# if the inspector is involving copy base, we can't use
+	# $self->inspector, as it represent the current txn
+	return ($basepath, $fromrev, $self->static_inspector);
     }
 
     return ($path, undef, $self->inspector) 
