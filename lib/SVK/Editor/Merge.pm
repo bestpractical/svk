@@ -280,7 +280,7 @@ sub add_file {
 	if (defined $arg[0]) {
 	    $self->{notify}->hist_status ($path, '+');
 	    @arg = $self->resolve_copy($path, @arg);
-	    $self->{info}{$path}{baseinfo} = [$self->_resolve_base($path)];
+	    $self->{info}{$path}{baseinfo} = [$self->resolve_base($path, 0, $pool)];
 	    $self->{info}{$path}{fpool} = $pool;
 	}
 	$self->{storage_baton}{$path} =
@@ -307,13 +307,26 @@ sub _resolve_base {
 	    $entry->{".${key}_rev"});
 }
 
+sub resolve_base {
+    my ($self, $path, $orig, $pool) = @_;
+    my ($basepath, $fromrev) = $self->_resolve_base($path, $orig);
+    if ($basepath) {
+	my $inspector =
+	    SVK::Inspector::Root->new({ anchor => $self->inspector->anchor,
+					root => $self->{base_root}->fs->revision_root($fromrev, $pool),
+					path_translations => $self->inspector->path_translations });
+	return ($basepath, $fromrev, $inspector);
+    }
+
+    return ($path, undef, $self->inspector) 
+}
+
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    my ($basepath, $fromrev) = $self->_resolve_base($path);
-    $basepath = $path unless defined $basepath;
-    if (defined $pdir && $self->inspector->exist($basepath, $pool) == $SVN::Node::file) {
-	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
+    my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
+    if (defined $pdir && $inspector->exist($basepath, $pool) == $SVN::Node::file) {
+	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev, $inspector]
 	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
@@ -420,10 +433,10 @@ sub apply_textdelta {
     return unless $path;
 
     my $info = $self->{info}{$path};
-    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
+    my ($basepath, $fromrev, $inspector) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path, undef, $self->inspector);
     my $fh = $info->{fh} = {};
     my $pool = $info->{fpool};
-    if ($pool && ($fh->{local} = $self->inspector->localmod($basepath, $checksum || '', $pool))) {
+    if ($pool && ($fh->{local} = $inspector->localmod($basepath, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
 	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
@@ -541,7 +554,7 @@ sub close_file {
     my $fh = $info->{fh};
     my $iod;
 
-    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
+    my ($basepath, $fromrev, $inspector) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path, undef, $self->inspector);
     no warnings 'uninitialized';
     my $storagebase_checksum = $fh->{local}[CHECKSUM];
     if ($fromrev) {
@@ -555,7 +568,7 @@ sub close_file {
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
 	    if $checksum eq $storagebase_checksum;
 
-	my $eol = $self->inspector->localprop($basepath, 'svn:eol-style', $pool);
+	my $eol = $inspector->localprop($basepath, 'svn:eol-style', $pool);
 	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
 	$eol_layer = '' if $eol_layer eq ':raw';
 	$self->prepare_fh ($fh, $eol_layer);
@@ -589,7 +602,7 @@ sub close_file {
 	    if ($basepath ne $path) {
 		$checksum = $self->{base_root}->fs->revision_root($fromrev, $pool)->file_md5_checksum($basepath, $pool);
 	    }
-	    elsif (my $local = $self->inspector->localmod($basepath, $checksum, $pool)) {
+	    elsif (my $local = $inspector->localmod($basepath, $checksum, $pool)) {
 		$checksum = $local->[CHECKSUM];
 		close $local->[FH];
 	    }
@@ -668,10 +681,9 @@ sub open_directory {
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
 
-	my ($basepath, $fromrev) = $self->_resolve_base($path);
-	$basepath = $path unless defined $basepath;
+	my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
 
-	unless ($self->inspector->exist($basepath, $pool) || $self->{open_nonexist}) {
+	unless ($inspector->exist($basepath, $pool) || $self->{open_nonexist}) {
 	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;
@@ -708,22 +720,21 @@ sub close_directory {
 sub _merge_file_delete {
     my ($self, $path, $rpath, $pdir, $pool) = @_;
 
-    my ($basepath, $fromrev) = $self->_resolve_base($path);
-    $basepath = $path unless defined $basepath;
+    my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
     
     my $no_base;
     my $md5 = $self->{base_root}->check_path ($rpath, $pool)?
         $self->{base_root}->file_md5_checksum ($rpath, $pool)
         : do { $no_base = 1; require Digest::MD5; Digest::MD5::md5_hex('') };
 
-    return undef unless $self->inspector->localmod ($basepath, $md5, $pool);
+    return undef unless $inspector->localmod ($basepath, $md5, $pool);
     return {} unless $self->{resolve};
 
     my $fh = $self->{info}{$path}->{fh} || {};
     $fh->{base} ||= [$no_base? (tmpfile('base-')): ($self->_retrieve_base($path, $pool))];
     $fh->{new} = [tmpfile('new-')];
     $fh->{local} = [tmpfile('local-')];
-    my ($tmp) = $self->inspector->localmod($basepath, '', $pool);
+    my ($tmp) = $inspector->localmod($basepath, '', $pool);
     slurp_fh ( $tmp->[FH], $fh->{local}[FH]);
     seek $fh->{local}[FH], 0, 0;
     $fh->{local}[CHECKSUM] = $tmp->[CHECKSUM];
@@ -888,10 +899,9 @@ sub delete_entry {
     my ($self, $path, $revision, $pdir, $pool) = @_;
     no warnings 'uninitialized';
     $pool = SVN::Pool->new_default($pool);
-    my ($basepath, $fromrev) = $self->_resolve_base($path);
-    $basepath = $path unless defined $basepath;
+    my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
 
-    return unless defined $pdir && $self->inspector->exist($basepath);
+    return unless defined $pdir && $inspector->exist($basepath);
     my $rpath = $basepath =~ m{^/} ? $basepath :
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
     my $torm;
