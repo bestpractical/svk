@@ -63,6 +63,7 @@ sub options {
     ('l|list'  => 'list',
      'C|check-only'     => 'check_only',
      'create'=> 'create',
+     'all'=> 'all',
      'local'=> 'local',
      'merge'=> 'merge',
      'move' => 'move',
@@ -125,6 +126,7 @@ sub run {
     }
 
     my $branches = $proj->branches ($self->{local});
+    push @{$branches},@{$proj->branches (!$self->{local})} if ($self->{all});
 
     my $fmt = "%s\n"; # here to change layout
     printf $fmt, $_ for @{$branches};
