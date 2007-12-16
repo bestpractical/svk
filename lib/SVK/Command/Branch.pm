@@ -60,15 +60,16 @@ use SVK::Project;
 use constant narg => undef;
 
 sub options {
-    ('l|list'  => 'list',
+    ('l|list'           => 'list',
      'C|check-only'     => 'check_only',
-     'create'=> 'create',
-     'all'=> 'all',
-     'local'=> 'local',
-     'merge'=> 'merge',
-     'move' => 'move',
-     'remove'=> 'remove',
-     'switch-to'=> 'switch',
+     'create'           => 'create',
+     'all'              => 'all',
+     'local'            => 'local',
+     'from=s'             => 'from',
+     'merge'            => 'merge',
+     'move'             => 'move',
+     'remove'           => 'remove',
+     'switch-to'        => 'switch',
     );
 }
 
@@ -160,12 +161,17 @@ sub run {
 
     my $proj = $self->load_project($target);
 
-    my $trunk_path = '/'.$proj->depot->depotname.'/'.$proj->trunk;
+    my $src_path = '/'.$proj->depot->depotname.'/'.
+	( $self->{from} ?
+	    $proj->branch_location .'/'. $self->{from}.'/'
+	    :
+	    $proj->trunk
+	);
     my $newbranch_path = '/'.$proj->depot->depotname.'/'.
 	( $self->{local} ? $proj->local_root : $proj->branch_location ).
 	'/'.$branch_path.'/';
 
-    my $src = $self->arg_uri_maybe($trunk_path);
+    my $src = $self->arg_uri_maybe($src_path);
     my $dst = $self->arg_uri_maybe($newbranch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
@@ -176,8 +182,11 @@ sub run {
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
-	print loc("Project branch created: %1 %2\n",
-	    $branch_path, $self->{local} ? '(in local)' : '');
+	print loc("Project branch created: %1%2%3\n",
+	    $branch_path,
+	    $self->{local} ? ' (in local)' : '',
+	    $self->{from} ? " (from $self->{from})" : '',
+	);
 	# call SVK::Command::Switch here if --switch-to
 	$self->SVK::Command::Switch::run(
 	    $self->arg_uri_maybe($newbranch_path),
