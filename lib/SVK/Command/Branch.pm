@@ -320,7 +320,7 @@ sub run {
 package SVK::Command::Branch::merge;
 use base qw( SVK::Command::Smerge SVK::Command::Branch);
 use SVK::I18N;
-use SVK::Util qw( is_uri );
+use SVK::Util qw( is_uri abs_path );
 
 use constant narg => 1;
 
@@ -356,10 +356,13 @@ sub run {
 
     # try to get checkout from copath (if dst is specified PATH)
     # if failed (SVN::Node::none), get from depotpath
-    $dst = $self->arg_copath($dst);
-    $dst = $dst->source;
-    $dst = $self->arg_depotpath($dst_branch_path)
-        if $SVN::Node::none == $dst->root->check_path($dst->path);
+    if (-e $dst) {
+	my $copath = abs_path($dst);
+	my ($entry, @where) = $self->{xd}{checkout}->get($copath, 1);
+	$dst = $self->arg_depotpath($entry->{depotpath});
+    } else {
+	$dst = $self->arg_depotpath($dst_branch_path)
+    }
 
     # see also check_only in incmrental smerge.  this should be a
     # better api in svk::path

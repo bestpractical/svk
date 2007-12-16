@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 20;
 use SVK::Test;
 use File::Path;
 
@@ -135,3 +135,28 @@ is_output ($svk, 'branch', ['--merge', 'merge/foo', '.'],
      'Merge back committed as revision 20.', "Syncing $uri",
      'Retrieving log information from 20 to 20',
      'Committed revision 21 from revision 20.']);
+
+$svk->branch ('--create', 'merge/foo2', '--switch-to');
+append_file ('B/S/Q/qu', "\nappend CBA on foo2\n");
+$svk->commit ('-m', 'commit message here (r20)','');
+$svk->branch ('--switch', 'merge/foo');
+$branch_foo = '/mirror/MyProject/branches/merge/foo';
+my $branch_foo2 = '/mirror/MyProject/branches/merge/foo2';
+is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo2', 'merge/foo'],
+    ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
+     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo2:22',
+     qr'New merge ticket: [\w\d-]+:/trunk:20']);
+is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo2', '.'], 
+    ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
+     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo2:22',
+     qr'New merge ticket: [\w\d-]+:/trunk:20']);
+is_output ($svk, 'branch', ['--merge', 'merge/foo2', '.'], 
+    ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
+     "Merging back to mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo2:22',
+     qr'New merge ticket: [\w\d-]+:/trunk:20',
+     'Merge back committed as revision 23.', "Syncing $uri",
+     'Retrieving log information from 23 to 23',
+     'Committed revision 24 from revision 23.']);
