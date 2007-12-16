@@ -28,7 +28,7 @@ is_output ($svk, 'branch', ['--create', 'feature/foo'],
      "Syncing $uri",
      'Retrieving log information from 6 to 6',
      'Committed revision 7 from revision 6.',
-     'Project branch created: feature/foo ']);
+     'Project branch created: feature/foo']);
 is_output ($svk, 'branch', ['--list'], ['feature/foo']);
 
 is_output ($svk, 'branch', ['--move', 'feature/foo', 'release-ready/bar'],
@@ -53,7 +53,7 @@ is_output ($svk, 'branch', ['--create', 'feature/moo'],
      "Syncing $uri",
      'Retrieving log information from 9 to 9',
      'Committed revision 10 from revision 9.',
-     'Project branch created: feature/moo ']);
+     'Project branch created: feature/moo']);
 is_output ($svk, 'branch', ['--move', 'feature/moo', 'feature/mar'],
     ["Merging back to mirror source $uri.",
      "Merge back committed as revision 10.",
