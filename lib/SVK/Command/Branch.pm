@@ -126,11 +126,24 @@ sub run {
 	return;
     }
 
-    my $branches = $proj->branches ($self->{local});
-    push @{$branches},@{$proj->branches (!$self->{local})} if ($self->{all});
+    if ($self->{all}) {
+	my $fmt = "%s%s\n"; # here to change layout
 
-    my $fmt = "%s\n"; # here to change layout
-    printf $fmt, $_ for @{$branches};
+	my $branches = $proj->branches (0); # branches
+	printf $fmt, $_, '' for @{$branches};
+	
+	$branches = $proj->tags ();         # tags
+	printf $fmt, $_, ' (tags)' for @{$branches};
+
+	$branches = $proj->branches (1);    # local branches
+	printf $fmt, $_, ' (in local)' for @{$branches};
+
+    } else {
+	my $branches = $proj->branches ($self->{local});
+
+	my $fmt = "%s\n"; # here to change layout
+	printf $fmt, $_ for @{$branches};
+    }
     return;
 }
 

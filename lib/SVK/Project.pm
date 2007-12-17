@@ -83,6 +83,17 @@ sub branches {
         @{ $self->_find_branches( $root, $branch_location ) } ];
 }
 
+sub tags {
+    my $self = shift;
+
+    my $fs              = $self->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my $tag_location    = $self->tag_location;
+
+    return [ apply {s{^\Q$tag_location\E/}{}}
+        @{ $self->_find_branches( $root, $tag_location ) } ];
+}
+
 sub _find_branches {
     my ( $self, $root, $path ) = @_;
     my $pool    = SVN::Pool->new_default;

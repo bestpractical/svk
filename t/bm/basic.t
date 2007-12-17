@@ -65,5 +65,5 @@ is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
           ['feature/foobar']);
 
 is_output($svk, 'br', ['-l', '--all', '//mirror/MyProject'],
-          ['Foo', 'feature/foo', 'feature/foobar']);
+          ['Foo', 'feature/foo', 'feature/foobar (in local)']);
 
