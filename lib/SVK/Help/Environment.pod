@@ -140,6 +140,12 @@ By specifying this variable, you change the default output filter used by the
 C<svk log> command.  The value of this variable can be anything that you can
 pass to C<svk log>'s C<--output> option.
 
+=item SVKBATCHMODE
+
+When you set this variable to a true value, SVK should never prompt the user for an 
+interactive response. 
+
+
 =item $SVKPGP
 
 svk supports signing and verifying changesets using the Gnu Privacy Guard.

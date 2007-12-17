@@ -52,7 +52,7 @@ package SVK::Command::Copy;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Mkdir );
-use SVK::Util qw( get_anchor get_prompt abs2rel splitdir is_uri make_path is_path_inside);
+use SVK::Util qw( get_anchor abs2rel splitdir is_uri make_path is_path_inside);
 use SVK::I18N;
 use SVK::Logger;
 
