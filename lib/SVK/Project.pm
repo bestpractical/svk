@@ -130,12 +130,13 @@ sub create_from_prop {
 #	grep { $_ ne $project_name && (($project_name) = $_) }
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
+    my $mirror_rootpath = $pathobj->mirror_source->path."/";
     
     return undef unless @projnames;
     
     my $project_name = $projnames[0];
     my %props = 
-	map { $_ => $allprops->{'svk:project:'.$project_name.':'.$_} }
+	map { $_ => $mirror_rootpath.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    ('path-trunk', 'path-branches', 'path-tags');
     return SVK::Project->new(
 	{   
