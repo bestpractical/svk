@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 3;
+plan tests => 4;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -28,10 +28,6 @@ $svk->cp(-m => 'branch Bar in projectB', '//mirror/twoProject/projectB/trunk',
 
 my ($copath, $corpath) = get_copath('basic-trunk');
 
-$svk->checkout('//mirror/twoProject/projectB', $copath); # checkout project B
-
-chdir($copath);
-
 # set prop for project A
 my $proppath = { 'trunk' => 'projectA/trunk', 
     'branches' => 'projectA/branches',
@@ -46,6 +42,25 @@ $svk->propset('-m', "- projectA branches path set", 'svk:project:projectA:path-b
 $svk->propset('-m', "- projectA tags path set", 'svk:project:projectA:path-tags',
     $proppath->{tags}, "//");
 is_output ($svk, 'propget', ['svk:project:projectA:path-trunk', '//'], [$proppath->{trunk}]);
+
+# set prop for project B
+$proppath = { 'trunk' => 'projectB/trunk', 
+    'branches' => 'projectB/branches',
+    'tags' => 'projectB/tags',
+    'hooks' => 'projectB/hooks',
+};
+
+$svk->propset('-m', "- projectB trunk path set", 'svk:project:projectB:path-trunk',
+    $proppath->{trunk}, "//"); 
+$svk->propset('-m', "- projectB branches path set", 'svk:project:projectB:path-branches',
+    $proppath->{branches}, "//");
+$svk->propset('-m', "- projectB tags path set", 'svk:project:projectB:path-tags',
+    $proppath->{tags}, "//");
+is_output ($svk, 'propget', ['svk:project:projectB:path-trunk', '//'], [$proppath->{trunk}]);
+
+$svk->checkout('//mirror/twoProject/projectB', $copath); # checkout project B
+
+chdir($copath);
 
 # in checkout of project B, list
 is_output ($svk, 'branch', ['--list'], ['Bar']);
