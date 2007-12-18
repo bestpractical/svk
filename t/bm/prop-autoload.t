@@ -31,21 +31,23 @@ my $proppath = { 'trunk' => '/trunk',
     'hooks' => '/hooks',
 };
 
-$svk->propset('-m', "- project trunk path set", 'svk:project:GoodProject:path_trunk',
+$svk->propset('-m', "- project trunk path set", 'svk:project:MyProject:path-trunk',
     $proppath->{trunk}, "//"); 
-$svk->propset('-m', "- project branches path set", 'svk:project:GoodProject:path_branches',
+$svk->propset('-m', "- project branches path set", 'svk:project:MyProject:path-branches',
     $proppath->{branches}, "//");
-$svk->propset('-m', "- project tags path set", 'svk:project:GoodProject:path_tags',
+$svk->propset('-m', "- project tags path set", 'svk:project:MyProject:path-tags',
     $proppath->{tags}, "//");
-is_output ($svk, 'propget', ['svk:project:GoodProject:path_trunk', '//'], [$proppath->{trunk}]);
+is_output ($svk, 'propget', ['svk:project:MyProject:path-trunk', '//'], [$proppath->{trunk}]);
 
 is_output ($svk, 'branch', ['--list','//mirror/MyProject'], ['Foo']);
 
-$svk->mirror('--detach', '//mirror/MyProject');
+is_output ($svk, 'branch', ['--list'], ['Foo']);
 
-# { TODO interactive mode
-$svk->mirror('//mirror/NewProject', $uri);
+#$svk->mirror('--detach', '//mirror/MyProject');
+
+## { TODO interactive mode
+#$svk->mirror('//mirror/NewProject', $uri);
 
 
 # }
-is_output ($svk, 'branch', ['--list','//mirror/NewProject'], ['Foo']);
+#is_output ($svk, 'branch', ['--list','//mirror/NewProject'], ['Foo']);

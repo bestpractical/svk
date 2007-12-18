@@ -135,7 +135,9 @@ sub create_from_prop {
     
     my $mirror_rootpath = $pathobj->mirror_source->path."/";
     my ($relative_path) = $pathobj->path =~ m/^$mirror_rootpath\b(.*)/;
+    $relative_path ||= '/';
     my ($project_name) = grep { $relative_path =~ /\b$_\b/} @projnames;
+    $project_name ||= $projnames[0];
 
     my %props = 
 	map { $_ => $mirror_rootpath.$allprops->{'svk:project:'.$project_name.':'.$_} }
