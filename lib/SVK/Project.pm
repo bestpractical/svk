@@ -126,35 +126,29 @@ sub create_from_prop {
     my $root            = $fs->revision_root( $fs->youngest_rev );
     my $allprops        = $root->node_proplist('/');
     my ($depotroot)     = '/';
-    my @projnames = 
-#	grep { $_ ne $project_name && (($project_name) = $_) }
+    my %projnames = 
+        map  { $_ => 1 }
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
     
-    return undef unless @projnames;
+    for my $project_name (keys %projnames)  {
+	my %props = 
+	    map { $_ => $allprops->{'svk:project:'.$project_name.':'.$_} }
+		('path-trunk', 'path-branches', 'path-tags');
     
-    my $mirror_rootpath = $pathobj->mirror_source->path."/";
-    my ($relative_path) = $pathobj->path =~ m/^$mirror_rootpath\b(.*)/;
-    $relative_path ||= '/';
-    my ($project_name) = grep { $relative_path =~ /\b$_\b/} @projnames;
-    $project_name ||= $projnames[0];
-
-    my %props = 
-	map { $_ => $mirror_rootpath.$allprops->{'svk:project:'.$project_name.':'.$_} }
-	    ('path-trunk', 'path-branches', 'path-tags');
-    
-    # only the current path matches one of the branches/trunk/tags, the project
-    # is returned
-    for my $key (keys %props) {
-	return SVK::Project->new(
-	    {   
-		name            => $project_name,
-		depot           => $pathobj->depot,
-		trunk           => $props{'path-trunk'},
-		branch_location => $props{'path-branches'},
-		tag_location    => $props{'path-tags'},
-		local_root      => "/local/${project_name}",
-	    }) if $pathobj->path =~ m/^$props{$key}/;
+	# only the current path matches one of the branches/trunk/tags, the project
+	# is returned
+	for my $key (keys %props) {
+	    return SVK::Project->new(
+		{   
+		    name            => $project_name,
+		    depot           => $pathobj->depot,
+		    trunk           => $props{'path-trunk'},
+		    branch_location => $props{'path-branches'},
+		    tag_location    => $props{'path-tags'},
+		    local_root      => "/local/${project_name}",
+		}) if $pathobj->path =~ m/^$props{$key}/;
+	}
     }
     return undef;
 }

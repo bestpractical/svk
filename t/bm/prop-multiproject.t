@@ -29,10 +29,10 @@ $svk->cp(-m => 'branch Bar in projectB', '//mirror/twoProject/projectB/trunk',
 my ($copath, $corpath) = get_copath('basic-trunk');
 
 # set prop for project A
-my $proppath = { 'trunk' => 'projectA/trunk', 
-    'branches' => 'projectA/branches',
-    'tags' => 'projectA/tags',
-    'hooks' => 'projectA/hooks',
+my $proppath = { 'trunk' => '/mirror/twoProject/projectA/trunk', 
+    'branches' => '/mirror/twoProject/projectA/branches',
+    'tags' => '/mirror/twoProject/projectA/tags',
+    'hooks' => '/mirror/twoProject/projectA/hooks',
 };
 
 $svk->propset('-m', "- projectA trunk path set", 'svk:project:projectA:path-trunk',

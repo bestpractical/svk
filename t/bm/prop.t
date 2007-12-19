@@ -25,10 +25,10 @@ $svk->checkout('//mirror/MyProject/trunk', $copath);
 
 chdir($copath);
 
-my $proppath = { 'trunk' => 'trunk', 
-    'branches' => 'branches',
-    'tags' => 'tags',
-    'hooks' => 'hooks',
+my $proppath = { 'trunk' => '/mirror/MyProject/trunk', 
+    'branches' => '/mirror/MyProject/branches',
+    'tags' => '/mirror/MyProject/tags',
+    'hooks' => '/mirror/MyProject/hooks',
 };
 
 $svk->propset('-m', "- project trunk path set", 'svk:project:MyProject:path-trunk',
