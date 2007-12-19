@@ -142,15 +142,21 @@ sub create_from_prop {
     my %props = 
 	map { $_ => $mirror_rootpath.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    ('path-trunk', 'path-branches', 'path-tags');
-    return SVK::Project->new(
-	{   
-	    name            => $project_name,
-	    depot           => $pathobj->depot,
-	    trunk           => $props{'path-trunk'},
-	    branch_location => $props{'path-branches'},
-	    tag_location    => $props{'path-tags'},
-	    local_root      => "/local/${project_name}",
-	});
+    
+    # only the current path matches one of the branches/trunk/tags, the project
+    # is returned
+    for my $key (keys %props) {
+	return SVK::Project->new(
+	    {   
+		name            => $project_name,
+		depot           => $pathobj->depot,
+		trunk           => $props{'path-trunk'},
+		branch_location => $props{'path-branches'},
+		tag_location    => $props{'path-tags'},
+		local_root      => "/local/${project_name}",
+	    }) if $pathobj->path =~ m/^$props{$key}/;
+    }
+    return undef;
 }
 
 sub create_from_path {
