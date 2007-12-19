@@ -19,35 +19,23 @@ $svk->sync('//mirror/MyProject');
 
 $svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/Foo');
 
+$svk->mirror('--detach', '//mirror/MyProject');
 my ($copath, $corpath) = get_copath('basic-trunk');
 
-$svk->checkout('//mirror/MyProject/trunk', $copath);
-
-chdir($copath);
-
-my $proppath = { 'trunk' => '/mirror/MyProject/trunk', 
-    'branches' => '/mirror/MyProject/branches',
-    'tags' => '/mirror/MyProject/tags',
-    'hooks' => '/mirror/MyProject/hooks',
+my $props = { 
+    'svk:project:projectA:path-trunk' => '/mirror/projectA/trunk',
+    'svk:project:projectA:path-branches' => '/mirror/projectA/branches',
+    'svk:project:projectA:path-tags' => '/mirror/projectA/tags',
 };
 
-$svk->propset('-m', "- project trunk path set", 'svk:project:MyProject:path-trunk',
-    $proppath->{trunk}, "//"); 
-$svk->propset('-m', "- project branches path set", 'svk:project:MyProject:path-branches',
-    $proppath->{branches}, "//");
-$svk->propset('-m', "- project tags path set", 'svk:project:MyProject:path-tags',
-    $proppath->{tags}, "//");
-is_output ($svk, 'propget', ['svk:project:MyProject:path-trunk', '//'], [$proppath->{trunk}]);
+add_prop_to_basic_tree($xd, '/test/',$props);
+$answer = ['','','y',''];
+$svk->checkout($uri,$copath);
 
-is_output ($svk, 'branch', ['--list','//mirror/MyProject'], ['Foo']);
+chdir($copath);
+is_output ($svk, 'propget',
+    ['svk:project:projectA:path-trunk', '//mirror/projectA'],
+    [$props->{'svk:project:projectA:path-trunk'}]);
 
+is_output ($svk, 'branch', ['--list','//mirror/projectA'], ['Foo']);
 is_output ($svk, 'branch', ['--list'], ['Foo']);
-
-#$svk->mirror('--detach', '//mirror/MyProject');
-
-## { TODO interactive mode
-#$svk->mirror('//mirror/NewProject', $uri);
-
-
-# }
-#is_output ($svk, 'branch', ['--list','//mirror/NewProject'], ['Foo']);
