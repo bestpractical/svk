@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 3;
+plan tests => 4;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -14,12 +14,6 @@ my $tree = create_basic_tree($xd, '/test/trunk');
 my $depot = $xd->find_depot('test');
 my $uri = uri($depot->repospath);
 
-$svk->mirror('//mirror/MyProject', $uri);
-$svk->sync('//mirror/MyProject');
-
-$svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/Foo');
-
-$svk->mirror('--detach', '//mirror/MyProject');
 my ($copath, $corpath) = get_copath('basic-trunk');
 
 my $props = { 
@@ -29,6 +23,17 @@ my $props = {
 };
 
 add_prop_to_basic_tree($xd, '/test/',$props);
+$svk->mirror('//mirror/MyProject', $uri);
+$svk->sync('//mirror/MyProject');
+
+is_output ($svk, 'propget',
+    ['svk:project:projectA:path-trunk', '//mirror/MyProject'],
+    [$props->{'svk:project:projectA:path-trunk'}]);
+
+$svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/Foo');
+
+$svk->mirror('--detach', '//mirror/MyProject');
+
 $answer = ['','','y',''];
 $svk->checkout($uri,$copath);
 
