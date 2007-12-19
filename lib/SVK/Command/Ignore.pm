@@ -129,3 +129,5 @@ results are undefined -- specifically, the result of the check to see
 if the entry is already there may not be what you expected.  Currently
 it will not try to escape any such entries before adding them.)
 
+To tell svk to start paying attention to a file again, use the command
+'svk pe svn:ignore' to manually edit the ignore list.

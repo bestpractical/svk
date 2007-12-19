@@ -569,6 +569,7 @@ sub run {
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->path_anchor,
 	  repospath => $src->repospath, # for stupid copyfrom url
+	  static_inspector => $self->{dst}->inspector,
 	  base_anchor => $base->path_anchor,
 	  base_root => $base_root,
 	  target => $target,

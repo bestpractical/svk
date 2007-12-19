@@ -1034,6 +1034,10 @@ svk use the default.
 		      );
     }
     else {
+        if ($ENV{'SVKBATCHMODE'}) {
+            die(loc("This command needs to be run interactively\n"));
+        }
+
 	$prompt = loc ("Enter a depot path to %1 into (under // if no leading '/'): ",
 		       loc($action));
     }

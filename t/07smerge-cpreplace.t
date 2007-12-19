@@ -17,28 +17,24 @@ $svk->cp(-m => 'V to X', '//V', '//X');
 
 # r2 - remove file B
 
-$svk->rm(-m => 'r5 - remove file A/me', "//V/A/me");
+#$svk->rm(-m => 'r5 - remove file A/me', "//V/A/me");
 
 $svk->checkout('//V',$copath);
 # r3 - cp B@1 to C with modification,
 $svk->cp('//V/A/me' => "$copath/Cme", -r => 4 );
 
-append_file("$copath/Cme", "mmmmmm\n");
+append_file("$copath/Cme", "mmmmmmxx\n");
 $svk->ci(-m => 'r8 - modify Cme', $copath);
-# cp A@2 to B
-$svk->cp('//V/A/D/de' => "$copath/A/me", -r => 5);
+# cp A@2 to B, if we comment these two out, 
+#$svk->cp('//V/A/D/de' => "$copath/A/me", -r => 5);
 append_file("$copath/A/me", "mmmmmm\n");
-
 $svk->ci(-m => 'some copy with mods', $copath);
 
-TODO: {
-    local $TODO = 'not yet';
 is_output($svk, 'smerge', [-m => 'go', '//V', '//X'],
-	  ['Auto-merging (3, 7) /V to /X (base /V:3).',
-	   'R + A/me',
-	   'R + Cme',
-	   qr'New merge ticket: .*:/V:7',
-	   'Committed revision 8']);
-}
+	  ['Auto-merging (3, 6) /V to /X (base /V:3).',
+	   'U   A/me',
+	   'A + Cme',
+	   qr'New merge ticket: .*:/V:6',
+	   'Committed revision 7.']);
 
 1;
