@@ -34,7 +34,7 @@ $svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/bra
 
 $svk->mirror('--detach', '//mirror/MyProject');
 
-$answer = ['','','y',''];
+$answer = ['','','y','1', ''];
 $svk->checkout($uri,$copath);
 
 chdir($copath);
