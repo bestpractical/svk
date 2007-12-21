@@ -17,9 +17,9 @@ my $uri = uri($depot->repospath);
 my ($copath, $corpath) = get_copath('basic-trunk');
 
 my $props = { 
-    'svk:project:projectA:path-trunk' => '/mirror/projectA/trunk',
-    'svk:project:projectA:path-branches' => '/mirror/projectA/branches',
-    'svk:project:projectA:path-tags' => '/mirror/projectA/tags',
+    'svk:project:projectA:path-trunk' => '/projectA/trunk',
+    'svk:project:projectA:path-branches' => '/projectA/branches',
+    'svk:project:projectA:path-tags' => '/projectA/tags',
 };
 
 add_prop_to_basic_tree($xd, '/test/',$props);

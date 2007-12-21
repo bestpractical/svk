@@ -133,7 +133,7 @@ sub create_from_prop {
     
     for my $project_name (keys %projnames)  {
 	my %props = 
-	    map { $_ => $allprops->{'svk:project:'.$project_name.':'.$_} }
+	    map { $_ => '/mirror'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 		('path-trunk', 'path-branches', 'path-tags');
     
 	# only the current path matches one of the branches/trunk/tags, the project

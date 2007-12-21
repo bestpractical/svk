@@ -473,6 +473,7 @@ usually good enough.
 
     # try to get prop of project first
     #
+    my ($project_depot_root) = $path =~ m{^(/[^/]*/[^/]+)/};
     $uri =~ s/\/$//;
     my $ra = SVN::Ra->new($uri);
     my %prop = %{ ($ra->get_file('',$ra->get_latest_revnum, undef))[1] };
@@ -504,7 +505,7 @@ Remote repository has projects property set, do you like to use it? ");
 		qr(^\d+$)
 		));
 	    $proj_answer--;
-	    $path = $projects{$projs[$proj_answer]};
+	    $path = $project_depot_root.$projects{$projs[$proj_answer]};
 	}
     }
 
