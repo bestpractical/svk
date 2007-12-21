@@ -476,6 +476,7 @@ usually good enough.
     my ($project_depot_root) = $path =~ m{^(/[^/]*/[^/]+)/};
     $uri =~ s/\/$//;
     my $ra = SVN::Ra->new($uri);
+    $ra->reparent($ra->get_repos_root());
     my %prop = %{ ($ra->get_file('',$ra->get_latest_revnum, undef))[1] };
 
     my $prompt_project = loc("
