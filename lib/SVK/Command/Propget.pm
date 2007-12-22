@@ -51,7 +51,7 @@
 package SVK::Command::Propget;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
-
+use SVK::Logger;
 use base qw( SVK::Command::Proplist );
 use constant opt_recursive => 0;
 use SVK::XD;
@@ -81,10 +81,15 @@ sub run {
             my $proplist = $self->_proplist($target);
             exists $proplist->{$pname} or return;
 
-            print $target->report, ' - '
-                if !$self->{strict} && ( $self->{recursive} || @targets > 1 );
-            print $proplist->{$pname};
-            print "\n" if !$self->{strict};
+	    if ( $self->{strict} ) {
+		print $proplist->{$pname};
+	    } else { # !self->{strict}
+		if ( $self->{recursive} || @targets > 1 ) {
+		    $logger->info( $target->report, ' - ', $proplist->{$pname}, "\n" );
+		} else {
+		    $logger->info( $proplist->{$pname}, "\n" );
+		}
+	    }
         }, $errs, 0,
     ) for @targets;
 

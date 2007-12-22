@@ -52,7 +52,6 @@ package SVK::Editor;
 
 use base qw(Class::Accessor::Fast);
 __PACKAGE__->mk_accessors(qw(_debug));
-
 use SVK::Editor::ByPass;
 
 sub new {
@@ -82,8 +81,11 @@ sub baton_at {
     return $func =~ m/^(?:add|open|absent)/ ? 1 : 0;
 }
 
+
 # XXX: original behaviour of svn::delta::editor is "don't care" on
 # methods not implemented.  we shuold probably do warn and fix them.
-sub AUTOLOAD {}
+sub AUTOLOAD { 
+
+}
 
 1;

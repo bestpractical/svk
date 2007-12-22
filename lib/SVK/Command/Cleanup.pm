@@ -54,6 +54,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ('a|all' => 'all');
@@ -72,17 +73,17 @@ sub run {
 
     if ($self->{all}) {
         $self->{xd}{checkout}->store ('', {lock => undef});
-        print loc("Cleaned up all stalled locks.\n");
+        $logger->info( loc("Cleaned up all stalled locks."));
         return;
     }
 
     for (@arg) {
 	if ($self->{xd}{checkout}->get ($_->copath_anchor)->{lock}) {
-	    print loc("Cleaned up stalled lock on %1.\n", $_->copath_anchor);
+	    $logger->info( loc("Cleaned up stalled lock on %1.\n", $_->copath_anchor));
 	    $self->{xd}{checkout}->store ($_->copath_anchor, {lock => undef});
 	}
         else {
-	    print loc("Path %1 was not locked.\n", $_->copath_anchor);
+	    $logger->info(loc("Path %1 was not locked.\n", $_->copath_anchor));
 	}
     }
     return;
