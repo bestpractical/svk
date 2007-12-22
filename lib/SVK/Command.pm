@@ -95,6 +95,7 @@ use constant alias =>
             qw( ann		annotate
                 blame		annotate
                 praise		annotate
+		br		branch
 		co		checkout
 		cm		cmerge
 		ci		commit
@@ -469,6 +470,45 @@ usually good enough.
     );
     $path = $default unless length $path;
     $path = "//mirror/$path" unless $path =~ m!^/!;
+
+    # try to get prop of project first
+    #
+    my ($project_depot_root) = $path =~ m{^(/[^/]*/[^/]+)/};
+    $uri =~ s/\/$//;
+    my $ra = SVN::Ra->new($uri);
+    $ra->reparent($ra->get_repos_root());
+    my %prop = %{ ($ra->get_file('',$ra->get_latest_revnum, undef))[1] };
+
+    my $prompt_project = loc("
+Remote repository has projects property set, do you like to use it? ");
+
+    # XXX list projects, let user choose it
+    if (grep { $_ =~ /^svk:project/ } keys %prop) {
+	my $go_for_project = lc ( get_prompt( $prompt_project . '[Y/n]' ) );
+	if ($go_for_project ne 'n') {
+	    # use first project
+	    my %projects = 
+		map { $_ => 1 }
+		grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ } keys %prop;
+	    my @projs = keys %projects;
+	    print loc("Avaliable projects:\n");
+	    print loc("No.   Project      Path\n");
+	    my $index = 0;
+	    for my $proj (@projs) {
+		$index++;
+		$projects{$proj} = '/'.$prop{'svk:project:'.$proj.':path-trunk'};
+		$projects{$proj} =~ s{/[^/]+$}{};
+		print sprintf ("%d)    %-12s %-12s\n",
+		    $index, $proj, $projects{$proj});
+	    }
+	    my $proj_answer = lc(get_prompt(
+		loc("Which project? [No.] "),
+		qr(^\d+$)
+		));
+	    $proj_answer--;
+	    $path = $project_depot_root.$projects{$projs[$proj_answer]};
+	}
+    }
 
     my $target = $self->arg_depotpath($path);
     $self->command ('mirror')->run ($target, $base_uri);

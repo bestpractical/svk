@@ -138,7 +138,7 @@ sub as_depotpath {
 	$self = $self->new;
 	$self->source->revision($revision);
 	$self->revision($revision);
-	$self->_recreate_view;
+	eval { $self->_recreate_view; } or return undef;
     }
     return $self;
 }

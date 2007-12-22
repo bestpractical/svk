@@ -117,42 +117,44 @@ sub new {
 sub auto {
     my $self = new (@_);
     @{$self}{qw/base fromrev/} = $self->find_merge_base(@{$self}{qw/src dst/});
-    $self->_rebase;
 
     return $self;
 }
 
-sub _rebase {
+sub _rebase2 {
     my $self = shift;
+    my ($src, $dst, $base) = @_;
 
-    return unless $self->{base}->path eq $self->{dst}->path;
+    return unless $base->path eq $dst->path;
 
-    $self->{src}->is_merged_from($self->{base})
+    $src->is_merged_from($base)
 	or return;
 
-    my $dst = $self->{src}->prev or return;
-    $dst->root->check_path($dst->path) or return;
+    my $ddst = $src->prev or return;
+    $ddst->root->check_path($ddst->path) or return;
 
     # If the previous source hasn't been merged, use the original base
     # logic.  Otherwise we are merging changes between the alleged
     # merge and actual revision.
-    $self->{dst}->is_merged_from($dst) or return;
+    $dst->is_merged_from($ddst) or return;
 
     require SVK::Path::Txn;
-    $dst = $dst->clone;
-    bless $dst, 'SVK::Path::Txn'; # XXX: need a saner api for this
+    $ddst = $ddst->clone;
+    bless $ddst, 'SVK::Path::Txn'; # XXX: need a saner api for this
 
     my $xmerge = SVK::Merge->auto(%$self, quiet => 1,
-				  src => $self->{base},
-				  dst => $dst);
+				  src => $base,
+				  dst => $ddst);
 
     my ($editor, $inspector, %cb) = $xmerge->{dst}->get_editor();
     local $ENV{SVKRESOLVE} = 's';
     unless ($xmerge->run( $editor, inspector => $inspector, %cb )) {
 	# XXX why isn't the txnroot uptodate??
-	$self->{base} = $xmerge->{dst};
-	$self->{base}->inspector->root($self->{base}->txn->root($self->{base}->pool));
+        my $new_base = $xmerge->{dst};
+	$new_base->inspector->root($new_base->txn->root($new_base->pool));
+        return $new_base;
     }
+    return;
 }
 
 # DEPRECATED
@@ -228,6 +230,11 @@ sub find_merge_base {
 		$rev);
     }
 
+    return ($src->new (revision => $merge_baserev), $merge_baserev)
+        if $merge_baserev;
+
+    my @preempt_result;
+
     for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
 	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
 	my ($path) = m/:(.*)$/;
@@ -242,17 +249,30 @@ sub find_merge_base {
 	    next unless $src->related_to($src->as_depotpath->seek_to($rev));
 	}
 
-	if ($path eq $dst->path &&
-	    (my $src_base = $src->is_merged_from($src->mclone(path => $path, revision => $rev)))) {
-	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
-	    last;
-	}
-	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
-	    if !$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date');
+        if (!$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date')) {
+            ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
+            if ($path eq $dst->path &&
+                $src->is_merged_from($dst->mclone(revision => $rev))) {
+
+                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
+                # this takes precedence than other potential base or
+                # rebasable base that is on src.
+                if (my $rebased = $self->_rebase2( $src, $dst, $base)) {
+                    return ($rebased, $from);
+                }
+            }
+            elsif ($path eq $src->path && $dst->is_merged_from($src->mclone(revision => $rev))) {
+                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
+                $base = $self->_rebase2( $dst, $src, $base) || $base;
+                @preempt_result = ($base, $from);
+            }
+            else {
+                @preempt_result = ();
+            }
+        }
     }
 
-    return ($src->new (revision => $merge_baserev), $merge_baserev)
-        if $merge_baserev;
+    return @preempt_result if @preempt_result;
 
     unless ($basepath) {
 	return ($src->new (path => '/', revision => 0), 0)
@@ -274,6 +294,12 @@ sub find_merge_base {
 		if $minfo->subset_of ($srcinfo) && $minfo->subset_of ($dstinfo);
 	}
     }
+    return $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
+}
+
+sub _mk_base_and_from {
+    my $self = shift;
+    my ($src, $dstinfo, $basepath, $baserev) = @_;
 
     my $base = $src->as_depotpath->new
 	(path => $basepath, revision => $baserev, targets => undef);
@@ -282,7 +308,7 @@ sub find_merge_base {
 
     # When /A:1 is copied to /B:2, then removed, /B:2 copied to /A:5
     # the fromrev shouldn't be /A:1, as it confuses the copy detection during merge.
-    my $from = $dstinfo->{$fs->get_uuid.':'.$src->path};
+    my $from = $dstinfo->{$src->depot->repos->fs->get_uuid.':'.$src->path};
     if ($from) {
 	my ($toroot, $fromroot) = $src->nearest_copy;
 	$from = 0 if $toroot && $from < $toroot->revision_root_revision;
@@ -601,8 +627,18 @@ sub run {
 	    my $usrc = $src->universal;
 	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 	    if ($dstinfo->{$srckey}) {
+                # find which rev on src is merged from the base.
 		$boundry_rev = $src->merged_from
 		    ($self->{base}, $self, $self->{base}{path});
+                # however if src is removed and later copied again
+                # from base, we need the later one as boundry
+                my $t = $src;
+                while (my ($toroot, $fromroot, $path) = $t->nearest_copy) {
+                    if ($path eq $self->{base}->path_anchor) {
+                        $boundry_rev = List::Util::max( grep { defined $_ } $boundry_rev, $toroot->revision_root_revision );
+                    }
+                    $t = $t->mclone( path => $path, revision => $fromroot->revision_root_revision );
+                }
 	    }
 	    else {
 		# when did the branch first got created?

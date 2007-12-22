@@ -276,9 +276,14 @@ is_output($svk, 'push', [],
 	   "Syncing $uri/A",
 	   'Retrieving log information from 14 to 14',
 	   'Committed revision 31 from revision 14.',
-	   '===> Auto-merging (28, 29) /l2 to /m (base */l2:28).',
+	   '===> Auto-merging (28, 29) /l2 to /m (base */m:30).',
 	   "Merging back to mirror source $uri/A.",
-	   'Empty merge.']);
+           'U   new-file',
+	   qr'New merge ticket: .*:/l2:29',
+	   'Merge back committed as revision 15.',
+	   "Syncing $uri/A",
+	   'Retrieving log information from 15 to 15',
+	   'Committed revision 32 from revision 15.']);
 
 chdir ($initial_cwd);
 $svk->cp (-m => 'copy', '/test/A' => '/test/A-cp');
