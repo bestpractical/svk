@@ -173,6 +173,8 @@ the regular expression pattern.  Returns the chomped answer line.
 sub get_prompt { {
     my ($prompt, $pattern) = @_;
 
+    return '' if ($ENV{'SVKBATCHMODE'});
+
     local $| = 1;
     print $prompt;
 
@@ -266,69 +268,76 @@ XXX Undocumented
 =cut
 
 sub get_buffer_from_editor {
-    my ($what, $sep, $content, $file, $anchor, $targets_ref) = @_;
+    my ( $what, $sep, $content, $file, $anchor, $targets_ref ) = @_;
     my $fh;
-    if (defined $content) {
-	($fh, $file) = tmpfile ($file, TEXT => 1, UNLINK => 0);
-	print $fh $content;
-	close $fh;
-    }
-    else {
-	open $fh, $file or die $!;
-	local $/;
-	$content = <$fh>;
+    if ( defined $content ) {
+        ( $fh, $file ) = tmpfile( $file, TEXT => 1, UNLINK => 0 );
+        print $fh $content;
+        close $fh;
+    } else {
+        open $fh, $file or die $!;
+        local $/;
+        $content = <$fh>;
+        close $fh;
     }
 
     my $time = time;
 
-    while (1) {
+    while (!$ENV{'SVKBATCHMODE'} && 1) {
         open my $fh, '<', $file or die $!;
         my $md5 = md5_fh($fh);
         close $fh;
 
-	edit_file ($file);
+        edit_file($file);
 
         open $fh, '<', $file or die $!;
-        last if ($md5 ne md5_fh($fh));
+        last if ( $md5 ne md5_fh($fh) );
         close $fh;
 
-	my $ans = get_prompt(
-	    loc("%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what)),
-	    qr/^[aec]/,
-	);
-	last if $ans =~ /^c/;
-	# XXX: save the file somewhere
-	unlink ($file), die loc("Aborted.\n") if $ans =~ /^a/;
+        my $ans = get_prompt(
+            loc( "%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what) ),
+            qr/^[aec]/,
+        );
+        last if $ans =~ /^c/;
+
+        # XXX: save the file somewhere
+        unlink($file), die loc("Aborted.\n") if $ans =~ /^a/;
     }
 
     open $fh, $file or die $!;
     local $/;
-    my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
+    my @ret = defined $sep ? split( /\n\Q$sep\E\n/, <$fh>, 2 ) : (<$fh>);
     close $fh;
     unlink $file;
 
     die loc("Cannot find separator; aborted.\n")
-        if defined($sep) and !defined($ret[1]);
+        if defined($sep)
+            and !defined( $ret[1] );
 
     return $ret[0] unless wantarray;
 
     # Compare targets in commit message
-    my $old_targets = (split (/\n\Q$sep\E\n/, $content, 2))[1];
-    $old_targets =~ s/^\?.*//mg; # remove unversioned files
+    my $old_targets = ( split( /\n\Q$sep\E\n/, $content, 2 ) )[1];
+    $old_targets =~ s/^\?.*//mg;    # remove unversioned files
 
-    my @new_targets =
-               map {
-                   s/^\s+//; # proponly change will have leading spacs
-			       [split(/[\s\+]+/, $_, 2)]}
-               grep {!/^\?/m} # remove unversioned fils
-               grep {/\S/}
-               split(/\n+/, $ret[1]);
+    my @new_targets
+        = map {
+        s/^\s+//;                   # proponly change will have leading spacs
+        [ split( /[\s\+]+/, $_, 2 ) ]
+        }
+        grep {
+        !/^\?/m
+        }    # remove unversioned fils
+        grep {/\S/}
+        split( /\n+/, $ret[1] );
 
-    if ($old_targets ne $ret[1]) {
-        # Assign new targets 
-	@$targets_ref = map abs2rel($_->[1], $anchor, undef, '/'), @new_targets;
+    if ( $old_targets ne $ret[1] ) {
+
+        # Assign new targets
+        @$targets_ref = map abs2rel( $_->[1], $anchor, undef, '/' ),
+            @new_targets;
     }
-    return ($ret[0], \@new_targets);
+    return ( $ret[0], \@new_targets );
 }
 
 =head3 get_encoding
@@ -476,21 +485,24 @@ is missing on the system.
 
 =cut
 
+{ my $mm; # C<state $mm>, yuck
+
 sub mimetype {
     my ($filename) = @_;
-    my $mm if 0;  # C<state $mm>, yuck
 
     # find an implementation module if necessary
-    if ( !$mm ) {
+    $mm ||= do {
         my $module = $ENV{SVKMIME} || 'Internal';
         $module =~ s/:://;
         $module = "SVK::MimeDetect::$module";
         eval "require $module";
         die $@ if $@;
-        $mm = $module->new();
-    }
+        $module->new();
+    };
 
     return $mm->checktype_filename($filename);
+}
+
 }
 
 =head3 mimetype_is_text ($mimetype)

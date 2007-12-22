@@ -162,10 +162,15 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
+pkg/maketest
+pkg/svk-wrapper
+pkg/win32/builddist.bat
 pkg/win32/LICENSE.txt
 pkg/win32/maketest.bat
 pkg/win32/MANIFEST
+pkg/win32/paroptions.txt
 pkg/win32/Path.nsh
+pkg/win32/setenv.bat
 pkg/win32/svk-uninstall.ico
 pkg/win32/svk.ico
 pkg/win32/svk.nsi
@@ -185,6 +190,7 @@ t/03import.t
 t/04merge-rename.t
 t/04merge.t
 t/05svm-all.t
+t/05svm-branches.t
 t/05svm-copy.t
 t/05svm-empty.t
 t/05svm-head.t
@@ -200,10 +206,11 @@ t/07smerge-baseless.t
 t/07smerge-bidi-inc.t
 t/07smerge-branch-renamed.t
 t/07smerge-copy-co.t
-t/07smerge-copy.t
 t/07smerge-copy-outside.t
+t/07smerge-copy.t
 t/07smerge-copy2.t
 t/07smerge-cpdelete.t
+t/07smerge-cpreplace.t
 t/07smerge-delete.t
 t/07smerge-dir-replaced.t
 t/07smerge-external.t
@@ -216,10 +223,10 @@ t/07smerge-moved.t
 t/07smerge-multi.t
 t/07smerge-prop.t
 t/07smerge-relayed.t
+t/07smerge-rename-dest.t
 t/07smerge-rename.t
 t/07smerge-rename2.t
 t/07smerge-rename3.t
-t/07smerge-rename-dest.t
 t/07smerge-tags.t
 t/07smerge-to-from.t
 t/07smerge-tree.t
@@ -240,6 +247,7 @@ t/20add-mmagic.t
 t/20add-nomime.t
 t/20add.t
 t/21delete.t
+t/21delete-co.t
 t/22status-conflict.t
 t/22status.t
 t/23commit-file.t
@@ -282,9 +290,13 @@ t/75hook.t
 t/76ignore.t
 t/77floating.t
 t/api/mirror.t
+t/api/root.t
 t/copy-escape.t
 t/copy-replace.t
 t/diff/mixed-checkout.t
+t/i18n/big5dirname.t
+t/i18n/checkout.t
+t/i18n/win32filename.t
 t/mirror/commit-copy.t
 t/mirror/dav-authz.t
 t/mirror/relocate.t
@@ -297,9 +309,9 @@ t/mirror/sync-replaced.t
 t/mirror/sync-replicate.t
 t/mirror/sync-revhole.t
 t/mirror/sync-snapshot.t
-t/update-gone.t
 t/svk-sec.gpg
 t/svk.gpg
+t/update-gone.t
 utils/extract-docs
 utils/extract-message-catalog
 utils/license_tag
@@ -307,4 +319,3 @@ utils/pullyu
 utils/svk-ediff.el
 utils/vc-svk.el
 utils/verify-mirror
-

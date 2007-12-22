@@ -346,18 +346,27 @@ sub find_merge_sources {
     return $minfo;
 }
 
+sub _get_new_ticket {
+    my ($self, $srcinfo) = @_;
+    my $dstinfo = $self->merge_info($self->{dst});
+    # We want the ticket representing src, but not dst.
+    return $dstinfo->union ($srcinfo)->del_target($self->{dst});
+}
+
+# deprecated
 sub get_new_ticket {
     my ($self, $srcinfo) = @_;
-    my $dstinfo = $self->merge_info ($self->{dst});
-    # We want the ticket representing src, but not dst.
-    my $newinfo = $dstinfo->union ($srcinfo)->del_target ($self->{dst});
-    unless ($self->{quiet}) {
-	for (sort keys %$newinfo) {
-	    $logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
-		if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
-	}
-    }
+    my $newinfo = $self->_get_new_ticket($srcinfo);
+    $self->print_new_ticket($newinfo);
     return $newinfo->as_string;
+}
+
+sub print_new_ticket {
+    my ($self, $dstinfo, $newinfo) = @_;
+    for (sort keys %$newinfo) {
+	$logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
+	    if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
+    }
 }
 
 sub log {
@@ -529,9 +538,12 @@ sub run {
     # $cb{inspector} = $self->{dst}->inspector
     # unless ref($cb{inspector}) eq 'SVK::Inspector::Compat' ;
 
+    my $dstinfo = $self->merge_info($self->{dst});
+
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->path_anchor,
 	  repospath => $src->repospath, # for stupid copyfrom url
+	  static_inspector => $self->{dst}->inspector,
 	  base_anchor => $base->path_anchor,
 	  base_root => $base_root,
 	  target => $target,
@@ -555,8 +567,18 @@ sub run {
 					(SVK::Merge::Info->new ($prop->{local}))->as_string);
 			    }
 			},
-	    ticket => 
-	    sub { $self->get_new_ticket ($self->merge_info_with_copy ($src)->add_target ($src)) }
+	    ticket =>
+	    $self->_get_new_ticket($self->merge_info_with_copy($src)->add_target($src)),
+	    cb_merged => sub {
+		my ($changes, $type, $ticket) = @_;
+		if (!$changes) { # rollback all ticket
+		    my $func = "change_${type}_prop";
+		    my $baton = $storage->open_root ($cb{cb_rev}->($cb{target}||''));
+		    $storage->$func( $baton, 'svk:merge', undef );
+		    return;
+		}
+		$self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
+	    }
 	  ) :
 	  ( prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} # skip
 			     }),
@@ -678,9 +700,9 @@ sub resolve_copy {
     # now the hard part, reoslve the revision
     my $usrc = $src->universal;
     my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
+    my $udst = $self->{dst}->universal;
+    my $dstkey = join(':', $udst->{uuid}, $udst->{path});
     unless ($dstinfo->{$srckey}) {
-	my $udst = $self->{dst}->universal;
-	my $dstkey = join(':', $udst->{uuid}, $udst->{path});
 	return $srcinfo->{$dstkey}{rev} ?
 	    ($path, $srcinfo->{$dstkey}->local($self->{dst}->depot)->revision) : ();
     }
@@ -688,9 +710,15 @@ sub resolve_copy {
 	# same as re-base in editor::copy
 	my $rev = $self->{src}->merged_from
 	    ($self->{base}, $self, $self->{base}->path_anchor);
-	# XXX: compare rev and cp_rev
-	return ($path, $rev) if defined $rev;
-	return;
+
+	return unless defined $rev;
+	$rev = $self->merge_info_with_copy(
+	  $self->{src}->mclone(revision => $rev)
+        )->{$dstkey}
+         ->local($self->{dst}->depot)
+         ->revision;
+
+	return ($path, $rev);
     }
     # XXX: get rid of the merge context needed for
     # merged_from(); actually what the function needs is

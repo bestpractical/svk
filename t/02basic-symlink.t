@@ -24,5 +24,7 @@ sub get_copath {
 }
 
 local $^W;
-require 't/02basic.t';
+my $file = $0;
+$file =~ s'-symlink.t'.t';
+require $file;
 

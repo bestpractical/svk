@@ -50,7 +50,7 @@
 # END BPS TAGGED BLOCK }}}
 package SVK::Root::Checkout;
 use strict;
-use SVK::Util qw(abs2rel md5_fh is_symlink);
+use SVK::Util qw(abs2rel md5_fh is_symlink from_native to_native );
 
 use base qw{ Class::Accessor::Fast };
 
@@ -180,7 +180,10 @@ sub AUTOLOAD {
 sub _get_copath {
     my ($self, $path, $pool) = @_;
     # XXX: copath shouldn't be copath_anchor!
-    my $copath = abs2rel($path, $self->path->path_anchor => $self->path->copath);
+    my $copath = $self->path->copath; $copath = "$copath";
+    from_native($copath);
+    $copath = abs2rel($path, $self->path->path_anchor => $copath);
+    to_native($copath);
     my $root;
     ($root, $_[1]) = $self->path->source->root->get_revision_root
 	($path, $self->path->xd->{checkout}->get($copath, 1)->{revision}, $pool);

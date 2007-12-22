@@ -5,7 +5,7 @@ use Cwd;
 use File::Path;
 
 use SVK::Test;
-plan tests => 6;
+plan tests => 7;
 
 # These tests actually use push and pull, in the hope that I'll get less
 # confused. This should be okay, because other tests demonstrate that
@@ -110,6 +110,16 @@ append_file ("$corpath_test/new-file", "some extra text\n");
 $svk->commit ('-m', 'more changes in remote depot', "$corpath_test");
 chdir ($corpath_default);
 
+# server should be less strict
+is_output ($svk, 'push', [], [
+        "Auto-merging (10, 12) /l to /m (base /l:10).",
+        "===> Auto-merging (10, 12) /l to /m (base /l:10).",
+        "Merging back to mirror source $uri/A.",
+	qr"Transaction is out of date: Out of date: '/A' in transaction '.*'",
+	 'Please sync mirrored path /m first.']);
+
+$svk->sync('//m');
+
 is_output ($svk, 'push', [], [
         "Auto-merging (10, 12) /l to /m (base /l:10).",
         "===> Auto-merging (10, 12) /l to /m (base /l:10).",
@@ -118,9 +128,7 @@ is_output ($svk, 'push', [], [
         "New merge ticket: $default_uuid:/l:12",
         "Merge back committed as revision 8.",
         "Syncing $uri/A",
-        "Retrieving log information from 6 to 8",
-        "Committed revision 13 from revision 6.",
-        "Committed revision 14 from revision 7.",
+        "Retrieving log information from 8 to 8",
         "Committed revision 15 from revision 8."]);
 
 append_file ("$corpath_default/be", "and more content\n");

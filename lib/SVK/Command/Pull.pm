@@ -50,6 +50,8 @@
 # END BPS TAGGED BLOCK }}}
 package SVK::Command::Pull;
 use strict;
+use warnings;
+
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command::Update );
@@ -58,6 +60,7 @@ use SVK::XD;
 sub options {
    ('a|all'		=> 'all',
     'force-incremental' => 'force_incremental',
+    'no-sync'       => 'no_sync',
     'l|lump'		=> 'lump');
 }
 
@@ -90,7 +93,7 @@ sub parse_arg {
     }
 
 
-    $self->{sync}++;
+    $self->{sync}++ unless $self->{'no_sync'};
     $self->{merge}++;
 
     $self->SUPER::parse_arg (@arg);

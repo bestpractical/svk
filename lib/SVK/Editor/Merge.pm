@@ -58,7 +58,7 @@ use SVK::Logger;
 use autouse 'SVK::Util'
     => qw( slurp_fh md5_fh tmpfile devnull abs2rel );
 
-__PACKAGE__->mk_accessors(qw(inspector notify storage));
+__PACKAGE__->mk_accessors(qw(inspector static_inspector notify storage ticket cb_merged));
 
 use Class::Autouse qw(SVK::Inspector::Root SVK::Notify
 		      Data::Hierarchy IO::Digest);
@@ -227,21 +227,27 @@ sub set_target_revision {
     $self->{storage}->set_target_revision ($revision);
 }
 
+sub set_ticket {
+    my ($self, $baton, $type, $pool) = @_;
+
+    my $func = "change_${type}_prop";
+
+    $self->{storage}->$func( $baton, 'svk:merge', $self->ticket->as_string, $pool );
+
+}
+
 sub open_root {
-    my ($self, $baserev) = @_;
+    my ($self, $baserev, $pool) = @_;
     $self->{baserev} = $baserev;
     $self->{notify} ||= SVK::Notify->new_with_report ($self->{report}, $self->{target});
     $self->{storage_baton}{''} =
 	$self->{storage}->open_root ($self->{cb_rev}->($self->{target}||''));
     $self->{notify}->node_status ('', '');
 
-    my $ticket = $self->{ticket};
     $self->{dh} = Data::Hierarchy->new;
-    $self->{cb_merged} =
-	sub { my ($editor, $baton, $type, $pool) = @_;
-	      my $func = "change_${type}_prop";
-	      $editor->$func ($baton, 'svk:merge', $ticket->(), $pool);
-	  } if $ticket;
+
+    $self->set_ticket($self->{storage_baton}{''}, 'dir', $pool)
+	if !length $self->{target} && $self->ticket;
 
     return '';
 }
@@ -251,9 +257,10 @@ sub add_file {
     return unless defined $pdir;
     my $pool = pop @arg;
     # a replaced node shouldn't be checked with cb_exist
+    my $spool = SVN::Pool->new_default($pool);
     my $touched = $self->{notify}->node_status($path);
     if (!$self->{added}{$pdir} && !$touched &&
-	(my $kind = $self->inspector->exist($path, $pool))) {
+	(my $kind = $self->inspector->exist($path, $spool))) {
 	unless ($kind == $SVN::Node::file) {
 	    $self->{notify}->flush ($path) ;
 	    return undef;
@@ -273,12 +280,14 @@ sub add_file {
 	if (defined $arg[0]) {
 	    $self->{notify}->hist_status ($path, '+');
 	    @arg = $self->resolve_copy($path, @arg);
-	    $self->{info}{$path}{baseinfo} = [$self->_resolve_base($path)];
+	    $self->{info}{$path}{baseinfo} = [$self->resolve_base($path, 0, $pool)];
 	    $self->{info}{$path}{fpool} = $pool;
 	}
 	$self->{storage_baton}{$path} =
 	    $self->{storage}->add_file ($path, $self->{storage_baton}{$pdir}, @arg, $pool);
-	$pool->default if $pool && $pool->can ('default');
+	# XXX: Why was this here? All tests pass without it.
+	#$pool->default if $pool && $pool->can ('default');
+
 	# XXX: fpool is used for testing if the file is open rather than add,
 	# so use another field to hold it.
 	$self->{info}{$path}{hold_pool} = $pool;
@@ -298,13 +307,24 @@ sub _resolve_base {
 	    $entry->{".${key}_rev"});
 }
 
+sub resolve_base {
+    my ($self, $path, $orig, $pool) = @_;
+    my ($basepath, $fromrev) = $self->_resolve_base($path, $orig);
+    if ($basepath) {
+	# if the inspector is involving copy base, we can't use
+	# $self->inspector, as it represent the current txn
+	return ($basepath, $fromrev, $self->static_inspector);
+    }
+
+    return ($path, undef, $self->inspector) 
+}
+
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
     # modified but rm locally - tag for conflict?
-    my ($basepath, $fromrev) = $self->_resolve_base($path);
-    $basepath = $path unless defined $basepath;
-    if (defined $pdir && $self->inspector->exist($basepath, $pool) == $SVN::Node::file) {
-	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev]
+    my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
+    if (defined $pdir && $inspector->exist($basepath, $pool) == $SVN::Node::file) {
+	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev, $inspector]
 	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
 	$self->{info}{$path}{fpool} = $pool;
@@ -326,7 +346,10 @@ sub ensure_open {
 	$self->{storage}->open_file ($path, $self->{storage_baton}{$pdir},
 				     $self->{cb_rev}->($path), $pool);
     ++$self->{changes};
-    delete $self->{info}{$path}{open};
+    delete $self->{info}{$path}{open}; # 
+
+    $self->set_ticket( $self->{storage_baton}{$path}, 'file', $pool )
+	if $path eq $self->{target} && $self->ticket;
 }
 
 sub ensure_close {
@@ -337,9 +360,9 @@ sub ensure_close {
     $self->{cb_closed}->($path, $checksum, $pool)
         if $self->{cb_closed};
 
-    if ($path eq $self->{target} && $self->{changes} && $self->{cb_merged}) {
+    if ($path eq $self->{target} && $self->cb_merged) {
 	$self->ensure_open ($path);
-	$self->{cb_merged}->($self->{storage}, $self->{storage_baton}{$path}, 'file', $pool);
+	$self->cb_merged->($self->{changes},'file', $self->{ticket});
     }
 
     if (my $baton = $self->{storage_baton}{$path}) {
@@ -408,10 +431,10 @@ sub apply_textdelta {
     return unless $path;
 
     my $info = $self->{info}{$path};
-    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
+    my ($basepath, $fromrev, $inspector) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path, undef, $self->inspector);
     my $fh = $info->{fh} = {};
     my $pool = $info->{fpool};
-    if ($pool && ($fh->{local} = $self->inspector->localmod($basepath, $checksum || '', $pool))) {
+    if ($pool && ($fh->{local} = $inspector->localmod($basepath, $checksum || '', $pool))) {
 	# retrieve base
 	unless ($info->{addmerge}) {
 	    $fh->{base} = [$self->_retrieve_base($path, $pool)];
@@ -529,7 +552,7 @@ sub close_file {
     my $fh = $info->{fh};
     my $iod;
 
-    my ($basepath, $fromrev) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path);
+    my ($basepath, $fromrev, $inspector) = $info->{baseinfo} ? @{$info->{baseinfo}} : ($path, undef, $self->inspector);
     no warnings 'uninitialized';
     my $storagebase_checksum = $fh->{local}[CHECKSUM];
     if ($fromrev) {
@@ -543,7 +566,7 @@ sub close_file {
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
 	    if $checksum eq $storagebase_checksum;
 
-	my $eol = $self->inspector->localprop($basepath, 'svn:eol-style', $pool);
+	my $eol = $inspector->localprop($basepath, 'svn:eol-style', $pool);
 	my $eol_layer = SVK::XD::get_eol_layer({'svn:eol-style' => $eol}, '>');
 	$eol_layer = '' if $eol_layer eq ':raw';
 	$self->prepare_fh ($fh, $eol_layer);
@@ -577,7 +600,7 @@ sub close_file {
 	    if ($basepath ne $path) {
 		$checksum = $self->{base_root}->fs->revision_root($fromrev, $pool)->file_md5_checksum($basepath, $pool);
 	    }
-	    elsif (my $local = $self->inspector->localmod($basepath, $checksum, $pool)) {
+	    elsif (my $local = $inspector->localmod($basepath, $checksum, $pool)) {
 		$checksum = $local->[CHECKSUM];
 		close $local->[FH];
 	    }
@@ -656,19 +679,21 @@ sub open_directory {
     unless ($self->{open_nonexist}) {
 	return undef unless defined $pdir;
 
-	my ($basepath, $fromrev) = $self->_resolve_base($path);
-	$basepath = $path unless defined $basepath;
+	my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
 
-	unless ($self->inspector->exist($basepath, $pool) || $self->{open_nonexist}) {
+	unless ($inspector->exist($basepath, $pool) || $self->{open_nonexist}) {
 	    ++$self->{skipped};
 	    $self->{notify}->flush ($path);
 	    return undef;
 	}
     }
     $self->{notify}->node_status ($path, '');
-    $self->{storage_baton}{$path} =
+    my $baton = $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);
+    $self->set_ticket->($baton, 'dir', $pool)
+	if $path eq $self->{target} && $self->ticket;
+
     return $path;
 }
 
@@ -681,8 +706,9 @@ sub close_directory {
     $self->{notify}->flush_dir ($path);
 
     my $baton = $self->{storage_baton}{$path};
-    $self->{cb_merged}->($self->{storage}, $baton, 'dir', $pool)
-	if $path eq $self->{target} && $self->{changes} && $self->{cb_merged};
+    $self->cb_merged->( $self->{changes}, 'dir', $self->{ticket})
+	if $path eq $self->{target} && $self->cb_merged;
+
 
     $self->{storage}->close_directory ($baton, $pool);
     delete $self->{storage_baton}{$path}
@@ -692,22 +718,21 @@ sub close_directory {
 sub _merge_file_delete {
     my ($self, $path, $rpath, $pdir, $pool) = @_;
 
-    my ($basepath, $fromrev) = $self->_resolve_base($path);
-    $basepath = $path unless defined $basepath;
+    my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
     
     my $no_base;
     my $md5 = $self->{base_root}->check_path ($rpath, $pool)?
         $self->{base_root}->file_md5_checksum ($rpath, $pool)
         : do { $no_base = 1; require Digest::MD5; Digest::MD5::md5_hex('') };
 
-    return undef unless $self->inspector->localmod ($basepath, $md5, $pool);
+    return undef unless $inspector->localmod ($basepath, $md5, $pool);
     return {} unless $self->{resolve};
 
     my $fh = $self->{info}{$path}->{fh} || {};
     $fh->{base} ||= [$no_base? (tmpfile('base-')): ($self->_retrieve_base($path, $pool))];
     $fh->{new} = [tmpfile('new-')];
     $fh->{local} = [tmpfile('local-')];
-    my ($tmp) = $self->inspector->localmod($basepath, '', $pool);
+    my ($tmp) = $inspector->localmod($basepath, '', $pool);
     slurp_fh ( $tmp->[FH], $fh->{local}[FH]);
     seek $fh->{local}[FH], 0, 0;
     $fh->{local}[CHECKSUM] = $tmp->[CHECKSUM];
@@ -760,8 +785,8 @@ sub _check_delete_conflict {
 
     # it's dir...
 
-    my $dirmodified = $self->inspector->dirdelta ($path, $self->{base_root}, $rpath);
-    my $entries = $self->{base_root}->dir_entries ($rpath);
+    my $dirmodified = $self->inspector->dirdelta ($path, $self->{base_root}, $rpath, $pool);
+    my $entries = $self->{base_root}->dir_entries ($rpath, $pool);
 
     my $baton = $self->{storage_baton}{$path} = $self->{storage}->open_directory (
         $path, $self->{storage_baton}{$pdir}, $self->{cb_rev}->($path), $pool
@@ -777,13 +802,13 @@ sub _check_delete_conflict {
                 $torm->{$name} = undef;
 	    }
             else {
-                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, $pool);
+                $torm->{$name} = $self->_check_delete_conflict ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new_default($pool));
             }
             delete $dirmodified->{$name};
 	}
 	else { # dir or unmodified file
             $torm->{$name} = $self->_check_delete_conflict
-                ($cpath, $crpath, $entry->kind, $path, $pool);
+                ($cpath, $crpath, $entry->kind, $path, SVN::Pool->new_default($pool));
 	}
     }
 
@@ -791,7 +816,7 @@ sub _check_delete_conflict {
         local $self->{tree_conflict} = 1;
         my ($cpath, $crpath) = ("$path/$node", "$rpath/$node");
         my $kind = $self->{base_root}->check_path ($crpath);
-        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, $pool);
+        $torm->{$node} = $self->_check_delete_conflict ($cpath, $crpath, $kind, $path, SVN::Pool->new_default($pool));
     }
 
     $self->{storage}->close_directory ($baton, $pool);
@@ -829,7 +854,7 @@ sub _partial_delete {
     for (sort keys %$torm) {
 	my $cpath = "$path/$_";
         # check that out
-	my $status = $self->_partial_delete ($torm->{$_}, $cpath, $baton, SVN::Pool->new ($pool), 1);
+	my $status = $self->_partial_delete ($torm->{$_}, $cpath, $baton, SVN::Pool->new_default($pool), 1);
         push @children_stats, [$cpath, $status];
         $skip_children = 0  unless $status eq 'D';
         $summary = 'C' if $status eq 'C';
@@ -869,14 +894,12 @@ sub _partial_delete {
 }
 
 sub delete_entry {
-    my ($self, $path, $revision, $pdir, @arg) = @_;
+    my ($self, $path, $revision, $pdir, $pool) = @_;
     no warnings 'uninitialized';
-    my $pool = $arg[-1];
-    $pool->default;
-    my ($basepath, $fromrev) = $self->_resolve_base($path);
-    $basepath = $path unless defined $basepath;
+    $pool = SVN::Pool->new_default($pool);
+    my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
 
-    return unless defined $pdir && $self->inspector->exist($basepath);
+    return unless defined $pdir && $inspector->exist($basepath);
     my $rpath = $basepath =~ m{^/} ? $basepath :
 	$self->{base_anchor} eq '/' ? "/$basepath" : "$self->{base_anchor}/$basepath";
     my $torm;
@@ -887,10 +910,10 @@ sub delete_entry {
 	# XXX: this is too evil
 	local $self->{base_root} = $self->{base_root}->fs->revision_root($fromrev) if $basepath ne $path;
 	my $kind = $self->{base_root}->check_path ($rpath);
-        $torm = $self->_check_delete_conflict ($path, $rpath, $kind, $pdir, @arg);
+	$torm = $self->_check_delete_conflict ($path, $rpath, $kind, $pdir, $pool);
     }
 
-    $self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, @arg);
+    $self->_partial_delete ($torm, $path, $self->{storage_baton}{$pdir}, $pool);
     ++$self->{changes};
 }
 

@@ -293,6 +293,10 @@ sub overwrite_file_raw {
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
+    unless (-e $file) {
+	@_ = (undef, $content, $test);
+	goto &is;
+    }
     open my ($fh), '<', $file or confess "Cannot read from $file: $!";
     my $actual_content = do { local $/; <$fh> };
 
@@ -614,7 +618,7 @@ sub install_perl_hook {
     open my $fh, '>', $hook or die $!;
     if (IS_WIN32) {
         print $fh "\@rem = '--*-Perl-*--\n";
-        print $fh '@echo off'."\n$^X".' -x -S %0 %*'."\n";
+        print $fh '@echo off'."\n\"$^X\"".' -x -S %0 %*'."\n";
         print $fh 'if errorlevel 1 goto script_failed_so_exit_with_non_zero_val 2>nul'."\n";
 	print $fh "goto endofperl\n\@rem ';\n";
     }

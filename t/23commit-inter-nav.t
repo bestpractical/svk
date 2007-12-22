@@ -14,10 +14,10 @@ chdir ($copath);
 mkdir ('A');
 mkdir ('A/deep');
 mkdir ('A/deep/la');
-overwrite_file ("A/foo", "foobar\ngrab\n");
-overwrite_file ("A/deep/baz", "makar");
-overwrite_file ("A/deep/la/no", "foobar");
-overwrite_file ("A/deep/mas", "po\nkra\nczny");
+overwrite_file_raw ("A/foo", "foobar\ngrab\n");
+overwrite_file_raw ("A/deep/baz", "makar");
+overwrite_file_raw ("A/deep/la/no", "foobar");
+overwrite_file_raw ("A/deep/mas", "po\nkra\nczny");
 
 $svk->add ('A');
 
@@ -261,7 +261,7 @@ is_output ($svk, 'diff', [],
     ' +wex',
     ''], 'skip all \'bata\' properties');
 
-overwrite_file ("A/deep/mas", "wy\nkra\nkal\n");
+overwrite_file_raw ("A/deep/mas", "wy\nkra\nkal\n");
 $svk->propset('parra', 'kok', 'A/deep/mas');
 $answer = [[qq{--- A/deep/mas\t(revision 6)
 +++ A/deep/mas\t(local)}.q{
@@ -494,8 +494,8 @@ is_output ($svk, 'diff', [],
     ' +wex',
     ''], 'commit only content changes');
 
-overwrite_file ("A/deep/mas", "wy\npstry\nkal\n");
-overwrite_file ("A/foo", "temp");
+overwrite_file_raw ("A/deep/mas", "wy\npstry\nkal\n");
+overwrite_file_raw ("A/foo", "temp");
 $answer = [[qq{--- A/deep/mas\t(revision 7)
 +++ A/deep/mas\t(local)}.q{
 @@ -0,2 +0,2 @@
@@ -617,7 +617,7 @@ $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [], [], 'commit change to root directory');
 
-overwrite_file ("A/foo", "za\ngrab\nione\n");
+overwrite_file_raw ("A/foo", "za\ngrab\nione\n");
 $answer = [[qq{--- foo\t(revision 9)
 +++ foo\t(local)}.q{
 @@ -0,1 +0,1 @@
@@ -654,7 +654,7 @@ is_output ($svk, 'diff', [],
     '+ione'], 'skiped content change to directly passed file');
 
 $svk->propset('papa', 'mot', 'A/foo');
-overwrite_file ("A/foo", "za\ngrab\nione\n");
+overwrite_file_raw ("A/foo", "za\ngrab\nione\n");
 $answer = [[qq{--- foo\t(revision 9)
 +++ foo\t(local)}.q{
 @@ -0,1 +0,1 @@
@@ -730,7 +730,7 @@ our $show_prompt=1;
 is_output($svk,'merge', ['-c1', '//A/foo', 'A/deep/mas'],
 [ __('C   A/deep/mas'), '1 conflict found.'], "Merge a conflict into the tree");
 
-overwrite_file ("A/foo", "za\npalny\n");
+overwrite_file_raw ("A/foo", "za\npalny\n");
 $answer = [[q{Conflict detected in:
   A/deep/mas
 file. Do you want to skip it and commit other changes? (y/n) }, 'n'],'stop'];
@@ -772,7 +772,7 @@ is_output($svk, 'merge', ['-c1', '//A/foo', 'A/deep/baz'],
 [__('C   A/deep/baz'),
 '1 conflict found.'
 ], "create another conflict");
-overwrite_file ("A/foo", "");
+overwrite_file_raw ("A/foo", "");
 $answer = [[q{Conflict detected in:
   A/deep/baz
   A/deep/mas
@@ -812,7 +812,7 @@ is_output ($svk, 'status', [],
 
 $svk->revert('A/deep/baz', 'A/deep/mas');
 $svk->propset('svn:mime-type', 'faked/type', 'A/deep/mas');
-overwrite_file ("A/deep/mas", "baran\nkoza\nowca\n");
+overwrite_file_raw ("A/deep/mas", "baran\nkoza\nowca\n");
 $show_prompt=1;
 $answer = [[q{
 [1/2] Modifications to binary file 'A/deep/mas':
@@ -829,7 +829,7 @@ is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [], [], 'replace file with binary one');
 
 $svk->propset('svn:mime-type', 'text/plain', 'A/deep/mas');
-overwrite_file ("A/deep/mas", "krowa\nkoza\n");
+overwrite_file_raw ("A/deep/mas", "krowa\nkoza\n");
 $show_prompt=0;
 $answer = [[q{
 [1/2] Modifications to binary file 'A/deep/mas':
@@ -848,7 +848,7 @@ $svk->commit('--interactive', '-m', 'foo');
 is_deeply($answer, ['stop'], 'all answers used');
 is_output ($svk, 'status', [], [], 'replace binary file with text one');
 
-overwrite_file ("A/deep/mas", "byk\nkrowa\nbawol\nkoza\nkaczka\n");
+overwrite_file_raw ("A/deep/mas", "byk\nkrowa\nbawol\nkoza\nkaczka\n");
 $answer = [[qq{--- A/deep/mas\t(revision 15)
 +++ A/deep/mas\t(local)}.q{
 @@ -0,1 +0,1 @@
@@ -885,7 +885,7 @@ is_output ($svk, 'status', [], [], 'replace text file with text one');
 
 #our $show_prompt_output=1;
 $svk->propset('kox', 'ob', 'A/deep');
-overwrite_file ("A/deep/mas", "mleczna\nkrowa\n");
+overwrite_file_raw ("A/deep/mas", "mleczna\nkrowa\n");
 $answer = [[qq{--- A/deep/mas\t(revision 16)
 +++ A/deep/mas\t(local)}.q{
 @@ -0,4 +0,4 @@
