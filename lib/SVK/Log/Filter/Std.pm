@@ -63,7 +63,7 @@ sub setup {
     my $stash = $args->{stash};
 
     $sep = $stash->{verbatim} || $stash->{no_sep} ? '' : ('-' x 70)."\n";
-    $logger->info ($sep);
+    $logger->info ($sep) if $sep;
 
     # avoid get_encoding() calls for each revision
     $self->{encoding} = get_encoding();
