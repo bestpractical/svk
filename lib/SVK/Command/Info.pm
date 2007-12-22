@@ -58,6 +58,7 @@ use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
 use YAML::Syck;
+use SVK::Logger;
 use autouse 'SVK::Util' => qw( reformat_svn_date );
 
 # XXX: provide -r which walks peg to the specified revision based on
@@ -93,33 +94,33 @@ sub _do_info {
 
     my ($m, $mpath) = $target->is_mirrored;
 
-    print loc("Checkout Path: %1\n",$target->copath)
+    $logger->info( loc("Checkout Path: %1\n",$target->copath))
 	if $target->isa('SVK::Path::Checkout');
-    print loc("Depot Path: %1\n", $target->depotpath);
-    print loc("Revision: %1\n", $target->revision);
+    $logger->info( loc("Depot Path: %1\n", $target->depotpath));
+    $logger->info( loc("Revision: %1\n", $target->revision));
     if (defined( my $lastchanged = $target->root->node_created_rev( $target->path ))) {
-        print loc( "Last Changed Rev.: %1\n", $lastchanged );
+        $logger->info( loc( "Last Changed Rev.: %1\n", $lastchanged ));
         my $date
             = $target->root->fs->revision_prop( $lastchanged, 'svn:date' );
-        print loc(
+        $logger->info( loc(
             "Last Changed Date: %1\n",
             reformat_svn_date( "%Y-%m-%d", $date )
-        );
+        ));
     }
 
-    print loc("Mirrored From: %1, Rev. %2\n",$m->url, $m->fromrev)
+    $logger->info( loc("Mirrored From: %1, Rev. %2\n",$m->url, $m->fromrev))
 	if $m;
 
     for ($target->copy_ancestors) {
-	print loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]);
+	$logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
     }
 
     $self->{merge} = SVK::Merge->new (%$self);
     my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
     for (sort { $minfo->{$b} <=> $minfo->{$a} } keys %$minfo) {
-	print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
+	$logger->info( loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_}));
     }
-    print "\n";
+    $logger->info( "\n");
 }
 
 1;

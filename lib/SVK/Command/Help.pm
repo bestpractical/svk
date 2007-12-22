@@ -54,6 +54,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Util qw( get_encoder can_run );
 use autouse 'File::Find' => qw(find);
 
@@ -74,7 +75,7 @@ sub run {
             my @cmd;
             my $dir = $INC{'SVK/Command.pm'};
             $dir =~ s/\.pm$//;
-            print loc("Available commands:\n");
+            $logger->info( loc("Available commands:"));
             find (
                 sub { push @cmd, $File::Find::name if m/\.pm$/ }, $dir,
             );
@@ -92,7 +93,7 @@ sub run {
 
             $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
-            print get_encoder->encode($buf);
+            $logger->info( get_encoder->encode($buf));
         }
         else {
             die loc("Cannot find help topic '%1'.\n", $topic);

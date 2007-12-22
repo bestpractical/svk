@@ -57,6 +57,7 @@ use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::Editor::Status;
 use SVK::Util qw( abs2rel );
+use SVK::Logger;
 
 sub options {
     ("q|quiet"    => 'quiet',
@@ -71,8 +72,8 @@ sub parse_arg {
     return $self->arg_condensed (@arg);
 }
 
-sub flush_print {
-    my ($root, $target, $entry, $status, $baserev, $from_path, $from_rev) = @_;
+sub _flush_print {
+    my ($self, $root, $target, $entry, $status, $baserev, $from_path, $from_rev) = @_;
     my ($crev, $author);
     my $fs = $root->fs;
     if ($from_path) {
@@ -99,11 +100,11 @@ sub flush_print {
 	? SVK::Path::Checkout->copath ($report, $entry)
 	: SVK::Path::Checkout->copath ('', length $report ? $report : '.');
     no warnings 'uninitialized';
-    print sprintf ("%1s%1s%1s %8s %8s %-12.12s \%s\n", @{$status}[0..2],
+    $logger->info(sprintf ("%1s%1s%1s %8s %8s %-12.12s \%s\n", @{$status}[0..2],
                    defined $baserev ? $baserev : '? ',
 		   defined $crev ? $crev : '? ',
 		   $author ? $author : ' ?',
-                   $newentry);
+                   $newentry));
 }
 
 sub run {
@@ -114,7 +115,7 @@ sub run {
 	  (notify => SVK::Notify->new (
 	       flush_baserev => 1,
 	       flush_unchanged => 1,
-	       cb_flush => sub { flush_print ($target->root, $target, @_); }
+	       cb_flush => sub { _flush_print ($self, $target->root, $target, @_); }
 	   )
 	  )                :
 	  (notify => SVK::Notify->new_with_report ($target->report,

@@ -59,7 +59,7 @@ use SVK::Merge;
 use SVK::Editor::Merge;
 use SVK::I18N;
 use SVK::Command::Log;
-
+use SVK::Logger;
 
 sub options {
     (
@@ -112,6 +112,7 @@ sub run {
 
 package SVK::Command::Patch::FileRequired;
 use base qw/SVK::Command::Patch/;
+use SVK::Logger;
 use SVK::I18N;
 
 sub parse_arg {
@@ -132,12 +133,13 @@ sub run {
 }
 
 package SVK::Command::Patch::dump;
+use SVK::Logger;
 
 use base qw/SVK::Command::Patch::FileRequired/;
 
 sub run {
     my ($self, $patch) = @_;
-    print YAML::Syck::Dump ($patch);
+    $logger->info( YAML::Syck::Dump ($patch));
     return;
 }
 
@@ -161,6 +163,7 @@ sub run {
 
 package SVK::Command::Patch::regen;
 use SVK::I18N;
+use SVK::Logger;
 
 use base qw/SVK::Command::Patch::FileRequired/;
 
@@ -206,6 +209,7 @@ sub run {
 package SVK::Command::Patch::list;
 
 use base qw/SVK::Command::Patch/;
+use SVK::Logger;
 
 sub parse_arg { undef }
 sub run {
@@ -215,10 +219,8 @@ sub run {
 	next if $file =~ /^\./;
 	$file =~ s/\.patch$// or next;
 	my ($patch, $not_applicable) = $self->_load ($file);
-	print "$patch->{name}\@$patch->{level}: ";
-	print "[n/a]"
-	    if $not_applicable;
-	print "\n";
+	$logger->info( "$patch->{name}\@$patch->{level}: ".
+	    ( $not_applicable ? "[n/a]" : '' ) );
     }
     return;
 }
@@ -227,6 +229,7 @@ package SVK::Command::Patch::apply;
 use SVK::I18N;
 
 use base qw/SVK::Command::Patch::FileRequired/;
+use SVK::Logger;
 
 sub run {
     my ($self, $patch, $not_applicable, @args) = @_;

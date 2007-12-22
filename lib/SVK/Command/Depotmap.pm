@@ -55,6 +55,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Util qw( get_buffer_from_editor abs_path move_path );
 use YAML::Syck;
 use File::Path;
@@ -109,9 +110,9 @@ sub run {
               get_buffer_from_editor( loc('depot map'), $sep, "$map\n$sep\n",
                 'depotmap' );
             $new = eval { YAML::Syck::Load($map) };
-            print "$@\n" if $@;
+            $logger->info("$@") if $@;
         } while ($@);
-        print loc("New depot map saved.\n");
+        $logger->info( loc("New depot map saved."));
         $self->{xd}{depotmap} = $new;
     }
     $self->{xd}->create_depots;
@@ -120,6 +121,7 @@ sub run {
 
 package SVK::Command::Depotmap::add;
 use base qw(SVK::Command::Depotmap);
+use SVK::Logger;
 use SVK::I18N;
 
 sub run {
@@ -130,12 +132,13 @@ sub run {
 
     $self->{xd}{depotmap}{$depot} = $path;
 
-    print loc("New depot map saved.\n");
+    $logger->info(loc("New depot map saved."));
     $self->{xd}->create_depots;
 }
 
 package SVK::Command::Depotmap::relocate;
 use base qw(SVK::Command::Depotmap);
+use SVK::Logger;
 use SVK::I18N;
 
 sub run {
@@ -146,12 +149,13 @@ sub run {
 
     $self->{xd}{depotmap}{$depot} = $path;
 
-    print loc("Depot '%1' relocated to '%2'.\n", $depot, $path);
+    $logger->info( loc("Depot '%1' relocated to '%2'.\n", $depot, $path));
     $self->{xd}->create_depots;
 }
 
 package SVK::Command::Depotmap::detach;
 use base qw(SVK::Command::Depotmap);
+use SVK::Logger;
 use SVK::I18N;
 
 sub run {
@@ -159,12 +163,13 @@ sub run {
     delete $self->{xd}{depotmap}{$depot}
         or die loc("Depot '%1' does not exist in the depot map.\n", $depot);
 
-    print loc("Depot '%1' detached.\n", $depot);
+    $logger->info( loc("Depot '%1' detached.\n", $depot));
     return;
 }
 
 package SVK::Command::Depotmap::list;
 use base qw(SVK::Command::Depotmap);
+use SVK::Logger;
 use SVK::I18N;
 
 sub parse_arg { undef }
@@ -173,9 +178,9 @@ sub run {
     my ($self) = @_;
     my $map = $self->{xd}{depotmap};
     my $fmt = "%-20s\t%-s\n";
-    printf $fmt, loc('Depot'), loc('Path');
-    print '=' x 60, "\n";
-    printf $fmt, "/$_/", $map->{$_} for sort keys %$map;
+    $logger->info(sprintf $fmt, loc('Depot'), loc('Path'));
+    $logger->info( '=' x 60, "\n");
+    $logger->info(sprintf $fmt, "/$_/", $map->{$_}) for sort keys %$map;
     return;
 }
 

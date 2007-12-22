@@ -52,6 +52,7 @@ package SVK::Command::Verify;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
+use SVK::Logger;
 
 use base qw( SVK::Command );
 
@@ -79,8 +80,7 @@ sub _verify {
 			  );
 
     return loc ("Signature verification failed.\n") if $editor->{fail};
-    print "Signature verified.\n";
-    return;
+    return loc( "Signature verified.\n");
 }
 
 sub run {
@@ -90,13 +90,14 @@ sub run {
     my $sig = $fs->revision_prop ($chg, 'svk:signature');
     return _verify($target->depot, $sig, $chg)
 	if $sig;
-    print "No signature found for change $chg at /$depot/.\n";
+    $logger->info( "No signature found for change $chg at /$depot/.");
     return;
 }
 
 # XXX: Don't need this editor once root->paths_changed is available.
 package SVK::VerifyEditor;
 use base 'SVK::Editor';
+use SVK::Logger;
 __PACKAGE__->mk_accessors(qw(depot sig));
 
 sub add_file {
@@ -125,7 +126,8 @@ sub close_edit {
     close D;
 
     if ($?) {
-	print "Can't verify signature\n";
+        warn "Self is $self";
+        $logger->info( "Can't verify signature");
 	$self->{fail} = 1;
 	return;
     }
@@ -140,14 +142,14 @@ sub close_edit {
 	my ($md5, $filename) = ($1, $2);
 	my $checksum = delete $self->{checksum}{"$path/$filename"};
 	if ($checksum ne $md5) {
-	    print "checksum for $path/$filename mismatched: $checksum vs $md5\n";
+	    $logger->info( "checksum for $path/$filename mismatched: $checksum vs $md5");
 	    $self->{fail} = 1;
 	    return;
 	}
     }
     # unsigned change
     if (my @unsig = keys %{$self->{checksum}}) {
-	print "Checksum for changed path ".join (',', @unsig)." not signed.\n";
+	$logger->info("Checksum for changed path ".join (',', @unsig)." not signed.");
 	$self->{fail} = 1;
     }
 }

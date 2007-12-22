@@ -56,7 +56,7 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Logger;
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
-		  find_svm_source $SEP IS_WIN32 catdepot traverse_history);
+		  find_svm_source $SEP IS_WIN32 catdepot traverse_history );
 use SVK::I18N;
 use Encode;
 use constant subcommands => '*';
@@ -164,9 +164,9 @@ sub invoke {
 				 output => $output) };
 
     $ofh = select STDERR unless $output;
-    print $ret if $ret && $ret !~ /^\d+$/;
-    unless (ref($@)) {
-	print $@ if $@;
+    $logger->info( $ret) if $ret && $ret !~ /^\d+$/;
+    if ($@ && !ref($@)) {
+        $logger->info("$@");
     }
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
 
@@ -479,7 +479,7 @@ usually good enough.
     $m = $target->is_mirrored;
     # If the user is mirroring from svn
     if ($m) {
-        print loc("
+        $logger->info( loc("
 svk needs to mirror the remote repository so you can work locally.
 If you're mirroring a single branch, it's safe to use any of the options
 below.
@@ -489,13 +489,13 @@ work best if you choose to retrieve all revisions.  Choosing to start
 with a recent revision can result in a larger local repository and will
 break history-sensitive merging within the mirrored path.
 
-");
+"),
 
-        print loc("Synchronizing the mirror for the first time:\n");
-        print loc("  a        : Retrieve all revisions (default)\n");
-        print loc("  h        : Only the most recent revision\n");
-        print loc("  -count   : At most 'count' recent revisions\n");
-        print loc("  revision : Start from the specified revision\n");
+         loc("Synchronizing the mirror for the first time:\n"),
+         loc("  a        : Retrieve all revisions (default)\n"),
+         loc("  h        : Only the most recent revision\n"),
+         loc("  -count   : At most 'count' recent revisions\n"),
+         loc("  revision : Start from the specified revision\n"));
 
         $answer = lc(get_prompt(
             loc("a)ll, h)ead, -count, revision? [a] "),
@@ -525,7 +525,7 @@ break history-sensitive merging within the mirrored path.
 
     my $depotpath = length ($rel_uri) ? $target->depotpath."/$rel_uri" : $target->depotpath;
     if (my $err = $@) {
-	print loc("Unable to complete initial sync: %1", $err);
+	$logger->info(loc("Unable to complete initial sync: %1", $err));
 	die loc("Run svk sync %1, and run the %2 command again.\n", $depotpath, lc((ref($self) =~ m/::([^:]*)$/)[0]));
     }
 
@@ -818,7 +818,7 @@ sub brief_usage {
     local $/=undef;
     my $buf = <$podfh>;
     if($buf =~ /^=head1\s+NAME\s*SVK::Command::(\w+ - .+)$/m) {
-	print "   ",loc(lcfirst($1)),"\n";
+	$logger->info( "   ",loc(lcfirst($1)),"\n");
     }
     close $podfh;
 }
@@ -871,15 +871,15 @@ sub usage {
                 my $spaces = $3;
                 my $loc = $1 . loc($2 . ($4||'')) . $5;
                 $loc =~ s/: /$spaces: / if $spaces;
-                print $loc, "\n";
+                $logger->info( $loc, "\n");
             }
-            print "\n";
+            $logger->info( "\n");
 	}
         elsif ($line =~ /^(\s+)(\w+ - .*)$/) {
-            print $1, loc($2), "\n\n";
+            $logger->info( $1, loc($2), "\n\n");
         }
         elsif (length $line) {
-            print loc($line), "\n\n";
+            $logger->info( loc($line), "\n\n");
 	}
     }
 }
@@ -928,7 +928,7 @@ sub msg_handler {
     my ($self, $err, $msg) = @_;
     $self->add_handler
 	($err, sub {
-	     print $_[0]->expanded_message."\n".($msg ? "$msg\n" : '');
+	     $logger->info( $_[0]->expanded_message."\n".($msg ? "$msg\n" : ''));
 	 });
 }
 
@@ -1067,9 +1067,9 @@ Traverse C<$target> and and invoke C<$code> with each node.
 sub _run_code {
     my ($self, $target, $code, $level, $errs, $kind) = @_;
     eval { $code->( $target, $kind, $level ) };
-    if ($@) {
-	print $@;
-	push @$errs, "$@";
+    if (my $err = "$@") {
+	$logger->info( $err);
+	push @$errs, $err;
     }
 }
 
@@ -1082,7 +1082,7 @@ sub run_command_recursively {
         if $kind == $SVN::Node::dir
         && $self->{recursive}
         && ( !$self->{depth} || 0 < $self->{depth} );
-    print "\n" if $newline;
+    $logger->info( "\n") if $newline;
 }
 
 sub _descend_with {
