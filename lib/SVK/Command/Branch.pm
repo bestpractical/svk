@@ -56,6 +56,7 @@ use base qw( SVK::Command::Commit );
 use SVK::I18N;
 use SVK::Util qw( is_uri get_prompt );
 use SVK::Project;
+use SVK::Logger;
 
 use constant narg => undef;
 
@@ -87,7 +88,7 @@ sub run {
 
     my $proj = $self->load_project($target);
 
-    print loc("Project mapped.  Project name: %1.\n", $proj->name);
+    $logger->info( loc("Project mapped.  Project name: %1.\n", $proj->name));
 
     return;
 }
@@ -115,6 +116,7 @@ sub expand_branch {
 package SVK::Command::Branch::list;
 use base qw(SVK::Command::Branch);
 use SVK::I18N;
+use SVK::Logger;
 
 sub run {
     my ($self, $target) = @_;
@@ -122,7 +124,7 @@ sub run {
     my $proj = $self->load_project($target);
 
     if (!$proj) {
-	print loc("No project branch founded.\n");
+	$logger->info( loc("No project branch founded.\n"));
 	return;
     }
 
@@ -130,19 +132,19 @@ sub run {
 	my $fmt = "%s%s\n"; # here to change layout
 
 	my $branches = $proj->branches (0); # branches
-	printf $fmt, $_, '' for @{$branches};
+	$logger->info (sprintf $fmt, $_, '') for @{$branches};
 	
 	$branches = $proj->tags ();         # tags
-	printf $fmt, $_, ' (tags)' for @{$branches};
+	$logger->info (sprintf $fmt, $_, ' (tags)') for @{$branches};
 
 	$branches = $proj->branches (1);    # local branches
-	printf $fmt, $_, ' (in local)' for @{$branches};
+	$logger->info (sprintf $fmt, $_, ' (in local)') for @{$branches};
 
     } else {
 	my $branches = $proj->branches ($self->{local});
 
 	my $fmt = "%s\n"; # here to change layout
-	printf $fmt, $_ for @{$branches};
+	$logger->info (sprintf $fmt, $_) for @{$branches};
     }
     return;
 }
@@ -151,6 +153,7 @@ package SVK::Command::Branch::create;
 use base qw( SVK::Command::Copy SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
+use SVK::Logger;
 
 sub lock { $_[0]->lock_target ($_[1]); };
 
@@ -195,10 +198,11 @@ sub run {
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
-	print loc("Project branch created: %1%2%3\n",
+	$logger->info( loc("Project branch created: %1%2%3\n",
 	    $branch_path,
 	    $self->{local} ? ' (in local)' : '',
 	    $self->{from} ? " (from $self->{from})" : '',
+	  )
 	);
 	# call SVK::Command::Switch here if --switch-to
 	$self->SVK::Command::Switch::run(
