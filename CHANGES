@@ -1,3 +1,99 @@
+[Changes for 2.1.0 - ]
+
+  New feature
+    * Branch support as 'svk branch' subcommand
+    * SVKBATCHMODE environemt variable
+
+  Mirror subsystem
+    * Fix a bug when mirroring a copy revision with unnormalized
+      revision outside mirror anchor and newer th an anchor head.
+
+  Merge subsystem
+    * Bugfixes for opened file handle passed to editor under win32,
+      causing file to be opened as read-only.
+    * Fix a problem that merge-ticket might be reverted on mirror
+      in some cases.
+    * Fix a bug when merging a copy with modification to the copied
+      source, it might cause checksum error.
+
+[Changes for 2.0.2 - 20 Jul, 2007]
+
+  Mirror subsystem
+    * be more friendly when trying to relocating incorrect mirror
+      path.
+
+  Merge subsystem
+    * Fix a problem when repeatedly merging renames tracked with
+      --track-renames, and when merging back such files.
+    * Fix the "file not found at revision 0" bug when smerge to a
+      mirror where copy source is not normalized.
+    * Fix a bug that deletes inside copies aren't properly merged
+      across branches even the status output says so.
+    * Fix a bug when merging copies across branches we be using
+      incorrect dst revision causing "file not found at revision 0".
+    * Fix a bug where copies outside the mirror source across merge
+      are not expanded as non-copies.
+    * Fix an inconsistency for smerge -IC behaviour when the base is
+      a txn path.
+
+  Pullyu
+    * properly translate to local path when mirroring remote root.
+    * Fix pullyu for translating "included" records, which are
+      replaced entries.
+
+  Others
+    * Improve error reporting when failed to save config.
+    * Perl 5.9.5 compatibility fixes.
+    * Work around a problem that push -P might be using outdated
+      memory pool.
+    * svk diff -r:123 should report invalid -r rather than blow up.
+    * Add -i as shorthand for --interactive in svk ci.
+    * Various win32 fixes.
+    * Various i18n fixes.
+
+[Changes for 2.0.1 - 26 Mar, 2007]
+
+  Mirror subsystem
+    * You can now use $SVKNORAREPLAY forcing svk to use old SVN::Mirror
+      for sync.
+    * Fix a bug when mirroring partial repository with copies, the from
+      revision number might not be exactly the ones we have mirrored.
+    * In the pipelined sync editor, use pool more wisely for invoking
+      editor calls.  This fixes the memory bloat for syncing revisions
+      with large number of deleted files.
+    * In pipelined replay, make perl don't segfault on SIGINT.
+    * Fix the bug committing to subdirs of mirrors that are on /.
+    * Fix a bug preventing mirror --relocate to work on mirrors on '/'.
+    * Fix a problem replaying failing with RA_DAV_REQUEST_FAILED in some
+      servers.
+
+  Merge subsystem
+    * Fix a pool usage in Editor::Merge::apply_textdelta, which has a
+      side-effect causing rename-tracking smerge on a new file inside a
+      renamed directory to fail with SWIG-runtime error.
+    * Prevent unwanted repeated merges when repeatedly merging tags to a
+      branch.  We now also record the copy source(s) of the path being
+      merged from in the merge ticket.
+    * Fix a bug in merging moved files that are modified.
+    * Fix a bug that smerge to checkout with changes to a copied file is
+      causing incomplete svn delta string.
+    * When merging the replaced directory, do not ignore the fact when
+      the delete part is already conflicting.
+    * Fix a bug when merging a copy that happened on an intermediate
+      branch, which might not map back to the merge destination.
+
+  Tools
+    * verify-mirror improvements.
+    * Ship vc-svk.el with the distribution.
+
+  Others
+    * Make updating a checkout that no longer exists in the depot give
+      proper message.
+    * Make checkout more robust when resuming a interrupted checkout.
+    * Check for .svk/floating before assuming floating checkout.
+    * Fix a regression which caused binary files to sometimes be
+      displayed as text during an "svk diff".
+
 [Changes for 2.0.0 - 28 Dec, 2006]
 
   Dependency
