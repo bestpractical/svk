@@ -27,6 +27,7 @@ lib/SVK/Command.pm
 lib/SVK/Command/Add.pm
 lib/SVK/Command/Admin.pm
 lib/SVK/Command/Annotate.pm
+lib/SVK/Command/Branch.pm
 lib/SVK/Command/Cat.pm
 lib/SVK/Command/Checkout.pm
 lib/SVK/Command/Cleanup.pm
@@ -247,8 +248,8 @@ t/20add-libmagic.t
 t/20add-mmagic.t
 t/20add-nomime.t
 t/20add.t
-t/21delete.t
 t/21delete-co.t
+t/21delete.t
 t/22status-conflict.t
 t/22status.t
 t/23commit-file.t
@@ -290,10 +291,21 @@ t/74view.t
 t/75hook.t
 t/76ignore.t
 t/77floating.t
+t/80memory.t
+t/81branch.t
 t/api/mirror.t
 t/api/project.t
+t/api/project_from_path.t
 t/api/root.t
 t/bm/basic.t
+t/bm/create.t
+t/bm/merge.t
+t/bm/move.t
+t/bm/prop-autoload.t
+t/bm/prop-multiproject.t
+t/bm/prop.t
+t/bm/remove.t
+t/bm/switch.t
 t/copy-escape.t
 t/copy-replace.t
 t/diff/mixed-checkout.t
@@ -312,6 +324,7 @@ t/mirror/sync-replaced.t
 t/mirror/sync-replicate.t
 t/mirror/sync-revhole.t
 t/mirror/sync-snapshot.t
+t/smerge/copy-reuse.t
 t/svk-sec.gpg
 t/svk.gpg
 t/update-gone.t
