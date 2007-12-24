@@ -147,7 +147,7 @@ sub create_from_prop {
 		    branch_location => $props{'path-branches'},
 		    tag_location    => $props{'path-tags'},
 		    local_root      => "/local/${project_name}",
-		}) if $pathobj->path =~ m/^$props{$key}/;
+		}) if $pathobj->path =~ m/^$props{$key}/ or $props{$key} =~ m/^$pathobj->{path}/
 	}
     }
     return undef;
