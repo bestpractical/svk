@@ -148,6 +148,7 @@ sub create_from_prop {
 		    tag_location    => $props{'path-tags'},
 		    local_root      => "/local/${project_name}",
 		}) if $pathobj->path =~ m/^$props{$key}/ or $props{$key} =~ m/^$pathobj->{path}/
+		      or $pathobj->path =~ m{^/local/$project_name};
 	}
     }
     return undef;
