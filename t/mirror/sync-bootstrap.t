@@ -50,7 +50,7 @@ is($boot_mirror, $exp_mirror, 'UUID should be the same'); # do something with UU
 is_output($svk, mirror => ['--bootstrap=./no-such-file', '/m3/m', $uri],
           ["No such dump file: ./no-such-file."]);
 # this is real test
-is_output($svk, mirror => ['--bootstrap='.$dump, '/m3/m', $uri],
+is_output($svk, mirror => ['--bootstrap',$dump->filename, '/m3/m', $uri],
           ["Mirror initialized.",
 	   "Mirror path '/m3/m' synced from dumpfile."]);
 
