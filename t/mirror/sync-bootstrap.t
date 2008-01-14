@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 use SVK::Test;
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 7;
+plan tests => 8;
 
 my ($xd, $svk) = build_test('test', 'm2', 'm3');
 
@@ -46,6 +46,10 @@ is($boot_mirror, $exp_mirror, 'UUID should be the same'); # do something with UU
 
 # now try with mirror, sync in single bootstrap command
 
+# try feed with incorrect file 
+is_output($svk, mirror => ['--bootstrap=./no-such-file', '/m3/m', $uri],
+          ["No such dump file: ./no-such-file."]);
+# this is real test
 is_output($svk, mirror => ['--bootstrap='.$dump, '/m3/m', $uri],
           ["Mirror initialized.",
 	   "Mirror path '/m3/m' synced from dumpfile."]);
