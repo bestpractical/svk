@@ -300,8 +300,12 @@ sub _import_repos {
     my ($header, $buf) = @_;
     $buf = $header.$buf;
     open my $fh, '<', \$buf;
-    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, \*STDERR, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+    my $feedback = '';
+    open my $fstream, '>', \$feedback;
+    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, $fstream, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
     # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+    # XXX: display $feedback if we are in verbose / debug mode.
+    # and provide progress feedback in caller
     return $ret;
 }
 
