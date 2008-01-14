@@ -56,6 +56,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 0;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ('v|verbose' => 'verbose',
@@ -106,15 +107,15 @@ sub _show_props {
     %$props or return;
 
     if ($self->{revprop}) {
-        print loc("Unversioned properties on revision %1:\n", $rev);
+        $logger->info( loc("Unversioned properties on revision %1:\n", $rev));
     }
     else {
-        print loc("Properties on %1:\n", length $target->report ? $target->report : '.');
+        $logger->info( loc("Properties on %1:\n", length $target->report ? $target->report : '.'));
     }
 
     for my $key (sort keys %$props) {
         my $value = $props->{$key};
-        print $self->{verbose} ? "  $key: $value\n" : "  $key\n";
+        $logger->info( $self->{verbose} ? "  $key: $value\n" : "  $key\n");
     }
 }
 

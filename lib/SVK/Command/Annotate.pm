@@ -55,6 +55,7 @@ use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( traverse_history );
+use SVK::Logger;
 use Algorithm::Annotate;
 
 sub options {
@@ -91,9 +92,8 @@ sub run {
         }
     );
 
-    print loc("Annotations for %1 (%2 active revisions):\n", $target->path, scalar @paths);
-    print '*' x 16;
-    print "\n";
+    $logger->info(loc("Annotations for %1 (%2 active revisions):\n", $target->path, scalar @paths));
+    $logger->info( '*' x 16 );
     for my $t (@paths) {
 	local $/;
 	my $content = $t->root->file_contents($t->path);
@@ -120,7 +120,7 @@ sub run {
 
     my $result = $ann->result;
     while (my $info = shift @$result) {
-	print $info, shift(@$final), "\n";
+        $logger->info($info, shift(@$final), "\n");
     }
 
 }

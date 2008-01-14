@@ -53,6 +53,7 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 
+use SVK::Logger;
 use SVK::Util qw ( abs2rel );
 
 sub parse_arg {
@@ -85,7 +86,7 @@ sub do_ignore {
 
     my $current_ignore_re = $self->{xd}->ignore($svn_ignore);
     if ($filename =~ m/$current_ignore_re/) {
-        print "Already ignoring '$report'\n";
+        $logger->info( "Already ignoring '$report'");
     } else {
         $svn_ignore .= "\n"
           if length $svn_ignore and substr($svn_ignore, -1, 1) ne "\n";
@@ -129,3 +130,5 @@ results are undefined -- specifically, the result of the check to see
 if the entry is already there may not be what you expected.  Currently
 it will not try to escape any such entries before adding them.)
 
+To tell svk to start paying attention to a file again, use the command
+'svk pe svn:ignore' to manually edit the ignore list.

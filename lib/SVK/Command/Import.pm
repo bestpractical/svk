@@ -55,6 +55,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -104,7 +105,7 @@ sub _mkpdir {
         mkdir => { message => "Directory for svk import.", parent => 1 },
     )->run ($target);
 
-    print loc("Import path %1 initialized.\n", $target->depotpath);
+    $logger->info( loc("Import path %1 initialized.\n", $target->depotpath));
 }
 
 sub run {
@@ -119,7 +120,7 @@ sub run {
     my $basetarget = $target;
     if ($kind == $SVN::Node::none) {
 	if ($self->{check_only}) {
-	    print loc("Import path %1 will be created.\n", $target->depotpath);
+	    $logger->info( loc("Import path %1 will be created.\n", $target->depotpath));
 	    $basetarget = $target->new (revision => 0, path => '/');
 	}
 	else {
@@ -141,8 +142,8 @@ sub run {
     $self->get_commit_message () unless $self->{check_only};
     my $committed =
 	sub { my $yrev = $_[0];
-	      print loc("Directory %1 imported to depotpath %2 as revision %3.\n",
-			$copath, $target->depotpath, $yrev);
+	      $logger->info( loc("Directory %1 imported to depotpath %2 as revision %3.\n",
+			$copath, $target->depotpath, $yrev));
 
 	      if ($self->{to_checkout}) {
                   $self->{xd}{checkout}->store (
@@ -172,8 +173,8 @@ sub run {
 			 copath_anchor => $copath }), $root, $editor, %cb);
 
     if ($self->{check_only}) {
-	print loc("Directory %1 will be imported to depotpath %2.\n",
-		  $copath, $target->depotpath);
+	$logger->info( loc("Directory %1 will be imported to depotpath %2.\n",
+		  $copath, $target->depotpath));
 	$self->{xd}{checkout}->store
 	    ($copath, {depotpath => undef,
 		       revision => undef,

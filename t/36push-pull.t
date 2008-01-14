@@ -5,7 +5,7 @@ use Cwd;
 use File::Path;
 
 use SVK::Test;
-plan tests => 15;
+plan tests => 18;
 
 my $initial_cwd = getcwd;
 
@@ -195,6 +195,23 @@ $svk->commit (-m => 'randome changes', $corpath_test);
 chdir ($corpath_second);
 our $output;
 
+# Server should be less strict, before that we need sync first
+# so we first expect it is bzz here
+# These added tests should be removed after server side less strict
+is_output ($svk, 'push', [],
+	   ['Auto-merging (0, 25) /l2 to /m (base /m:16).',
+	    '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
+	    "Merging back to mirror source $uri/A.",
+	    qr"Transaction is out of date: Out of date: '/A' in transaction '.*'",
+	    'Please sync mirrored path /m first.']);
+
+# syncing
+is_output ($svk, "sync", ['//m'], [
+        "Syncing $uri/A",
+        "Retrieving log information from 11 to 11",
+        "Committed revision 26 from revision 11."]);
+
+# expect it is 
 is_output ($svk, 'push', [],
 	   ['Auto-merging (0, 25) /l2 to /m (base /m:16).',
 	    '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
@@ -202,8 +219,8 @@ is_output ($svk, 'push', [],
 	    'Empty merge.',
 	    '===> Auto-merging (18, 25) /l2 to /m (base /m:16).',
 	    "Merging back to mirror source $uri/A.",
-	    qr"Transaction is out of date: Out of date: '/A/Q/qz' in transaction '.*'",
-	    'Please sync mirrored path /m first.']);
+	    "g   Q/qz",
+	    'Empty merge.']);
 
 overwrite_file ("$corpath_test/push-newfile", "sync and not merged immediately\n");
 $svk->add("$corpath_test/push-newfile");
@@ -230,6 +247,17 @@ $svk->up($corpath_test);
 append_file("$corpath_test/new-file", "more modification that will get overwritten if using wrong merge base\n");
 $svk->commit (-m => 'change something', $corpath_test);
 
+# Server should be less strict, before that we need sync first
+# so we first expect it is bzz here
+is_output($svk, 'push', [],
+	  ['Auto-merging (0, 29) /l2 to /m (base /m:27).',
+	   '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
+	   "Merging back to mirror source $uri/A.",
+	    qr"Transaction is out of date: Out of date: '/A' in transaction '.*'",
+	    'Please sync mirrored path /m first.']);
+# syncing
+$svk->sync('//m');
+
 is_output($svk, 'push', [],
 	  ['Auto-merging (0, 29) /l2 to /m (base /m:27).',
 	   '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
@@ -246,12 +274,16 @@ is_output($svk, 'push', [],
 	   qr'New merge ticket: .*:/l2:28',
 	   'Merge back committed as revision 14.',
 	   "Syncing $uri/A",
-	   'Retrieving log information from 13 to 14',
-	   'Committed revision 30 from revision 13.',
+	   'Retrieving log information from 14 to 14',
 	   'Committed revision 31 from revision 14.',
-	   '===> Auto-merging (28, 29) /l2 to /m (base */l2:28).',
+	   '===> Auto-merging (28, 29) /l2 to /m (base */m:30).',
 	   "Merging back to mirror source $uri/A.",
-	   'Empty merge.']);
+           'U   new-file',
+	   qr'New merge ticket: .*:/l2:29',
+	   'Merge back committed as revision 15.',
+	   "Syncing $uri/A",
+	   'Retrieving log information from 15 to 15',
+	   'Committed revision 32 from revision 15.']);
 
 chdir ($initial_cwd);
 $svk->cp (-m => 'copy', '/test/A' => '/test/A-cp');

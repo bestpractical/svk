@@ -56,7 +56,7 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 
 use SVK::Logger;
 use SVK::Util qw( get_prompt abs2rel abs_path is_uri catdir bsd_glob from_native
-		  find_svm_source $SEP IS_WIN32 catdepot traverse_history);
+		  find_svm_source $SEP IS_WIN32 catdepot traverse_history );
 use SVK::I18N;
 use Encode;
 use constant subcommands => '*';
@@ -95,6 +95,7 @@ use constant alias =>
             qw( ann		annotate
                 blame		annotate
                 praise		annotate
+		br		branch
 		co		checkout
 		cm		cmerge
 		ci		commit
@@ -164,9 +165,9 @@ sub invoke {
 				 output => $output) };
 
     $ofh = select STDERR unless $output;
-    print $ret if $ret && $ret !~ /^\d+$/;
-    unless (ref($@)) {
-	print $@ if $@;
+    $logger->info( $ret) if $ret && $ret !~ /^\d+$/;
+    if ($@ && !ref($@)) {
+        $logger->info("$@");
     }
     $ret = 1 if ($ret ? $ret !~ /^\d+$/ : $@);
 
@@ -470,6 +471,45 @@ usually good enough.
     $path = $default unless length $path;
     $path = "//mirror/$path" unless $path =~ m!^/!;
 
+    # try to get prop of project first
+    #
+    my ($project_depot_root) = $path =~ m{^(/[^/]*/[^/]+)/};
+    $uri =~ s/\/$//;
+    my $ra = SVN::Ra->new($uri);
+    $ra->reparent($ra->get_repos_root());
+    my %prop = %{ ($ra->get_file('',$ra->get_latest_revnum, undef))[1] };
+
+    my $prompt_project = loc("
+Remote repository has projects property set, do you like to use it? ");
+
+    # XXX list projects, let user choose it
+    if (grep { $_ =~ /^svk:project/ } keys %prop) {
+	my $go_for_project = lc ( get_prompt( $prompt_project . '[Y/n]' ) );
+	if ($go_for_project ne 'n') {
+	    # use first project
+	    my %projects = 
+		map { $_ => 1 }
+		grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ } keys %prop;
+	    my @projs = keys %projects;
+	    print loc("Avaliable projects:\n");
+	    print loc("No.   Project      Path\n");
+	    my $index = 0;
+	    for my $proj (@projs) {
+		$index++;
+		$projects{$proj} = '/'.$prop{'svk:project:'.$proj.':path-trunk'};
+		$projects{$proj} =~ s{/[^/]+$}{};
+		print sprintf ("%d)    %-12s %-12s\n",
+		    $index, $proj, $projects{$proj});
+	    }
+	    my $proj_answer = lc(get_prompt(
+		loc("Which project? [No.] "),
+		qr(^\d+$)
+		));
+	    $proj_answer--;
+	    $path = $project_depot_root.$projects{$projs[$proj_answer]};
+	}
+    }
+
     my $target = $self->arg_depotpath($path);
     $self->command ('mirror')->run ($target, $base_uri);
   
@@ -479,7 +519,7 @@ usually good enough.
     $m = $target->is_mirrored;
     # If the user is mirroring from svn
     if ($m) {
-        print loc("
+        $logger->info( loc("
 svk needs to mirror the remote repository so you can work locally.
 If you're mirroring a single branch, it's safe to use any of the options
 below.
@@ -489,13 +529,13 @@ work best if you choose to retrieve all revisions.  Choosing to start
 with a recent revision can result in a larger local repository and will
 break history-sensitive merging within the mirrored path.
 
-");
+"),
 
-        print loc("Synchronizing the mirror for the first time:\n");
-        print loc("  a        : Retrieve all revisions (default)\n");
-        print loc("  h        : Only the most recent revision\n");
-        print loc("  -count   : At most 'count' recent revisions\n");
-        print loc("  revision : Start from the specified revision\n");
+         loc("Synchronizing the mirror for the first time:\n"),
+         loc("  a        : Retrieve all revisions (default)\n"),
+         loc("  h        : Only the most recent revision\n"),
+         loc("  -count   : At most 'count' recent revisions\n"),
+         loc("  revision : Start from the specified revision\n"));
 
         $answer = lc(get_prompt(
             loc("a)ll, h)ead, -count, revision? [a] "),
@@ -525,7 +565,7 @@ break history-sensitive merging within the mirrored path.
 
     my $depotpath = length ($rel_uri) ? $target->depotpath."/$rel_uri" : $target->depotpath;
     if (my $err = $@) {
-	print loc("Unable to complete initial sync: %1", $err);
+	$logger->info(loc("Unable to complete initial sync: %1", $err));
 	die loc("Run svk sync %1, and run the %2 command again.\n", $depotpath, lc((ref($self) =~ m/::([^:]*)$/)[0]));
     }
 
@@ -818,7 +858,7 @@ sub brief_usage {
     local $/=undef;
     my $buf = <$podfh>;
     if($buf =~ /^=head1\s+NAME\s*SVK::Command::(\w+ - .+)$/m) {
-	print "   ",loc(lcfirst($1)),"\n";
+	$logger->info( "   ",loc(lcfirst($1)),"\n");
     }
     close $podfh;
 }
@@ -871,15 +911,15 @@ sub usage {
                 my $spaces = $3;
                 my $loc = $1 . loc($2 . ($4||'')) . $5;
                 $loc =~ s/: /$spaces: / if $spaces;
-                print $loc, "\n";
+                $logger->info( $loc, "\n");
             }
-            print "\n";
+            $logger->info( "\n");
 	}
         elsif ($line =~ /^(\s+)(\w+ - .*)$/) {
-            print $1, loc($2), "\n\n";
+            $logger->info( $1, loc($2), "\n\n");
         }
         elsif (length $line) {
-            print loc($line), "\n\n";
+            $logger->info( loc($line), "\n\n");
 	}
     }
 }
@@ -928,7 +968,7 @@ sub msg_handler {
     my ($self, $err, $msg) = @_;
     $self->add_handler
 	($err, sub {
-	     print $_[0]->expanded_message."\n".($msg ? "$msg\n" : '');
+	     $logger->info( $_[0]->expanded_message."\n".($msg ? "$msg\n" : ''));
 	 });
 }
 
@@ -1033,6 +1073,10 @@ svk use the default.
 		      );
     }
     else {
+        if ($ENV{'SVKBATCHMODE'}) {
+            die(loc("This command needs to be run interactively\n"));
+        }
+
 	$prompt = loc ("Enter a depot path to %1 into (under // if no leading '/'): ",
 		       loc($action));
     }
@@ -1063,9 +1107,9 @@ Traverse C<$target> and and invoke C<$code> with each node.
 sub _run_code {
     my ($self, $target, $code, $level, $errs, $kind) = @_;
     eval { $code->( $target, $kind, $level ) };
-    if ($@) {
-	print $@;
-	push @$errs, "$@";
+    if (my $err = "$@") {
+	$logger->info( $err);
+	push @$errs, $err;
     }
 }
 
@@ -1078,7 +1122,7 @@ sub run_command_recursively {
         if $kind == $SVN::Node::dir
         && $self->{recursive}
         && ( !$self->{depth} || 0 < $self->{depth} );
-    print "\n" if $newline;
+    $logger->info( "\n") if $newline;
 }
 
 sub _descend_with {

@@ -56,6 +56,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Util qw( $SEP is_symlink mimetype_is_text to_native);
 
 sub options {
@@ -140,7 +141,7 @@ sub _do_add {
         $bin = ' - (bin)' if !mimetype_is_text( $newprop->{'svn:mime-type'} );
     }
 
-    print "$st   $report$bin\n";
+    $logger->info( "$st   $report$bin");
 }
 
 1;

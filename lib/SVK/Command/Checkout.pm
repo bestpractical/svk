@@ -57,6 +57,7 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP get_encoding abs_path_noexist catfile );
 use File::Path;
+use SVK::Logger;
 
 sub options {
     ($_[0]->SUPER::options,
@@ -207,6 +208,7 @@ sub _not_if_floating {
 
 package SVK::Command::Checkout::list;
 use base qw( SVK::Command::Checkout );
+use SVK::Logger;
 use SVK::I18N;
 
 sub parse_arg { undef }
@@ -217,15 +219,16 @@ sub run {
     my ($self) = @_;
     my $map = $self->{xd}{checkout}{hash};
     my $fmt = "%1s %-30s\t%-s\n";
-    printf $fmt, ' ', loc('Depot Path'), loc('Path');
-    print '=' x 72, "\n";
-    print sort(map sprintf($fmt, -e $_ ? ' ' : '?', $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map);
+    $logger->info(sprintf $fmt, ' ', loc('Depot Path'), loc('Path')); 
+     $logger->info('=' x 72, "\n");
+    $logger->info( sort(map sprintf($fmt, -e $_ ? ' ' : '?', $map->{$_}{depotpath}, $_), grep $map->{$_}{depotpath}, keys %$map));
     return;
 }
 
 package SVK::Command::Checkout::relocate;
 use base qw( SVK::Command::Checkout );
 use SVK::Util qw( get_anchor abs_path move_path splitdir $SEP );
+use SVK::Logger;
 use SVK::I18N;
 
 sub parse_arg {
@@ -275,13 +278,14 @@ sub run {
     $relocate->($hmap);
     $relocate->($self->{xd}{checkout}{sticky});
 
-    print loc("Checkout '%1' relocated to '%2'.\n", $path, $target);
+    $logger->info( loc("Checkout '%1' relocated to '%2'.\n", $path, $target));
 
     return;
 }
 
 package SVK::Command::Checkout::detach;
 use base qw( SVK::Command::Checkout );
+use SVK::Logger;
 use SVK::I18N;
 
 sub parse_arg {
@@ -307,7 +311,7 @@ sub run {
         foreach my $copath (sort @copath) {
             $checkout->store ($copath, {_remove_entry, $self->_schedule_empty},
                              {override_sticky_descendents => 1});
-            print loc("Checkout path '%1' detached.\n", $copath);
+            $logger->info( loc("Checkout path '%1' detached.\n", $copath));
         }
     }
 

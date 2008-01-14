@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
+use SVK::Test;
 BEGIN {
   -d '/proc' or
     eval { require BSD::Resource; } or
     plan( skip_all => "No /proc and no BSD::Resources" );
 }
-use SVK::Test;
 plan tests => 6;
 
 my $curr_mem = sub { -1 };

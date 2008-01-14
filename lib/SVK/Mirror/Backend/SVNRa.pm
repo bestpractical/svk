@@ -59,6 +59,7 @@ use SVK::Editor;
 use SVK::Mirror::Backend::SVNRaPipe;
 use SVK::Editor::MapRev;
 use SVK::Util 'IS_WIN32';
+use SVK::Logger;
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler SVK::Editor::Translate);
 
@@ -420,7 +421,7 @@ sub _find_rev_from_changeset {
 	      return $s_changeset <=> $changeset;
           } );
 
-    return $t->revision unless $result;
+    return $t->normalize->revision unless $result;
 
     return $result->revision;
 }
@@ -459,7 +460,7 @@ sub traverse_new_changesets {
     my $ra = $self->_new_ra;
     $to = $ra->get_latest_revnum() if $to == -1;
     return if $from > $to;
-    print "Retrieving log information from $from to $to\n";
+    $logger->info( "Retrieving log information from $from to $to");
     eval {
     $ra->get_log([''], $from, $to, 0,
 		  0, 1,

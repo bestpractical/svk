@@ -135,6 +135,7 @@ lib/SVK/Path.pm
 lib/SVK/Path/Checkout.pm
 lib/SVK/Path/Txn.pm
 lib/SVK/Path/View.pm
+lib/SVK/Project.pm
 lib/SVK/Resolve.pm
 lib/SVK/Resolve/AraxisMerge.pm
 lib/SVK/Resolve/Emacs.pm
@@ -210,6 +211,7 @@ t/07smerge-copy-outside.t
 t/07smerge-copy.t
 t/07smerge-copy2.t
 t/07smerge-cpdelete.t
+t/07smerge-cpreplace.t
 t/07smerge-delete.t
 t/07smerge-dir-replaced.t
 t/07smerge-external.t
@@ -289,7 +291,9 @@ t/75hook.t
 t/76ignore.t
 t/77floating.t
 t/api/mirror.t
+t/api/project.t
 t/api/root.t
+t/bm/basic.t
 t/copy-escape.t
 t/copy-replace.t
 t/diff/mixed-checkout.t

@@ -62,7 +62,17 @@ if (eval {
     my $level = { map { $_ => uc $_ } qw( debug info warn error fatal ) }
         ->{ lc $ENV{SVKLOGLEVEL} } || 'INFO';
 
-    my $conf = qq{
+    my $conf_file = $ENV{SVKLOGCONFFILE};
+    my $conf;
+    if ( defined($conf_file) and -e $conf_file ) {
+	my $fh;
+	open $fh, $conf_file or die $!;
+	local $/;
+	$conf = <$fh>;
+	close $fh;
+    }
+    #warn $conf unless $Log::Log4perl::Logger::INITIALIZED;
+    $conf ||= qq{
   log4perl.rootLogger=$level, Screen
   log4perl.appender.Screen = Log::Log4perl::Appender::Screen
   log4perl.appender.Screen.stderr = 0
