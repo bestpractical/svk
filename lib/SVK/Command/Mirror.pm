@@ -62,7 +62,7 @@ use constant narg => undef;
 sub options {
     ('l|list'  => 'list',
      'd|delete|detach'=> 'detach',
-     'b|bootstrap' => 'bootstrap',
+     'b|bootstrap=s' => 'bootstrap',
      'upgrade' => 'upgrade',
      'relocate'=> 'relocate',
      'unlock'=> 'unlock',
@@ -104,7 +104,17 @@ sub run {
         }
     );
 
-    $logger->info( loc("Mirror initialized.  Run svk sync %1 to start mirroring.\n", $target->report));
+    if ($self->{bootstrap}) {
+	my ($m, $mpath) = $target->is_mirrored;
+	die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+	die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
+
+	$logger->info( loc("Mirror initialized.\n"));
+	$m->bootstrap($self->{bootstrap}); # load from dumpfile
+	$logger->info( loc("Mirror path '%1' synced from dumpfile.\n", $target->depotpath));
+    } else {
+	$logger->info( loc("Mirror initialized.  Run svk sync %1 to start mirroring.\n", $target->report));
+    }
 
     return;
 }
@@ -154,13 +164,20 @@ use SVK::I18N;
 use constant narg => 2;
 
 sub run {
-    my ($self, $target, $dumpfile) = @_;
+    my ($self, $target, $uri, @options) = @_;
     my ($m, $mpath) = $target->is_mirrored;
 
+    die loc("No such dump file: %1.\n", $self->{bootstrap})
+	unless -f ($self->{bootstrap});
+
+    if (!$m) {
+	$self->SUPER::run($target,$uri, @options);
+	return;
+    }
     die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
     die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
 
-    $m->bootstrap($dumpfile); # load from dumpfile
+    $m->bootstrap($self->{bootstrap}); # load from dumpfile
     print loc("Mirror path '%1' synced from dumpfile.\n", $target->depotpath);
     return;
 }
@@ -355,6 +372,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  # You may also list the target part first:
  mirror DEPOTPATH [http|svn]://host/path
 
+ mirror --bootstrap=DUMPFILE DEPOTPATH [http|svn]://host/path 
  mirror --list [DEPOTNAME...]
  mirror --relocate DEPOTPATH [http|svn]://host/path 
  mirror --detach DEPOTPATH
@@ -365,6 +383,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 OPTIONS
 
+ -b [--bootstrap]       : mirror from a dump file
  -l [--list]            : list mirrored paths
  -d [--detach]          : mark a depotpath as no longer mirrored
  --relocate             : change the upstream URI for the mirrored depotpath
