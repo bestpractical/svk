@@ -3,9 +3,9 @@ use strict;
 use Test::More;
 use SVK::Test;
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
-plan tests => 4;
+plan tests => 7;
 
-my ($xd, $svk) = build_test('test', 'm2');
+my ($xd, $svk) = build_test('test', 'm2', 'm3');
 
 our $output;
 
@@ -26,7 +26,7 @@ is_output($svk, mirror => ['/m2/m', $uri],
           ["Mirror initialized.  Run svk sync /m2/m to start mirroring."]);
 $svk->sync('/m2/m');
 
-is_output($svk, mirror => ['--bootstrap', '//m', $dump],
+is_output($svk, mirror => ['--bootstrap='.$dump, '//m', $uri],
 	  ['Mirror path \'//m\' synced from dumpfile.']);
 
 # compare normal mirror result and bootstrap mirror result
@@ -42,8 +42,26 @@ $boot_mirror =~ s/UUID: .*//;
 $exp_mirror =~ s/\d{4}-\d{2}-\d{2}T[\d:.]+Z//;
 $boot_mirror =~ s/\d{4}-\d{2}-\d{2}T[\d:.]+Z//;
 
-is($boot_mirror, $exp_mirror); # do something with UUID, they should be different
+is($boot_mirror, $exp_mirror, 'UUID should be the same'); # do something with UUID, they should be identical
 
+# now try with mirror, sync in single bootstrap command
+
+is_output($svk, mirror => ['--bootstrap='.$dump, '/m3/m', $uri],
+          ["Mirror initialized.",
+	   "Mirror path '/m3/m' synced from dumpfile."]);
+
+# compare UUID
+
+my ($boot_mirror2);
+open my $boot2, '>', \$boot_mirror2;
+dump_all($xd->find_depot('m3') => $boot2);
+$boot_mirror2 =~ s/UUID: .*//;
+# remove first svn-date (initial mirro)
+# 2007-08-09T14:43:18.137165Z
+$boot_mirror2 =~ s/\d{4}-\d{2}-\d{2}T[\d:.]+Z//;
+
+is($boot_mirror, $boot_mirror2, 'UUID should be the same');
+is($exp_mirror, $boot_mirror2, 'UUID should be the same');
 
 sub dump_all {
     my ($depot, $output) = @_;
