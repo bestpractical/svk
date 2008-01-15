@@ -616,7 +616,12 @@ sub _mirror_changesets {
         }
         $ra = SVK::Mirror::Backend::SVNRaPipe->new( $ra, sub { shift @gen } );
     }
+    my $progress =
+      $self->mirror->{use_progress}
+      ? SVK::Notify->new->progress( { count => scalar @revs } )
+      : undef;
     my $pool = SVN::Pool->new_default;
+    my $i = 0;
     for (@revs) {
         $pool->clear;
         my ( $changeset, $metadata ) = @$_;
@@ -630,6 +635,7 @@ sub _mirror_changesets {
         }
         $self->sync_changeset( $changeset, $metadata, $ra, $extra_prop,
             $callback );
+        $progress->update( ++$i ) if $progress;
     }
     $self->_ra_finished($ra);
 }

@@ -457,10 +457,13 @@ sub run {
 
     $logger->info(loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1", $self->server_url) : ""));
 
+    $self->{use_progress} = 1 unless SVK::Test->can('is_output');
+
     $self->mirror_changesets($torev,
         sub {
             my ( $changeset, $rev ) = @_;
-            $logger->info("Committed revision $rev from revision $changeset.");
+            $logger->info("Committed revision $rev from revision $changeset.")
+                unless $self->{use_progress};
         }, $fake_last
     );
     die $@ if $@;
