@@ -90,6 +90,7 @@ requires(
     'Pod::Escapes'             => '0',       # in core since 5.9.3
     'Pod::Simple'              => '0',       # in core since 5.9.3
     'File::Spec'               => '3.19',    # in core since 5.9.3
+    'PerlIO::via::Bzip2'       => '0'
 );
 requires(
     'Date::Format'             => '',
