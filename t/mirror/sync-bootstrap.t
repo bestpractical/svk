@@ -11,7 +11,6 @@ our $output;
 
 my $tree = create_basic_tree($xd, '/test/');
 my $depot = $xd->find_depot('test');
-diag $depot->repospath;
 
 my $uri = uri($depot->repospath);
 
