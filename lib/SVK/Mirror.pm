@@ -236,9 +236,15 @@ sub detach {
 
 sub bootstrap {
     my ($self, $dumpfile) = @_;
+    # XXX make these all 'require' not 'use' and fail optionally
     use SVN::Dump;
+    use PerlIO::via::Bzip2;
+    use PerlIO::gzip;
+    open my $fh, '<', $dumpfile or die $!;
+    binmode($fh, ':via(Bzip2)') if $dumpfile =~ m/bz2/i;
+    binmode($fh, ':gzip')  if $dumpfile =~ m/gz/i;
 
-    my $dump = SVN::Dump->new( { file => $dumpfile } );
+    my $dump = SVN::Dump->new( { fh => $fh } );
     my $prefix = $self->path.'/';
 
     my $prev = undef;
