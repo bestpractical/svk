@@ -237,6 +237,8 @@ sub detach {
 sub bootstrap {
     my ($self, $dumpfile) = @_;
     # XXX make these all 'require' not 'use' and fail optionally
+    # XXX requires unreleased SVN::Dump that removes binmode() in ::reader
+    #     for compressed streams to work
     use SVN::Dump;
     use PerlIO::via::Bzip2;
     use PerlIO::gzip;
