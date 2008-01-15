@@ -279,7 +279,6 @@ sub bootstrap {
 		$prev = $rev if !$prev;
 		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
                 $progress->update($rev);
-                $progress->message( loc("Loaded revision %1", $rev) );
 	    }
 
 
