@@ -254,6 +254,8 @@ sub bootstrap {
     my $rev = 0;
     my $buf;
     my $header;
+    my $progress = SVK::Notify->new->progress( { count => 1024, ETA => 'linear' } );
+    $progress->target( $self->_backend->_new_ra->get_latest_revnum ) if $progress;
     while ( my $record = $dump->next_record() ) {
 	if ($record->type eq 'format' || $record->type eq 'uuid') {
 	    $header = $header.$record->as_string;
@@ -275,7 +277,9 @@ sub bootstrap {
 	    if ($rec->get_header('Revision-number')) {
 		$rev = $rec->get_header('Revision-number');
 		$prev = $rev if !$prev;
-		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rec->get_header('Revision-number')."\n");
+		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
+                $progress->update($rev);
+                $progress->message( loc("Loaded revision %1", $rev) );
 	    }
 
 

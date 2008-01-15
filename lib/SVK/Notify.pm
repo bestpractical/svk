@@ -209,5 +209,15 @@ sub flush_dir {
     $self->flush ($path, 1);
 }
 
+sub progress {
+    my $self = shift;
+    require Term::ProgressBar;
+    return if $self->{quiet};
+    my $progress = Term::ProgressBar->new(@_);
+    $progress->minor(0);
+    $progress->max_update_rate(1);
+    return $progress;
+
+}
 
 1;
