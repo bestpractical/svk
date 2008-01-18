@@ -1,9 +1,18 @@
 #!/usr/bin/perl -w
 use strict;
 use SVN::Hook;
+use SVN::Core;
+use SVN::Repos;
+use SVN::Fs;
 
 use Cwd 'abs_path';
 my $repospath = shift or die "repospath required.\n";
+$repospath = abs_path($repospath);
+
+my $repos = SVN::Repos::open($repospath) or die "Can't open repository: $@";
+
+my $fs = $repos->fs;
+$fs->change_rev_prop(0, 'svk:notify-commit' => '*');
 
 my $hooks = SVN::Hook->new({ repospath => $repospath});
 
