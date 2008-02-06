@@ -17,7 +17,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//MyProject', $uri);
 $svk->sync('//MyProject');
 
-$svk->cp(-m => 'branch Foo', '//MyProject/trunk', '//mirror/MyProject/branches/Foo');
+$svk->cp(-m => 'branch Foo', '//MyProject/trunk', '//MyProject/branches/Foo');
 
 my ($copath, $corpath) = get_copath('basic-trunk');
 
@@ -50,7 +50,7 @@ $svk->branch('--switch-to', 'feature/foo'); # switch to foo
 is_output_like ($svk, 'info', [],
     qr'Depot Path: //MyProject/branches/feature/foo', 'Switch to feature/foo branch');
 
-$svk->branch('--switch-to', '//MyProject/trunk'); # switch to trunk via //mirror/MyProject/trunk
+$svk->branch('--switch-to', '//MyProject/trunk'); # switch to trunk via //MyProject/trunk
 is_output_like ($svk, 'info', [],
     qr'Depot Path: //MyProject/branches/feature/foo', 'Switch to trunk');
 
