@@ -133,7 +133,7 @@ sub create_from_prop {
     
     for my $project_name (keys %projnames)  {
 	my %props = 
-	    map { $_ => '/mirror'.$allprops->{'svk:project:'.$project_name.':'.$_} }
+	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 		('path-trunk', 'path-branches', 'path-tags');
     
 	# only the current path matches one of the branches/trunk/tags, the project
@@ -198,11 +198,12 @@ sub _find_project_path {
 
     while (!$project_name) {
 	($mirror_path,$project_name) = # always assume the last entry the projectname
-	    $path =~ m{^(.*)/([\w\-_]+)$}; 
+	    $path =~ m{^(.*/)?([\w\-_]+)$}; 
 	return undef unless $project_name; # can' find any project_name
+	$mirror_path ||= '';
 
 	($trunk_path, $branch_path, $tag_path) = 
-	    map { $mirror_path."/".$project_name."/".$_ } ('trunk', 'branches', 'tags');
+	    map { $mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
 	# check trunk, branch, tag, these should be metadata-ed 
 	# we check if the structure of mirror is correct, otherwise go again
 	for my $_path ($trunk_path, $branch_path, $tag_path) {
