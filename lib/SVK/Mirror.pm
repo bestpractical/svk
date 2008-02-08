@@ -61,7 +61,7 @@ use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked));
+__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy));
 
 *repos = sub { Carp::cluck unless $_[0]->depot; shift->depot->repos };
 
