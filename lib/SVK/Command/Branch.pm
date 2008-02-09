@@ -237,18 +237,22 @@ sub parse_arg {
 }
 
 sub run {
-    my ($self, $target, $dst, $src) = @_;
+    my ($self, $target, $dst_path, $src_path) = @_;
 
     my $proj = $self->load_project($target);
 
-    my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
-    my $src_branch_path = $branch_path.'/'.$src.'/';
-    my $dst_branch_path = $branch_path.'/'.$dst.'/';
-    $src_branch_path = '/'.$proj->depot->depotname.$target->source->path
-	unless ($src);
+    my $depot_root = '/'.$proj->depot->depotname;
+    my $branch_path = $depot_root.'/'.$proj->branch_location;
+    my ($src_branch_path, $dst_branch_path) = ($src_path, $dst_path);
+    $src_branch_path = $branch_path.'/'.$src_path.'/'
+	unless $src_path =~ m#^$depot_root/#;
+    $dst_branch_path = $branch_path.'/'.$dst_path.'/'
+	unless $dst_path =~ m#^$depot_root/#;
+    $src_branch_path = $depot_root.$target->source->path
+	unless ($src_path);
 
-    $src = $self->arg_uri_maybe($src_branch_path);
-    $dst = $self->arg_depotpath($dst_branch_path);
+    my $src = $self->arg_co_maybe($src_branch_path);
+    my $dst = $self->arg_depotpath($dst_branch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or $SVN::Node::dir == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
@@ -259,7 +263,7 @@ sub run {
 	# branch first, then sm -I
 	my $which_rev_we_branch = ($src->copy_ancestors)[0]->[1];
 	$self->{rev} = $which_rev_we_branch;
-	$src = $self->arg_uri_maybe('/'.$proj->depot->depotname.'/'.$proj->trunk);
+	$src = $self->arg_uri_maybe($depot_root.'/'.$proj->trunk);
 	$self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
 	local *handle_direct_item = sub {
 	    my $self = shift;
