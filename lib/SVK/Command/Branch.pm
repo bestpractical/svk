@@ -228,30 +228,25 @@ sub parse_arg {
     die loc ("Copy destination can't be URI.\n")
 	if is_uri ($dst);
 
-    my $src = pop(@arg);
-    $src ||= '';
-    die loc ("Copy source can't be URI.\n")
-	if is_uri ($src);
+    for (@arg) {
+	die loc ("Copy source can't be URI.\n")
+	    if is_uri ($_);
+    }
+    push @arg, '' unless @arg;
 
-    return ($self->arg_co_maybe (''), $dst, $src);
+    return ($self->arg_co_maybe (''), $dst, @arg);
 }
 
 sub run {
-    my ($self, $target, $dst_path, $src_path) = @_;
+    my ($self, $target, $dst_path, @src_paths) = @_;
 
     my $proj = $self->load_project($target);
 
     my $depot_root = '/'.$proj->depot->depotname;
     my $branch_path = $depot_root.'/'.$proj->branch_location;
-    my ($src_branch_path, $dst_branch_path) = ($src_path, $dst_path);
-    $src_branch_path = $branch_path.'/'.$src_path.'/'
-	unless $src_path =~ m#^$depot_root/#;
+    my $dst_branch_path = $dst_path;
     $dst_branch_path = $branch_path.'/'.$dst_path.'/'
 	unless $dst_path =~ m#^$depot_root/#;
-    $src_branch_path = $depot_root.$target->source->path
-	unless ($src_path);
-
-    my $src = $self->arg_co_maybe($src_branch_path);
     my $dst = $self->arg_depotpath($dst_branch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or $SVN::Node::dir == $dst->root->check_path($dst->path)
@@ -259,31 +254,40 @@ sub run {
 	    $branch_path, $self->{local} ? '(in local)' : '');
 
     $self->{parent} = 1;
-    if ( !$dst->same_source($src) ) {
-	# branch first, then sm -I
-	my $which_rev_we_branch = ($src->copy_ancestors)[0]->[1];
-	$self->{rev} = $which_rev_we_branch;
-	$src = $self->arg_uri_maybe($depot_root.'/'.$proj->trunk);
-	$self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
-	local *handle_direct_item = sub {
-	    my $self = shift;
-	    $self->SVK::Command::Copy::handle_direct_item(@_);
-	};
-	$self->SVK::Command::Copy::run($src, $dst);
-	# now we do sm -I
-	$src = $self->arg_uri_maybe($src_branch_path);
-	$self->{message} = ''; # incremental does not need message
-	# w/o reassign $dst = ..., we will have changes 'XXX - skipped'
-	$dst->refresh_revision;
-	$dst = $self->arg_depotpath($dst_branch_path);
-	$self->{incremental} = 1;
-	$self->SVK::Command::Smerge::run($src, $dst);
-	$self->{message} = "- Delete branch $src_branch_path, because it move to $dst_branch_path";
-	$self->SVK::Command::Delete::run($src, $target);
-	return;
+    for my $src_path (@src_paths) {
+	my $src_branch_path = $src_path;
+	$src_branch_path = $branch_path.'/'.$src_path.'/'
+	    unless $src_path =~ m#^$depot_root/#;
+	$src_branch_path = $depot_root.$target->source->path
+	    unless ($src_path);
+	my $src = $self->arg_co_maybe($src_branch_path);
+
+	if ( !$dst->same_source($src) ) {
+	    # branch first, then sm -I
+	    my $which_rev_we_branch = ($src->copy_ancestors)[0]->[1];
+	    $self->{rev} = $which_rev_we_branch;
+	    $src = $self->arg_uri_maybe($depot_root.'/'.$proj->trunk);
+	    $self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
+	    local *handle_direct_item = sub {
+		my $self = shift;
+		$self->SVK::Command::Copy::handle_direct_item(@_);
+	    };
+	    $self->SVK::Command::Copy::run($src, $dst);
+	    # now we do sm -I
+	    $src = $self->arg_uri_maybe($src_branch_path);
+	    $self->{message} = ''; # incremental does not need message
+	    # w/o reassign $dst = ..., we will have changes 'XXX - skipped'
+	    $dst->refresh_revision;
+	    $dst = $self->arg_depotpath($dst_branch_path);
+	    $self->{incremental} = 1;
+	    $self->SVK::Command::Smerge::run($src, $dst);
+	    $self->{message} = "- Delete branch $src_branch_path, because it move to $dst_branch_path";
+	    $self->SVK::Command::Delete::run($src, $target);
+	} else {
+	    $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
+	    my $ret = $self->SVK::Command::Move::run($src, $dst);
+	}
     }
-    $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
-    my $ret = $self->SVK::Command::Move::run($src, $dst);
     return;
 }
 

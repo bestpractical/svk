@@ -113,7 +113,12 @@ is_output ($svk, 'branch', ['--move', 'feature/bar', 'feature/mar', 'hasbugs/'],
      "Merge back committed as revision 14.",
      "Syncing $uri",
      "Retrieving log information from 14 to 14",
-     "Committed revision 18 from revision 14."]);
+     "Committed revision 18 from revision 14.",
+     "Merging back to mirror source $uri.",
+     "Merge back committed as revision 15.",
+     "Syncing $uri",
+     "Retrieving log information from 15 to 15",
+     "Committed revision 19 from revision 15."]);
 
 is_output ($svk, 'branch', ['--list'],
     ['feature/remotebar','feature/remotefoo', 'hasbugs/bar','hasbugs/mar'],
