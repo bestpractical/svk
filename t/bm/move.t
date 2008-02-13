@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 16;
+use Test::More tests => 18;
 use SVK::Test;
 use File::Path;
 
@@ -105,4 +105,16 @@ is_output ($svk, 'branch', ['--move', '//local/MyProject/localbar', 'feature/rem
 
 is_output ($svk, 'branch', ['--list'],
     ['feature/bar','feature/mar','feature/remotebar','feature/remotefoo'],
+    'Move localbar to remotefoo, cross depot move w/o switch to local');
+
+$svk->mkdir('//mirror/MyProject/branches/hasbugs', -m => '- bugs dir');
+is_output ($svk, 'branch', ['--move', 'feature/bar', 'feature/mar', 'hasbugs/'],
+    ["Merging back to mirror source $uri.",
+     "Merge back committed as revision 14.",
+     "Syncing $uri",
+     "Retrieving log information from 14 to 14",
+     "Committed revision 18 from revision 14."]);
+
+is_output ($svk, 'branch', ['--list'],
+    ['feature/remotebar','feature/remotefoo', 'hasbugs/bar','hasbugs/mar'],
     'Move localbar to remotefoo, cross depot move w/o switch to local');
