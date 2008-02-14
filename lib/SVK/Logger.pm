@@ -123,8 +123,8 @@ $current_level = $level->{lc $ENV{SVKLOGLEVEL}} || $level->{info};
 
 my $ignore  = sub { return };
 my $warn = sub {
-    $_[1] .= "\n" unless substr( $_[1], -1, 1 ) eq "\n";
     print $_[1];
+    print "\n" unless substr( $_[1], -1, 1 ) eq "\n";
 };
 my $die     = sub { shift; die $_[0]."\n"; };
 my $carp    = sub { shift; goto \&Carp::carp };
