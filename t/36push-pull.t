@@ -202,7 +202,7 @@ is_output ($svk, 'push', [],
 	   ['Auto-merging (0, 25) /l2 to /m (base /m:16).',
 	    '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
 	    "Merging back to mirror source $uri/A.",
-	    qr"Transaction is out of date: Out of date: '/A' in transaction '.*'",
+	    qr"Transaction is out of date: .+ '/A' .+",
 	    'Please sync mirrored path /m first.']);
 
 # syncing
@@ -253,7 +253,7 @@ is_output($svk, 'push', [],
 	  ['Auto-merging (0, 29) /l2 to /m (base /m:27).',
 	   '===> Auto-merging (0, 18) /l2 to /m (base /m:16).',
 	   "Merging back to mirror source $uri/A.",
-	    qr"Transaction is out of date: Out of date: '/A' in transaction '.*'",
+	    qr"Transaction is out of date: .+ '/A' .+",
 	    'Please sync mirrored path /m first.']);
 # syncing
 $svk->sync('//m');

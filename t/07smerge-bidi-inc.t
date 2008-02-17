@@ -115,7 +115,7 @@ is_output ($svk, 'push', [], [
         "Auto-merging (10, 12) /l to /m (base /l:10).",
         "===> Auto-merging (10, 12) /l to /m (base /l:10).",
         "Merging back to mirror source $uri/A.",
-	qr"Transaction is out of date: Out of date: '/A' in transaction '.*'",
+	qr"Transaction is out of date: .+ '/A' .+",
 	 'Please sync mirrored path /m first.']);
 
 $svk->sync('//m');
