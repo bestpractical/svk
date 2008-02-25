@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use SVK::Test;
 use File::Path;
 
@@ -62,5 +62,11 @@ is_output ($svk, 'info',['//mirror/MyProject/branches/feature/foobar'],
      "Merged From: /mirror/MyProject/branches/feature/bar, Rev. 9",
      "Merged From: /mirror/MyProject/trunk, Rev. 6",'']);
 
- warn $output;
-
+is_output ($svk, 'branch',
+    ['--create', 'feature/footrunk', '--from', 'trunk'],
+    ["Merging back to mirror source $uri.",
+     "Merge back committed as revision 10.",
+     "Syncing $uri",
+     'Retrieving log information from 10 to 10',
+     'Committed revision 13 from revision 10.',
+     "Project branch created: feature/footrunk"]);
