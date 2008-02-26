@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 20;
+use Test::More tests => 21;
 use SVK::Test;
 use File::Path;
 
@@ -152,6 +152,35 @@ is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo2', '.'],
      "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
      qr'New merge ticket: [\w\d-]+:/branches/merge/foo2:22',
      qr'New merge ticket: [\w\d-]+:/trunk:20']);
+my $patch1 = [
+	    '=== B/S/Q/qu',
+	    '==================================================================',
+	    "--- B/S/Q/qu\t(revision 19)",
+	    "+++ B/S/Q/qu\t(patch - level 1)",
+	    '@@ -5,3 +5,5 @@',
+	    " append CBA on local branch foo",
+	    " ",
+	    " append CBA on local branch foo",
+	    "+",
+	    '+append CBA on foo2'];
+is_output ($svk, 'branch', ['--merge', 'merge/foo2', '.', '-P', '-'], 
+    ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
+    "Patching locally against mirror source $uri.",
+    'U   B/S/Q/qu',
+    '==== Patch <-> level 1',
+    qr'Source: [\w\d-]+:/branches/merge/foo2:22',
+    "        ($uri)",
+    qr'Target: [\w\d-]+:/branches/merge/foo:19',
+    "        ($uri)",
+    "Log:",
+    "- Merge //mirror/MyProject/branches/merge/foo2 to //mirror/MyProject/branches/.",
+    @$patch1,
+    '',
+    '==== BEGIN SVK PATCH BLOCK ====',
+    qr'Version: svk .*',
+    '',
+    \'...',
+    ]);
 is_output ($svk, 'branch', ['--merge', 'merge/foo2', '.'], 
     ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
      "Merging back to mirror source $uri.", 'U   B/S/Q/qu',

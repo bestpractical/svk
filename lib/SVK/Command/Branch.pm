@@ -63,10 +63,11 @@ use constant narg => undef;
 sub options {
     ('l|list'           => 'list',
      'C|check-only'     => 'check_only',
+     'P|patch=s'        => 'patch',
      'create'           => 'create',
      'all'              => 'all',
      'local'            => 'local',
-     'from=s'             => 'from',
+     'from=s'           => 'from',
      'merge'            => 'merge',
      'move'             => 'move',
      'remove'           => 'remove',
