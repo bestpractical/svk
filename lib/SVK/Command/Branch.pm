@@ -189,6 +189,8 @@ sub run {
 	'/'.$branch_path.'/';
 
     my $src = $self->arg_uri_maybe($src_path);
+    die loc("Invalid --from argument") if
+	$SVN::Node::none == $src->root->check_path($src->path);
     my $dst = $self->arg_uri_maybe($newbranch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
