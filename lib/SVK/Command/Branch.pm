@@ -178,6 +178,7 @@ sub run {
 
     my $proj = $self->load_project($target);
 
+    delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = '/'.$proj->depot->depotname.'/'.
 	( $self->{from} ?
 	    $proj->branch_location .'/'. $self->{from}.'/'
