@@ -207,6 +207,8 @@ sub find_merge_base {
     my ($basepath, $baserev, $baseentry);
     my ($merge_base, $merge_baserev) = $self->{merge_base} ?
 	split(/:/, $self->{merge_base}) : ('', undef);
+    die loc("Invalid merge base:'%1'\n", $self->{merge_base} )
+	if $merge_baserev && $merge_baserev !~ /^\d+$/;
     ($merge_base, $merge_baserev) = (undef, $merge_base)
         if $merge_base =~ /^\d+$/;
 

@@ -7,7 +7,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test('test');
 our $output;
-my ($copath, $corpath) = get_copath ('smerge-copy');
+my ($copath, $corpath) = get_copath ('smerge-argument');
 $svk->mkdir ('-pm', 'trunk', '/test/trunk');
 $svk->mkdir ('-pm', 'some other local', '//local');
 my $tree = create_basic_tree ($xd, '/test/trunk');
@@ -22,12 +22,6 @@ $svk->cp ('-m', 'branch', '//foo/bar/trunk' => '//local/blah');
 
 $svk->mkdir (-m => 'something bzz', '//local/blah/A/bzz');
 
+# invalid base format such as "file:///dev/shm/svk/test_repos/trunk:5"
 is_output($svk, 'sm', [-m => 'local to trunk', -b => $uri.':5', '//local/blah', '//foo/bar/trunk'],
-          ['Auto-merging (0, 7) /local/blah to /foo/bar/trunk (base /foo/bar/trunk:5).',
-           "Merging back to mirror source $uri.",
-           'A   A/bzz',
-           qr'New merge ticket: .*:/local/blah:7',
-           'Merge back committed as revision 4.',
-           qr'Syncing .*',
-           'Retrieving log information from 4 to 4',
-           'Committed revision 8 from revision 4.']);
+          ["Invalid merge base:'$uri:5'"])
