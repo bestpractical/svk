@@ -615,12 +615,13 @@ sub _sync_edge_changeset {
     }
 
     my ($entry, $old_path, $old_rev) = $self->_find_edge_entry( $paths, $translate_from || $self->source_path ) or return;
+    my ($copyfrom_path, $copyfrom_rev) = ($entry->copyfrom_path, $entry->copyfrom_rev);
 
     $self->_mirror_changesets( $revdata->[0], $callback, 0, $old_path );
 
     my $ra = $self->_new_ra;
-    $ra->reparent( $self->source_root . $entry->copyfrom_path );
 
+    $ra->reparent( $self->source_root . $copyfrom_path );
     $self->sync_changeset
         ( $revdata->[0], $revdata->[1], {},
           $callback,
@@ -632,7 +633,7 @@ sub _sync_edge_changeset {
                   ( { cb_prop => sub { return $_[0] !~ m/^svn:(wc|entry)/; },
                       _editor => [ $editor ] } );
               my $report = $ra->do_diff($revdata->[0], '', 1, 1, $self->source_root.$self->source_path, $editor);
-              $report->set_path('', $entry->copyfrom_rev, 0, undef );
+              $report->set_path('', $copyfrom_rev, 0, undef );
               $report->finish_report;
               if ( %{$txn->root->paths_changed} ) {
                   $editor->master_editor->close_edit;
