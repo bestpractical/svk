@@ -220,15 +220,13 @@ sub find_merge_base {
 	if $merge_base && $merge_baserev;
 
     if ($merge_base) {
-        my %allowed = map { ($_ =~ /:(.*)$/) => $_ }
-            grep exists $srcinfo->{$_} && exists $dstinfo->{$_},
-            keys %{ { %$srcinfo, %$dstinfo } };
+        my %allowed = map { ($_ =~ /:(.*)$/) => $_ } sort keys %$joint_info;
 
         unless ($allowed{$merge_base}) {
 	    die loc("base '%1' is not allowed without revision specification.\nUse one of the next or provide revision:%2\n",
                 $merge_base, (join '', map "\n    $_", sort keys %allowed) );
         }
-	my $rev = min ($srcinfo->{$allowed{$merge_base}}, $dstinfo->{$allowed{$merge_base}});
+	my $rev = $joint_info->{$allowed{$merge_base}};
 	return ($src->as_depotpath->new
 		(path => $merge_base, revision => $rev, targets => undef),
 		$rev);
@@ -257,7 +255,7 @@ sub find_merge_base {
             if ($path eq $dst->path &&
                 $src->is_merged_from($dst->mclone(revision => $rev))) {
 
-                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
+                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo2, $basepath, $baserev );
                 # this takes precedence than other potential base or
                 # rebasable base that is on src.
                 if (my $rebased = $self->_rebase2( $src, $dst, $base)) {
@@ -265,7 +263,7 @@ sub find_merge_base {
                 }
             }
             elsif ($path eq $src->path && $dst->is_merged_from($src->mclone(revision => $rev))) {
-                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
+                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo2, $basepath, $baserev );
                 $base = $self->_rebase2( $dst, $src, $base) || $base;
                 @preempt_result = ($base, $from);
             }
@@ -297,12 +295,12 @@ sub find_merge_base {
 		if $minfo->subset_of ($srcinfo) && $minfo->subset_of ($dstinfo);
 	}
     }
-    return $self->_mk_base_and_from( $src, $dstinfo, $basepath, $baserev );
+    return $self->_mk_base_and_from( $src, $dstinfo2, $basepath, $baserev );
 }
 
 sub _mk_base_and_from {
     my $self = shift;
-    my ($src, $dstinfo, $basepath, $baserev) = @_;
+    my ($src, $dstinfo2, $basepath, $baserev) = @_;
 
     my $base = $src->as_depotpath->new
 	(path => $basepath, revision => $baserev, targets => undef);
@@ -311,7 +309,8 @@ sub _mk_base_and_from {
 
     # When /A:1 is copied to /B:2, then removed, /B:2 copied to /A:5
     # the fromrev shouldn't be /A:1, as it confuses the copy detection during merge.
-    my $from = $dstinfo->{$src->depot->repos->fs->get_uuid.':'.$src->path};
+    my $from = $dstinfo2->{$src->universal->ukey};
+    $from = $from->local($src->depot)->revision if $from;
     if ($from) {
 	my ($toroot, $fromroot) = $src->nearest_copy;
 	$from = 0 if $toroot && $from < $toroot->revision_root_revision;
