@@ -61,7 +61,7 @@ use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy));
+__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy _rev_cache));
 
 *repos = sub { Carp::cluck unless $_[0]->depot; shift->depot->repos };
 
@@ -347,7 +347,9 @@ sub spec {
 
 sub find_local_rev {
     my ($self, $changeset, $uuid) = @_;
-    $self->find_rev_from_changeset($changeset, $uuid);
+    $self->_rev_cache({}) unless $self->_rev_cache;
+    $self->_rev_cache->{$uuid || ''}{$changeset}
+        ||= $self->find_rev_from_changeset($changeset, $uuid);
 }
 
 sub find_remote_rev {
