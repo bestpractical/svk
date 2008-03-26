@@ -181,12 +181,27 @@ sub union {
     return $new;
 }
 
+sub intersect {
+    my ($self, $other) = @_;
+    # bring merge history up to date as from source
+    my $new = SVK::Merge::Info->new;
+    for ( keys %{ { %$self, %$other } } ) {
+        if ( $self->{$_} && $other->{$_} ) {
+            $new->{$_} = $self->{$_}{rev} < $other->{$_}{rev}
+                ? $self->{$_}
+                : $other->{$_};
+        }
+    }
+    return $new;
+}
+
 =item resolve
 
 =cut
 
 sub resolve {
     my ( $self, $depot ) = @_;
+
     my $uuid = $depot->repos->fs->get_uuid;
     return {
         map {
