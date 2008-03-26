@@ -203,6 +203,8 @@ sub find_merge_base {
     my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
+    my ($srcinfo2, $dstinfo2) = map {$self->find_merge_sources2($_)} ($src, $dst);
+    my $joint_info = $srcinfo2->intersect($dstinfo2)->resolve($src->depot);
     my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     my ($merge_base, $merge_baserev) = $self->{merge_base} ?
@@ -237,10 +239,9 @@ sub find_merge_base {
 
     my @preempt_result;
 
-    for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
-	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
+    for (sort keys %{$joint_info}) {
 	my ($path) = m/:(.*)$/;
-	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
+	my $rev = $joint_info->{$_};
 
 	# when the base is one of src or dst, make sure the base is
 	# still the same node (not removed and replaced)
@@ -372,6 +373,27 @@ sub find_merge_sources {
     }
 
     return $minfo;
+}
+
+sub find_merge_sources2 {
+    my ($self, $target) = @_;
+    my $pool = SVN::Pool->new_default;
+    my $info = $self->merge_info ($target->new);
+
+    $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath. 1)->{revision})
+	if $target->isa('SVK::Path::Checkout');
+    $info->add_target($target);
+
+    return $info if !$target->root->check_path($target->path);
+
+    for (reverse $target->copy_ancestors) {
+	my ($path, $rev) = @$_;
+        # XXX: short circuit it when we have the ancestor already.
+        my $t = $target->mclone( targets => undef, path => $path, revision => $rev)->universal;
+        $info->add_target( $t )
+            if !$info->{ $t->ukey } || $info->{ $t->ukey }->rev < $t->rev;
+    }
+    return $info;
 }
 
 sub _get_new_ticket {
