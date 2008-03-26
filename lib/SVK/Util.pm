@@ -193,7 +193,7 @@ sub get_prompt { {
     my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
     my $erase;
-    if (!IS_WIN32) {
+    if (!IS_WIN32 && -t) {
        my %keys = Term::ReadKey::GetControlChars();
        $erase = $keys{ERASE};
     }
