@@ -205,7 +205,6 @@ sub find_merge_base {
     my $yrev = $fs->youngest_rev;
     my ($srcinfo2, $dstinfo2) = map {$self->find_merge_sources2($_)} ($src, $dst);
     my $joint_info = $srcinfo2->intersect($dstinfo2)->resolve($src->depot);
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
     my ($basepath, $baserev, $baseentry);
     my ($merge_base, $merge_baserev) = $self->{merge_base} ?
 	split(/:/, $self->{merge_base}) : ('', undef);
@@ -283,6 +282,8 @@ sub find_merge_base {
 
     # XXX: document this, cf t/07smerge-foreign.t
     if ($basepath ne $src->path && $basepath ne $dst->path) {
+        my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
+
 	my ($fromrev, $torev) = ($srcinfo->{$baseentry}, $dstinfo->{$baseentry});
 	($fromrev, $torev) = ($torev, $fromrev) if $torev < $fromrev;
 	if (my ($mrev, $merge) =
