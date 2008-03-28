@@ -83,7 +83,7 @@ $svk->branch ('--create', 'smerge/bar', '--switch-to');
 overwrite_file ('B/S/Q/qu', "first line in qu\nblah\n2nd line in qu\n");
 $svk->commit ('-m', 'commit message here (r13)','');
 
-$svk->switch ('//mirror/MyProject/trunk');
+$svk->branch ('--switch', 'trunk');
 
 $svk->branch ('--create', 'smerge/foo', '--switch-to');
 append_file ('B/S/Q/qu', "\nappend CBA on local branch foo\n");
