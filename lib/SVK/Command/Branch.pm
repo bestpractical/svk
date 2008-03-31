@@ -69,6 +69,7 @@ sub options {
      'local'            => 'local',
      'from=s'           => 'from',
      'merge'            => 'merge',
+     'push'             => 'push',
      'move'             => 'move',
      'remove'           => 'remove',
      'switch-to'        => 'switch',
@@ -413,6 +414,10 @@ sub run {
     }
     return;
 }
+
+package SVK::Command::Branch::push;
+use base qw( SVK::Command::Push SVK::Command::Branch);
+use SVK::I18N;
 
 package SVK::Command::Branch::switch;
 use base qw( SVK::Command::Switch SVK::Command::Branch );

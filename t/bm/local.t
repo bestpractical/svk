@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 5;
+plan tests => 6;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -45,10 +45,23 @@ append_file ('B/S/Q/qu', "\nappend CBA on local branch localfoo\n");
 $svk->commit ('-m', 'commit message','');
 
 my $trunk = '/mirror/MyProject/trunk';
-TODO: {
-local $TODO = '--push need to be implemented';
-is_output ($svk, 'branch', ['--push', '-C', 'smerge/foo', 'trunk'],
-    ["Auto-merging (0, 10) /local/MyProject/localfoo to $trunk (base $trunk:12).",
-     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
-     qr'New merge ticket: [\w\d-]+:/localfoo:9']);
-}
+is_output ($svk, 'branch', ['--push', '-C'],
+    ["Auto-merging (0, 10) /local/MyProject/localfoo to $trunk (base $trunk:6).",
+     "===> Auto-merging (0, 9) /local/MyProject/localfoo to $trunk (base $trunk:6).",
+     "Empty merge.",
+     "===> Auto-merging (9, 10) /local/MyProject/localfoo to $trunk (base $trunk:6).",
+     'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/local/MyProject/localfoo:10']);
+is_output ($svk, 'branch', ['--push'],
+    ["Auto-merging (0, 10) /local/MyProject/localfoo to $trunk (base $trunk:6).",
+     "===> Auto-merging (0, 9) /local/MyProject/localfoo to $trunk (base $trunk:6).",
+     "Merging back to mirror source $uri.",
+     "Empty merge.",
+     "===> Auto-merging (9, 10) /local/MyProject/localfoo to $trunk (base $trunk:6).",
+     "Merging back to mirror source $uri.",
+     'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/local/MyProject/localfoo:10',
+     "Merge back committed as revision 7.",
+     "Syncing $uri",
+     "Retrieving log information from 7 to 7",
+     "Committed revision 11 from revision 7."]);
