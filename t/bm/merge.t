@@ -195,18 +195,14 @@ $svk->branch ('--create', 'merge/foo3', '--switch-to');
 append_file ('B/S/Q/qu', "\nappend CBA on foo3\n");
 $svk->commit ('-m', 'commit message here (r26)','');
 
+$svk->push('-C');
+my ($pushOutputs) = $output;
+
 $svk->branch ('--switch', 'trunk');
 is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo3', '.'], 
     ["Auto-merging (0, 26) $branch_foo3 to $trunk (base $trunk:21).",
      "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
      qr'New merge ticket: [\w\d-]+:/branches/merge/foo3:25']);
-TODO: {
-local $TODO = 'in push, --from should specify branch(tag) name instead of depotpath';
+
 is_output ($svk, 'branch', ['--push', '-C', '--from', 'merge/foo3'],
-    ["Auto-merging (0, 26) $branch_foo3 to $trunk (base $trunk:21).",
-     "===> Auto-merging (0, 25) $branch_foo3 to $trunk (base $trunk:21).",
-     "Empty merge.",
-     "===> Auto-merging (25, 26) $branch_foo3 to $trunk (base $trunk:21).",
-     'U   B/S/Q/qu',
-     qr'New merge ticket: [\w\d-]+:/branches/merge/foo3:25']);
- }
+    [(split /\n/, $pushOutputs)]);

@@ -419,6 +419,28 @@ package SVK::Command::Branch::push;
 use base qw( SVK::Command::Push SVK::Command::Branch);
 use SVK::I18N;
 
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    if ($self->{from}) {
+	my $target = $self->arg_co_maybe ('');
+	$target = $target->source if $target->isa('SVK::Path::Checkout');
+	my $proj = $self->load_project($target);
+	my $depot_root = '/'.$proj->depot->depotname;
+	my $branch_path = $depot_root.'/'.$proj->branch_location;
+	my $from_path = $branch_path.'/'.$self->{from};
+	if ($SVN::Node::dir != $target->root->check_path($from_path)) {
+	    my $tag_path = $depot_root.'/'.$proj->tag_location;
+	    $from_path = $tag_path.'/'.$self->{from};
+	    die loc("No such branch/tag exists: %1\n", $self->{from})
+		if ($SVN::Node::dir != $target->root->check_path($from_path)) ;
+	}
+	$self->{from_path} = $from_path;
+    }
+
+    $self->SUPER::parse_arg (@arg);
+}
+
 package SVK::Command::Branch::switch;
 use base qw( SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
