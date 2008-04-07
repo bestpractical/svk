@@ -38,6 +38,10 @@ append_file('A/newlevel/qu', "fscked\n");
 $svk->cp('//trunk/B/fe' => 'A/newlevel');
 $svk->ci(-m => 'move things around on local');
 
+# XXX: THIS IS TOTALLY WRONG
+# this merge should be a replace of A/newlevel on trunk with A/Q
+# and A/newlevel/qu should be added as well as other things from A/Q
+# //RUZ
 is_output($svk, 'sm', [-Cf => '//local'],
 	  ['Auto-merging (0, 8) /local to /trunk (base /trunk:5).',
 	   '    A/newlevel/qu - skipped',

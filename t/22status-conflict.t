@@ -33,7 +33,10 @@ is_output($svk, 'st', [],
 
 is_output($svk, 'up', [],
 	  ['Syncing //(/) in '.__($corpath).' to 1.',
-	   '    A - skipped']);
+	   '    A - skipped',
+	   '    A/foo - skipped',
+	   '    A/deep - skipped',
+]);
 
 is_output($svk, 'st', ['A'],
 	  [map {__($_) }

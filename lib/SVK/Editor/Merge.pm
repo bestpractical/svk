@@ -254,6 +254,11 @@ sub open_root {
 
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
+    unless ( defined $pdir ) {
+        ++$self->{skipped};
+        $self->{notify}->flush ($path);
+        return undef;
+    }
     return unless defined $pdir;
     my $pool = pop @arg;
     # a replaced node shouldn't be checked with cb_exist
@@ -613,7 +618,11 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
-    return undef unless defined $pdir;
+    unless ( defined $pdir ) {
+        ++$self->{skipped};
+        $self->{notify}->flush ($path);
+        return undef;
+    }
     my $pool = pop @arg;
     my $touched = $self->{notify}->node_status($path);
     # This comes from R (D+A) where the D has conflict

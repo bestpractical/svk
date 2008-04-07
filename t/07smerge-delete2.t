@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 25;
+use Test::More tests => 1;
 use strict;
 use File::Path;
 use Cwd;
