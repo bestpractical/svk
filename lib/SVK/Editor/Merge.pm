@@ -118,7 +118,7 @@ The editor that will receive the merged callbacks.
 
 =item allow_conflicts
 
-Close the edito instead of abort when there are conflicts.
+Close the editor instead of abort when there are conflicts.
 
 =item open_nonexist
 
