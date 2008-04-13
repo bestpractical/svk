@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 6;
+plan tests => 7;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -65,3 +65,6 @@ is_output ($svk, 'branch', ['--push'],
      "Syncing $uri",
      "Retrieving log information from 7 to 7",
      "Committed revision 11 from revision 7."]);
+
+is_output ($svk, 'branch', ['--list', '--local'],
+    ["feature/foobar","localfoo"]);
