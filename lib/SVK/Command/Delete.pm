@@ -96,6 +96,7 @@ sub do_delete_direct {
 
     $self->get_commit_message;
     $target->normalize;
+    $target->refresh_revision;
     my ( $anchor, $editor ) = $self->get_dynamic_editor($target);
     for (@args) {
         $editor->delete_entry( abs2rel( $_->path, $anchor => undef, '/' ),
