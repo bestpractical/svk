@@ -499,13 +499,27 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [--local] [--switch-to]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
+ branch --delete BRANCH1
 
 =head1 OPTIONS
 
- -l [--list]            : list mirrored paths
- -C [--check-only]      : try operation but make no changes
+ -l [--list]            : list branches for this project
  --create               : create a new branch
  --local                : targets in local branch
- --switch-to            : also switch to another branch
- --merge                : automatically merge all changes between branches
+ --delete               : delete BRANCH
+ --switch               : switch the current checkout to another branch
+                          (can be paired with --create)
+ --merge                : automatically merge all changes from BRANCH1, BRANCH2,
+                          etc, to TARGET
+ -C [--check-only]      : try a create, move or merge operation but make no     
+                          changes
+
+
+=head1 DESCRIPTION
+
+SVK provides tools to more easily manage your project's branching
+and merging, so long as you use the standard "trunk,branches/,tags/"
+directory layout for your project or specifically tell SVK where
+your branches live.
+
 
