@@ -603,25 +603,29 @@ sub mirror_changesets {
 }
 
 sub _sync_edge_changeset {
-    my ($self, $revdata, $callback, $translate_from) = @_;
+    my ($self, $revdata, $callback, $translate_from, $up_to) = @_;
 
     my $paths = $revdata->[2];
     unless ($paths) {
         my $ra = $self->_new_ra;
 
         $ra->get_log([''], $revdata->[0], $revdata->[0], 0,
-                     1, 1, sub { $paths = shift; } );
+                     1, 1, sub { $paths = _dclone_log_change_paths(shift); } );
         $self->_ra_finished($ra);
     }
 
     my ($entry, $old_path, $old_rev) = $self->_find_edge_entry( $paths, $translate_from || $self->source_path ) or return;
-    my ($copyfrom_path, $copyfrom_rev) = ($entry->copyfrom_path, $entry->copyfrom_rev);
 
-    $self->_mirror_changesets( $revdata->[0], $callback, 0, $old_path );
+    my ($copyfrom_path, $copyfrom_rev) = ($entry->{copyfrom_path}, $entry->{copyfrom_rev});
+
+    if ($up_to) {
+        $self->_mirror_changesets_with_cross( $revdata->[0], $callback, 0, $old_path );
+    }
+
 
     my $ra = $self->_new_ra;
 
-    $ra->reparent( $self->source_root . $copyfrom_path );
+    $ra->reparent( $self->source_root . $old_path );
     $self->sync_changeset
         ( $revdata->[0], $revdata->[1], {},
           $callback,
@@ -632,7 +636,7 @@ sub _sync_edge_changeset {
               $editor = SVK::Editor::FilterProp->new
                   ( { cb_prop => sub { return $_[0] !~ m/^svn:(wc|entry)/; },
                       _editor => [ $editor ] } );
-              my $report = $ra->do_diff($revdata->[0], '', 1, 1, $self->source_root.$self->source_path, $editor);
+              my $report = $ra->do_diff($revdata->[0], '', 1, 1, $self->source_root.($translate_from || $self->source_path), $editor);
               $report->set_path('', $copyfrom_rev, 0, undef );
               $report->finish_report;
               if ( %{$txn->root->paths_changed} ) {
@@ -642,6 +646,13 @@ sub _sync_edge_changeset {
 
 }
 
+sub _sync_up_to_edge_changeset {
+    my ($self, $revdata, $callback) = @_;
+
+    return $self->_sync_edge_changeset($revdata, $callback, undef, 1);
+}
+
+
 sub _find_edge_entry {
     my ($self, $paths, $translate_from) = @_;
 
@@ -649,60 +660,102 @@ sub _find_edge_entry {
         if (Path::Class::Dir->new_foreign("Unix", $_)
             ->subsumes($translate_from)) {
             my $entry = $paths->{$_};
-            if ($entry->action eq 'A' && $entry->copyfrom_path) {
+            if ($entry->{action} eq 'A' && $entry->{copyfrom_path}) {
                 return ($entry,
-                        SVK::Util::abs2rel($translate_from, $_ => $entry->copyfrom_path),
-                        $entry->copyfrom_rev);
+                        SVK::Util::abs2rel($translate_from, $_ => $entry->{copyfrom_path}),
+                        $entry->{copyfrom_rev});
             }
         }
     }
     return;
 }
 
-sub _mirror_changesets {
+sub _dclone_log_change_paths {
+    my $p = shift or return;
+    my $paths = {};
+    for ( keys %$p ) {
+        $paths->{$_} = { action => $p->{$_}->action,
+            copyfrom_path => $p->{$_}->copyfrom_path,
+            copyfrom_rev  => $p->{$_}->copyfrom_rev,
+        };
+    }
+    return $paths;
+}
+
+# note this method doesn't actually sync $torev, it's dealing with all
+# the changes before it
+sub _mirror_changesets_with_cross {
     my ( $self, $torev, $callback, $fake_last, $translate_from ) = @_;
     my @revs;
-    my $cross = $translate_from ? 1 : 0;
-    $self->traverse_new_changesets( sub { push @revs, [@_] unless $fake_last && $torev && $_[0] == $torev}, $torev, $cross, $cross );
+    $self->traverse_new_changesets(
+        sub {
+            my $paths = _dclone_log_change_paths(pop);
+            push @revs, [ @_, $paths ]
+                unless $fake_last && $torev && $_[0] == $torev;
+        },
+        $torev, 1, 1 );
 
     # the last revision belongs to our caller, so don't sync it.
-    pop @revs if $cross;
+    pop @revs;
 
     return unless @revs;
-    if ($cross) {
-        # if we are in cross mode, our @revs might already contain
-        # renames that we need to segment with different
-        # translate_from
-        my $tmp_translate_from = $translate_from;
-        my (@batch, @newrev);
-        for (reverse @revs) {
-            my $paths = $_->[-1];
-            my ($entry, $old_path, $oldrev) = $self->_find_edge_entry($paths, $tmp_translate_from || $self->source_path);
-            unless ($entry) {
-                unshift @newrev, $_;
-                next;
-            }
 
-            unshift @batch, [\@newrev, $_, $old_path];
-            @newrev = ();
-            $tmp_translate_from = $old_path;
-        }
-        for (@batch) {
-            my ($revs, $edge, $t) = @$_;
-            $self->_sync_changesets($callback, $revs, $t);
-            $self->_sync_edge_changeset($edge, $callback, $_);
+    my @batch;
+
+    # if we are in cross mode, our @revs might already contain
+    # renames that we need to segment with different
+    # translate_from into different batches
+    my $tmp_translate_from = $translate_from || $self->source_path;
+    my (@newrev);
+    for ( reverse @revs ) {
+        my $paths = $_->[-1];
+        my ( $entry, $old_path, $oldrev ) = $self->_find_edge_entry( $paths, $tmp_translate_from );
+
+        # if there's no edge entry, it's the same batch
+        unless ($entry) {
+            unshift @newrev, $_;
+            next;
         }
 
+        push @batch, [ [@newrev], $_, $tmp_translate_from, $old_path ];
+        @newrev             = ();
+        $tmp_translate_from = $old_path;
     }
-    # get the first revision and see if it's renamed from somewhere else
+    @revs = @newrev;
 
-    if ($self->mirror->follow_anchor_copy && !$cross) {
-        $self->_sync_edge_changeset(shift @revs, $callback, $translate_from);
+    $self->_sync_changesets($callback, \@revs, $tmp_translate_from);
+
+    for (@batch) {
+        my ($revs, $edge, $t, $ot) = @$_;
+        $self->_sync_edge_changeset($edge, $callback, $ot);
+        $self->_sync_changesets($callback, $revs, $t);
     }
 
-    $self->_sync_changesets($callback, \@revs, $translate_from);
 
 }
+
+sub _mirror_changesets {
+    my ( $self, $torev, $callback, $fake_last ) = @_;
+    my @revs;
+    $self->traverse_new_changesets(
+        sub {
+            my $paths = _dclone_log_change_paths(pop);
+            push @revs, [ @_, $paths ]
+                unless $fake_last && $torev && $_[0] == $torev;
+        },
+        $torev, 0, 0 );
+
+    return unless @revs;
+
+    # get the first revision and see if it's renamed from somewhere else
+    if ($self->mirror->follow_anchor_copy) {
+        $self->_sync_up_to_edge_changeset(shift @revs, $callback );
+    }
+
+    # the rest
+    $self->_sync_changesets($callback, \@revs);
+}
+
 sub _sync_changesets {
     my ($self, $callback, $revs, $translate_from) = @_;
 
