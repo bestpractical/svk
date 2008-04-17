@@ -58,7 +58,7 @@ use SVK::I18N;
 use SVK::Editor;
 use SVK::Mirror::Backend::SVNRaPipe;
 use SVK::Editor::MapRev;
-use SVK::Util 'IS_WIN32';
+use SVK::Util qw(IS_WIN32 uri_escape);
 use SVK::Logger;
 use SVK::Editor::FilterProp;
 use SVK::Editor::Composite;
@@ -323,7 +323,7 @@ sub _new_ra {
 
     if ( $self->_cached_ra ) {
         my $ra = delete $self->{_cached_ra};
-        my $url = $args{url} || $self->mirror->url;
+        my $url = uri_escape($args{url} || $self->mirror->url);
         return $ra if $ra->{url} eq $url;
         if ( _p_svn_ra_session_t->can('reparent') ) {
             $ra->reparent($url);
@@ -333,7 +333,7 @@ sub _new_ra {
     }
     $self->_initialize_svn;
     return SVN::Ra->new(
-        url    => $self->mirror->url,
+        url    => uri_escape($self->mirror->url),
         auth   => $self->_auth_baton,
         config => $self->_config,
         %args

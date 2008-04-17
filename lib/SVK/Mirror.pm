@@ -57,6 +57,7 @@ use SVK::Logger;
 
 use Sys::Hostname;
 use SVK::I18N;
+use SVK::Util qw(uri_escape uri_unescape);
 use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
@@ -118,6 +119,7 @@ sub create {
     my $self = $class->SUPER::new($args);
 
     $self->{url} =~ s{/+$}{}g;
+    $self->{url} = uri_unescape($self->{url});
 
     $self->pool( SVN::Pool->new(undef) )
         unless $self->pool;
@@ -426,7 +428,11 @@ sub run_svnmirror_sync {
     my $target = $self->get_svkpath;
 
     my $lock_message = $self->_lock_message;
+    my $escaped_url = uri_escape($self->url);
+	    
+    # XXX if SVN::Mirror do uri_escape in future, then we can remove 'source => $escaped_url' line
     my $svm = SVN::Mirror->new(
+        source => $escaped_url,
         target_path    => $self->path,
         repos          => $self->depot->repos,
         config         => SVK::Config->svnconfig,

@@ -70,6 +70,8 @@ our @EXPORT_OK = qw(
 
     is_symlink is_executable is_uri can_run is_path_inside
 
+    uri_escape uri_unescape
+
     str2time time2str reformat_svn_date
 
     find_dotsvk
@@ -1012,6 +1014,30 @@ sub is_path_inside {
     my ($path, $parent) = @_;
     return 1 if $path eq $parent;
     return substr ($path, 0, length ($parent)+1) eq "$parent/";
+}
+
+=head3 uri_escape($uri)
+
+Returns escaped URI.
+
+=cut
+
+sub uri_escape {
+    my ($uri) = @_;
+    $uri =~ s/([^0-9A-Za-z%\-\/:_.!~*'()])/sprintf("%%%02X", ord($1))/eg;
+    return $uri;
+}
+
+=head3 uri_unescape($uri)
+
+Unescape escaped URI and return it.
+
+=cut
+
+sub uri_unescape {
+    my ($uri) = @_;
+    $uri =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+    return $uri;
 }
 
 1;
