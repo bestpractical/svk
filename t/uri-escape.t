@@ -37,7 +37,7 @@ $svk->mirror('//mirror/BK', $uri_trunk);
 
 is_output ($svk, 'mirror', ['--list'], [
     "Path          Source",
-    "==========================================================",
+    qr"=========+",
     "//mirror/BK   $uri/B and K/A/N P1/trunk"]);
 
 is_output ($svk, 'sync', ['//mirror/BK'], [
