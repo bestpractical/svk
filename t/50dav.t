@@ -38,6 +38,7 @@ plan skip_all => "Can't find apxs utility. Use APXS env to specify path" unless 
 
 my $cfg = Apache::TestConfig->new
     ( top_dir => $apache_root,
+      src_dir => $ENV{APACHE_MODULE_DIR},
       t_dir => $apache_root,
       apxs => $apxs,
  )->httpd_config;
@@ -55,6 +56,7 @@ $cfg->postamble (Location => "/svn",
 		 qq{DAV svn\n    SVNPath $srepospath\n});
 $cfg->generate_httpd_conf;
 my $server = $cfg->server;
+
 $server->start;
 ok ($server->ping, 'server is alive');
 
@@ -132,8 +134,10 @@ is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
 	    'Commit into mirrored path: merging back directly.',
 	    "Merging back to mirror source $uri/A.",
-	    qr"RA layer request failed: OPTIONS request failed on '/svn/A': OPTIONS of '/svn/A': .*",
-	    qr'Commit message saved in (.*)\.']);
+	    qr'Commit message saved in (.*)\.',
+	    qr"RA layer request failed: OPTIONS.*/svn/A.*",
+           ]);
+
 ($filename) = $output =~ m/saved in (.*)\./s;
 is_file_content ($filename, "from editor\n");
 
