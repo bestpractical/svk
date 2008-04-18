@@ -500,6 +500,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --delete BRANCH1
+ branch --push [--from BRANCH]
 
 =head1 OPTIONS
 
@@ -513,6 +514,7 @@ SVK::Command::Branch - Manage a project with its branches
                           etc, to TARGET
  -C [--check-only]      : try a create, move or merge operation but make no     
                           changes
+ --push                 : move changes to where it from
 
 
 =head1 DESCRIPTION
