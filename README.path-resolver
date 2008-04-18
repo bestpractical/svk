@@ -1,0 +1,31 @@
+
+here is ideas and cases we have to cover.
+
+You're MORE than welcome to add more cases, ideas and other things
+that may help... Questions are ok too.
+
+
+=head1 CASES
+
+=head2 new node in locally deleted dir
+
+=head3 case
+
+new node in dir A is added on trunk when that dir is deleted in local.
+we skip such change during smerge when we should
+1) allow user to return back A in local with new file
+2) allow user to enter new path for the node 
+    ** this must be handled during further smerges as rename, even if
+    that file never existed
+3) allow to say that A is now B in local, even if B is not actually is
+   copy of A, it shouldn't be treated as replace, but as merge of two
+   streams so changes on trunk in A and B goes into the same dir in
+   the local repo.
+
+=head3 implementation notes
+
+* open_directory should be "wait" when we'll merge everything down
+  the path and then either do nothing (2 from above) or
+  add dir back again (1 from above)
+* not sure if there is way to do 3
+
