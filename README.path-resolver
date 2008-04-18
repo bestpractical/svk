@@ -17,6 +17,12 @@ we skip such change during smerge when we should
 2) allow user to enter new path for the node 
     ** this must be handled during further smerges as rename, even if
     that file never existed
+2.1) new path may exist already and may be it has different type
+2.1.1) user may want replace node if types are diffrent
+2.1.2) user may want replace and save old node what falls into recursion :(
+       of resolving
+2.1.3) if types match, does he mean replace, is it 3) for dirs or
+       is it text merge of files?
 3) allow to say that A is now B in local, even if B is not actually is
    copy of A, it shouldn't be treated as replace, but as merge of two
    streams so changes on trunk in A and B goes into the same dir in
@@ -28,4 +34,7 @@ we skip such change during smerge when we should
   the path and then either do nothing (2 from above) or
   add dir back again (1 from above)
 * not sure if there is way to do 3
+** can a new merge ticket on dir B in the local help us? so we will
+   have two tickets: one on root of the branch and another on dir B
+   that it's been merged from trunk/A...
 
