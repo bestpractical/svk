@@ -255,9 +255,36 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     unless ( defined $pdir ) {
-        ++$self->{skipped};
-        $self->{notify}->flush ($path);
-        return undef;
+#        my $action = get_prompt(
+#            "Parent dir of file $path doesn't exist, what do you want to do?\n"
+#            "a)dd, s)kip", qr/^[as]/i
+#        );
+        my $action = 'a';
+        if ( $action eq 's' ) {
+            ++$self->{skipped};
+            $self->{notify}->flush ($path);
+            return undef;
+        }
+        elsif ( $action eq 'a' ) {
+            my $bite_me;
+            $logger->error("here we are with $path");
+
+            #dirty hacks and most probably stupid thing
+            my @dirs = split m{/}, $path; pop @dirs;
+            my @to_add;
+            while ( @dirs && !defined $self->{'storage_baton'}{ join '/', @dirs } ) {
+                unshift @to_add, pop @dirs;
+            }
+            while ( @to_add ) {
+                my $cur = shift @to_add;
+                $self->add_directory( join('/', @dirs, $cur), join('/', @dirs), undef, $arg[-1] );
+                push @dirs, $cur;
+            }
+            return $self->add_file( $path, join('/', @dirs), @arg);
+        }
+        else {
+            die "no such action";
+        }
     }
     return unless defined $pdir;
     my $pool = pop @arg;
