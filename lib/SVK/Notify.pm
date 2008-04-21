@@ -70,6 +70,24 @@ SVK::Notify - svk entry status notification
 
 =head1 DESCRIPTION
 
+Collect and report status of nodes in a tree.
+
+=head1 METHODS
+
+=head2 new
+
+=over 4
+
+=item cb_flush
+
+=item cb_skip
+
+=item quite - don't report anything if true.
+
+=item flush_baserev
+
+=back
+
 
 
 =cut
@@ -135,6 +153,15 @@ sub new_with_report {
 		  cb_flush => print_report (\&flush_print, $is_copath, $report, $target));
 }
 
+=head2 notify_translate $translator
+
+Sets $translator as path converter. Should be code reference
+which modifies its first argument. For example:
+
+    $notify->notify_translate( sub { $_[0] =~ s/^path/new_path/ } );
+
+=cut
+
 sub notify_translate {
     my ($self, $translate) = @_;
 
@@ -147,6 +174,12 @@ sub notify_translate {
 			};
     }
 }
+
+=head2 node_status $path [$status]
+
+Sets or returns status of the $path.
+
+=cut
 
 sub node_status {
     my ($self, $path, $s) = @_;
