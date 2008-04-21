@@ -38,3 +38,12 @@ we skip such change during smerge when we should
    have two tickets: one on root of the branch and another on dir B
    that it's been merged from trunk/A...
 
+
+=head1 FIRST MILESTONE
+
+looked deeper in the code and decided that it's better to stop on following goals:
+
+1) For new files we can stop on "add" and "skip" actions.
+
+2) For changes it's possible to use the resolver we already have.
+
