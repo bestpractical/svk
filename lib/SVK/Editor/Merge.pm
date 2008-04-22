@@ -754,10 +754,16 @@ sub open_directory {
 
 	my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
 
-	unless ($inspector->exist($basepath, $pool) || $self->{open_nonexist}) {
-	    ++$self->{skipped};
-	    $self->{notify}->flush ($path);
-	    return undef;
+	unless ($inspector->exist($basepath, $pool)) {
+            # XXX: hackish check but resolve only exist when
+            # we want interactivity
+            if ($self->{resolve}) {
+                $self->{return_back}{$path} = 1;
+                return $path;
+            } else {
+                $self->node_conflict($path);
+                return undef;
+            }
 	}
     }
     $self->{notify}->node_status ($path, '');
