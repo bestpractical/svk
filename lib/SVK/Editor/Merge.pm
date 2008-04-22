@@ -638,6 +638,25 @@ sub add_directory {
     }
 
     my $pool = pop @arg;
+    if ($self->{return_back}{$pdir} || $self->{returned_back}{$pdir}) {
+        require SVK::PathResolve;
+        my $action = SVK::PathResolve->new->add_directory($path);
+        if ( $action eq 's' ) {
+            ++$self->{skipped};
+            $self->{notify}->node_status ($path, '');
+            return undef;
+        }
+        elsif ( $action eq 'o' ) {
+            $self->add_directory_back( $pool );
+        }
+        elsif ( $action eq 'a' ) {
+            $self->add_directory_back( 1, $pool );
+        }
+        else {
+            die "uknown action";
+        }
+    }
+
     my $touched = $self->{notify}->node_status($path);
     # This comes from R (D+A) where the D has conflict
     if ($touched && $touched eq 'C') {
@@ -666,6 +685,7 @@ sub add_directory {
 					     @arg, $pool);
 	unless (defined $baton) {
 	    $self->{notify}->flush ($path);
+            $logger->error("no baton");
 	    return undef;
 	}
 	$self->{storage_baton}{$path} = $baton;
@@ -708,7 +728,6 @@ sub add_directory_back {
     pop @add if $skip_tail;
     $self->{returned_back}{$_} = 1 foreach @add;
 }
-
 
 sub resolve_copy {
     my ($self, $path, $from, $rev) = @_;
