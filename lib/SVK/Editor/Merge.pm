@@ -255,11 +255,12 @@ sub open_root {
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
     unless ( defined $pdir ) {
-#        my $action = get_prompt(
-#            "Parent dir of file $path doesn't exist, what do you want to do?\n"
-#            "a)dd, s)kip", qr/^[as]/i
-#        );
-        my $action = 'a';
+        $self->node_conflict($path);
+        return;
+    }
+    if ($self->{return_back}{$pdir} || $self->{returned_back}{$pdir}) {
+        require SVK::PathResolve;
+        my $action = SVK::PathResolve->new->add_file($path);
         if ( $action eq 's' ) {
             ++$self->{skipped};
             $self->{notify}->flush ($path);
