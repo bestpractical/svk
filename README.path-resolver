@@ -4,6 +4,28 @@ here is ideas and cases we have to cover.
 You're MORE than welcome to add more cases, ideas and other things
 that may help... Questions are ok too.
 
+=head1 FIRST MILESTONE
+
+looked deeper in the code and decided that it's better to stop on following goals:
+
+1) For new files we can stop on "add" and "skip" actions.
+* this is implemented:
+** for every new node you're asked if you want to add it then parent
+   dirs that don't exist are added back.
+** if it's dir then you can add only dir itself, but as well you can
+   add it with all its children without questions
+
+2) For changes it's possible to use the resolver we already have.
+
+=head2 M1 TODO
+
+* resolver help
+* when you're deciding if you want to add dir w/o children then
+  you usually want to list all new nodes in the dir, something like
+  > a)add all, o)nly this, ..., l)ist [a]: l
+  X/file
+  X/dir/file
+  ...
 
 =head1 CASES
 
@@ -38,12 +60,4 @@ we skip such change during smerge when we should
    have two tickets: one on root of the branch and another on dir B
    that it's been merged from trunk/A...
 
-
-=head1 FIRST MILESTONE
-
-looked deeper in the code and decided that it's better to stop on following goals:
-
-1) For new files we can stop on "add" and "skip" actions.
-
-2) For changes it's possible to use the resolver we already have.
 
