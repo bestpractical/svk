@@ -631,11 +631,11 @@ sub close_file {
 
 sub add_directory {
     my ($self, $path, $pdir, @arg) = @_;
-    unless ( defined $pdir ) {
-        ++$self->{skipped};
-        $self->{notify}->flush ($path);
+    unless (defined $pdir) {
+        $self->node_conflict($path);
         return undef;
     }
+
     my $pool = pop @arg;
     my $touched = $self->{notify}->node_status($path);
     # This comes from R (D+A) where the D has conflict
