@@ -97,6 +97,7 @@ sub tags {
 sub _find_branches {
     my ( $self, $root, $path ) = @_;
     my $pool    = SVN::Pool->new_default;
+    return [] if $SVN::Node::none == $root->check_path($path);
     my $entries = $root->dir_entries($path);
 
     my $trunk = SVK::Path->real_new(
