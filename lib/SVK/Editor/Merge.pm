@@ -680,7 +680,7 @@ sub add_directory {
 }
 
 sub add_directory_back {
-    my ($self, @arg) = @_;
+    my ($self, $skip_tail, @arg) = @_;
     return unless $self->{return_back};
 
     my @add = sort { length($a) <=> length($b) } keys %{ $self->{return_back} };
@@ -690,9 +690,10 @@ sub add_directory_back {
     my $pdir = $add[0];
     $pdir =~ s{(?:/|^)[^/]+$}{};
 
+    my $pool = pop @arg;
     foreach my $path(@add) {
 	my $baton = $self->{storage}->add_directory(
-            $path, $self->{storage_baton}{$pdir}, undef, -1, @arg
+            $path, $self->{storage_baton}{$pdir}, undef, -1, $pool
         );
 	unless (defined $baton) {
             $logger->error("no baton");
@@ -703,11 +704,9 @@ sub add_directory_back {
 	$self->{notify}->node_status ($path, 'A');
         $pdir = $path;
     }
-    if ( $self->{returned_back} ) {
-        $self->{returned_back} = { %{ $self->{returned_back} }, %{ delete $self->{return_back} } };
-    } else {
-        $self->{returned_back} = delete $self->{return_back};
-    }
+    delete $self->{return_back};
+    pop @add if $skip_tail;
+    $self->{returned_back}{$_} = 1 foreach @add;
 }
 
 
