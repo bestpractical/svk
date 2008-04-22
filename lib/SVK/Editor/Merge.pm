@@ -692,6 +692,34 @@ sub add_directory {
     return $path;
 }
 
+sub add_directory_back {
+    my ($self, @arg) = @_;
+
+    my @add = sort { length($a) <=> length($b) } keys %{ $self->{return_back} };
+    return unless @add;
+
+    # XXX: do we have better way?
+    my $pdir = $add[0];
+    $pdir =~ s{(?:/|^)[^/]+$}{};
+
+    foreach my $path(@add) {
+
+	my $baton = $self->{storage}->add_directory(
+            $path, $self->{storage_baton}{$pdir}, undef, -1, @arg
+        );
+	unless (defined $baton) {
+            $logger->error("no baton");
+            last;
+	}
+	$self->{storage_baton}{$path} = $baton;
+	$self->{added}{$path} = 1;
+	$self->{notify}->node_status ($path, 'A');
+        $pdir = $path;
+    }
+    delete $self->{return_back};
+}
+
+
 sub resolve_copy {
     my ($self, $path, $from, $rev) = @_;
     die "unknown copy $from $rev for $path"
