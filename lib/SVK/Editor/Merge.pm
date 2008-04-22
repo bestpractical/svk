@@ -266,27 +266,13 @@ sub add_file {
             return undef;
         }
         elsif ( $action eq 'a' ) {
-            my $bite_me;
-            $logger->error("here we are with $path");
-
-            #dirty hacks and most probably stupid thing
-            my @dirs = split m{/}, $path; pop @dirs;
-            my @to_add;
-            while ( @dirs && !defined $self->{'storage_baton'}{ join '/', @dirs } ) {
-                unshift @to_add, pop @dirs;
-            }
-            while ( @to_add ) {
-                my $cur = shift @to_add;
-                $self->add_directory( join('/', @dirs, $cur), join('/', @dirs), undef, $arg[-1] );
-                push @dirs, $cur;
-            }
-            return $self->add_file( $path, join('/', @dirs), @arg);
+            $self->add_directory_back( $arg[-1] );
         }
         else {
-            die "no such action";
+            die "uknown action";
         }
     }
-    return unless defined $pdir;
+
     my $pool = pop @arg;
     # a replaced node shouldn't be checked with cb_exist
     my $spool = SVN::Pool->new_default($pool);
