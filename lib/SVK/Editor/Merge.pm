@@ -694,6 +694,7 @@ sub add_directory {
 
 sub add_directory_back {
     my ($self, @arg) = @_;
+    return unless $self->{return_back};
 
     my @add = sort { length($a) <=> length($b) } keys %{ $self->{return_back} };
     return unless @add;
@@ -703,7 +704,6 @@ sub add_directory_back {
     $pdir =~ s{(?:/|^)[^/]+$}{};
 
     foreach my $path(@add) {
-
 	my $baton = $self->{storage}->add_directory(
             $path, $self->{storage_baton}{$pdir}, undef, -1, @arg
         );
@@ -716,7 +716,11 @@ sub add_directory_back {
 	$self->{notify}->node_status ($path, 'A');
         $pdir = $path;
     }
-    delete $self->{return_back};
+    if ( $self->{returned_back} ) {
+        $self->{returned_back} = { %{ $self->{returned_back} }, %{ delete $self->{return_back} } };
+    } else {
+        $self->{returned_back} = delete $self->{return_back};
+    }
 }
 
 
@@ -767,12 +771,17 @@ sub close_directory {
     no warnings 'uninitialized';
 
     delete $self->{added}{$path};
+
+    $self->{notify}->node_status ($path, '')
+        if $self->{return_back}{$path};
+
     $self->{notify}->flush_dir ($path);
+    return if delete $self->{return_back}{$path};
+    delete $self->{returned_back}{$path};
 
     my $baton = $self->{storage_baton}{$path};
     $self->cb_merged->( $self->{changes}, 'dir', $self->{ticket})
 	if $path eq $self->{target} && $self->cb_merged;
-
 
     $self->{storage}->close_directory ($baton, $pool);
     delete $self->{storage_baton}{$path}
