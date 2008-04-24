@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 5;
+plan tests => 9;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -42,5 +42,20 @@ is_output ($svk, 'branch', ['--list'], ['foo']);
 TODO: {
 local $TODO = "should create from  /trunk/proj instead /trunk";
 is_output ($svk, 'list', ['//mirror/MyProject/branches/foo'],
+    ['A/' , 'B/', 'C/', 'D/', 'me']);
+$svk->branch ('--remove', 'foo');
+is_output ($svk, 'branch', ['--list'], []);
+}
+
+$props->{'svk:project:projectA:path-branches'} = '/branches/projA';
+add_prop_to_basic_tree($xd, '/test/',$props);
+
+$svk->sync('//mirror/MyProject'); # sync properties
+
+is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: bar');
+is_output ($svk, 'branch', ['--list'], ['bar']);
+TODO: {
+local $TODO = "should create from /trunk/proj and put into branches/projA";
+is_output ($svk, 'list', ['//mirror/MyProject/branches/projA/bar'],
     ['A/' , 'B/', 'C/', 'D/', 'me']);
 }
