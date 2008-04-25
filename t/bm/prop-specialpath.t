@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+# This test for trunk and/or branches are not in trunk/ and/or branches/ directories
 use strict;
 use SVK::Test;
 plan tests => 9;

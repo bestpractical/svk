@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+# This test for loading project from multiprojects via props
 use strict;
 use SVK::Test;
 plan tests => 11;
