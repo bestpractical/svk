@@ -520,8 +520,27 @@ SVK::Command::Branch - Manage a project with its branches
 =head1 DESCRIPTION
 
 SVK provides tools to more easily manage your project's branching
-and merging, so long as you use the standard "trunk,branches/,tags/"
+and merging, so long as you use the standard "trunk/, branches/, tags/"
 directory layout for your project or specifically tell SVK where
 your branches live.
 
+SVK branch also provides another project loading mechanism by setting
+properties on root path. Current usable properties for SVK branch are 
 
+  'svk:project:<projectName>:path-trunk'
+  'svk:project:<projectName>:path-branches'
+  'svk:project:<projectName>:path-tags'
+
+These properties are useful when you are not using the standard 
+"trunk/, branches/, tags/" directory layout. For example, a mirrored
+depotpath '//mirror/projA' may have trunk in "/trunk/projA/" directory, 
+branches in "/branches/projA", and have a standard "/tags" directory.
+Then by setting the following properties on root path of
+remote repository, it can use SVK branch to help manage the project:
+
+  'svk:project:projA:path-trunk => /trunk/projA'
+  'svk:project:projA:path-branches => /branches/projA' 
+  'svk:project:projA:path-tags => /tags'
+
+Be sure to have all "path-trunk", "path-branches" and "path-tags"
+set at the same time.
