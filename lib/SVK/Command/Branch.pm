@@ -495,7 +495,7 @@ SVK::Command::Branch - Manage a project with its branches
 
  branch --create [BRANCH]
 
- branch --list [BRANCH...]
+ branch --list [--all]
  branch --create BRANCH [--local] [--switch-to]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
