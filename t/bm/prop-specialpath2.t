@@ -32,11 +32,11 @@ is_output ($svk, 'propget',
     [$props->{'svk:project:rt38:path-trunk'}]);
 
 is_output_like ($svk, 'branch', ['--create', 'foo'], qr'Project branch created: foo');
-TODO: {
-local $TODO = "should create from branches/3.8-TESTING and 3.8-TESTING is not one of branches";
+#TODO: {
+#local $TODO = "should create from branches/3.8-TESTING and 3.8-TESTING is not one of branches";
 is_output ($svk, 'branch', ['--list'], ['foo']);
 is_output ($svk, 'list', ['//mirror/MyProject/branches/foo'],
     ['A/' , 'B/', 'C/', 'D/', 'me']);
 $svk->branch ('--remove', 'foo');
 is_output ($svk, 'branch', ['--list'], []);
-}
+#}

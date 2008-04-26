@@ -40,13 +40,13 @@ is_output ($svk, 'propget',
 
 is_output_like ($svk, 'branch', ['--create', 'foo'], qr'Project branch created: foo');
 is_output ($svk, 'branch', ['--list'], ['foo']);
-TODO: {
-local $TODO = "should create from  /trunk/proj instead /trunk";
+#TODO: {
+#local $TODO = "should create from  /trunk/proj instead /trunk";
 is_output ($svk, 'list', ['//mirror/MyProject/branches/foo'],
     ['A/' , 'B/', 'C/', 'D/', 'me']);
 $svk->branch ('--remove', 'foo');
 is_output ($svk, 'branch', ['--list'], []);
-}
+#}
 
 $props->{'svk:project:projectA:path-branches'} = '/branches/projA';
 add_prop_to_basic_tree($xd, '/test/',$props);
@@ -55,8 +55,8 @@ $svk->sync('//mirror/MyProject'); # sync properties
 
 is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: bar');
 is_output ($svk, 'branch', ['--list'], ['bar']);
-TODO: {
-local $TODO = "should create from /trunk/proj and put into branches/projA";
+#TODO: {
+#local $TODO = "should create from /trunk/proj and put into branches/projA";
 is_output ($svk, 'list', ['//mirror/MyProject/branches/projA/bar'],
     ['A/' , 'B/', 'C/', 'D/', 'me']);
-}
+#}

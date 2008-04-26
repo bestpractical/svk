@@ -44,11 +44,11 @@ is_output ($svk, 'propget',
 
 is_output_like ($svk, 'branch', ['--create', 'foo'], qr'Project branch created: foo');
 is_output ($svk, 'branch', ['--list'], ['foo']);
-TODO: {
-local $TODO = "should create from  /trunk/proj instead /trunk";
+#TODO: {
+#local $TODO = "should create from  /trunk/proj instead /trunk";
 is_output ($svk, 'list', ['//mirror/projectA/branches/A/foo'],
     ['A/' , 'B/', 'C/', 'D/', 'me']);
-}
+#}
 
 is_output ($svk, 'mirror', ['//mirror/projectB', $uri],
     ["Mirroring overlapping paths not supported"]);
@@ -71,8 +71,8 @@ is_output ($svk, 'propget',
 
 is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: bar');
 is_output ($svk, 'branch', ['--list'], ['bar']);
-TODO: {
-local $TODO = "should create from /trunk/proj and put into branches/B";
+#TODO: {
+#local $TODO = "should create from /trunk/proj and put into branches/B";
 is_output ($svk, 'list', ['//mirror/projectB/branches/B/bar'],
     ['A/' , 'B/', 'C/', 'D/', 'me']);
-}
+#}

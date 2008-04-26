@@ -112,6 +112,7 @@ sub _find_branches {
     for my $entry ( sort keys %$entries ) {
         next unless $entries->{$entry}->kind == $SVN::Node::dir;
         my $b = $trunk->mclone( path => $path . '/' . $entry );
+        next if $b->path eq $trunk->path;
 
         push @branches, $b->related_to($trunk)
             ? $b->path
@@ -133,9 +134,16 @@ sub create_from_prop {
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
     
-    for my $project_name (keys %projnames)  {
+    # Given a lists of projects: 'rt32', 'rt34', 'rt38' in lexcialorder
+    # if the suffix of prop_path matches $project_name like /mirror/rt38 matches rt38
+    # then 'rt38' should be used to try before 'rt36', 'rt32'... 
+    for my $project_name ( sort { $prop_path =~ m/$b$/ } keys %projnames)  {
 	my %props = 
-	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
+#	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
+	    map {
+		my $prop = $allprops->{'svk:project:'.$project_name.':'.$_};
+		$prop =~ s{/$}{};
+		$_ => $prop_path.'/'.$prop }
 		('path-trunk', 'path-branches', 'path-tags');
     
 	# only the current path matches one of the branches/trunk/tags, the project
@@ -206,6 +214,7 @@ sub _find_project_path {
 
 	($trunk_path, $branch_path, $tag_path) = 
 	    map { $mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
+	    map { '/'.$mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
 	# check trunk, branch, tag, these should be metadata-ed 
 	# we check if the structure of mirror is correct, otherwise go again
 	for my $_path ($trunk_path, $branch_path, $tag_path) {
