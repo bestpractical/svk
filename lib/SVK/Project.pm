@@ -127,6 +127,7 @@ sub create_from_prop {
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
     my ($prop_path)     = $root->node_prop('/','svm:mirror') =~ m/^(\S+)\s+$/;
+    $prop_path ||= '/';
     my $allprops        = $root->node_proplist($prop_path);
     my ($depotroot)     = '/';
     my %projnames = 
