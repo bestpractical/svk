@@ -72,6 +72,7 @@ sub options {
      'push'             => 'push',
      'move'             => 'move',
      'remove'           => 'remove',
+     'setup'            => 'setup',
      'switch-to'        => 'switch',
     );
 }
@@ -483,6 +484,72 @@ sub run {
     return;
 }
 
+package SVK::Command::Branch::setup;
+use base qw( SVK::Command SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Util qw( is_uri get_prompt );
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg != 0;
+
+    my $dst = shift(@arg);
+    die loc ("Copy destination can't be URI.\n")
+        if is_uri ($dst);
+
+    return ($self->arg_co_maybe ($dst));
+}
+
+
+sub run {
+    my ($self, $target) = @_;
+
+    my $proj = $self->load_project($target);
+
+    if (!$proj) {
+	$logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
+	my ($trunk_path, $branch_path, $tag_path, $project_name);
+	for my $path ($target->depot->mirror->entries) {
+	    ($trunk_path, $project_name) = $target->path =~ m{^$path(/?([^/]+).*)$};
+	}
+	{
+	    my $ans = get_prompt(
+		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
+		qr/^(?:.*)/
+	    );
+	    if (length($ans)) {
+		$trunk_path = $ans;
+		last;
+	    }
+	}
+	$branch_path = $trunk_path.'/branches';
+	{
+	    my $ans = get_prompt(
+		loc("And where is the branches/? (%1)\n=> ", $branch_path),
+		qr/^(?:.*)/
+	    );
+	    if (length($ans)) {
+		$branch_path = $ans;
+		last;
+	    }
+	}
+	$tag_path = $trunk_path.'/tags';
+	{
+	    my $ans = get_prompt(
+		loc("And where is the tags/? (press enter to skip)"),
+		qr/^(?:.*)/
+	    );
+	    if (length($ans)) {
+		$tag_path = $ans;
+		last;
+	    }
+	}
+	#XXX implement setting properties of project here
+	return;
+    }
+    return;
+}
 1;
 
 __DATA__

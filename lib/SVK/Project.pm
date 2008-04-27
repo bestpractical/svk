@@ -121,6 +121,21 @@ sub _find_branches {
     return \@branches;
 }
 
+sub create_to_prop {
+    my ($self, $pathobj, $project_name, @paths) = @_;
+
+    my $fs              = $pathobj->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my ($prop_path)     = $root->node_prop('/','svm:mirror') =~ m/^(\S+)\s+$/;
+    my $allprops        = $root->node_proplist($prop_path);
+    
+    my %props;
+    $props{'path-trunk'} = $paths[0];
+    $props{'path-branches'} = $paths[1];
+    $props{'path-tags'} = $paths[2] || '';
+    return undef;
+}
+
 sub create_from_prop {
     my ($self, $pathobj) = @_;
 
