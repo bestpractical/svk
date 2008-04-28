@@ -16,7 +16,7 @@ my ($copath, $corpath) = get_copath('prop-setup');
 
 my $props = { 
     'svk:project:A:path-trunk' => '/A',
-    'svk:project:A:path-branches' => '/B',
+    'svk:project:A:path-branches' => '/A-b',
     'svk:project:A:path-tags' => '/',
 };
 
@@ -30,12 +30,13 @@ chdir($copath);
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], ['No project branch founded.']);
 TODO: {
 local $TODO = 'Need to implement br --setup ';
-$answer = ['','',''];
+$answer = ['','/A-b',''];
 $svk->branch('--setup', '//mirror/nomeans/A');
-is_output ($svk, 'list', ['//mirror/nomeans/A'], []);
+is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], []);
 
+chdir("A/");
 is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: bar');
 is_output ($svk, 'branch', ['--list'], ['bar']);
-is_output ($svk, 'list', ['//mirror/MyProject/branches/projA/bar'],
+is_output ($svk, 'list', ['//mirror/nomeans/A-b/bar'],
     ['Q/' ,'be']);
 }
