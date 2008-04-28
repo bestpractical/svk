@@ -55,6 +55,10 @@ extends 'SVK::Path';
 
 has 'txn' => ( is => "rw" );
 
+has '+inspector' => (
+	handles => ['root'],
+);
+
 sub _build_inspector {
     my $self = shift;
 
@@ -86,11 +90,6 @@ sub get_editor {
 	    post_handler => $post_handler,
 	    cb_rev => sub { $self->revision },
 	    cb_copyfrom => sub { $self->as_url(1, @_) });
-}
-
-sub root {
-    my $self = shift;
-    return $self->inspector->root;
 }
 
 sub as_depotpath {

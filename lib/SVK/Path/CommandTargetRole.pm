@@ -21,12 +21,4 @@ has pool => (
 	traits  => [qw(NoClone)],
 );
 
-sub _build_inspector {
-    my $self = shift;
-    return SVK::Inspector::Root->new
-	({ root => $self->repos->fs->revision_root($self->revision, $self->pool),
-	   _pool => $self->pool,
-	   anchor => $self->path_anchor });
-}
-
 1;
