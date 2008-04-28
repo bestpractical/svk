@@ -50,6 +50,7 @@
 # END BPS TAGGED BLOCK }}}
 package SVK::Mirror;
 use Moose;
+use Moose::Util::TypeConstraints;
 
 use SVN::Core;
 use SVK::Logger;
@@ -103,43 +104,54 @@ SVK::Mirror -
 
 =cut
 
+
+# for SVK::Moose::Types
+class_type "URI";
+use URI ();
+subtype "SVK::URL" => ( as "URI" );
+
+coerce "SVK::URL" => (
+    from "Str",
+    via {
+        my $uri = shift;
+        $uri =~ s{/$}{};
+        URI->new( uri_unescape($uri) );
+    },
+);
+
+has _url => (
+    isa => "SVK::URL",
+    is  => "rw",
+    coerce => 1,
+    init_arg => "url",
+    handles => { stringify => "url" },
+);
+
 sub create {
     my ( $class, $args ) = @_;
-    my $self = $class->SUPER::new($args);
 
-    # in has uri, use a builder to handle this or do it in submethod BUILD
-    $self->{url} =~ s{/+$}{}g;
-    $self->{url} = uri_unescape($self->{url});
+    my $self = $class->new($args);
 
     if ( $self->path eq '/' ) {
-        # has backend => ( lazy_build => 1 )
-        # sub _build_backend {
-        $self->_backend(
-            $self->_create_backend( 'SVNSync',
-                $args->{backend_options} )
+        $self->_backend($self->_create_backend( 'SVNSync', $args->{backend_options} ));
+    } else {
+        my $t = $self->get_svkpath('/');
+
+        my ($editor, %opt) = $t->get_dynamic_editor(
+            ignore_mirror => 1,
+            message       => loc('Mirror initialized for %1', $self->url),
+            author        => $ENV{USER},
         );
-        #}
-        return $self;
+    
+        $self->_backend( $self->_create_backend( $args->{backend}, $args->{backend_options}, $opt{txn}, $editor ) );
+
+        my %mirrors = map { ( $_ => 1 ) } $self->path,
+            split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
+
+        $editor->change_dir_prop( $editor->_root_baton, 'svm:mirror',
+            join( "\n", ( grep length, sort keys %mirrors ), '' ) );
+        $editor->close_edit;
     }
-
-    my $t = $self->get_svkpath('/');
-
-    my ($editor, %opt) = $t->get_dynamic_editor(
-        ignore_mirror => 1,
-        message       => loc('Mirror initialized for %1', $self->url),
-        author        => $ENV{USER},
-    );
-
-    $self->_backend(
-        $self->_create_backend( $args->{backend}, $args->{backend_options}, $opt{txn}, $editor )
-    );
-
-    my %mirrors = map { ( $_ => 1 ) } $self->path,
-        split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
-
-    $editor->change_dir_prop( $editor->_root_baton, 'svm:mirror',
-        join( "\n", ( grep length, sort keys %mirrors ), '' ) );
-    $editor->close_edit;
 
     return $self;
 }
@@ -162,7 +174,7 @@ sub _create_backend {
 
 sub load {
     my ( $class, $args ) = @_;
-    my $self = $class->SUPER::new($args);
+    my $self = $class->new($args);
 
     my $backend = $self->path eq '/' ? 'SVNSync' : 'SVNRa';
     $self->_backend(

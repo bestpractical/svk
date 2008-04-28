@@ -49,8 +49,7 @@
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Mirror::Backend::SVNRa;
-use strict;
-use warnings;
+use Moose;
 
 use SVN::Core;
 use SVN::Ra;
@@ -62,7 +61,6 @@ use SVK::Util qw(IS_WIN32 uri_escape);
 use SVK::Logger;
 use SVK::Editor::FilterProp;
 use SVK::Editor::Composite;
-use Moose;
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler SVK::Editor::Translate);
 
@@ -71,12 +69,13 @@ use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler SVK::Editor:
 ## has ($.source_root, $.source_path, $.fromrev)
 
 # We'll extract SVK::Mirror::Backend later.
-# use base 'SVK::Mirror::Backend';
-use base 'Class::Accessor::Fast';
+# extends 'SVK::Mirror::Backend';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(_config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra use_pipeline));
+has [qw(_config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra use_pipeline)] => (
+    is => "rw",
+);
 
 has mirror => (
     is => "rw",
@@ -101,7 +100,7 @@ SVK::Mirror::Backend::SVNRa -
 sub new {
     my ( $class, $args ) = @_;
     unless ( defined $args->{use_pipeline} ) {
-        $args->{use_pipeline} = 0;#IS_WIN32 ? 0 : 1;
+        $args->{use_pipeline} = 0;#IS_WIN32 ? 0 : 1; # default => ...
     }
     return $class->SUPER::new($args);
 }
