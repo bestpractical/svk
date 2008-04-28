@@ -59,7 +59,7 @@ use Sys::Hostname;
 use SVK::I18N;
 use SVK::Util qw(uri_escape uri_unescape);
 
-has [qw(path server_uuid source_uuid url _locked follow_anchor_copy _rev_cache)] => (
+has [qw(path server_uuid source_uuid _locked follow_anchor_copy _rev_cache)] => (
     is => "rw",
 );
 
@@ -105,6 +105,16 @@ SVK::Mirror -
 =cut
 
 
+has url => (
+    #isa => "Str",
+    is => "rw",
+);
+
+=begin comment
+
+# this ought to be a real URI object later, without all the delegation to URI->as_string or the funky coercion
+# a proper object can then be from a string unidirectionally and then used always as an object from the reader
+
 # for SVK::Moose::Types
 class_type "URI";
 use URI ();
@@ -124,11 +134,17 @@ has _url => (
     is  => "rw",
     coerce => 1,
     init_arg => "url",
-    handles => { stringify => "url" },
+    handles => { url => 'as_string' },
 );
+
+=cut comment
 
 sub create {
     my ( $class, $args ) = @_;
+    
+    my $url = $args->{url};
+    $url =~ s{/$}{};
+    $args->{url} = uri_unescape($url);
 
     my $self = $class->new($args);
 
