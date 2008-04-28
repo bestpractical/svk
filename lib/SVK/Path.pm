@@ -61,23 +61,32 @@ use SVN::Delta;
 use SVK::Logger;
 use SVK::Depot;
 use SVK::Root;
-use base 'SVK::Accessor';
+use Moose;
 
-__PACKAGE__->mk_shared_accessors
-    (qw(depot));
+extends qw(SVK::Accessor);
 
-__PACKAGE__->mk_clonable_accessors
-    (qw(revision targets));
+has depot => (
+	is => "rw",
+	handles => [qw(depotname repos repospath mirror)],
+);
 
-__PACKAGE__->mk_accessors
-    (qw(_root _inspector _pool));
+
+has [qw(revision targets)] => (
+	is => "rw",
+	traits => [qw(Clone)],
+);
+
+has path => (
+	accessor => "path_anchor",
+#	traits => [qw(Clone)],
+);
+
+has [qw(_root _inspector _pool)] => (
+	is => "rw",
+	traits => [qw(NoClone)],
+);
 
 use Class::Autouse qw( SVK::Inspector::Root SVK::Target::Universal );
-
-for my $proxy (qw/depotname repos repospath mirror/) {
-    no strict 'refs';
-    *{$proxy} = sub { my $self = shift; $self->depot; $self->depot->$proxy(@_) }
-}
 
 =head1 NAME
 
@@ -779,9 +788,6 @@ sub seek_to {
 
     return $self->mclone( revision => $revision );
 }
-
-*path_anchor = __PACKAGE__->make_accessor('path');
-push @{__PACKAGE__->_clonable_accessors}, 'path_anchor';
 
 sub path_target { $_[0]->{targets}[0] || '' }
 

@@ -49,9 +49,11 @@
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Path::Txn;
-use strict;
-use base 'SVK::Path';
-__PACKAGE__->mk_shared_accessors(qw(txn));
+use Moose;
+
+extends 'SVK::Path';
+
+has 'txn' => ( is => "rw" );
 
 sub _get_inspector {
     my $self = shift;

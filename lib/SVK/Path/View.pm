@@ -49,14 +49,20 @@
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Path::View;
-use strict;
+use Moose;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use SVK::Logger;
-use base 'SVK::Path';
+extends 'SVK::Path';
 
-__PACKAGE__->mk_clonable_accessors(qw(source));
-__PACKAGE__->mk_shared_accessors(qw(view));
+has source => (
+    is => "rw",
+    traits => [qw(Clone)],
+);
+
+has view => (
+    is => "rw",
+);
 
 use SVK::Util qw( abs2rel );
 use SVK::Root::View;

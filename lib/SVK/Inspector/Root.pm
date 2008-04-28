@@ -123,6 +123,7 @@ sub dirdelta {
 
 sub _anchor_path {
     my ($self, $path) = @_;
+    Carp::cluck unless defined $path;
     $path = $self->translate($path);
     return $path if $path =~ m{^/};
     return $self->anchor unless length $path;

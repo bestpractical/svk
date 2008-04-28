@@ -49,16 +49,29 @@
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Path::Checkout;
-use strict;
+use Moose;
+
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
-use base 'SVK::Accessor';
+extends 'SVK::Accessor';
 
 use SVK::Path;
 
-__PACKAGE__->mk_shared_accessors(qw(xd));
-__PACKAGE__->mk_clonable_accessors(qw(report source copath_anchor copath_target));
-__PACKAGE__->mk_accessors(qw(_pool _inspector));
+has xd => ( is => "rw" );
+
+has [qw(report)] => (
+    is => "rw",
+);
+
+has [qw(source copath_anchor copath_target)] => (
+    is => "rw",
+    traits => [qw(Clone)],
+);
+
+has [qw(_pool _inspector)] => (
+    is => "rw",
+    traits => [qw(NoClone)],
+);
 
 use Class::Autouse qw(SVK::Editor::XD SVK::Root::Checkout);
 
@@ -187,7 +200,7 @@ sub copath {
     return $_copath_catsplit->($copath, $paths);
 }
 
-sub report { __PACKAGE__->make_accessor('report')->(@_) }
+#sub report { __PACKAGE__->make_accessor('report')->(@_) }
 
 sub report_copath {
     my ($self, $copath) = @_;

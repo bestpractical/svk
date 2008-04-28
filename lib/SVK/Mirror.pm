@@ -106,7 +106,7 @@ SVK::Mirror -
 
 
 has url => (
-    #isa => "Str",
+    #isa => "Str", # can be Maybe[Str], but that's really pointless
     is => "rw",
 );
 
