@@ -53,6 +53,7 @@ use Moose;
 
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 
+with('SVK::Path::CommandTargetRole');
 extends 'SVK::Accessor';
 
 use SVK::Path;
@@ -74,10 +75,14 @@ has [qw(copath_anchor copath_target)] => (
     traits => [qw(Clone)],
 );
 
-has [qw(_pool _inspector)] => (
-    is => "rw",
-    traits => [qw(NoClone)],
-);
+
+# XXX:
+for my $pass_through (qw/_to_pclass dump copy_ancestors _copy_ancestors nearest_copy is_merged_from/) {
+    no strict 'refs';
+    no warnings 'once';
+    *{$pass_through} = *{'SVK::Path::'.$pass_through};
+}
+
 
 use Class::Autouse qw(SVK::Editor::XD SVK::Root::Checkout);
 
@@ -206,8 +211,6 @@ sub copath {
     return $_copath_catsplit->($copath, $paths);
 }
 
-#sub report { __PACKAGE__->make_accessor('report')->(@_) }
-
 sub report_copath {
     my ($self, $copath) = @_;
     my $report = length($self->report) ? $self->report : undef;
@@ -267,12 +270,12 @@ sub anchorify {
 
 }
 
-sub _get_inspector {
+sub _build_inspector {
     my $self = shift;
     return SVK::Inspector::Root->new
 	({ root => $self->root,
 	   anchor => $self->path_anchor,
-	   _pool => $self->pool,
+	   pool => $self->pool,
 	 });
 }
 
@@ -284,16 +287,10 @@ sub as_depotpath {
 sub refresh_revision {
     my $self = shift;
     $self->source->refresh_revision;
-    $self->_inspector(undef);
+    $self->clear_inspector;
     return $self;
 }
 
-# XXX:
-for my $pass_through (qw/pool inspector _to_pclass dump copy_ancestors _copy_ancestors nearest_copy is_merged_from/) {
-    no strict 'refs';
-    no warnings 'once';
-    *{$pass_through} = *{'SVK::Path::'.$pass_through};
-}
 
 sub for_checkout_delta {
     my $self = shift;

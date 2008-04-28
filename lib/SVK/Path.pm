@@ -63,6 +63,8 @@ use SVK::Depot;
 use SVK::Root;
 use Moose;
 
+with('SVK::Path::CommandTargetRole');
+
 extends qw(SVK::Accessor);
 
 has depot => (
@@ -81,7 +83,7 @@ has path => (
 #	traits => [qw(Clone)],
 );
 
-has [qw(_root _inspector _pool)] => (
+has [qw(_root)] => (
 	is => "rw",
 	traits => [qw(NoClone)],
 );
@@ -104,12 +106,20 @@ The class represents a node in svk depot.
 
 sub refresh_revision {
     my ($self) = @_;
-    $self->_inspector(undef);
+    $self->clear_inspector;
     $self->_root(undef);
     Carp::cluck unless $self->repos;
     $self->revision($self->repos->fs->youngest_rev);
 
     return $self;
+}
+
+sub _build_inspector {
+    my $self = shift;
+    return SVK::Inspector::Root->new
+	({ root => $self->repos->fs->revision_root($self->revision, $self->pool),
+	   _pool => $self->pool,
+	   anchor => $self->path_anchor });
 }
 
 =head2 root
@@ -214,30 +224,6 @@ sub _get_local_editor {
     $editor = SVK::Editor::TxnCleanup->new(_editor => [$editor], txn => $txn);
 
     return ($txn, $editor, $post_handler_ref);
-}
-
-sub pool {
-    my $self = shift;
-    $self->_pool( SVN::Pool->new )
-	unless $self->_pool;
-
-    return $self->_pool;
-}
-
-sub inspector {
-    my $self = shift;
-    $self->_inspector( $self->_get_inspector )
-	unless $self->_inspector;
-
-    return $self->_inspector;
-}
-
-sub _get_inspector {
-    my $self = shift;
-    return SVK::Inspector::Root->new
-	({ root => $self->repos->fs->revision_root($self->revision, $self->pool),
-	   _pool => $self->pool,
-	   anchor => $self->path_anchor });
 }
 
 sub _get_remote_editor {

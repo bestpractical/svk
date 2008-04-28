@@ -55,7 +55,7 @@ extends 'SVK::Path';
 
 has 'txn' => ( is => "rw" );
 
-sub _get_inspector {
+sub _build_inspector {
     my $self = shift;
 
     Carp::cluck unless $self->repos;
