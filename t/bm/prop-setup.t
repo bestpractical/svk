@@ -2,7 +2,7 @@
 # This test for trunk and/or branches are not in trunk/ and/or branches/ directories
 use strict;
 use SVK::Test;
-plan tests => 6;
+plan tests => 7;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -40,4 +40,6 @@ is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: 
 is_output ($svk, 'branch', ['--list'], ['bar']);
 is_output ($svk, 'list', ['//mirror/nomeans/A-b/bar'],
     ['Q/' ,'be']);
+is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/A'],
+    ['Project already set in properties: //mirror/nomeans/A']);
 }
