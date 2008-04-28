@@ -64,7 +64,7 @@ has [qw(path server_uuid source_uuid url _locked follow_anchor_copy _rev_cache)]
 
 has 'pool' => (
     is => "ro",
-    default => { SVN::Pool->new(undef) },
+    default => sub { SVN::Pool->new(undef) },
 );
 
 has depot => (
