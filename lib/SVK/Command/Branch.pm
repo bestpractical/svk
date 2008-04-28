@@ -72,7 +72,8 @@ sub options {
      'merge'            => 'merge',
      'push'             => 'push',
      'move'             => 'move',
-     'remove'           => 'remove',
+     'rm|remove'           => 'remove',
+     'del|delete'           => 'remove',
      'setup'            => 'setup',
      'switch-to'        => 'switch',
     );
