@@ -67,6 +67,7 @@ has [qw(report)] => (
 has 'source' => (
     is => "rw",
     traits => [qw(Clone)],
+    # FIXME: handles => 'SVK::Path::CommandTargetRole',
     handles => [qw(same_repos same_source is_mirrored normalize path universal contains_mirror depot depotpath depotname related_to copied_from search_revision merged_from revision repos path_anchor path_target repospath as_url)],
 );
 

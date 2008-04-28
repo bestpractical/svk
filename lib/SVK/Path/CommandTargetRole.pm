@@ -3,6 +3,8 @@ use Moose::Role;
 
 with('MooseX::Clone');
 
+#requires $_ for qw(same_repos same_source is_mirrored normalize path universal contains_mirror  related_to copied_from search_revision merged_from revision path_target as_url);
+
 has inspector => (
 	isa => "SVK::Inspector",
 	is  => "rw",
@@ -20,5 +22,6 @@ has pool => (
 	default => sub { SVN::Pool->new },
 	traits  => [qw(NoClone)],
 );
+
 
 1;
