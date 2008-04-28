@@ -2,7 +2,7 @@
 # This test for trunk and/or branches are not in trunk/ and/or branches/ directories
 use strict;
 use SVK::Test;
-plan tests => 7;
+plan tests => 10;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -32,8 +32,8 @@ $svk->checkout('//mirror/nomeans',$copath);
 chdir($copath);
 
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], ['No project found.']);
-TODO: {
-local $TODO = 'Need to implement br --setup ';
+#TODO: {
+#local $TODO = 'Need to implement br --setup ';
 $answer = ['','/A-b',''];
 $svk->branch('--setup', '//mirror/nomeans/A');
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], []);
@@ -54,4 +54,4 @@ is_output_like ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
     qr/Project detected in specified path./);
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
     ['Project already set in properties: //mirror/nomeans/projectB']);
-}
+#}

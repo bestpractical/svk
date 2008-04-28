@@ -58,6 +58,7 @@ use SVK::Util qw( is_uri get_prompt );
 use SVK::Project;
 use SVK::Logger;
 
+our $fromProp;
 use constant narg => undef;
 
 sub options {
@@ -98,14 +99,14 @@ sub run {
 
 sub load_project {
     my ($self, $target) = @_;
+    $fromProp = 0;
 
     Carp::cluck unless $target->isa('SVK::Path') or $target->isa('SVK::Path::Checkout');
     $target = $target->source if $target->isa('SVK::Path::Checkout');
-    my $proj =
-        SVK::Project->create_from_prop($target) ||
-        SVK::Project->create_from_path(
-	    $target->depot,
-	    $target->path );
+    my $proj = SVK::Project->create_from_prop($target);
+    $fromProp = 1 if $proj;
+    $proj ||= SVK::Project->create_from_path(
+	    $target->depot, $target->path );
     return $proj;
 }
 
@@ -127,7 +128,7 @@ sub run {
     my $proj = $self->load_project($target);
 
     if (!$proj) {
-	$logger->info( loc("No project branch founded.\n"));
+	$logger->info( loc("No project found.\n"));
 	return;
     }
 
@@ -179,6 +180,11 @@ sub run {
     my ($self, $target, $branch_path) = @_;
 
     my $proj = $self->load_project($target);
+
+    if (!$proj) {
+	$logger->info( loc("No project found.\n"));
+	return;
+    }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = '/'.$proj->depot->depotname.'/'.
@@ -507,45 +513,79 @@ sub run {
 
     my $proj = $self->load_project($target);
 
-    if (!$proj) {
-	$logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
-	my ($trunk_path, $branch_path, $tag_path, $project_name);
+    if ($proj && $fromProp) {
+	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
+    } else {
+	my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
 	for my $path ($target->depot->mirror->entries) {
 	    ($trunk_path, $project_name) = $target->path =~ m{^$path(/?([^/]+).*)$};
+	    $preceding_path = $path;
+	    last if $trunk_path;
+	}
+	if (!$proj) {
+	    $logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
+	} else {
+	    $logger->info( loc("Project detected in specified path.\n"));
+	    $project_name = $proj->name;
+	    $trunk_path = '/'.$proj->trunk;
+	    $trunk_path =~ s#^/?$preceding_path##;
+	    $branch_path = '/'.$proj->branch_location;
+	    $branch_path =~ s{^/?$preceding_path}{};
+	    $tag_path = '/'.$proj->tag_location;
+	    $tag_path =~ s{^/?$preceding_path}{};
 	}
 	{
 	    my $ans = get_prompt(
 		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
-		qr/^(?:.*)/
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*:|$)/
+
 	    );
 	    if (length($ans)) {
 		$trunk_path = $ans;
 		last;
 	    }
 	}
-	$branch_path = $trunk_path.'/branches';
+	$branch_path ||= $trunk_path.'/branches';
 	{
 	    my $ans = get_prompt(
 		loc("And where is the branches/? (%1)\n=> ", $branch_path),
-		qr/^(?:.*)/
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*:|$)/
 	    );
 	    if (length($ans)) {
 		$branch_path = $ans;
 		last;
 	    }
 	}
-	$tag_path = $trunk_path.'/tags';
+	$tag_path ||= $trunk_path.'/tags';
 	{
 	    my $ans = get_prompt(
-		loc("And where is the tags/? (press enter to skip)"),
-		qr/^(?:.*)/
+		loc("And where is the tags/? (%1) (or 's' to skip)", $tag_path),
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*:|$)/
 	    );
 	    if (length($ans)) {
 		$tag_path = $ans;
+		$tag_path = '' if lc($ans) eq 's';
 		last;
 	    }
 	}
 	#XXX implement setting properties of project here
+	my ($anchor, $editor) = $self->get_dynamic_editor ($target);
+	my $baton = $editor->open_directory ('/', 0, $target->revision);
+	{
+	    $editor->change_dir_prop ($baton, "svk:project:$project_name:path-trunk", $trunk_path);
+	    $editor->change_dir_prop ($baton, "svk:project:$project_name:path-branches", $branch_path);
+	    $editor->change_dir_prop ($baton, "svk:project:$project_name:path-tags", $tag_path);
+	}
+	$editor->close_directory ($baton);
+	$self->adjust_anchor ($editor);
+	$self->finalize_dynamic_editor ($editor);
+	my $proj = SVK::Project->create_from_prop($target);
+	# XXX: what if it still failed here? How to rollback the prop commits?
+	if (!$proj) {
+	    $logger->info( loc("Project setup failed.\n"));
+	} else {
+	    $logger->info( loc("Project setup success.\n"));
+	}
 	return;
     }
     return;

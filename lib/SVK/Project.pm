@@ -121,21 +121,6 @@ sub _find_branches {
     return \@branches;
 }
 
-sub create_to_prop {
-    my ($self, $pathobj, $project_name, @paths) = @_;
-
-    my $fs              = $pathobj->depot->repos->fs;
-    my $root            = $fs->revision_root( $fs->youngest_rev );
-    my ($prop_path)     = $root->node_prop('/','svm:mirror') =~ m/^(\S+)\s+$/;
-    my $allprops        = $root->node_proplist($prop_path);
-    
-    my %props;
-    $props{'path-trunk'} = $paths[0];
-    $props{'path-branches'} = $paths[1];
-    $props{'path-tags'} = $paths[2] || '';
-    return undef;
-}
-
 sub create_from_prop {
     my ($self, $pathobj) = @_;
 
@@ -159,6 +144,7 @@ sub create_from_prop {
 	    map {
 		my $prop = $allprops->{'svk:project:'.$project_name.':'.$_};
 		$prop =~ s{/$}{};
+		$prop =~ s{^/}{};
 		$_ => $prop_path.'/'.$prop }
 		('path-trunk', 'path-branches', 'path-tags');
     
@@ -230,7 +216,7 @@ sub _find_project_path {
 
 	($trunk_path, $branch_path, $tag_path) = 
 	    map { $mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
-	    map { '/'.$mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
+#	    map { '/'.$mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
 	# check trunk, branch, tag, these should be metadata-ed 
 	# we check if the structure of mirror is correct, otherwise go again
 	for my $_path ($trunk_path, $branch_path, $tag_path) {
