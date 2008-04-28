@@ -62,11 +62,11 @@ use SVK::Util qw(IS_WIN32 uri_escape);
 use SVK::Logger;
 use SVK::Editor::FilterProp;
 use SVK::Editor::Composite;
+use Moose;
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler SVK::Editor::Translate);
 
 ## class SVK::Mirror::Backend::SVNRa;
-## has $.mirror is weak;
 ## has ($!config, $!auth_baton, $!auth_ref);
 ## has ($.source_root, $.source_path, $.fromrev)
 
@@ -76,7 +76,12 @@ use base 'Class::Accessor::Fast';
 
 # for this: things without _'s will probably move to base
 # SVK::Mirror::Backend
-__PACKAGE__->mk_accessors(qw(mirror _config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra use_pipeline));
+__PACKAGE__->mk_accessors(qw(_config _auth_baton _auth_ref _auth_baton source_root source_path fromrev _has_replay _cached_ra use_pipeline));
+
+has mirror => (
+    is => "rw",
+    is_weak => 1,
+);
 
 =head1 NAME
 

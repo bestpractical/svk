@@ -49,8 +49,7 @@
 # 
 # END BPS TAGGED BLOCK }}}
 package SVK::Mirror;
-use strict;
-use warnings;
+use Moose;
 
 use SVN::Core;
 use SVK::Logger;
@@ -58,37 +57,27 @@ use SVK::Logger;
 use Sys::Hostname;
 use SVK::I18N;
 use SVK::Util qw(uri_escape uri_unescape);
-use Scalar::Util 'weaken';
 
-use base 'Class::Accessor::Fast';
+has [qw(path server_uuid source_uuid url _locked follow_anchor_copy _rev_cache)] => (
+    is => "rw",
+);
 
-__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy _rev_cache));
+has 'pool' => (
+    is => "ro",
+    default => { SVN::Pool->new(undef) },
+);
 
-*repos = sub { Carp::cluck unless $_[0]->depot; shift->depot->repos };
+has depot => (
+    is => "rw",
+    handles => [qw(repos)],
+);
+
+has _backend => (
+    is => 'rw',
+    handles => [qw(find_rev_from_changeset find_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path relocate)],
+);
 
 use SVK::Mirror::Backend::SVNRa;
-
-## class SVK::Mirror;
-## has ($.repos, $.path, $.server_uuid, $.url, $.pool);
-## has $!backend handles <find_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor>;
-## has $!locked
-
-## submethod BUILD($.path, $.repos, :$backend = 'SVNRa', :$.url, :%backend_options) {
-##   $!backend = $.load_backend: self;
-##   if $.url {
-##       $!backend.new: self;
-##   }
-##   else {
-##       $!backend.load: self;
-##   }
-##   POST {
-##     [&&] $.url, $.server_uuid;
-##   }
-## }
-
-## method load($path, $repos) {
-##   $.new(:$path, :$repos);
-##}
 
 =head1 NAME
 
@@ -118,18 +107,18 @@ sub create {
     my ( $class, $args ) = @_;
     my $self = $class->SUPER::new($args);
 
+    # in has uri, use a builder to handle this or do it in submethod BUILD
     $self->{url} =~ s{/+$}{}g;
     $self->{url} = uri_unescape($self->{url});
 
-    $self->pool( SVN::Pool->new(undef) )
-        unless $self->pool;
-
     if ( $self->path eq '/' ) {
+        # has backend => ( lazy_build => 1 )
+        # sub _build_backend {
         $self->_backend(
             $self->_create_backend( 'SVNSync',
                 $args->{backend_options} )
         );
-        weaken( $self->{_backend}{mirror} );
+        #}
         return $self;
     }
 
@@ -144,8 +133,6 @@ sub create {
     $self->_backend(
         $self->_create_backend( $args->{backend}, $args->{backend_options}, $opt{txn}, $editor )
     );
-
-    weaken( $self->{_backend}{mirror} );
 
     my %mirrors = map { ( $_ => 1 ) } $self->path,
         split( /\n/, $t->root->node_prop( '/', 'svm:mirror' ) || '' );
@@ -180,7 +167,6 @@ sub load {
     my $backend = $self->path eq '/' ? 'SVNSync' : 'SVNRa';
     $self->_backend(
         $self->_load_backend( $backend, $args->{backend_options} ) );
-    weaken( $self->{_backend}{mirror} );
 
     return $self;
 }
@@ -325,19 +311,6 @@ sub get_svkpath {
     my ($self, $path) = @_;
     return SVK::Path->real_new( { depot => $self->depot, path => $path || $self->path } )
       ->refresh_revision;
-}
-
-for my $delegate
-    qw( find_rev_from_changeset find_changeset sync_changeset traverse_new_changesets mirror_changesets get_commit_editor refresh change_rev_prop fromrev source_path relocate )
-{
-    no strict 'refs';
-    *{$delegate} = sub {
-        my $self   = shift;
-	Carp::cluck $delegate unless $self->_backend;
-        my $method = $self->_backend->can($delegate);
-        unshift @_, $self->_backend;
-        goto $method;
-    };
 }
 
 # compat methods
