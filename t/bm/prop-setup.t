@@ -7,7 +7,11 @@ our $output;
 
 my ($xd, $svk) = build_test('test');
 
+$svk->mkdir('-p', -m => 'trunk in project B', '/test/projectB/trunk');
+$svk->mkdir(-m => 'branches in project B', '/test/projectB/branches');
+$svk->mkdir(-m => 'tags in project B', '/test/projectB/tags');
 my $tree = create_basic_tree($xd, '/test/');
+$tree = create_basic_tree($xd, '/test/projectB/trunk');
 
 my $depot = $xd->find_depot('test');
 my $uri = uri($depot->repospath);
@@ -27,7 +31,7 @@ $svk->checkout('//mirror/nomeans',$copath);
 
 chdir($copath);
 
-is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], ['No project branch found.']);
+is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], ['No project found.']);
 TODO: {
 local $TODO = 'Need to implement br --setup ';
 $answer = ['','/A-b',''];
@@ -42,4 +46,12 @@ is_output ($svk, 'list', ['//mirror/nomeans/A-b/bar'],
     ['Q/' ,'be']);
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/A'],
     ['Project already set in properties: //mirror/nomeans/A']);
+
+chdir("..");
+is_output ($svk, 'branch', ['--list', '//mirror/nomeans/projectB'], []);
+$answer = ['','',''];
+is_output_like ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
+    qr/Project detected in specified path./);
+is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
+    ['Project already set in properties: //mirror/nomeans/projectB']);
 }
