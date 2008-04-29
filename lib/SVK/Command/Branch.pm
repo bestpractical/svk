@@ -72,8 +72,8 @@ sub options {
      'merge'            => 'merge',
      'push'             => 'push',
      'move'             => 'move',
-     'rm|remove'           => 'remove',
-     'del|delete'           => 'remove',
+     'rm|remove'        => 'remove',
+     'del|delete'       => 'remove',
      'setup'            => 'setup',
      'switch-to'        => 'switch',
     );
@@ -387,20 +387,16 @@ sub run {
 
     @srcs = map { $self->expand_branch($proj, $_) } @srcs;
 
-    my $branch_path = '/'.$proj->depot->depotname.'/'.$proj->branch_location;
-    my $dst_branch_path = $branch_path.'/'.$dst;
-    $dst_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
+    my $dst_depotpath = $dst;
+    $dst_depotpath = '/'.$proj->depot->depotname.'/'.$proj->trunk
 	if $dst eq 'trunk';
+    $dst_depotpath = $proj->depotpath_in_branch_or_tag($dst_depotpath) || $dst_depotpath;
+    $dst = $self->arg_co_maybe($dst_depotpath);
+    $dst->root->check_path($dst->path)
+	or die loc("Path or branche %1 does not included in current Project\n", $dst->depotpath);
+    $dst_depotpath = $dst->depotpath;
 
-    # try to get checkout from copath (if dst is specified PATH)
-    # if failed (SVN::Node::none), get from depotpath
-    if (-e $dst) {
-	my $copath = abs_path($dst);
-	my ($entry, @where) = $self->{xd}{checkout}->get($copath, 1);
-	$dst = $self->arg_depotpath($entry->{depotpath});
-    } else {
-	$dst = $self->arg_depotpath($dst_branch_path)
-    }
+    $dst = $self->arg_depotpath($dst_depotpath);
 
     # see also check_only in incmrental smerge.  this should be a
     # better api in svk::path
@@ -411,12 +407,12 @@ sub run {
     }
 
     for my $src (@srcs) {
-	my $src_branch_path = $branch_path.'/'.$src;
+	my $src_branch_path = $proj->depotpath_in_branch_or_tag($src);
 	$src_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
 	    if $src eq 'trunk';
 	$src = $self->arg_depotpath($src_branch_path);
 
-	$self->{message} = "- Merge $src_branch_path to $dst_branch_path";
+	$self->{message} = "- Merge $src_branch_path to ".$dst->depotpath;
 	my $ret = $self->SUPER::run($src, $dst);
 	$dst->refresh_revision;
     }

@@ -85,6 +85,7 @@ sub branches {
 
 sub tags {
     my $self = shift;
+    return [] unless $self->tag_location;
 
     my $fs              = $self->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
@@ -238,4 +239,13 @@ sub _find_project_path {
     return ($project_name, $trunk_path, $branch_path, $tag_path);
 }
 
+sub depotpath_in_branch_or_tag {
+    my ($self, $name) = @_;
+    # return 1 for branch, 2 for tag, others => 0
+    return '/'.$self->depot->depotname.'/'.$self->branch_location.'/'.$name
+	if grep { $_ eq $name } @{$self->branches};
+    return '/'.$self->depot->depotname.'/'.$self->tag_location.'/'.$name
+	if grep { $_ eq $name } @{$self->tags};
+    return ;
+}
 1;
