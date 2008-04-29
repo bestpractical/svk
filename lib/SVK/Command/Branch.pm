@@ -93,7 +93,15 @@ sub run {
 
     my $proj = $self->load_project($target);
 
-    $logger->info( loc("Project mapped.  Project name: %1.\n", $proj->name));
+    if ($proj) {
+        $logger->info( loc("Project mapped.  Project name: %1.\n", $proj->name));
+    } else {
+        $target->root->check_path($target->path)
+            or die loc("Path %1 does not exist.\n", $target->depotpath);
+        $logger->info(
+            loc("Project not found. use 'svk branch --setup %1' to initial.\n", $target->depotpath)
+        );
+    }
 
     return;
 }
