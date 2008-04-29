@@ -316,6 +316,7 @@ package SVK::Command::Branch::remove;
 use base qw( SVK::Command::Delete SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
+use SVK::Logger;
 
 sub lock { $_[0]->lock_target ($_[1]); };
 
@@ -352,13 +353,14 @@ sub run {
 	$target = $target->root->check_path($target->path) ? $target : undef;
 	$target ? 
 	    $self->{message} .= "- Delete branch ".$target->path."\n" :
-	    warn loc("No such branch exists: %1 %2\n",
-		$_, $self->{local} ? '(in local)' : '');
+	    $logger->info ( loc("No such branch exists: %1 %2",
+		$_, $self->{local} ? '(in local)' : '')
+	    );
 
 	$target;
     } @dsts;
 
-    $self->SUPER::run(@dsts);
+    $self->SUPER::run(@dsts) if @dsts;
 
     return;
 }
