@@ -1024,7 +1024,7 @@ Returns escaped URI.
 
 sub uri_escape {
     my ($uri) = @_;
-    $uri =~ s/([^0-9A-Za-z%+\-\/:_.!~*'()])/sprintf("%%%02X", ord($1))/eg;
+    $uri =~ s/([^0-9A-Za-z@%+\-\/:_.!~*'()])/sprintf("%%%02X", ord($1))/eg;
     return $uri;
 }
 
