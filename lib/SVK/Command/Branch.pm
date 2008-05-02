@@ -85,11 +85,17 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
+#    if ($arg[0] eq 'push') {
+#	shift @arg;
+#	local *$self->run = sub SVK::Command::Smerge::run;
+#	return SVK::Command::Branch::push::parse_arg($self,@arg);
+#    }
     return map {$self->arg_co_maybe ($_)} @arg;
 }
 
 sub run {
     my ( $self, $target, @options ) = @_;
+#    return SVK::Command::Branch::push::run($self,@options) if $target eq 'push';
 
     my $proj = $self->load_project($target);
 
@@ -172,16 +178,18 @@ sub lock { $_[0]->lock_target ($_[1]); };
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 0;
+    return if $#arg > 1;
 
-    my $dst = shift(@arg);
+    my $dst = shift (@arg);
     die loc ("Copy destination can't be URI.\n")
 	if is_uri ($dst);
 
-    die loc ("More than one URI found.\n")
-	if (grep {is_uri($_)} @arg) > 1;
+    @arg = ('') if $#arg < 0;
 
-    return ($self->arg_co_maybe (''), $dst);
+    die loc ("Copy source can't be URI.\n")
+	if is_uri ($arg[0]);
+
+    return ($self->arg_co_maybe ($arg[0]), $dst);
 }
 
 
@@ -607,10 +615,10 @@ SVK::Command::Branch - Manage a project with its branches
 
 =head1 SYNOPSIS
 
- branch --create [BRANCH]
+ branch --create BRANCH [DEPOTPATH]
 
  branch --list [--all]
- branch --create BRANCH [--local] [--switch-to]
+ branch --create BRANCH [--local] [--switch-to] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --delete BRANCH1
