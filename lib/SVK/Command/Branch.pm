@@ -506,7 +506,7 @@ sub run {
 }
 
 package SVK::Command::Branch::setup;
-use base qw( SVK::Command SVK::Command::Branch );
+use base qw( SVK::Command::Propset SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri get_prompt );
 use SVK::Logger;
@@ -537,6 +537,7 @@ sub run {
 	    $preceding_path = $path;
 	    last if $trunk_path;
 	}
+	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
 	if (!$proj) {
 	    $logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
 	} else {
@@ -566,7 +567,6 @@ sub run {
 		loc("And where is the branches/? (%1)\n=> ", $branch_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 	    );
-	    warn $ans;
 	    if (length($ans)) {
 		$branch_path = $ans;
 		last;
@@ -585,16 +585,10 @@ sub run {
 	    }
 	}
 	#XXX implement setting properties of project here
-	my ($anchor, $editor) = $self->get_dynamic_editor ($target);
-	my $baton = $editor->open_directory ('/', 0, $target->revision);
-	{
-	    $editor->change_dir_prop ($baton, "svk:project:$project_name:path-trunk", $trunk_path);
-	    $editor->change_dir_prop ($baton, "svk:project:$project_name:path-branches", $branch_path);
-	    $editor->change_dir_prop ($baton, "svk:project:$project_name:path-tags", $tag_path);
-	}
-	$editor->close_directory ($baton);
-	$self->adjust_anchor ($editor);
-	$self->finalize_dynamic_editor ($editor);
+	$self->{message} = "- Setup properties for project $project_name";
+	$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $root_depot);
+	$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $root_depot);
+	$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $root_depot);
 	my $proj = SVK::Project->create_from_prop($target);
 	# XXX: what if it still failed here? How to rollback the prop commits?
 	if (!$proj) {
