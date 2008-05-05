@@ -623,6 +623,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --delete BRANCH1
+ branch --setup DEPOTPATH
  branch --push [--from BRANCH]
 
 =head1 OPTIONS
@@ -636,6 +637,7 @@ SVK::Command::Branch - Manage a project with its branches
  --merge                : automatically merge all changes from BRANCH1, BRANCH2,
                           etc, to TARGET
  --push                 : move changes to wherever this branch was copied from
+ --setup                : setup a project for a specified DEPOTPATH
  -C [--check-only]      : try a create, move or merge operation but make no     
                           changes
 
