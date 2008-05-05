@@ -552,6 +552,16 @@ sub run {
 	}
 	{
 	    my $ans = get_prompt(
+		loc("Specify a project name (enter to use '%1'): ", $project_name),
+		qr/^(?:[A-Za-z][-+_A-Za-z0-9]*|$)/
+	    );
+	    if (length($ans)) {
+		$project_name = $ans;
+		last;
+	    }
+	}
+	{
+	    my $ans = get_prompt(
 		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 
