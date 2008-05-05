@@ -552,7 +552,7 @@ sub run {
 	{
 	    my $ans = get_prompt(
 		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
-		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*:|$)/
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 
 	    );
 	    if (length($ans)) {
@@ -564,8 +564,9 @@ sub run {
 	{
 	    my $ans = get_prompt(
 		loc("And where is the branches/? (%1)\n=> ", $branch_path),
-		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*:|$)/
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 	    );
+	    warn $ans;
 	    if (length($ans)) {
 		$branch_path = $ans;
 		last;
@@ -575,7 +576,7 @@ sub run {
 	{
 	    my $ans = get_prompt(
 		loc("And where is the tags/? (%1) (or 's' to skip)", $tag_path),
-		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*:|$)/
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 	    );
 	    if (length($ans)) {
 		$tag_path = $ans;
