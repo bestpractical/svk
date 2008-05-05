@@ -71,11 +71,13 @@ sub options {
      'from=s'           => 'from',
      'merge'            => 'merge',
      'push'             => 'push',
+     'checkout'         => 'checkout',
      'move'             => 'move',
      'rm|remove'        => 'remove',
      'del|delete'       => 'remove',
      'setup'            => 'setup',
      'switch-to'        => 'switch',
+     'verbose'          => 'verbose', # TODO
     );
 }
 
@@ -463,6 +465,38 @@ sub parse_arg {
     $self->SUPER::parse_arg (@arg);
 }
 
+package SVK::Command::Branch::checkout;
+use base qw( SVK::Command::Checkout SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg < 0 or $#arg > 1;
+
+    my $target = $self->arg_co_maybe ('');
+    my $proj = $self->load_project($target);
+
+    if (!$proj) {
+        $logger->info(
+            loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n")
+        );
+	return ;
+    }
+
+    my $branch_path = shift(@arg);
+    my $newtarget_path = '/'.$proj->depot->depotname.'/'.
+        ($self->{local} ?
+	    $proj->local_root."/$branch_path"
+	    :
+	    ($branch_path ne 'trunk' ?
+		$proj->branch_location . "/$branch_path/" : $proj->trunk)
+	);
+    unshift @arg, $newtarget_path;
+    return $self->SUPER::parse_arg(@arg);
+}
+
+
 package SVK::Command::Branch::switch;
 use base qw( SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
@@ -626,7 +660,8 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [--local] [--switch-to] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
- branch --delete BRANCH1
+ branch --checkout BRANCH [PATH]
+ branch --delete BRANCH1 BRANCH2 ...
  branch --setup DEPOTPATH
  branch --push [--from BRANCH]
 
@@ -635,7 +670,8 @@ SVK::Command::Branch - Manage a project with its branches
  -l [--list]            : list branches for this project
  --create               : create a new branch
  --local                : targets in local branch
- --delete               : delete BRANCH
+ --delete               : delete BRANCH(s)
+ --checkout             : checkout BRANCH in current directory
  --switch               : switch the current checkout to another branch
                           (can be paired with --create)
  --merge                : automatically merge all changes from BRANCH1, BRANCH2,
