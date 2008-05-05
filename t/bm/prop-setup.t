@@ -34,7 +34,7 @@ chdir($copath);
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], ['No project found.']);
 #TODO: {
 #local $TODO = 'Need to implement br --setup ';
-$answer = ['','/A-b',''];
+$answer = ['', '','/A-b',''];
 $svk->branch('--setup', '//mirror/nomeans/A');
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], []);
 
@@ -49,7 +49,7 @@ is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/A'],
 
 chdir("..");
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/projectB'], []);
-$answer = ['','',''];
+$answer = ['', '','',''];
 is_output_like ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
     qr/Project detected in specified path./);
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
