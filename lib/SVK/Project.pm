@@ -123,7 +123,7 @@ sub _find_branches {
 }
 
 sub create_from_prop {
-    my ($self, $pathobj) = @_;
+    my ($self, $pathobj, $pname) = @_;
 
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
@@ -139,6 +139,7 @@ sub create_from_prop {
     my ($depotroot)     = '/';
     my %projnames = 
         map  { $_ => 1 }
+	grep { (1 and !$pname) or ($_ eq $pname)  } # if specified pname, the grep it only
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
     

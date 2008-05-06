@@ -65,16 +65,17 @@ sub options {
     ('l|list'           => 'list',
      'C|check-only'     => 'check_only',
      'P|patch=s'        => 'patch',
-     'create'           => 'create',
      'all'              => 'all',
-     'local'            => 'local',
-     'from=s'           => 'from',
-     'merge'            => 'merge',
-     'push'             => 'push',
-     'checkout'         => 'checkout',
-     'move'             => 'move',
-     'rm|remove'        => 'remove',
+     'co|checkout'      => 'checkout',
+     'create'           => 'create',
      'del|delete'       => 'remove',
+     'from=s'           => 'from',
+     'local'            => 'local',
+     'merge'            => 'merge',
+     'move'             => 'move',
+     'push'             => 'push',
+     'project=s'          => 'project',
+     'rm|remove'        => 'remove',
      'setup'            => 'setup',
      'switch-to'        => 'switch',
      'verbose'          => 'verbose', # TODO
@@ -120,7 +121,7 @@ sub load_project {
 
     Carp::cluck unless $target->isa('SVK::Path') or $target->isa('SVK::Path::Checkout');
     $target = $target->source if $target->isa('SVK::Path::Checkout');
-    my $proj = SVK::Project->create_from_prop($target);
+    my $proj = SVK::Project->create_from_prop($target, $self->{project});
     $fromProp = 1 if $proj;
     $proj ||= SVK::Project->create_from_path(
 	    $target->depot, $target->path );
