@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 69;
+plan tests => 74;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -333,6 +333,40 @@ overwrite_file("A/verbose", "you know the drill");
 is_output ($svk, 'status', [],
 	   [__('M   A/foo'),
         __('M   A/verbose')]);
+
+$svk->revert('A/verbose');
+
+# bug with ?->A in `svk ci ..`
+$svk->remove('A/verbose');
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+        __('D   A/verbose')]);
+
+$svk->commit ('-m', 'blah');
+
+overwrite_file("A/foo", "hi");
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
+
+overwrite_file("A/verbose", "happy happy joy joy");
+
+chdir('A/deep');
+is_output ($svk, 'commit', ['..'],
+    ['Waiting for editor...',
+    'Committed revision 20.'], 'we got a commit by replacing a ? with an A');
+chdir('../..');
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo')]);
+
+overwrite_file("A/verbose", "just making sure I'm versioned");
+
+is_output ($svk, 'status', [],
+	   [__('M   A/foo'),
+        __('M   A/verbose')]);
+
 $svk->revert('A/verbose');
 # }}}
 
@@ -369,7 +403,7 @@ $svk->revert ('-R');
 append_file ("A/bar", "foobar2");
 is_output ($svk, 'commit', [],
 	   ['Waiting for editor...',
-	    'Committed revision 21.'], 'buffer unmodified');
+	    'Committed revision 23.'], 'buffer unmodified');
 $answer = 'a';
 append_file ("A/bar", "foobar2");
 is_output ($svk, 'commit', [],
@@ -382,20 +416,20 @@ is_output ($svk, 'commit', [-F => 'svk-commit', -m => 'hate'],
 	   ["Can't use -F with -m."]);
 
 is_output ($svk, 'commit', [-F => 'svk-commit'],
-	   ['Committed revision 22.'], 'commit with -F');
+	   ['Committed revision 24.'], 'commit with -F');
 
-is_output_like ($svk, 'log', [-r => 22],
+is_output_like ($svk, 'log', [-r => 24],
 		qr/my log message/);
 
 append_file ("A/bar", "please be changed");
 is_output($svk, 'commit', [-m => "i like a monkey\nand a birdie", '--template'],
           ["Waiting for editor...",
-	   "Committed revision 23."], 'commit with -m and --template');
+	   "Committed revision 25."], 'commit with -m and --template');
 
-is_output_like ($svk, 'log', [-r => 23],
+is_output_like ($svk, 'log', [-r => 25],
 		qr/i like a gorilla/, 'first line successfully edited from template');
 
-is_output_like ($svk, 'log', [-r => 23],
+is_output_like ($svk, 'log', [-r => 25],
 		qr/and a parrot/, 'second line successfully edited from template');
 
 append_file ("A/bar", "changed some more");
@@ -403,23 +437,23 @@ overwrite_file ('svk-commit', "this time it's a birdie\nalso a monkey");
 
 is_output($svk, 'commit', [-F => 'svk-commit', '--template'],
           ["Waiting for editor...",
-	   "Committed revision 24."], 'commit with -F and --template');
+	   "Committed revision 26."], 'commit with -F and --template');
 
-is_output_like ($svk, 'log', [-r => 24],
+is_output_like ($svk, 'log', [-r => 26],
 		qr/this time it's a parrot/, 'first line successfully edited from template');
 
-is_output_like ($svk, 'log', [-r => 24],
+is_output_like ($svk, 'log', [-r => 26],
 		qr/also a gorilla/, 'second line successfully edited from template');
 
 overwrite_file("changeme", 'to be committed with revprop');
 $svk->add("changeme");
 
 is_output($svk, 'commit', [-m => 'with revprop', '--set-revprop', 'fnord=baz'],
-          ["Committed revision 25."], 'fnord');
+          ["Committed revision 27."], 'fnord');
 
 is_output(
-    $svk, 'pl', ['-r' => 25, '--revprop'],
-    ['Unversioned properties on revision 25:',
+    $svk, 'pl', ['-r' => 27, '--revprop'],
+    ['Unversioned properties on revision 27:',
      '  fnord',
      '  svn:author',
      '  svn:date',

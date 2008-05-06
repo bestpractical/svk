@@ -329,7 +329,7 @@ sub get_buffer_from_editor {
         }
         grep {
         !/^\?/m
-        }    # remove unversioned fils
+        }    # remove unversioned files
         grep {/\S/}
         split( /\n+/, $ret[1] );
 
