@@ -12,7 +12,6 @@ sub new {
 sub add_file {
     my ($self, $path) = @_;
     
-    my ($prompt, $default);
     my $default = 'a';
     my $prompt = loc(
         "Conflict found in %1:\na)add, s)kip, h)elp? [%2] ",
@@ -31,7 +30,6 @@ sub add_file {
 sub add_directory {
     my ($self, $path) = @_;
     
-    my ($prompt, $default);
     my $default = 'a';
     my $prompt = loc(
         "Conflict found in %1:\na)dd all, o)only this, s)kip, h)elp? [%2] ",
