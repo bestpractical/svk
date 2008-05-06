@@ -61,24 +61,19 @@ use SVK::Logger;
 our $fromProp;
 use constant narg => undef;
 
+my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create setup);
+
 sub options {
     ('l|list'           => 'list',
      'C|check-only'     => 'check_only',
      'P|patch=s'        => 'patch',
      'all'              => 'all',
-     'co|checkout'      => 'checkout',
-     'create'           => 'create',
-     'del|delete'       => 'remove',
      'from=s'           => 'from',
      'local'            => 'local',
-     'merge'            => 'merge',
-     'move'             => 'move',
-     'push'             => 'push',
-     'project=s'          => 'project',
-     'rm|remove'        => 'remove',
-     'setup'            => 'setup',
+     'project=s'        => 'project',
      'switch-to'        => 'switch',
      'verbose'          => 'verbose', # TODO
+     map { my $cmd = $_; s/\|.*$//; ($cmd => $_) } @SUBCOMMANDS
     );
 }
 
