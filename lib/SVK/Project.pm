@@ -226,9 +226,9 @@ sub _find_project_path {
 
     my ($mirror_path,$project_name);
     my ($trunk_path, $branch_path, $tag_path);
-    my $depotname = $path_obj->depot->depotname;
+    my $current_path = $path_obj->_to_pclass($path_obj->path);
     # Finding inverse layout first
-    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.+?/(?:trunk|branches|tags)/[^/]+)};
+    my ($path) = $current_path =~ m{^/(.+?/(?:trunk|branches|tags)/[^/]+)};
     if ($path) {
         ($mirror_path, $project_name) = # always assume the last entry the projectname
             $path =~ m{^(.*/)?(?:trunk|branches|tags)/(.+)$}; 
@@ -242,7 +242,7 @@ sub _find_project_path {
         $project_name = '';
     }
     # not found in inverse layout, else 
-    ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
+    ($path) = $current_path =~ m{^/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
 
     if ($path =~ m{^local/([^/]+)/?}) { # guess if in local branch
 	# should only be 1 entry
