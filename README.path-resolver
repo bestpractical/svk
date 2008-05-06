@@ -27,6 +27,12 @@ looked deeper in the code and decided that it's better to stop on following goal
   X/dir/file
   ...
 
+=head1 SIDENOTES
+
+* if I resolve a conflict then I do want svk to commit after all even
+  if overall merge is empty. I don't want to resolve things again and
+  this is not only about path resolving.
+
 =head1 CASES
 
 =head2 new node in locally deleted dir
