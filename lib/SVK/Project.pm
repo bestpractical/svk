@@ -200,6 +200,25 @@ sub create_from_path {
 	});
 }
 
+sub _check_project_path {
+    my ($self, $path_obj, $trunk_path, $branch_path, $tag_path) = @_;
+
+    my $checked_result = 1;
+    # check trunk, branch, tag, these should be metadata-ed 
+    # we check if the structure of mirror is correct, otherwise go again
+    for my $_path ($trunk_path, $branch_path, $tag_path) {
+        unless ($path_obj->root->check_path($_path) == $SVN::Node::dir) {
+            if ($tag_path eq $_path) { # tags directory is optional
+                $checked_result = 2; # no tags
+            }
+            else {
+                return 0;
+            }
+        }
+    }
+    return $checked_result;
+}
+
 # this is heuristics guessing of project and should be replaced
 # eventually when we can define project meta data.
 sub _find_project_path {
@@ -208,7 +227,22 @@ sub _find_project_path {
     my ($mirror_path,$project_name);
     my ($trunk_path, $branch_path, $tag_path);
     my $depotname = $path_obj->depot->depotname;
-    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
+    # Finding inverse layout first
+    my ($path) = $path_obj->depotpath =~ m{^/$depotname/(.+?/(?:trunk|branches|tags)/[^/]+)};
+    if ($path) {
+        ($mirror_path, $project_name) = # always assume the last entry the projectname
+            $path =~ m{^(.*/)?(?:trunk|branches|tags)/(.+)$}; 
+        if ($project_name) {
+            ($trunk_path, $branch_path, $tag_path) = 
+                map { $mirror_path.$_.'/'.$project_name } ('trunk', 'branches', 'tags');
+            my $result = $self->_check_project_path ($path_obj, $trunk_path, $branch_path, $tag_path);
+	    $tag_path = '' if $result == 2;
+            return ($project_name, $trunk_path, $branch_path, $tag_path) if $result > 0;
+        }
+        $project_name = '';
+    }
+    # not found in inverse layout, else 
+    ($path) = $path_obj->depotpath =~ m{^/$depotname/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
 
     if ($path =~ m{^local/([^/]+)/?}) { # guess if in local branch
 	# should only be 1 entry
@@ -224,23 +258,12 @@ sub _find_project_path {
 
 	($trunk_path, $branch_path, $tag_path) = 
 	    map { $mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
-#	    map { '/'.$mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
-	# check trunk, branch, tag, these should be metadata-ed 
-	# we check if the structure of mirror is correct, otherwise go again
-	for my $_path ($trunk_path, $branch_path, $tag_path) {
-            unless ($path_obj->root->check_path($_path) == $SVN::Node::dir) {
-                if ($tag_path eq $_path) { # tags directory is optional
-                    undef $tag_path;
-                }
-                else {
-                    undef $project_name;
-                }
-            }
-	}
+	my $result = $self->_check_project_path ($path_obj, $trunk_path, $branch_path, $tag_path);
 	# if not the last entry, then the mirror_path should contains
 	# trunk/branches/tags, otherwise no need to test
 	($path) = $mirror_path =~ m{^(.+(?=/(?:trunk|branches|tags)))}
-	    unless $project_name;
+	    unless $result != 0;
+	$tag_path = '' if $result == 2;
 	return undef unless $path;
     }
     return ($project_name, $trunk_path, $branch_path, $tag_path);
@@ -255,4 +278,17 @@ sub depotpath_in_branch_or_tag {
 	if grep { $_ eq $name } @{$self->tags};
     return ;
 }
+
+sub branch_path {
+    my ($self, $bname, $is_local) = @_;
+    my $branch_path = '/'.$self->depot->depotname.'/'.
+        ($is_local ?
+            $self->local_root."/$bname"
+            :
+            ($bname ne 'trunk' ?
+                $self->branch_location . "/$bname" : $self->trunk)
+        );
+    return $branch_path;
+}
+
 1;

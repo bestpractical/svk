@@ -192,7 +192,7 @@ sub parse_arg {
 
 
 sub run {
-    my ($self, $target, $branch_path) = @_;
+    my ($self, $target, $branch_name) = @_;
 
     my $proj = $self->load_project($target);
 
@@ -202,15 +202,8 @@ sub run {
     }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
-    my $src_path = '/'.$proj->depot->depotname.'/'.
-	( $self->{from} ?
-	    $proj->branch_location .'/'. $self->{from}.'/'
-	    :
-	    $proj->trunk
-	);
-    my $newbranch_path = '/'.$proj->depot->depotname.'/'.
-	( $self->{local} ? $proj->local_root : $proj->branch_location ).
-	'/'.$branch_path.'/';
+    my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
+    my $newbranch_path = $proj->branch_path($branch_name, $self->{local});
 
     my $src = $self->arg_uri_maybe($src_path);
     die loc("Invalid --from argument") if
@@ -218,15 +211,15 @@ sub run {
     my $dst = $self->arg_uri_maybe($newbranch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
-	    $branch_path, $self->{local} ? '(in local)' : '');
+	    $branch_name, $self->{local} ? '(in local)' : '');
 
     $self->{parent} = 1;
-    $self->{message} ||= "- Create branch $branch_path";
+    $self->{message} ||= "- Create branch $branch_name";
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
 	$logger->info( loc("Project branch created: %1%2%3\n",
-	    $branch_path,
+	    $branch_name,
 	    $self->{local} ? ' (in local)' : '',
 	    $self->{from} ? " (from $self->{from})" : '',
 	  )
@@ -347,13 +340,7 @@ sub run {
     @dsts = map { $self->expand_branch($proj, $_) } @dsts;
 
     @dsts = grep { defined($_) } map { 
-	my $target_path = '/'.$proj->depot->depotname.'/'.
-	    ($self->{local} ?
-		$proj->local_root."/$_"
-		:
-		($_ ne 'trunk' ?
-		    $proj->branch_location . "/$_" : $proj->trunk)
-	    );
+	my $target_path = $proj->branch_path($_, $self->{local});
 
 	my $target = $self->arg_uri_maybe($target_path);
 	$target = $target->root->check_path($target->path) ? $target : undef;
@@ -480,14 +467,8 @@ sub parse_arg {
 	return ;
     }
 
-    my $branch_path = shift(@arg);
-    my $newtarget_path = '/'.$proj->depot->depotname.'/'.
-        ($self->{local} ?
-	    $proj->local_root."/$branch_path"
-	    :
-	    ($branch_path ne 'trunk' ?
-		$proj->branch_location . "/$branch_path/" : $proj->trunk)
-	);
+    my $branch_name = shift(@arg);
+    my $newtarget_path = $proj->branch_path($branch_name, $self->{local});
     unshift @arg, $newtarget_path;
     return $self->SUPER::parse_arg(@arg);
 }
@@ -520,13 +501,7 @@ sub run {
 
     my $proj = $self->load_project($target);
 
-    my $newtarget_path = '/'.$proj->depot->depotname.'/'.
-        ($self->{local} ?
-	    $proj->local_root."/$new_path"
-	    :
-	    ($new_path ne 'trunk' ?
-		$proj->branch_location . "/$new_path/" : $proj->trunk)
-	);
+    my $newtarget_path = $proj->branch_path($new_path, $self->{local});
 
     $self->SUPER::run(
 	$self->arg_uri_maybe($newtarget_path),
