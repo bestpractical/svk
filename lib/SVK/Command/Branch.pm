@@ -61,7 +61,7 @@ use SVK::Logger;
 our $fromProp;
 use constant narg => undef;
 
-my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create setup);
+my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create setup online offline);
 
 sub options {
     ('l|list'           => 'list',
@@ -640,6 +640,56 @@ sub run {
     }
     return;
 }
+
+package SVK::Command::Branch::online;
+use base qw( SVK::Command::Branch::move SVK::Command::Switch );
+use SVK::I18N;
+use SVK::Logger;
+
+sub lock { $_[0]->lock_target ($_[1]); };
+
+sub parse_arg {
+    my ($self, $arg) = @_;
+    my $target = $self->arg_co_maybe($arg || '');
+    # XXX: make sure we are a local branch
+    $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
+    # XXX: if the remote branch of the same name already exists, do a
+    # smerge instead
+    $self->{branch_name} = $target->_to_pclass($target->path)->dir_list(-1);
+
+    return ($target, $self->{branch_name}, $target->depotpath);
+}
+
+sub run {
+    my ($self, $target, @args) = @_;
+    $self->SUPER::run($target, @args);
+    my $proj = $self->load_project($target);
+
+    my $newtarget = $target->mclone( path => '/'. $proj->branch_location . '/' . $self->{branch_name} )->refresh_revision;
+
+    # XXX: we have a little conflict in private hash argname.
+    $self->{rev} = undef;
+    $self->SVK::Command::Switch::run($newtarget, $target) if $target->isa('SVK::Path::Checkout');
+}
+
+package SVK::Command::Branch::offline;
+use base qw( SVK::Command::Branch::create );
+use SVK::I18N;
+use SVK::Logger;
+
+# --offline FOO:
+#   --create FOO --local  if FOO/local does't exist 
+
+# --offline (at checkout of branch FOO
+#   --create FOO --from FOO --local
+
+sub run {
+    my ($self, $target, $branch_path) = @_;
+    $self->{local} = 1;
+    $self->{switch} = 1;
+    $self->SUPER::run($target, $branch_path);
+}
+
 1;
 
 __DATA__

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 6;
+plan tests => 5;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -17,16 +17,12 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-$svk->cp(-m => 'branch foo', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/foo');
-
 my ($copath, $corpath) = get_copath('basic-trunk');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 
 chdir($copath);
 
-TODO: {
-local $TODO = '--online/--offline not implemented yet';
 # this should be is_output(_like) instead of just run it
 # but I'm not sure what's the correct message yet
 $svk->br('--offline','foo');
@@ -34,14 +30,24 @@ $svk->br('--offline','foo');
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //local/MyProject/foo|);
 
+is_ancestor($svk, '//local/MyProject/foo', '/mirror/MyProject/trunk', 6);
+
 is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
           ['foo']);
+append_file('A/be', "fnordorz\n");
+$svk->commit(-m => 'orz');
 
-# should online need an argument ?
-$svk->br('--online');
+$svk->br('--online'); # XXX: check output
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/foo|);
+
+is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
+
+
+exit;
+TODO: {
+# should online need an argument ?
 
 # let's play with feature/foobar branch now
 
