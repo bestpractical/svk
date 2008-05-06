@@ -4,7 +4,7 @@
 # <clkao> it has trunk/[PROJNAME], branches/[PROJNAME]/* etc
 use strict;
 use SVK::Test;
-plan tests => 10;
+plan tests => 8;
 our $output;
 
 my ($xd, $svk) = build_test('test');
