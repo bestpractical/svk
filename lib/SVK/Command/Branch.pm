@@ -697,6 +697,7 @@ SVK::Command::Branch - Manage a project with its branches
                           (can be paired with --create)
  --merge                : automatically merge all changes from BRANCH1, BRANCH2,
                           etc, to TARGET
+ --project              : specify the target project name 
  --push                 : move changes to wherever this branch was copied from
  --setup                : setup a project for a specified DEPOTPATH
  -C [--check-only]      : try a create, move or merge operation but make no     

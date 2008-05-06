@@ -26,8 +26,6 @@ my ($copath, $corpath) = get_copath('prop-setup-inverse');
 $svk->mirror('//mirror/nomeans', $uri);
 $svk->sync('//mirror/nomeans');
 
-TODO: {
-local $TODO = 'no implemented yet';
 $answer = ['', '','',''];
 $svk->branch('--setup', '//mirror/nomeans/trunk/sushi');
 
@@ -40,6 +38,8 @@ is_output ($svk, 'branch', ['--list', '--project', 'sushi', '//mirror/nomeans'],
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/trunk/sushi'],
     ['Project already set in properties: //mirror/nomeans/trunk/sushi']);
 
+TODO: {
+local $TODO = 'no implemented yet';
 chdir($copath);
 
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/trunk/benshi'], []);
