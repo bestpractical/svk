@@ -263,6 +263,7 @@ sub add_file {
         my $action = SVK::PathResolve->new->add_file($path);
         if ( $action eq 's' ) {
             ++$self->{skipped};
+            ++$self->{changes}; # we do want to write a merge ticket
             $self->{notify}->flush ($path);
             return undef;
         }
@@ -643,6 +644,7 @@ sub add_directory {
         my $action = SVK::PathResolve->new->add_directory($path);
         if ( $action eq 's' ) {
             ++$self->{skipped};
+            ++$self->{changes};
             $self->{notify}->node_status ($path, '');
             return undef;
         }
