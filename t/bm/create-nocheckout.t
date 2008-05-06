@@ -20,7 +20,7 @@ $svk->sync('//mirror/MyProject');
 my ($copath, $corpath) = get_copath ('MyProject');
 
 is_output ($svk, 'branch', ['--create', 'feature/foo'],
-    ['path /usr/home/clsung/svn/svk/trunk is not a checkout path.']);
+    [qr/path \S+ is not a checkout path./]);
 
 is_output_like ($svk, 'branch', ['--create', 'feature/foo', '//mirror/MyProject'],
     qr'Project branch created: feature/foo');
