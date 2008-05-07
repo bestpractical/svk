@@ -328,9 +328,9 @@ sub parse_arg {
 	    if is_uri ($_);
     }
 
-    my $project_path = pop @arg if $#arg > 0;
     # if specified project path at the end
-    $project_path = '' unless is_depotpath($project_path);
+    my $project_path = pop @arg if $#arg > 0 and is_depotpath($arg[$#arg]);
+    $project_path = '' unless $project_path;
     return ($self->arg_co_maybe ($project_path), @arg);
 }
 
