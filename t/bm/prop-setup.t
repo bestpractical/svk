@@ -31,7 +31,9 @@ $svk->checkout('//mirror/nomeans',$copath);
 
 chdir($copath);
 
-is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'], ['No project found.']);
+is_output ($svk, 'branch', ['--list', '//mirror/nomeans/A'],
+    ["Project not found. use 'svk branch --setup //mirror/nomeans/A' to initial.",
+     "No project found."]);
 #TODO: {
 #local $TODO = 'Need to implement br --setup ';
 $answer = ['', '','/A-b',''];

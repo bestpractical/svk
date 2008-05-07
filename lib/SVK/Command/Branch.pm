@@ -103,9 +103,6 @@ sub run {
     } else {
         $target->root->check_path($target->path)
             or die loc("Path %1 does not exist.\n", $target->depotpath);
-        $logger->info(
-            loc("Project not found. use 'svk branch --setup %1' to initial.\n", $target->depotpath)
-        );
     }
 
     return;
@@ -121,7 +118,28 @@ sub load_project {
     $fromProp = 1 if $proj;
     $proj ||= SVK::Project->create_from_path(
 	    $target->depot, $target->path );
-    return $proj;
+    return $proj if $proj;
+
+    if ($SVN::Node::dir == $target->root->check_path($target->_to_pclass($target->path)->subdir('trunk'))) {
+	my $possible_pname = $target->_to_pclass($target->path)->dir_list(-1);
+	$logger->info(
+	    loc("I found a \"trunk\" directory for project '%1', but I can't find a \"branches\" directory.",
+		$possible_pname)
+	);
+	$logger->info(
+	    loc('You should either run "svk mkdir %1/branches" to set up the standard',
+		$target->depotpath)
+	);
+	$logger->info(
+	    loc('project layout or run "svk br --setup %1" to specify an alternate layout.',
+		$target->depotpath)
+	);
+    } else {
+	$logger->info(
+	    loc("Project not found. use 'svk branch --setup %1' to initial.\n", $target->depotpath)
+	);
+    }
+    return ;
 }
 
 sub expand_branch {
