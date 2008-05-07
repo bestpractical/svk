@@ -590,7 +590,11 @@ sub run {
     } else {
 	my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
 	for my $path ($target->depot->mirror->entries) {
-	    ($trunk_path, $project_name) = $target->path =~ m{^$path(/?([^/]+).*)$};
+	    next unless $target->path =~ m{^$path};
+	    ($trunk_path) = $target->path =~ m{^$path(/?.*)$};
+	    $project_name = $target->_to_pclass($target->path)->dir_list(-1);
+	    $project_name = $target->_to_pclass($target->path)->dir_list(-2)
+		if $project_name eq 'trunk';
 	    $preceding_path = $path;
 	    last if $trunk_path;
 	}
@@ -617,6 +621,7 @@ sub run {
 		last;
 	    }
 	}
+	$trunk_path ||= $target->_to_pclass('/')->subdir('trunk');
 	{
 	    my $ans = get_prompt(
 		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
@@ -628,7 +633,7 @@ sub run {
 		last;
 	    }
 	}
-	$branch_path ||= $trunk_path.'/branches';
+	$branch_path ||= $target->_to_pclass($trunk_path)->parent->subdir('branches');
 	{
 	    my $ans = get_prompt(
 		loc("And where is the branches/? (%1)\n=> ", $branch_path),
@@ -639,7 +644,7 @@ sub run {
 		last;
 	    }
 	}
-	$tag_path ||= $trunk_path.'/tags';
+	$tag_path ||= $target->_to_pclass($trunk_path)->parent->subdir('tags');
 	{
 	    my $ans = get_prompt(
 		loc("And where is the tags/? (%1) (or 's' to skip)", $tag_path),
