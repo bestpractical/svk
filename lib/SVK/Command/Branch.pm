@@ -98,7 +98,6 @@ sub run {
     my $proj = $self->load_project($target);
 
     if ($proj) {
-        $logger->info( loc("Project mapped."));
         $proj->info($target);
     } else {
         $target->root->check_path($target->path)
