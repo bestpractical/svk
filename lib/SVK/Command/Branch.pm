@@ -120,6 +120,7 @@ sub load_project {
 	    $target->depot, $target->path );
     return $proj if $proj;
 
+    return if $self->{setup};
     if ($SVN::Node::dir == $target->root->check_path($target->_to_pclass($target->path)->subdir('trunk'))) {
 	my $possible_pname = $target->_to_pclass($target->path)->dir_list(-1);
 	$logger->info(
