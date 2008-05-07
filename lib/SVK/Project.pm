@@ -321,11 +321,13 @@ sub info {
 	    $bname = $target->_to_pclass($target->path)->relative($self->tag_location)->dir_list(0);
 	}
 
-	$logger->info ( loc("Current Branch: %1 (%2)\n", $bname, $where ));
-	$logger->info ( loc("Depot Path: (%1)\n", $target->depotpath ));
-	if ($where ne 'trunk') { # project trunk should not have Copied info
-	    for ($target->copy_ancestors) {
-		$logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
+	if ($where) {
+	    $logger->info ( loc("Current Branch: %1 (%2)\n", $bname, $where ));
+	    $logger->info ( loc("Depot Path: (%1)\n", $target->depotpath ));
+	    if ($where ne 'trunk') { # project trunk should not have Copied info
+		for ($target->copy_ancestors) {
+		    $logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
+		}
 	    }
 	}
     }
