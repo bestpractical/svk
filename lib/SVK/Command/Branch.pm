@@ -188,7 +188,17 @@ sub parse_arg {
     die loc ("Copy source can't be URI.\n")
 	if is_uri ($arg[0]);
 
-    return ($self->arg_co_maybe ($arg[0]), $dst);
+    my $target;
+    eval {
+	$target = $self->arg_co_maybe($arg[0]);
+    };
+    if ($@) { 
+	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
+	$logger->info("either run '$0 branch --create' from within an existing chekout or specify");
+	$logger->info("a project root using the --project flag");
+	die $@;
+    }
+    return ($target, $dst);
 }
 
 

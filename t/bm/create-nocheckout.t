@@ -19,14 +19,11 @@ $svk->sync('//mirror/MyProject');
 
 my ($copath, $corpath) = get_copath ('MyProject');
 
-TODO: {
-local $TODO = 'To be implemented';
 is_output ($svk, 'branch', ['--create', 'feature/foo'],
-    [qr/path \S+ is not a checkout path./,
-     "I can't figure out what project you'd like to create a branch in. Please",
-     "either run 'svk branch --create' from within an existing chekout or specify",
-     "a project root using the --project flag"]);
-}
+    ["I can't figure out what project you'd like to create a branch in. Please",
+     "either run '$0 branch --create' from within an existing chekout or specify",
+     "a project root using the --project flag",
+     qr/path \S+ is not a checkout path./]);
 
 is_output_like ($svk, 'branch', ['--create', 'feature/foo', '//mirror/MyProject'],
     qr'Project branch created: feature/foo');
