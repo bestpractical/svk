@@ -52,6 +52,8 @@ package SVK::Project;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use Path::Class;
+use SVK::Logger;
+use SVK::I18N;
 use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(
@@ -282,6 +284,13 @@ sub depotpath_in_branch_or_tag {
     return ;
 }
 
+sub branch_name {
+    my ($self, $bpath, $is_local) = @_;
+    my $branch_location = $is_local ? $self->local_root : $self->branch_location;
+    $bpath =~ s{^\Q$branch_location\E/}{};
+    return $bpath;
+}
+
 sub branch_path {
     my ($self, $bname, $is_local) = @_;
     my $branch_path = '/'.$self->depot->depotname.'/'.
@@ -294,4 +303,31 @@ sub branch_path {
     return $branch_path;
 }
 
+sub info {
+    my ($self, $target) = @_;
+
+    $logger->info ( loc("Project name: %1.\n", $self->name));
+    if ($target) {
+	my $where;
+	my $bname;
+	if (dir($self->trunk)->subsumes($target->path)) {
+	    $where = 'trunk';
+	    $bname = 'trunk';
+	} elsif (dir($self->branch_location)->subsumes($target->path)) {
+	    $where = 'branch';
+	    $bname = $target->_to_pclass($target->path)->relative($self->branch_location)->dir_list(0);
+	} elsif (dir($self->tag_location)->subsumes($target->path)) {
+	    $where = 'tag';
+	    $bname = $target->_to_pclass($target->path)->relative($self->tag_location)->dir_list(0);
+	}
+
+	$logger->info ( loc("Current Branch: %1 (%2)\n", $bname, $where ));
+	$logger->info ( loc("Depot Path: (%1)\n", $target->depotpath ));
+	if ($where ne 'trunk') { # project trunk should not have Copied info
+	    for ($target->copy_ancestors) {
+		$logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
+	    }
+	}
+    }
+}
 1;

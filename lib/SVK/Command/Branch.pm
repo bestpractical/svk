@@ -98,7 +98,8 @@ sub run {
     my $proj = $self->load_project($target);
 
     if ($proj) {
-        $logger->info( loc("Project mapped.  Project name: %1.\n", $proj->name));
+        $logger->info( loc("Project mapped."));
+        $proj->info($target);
     } else {
         $target->root->check_path($target->path)
             or die loc("Path %1 does not exist.\n", $target->depotpath);
@@ -228,7 +229,7 @@ sub run {
 	$self->SVK::Command::Switch::run(
 	    $self->arg_uri_maybe($newbranch_path),
 	    $target
-	) if $self->{switch};
+	) if $self->{switch} and !$self->{check_only};
     }
     return;
 }
@@ -680,11 +681,24 @@ use SVK::Logger;
 # --offline (at checkout of branch FOO
 #   --create FOO --from FOO --local
 
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    push @arg, '' unless @arg;
+    return $self->SUPER::parse_arg(@arg);
+}
+
 sub run {
-    my ($self, $target, $branch_path) = @_;
+    my ($self, $target, $branch_name) = @_;
+
+    if (!$branch_name) { # no branch_name means using current branch(trunk) as src
+	my $proj = $self->load_project($target);
+	$branch_name = $proj->branch_name($target->path);
+	$self->{from} = $branch_name;
+    }
     $self->{local} = 1;
     $self->{switch} = 1;
-    $self->SUPER::run($target, $branch_path);
+    $self->SUPER::run($target, $branch_name);
 }
 
 1;
