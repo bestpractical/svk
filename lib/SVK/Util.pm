@@ -68,7 +68,7 @@ our @EXPORT_OK = qw(
     move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
     catdepot abs_path_noexist 
 
-    is_symlink is_executable is_uri can_run is_path_inside
+    is_symlink is_executable is_uri can_run is_path_inside is_depotpath
 
     uri_escape uri_unescape
 
@@ -1038,6 +1038,16 @@ sub uri_unescape {
     my ($uri) = @_;
     $uri =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
     return $uri;
+}
+
+=head3 is_depotpath($path)
+
+Check if a string is a valid depotpath.
+
+=cut
+
+sub is_depotpath {
+    ($_[0] =~ m|^/([^/]*)(/.*?)/?$|)
 }
 
 1;

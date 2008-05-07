@@ -314,7 +314,7 @@ sub run {
 package SVK::Command::Branch::remove;
 use base qw( SVK::Command::Delete SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
+use SVK::Util qw( is_uri is_depotpath);
 use SVK::Logger;
 
 sub lock { $_[0]->lock_target ($_[1]); };
@@ -330,7 +330,7 @@ sub parse_arg {
 
     my $project_path = pop @arg if $#arg > 0;
     # if specified project path at the end
-    $project_path = '' unless $project_path =~ m|^/([^/]*)(/.*?)/?$|;
+    $project_path = '' unless is_depotpath($project_path);
     return ($self->arg_co_maybe ($project_path), @arg);
 }
 
@@ -456,12 +456,31 @@ package SVK::Command::Branch::checkout;
 use base qw( SVK::Command::Checkout SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Logger;
+use SVK::Util qw( is_depotpath );
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    return if $#arg < 0 or $#arg > 1;
+    return if $#arg < 0 or $#arg > 2;
 
-    my $target = $self->arg_co_maybe ('');
+    my $branch_name = shift(@arg);
+    my ($project_path, $checkout_path) = ('','');
+    if (is_depotpath($arg[$#arg])) {
+	$project_path = pop(@arg);
+    }
+    $checkout_path = pop(@arg);
+    $checkout_path = $branch_name unless $checkout_path;
+    
+    if (@arg) { # this must be a project path, or error it
+	$project_path = pop(@arg);
+	if (!is_depotpath($project_path)) {
+	    $logger->info(
+		loc("No avaliable Projects found in %1.\n", $project_path )
+	    );
+	    return;
+	}
+    }
+
+    my $target = $self->arg_co_maybe ($project_path);
     my $proj = $self->load_project($target);
 
     if (!$proj) {
@@ -471,9 +490,8 @@ sub parse_arg {
 	return ;
     }
 
-    my $branch_name = shift(@arg);
     my $newtarget_path = $proj->branch_path($branch_name, $self->{local});
-    unshift @arg, $newtarget_path;
+    unshift @arg, $newtarget_path, $checkout_path;
     return $self->SUPER::parse_arg(@arg);
 }
 
@@ -685,7 +703,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [--local] [--switch-to] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
- branch --checkout BRANCH [PATH]
+ branch --checkout BRANCH [PATH] [DEPOTPATH]
  branch --delete BRANCH1 BRANCH2 ...
  branch --setup DEPOTPATH
  branch --push [--from BRANCH]
