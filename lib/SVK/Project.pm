@@ -51,6 +51,7 @@
 package SVK::Project;
 use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
+use Path::Class;
 use base 'Class::Accessor::Fast';
 
 __PACKAGE__->mk_accessors(
@@ -240,11 +241,12 @@ sub _find_project_path {
             return ($project_name, $trunk_path, $branch_path, $tag_path) if $result > 0;
         }
         $project_name = '';
+        $path = '';
     }
     # not found in inverse layout, else 
-    ($path) = $current_path =~ m{^/(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
+    ($path) = $current_path =~ m{^(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
 
-    if ($path =~ m{^local/([^/]+)/?}) { # guess if in local branch
+    if ($path =~ m{^/local/([^/]+)/?}) { # guess if in local branch
 	# should only be 1 entry
 	($path) = grep {/\/$1$/} $path_obj->depot->mirror->entries;
 	$path =~ s#^/##;
@@ -264,6 +266,7 @@ sub _find_project_path {
 	($path) = $mirror_path =~ m{^(.+(?=/(?:trunk|branches|tags)))}
 	    unless $result != 0;
 	$tag_path = '' if $result == 2;
+	$project_name = '' unless $result;
 	return undef unless $path;
     }
     return ($project_name, $trunk_path, $branch_path, $tag_path);
@@ -272,9 +275,9 @@ sub _find_project_path {
 sub depotpath_in_branch_or_tag {
     my ($self, $name) = @_;
     # return 1 for branch, 2 for tag, others => 0
-    return '/'.$self->depot->depotname.'/'.$self->branch_location.'/'.$name
+    return '/'.dir($self->depot->depotname,$self->branch_location,$name)
 	if grep { $_ eq $name } @{$self->branches};
-    return '/'.$self->depot->depotname.'/'.$self->tag_location.'/'.$name
+    return '/'.dir($self->depot->depotname,$self->tag_location,$name)
 	if grep { $_ eq $name } @{$self->tags};
     return ;
 }

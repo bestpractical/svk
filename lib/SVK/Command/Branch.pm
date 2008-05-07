@@ -362,6 +362,7 @@ package SVK::Command::Branch::merge;
 use base qw( SVK::Command::Smerge SVK::Command::Branch);
 use SVK::I18N;
 use SVK::Util qw( is_uri abs_path );
+use Path::Class;
 
 use constant narg => 1;
 
@@ -411,7 +412,7 @@ sub run {
 
     for my $src (@srcs) {
 	my $src_branch_path = $proj->depotpath_in_branch_or_tag($src);
-	$src_branch_path =  '/'.$proj->depot->depotname.'/'.$proj->trunk
+	$src_branch_path =  '/'.dir($proj->depot->depotname,$proj->trunk)
 	    if $src eq 'trunk';
 	$src = $self->arg_depotpath($src_branch_path);
 
