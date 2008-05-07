@@ -475,7 +475,7 @@ sub parse_arg {
 
     my $branch_name = shift(@arg);
     my ($project_path, $checkout_path) = ('','');
-    if (is_depotpath($arg[$#arg])) {
+    if (@arg and is_depotpath($arg[$#arg])) {
 	$project_path = pop(@arg);
     }
     $checkout_path = pop(@arg);
