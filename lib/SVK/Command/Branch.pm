@@ -328,7 +328,10 @@ sub parse_arg {
 	    if is_uri ($_);
     }
 
-    return ($self->arg_co_maybe (''), @arg);
+    my $project_path = pop @arg if $#arg > 0;
+    # if specified project path at the end
+    $project_path = '' unless $project_path =~ m|^/([^/]*)(/.*?)/?$|;
+    return ($self->arg_co_maybe ($project_path), @arg);
 }
 
 
