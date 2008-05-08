@@ -230,6 +230,13 @@ sub _find_project_path {
     my ($mirror_path,$project_name);
     my ($trunk_path, $branch_path, $tag_path);
     my $current_path = $path_obj->_to_pclass($path_obj->path);
+
+    if ($path_obj->_to_pclass("/local")->subsumes($current_path)) { # guess if in local branch
+	# should only be 1 entry
+	$project_name = $path_obj->_to_pclass($current_path)->dir_list(2);
+	$current_path = ($path_obj->copy_ancestors)[0]->[0];
+    }
+
     # Finding inverse layout first
     my ($path) = $current_path =~ m{^/(.+?/(?:trunk|branches|tags)/[^/]+)};
     if ($path) {
@@ -247,12 +254,6 @@ sub _find_project_path {
     }
     # not found in inverse layout, else 
     ($path) = $current_path =~ m{^(.*?)(?:/(?:trunk|branches/.*?|tags/.*?))?/?$};
-
-    if ($path =~ m{^/local/([^/]+)/?}) { # guess if in local branch
-	# should only be 1 entry
-	($path) = grep {/\/$1$/} $path_obj->depot->mirror->entries;
-	$path =~ s#^/##;
-    }
 
     while (!$project_name) {
 	($mirror_path,$project_name) = # always assume the last entry the projectname
@@ -316,9 +317,12 @@ sub info {
 	} elsif (dir($self->branch_location)->subsumes($target->path)) {
 	    $where = 'branch';
 	    $bname = $target->_to_pclass($target->path)->relative($self->branch_location)->dir_list(0);
-	} elsif (dir($self->tag_location)->subsumes($target->path)) {
+	} elsif ($self->tag_location and dir($self->tag_location)->subsumes($target->path)) {
 	    $where = 'tag';
 	    $bname = $target->_to_pclass($target->path)->relative($self->tag_location)->dir_list(0);
+	} elsif (dir($self->local_root)->subsumes($target->path)) {
+	    $where = 'local branch';
+	    $bname = $target->_to_pclass($target->path)->relative($self->local_root)->dir_list(0);
 	}
 
 	if ($where) {
