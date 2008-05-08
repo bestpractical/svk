@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 12;
+plan tests => 14;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -48,10 +48,6 @@ is_output ($svk, 'info', ['//local/MyProject/foo'],
 
 is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
 
-
-TODO: {
-# should online need an argument ?
-
 # let's play with feature/foobar branch now
 
 is_output_like ($svk, 'branch', ['--create', 'feature/foobar'],
@@ -74,7 +70,8 @@ append_file ('B/S/Q/qu', "\nappend CBA on local branch feature/foobar\n");
 $svk->commit ('-m', 'commit message','');
 
 # now should do smerge first, then sw to the branch 
-$svk->br('--online');
+is_output_like ($svk, 'branch', ['--online'],
+    qr|U   B/S/Q/qu|);
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/feature/foobar|);
@@ -83,5 +80,9 @@ is_output_like ($svk, 'info', [],
 is_output_like ($svk, 'info', ['//local/MyProject/feature/foobar'],
    qr|Depot Path: //local/MyProject/feature/foobar|);
 
-# need more message to test
-}
+$svk->delete ("A/Q/qu");
+overwrite_file ("A/Q/qz", "orz\n");
+$svk->commit (-m => '- changes in remote');
+
+is_output_like ($svk, 'branch', ['--offline'],
+    qr|U   A/Q/qz\nD   A/Q/qu|);
