@@ -644,7 +644,7 @@ sub run {
 	{
 	    my $ans = get_prompt(
 		loc("And where is the branches/? (%1)\n=> ", $branch_path),
-		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
+		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|^\/|$)/
 	    );
 	    if (length($ans)) {
 		$branch_path = $ans;
