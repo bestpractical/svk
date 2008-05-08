@@ -681,7 +681,7 @@ sub run {
 }
 
 package SVK::Command::Branch::online;
-use base qw( SVK::Command::Branch::move SVK::Command::Switch );
+use base qw( SVK::Command::Branch::move SVK::Command::Smerge SVK::Command::Switch );
 use SVK::I18N;
 use SVK::Logger;
 
@@ -691,28 +691,42 @@ sub parse_arg {
     my ($self, $arg) = @_;
     my $target = $self->arg_co_maybe($arg || '');
     $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
-    # XXX: if the remote branch of the same name already exists, do a
-    # smerge instead
-    $self->{branch_name} = $target->_to_pclass($target->path)->dir_list(-1);
-
     # XXX: should we verbose the branch_name here?
 #    die loc ("Current branch '%1' already online\n", $self->{branch_name})
     die loc ("Current branch already online\n")
 	if (!$target->_to_pclass("/local")->subsumes($target->path));
+
+    # XXX: if the remote branch of the same name already exists, do a
+    # smerge instead
+    my $proj = $self->load_project($target);
+    $self->{branch_name} = $proj->branch_name($target->path, 1);
+
+    # check existence of remote branch
+    my $dst = $self->arg_depotpath($proj->branch_path($self->{branch_name}));
+    if ($SVN::Node::none != $dst->root->check_path($dst->path)) {
+	$self->{go_smerge} = $dst->depotpath if $target->related_to($dst);
+    }
 
     return ($target, $self->{branch_name}, $target->depotpath);
 }
 
 sub run {
     my ($self, $target, @args) = @_;
-    $self->SUPER::run($target, @args);
-    my $proj = $self->load_project($target);
 
-    my $newtarget = $target->mclone( path => '/'. $proj->branch_location . '/' . $self->{branch_name} )->refresh_revision;
+    if ($self->{go_smerge}) {
+	my $dst = $self->arg_depotpath($self->{go_smerge});
+	
+	$self->{message} = "- Merged from local";
+	$self->SVK::Command::Smerge::run($target->source, $dst);
 
-    # XXX: we have a little conflict in private hash argname.
-    $self->{rev} = undef;
-    $self->SVK::Command::Switch::run($newtarget, $target) if $target->isa('SVK::Path::Checkout');
+	$dst->refresh_revision;
+
+	# XXX: we have a little conflict in private hash argname.
+	$self->{rev} = undef;
+	$self->SVK::Command::Switch::run($dst, $target) if $target->isa('SVK::Path::Checkout');
+    } else {
+	$self->SUPER::run($target, @args);
+    }
 }
 
 package SVK::Command::Branch::offline;

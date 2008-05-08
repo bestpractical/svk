@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 9;
+plan tests => 12;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -42,6 +42,10 @@ $svk->br('--online'); # XXX: check output
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/foo|);
 
+# since branch name is not the same, just do move and switch
+is_output ($svk, 'info', ['//local/MyProject/foo'],
+    ["Path //local/MyProject/foo does not exist."]);
+
 is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
 
 
@@ -69,8 +73,15 @@ is_output_like ($svk, 'info', [],
 append_file ('B/S/Q/qu', "\nappend CBA on local branch feature/foobar\n");
 $svk->commit ('-m', 'commit message','');
 
-# now should do push first, then sw to the branch 
+# now should do smerge first, then sw to the branch 
 $svk->br('--online');
+
+is_output_like ($svk, 'info', [],
+   qr|Depot Path: //mirror/MyProject/branches/feature/foobar|);
+
+# since there's the same branch name exists, just do smerge and switch
+is_output_like ($svk, 'info', ['//local/MyProject/feature/foobar'],
+   qr|Depot Path: //local/MyProject/feature/foobar|);
 
 # need more message to test
 }
