@@ -294,13 +294,14 @@ sub branch_name {
 
 sub branch_path {
     my ($self, $bname, $is_local) = @_;
-    my $branch_path = '/'.$self->depot->depotname.'/'.
+    my $branch_path = 
         ($is_local ?
             $self->local_root."/$bname"
             :
             ($bname ne 'trunk' ?
                 $self->branch_location . "/$bname" : $self->trunk)
         );
+    $branch_path = '/'.dir($self->depot->depotname)->subdir($branch_path);
     return $branch_path;
 }
 
