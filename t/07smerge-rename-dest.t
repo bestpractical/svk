@@ -32,6 +32,7 @@ is_output($svk, 'sm', [-m => 'merge', '//trunk', '//local'],
 	  ['Auto-merging (2, 4) /trunk to /local (base /trunk:2).',
 	   '    A - skipped',
 	   '    A/foo - skipped',
+	   '    A/deep/bar - skipped',
 	   'Empty merge.']);
 
 is_output($svk, 'sm', ['--track-rename', -m => 'merge', '//trunk', '//local'],

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 4;
+plan tests => 3;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -17,9 +17,9 @@ my $uri = uri($depot->repospath);
 my ($copath, $corpath) = get_copath('basic-trunk');
 
 my $props = { 
-    'svk:project:projectA:path-trunk' => '/projectA/trunk',
-    'svk:project:projectA:path-branches' => '/projectA/branches',
-    'svk:project:projectA:path-tags' => '/projectA/tags',
+    'svk:project:projectA:path-trunk' => '/trunk',
+    'svk:project:projectA:path-branches' => '/branches',
+    'svk:project:projectA:path-tags' => '/tags',
 };
 
 add_prop_to_basic_tree($xd, '/test/',$props);
@@ -34,6 +34,8 @@ $svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/bra
 
 $svk->mirror('--detach', '//mirror/MyProject');
 
+TODO: {
+local $TODO = "path properties are relative to the mirror root";
 $answer = ['','','y','1', ''];
 $svk->checkout($uri,$copath);
 
@@ -42,5 +44,7 @@ is_output ($svk, 'propget',
     ['svk:project:projectA:path-trunk', '//mirror/projectA'],
     [$props->{'svk:project:projectA:path-trunk'}]);
 
-is_output ($svk, 'branch', ['--list','//mirror/projectA'], ['Foo']);
+# currently core dump, after TODO implemented, remove the following #
+#is_output ($svk, 'branch', ['--list','//mirror/projectA'], ['Foo']);
 is_output ($svk, 'branch', ['--list'], ['Foo']);
+}

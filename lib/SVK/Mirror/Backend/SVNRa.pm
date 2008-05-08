@@ -58,8 +58,10 @@ use SVK::I18N;
 use SVK::Editor;
 use SVK::Mirror::Backend::SVNRaPipe;
 use SVK::Editor::MapRev;
-use SVK::Util 'IS_WIN32';
+use SVK::Util qw(IS_WIN32 uri_escape);
 use SVK::Logger;
+use SVK::Editor::FilterProp;
+use SVK::Editor::Composite;
 
 use Class::Autouse qw(SVK::Editor::SubTree SVK::Editor::CopyHandler SVK::Editor::Translate);
 
@@ -94,7 +96,7 @@ SVK::Mirror::Backend::SVNRa -
 sub new {
     my ( $class, $args ) = @_;
     unless ( defined $args->{use_pipeline} ) {
-        $args->{use_pipeline} = IS_WIN32 ? 0 : 1;
+        $args->{use_pipeline} = 0;#IS_WIN32 ? 0 : 1;
     }
     return $class->SUPER::new($args);
 }
@@ -321,7 +323,7 @@ sub _new_ra {
 
     if ( $self->_cached_ra ) {
         my $ra = delete $self->{_cached_ra};
-        my $url = $args{url} || $self->mirror->url;
+        my $url = uri_escape($args{url} || $self->mirror->url);
         return $ra if $ra->{url} eq $url;
         if ( _p_svn_ra_session_t->can('reparent') ) {
             $ra->reparent($url);
@@ -331,7 +333,7 @@ sub _new_ra {
     }
     $self->_initialize_svn;
     return SVN::Ra->new(
-        url    => $self->mirror->url,
+        url    => uri_escape($self->mirror->url),
         auth   => $self->_auth_baton,
         config => $self->_config,
         %args
@@ -452,7 +454,7 @@ sub _find_remote_rev {
 =cut
 
 sub traverse_new_changesets {
-    my ($self, $code, $torev) = @_;
+    my ($self, $code, $torev, $cross, $want_paths) = @_;
     $self->refresh;
     my $from = ($self->fromrev || 0)+1;
     my $to = defined $torev ? $torev : -1;
@@ -462,11 +464,11 @@ sub traverse_new_changesets {
     return if $from > $to;
     $logger->info( "Retrieving log information from $from to $to");
     eval {
-    $ra->get_log([''], $from, $to, 0,
-		  0, 1,
+        $ra->get_log([''], $from, $to, 0,
+		  $want_paths, !$cross,
 		  sub {
 		      my ($paths, $rev, $author, $date, $msg, $pool) = @_;
-		      $code->($rev, { author => $author, date => $date, message => $msg });
+		      $code->($rev, { author => $author, date => $date, message => $msg }, $paths);
 		  });
     };
     $self->_ra_finished($ra);
@@ -478,7 +480,7 @@ sub traverse_new_changesets {
 =cut
 
 sub sync_changeset {
-    my ( $self, $changeset, $metadata, $ra, $extra_prop, $callback ) = @_;
+    my ( $self, $changeset, $metadata, $extra_prop, $callback, $delta_generator, $translate_from ) = @_;
     my $t = $self->mirror->get_svkpath;
     my ( $editor, undef, %opt ) = $t->get_editor(
         ignore_mirror => 1,
@@ -497,9 +499,9 @@ sub sync_changeset {
     }
     $self->_revmap_prop( $opt{txn}, $changeset );
 
-    $editor = $self->_get_sync_editor($editor, $changeset);
-    $ra->replay( $changeset, 0, 1, $editor );
-    $self->_after_replay($ra, $editor);
+    $editor = $self->_get_sync_editor($editor, $changeset, $translate_from);
+
+    $delta_generator->( $editor, $opt{txn});
 
     return;
 
@@ -525,7 +527,7 @@ sub _after_replay {
 }
 
 sub _get_sync_editor {
-    my ($self, $oeditor, $changeset) = @_;
+    my ($self, $oeditor, $changeset, $translate_from) = @_;
 
     my $editor = SVK::Editor::CopyHandler->new(
         _editor => $oeditor,
@@ -533,7 +535,8 @@ sub _get_sync_editor {
             my ( undef, $path, $rev, $current_path, $pb ) = @_;
             return ( $path, $rev ) if $rev == -1;
             my $source_path = $self->source_path;
-            $path =~ s/^\Q$self->{source_path}//;
+            my $copy_prefix = $translate_from || $self->source_path;
+            $path =~ s/^\Q$copy_prefix//;
 	    my $lrev = $self->find_rev_from_changeset($rev, 1);
 	    if ($lrev == -1) {
 		# vivify the copy that we don't have
@@ -567,8 +570,8 @@ sub _get_sync_editor {
     # ra->replay gives us editor calls based on repos root not
     # base uri, so we need to get the correct subtree.
     my $baton;
-    if ( length $self->source_path ) {
-        my $anchor = substr( $self->source_path, 1 );
+    if ( $translate_from || length $self->source_path ) {
+        my $anchor = substr( $translate_from || $self->source_path, 1 );
         $baton  = $editor->open_root(-1);      # XXX: should use $t->revision
         $editor = SVK::Editor::SubTree->new(
             {   master_editor => $editor,
@@ -577,6 +580,7 @@ sub _get_sync_editor {
             }
         );
     }
+
     return $editor;
 }
 
@@ -594,23 +598,181 @@ sub mirror_changesets {
     my ( $self, $torev, $callback, $fake_last ) = @_;
     $self->mirror->with_lock(
         'mirror',
-        sub { $self->_mirror_changesets( $torev, $callback, $fake_last ) } );
+        sub { $self->refresh;
+              $self->_mirror_changesets( $torev, $callback, $fake_last ) } );
+}
+
+sub _sync_edge_changeset {
+    my ($self, $revdata, $callback, $translate_from, $up_to) = @_;
+
+    my $paths = $revdata->[2];
+    unless ($paths) {
+        my $ra = $self->_new_ra;
+
+        $ra->get_log([''], $revdata->[0], $revdata->[0], 0,
+                     1, 1, sub { $paths = _dclone_log_change_paths(shift); } );
+        $self->_ra_finished($ra);
+    }
+
+    my ($entry, $old_path, $old_rev) = $self->_find_edge_entry( $paths, $translate_from || $self->source_path ) or return;
+
+    my ($copyfrom_path, $copyfrom_rev) = ($entry->{copyfrom_path}, $entry->{copyfrom_rev});
+
+    if ($up_to) {
+        $self->_mirror_changesets_with_cross( $revdata->[0], $callback, 0, $old_path );
+    }
+
+
+    my $ra = $self->_new_ra;
+
+    $ra->reparent( $self->source_root . $old_path );
+    $self->sync_changeset
+        ( $revdata->[0], $revdata->[1], {},
+          $callback,
+          sub {
+              my ($editor, $txn) = @_;
+              $editor = $editor->master_editor;
+              $editor = SVK::Editor::Composite->new( { master_editor => $editor } );
+              $editor = SVK::Editor::FilterProp->new
+                  ( { cb_prop => sub { return $_[0] !~ m/^svn:(wc|entry)/; },
+                      _editor => [ $editor ] } );
+              my $report = $ra->do_diff($revdata->[0], '', 1, 1, $self->source_root.($translate_from || $self->source_path), $editor);
+              $report->set_path('', $copyfrom_rev, 0, undef );
+              $report->finish_report;
+              if ( %{$txn->root->paths_changed} ) {
+                  $editor->master_editor->close_edit;
+              }
+ }) ;
+
+}
+
+sub _sync_up_to_edge_changeset {
+    my ($self, $revdata, $callback) = @_;
+
+    return $self->_sync_edge_changeset($revdata, $callback, undef, 1);
+}
+
+
+sub _find_edge_entry {
+    my ($self, $paths, $translate_from) = @_;
+
+    for (reverse sort keys %$paths) {
+        if (Path::Class::Dir->new_foreign("Unix", $_)
+            ->subsumes($translate_from)) {
+            my $entry = $paths->{$_};
+            if ($entry->{action} eq 'A' && $entry->{copyfrom_path}) {
+                return ($entry,
+                        SVK::Util::abs2rel($translate_from, $_ => $entry->{copyfrom_path}),
+                        $entry->{copyfrom_rev});
+            }
+        }
+    }
+    return;
+}
+
+sub _dclone_log_change_paths {
+    my $p = shift or return;
+    my $paths = {};
+    for ( keys %$p ) {
+        $paths->{$_} = { action => $p->{$_}->action,
+            copyfrom_path => $p->{$_}->copyfrom_path,
+            copyfrom_rev  => $p->{$_}->copyfrom_rev,
+        };
+    }
+    return $paths;
+}
+
+# note this method doesn't actually sync $torev, it's dealing with all
+# the changes before it
+sub _mirror_changesets_with_cross {
+    my ( $self, $torev, $callback, $fake_last, $translate_from ) = @_;
+    my @revs;
+    $self->traverse_new_changesets(
+        sub {
+            my $paths = _dclone_log_change_paths(pop);
+            push @revs, [ @_, $paths ]
+                unless $fake_last && $torev && $_[0] == $torev;
+        },
+        $torev, 1, 1 );
+
+    # the last revision belongs to our caller, so don't sync it.
+    pop @revs;
+
+    return unless @revs;
+
+    my @batch;
+
+    # if we are in cross mode, our @revs might already contain
+    # renames that we need to segment with different
+    # translate_from into different batches
+    my $tmp_translate_from = $translate_from || $self->source_path;
+    my (@newrev);
+    for ( reverse @revs ) {
+        my $paths = $_->[-1];
+        my ( $entry, $old_path, $oldrev ) = $self->_find_edge_entry( $paths, $tmp_translate_from );
+
+        # if there's no edge entry, it's the same batch
+        unless ($entry) {
+            unshift @newrev, $_;
+            next;
+        }
+
+        push @batch, [ [@newrev], $_, $tmp_translate_from, $old_path ];
+        @newrev             = ();
+        $tmp_translate_from = $old_path;
+    }
+    @revs = @newrev;
+
+    $self->_sync_changesets($callback, \@revs, $tmp_translate_from);
+
+    for (@batch) {
+        my ($revs, $edge, $t, $ot) = @$_;
+        $self->_sync_edge_changeset($edge, $callback, $ot);
+        $self->_sync_changesets($callback, $revs, $t);
+    }
+
+
 }
 
 sub _mirror_changesets {
     my ( $self, $torev, $callback, $fake_last ) = @_;
-    $self->refresh;
     my @revs;
-    $self->traverse_new_changesets( sub { push @revs, [@_] unless $fake_last && $torev && $_[0] == $torev}, $torev );
+    $self->traverse_new_changesets(
+        sub {
+            my $paths = _dclone_log_change_paths(pop);
+            push @revs, [ @_, $paths ]
+                unless $fake_last && $torev && $_[0] == $torev;
+        },
+        $torev, 0, 0 );
+
     return unless @revs;
+
+    # get the first revision and see if it's renamed from somewhere else
+    if ($self->mirror->follow_anchor_copy) {
+        $self->_sync_up_to_edge_changeset(shift @revs, $callback );
+    }
+
+    # the rest
+    $self->_sync_changesets($callback, \@revs);
+}
+
+sub _sync_changesets {
+    my ($self, $callback, $revs, $translate_from) = @_;
 
     # prepare generator for pipelined ra
     my @gen;
     # XXX: this is so wrong
     my $revprop = $self->mirror->depot->mirror->revprop;
+
     my $ra = $self->_new_ra;
+
+    $ra->reparent( $translate_from
+                   ? $self->source_root . $translate_from 
+                   : $self->mirror->url)
+        if $translate_from;
+
     if ( $self->use_pipeline ) {
-        for (@revs) {
+        for (@$revs) {
             push @gen, [ 'rev_proplist', $_->[0] ] if $revprop;
             push @gen, [ 'replay', $_->[0], 0, 1, 'EDITOR' ];
         }
@@ -618,11 +780,11 @@ sub _mirror_changesets {
     }
     my $progress =
       $self->mirror->{use_progress}
-      ? SVK::Notify->new->progress( { count => scalar @revs } )
+      ? SVK::Notify->new->progress( { count => scalar @$revs } )
       : undef;
     my $pool = SVN::Pool->new_default;
     my $i = 0;
-    for (@revs) {
+    for (@$revs) {
         $pool->clear;
         my ( $changeset, $metadata ) = @$_;
         my $extra_prop = {};
@@ -633,8 +795,12 @@ sub _mirror_changesets {
                     if exists $prop->{$_};
             }
         }
-        $self->sync_changeset( $changeset, $metadata, $ra, $extra_prop,
-            $callback );
+        $self->sync_changeset( $changeset, $metadata, $extra_prop,
+            $callback, sub {
+                my $editor = shift;
+                $ra->replay( $changeset, 0, 1, $editor );
+                $self->_after_replay($ra, $editor);
+            }, $translate_from );
         $progress->update( ++$i ) if $progress;
     }
     $self->_ra_finished($ra);

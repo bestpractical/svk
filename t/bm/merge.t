@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 20;
+use Test::More tests => 23;
 use SVK::Test;
 use File::Path;
 
@@ -83,7 +83,7 @@ $svk->branch ('--create', 'smerge/bar', '--switch-to');
 overwrite_file ('B/S/Q/qu', "first line in qu\nblah\n2nd line in qu\n");
 $svk->commit ('-m', 'commit message here (r13)','');
 
-$svk->switch ('//mirror/MyProject/trunk');
+$svk->branch ('--switch', 'trunk');
 
 $svk->branch ('--create', 'smerge/foo', '--switch-to');
 append_file ('B/S/Q/qu', "\nappend CBA on local branch foo\n");
@@ -152,6 +152,35 @@ is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo2', '.'],
      "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
      qr'New merge ticket: [\w\d-]+:/branches/merge/foo2:22',
      qr'New merge ticket: [\w\d-]+:/trunk:20']);
+my $patch1 = [
+	    '=== B/S/Q/qu',
+	    '==================================================================',
+	    "--- B/S/Q/qu\t(revision 19)",
+	    "+++ B/S/Q/qu\t(patch - level 1)",
+	    '@@ -5,3 +5,5 @@',
+	    " append CBA on local branch foo",
+	    " ",
+	    " append CBA on local branch foo",
+	    "+",
+	    '+append CBA on foo2'];
+is_output ($svk, 'branch', ['--merge', 'merge/foo2', '.', '-P', '-'], 
+    ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
+    "Patching locally against mirror source $uri.",
+    'U   B/S/Q/qu',
+    '==== Patch <-> level 1',
+    qr'Source: [\w\d-]+:/branches/merge/foo2:22',
+    "        ($uri)",
+    qr'Target: [\w\d-]+:/branches/merge/foo:19',
+    "        ($uri)",
+    "Log:",
+    "- Merge //mirror/MyProject/branches/merge/foo2 to //mirror/MyProject/branches/merge/foo",
+    @$patch1,
+    '',
+    '==== BEGIN SVK PATCH BLOCK ====',
+    qr'Version: svk .*',
+    '',
+    \'...',
+    ]);
 is_output ($svk, 'branch', ['--merge', 'merge/foo2', '.'], 
     ["Auto-merging (0, 23) $branch_foo2 to $branch_foo (base $branch_foo:20).",
      "Merging back to mirror source $uri.", 'U   B/S/Q/qu',
@@ -160,3 +189,20 @@ is_output ($svk, 'branch', ['--merge', 'merge/foo2', '.'],
      'Merge back committed as revision 23.', "Syncing $uri",
      'Retrieving log information from 23 to 23',
      'Committed revision 24 from revision 23.']);
+
+my $branch_foo3 = '/mirror/MyProject/branches/merge/foo3';
+$svk->branch ('--create', 'merge/foo3', '--switch-to');
+append_file ('B/S/Q/qu', "\nappend CBA on foo3\n");
+$svk->commit ('-m', 'commit message here (r26)','');
+
+$svk->push('-C');
+my ($pushOutputs) = $output;
+
+$svk->branch ('--switch', 'trunk');
+is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo3', '.'], 
+    ["Auto-merging (0, 26) $branch_foo3 to $trunk (base $trunk:21).",
+     "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
+     qr'New merge ticket: [\w\d-]+:/branches/merge/foo3:25']);
+
+is_output ($svk, 'branch', ['--push', '-C', '--from', 'merge/foo3'],
+    [(split /\n/, $pushOutputs)]);

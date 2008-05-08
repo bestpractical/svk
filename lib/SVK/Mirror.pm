@@ -57,11 +57,12 @@ use SVK::Logger;
 
 use Sys::Hostname;
 use SVK::I18N;
+use SVK::Util qw(uri_escape uri_unescape);
 use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
 
-__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked));
+__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy _rev_cache));
 
 *repos = sub { Carp::cluck unless $_[0]->depot; shift->depot->repos };
 
@@ -118,6 +119,7 @@ sub create {
     my $self = $class->SUPER::new($args);
 
     $self->{url} =~ s{/+$}{}g;
+    $self->{url} = uri_unescape($self->{url});
 
     $self->pool( SVN::Pool->new(undef) )
         unless $self->pool;
@@ -438,7 +440,9 @@ sub spec {
 
 sub find_local_rev {
     my ($self, $changeset, $uuid) = @_;
-    $self->find_rev_from_changeset($changeset, $uuid);
+    $self->_rev_cache({}) unless $self->_rev_cache;
+    $self->_rev_cache->{$uuid || ''}{$changeset}
+        ||= $self->find_rev_from_changeset($changeset, $uuid);
 }
 
 sub find_remote_rev {
@@ -518,7 +522,11 @@ sub run_svnmirror_sync {
     my $target = $self->get_svkpath;
 
     my $lock_message = $self->_lock_message;
+    my $escaped_url = uri_escape($self->url);
+	    
+    # XXX if SVN::Mirror do uri_escape in future, then we can remove 'source => $escaped_url' line
     my $svm = SVN::Mirror->new(
+        source => $escaped_url,
         target_path    => $self->path,
         repos          => $self->depot->repos,
         config         => SVK::Config->svnconfig,

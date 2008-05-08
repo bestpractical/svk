@@ -48,65 +48,27 @@
 # and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
-package SVK::Editor::Composite;
+package SVK::Editor::FilterProp;
 use strict;
-use SVK::Version;  our $VERSION = $SVK::VERSION;
-use base 'SVK::Editor';
+use warnings;
 
-__PACKAGE__->mk_accessors(qw(master_editor));
+use base 'SVK::Editor::ByPass';
 
-=head1 NAME
-
-SVK::Editor::Composite - composite editor
-
-=head1 SYNOPSIS
-
-
-
-=head1 DESCRIPTION
-
-This editor is constructed with C<anchor> and C<anchor_baton>.  It
-then takes incoming editor calls, replay to C<master_editor> with
-paths prefixed with C<anchor>.
-
-=cut
+__PACKAGE__->mk_accessors(qw(cb_prop));
 
 sub AUTOLOAD {
     my ($self, @arg) = @_;
     my $func = our $AUTOLOAD;
     $func =~ s/^.*:://;
-    return if $func =~ m/^[A-Z]/;
+    return if $func =~ m/^[A-Z]+$/;
 
-    if ($func eq 'open_root') {
-    }
-    elsif ($func =~ m/^(?:add|open|delete)/) {
-	return $self->{target_baton}
-	    if defined $self->{target} && $arg[0] eq $self->{target};
-	$arg[0] = length $arg[0] ?
-	    "$self->{anchor}/$arg[0]" : $self->{anchor}
-                if defined $self->{anchor};
-    }
-    elsif ($func =~ m/^close_(?:file|directory)/) {
-	if (defined $arg[0]) {
-	    return if defined $self->{anchor_baton} &&
-		$arg[0] eq $self->{anchor_baton};
-	    return if defined $self->{target_baton} &&
-		$arg[0] eq $self->{target_baton};
-	}
+    if ($func =~ m/^change.*prop/) {
+        $self->cb_prop->(@arg[1,2]) or return;
+        warn "==> $arg[1]";
     }
 
-    $self->master_editor->$func(@arg);
+    $func = "SUPER::$func";
+    $self->$func(@arg);
 }
-
-sub set_target_revision {}
-
-sub open_root {
-    my $self = shift;
-    return $self->{anchor_baton} if exists $self->{anchor_baton};
-
-    return $self->master_editor->open_root(@_)
-}
-
-sub close_edit {}
 
 1;
