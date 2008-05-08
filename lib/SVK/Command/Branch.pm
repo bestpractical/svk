@@ -717,6 +717,7 @@ sub run {
 	my $dst = $self->arg_depotpath($self->{go_smerge});
 	
 	$self->{message} = "- Merged from local";
+	$self->{log} = 1;
 	$self->SVK::Command::Smerge::run($target->source, $dst);
 
 	$dst->refresh_revision;
@@ -750,14 +751,37 @@ sub parse_arg {
 sub run {
     my ($self, $target, $branch_name) = @_;
 
+    die loc ("Current branch already offline\n")
+	if ($target->_to_pclass("/local")->subsumes($target->path));
+
+    my $proj = $self->load_project($target);
     if (!$branch_name) { # no branch_name means using current branch(trunk) as src
-	my $proj = $self->load_project($target);
 	$branch_name = $proj->branch_name($target->path);
 	$self->{from} = $branch_name;
     }
     $self->{local} = 1;
     $self->{switch} = 1;
-    $self->SUPER::run($target, $branch_name);
+
+    # check existence of local branch
+    my $local = $self->arg_depotpath(
+	$proj->branch_path($branch_name, $self->{local})
+    );
+    if ($SVN::Node::none != $local->root->check_path($local->path)  and
+	$target->related_to($local)) {
+
+	$self->{message} = "- Merged to local";
+	# XXX: Following copy from ::online, maybe need refactoring
+	$self->{log} = 1;
+	$self->SVK::Command::Smerge::run($target->source, $local);
+
+	$local->refresh_revision;
+
+	# XXX: we have a little conflict in private hash argname.
+	$self->{rev} = undef;
+	$self->SVK::Command::Switch::run($local, $target) if $target->isa('SVK::Path::Checkout');
+    } else {
+	$self->SUPER::run($target, $branch_name);
+    }
 }
 
 1;
