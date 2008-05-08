@@ -263,9 +263,10 @@ sub run {
 }
 
 package SVK::Command::Branch::move;
-use base qw( SVK::Command::Move SVK::Command::Copy SVK::Command::Smerge SVK::Command::Delete SVK::Command::Branch );
+use base qw( SVK::Command::Move SVK::Command::Smerge SVK::Command::Delete SVK::Command::Branch::create );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
+use Path::Class;
 
 sub lock { $_[0]->lock_coroot ($_[1]); };
 
@@ -292,7 +293,7 @@ sub run {
     my $proj = $self->load_project($target);
 
     my $depot_root = '/'.$proj->depot->depotname;
-    my $branch_path = $depot_root.'/'.$proj->branch_location;
+    my $branch_path = $depot_root.$proj->branch_location;
     my $dst_branch_path = $dst_path;
     $dst_branch_path = $branch_path.'/'.$dst_path.'/'
 	unless $dst_path =~ m#^$depot_root/#;
@@ -332,10 +333,17 @@ sub run {
 	    $self->SVK::Command::Smerge::run($src, $dst);
 	    $self->{message} = "- Delete branch $src_branch_path, because it move to $dst_branch_path";
 	    $self->SVK::Command::Delete::run($src, $target);
+	    $dst->refresh_revision;
 	} else {
 	    $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
 	    my $ret = $self->SVK::Command::Move::run($src, $dst);
 	}
+	$self->{rev} = $dst->revision; # required by Command::Switch
+	$self->SVK::Command::Switch::run(
+	    $self->arg_uri_maybe($dst_branch_path),
+	    $target
+	) if $target->_to_pclass($target->path) eq $target->_to_pclass($src_branch_path)
+	    and !$self->{check_only};
     }
     return;
 }

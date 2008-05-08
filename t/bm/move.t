@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 18;
+use Test::More tests => 17;
 use SVK::Test;
 use File::Path;
 
@@ -77,10 +77,8 @@ is_output ($svk, 'branch', ['--move', 'feature/remotebar'],
      'Auto-merging (0, 12) /local/MyProject/localfoo to /mirror/MyProject/branches/feature/remotebar (base /mirror/MyProject/trunk:6).',
      '===> Auto-merging (0, 12) /local/MyProject/localfoo to /mirror/MyProject/branches/feature/remotebar (base /mirror/MyProject/trunk:6).',
      "Merging back to mirror source $uri.",'Empty merge.',
-     "Committed revision 14."]);
-
-is_output ($svk, 'branch', ['--switch', 'feature/remotebar'],
-    ["Syncing //local/MyProject/localfoo(/local/MyProject/localfoo) in ".
+     "Committed revision 14.",
+     "Syncing //local/MyProject/localfoo(/local/MyProject/localfoo) in ".
       __($corpath)." to 14."]);
 
 is_output ($svk, 'branch', ['--list'],
