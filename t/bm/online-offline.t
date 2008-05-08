@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 14;
+plan tests => 16;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -67,11 +67,14 @@ is_output_like ($svk, 'info', [],
    qr|Depot Path: //local/MyProject/feature/foobar|);
 
 append_file ('B/S/Q/qu', "\nappend CBA on local branch feature/foobar\n");
-$svk->commit ('-m', 'commit message','');
+$svk->commit ('-m', 'commit message on local branch','');
 
 # now should do smerge first, then sw to the branch 
 is_output_like ($svk, 'branch', ['--online'],
     qr|U   B/S/Q/qu|);
+
+is_output_like ($svk, 'log', [],
+    qr|commit message on local branch|);
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/feature/foobar|);
@@ -86,3 +89,7 @@ $svk->commit (-m => '- changes in remote');
 
 is_output_like ($svk, 'branch', ['--offline'],
     qr|U   A/Q/qz\nD   A/Q/qu|);
+
+is_output_like ($svk, 'log', [],
+    qr|- changes in remote|);
+
