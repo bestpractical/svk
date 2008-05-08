@@ -44,4 +44,22 @@ sub add_directory {
     die "help is not implemented yet";
 }
 
+sub change_file {
+    my ($self, $path) = @_;
+    
+    my $default = 'a';
+    my $prompt = loc(
+        "Conflict found in %1:\na)add, s)kip, h)elp? [%2] ",
+        $path, $default
+    );
+
+    my $action = lc(get_prompt(
+        $prompt, qr/^[ash]?/i
+    ) || $default);
+    return $action if $action !~ /^h/;
+
+    die "help is not implemented yet";
+}
+
+
 1;
