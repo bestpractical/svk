@@ -138,18 +138,30 @@ sub create_from_prop {
             last;
         }
     }
-    my $allprops        = $root->node_proplist($prop_path);
+    my $proj = $self->_create_from_prop($pathobj, $root, $prop_path, $pname);
+    return $proj if $proj;
+    return $self->_create_from_prop($pathobj, $root, $prop_path, $pname, 1);
+}
+
+sub _project_names {
+    my ($self, $allprops, $pname) = @_;
     my ($depotroot)     = '/';
-    my %projnames = 
-        map  { $_ => 1 }
+    return
 	grep { (1 and !$pname) or ($_ eq $pname)  } # if specified pname, the grep it only
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
+}
+
+sub _create_from_prop {
+    my ($self, $pathobj, $root, $prop_path, $pname, $from_local) = @_;
+    my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
+    my @projnames = $self->_project_names($allprops);
+    return unless @projnames;
     
     # Given a lists of projects: 'rt32', 'rt34', 'rt38' in lexcialorder
     # if the suffix of prop_path matches $project_name like /mirror/rt38 matches rt38
     # then 'rt38' should be used to try before 'rt36', 'rt32'... 
-    for my $project_name ( sort { $prop_path =~ m/$b$/ } keys %projnames)  {
+    for my $project_name ( sort { $prop_path =~ m/$b$/ } @projnames)  {
 	my %props = 
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
