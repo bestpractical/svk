@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 2;
+use Test::More tests => 14;
 use SVK::Test;
 
 my ($xd, $svk) = build_test();
@@ -87,8 +87,6 @@ cleanup_repo_state();
             "2 conflicts found."
     	   ]);
     $answer = ['s'];
-    #XXX: I want it to be real merge as conflicts resolution is something
-    # annoying to do all the time again and again
     is_output ($svk, 'smerge', ['-m', 'skip file', '//trunk', '//local'],
     	   ['Auto-merging (11, 14) /trunk to /local (base /trunk:11).',
     	    __"    A/a_file - skipped",
@@ -147,5 +145,34 @@ cleanup_repo_state();
     	    "New merge ticket: $uuid:/trunk:31",
             "Committed revision 32."
     	   ]);
+}
+
+cleanup_repo_state();
+
+# test add of an empty dir with returning parent back
+{
+    $svk->mkdir ('-m', 'add a dir', "//trunk/A/a_dir");
+    $svk->mkdir ('-m', 'add a nested dir', "//trunk/A/a_dir/nested");
+
+    is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
+    	   ['Auto-merging (36, 40) /trunk to /local (base /trunk:36).',
+    	    __"C   A",
+    	    __"C   A/a_dir",
+    	    __"C   A/a_dir/nested",
+    	    "Empty merge.",
+            "3 conflicts found."
+    	   ]);
+    $answer = ['a'];
+    is_output ($svk, 'smerge', ['-m', 'add dir', '//trunk', '//local'],
+    	   ['Auto-merging (36, 40) /trunk to /local (base /trunk:36).',
+    	    __"A   A",
+    	    __"A   A/a_dir/nested",
+    	    __"A   A/a_dir",
+    	    "New merge ticket: $uuid:/trunk:40",
+            "Committed revision 41."
+    	   ]);
+    is_output ($svk, 'ls', ['//local/A/'],
+        ['a_dir/']
+    );
 }
 
