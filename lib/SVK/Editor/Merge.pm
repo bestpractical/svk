@@ -342,9 +342,13 @@ sub resolve_base {
 
 sub open_file {
     my ($self, $path, $pdir, $rev, $pool) = @_;
-    # modified but rm locally - tag for conflict?
+    unless ( defined $pdir ) {
+        $self->node_conflict($path);
+        return undef;
+    }
     my ($basepath, $fromrev, $inspector) = $self->resolve_base($path);
-    if (defined $pdir && $inspector->exist($basepath, $pool) == $SVN::Node::file) {
+    my $kind = $inspector->exist($basepath, $pool);
+    if ($kind == $SVN::Node::file) {
 	$self->{info}{$path}{baseinfo} = [$basepath, $fromrev, $inspector]
 	    if defined $fromrev;
 	$self->{info}{$path}{open} = [$pdir, $rev];
@@ -352,6 +356,35 @@ sub open_file {
 	$self->{notify}->node_status ($path, '');
 	$pool->default if $pool && $pool->can ('default');
 	return $path;
+    } elsif ( !$kind ) {
+        # no file in dst
+        unless ( $self->{'resolve'} ) {
+            $self->node_conflict($path);
+            return undef;
+        }
+
+        require SVK::PathResolve;
+        my $action = SVK::PathResolve->new->change_file($path);
+        if ( $action eq 's' ) {
+            ++$self->{skipped};
+            ++$self->{changes};
+            $self->{notify}->node_status ($path, '');
+            return undef;
+        }
+        elsif ( $action eq 'a' ) {
+            $self->{added}{$path} = 1;
+            $self->{info}{$path}{overwrite} = 1;
+            $self->{info}{$path}{fpool} = $pool;
+            $self->{info}{$path}{baseinfo} = [$basepath, $fromrev, $inspector]
+                if defined $fromrev;
+            $self->{storage_baton}{$path} = $self->{storage}->add_file(
+                $path, $self->{storage_baton}{$pdir}, undef, -1, $pool
+            );
+            return $path;
+        }
+        else {
+            die "uknown action";
+        }
     }
     ++$self->{skipped};
     $self->{notify}->flush ($path);
@@ -569,6 +602,7 @@ sub _merge_file_unchanged {
 sub close_file {
     my ($self, $path, $checksum, $pool) = @_;
     return unless $path;
+
     my $info = $self->{info}{$path};
     my $fh = $info->{fh};
     my $iod;
@@ -582,7 +616,28 @@ sub close_file {
     }
 
     # let close_directory reports about its children
-    if ($info->{fh}{new}) {
+    if ($info->{fh}{new} && $info->{overwrite}) {
+        # path conflict resolution, dst file doesn't exist, user requested 'add' it back
+
+        # XXX: this most probably doesn't work well with eol styles
+        # as ruz doesn't understand them well
+
+        # XXX: reopen handle, that's pretty bad that slurp_fh doesn't
+        # croak on closed FH
+        open $fh->{new}[FH], $fh->{new}[FILENAME];
+
+        open my $tmp_fh, '<', $fh->{new}[FILENAME];
+	$iod = IO::Digest->new ($tmp_fh, 'MD5');
+
+        local $self->{send_fulltext} = 1;
+	unless ($self->_overwrite_local_file ($fh, $path, $tmp_fh, $pool)) {
+	    $self->node_conflict ($path);
+	} else {
+            ++$self->{changes};
+            $self->{notify}->node_status ($path, 'A');
+        }
+	$self->cleanup_fh ($fh);
+    } elsif ($info->{fh}{new}) {
 
 	$self->_merge_file_unchanged ($path, $checksum, $pool), return
 	    if $checksum eq $storagebase_checksum;
@@ -815,7 +870,7 @@ sub _merge_file_delete {
     return undef unless $inspector->localmod ($basepath, $md5, $pool);
     return {} unless $self->{resolve};
 
-    my $fh = $self->{info}{$path}->{fh} || {};
+    my $fh = $self->{info}{$path}{fh} || {};
     $fh->{base} ||= [$no_base? (tmpfile('base-')): ($self->_retrieve_base($path, $pool))];
     $fh->{new} = [tmpfile('new-')];
     $fh->{local} = [tmpfile('local-')];
