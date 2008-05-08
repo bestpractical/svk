@@ -254,6 +254,8 @@ sub open_root {
 
 sub add_file {
     my ($self, $path, $pdir, @arg) = @_;
+    my $pool = pop @arg;
+
     unless ( defined $pdir ) {
         $self->node_conflict($path);
         return;
@@ -268,14 +270,13 @@ sub add_file {
             return undef;
         }
         elsif ( $action eq 'a' ) {
-            $self->add_directory_back( $arg[-1] );
+            $self->add_directory_back( $pool );
         }
         else {
             die "uknown action";
         }
     }
 
-    my $pool = pop @arg;
     # a replaced node shouldn't be checked with cb_exist
     my $spool = SVN::Pool->new_default($pool);
     my $touched = $self->{notify}->node_status($path);
