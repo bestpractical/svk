@@ -690,11 +690,15 @@ sub lock { $_[0]->lock_target ($_[1]); };
 sub parse_arg {
     my ($self, $arg) = @_;
     my $target = $self->arg_co_maybe($arg || '');
-    # XXX: make sure we are a local branch
     $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
     # XXX: if the remote branch of the same name already exists, do a
     # smerge instead
     $self->{branch_name} = $target->_to_pclass($target->path)->dir_list(-1);
+
+    # XXX: should we verbose the branch_name here?
+#    die loc ("Current branch '%1' already online\n", $self->{branch_name})
+    die loc ("Current branch already online\n")
+	if (!$target->_to_pclass("/local")->subsumes($target->path));
 
     return ($target, $self->{branch_name}, $target->depotpath);
 }

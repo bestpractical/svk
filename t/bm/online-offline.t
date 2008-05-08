@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 5;
+plan tests => 9;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -45,7 +45,6 @@ is_output_like ($svk, 'info', [],
 is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
 
 
-exit;
 TODO: {
 # should online need an argument ?
 
@@ -57,6 +56,9 @@ is_output_like ($svk, 'branch', ['--create', 'feature/foobar'],
 $svk->br('--switch', 'feature/foobar');
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/feature/foobar|);
+
+is_output ($svk, 'branch', ['--online'],
+    ["Current branch already online"]);
 
 # future should be is_output_like
 $svk->br('--offline'); # offline the feature/foobar branch
