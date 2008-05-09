@@ -320,26 +320,23 @@ sub branch_path {
 sub info {
     my ($self, $target) = @_;
 
-    $logger->info ( loc("Project name: %1.\n", $self->name));
+    $logger->info ( loc("Project name: %1\n", $self->name));
     if ($target) {
-	my $where;
+	my $where = "online";
 	my $bname;
 	if (dir($self->trunk)->subsumes($target->path)) {
-	    $where = 'trunk';
 	    $bname = 'trunk';
 	} elsif (dir($self->branch_location)->subsumes($target->path)) {
-	    $where = 'branch';
 	    $bname = $target->_to_pclass($target->path)->relative($self->branch_location)->dir_list(0);
 	} elsif ($self->tag_location and dir($self->tag_location)->subsumes($target->path)) {
-	    $where = 'tag';
 	    $bname = $target->_to_pclass($target->path)->relative($self->tag_location)->dir_list(0);
 	} elsif (dir($self->local_root)->subsumes($target->path)) {
-	    $where = 'local branch';
+	    $where = 'offline';
 	    $bname = $target->_to_pclass($target->path)->relative($self->local_root)->dir_list(0);
 	}
 
 	if ($where) {
-	    $logger->info ( loc("Current Branch: %1 (%2)\n", $bname, $where ));
+	    $logger->info ( loc("Branch: %1 (%2)\n", $bname, $where ));
 	    $logger->info ( loc("Depot Path: (%1)\n", $target->depotpath ));
 	    if ($where ne 'trunk') { # project trunk should not have Copied info
 		for ($target->copy_ancestors) {
