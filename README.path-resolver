@@ -16,22 +16,31 @@ looked deeper in the code and decided that it's better to stop on following goal
    add it with all its children without questions
 
 2) For changes it's possible to use the resolver we already have.
+* implemented, but without (old, base, new) resolver, just add or skip
 
 =head2 M1 TODO
 
+=head3 Bugs
+
+* t/22status-conflict.t fails and there is no way to fix it without
+  adjusting the way we distinguish tree conflicts vs. skips
+* fix t/smerge/path-resolver/change_in_deleted_file_co.t, it
+  has some issues I don't know how treat them
+* eol style is not handled when we return back a file
+
+=head3 Features
+
 * resolver help
-* when you're deciding if you want to add dir w/o children then
-  you usually want to list all new nodes in the dir, something like
-  > a)add all, o)nly this, ..., l)ist [a]: l
-  X/file
-  X/dir/file
-  ...
+* l)ist action for add_directory
+* dt - diff thiers action for a file change
+* c)at action for add_file
 
 =head1 SIDENOTES
 
 * if I resolve a conflict then I do want svk to commit after all even
   if overall merge is empty. I don't want to resolve things again and
   this is not only about path resolving.
+** done
 
 =head1 CASES
 
