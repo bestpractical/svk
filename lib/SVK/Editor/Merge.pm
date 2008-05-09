@@ -372,6 +372,9 @@ sub open_file {
             return undef;
         }
         elsif ( $action eq 'a' ) {
+            $self->add_directory_back( $pool )
+                if $self->{return_back}{$pdir};
+
             $self->{added}{$path} = 1;
             $self->{info}{$path}{overwrite} = 1;
             $self->{info}{$path}{fpool} = $pool;
