@@ -299,6 +299,7 @@ sub depotpath_in_branch_or_tag {
 
 sub branch_name {
     my ($self, $bpath, $is_local) = @_;
+    return 'trunk' if (dir($self->trunk)->subsumes($bpath));
     my $branch_location = $is_local ? $self->local_root : $self->branch_location;
     $bpath =~ s{^\Q$branch_location\E/}{};
     return $bpath;
@@ -337,10 +338,10 @@ sub info {
 
 	if ($where) {
 	    $logger->info ( loc("Branch: %1 (%2)\n", $bname, $where ));
-	    $logger->info ( loc("Depot Path: (%1)\n", $target->depotpath ));
+	    $logger->info ( loc("Repository path: %1\n", $target->depotpath ));
 	    if ($where ne 'trunk') { # project trunk should not have Copied info
-		for ($target->copy_ancestors) {
-		    $logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
+		if (my $copy_ancestor = ($target->copy_ancestors)[0]) {
+		    $logger->info( loc("Copied From: %1@%2\n", $self->branch_name($copy_ancestor->[0]), $copy_ancestor->[1]));
 		}
 	    }
 	}
