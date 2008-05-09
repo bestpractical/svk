@@ -79,7 +79,10 @@ sub exist {
 sub localmod {
     my ($self, $path, $checksum, $pool) = @_;
     $path = $self->_anchor_path($path);
-    my $md5 = $self->root->file_md5_checksum ($path, $pool);
+    my $md5 = $self->root->file_md5_checksum ($path, $pool)
+        # XXX: consider adding a constant string instead of code
+        || do { require Digest::MD5; Digest::MD5::md5_hex('') };
+
     return if $md5 eq $checksum;
     return [$self->root->file_contents ($path, $pool), undef, $md5];
 }
