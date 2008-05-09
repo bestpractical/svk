@@ -314,9 +314,10 @@ sub run {
 
 	if ( !$dst->same_source($src) ) {
 	    # branch first, then sm -I
-	    my $which_rev_we_branch = ($src->copy_ancestors)[0]->[1];
+	    my ($which_depotpath, $which_rev_we_branch) =
+		(($src->copy_ancestors)[0]->[0], ($src->copy_ancestors)[0]->[1]);
 	    $self->{rev} = $which_rev_we_branch;
-	    $src = $self->arg_uri_maybe($depot_root.'/'.$proj->trunk);
+	    $src = $self->arg_uri_maybe($depot_root.'/'.$which_depotpath);
 	    $self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
 	    local *handle_direct_item = sub {
 		my $self = shift;
@@ -684,22 +685,27 @@ package SVK::Command::Branch::online;
 use base qw( SVK::Command::Branch::move SVK::Command::Smerge SVK::Command::Switch );
 use SVK::I18N;
 use SVK::Logger;
+use SVK::Util qw( is_uri );
 
 sub lock { $_[0]->lock_target ($_[1]); };
 
 sub parse_arg {
     my ($self, $arg) = @_;
-    my $target = $self->arg_co_maybe($arg || '');
+    die loc ("Destination can't be URI.\n")
+	if $arg and is_uri ($arg);
+
+    my $target = $self->arg_co_maybe('');
     $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
     # XXX: should we verbose the branch_name here?
 #    die loc ("Current branch '%1' already online\n", $self->{branch_name})
     die loc ("Current branch already online\n")
 	if (!$target->_to_pclass("/local")->subsumes($target->path));
 
-    # XXX: if the remote branch of the same name already exists, do a
-    # smerge instead
     my $proj = $self->load_project($target);
-    $self->{branch_name} = $proj->branch_name($target->path, 1);
+
+    $self->{branch_name} = $arg if $arg;
+    $self->{branch_name} = $proj->branch_name($target->path, 1)
+	unless $arg;
 
     # check existence of remote branch
     my $dst = $self->arg_depotpath($proj->branch_path($self->{branch_name}));
@@ -716,8 +722,8 @@ sub run {
     if ($self->{go_smerge}) {
 	my $dst = $self->arg_depotpath($self->{go_smerge});
 	
-	$self->{message} = "- Merged from local";
-	$self->{log} = 1;
+	$self->{message} = "";
+	$self->{incremental} = 1;
 	$self->SVK::Command::Smerge::run($target->source, $dst);
 
 	$dst->refresh_revision;
@@ -769,9 +775,9 @@ sub run {
     if ($SVN::Node::none != $local->root->check_path($local->path)  and
 	$target->related_to($local)) {
 
-	$self->{message} = "- Merged to local";
+	$self->{message} = "";
 	# XXX: Following copy from ::online, maybe need refactoring
-	$self->{log} = 1;
+	$self->{incremental} = 1;
 	$self->SVK::Command::Smerge::run($target->source, $local);
 
 	$local->refresh_revision;

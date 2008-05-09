@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 16;
+plan tests => 18;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -93,3 +93,12 @@ is_output_like ($svk, 'branch', ['--offline'],
 is_output_like ($svk, 'log', [],
     qr|- changes in remote|);
 
+# online with a new branch name
+
+$svk->br('--online', 'release/abc'); # offline the feature/foobar branch
+
+is_output_like ($svk, 'info', [],
+   qr|Depot Path: //mirror/MyProject/branches/release/abc|);
+
+is_output_like ($svk, 'br', [],
+   qr|Copied From: feature/foobar@\d+|);
