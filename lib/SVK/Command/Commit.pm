@@ -73,7 +73,6 @@ sub options {
     ('m|message=s'    => 'message',
      'F|file=s'       => 'message_file',
      'C|check-only'   => 'check_only',
-     'S|sign'         => 'sign',
      'P|patch=s'      => 'patch',
      'import'         => 'import',
      'direct'         => 'direct',
@@ -270,25 +269,6 @@ sub get_editor {
 	}
     }
 
-    if ($self->{sign}) {
-	$editor = SVK::Editor::Sign->new
-	    ( _editor => [$editor],
-	      anchor => $target->universal->ukey );
-	my $post_handler = $cb{post_handler};
-	if (my $m = $cb{mirror}) {
-	    $$post_handler = sub {
-                $m->change_rev_prop( $_[0], 'svk:signature', $editor->{sig} );
-		1;
-	    }
-	}
-	else {
-	    my $fs = $target->repos->fs;
-	    $$post_handler = sub {
-		$fs->change_rev_prop($_[0], 'svk:signature', $editor->{sig});
-		1;
-	    }
-	}
-    }
 
     unless ($self->{check_only}) {
 	my $txn = $cb{txn};
@@ -682,7 +662,6 @@ SVK::Command::Commit - Commit changes to depot
  --encoding ENC         : treat -m/-F value as being in charset encoding ENC
  --template             : use the specified message as the template to edit
  -P [--patch] NAME      : instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
  -N [--non-recursive]   : operate on single directory only
  --set-revprop P=V      : set revision property on the commit

@@ -84,7 +84,6 @@ lib/SVK/Editor/Merge.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Serialize.pm
-lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/SubTree.pm
 lib/SVK/Editor/Tee.pm
