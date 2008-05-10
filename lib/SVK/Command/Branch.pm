@@ -72,6 +72,7 @@ sub options {
      'local'            => 'local',
      'project=s'        => 'project',
      'switch-to'        => 'switch',
+     'tag'              => "tag",
      'verbose'          => 'verbose', # TODO
      map { my $cmd = $_; s/\|.*$//; ($cmd => $_) } @SUBCOMMANDS
     );
@@ -232,7 +233,7 @@ sub run {
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
-    my $newbranch_path = $proj->branch_path($branch_name, $self->{local});
+    my $newbranch_path = $self->dst_path($proj, $branch_name);
 
     my $src = $self->arg_uri_maybe($src_path);
     die loc("Invalid --from argument") if
@@ -247,7 +248,8 @@ sub run {
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
-	$logger->info( loc("Project branch created: %1%2%3\n",
+	$logger->info( loc("Project %1 created: %2%3%4\n",
+        $self->{tag} ? "tag" : "branch",
 	    $branch_name,
 	    $self->{local} ? ' (in local)' : '',
 	    $self->{from} ? " (from $self->{from})" : '',
@@ -260,6 +262,16 @@ sub run {
 	) if $self->{switch} and !$self->{check_only};
     }
     return;
+}
+
+sub dst_path {
+    my ( $self, $proj, $branch_name ) = @_;
+
+    if ( $self->{tag} ) {
+        $proj->tag_path($branch_name);
+    } else {
+        $proj->branch_path($branch_name, $self->{local});
+    }
 }
 
 package SVK::Command::Branch::move;
@@ -803,7 +815,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [DEPOTPATH]
 
  branch --list [--all]
- branch --create BRANCH [--local] [--switch-to] [DEPOTPATH]
+ branch --create BRANCH [--tag] [--local] [--switch-to] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --checkout BRANCH [PATH] [DEPOTPATH]
@@ -815,6 +827,7 @@ SVK::Command::Branch - Manage a project with its branches
 
  -l [--list]            : list branches for this project
  --create               : create a new branch
+ --tag                  : create in the tags directory
  --local                : targets in local branch
  --delete               : delete BRANCH(s)
  --checkout             : checkout BRANCH in current directory

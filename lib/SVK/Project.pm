@@ -318,6 +318,13 @@ sub branch_path {
     return $branch_path;
 }
 
+sub tag_path {
+    my ($self, $tname) = @_;
+    my $tag_path = ($tname ne 'trunk' ?  $self->tag_location . "/$tname" : $self->trunk);
+    $tag_path = '/'.dir($self->depot->depotname)->subdir($tag_path);
+    return $tag_path;
+}
+
 sub info {
     my ($self, $target) = @_;
 
