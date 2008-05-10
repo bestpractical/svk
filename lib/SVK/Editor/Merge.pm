@@ -154,8 +154,9 @@ status.
 
 =item cb_merged
 
-Called right before closing the top directory with storage editor,
-root baton, and pool.
+Called right before closing the target (top directory or file) with
+boolean flag if there were any changes, if it's 'dir' or 'file' and
+ticket.
 
 =item cb_closed
 
