@@ -28,12 +28,13 @@ overwrite_file("$copath/A/deep/bar", "foobar\n");
 $svk->add("$copath/A/deep/bar");
 $svk->ci(-m => 'change on trunk', $copath);
 $svk->mv('-m', 'move foo', '//local/A', '//local/A-away');
-is_output($svk, 'sm', [-m => 'merge', '//trunk', '//local'],
+is_output($svk, 'sm', ['-C', '//trunk', '//local'],
 	  ['Auto-merging (2, 4) /trunk to /local (base /trunk:2).',
-	   '    A - skipped',
-	   '    A/foo - skipped',
-	   '    A/deep/bar - skipped',
-	   'Empty merge.']);
+	   'C   A/deep/bar',
+	   'C   A/foo',
+	   'Empty merge.',
+       '2 conflicts found',
+]);
 
 is_output($svk, 'sm', ['--track-rename', -m => 'merge', '//trunk', '//local'],
 	  ['Auto-merging (2, 4) /trunk to /local (base /trunk:2).',
