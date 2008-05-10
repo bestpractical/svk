@@ -39,13 +39,15 @@ append_file ("$copath/A/normal", "appended\n");
 is_output ($svk, 'commit', ['-m', 'append to moved files', $copath],
 	   ['Committed revision 8.']);
 is_output ($svk, 'merge', ['-C', '-r7:8', '//trunk', '//local'],
-	   ['    A/deep.new - skipped',
-	    '    A/deep.new/foo - skipped',
-	    '    A/deep.new/bar - skipped',
-            'U   A/normal',
-	    '    A/foo.new - skipped',
-	    '    test.pl - skipped',
-	    '5 files skipped, you might want to rerun merge with --track-rename.']);
+            ['U   A/normal', # XXX: strange that it's first
+	    'C   A/deep.new',
+	    'C   A/deep.new/bar',
+	    'C   A/deep.new/foo',
+	    'C   A/foo.new',
+	    'C   test.pl',
+	    'Empty merge.',
+	    '5 conflicts found.',
+]);
 is_output ($svk, 'merge', ['-C', '--track-rename', '-r7:8', '//trunk', '//local'],
 	   ['Collecting renames, this might take a while.',
 	    'U   A/deep.new/foo - A/deep/foo',
@@ -81,10 +83,11 @@ overwrite_file ("$copath/A/deep/test.pl", "foobarbazzz\nfromlocal\nend\n");
 is_output ($svk, 'commit', ['-m', 'append to moved files', $copath],
 	   ['Committed revision 9.']);
 is_output ($svk, 'merge', ['-C', '-r8:9', '//local', '//trunk'],
-	   ['    A/deep - skipped',
-	    '    A/deep/test.pl - skipped',
+	   ['C   A/deep',
+	    'C   A/deep/test.pl',
 	    'Empty merge.',
-	    '2 files skipped, you might want to rerun merge with --track-rename.']);
+	    '2 conflicts found.'
+]);
 is_output ($svk, 'merge', ['-C', '--track-rename', '-r8:9', '//local', '//trunk'],
 	   ['Collecting renames, this might take a while.',
 	    'G   A/deep/test.pl - test.pl']);
