@@ -61,7 +61,7 @@ use SVK::Logger;
 our $fromProp;
 use constant narg => undef;
 
-my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff setup online offline);
+my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff info setup online offline);
 
 sub options {
     ('l|list'           => 'list',
@@ -624,6 +624,35 @@ sub parse_arg {
     }
 
     return ($target, $dst);
+}
+
+package SVK::Command::Branch::info;
+use base qw( SVK::Command::Info SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    @arg = ('') if $#arg < 0;
+
+    my ($target, $proj, $dst);
+    my $project_name = $self->{project};
+    eval { # always try to eval current wc
+	$target = $self->arg_co_maybe($arg[0]);
+    };
+    if ($@) { # then it means we must have a project
+	$target = $self->arg_depotpath('//'); # XXX: what if /abc/mirror/ ?
+	$proj = SVK::Project->create_from_prop($target, $project_name);
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+    }
+    if (!$proj) {
+	$logger->info( loc("Project not found."));
+	return ;
+    }
+
+    undef $self->{recursive};
+    return map {$self->arg_co_maybe ($proj->branch_path($_))} @arg;
 }
 
 package SVK::Command::Branch::setup;
