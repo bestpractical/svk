@@ -155,13 +155,13 @@ sub _project_names {
 sub _create_from_prop {
     my ($self, $pathobj, $root, $prop_path, $pname, $from_local) = @_;
     my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
-    my @projnames = $self->_project_names($allprops);
+    my @projnames = $self->_project_names($allprops, $pname);
     return unless @projnames;
     
     # Given a lists of projects: 'rt32', 'rt34', 'rt38' in lexcialorder
     # if the suffix of prop_path matches $project_name like /mirror/rt38 matches rt38
     # then 'rt38' should be used to try before 'rt36', 'rt32'... 
-    for my $project_name ( sort { $prop_path =~ m/$b$/ } @projnames)  {
+    for my $project_name ( @projnames)  {
 	my %props = 
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
