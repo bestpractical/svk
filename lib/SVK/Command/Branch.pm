@@ -61,7 +61,7 @@ use SVK::Logger;
 our $fromProp;
 use constant narg => undef;
 
-my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create setup online offline);
+my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff setup online offline);
 
 sub options {
     ('l|list'           => 'list',
@@ -84,12 +84,20 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
+    my $target;
+    eval {
+	$target = $self->arg_co_maybe(pop @arg);
+    };
+    if ($@) { # then it means we need to find the project
+	my $project_name = $self->{project} || pop @arg;
+	$target = $self->arg_depotpath('//');
+    }
 #    if ($arg[0] eq 'push') {
 #	shift @arg;
 #	local *$self->run = sub SVK::Command::Smerge::run;
 #	return SVK::Command::Branch::push::parse_arg($self,@arg);
 #    }
-    return map {$self->arg_co_maybe ($_)} @arg;
+    return ($target, @arg);
 }
 
 sub run {
@@ -582,6 +590,42 @@ sub run {
     return;
 }
 
+package SVK::Command::Branch::diff;
+use base qw( SVK::Command::Diff SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg > 1;
+
+    my ($target, $proj, $dst);
+    my $project_name = $self->{project};
+    eval { # always try to eval current wc
+	$target = $self->arg_co_maybe('');
+    };
+    if ($@) { # then it means we must have a project
+	$target = $self->arg_depotpath('//'); # XXX: what if /abc/mirror/ ?
+	$proj = SVK::Project->create_from_prop($target, $project_name);
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+    }
+    if (!$proj) {
+	$logger->info( loc("Project not found."));
+	return ;
+    }
+    if (@arg) {
+	my $dst_branch_path = $proj->branch_path(pop(@arg));
+	$dst = $self->arg_co_maybe($dst_branch_path);
+	if (@arg) {
+	    my $src_branch_path = $proj->branch_path(pop(@arg));
+	    $target = $self->arg_co_maybe($src_branch_path);
+	}
+    }
+
+    return ($target, $dst);
+}
+
 package SVK::Command::Branch::setup;
 use base qw( SVK::Command::Propset SVK::Command::Branch );
 use SVK::I18N;
@@ -604,21 +648,38 @@ sub run {
     my ($self, $target) = @_;
 
     my $proj = $self->load_project($target);
+    my $local_root = $self->arg_depotpath('/'.$target->depot->depotname.'/');
+    my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
+
+    for my $path ($target->depot->mirror->entries) {
+	next unless $target->path =~ m{^$path};
+	($trunk_path) = $target->path =~ m{^$path(/?.*)$};
+	$project_name = $target->_to_pclass($target->path)->dir_list(-1);
+	$project_name = $target->_to_pclass($target->path)->dir_list(-2)
+	    if $project_name eq 'trunk';
+	$preceding_path = $path;
+	last if $trunk_path;
+    }
 
     if ($proj && $fromProp) {
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
-    } else {
-	my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
-	for my $path ($target->depot->mirror->entries) {
-	    next unless $target->path =~ m{^$path};
-	    ($trunk_path) = $target->path =~ m{^$path(/?.*)$};
-	    $project_name = $target->_to_pclass($target->path)->dir_list(-1);
-	    $project_name = $target->_to_pclass($target->path)->dir_list(-2)
-		if $project_name eq 'trunk';
-	    $preceding_path = $path;
-	    last if $trunk_path;
+	my $proplist = $local_root->root->node_proplist('/');
+	if (!exists $proplist->{"svk:project:$project_name:path-trunk"}) {
+	    my $ans = lc (get_prompt(
+		loc("Would you like to pull the project '%1' settings? [Y/n]", $project_name)
+	    ) );
+	    if ($ans ne 'n') {
+		$self->{message} = "- Mirror properties for project $project_name";
+
+		$proplist = $local_root->root->node_proplist($preceding_path);
+		for my $p ( map {'svk:project:'.$project_name.':'.$_}
+		    ('path-trunk', 'path-branches', 'path-tags')) {
+		    $self->do_propset($p,$proplist->{$p}, $local_root);
+		}
+		$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
+	    }
 	}
-	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
+    } else {
 	if (!$proj) {
 	    $logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
 	} else {
@@ -678,9 +739,17 @@ sub run {
 	}
 	#XXX implement setting properties of project here
 	$self->{message} = "- Setup properties for project $project_name";
-	$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $root_depot);
-	$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $root_depot);
-	$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $root_depot);
+	# always set to local first
+	$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
+	$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
+	$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
+	$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
+	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
+	if (0) { # how do we ask user to push to remote?
+	    $self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $root_depot);
+	    $self->do_propset("svk:project:$project_name:path-branches",$branch_path, $root_depot);
+	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $root_depot);
+	}
 	my $proj = SVK::Project->create_from_prop($target);
 	# XXX: what if it still failed here? How to rollback the prop commits?
 	if (!$proj) {

@@ -164,6 +164,9 @@ sub _create_from_prop {
     # then 'rt38' should be used to try before 'rt36', 'rt32'... 
 
     for my $project_name ( sort { $prop_path =~ m/$b$/ } keys %projnames)  {
+	$prop_path = $allprops->{'svk:project:'.$project_name.':root'}
+	    if ($allprops->{'svk:project:'.$project_name.':root'} and
+		($from_local || $prop_path eq '/'));
 	my %props = 
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
@@ -331,7 +334,7 @@ sub info {
     my ($self, $target) = @_;
 
     $logger->info ( loc("Project name: %1\n", $self->name));
-    if ($target) {
+    if ($target->isa('SVK::Path::Checkout')) {
 	my $where = "online";
 	my $bname = '';
 	if (dir($self->trunk)->subsumes($target->path)) {
