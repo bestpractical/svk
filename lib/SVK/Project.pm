@@ -147,6 +147,7 @@ sub _project_names {
     my ($self, $allprops, $pname) = @_;
     my ($depotroot)     = '/';
     return
+        map  { $_ => 1}
 	grep { (1 and !$pname) or ($_ eq $pname)  } # if specified pname, the grep it only
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
@@ -155,13 +156,14 @@ sub _project_names {
 sub _create_from_prop {
     my ($self, $pathobj, $root, $prop_path, $pname, $from_local) = @_;
     my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
-    my @projnames = $self->_project_names($allprops, $pname);
-    return unless @projnames;
+    my %projnames = $self->_project_names($allprops, $pname);
+    return unless %projnames;
     
     # Given a lists of projects: 'rt32', 'rt34', 'rt38' in lexcialorder
     # if the suffix of prop_path matches $project_name like /mirror/rt38 matches rt38
     # then 'rt38' should be used to try before 'rt36', 'rt32'... 
-    for my $project_name ( @projnames)  {
+
+    for my $project_name ( sort { $prop_path =~ m/$b$/ } keys %projnames)  {
 	my %props = 
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
@@ -331,7 +333,7 @@ sub info {
     $logger->info ( loc("Project name: %1\n", $self->name));
     if ($target) {
 	my $where = "online";
-	my $bname;
+	my $bname = '';
 	if (dir($self->trunk)->subsumes($target->path)) {
 	    $bname = 'trunk';
 	} elsif (dir($self->branch_location)->subsumes($target->path)) {

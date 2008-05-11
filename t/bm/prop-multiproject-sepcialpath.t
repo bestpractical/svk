@@ -64,11 +64,9 @@ is_output ($svk, 'propget',
 chdir('../../../');
 $svk->checkout('//mirror/projectB',$copathB);
 
-chdir($copathB);
-is_output ($svk, 'propget',
-    ['svk:project:projectB:path-trunk', ''],
-    [$props->{'svk:project:projectB:path-trunk'}]);
+chdir($copathB.'/trunk/projB');
 
+is_output_like ($svk, 'branch', [], qr'Project name: projectB');
 is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: bar');
 is_output ($svk, 'branch', ['--list'], ['bar']);
 #TODO: {
