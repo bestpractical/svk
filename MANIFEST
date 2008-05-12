@@ -84,7 +84,6 @@ lib/SVK/Editor/Merge.pm
 lib/SVK/Editor/Patch.pm
 lib/SVK/Editor/Rename.pm
 lib/SVK/Editor/Serialize.pm
-lib/SVK/Editor/Sign.pm
 lib/SVK/Editor/Status.pm
 lib/SVK/Editor/SubTree.pm
 lib/SVK/Editor/Tee.pm
@@ -283,7 +282,6 @@ t/50dav.t
 t/60patchset.t
 t/70symlink.t
 t/71autovivify.t
-t/72sign.t
 t/73i18n.t
 t/74chgspec.t
 t/74view-mirror.t
