@@ -788,9 +788,9 @@ sub do_add {
 
     $self->checkout_delta(
         $target->for_checkout_delta,
+        %arg,
         xdroot => $target->create_xd_root,
         delete_verbose => 1,
-        unknown_verbose => $arg{recursive},
         editor => SVK::Editor::Status->new(
             notify => SVK::Notify->new(
                 cb_flush => sub {

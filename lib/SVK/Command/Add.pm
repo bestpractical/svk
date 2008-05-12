@@ -90,8 +90,9 @@ sub run {
 
     $self->{xd}->do_add(
         $target,
-        recursive => $self->{recursive},
-        quiet => $self->{quiet},
+        recursive       => $self->{recursive},
+        quiet           => $self->{quiet},
+        unknown_verbose => $self->{recursive},
     );
 
     return;
