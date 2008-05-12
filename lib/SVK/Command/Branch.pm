@@ -965,21 +965,21 @@ SVK::Command::Branch - Manage a project with its branches
 
 =head1 OPTIONS
 
- -l [--list]            : list branches for this project
- --create               : create a new branch
- --tag                  : create in the tags directory
- --local                : targets in local branch
- --delete               : delete BRANCH(s)
- --checkout             : checkout BRANCH in current directory
- --switch               : switch the current checkout to another branch
+ -l [--list]        : list branches for this project
+ --create           : create a new branch
+ --tag              : create in the tags directory
+ --local            : targets in local branch
+ --delete           : delete BRANCH(s)
+ --checkout         : checkout BRANCH in current directory
+ --switch           : switch the current checkout to another branch
                           (can be paired with --create)
- --merge                : automatically merge all changes from BRANCH1, BRANCH2,
+ --merge            : automatically merge all changes from BRANCH1, BRANCH2,
                           etc, to TARGET
- --project              : specify the target project name 
- --push                 : move changes to wherever this branch was copied from
- --setup                : setup a project for a specified DEPOTPATH
- -C [--check-only]      : try a create, move or merge operation but make no     
-                          changes
+ --project          : specify the target project name 
+ --push             : move changes to wherever this branch was copied from
+ --setup            : setup a project for a specified DEPOTPATH
+ -C [--check-only]  : try a create, move or merge operation but make no     
+                      changes
 
 
 =head1 DESCRIPTION
