@@ -733,26 +733,31 @@ sub run {
 
     my $proj = $self->load_project($self->arg_depotpath('/'.$target->depot->depotname.$preceding_path));
 
+    my $ans = 'n';
     if ($proj && $fromProp) {
-	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
 	$project_name = $proj->name;
-	my $proplist = $local_root->root->node_proplist('/');
-	if (!exists $proplist->{"svk:project:$project_name:path-trunk"}) {
-	    my $ans = lc (get_prompt(
-		loc("Would you like to pull the project '%1' settings? [Y/n]", $project_name)
-	    ) );
-	    if ($ans ne 'n') {
-		$self->{message} = "- Mirror properties for project $project_name";
-
-		$proplist = $local_root->root->node_proplist($preceding_path);
-		for my $p ( map {'svk:project:'.$project_name.':'.$_}
-		    ('path-trunk', 'path-branches', 'path-tags')) {
-		    $self->do_propset($p,$proplist->{$p}, $local_root);
-		}
-		$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
-	    }
-	}
-    } else {
+	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
+	$ans = lc (get_prompt(
+	    loc("Is the project '%1' match? [Y/n]", $project_name)
+	) );
+    }
+#	my $proplist = $local_root->root->node_proplist('/');
+#	if (!exists $proplist->{"svk:project:$project_name:path-trunk"}) {
+#	    my $ans = lc (get_prompt(
+#		loc("Would you like to pull the project '%1' settings? [Y/n]", $project_name)
+#	    ) );
+#	    if ($ans ne 'n') {
+#		$self->{message} = "- Mirror properties for project $project_name";
+	#
+	#	$proplist = $local_root->root->node_proplist($preceding_path);
+	#	for my $p ( map {'svk:project:'.$project_name.':'.$_}
+	#	    ('path-trunk', 'path-branches', 'path-tags')) {
+	#	    $self->do_propset($p,$proplist->{$p}, $local_root);
+	#	}
+	#	$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
+	#    }
+	#}
+    if ($ans eq 'n') {
 	if (!$proj) {
 	    $logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
 	} else {
@@ -766,7 +771,7 @@ sub run {
 	    $tag_path =~ s{^/?$preceding_path}{};
 	}
 	{
-	    my $ans = get_prompt(
+	    $ans = get_prompt(
 		loc("Specify a project name (enter to use '%1'): ", $project_name),
 		qr/^(?:[A-Za-z][-+_A-Za-z0-9]*|$)/
 	    );
@@ -777,7 +782,7 @@ sub run {
 	}
 	$trunk_path ||= $target->_to_pclass('/')->subdir('trunk');
 	{
-	    my $ans = get_prompt(
+	    $ans = get_prompt(
 		loc("What directory shall we use for the project's trunk? (Press ENTER to use %1)\n=>", $trunk_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 
@@ -789,7 +794,7 @@ sub run {
 	}
 	$branch_path ||= $target->_to_pclass($trunk_path)->parent->subdir('branches');
 	{
-	    my $ans = get_prompt(
+	    $ans = get_prompt(
 		loc("What directory shall we use for the project's branches? (Press ENTER to use %1)\n=>", $branch_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|^\/|$)/
 	    );
@@ -800,7 +805,7 @@ sub run {
 	}
 	$tag_path ||= $target->_to_pclass($trunk_path)->parent->subdir('tags');
 	{
-	    my $ans = get_prompt(
+	    $ans = get_prompt(
 		loc("What directory shall we use for the project's tags? (Press ENTER to use %1, or 's' to skip)\n=>", $tag_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 	    );
@@ -813,12 +818,12 @@ sub run {
 	#XXX implement setting properties of project here
 	$self->{message} = "- Setup properties for project $project_name";
 	# always set to local first
-	$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
-	$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
-	$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
-	$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
+	#$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
+	#$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
+	#$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
+	#$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
 	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
-	if (0) { # how do we ask user to push to remote?
+	if (1) { # how do we ask user to push to remote?
 	    $self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $root_depot);
 	    $self->do_propset("svk:project:$project_name:path-branches",$branch_path, $root_depot);
 	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $root_depot);
