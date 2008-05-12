@@ -90,7 +90,15 @@ sub parse_arg {
     };
     if ($@) { # then it means we need to find the project
 	my $project_name = $self->{project} || pop @arg;
-	$target = $self->arg_depotpath('//');
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	my $proj;
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
+	}
     }
 #    if ($arg[0] eq 'push') {
 #	shift @arg;
@@ -605,8 +613,16 @@ sub parse_arg {
 	$target = $self->arg_co_maybe('');
     };
     if ($@) { # then it means we must have a project
-	$target = $self->arg_depotpath('//'); # XXX: what if /abc/mirror/ ?
-	$proj = SVK::Project->create_from_prop($target, $project_name);
+	my $project_name = $self->{project} || pop @arg;
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	my $proj;
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
+	}
     } else {
 	$proj = $self->load_project($target, $self->{project});
     }
@@ -641,8 +657,16 @@ sub parse_arg {
 	$target = $self->arg_co_maybe($arg[0]);
     };
     if ($@) { # then it means we must have a project
-	$target = $self->arg_depotpath('//'); # XXX: what if /abc/mirror/ ?
-	$proj = SVK::Project->create_from_prop($target, $project_name);
+	my $project_name = $self->{project} || pop @arg;
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	my $proj;
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
+	}
     } else {
 	$proj = $self->load_project($target, $self->{project});
     }
