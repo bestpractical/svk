@@ -531,6 +531,7 @@ sub parse_arg {
 	    die loc("No such branch/tag exists: %1\n", $src->path)
 		if ($SVN::Node::dir != $target->root->check_path($src->path)) ;
 	}
+	$self->{from}++;
 	$self->{from_path} = $src->depotpath;
     }
 
