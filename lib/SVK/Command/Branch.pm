@@ -85,11 +85,11 @@ sub parse_arg {
     @arg = ('') if $#arg < 0;
 
     my $target;
+    my $project_name = $self->{project};
     eval {
 	$target = $self->arg_co_maybe(pop @arg);
     };
     if ($@) { # then it means we need to find the project
-	my $project_name = $self->{project} || pop @arg;
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
 	my $proj;
 	foreach my $depot (@depots) {
@@ -495,24 +495,44 @@ sub run {
 package SVK::Command::Branch::push;
 use base qw( SVK::Command::Push SVK::Command::Branch);
 use SVK::I18N;
+use SVK::Logger;
 
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    if ($self->{from}) {
-	my $target = $self->arg_co_maybe ('');
-	$target = $target->source if $target->isa('SVK::Path::Checkout');
-	my $proj = $self->load_project($target);
-	my $depot_root = '/'.$proj->depot->depotname;
-	my $branch_path = $depot_root.'/'.$proj->branch_location;
-	my $from_path = $branch_path.'/'.$self->{from};
-	if ($SVN::Node::dir != $target->root->check_path($from_path)) {
-	    my $tag_path = $depot_root.'/'.$proj->tag_location;
-	    $from_path = $tag_path.'/'.$self->{from};
-	    die loc("No such branch/tag exists: %1\n", $self->{from})
-		if ($SVN::Node::dir != $target->root->check_path($from_path)) ;
+    my ($target, $proj, $dst);
+    my $project_name = $self->{project};
+    eval { # always try to eval current wc
+	$target = $self->arg_co_maybe('');
+    };
+    if ($@) { # then it means we must have a project
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	my $proj;
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
 	}
-	$self->{from_path} = $from_path;
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+    }
+    if (!$proj) {
+	$logger->info( loc("Project not found."));
+	return ;
+    }
+    $target = $target->source if $target->isa('SVK::Path::Checkout');
+    if (@arg) {
+	my $src_bname = pop (@arg);
+	my $src = $self->arg_depotpath($proj->branch_path($src_bname));
+	if ($SVN::Node::dir != $target->root->check_path($src->path)) {
+	    $src = $self->arg_depotpath($proj->tag_path($src_bname));
+	    die loc("No such branch/tag exists: %1\n", $src->path)
+		if ($SVN::Node::dir != $target->root->check_path($src->path)) ;
+	}
+	$self->{from} = 0;
+	$self->{from_path} = $src->depotpath;
     }
 
     $self->SUPER::parse_arg (@arg);
@@ -613,7 +633,6 @@ sub parse_arg {
 	$target = $self->arg_co_maybe('');
     };
     if ($@) { # then it means we must have a project
-	my $project_name = $self->{project} || pop @arg;
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
 	my $proj;
 	foreach my $depot (@depots) {
@@ -657,7 +676,6 @@ sub parse_arg {
 	$target = $self->arg_co_maybe($arg[0]);
     };
     if ($@) { # then it means we must have a project
-	my $project_name = $self->{project} || pop @arg;
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
 	my $proj;
 	foreach my $depot (@depots) {
@@ -943,7 +961,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --checkout BRANCH [PATH] [DEPOTPATH]
  branch --delete BRANCH1 BRANCH2 ...
  branch --setup DEPOTPATH
- branch --push [--from BRANCH]
+ branch --push [BRANCH]
 
 =head1 OPTIONS
 
