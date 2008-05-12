@@ -531,7 +531,6 @@ sub parse_arg {
 	    die loc("No such branch/tag exists: %1\n", $src->path)
 		if ($SVN::Node::dir != $target->root->check_path($src->path)) ;
 	}
-	$self->{from} = 0;
 	$self->{from_path} = $src->depotpath;
     }
 
@@ -731,7 +730,7 @@ sub run {
 	last if $trunk_path;
     }
 
-    my $proj = $self->load_project($self->arg_depotpath('/'.$target->_to_pclass($target->depot->depotname)->subdir($preceding_path)));
+    my $proj = $self->load_project($self->arg_depotpath('/'.$target->depot->depotname.$preceding_path));
 
     if ($proj && $fromProp) {
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
