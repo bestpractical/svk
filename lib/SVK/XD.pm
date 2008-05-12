@@ -577,14 +577,15 @@ sub target_from_copath_maybe {
 	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
 	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
 	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
-	my ($rev, $subpath);
-	if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
-	    ($path, $view) = SVK::Command->create_view ($repos, $view, $rev, $subpath);
+	my ($view_rev, $subpath);
+	if (($view, $view_rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
+	    ($path, $view) = SVK::Command->create_view ($repos, $view, $view_rev, $subpath);
 	}
 
 	$path = abs2rel ($copath, $coroot => $path, '/');
 
 	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
+        $rev = $cinfo->{revision} unless defined $rev;
 	$depotpath = "/$depotpath$path";
     }
 
