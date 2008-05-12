@@ -718,7 +718,6 @@ sub parse_arg {
 sub run {
     my ($self, $target) = @_;
 
-    my $proj = $self->load_project($target);
     my $local_root = $self->arg_depotpath('/'.$target->depot->depotname.'/');
     my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
 
@@ -732,8 +731,11 @@ sub run {
 	last if $trunk_path;
     }
 
+    my $proj = $self->load_project($self->arg_depotpath('/'.$target->_to_pclass($target->depot->depotname)->subdir($preceding_path)));
+
     if ($proj && $fromProp) {
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
+	$project_name = $proj->name;
 	my $proplist = $local_root->root->node_proplist('/');
 	if (!exists $proplist->{"svk:project:$project_name:path-trunk"}) {
 	    my $ans = lc (get_prompt(
