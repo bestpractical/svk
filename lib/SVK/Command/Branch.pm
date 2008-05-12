@@ -776,7 +776,7 @@ sub run {
 	$trunk_path ||= $target->_to_pclass('/')->subdir('trunk');
 	{
 	    my $ans = get_prompt(
-		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
+		loc("What directory shall we use for the project's trunk? (Press ENTER to use %1)\n=>", $trunk_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 
 	    );
@@ -788,7 +788,7 @@ sub run {
 	$branch_path ||= $target->_to_pclass($trunk_path)->parent->subdir('branches');
 	{
 	    my $ans = get_prompt(
-		loc("And where is the branches/? (%1)\n=> ", $branch_path),
+		loc("What directory shall we use for the project's branches? (Press ENTER to use %1)\n=>", $branch_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|^\/|$)/
 	    );
 	    if (length($ans)) {
@@ -799,7 +799,7 @@ sub run {
 	$tag_path ||= $target->_to_pclass($trunk_path)->parent->subdir('tags');
 	{
 	    my $ans = get_prompt(
-		loc("And where is the tags/? (%1) (or 's' to skip)", $tag_path),
+		loc("What directory shall we use for the project's tags? (Press ENTER to use %1, or 's' to skip)\n=>", $tag_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 	    );
 	    if (length($ans)) {
