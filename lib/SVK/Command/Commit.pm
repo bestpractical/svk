@@ -368,6 +368,7 @@ sub get_committable {
 	  cb_conflict => sub { shift->conflict(@_) },
       cb_unknown  => sub {
           my ($self, $path) = @_;
+          $path = $target->copath($path);
           push @unversioned, "?   $path\n";
       },
 	);
@@ -444,7 +445,7 @@ sub get_committable {
 
     $self->decode_commit_message;
 
-    my @need_to_add = map  {$target->copath($_->[1])}
+    my @need_to_add = map  { $_->[1] }
                       grep {$_->[0] eq 'A'}
                       @$targets;
     for (@need_to_add)
