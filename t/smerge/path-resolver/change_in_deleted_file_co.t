@@ -20,21 +20,33 @@ append_file ("$copath/a_file", "a file\n");
 $svk->add ("$copath/a_file");
 $svk->commit ('-m', 'init', "$copath");
 
-{
-    append_file ("$copath/a_file", "a change\n");
-    $svk->commit ('-m', 'change a file', "$copath");
+chdir $copath;
 
-    $svk->up ('-r', '-1', "$copath");
-    diag $output;
-    is_output ($svk, 'cat', ["$copath/a_file"],
+{
+    append_file ("a_file", "a change\n");
+    $svk->commit ('-m', 'change a file');
+
+    $svk->up ('-r', '-1');
+    is_output ($svk, 'cat', ["a_file"],
         ['a file']
     );
-    die "XXX: if we uncomment this line then output is different, some sort of caching?";
-    #$svk->st ("$copath");
-    #diag $output;
-    $svk->rm ("$copath/a_file");
-    diag $output;
-    $svk->up ('-C', "$copath");
-    diag $output;
+    $svk->rm ("a_file");
+    is_output ($svk, 'up', [ '-C'],
+        ['Syncing //(/) in '.__"$corpath to 2.",
+        'C   a_file',
+        '1 conflict found.']
+    );
+
+    $answer = ['a'];
+    is_output ($svk, 'up', [ ], [
+        'Syncing //(/) in '.__"$corpath to 2.",
+        'A   a_file',
+    ] );
+    is_output ($svk, 'cat', ["a_file"],
+        ['a file', 'a change']
+    );
+    is_output ($svk, 'st', [ ],
+        [''],
+    );
 }
 
