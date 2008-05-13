@@ -577,14 +577,15 @@ sub target_from_copath_maybe {
 	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
 	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
 	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
-	my ($rev, $subpath);
-	if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
-	    ($path, $view) = SVK::Command->create_view ($repos, $view, $rev, $subpath);
+	my ($view_rev, $subpath);
+	if (($view, $view_rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
+	    ($path, $view) = SVK::Command->create_view ($repos, $view, $view_rev, $subpath);
 	}
 
 	$path = abs2rel ($copath, $coroot => $path, '/');
 
 	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
+        $rev = $cinfo->{revision} unless defined $rev;
 	$depotpath = "/$depotpath$path";
     }
 
@@ -780,6 +781,68 @@ sub do_delete {
     
     return if $arg{no_rm};
     rmtree (\@paths) if @paths;
+}
+
+sub do_add {
+    my ($self, $target, %arg) = @_;
+
+    $self->checkout_delta(
+        $target->for_checkout_delta,
+        %arg,
+        xdroot => $target->create_xd_root,
+        delete_verbose => 1,
+        editor => SVK::Editor::Status->new(
+            notify => SVK::Notify->new(
+                cb_flush => sub {
+                    my ($path, $status) = @_;
+                    to_native($path, 'path');
+                    my $copath = $target->copath($path);
+                    my $report = $target->report->subdir($path);
+
+                    $target->contains_copath ($copath) or return;
+                    die loc ("%1 already added.\n", $report)
+                        if !$arg{recursive} && ($status->[0] eq 'R' || $status->[0] eq 'A');
+
+                    return unless $status->[0] eq 'D';
+                    lstat ($copath);
+                    $self->_do_add('R', $copath, $report, !-d _, %arg)
+                        if -e _;
+                },
+            ),
+        ),
+        cb_unknown => sub {
+            my ($editor, $path) = @_;
+            to_native($path, 'path');
+            my $copath = $target->copath($path);
+            my $report = $target->report->subdir($path);
+            lstat ($copath);
+            $self->_do_add('A', $copath, $report, !-d _, %arg);
+        },
+	);
+    return;
+}
+
+my %sch = (A => 'add', 'R' => 'replace');
+
+sub _do_add {
+    my ($self, $st, $copath, $report, $autoprop, %arg) = @_;
+    my $newprop;
+    $newprop = $self->auto_prop($copath) if $autoprop;
+
+    $self->{checkout}->store($copath, {
+            '.schedule' => $sch{$st},
+            $autoprop ? ('.newprop' => $newprop) : ()
+    });
+
+    return if $arg{quiet};
+
+    # determine whether the path is binary
+    my $bin = q{};
+    if ( ref $newprop && $newprop->{'svn:mime-type'} ) {
+        $bin = ' - (bin)' if !mimetype_is_text( $newprop->{'svn:mime-type'} );
+    }
+
+    $logger->info( "$st   $report$bin");
 }
 
 sub do_propset {

@@ -356,6 +356,8 @@ sub get_committable {
         $status_editor = SVK::Editor::Status->new(notify => $notify);
     }
 
+    my %may_need_to_add;
+
     $self->{xd}->checkout_delta
 	( $target->for_checkout_delta,
 	  depth => $self->{recursive} ? undef : 0,
@@ -369,6 +371,7 @@ sub get_committable {
       cb_unknown  => sub {
           my ($self, $path) = @_;
           $path = $target->copath($path);
+          $may_need_to_add{$path} = 1;
           push @unversioned, "?   $path\n";
       },
 	);
@@ -446,22 +449,17 @@ sub get_committable {
     $self->decode_commit_message;
 
     my @need_to_add = map  { $_->[1] }
-                      grep {$_->[0] eq 'A'}
+                      grep { $may_need_to_add{ $_->[1] } }
+                      grep { $_->[0] eq 'A' }
                       @$targets;
-    for (@need_to_add)
-    {
-        my $newprop;
-        my $autoprop = !-d $_;
 
-        $newprop = $self->{xd}->auto_prop($_)
-            if $autoprop;
-
-        # seems to work even if the file is already there (say the user changes
-        # an M to an A), but there really should be some kind of check
-        $self->{xd}{checkout}->store ($_,
-                    { '.schedule' => 'add',
-                        $autoprop ?
-                        ('.newprop'  => $newprop) : ()});
+    if (@need_to_add) {
+        my $old_targets = $target->{targets};
+        $target->{targets} = \@need_to_add;
+        $self->{xd}->do_add($target,
+            unknown_verbose => 1,
+        );
+        $target->{targets} = $old_targets;
     }
 
     return ($commit_editor, [sort {$a->[1] cmp $b->[1]} @$targets]);

@@ -35,6 +35,7 @@ is_output ($svk, 'branch', ['--list', '--project', 'sushi', '//mirror/nomeans'],
 is_output_like ($svk, 'branch', ['--create','bar','--project','sushi','//mirror/nomeans'],
     qr'Project branch created: bar');
 is_output ($svk, 'branch', ['--list', '--project', 'sushi', '//mirror/nomeans'], ['bar']);
+$answer = [''];
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/trunk/sushi'],
     ['Project already set in properties: //mirror/nomeans/trunk/sushi']);
 
