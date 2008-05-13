@@ -65,6 +65,7 @@ sub file_contents {
 sub file_md5_checksum {
     my ($self, $path, $pool) = @_;
     my $fh = $self->file_contents($path, $pool);
+    return undef unless $fh;
     return md5_fh($fh);
 }
 
