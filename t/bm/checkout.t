@@ -27,8 +27,8 @@ $svk->br('--create', 'feature/foo', '//mirror/MyProject');
 is_output ($svk, 'branch', ['--list', '//mirror/MyProject'],
     ['feature/foo']);
 
-is_output ($svk, 'branch', ['--checkout', 'feature/foo'],
-    [qr/path \S+ is not a checkout path./]);
+is_output_like ($svk, 'branch', ['--checkout', 'feature/foo'],
+    qr'Project not found.');
 
 chdir($copath."/A");
 is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject'],

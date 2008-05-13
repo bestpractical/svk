@@ -130,7 +130,7 @@ sub create_from_prop {
 
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
-    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror');
+    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
     my $prop_path = '/';
     foreach my $m_path (@all_mirrors) {
         if ($pathobj->path =~ m/^$m_path/) {

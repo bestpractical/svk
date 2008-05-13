@@ -166,6 +166,16 @@ sub expand_branch {
     return grep { m/$match/ } @{ $proj->branches };
 }
 
+sub dst_path {
+    my ( $self, $proj, $branch_name ) = @_;
+
+    if ( $self->{tag} ) {
+        $proj->tag_path($branch_name);
+    } else {
+        $proj->branch_path($branch_name, $self->{local});
+    }
+}
+
 package SVK::Command::Branch::list;
 use base qw(SVK::Command::Branch);
 use SVK::I18N;
@@ -278,16 +288,6 @@ sub run {
 	) if $self->{switch} and !$self->{check_only};
     }
     return;
-}
-
-sub dst_path {
-    my ( $self, $proj, $branch_name ) = @_;
-
-    if ( $self->{tag} ) {
-        $proj->tag_path($branch_name);
-    } else {
-        $proj->branch_path($branch_name, $self->{local});
-    }
 }
 
 package SVK::Command::Branch::move;
@@ -566,9 +566,22 @@ sub parse_arg {
 	}
     }
 
-    my $target = $self->arg_co_maybe ($project_path);
-    my $proj = $self->load_project($target);
-
+    my ($target, $proj);
+    eval { 
+	$target = $self->arg_co_maybe($project_path);
+    };
+    if ($@) { # then it means we must have a project
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $self->{project});
+	    last if ($proj) ;
+	}
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+    }
     if (!$proj) {
         $logger->info(
             loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n")
@@ -694,7 +707,8 @@ sub parse_arg {
     }
 
     undef $self->{recursive};
-    return map {$self->arg_co_maybe ($proj->branch_path($_))} @arg;
+    $self->{local}++ if ($target->_to_pclass("/local")->subsumes($target->path));
+    return map {$self->arg_co_maybe ($self->dst_path($proj,$_))} @arg;
 }
 
 package SVK::Command::Branch::setup;
@@ -702,6 +716,17 @@ use base qw( SVK::Command::Propset SVK::Command::Branch );
 use SVK::I18N;
 use SVK::Util qw( is_uri get_prompt );
 use SVK::Logger;
+
+sub can_write_remote_proj_prop {
+    my ($self, $remote_depot, %arg) = @_;
+    eval {
+	for my $key (keys %arg) {
+	    $self->do_propset($key,$arg{$key}, $remote_depot);
+	}
+    };
+    return 1 if ($@);
+    return 0;
+}
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -713,7 +738,6 @@ sub parse_arg {
 
     return ($self->arg_co_maybe ($dst));
 }
-
 
 sub run {
     my ($self, $target) = @_;
@@ -818,17 +842,19 @@ sub run {
 	#XXX implement setting properties of project here
 	$self->{message} = "- Setup properties for project $project_name";
 	# always set to local first
-	#$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
-	#$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
-	#$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
-	#$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
 	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
-	if (1) { # how do we ask user to push to remote?
-	    $self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $root_depot);
-	    $self->do_propset("svk:project:$project_name:path-branches",$branch_path, $root_depot);
-	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $root_depot);
+	my $ret = $self->can_write_remote_proj_prop($root_depot,
+	    "svk:project:$project_name:path-trunk" => $trunk_path,
+	    "svk:project:$project_name:path-branches" => $branch_path,
+	    "svk:project:$project_name:path-tags" => $tag_path);
+	if ($ret) { # we have problem to write to remote
+	    $self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
+	    $self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
+	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
+	    $self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
+	    $logger->info( loc("Can't write project props to remote server. Save in local instead."));
 	}
-	my $proj = SVK::Project->create_from_prop($target);
+	$proj = SVK::Project->create_from_prop($target);
 	# XXX: what if it still failed here? How to rollback the prop commits?
 	if (!$proj) {
 	    $logger->info( loc("Project setup failed.\n"));
@@ -862,12 +888,19 @@ sub parse_arg {
 
     my $proj = $self->load_project($target);
 
+    # local
     $self->{branch_name} = $arg if $arg;
     $self->{branch_name} = $proj->branch_name($target->path, 1)
 	unless $arg;
 
     # check existence of remote branch
-    my $dst = $self->arg_depotpath($proj->branch_path($self->{branch_name}));
+    my $dst;
+#    if ($arg) { # user specify a new target branch
+	$dst = $self->arg_depotpath($proj->branch_path($self->{branch_name}));
+#    } else { # otherwise, merge back to its ancestor
+#	my $copy_ancestor = ($target->copy_ancestors)[0]->[0];
+#	$dst = $self->arg_depotpath('/'.$target->depotname.$copy_ancestor);
+#    }
     if ($SVN::Node::none != $dst->root->check_path($dst->path)) {
 	$self->{go_smerge} = $dst->depotpath if $target->related_to($dst);
     }
