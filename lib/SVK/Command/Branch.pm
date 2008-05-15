@@ -744,6 +744,8 @@ sub run {
 
     my $local_root = $self->arg_depotpath('/'.$target->depot->depotname.'/');
     my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
+    my $source_root = $target->is_mirrored->_backend->source_root;
+    my $url = $target->is_mirrored->url;
 
     for my $path ($target->depot->mirror->entries) {
 	next unless $target->path =~ m{^$path};
@@ -843,16 +845,20 @@ sub run {
 	$self->{message} = "- Setup properties for project $project_name";
 	# always set to local first
 	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
-	my $ret = $self->can_write_remote_proj_prop($root_depot,
+	my $ret = $source_root ne $url or $self->can_write_remote_proj_prop($root_depot,
 	    "svk:project:$project_name:path-trunk" => $trunk_path,
 	    "svk:project:$project_name:path-branches" => $branch_path,
 	    "svk:project:$project_name:path-tags" => $tag_path);
 	if ($ret) { # we have problem to write to remote
+	    if ($source_root ne $url) {
+		$logger->info( loc("Can't write project props to remote root. Save in local instead."));
+	    } else {
+		$logger->info( loc("Can't write project props to remote server. Save in local instead."));
+	    }
 	    $self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
 	    $self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
 	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
 	    $self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
-	    $logger->info( loc("Can't write project props to remote server. Save in local instead."));
 	}
 	$proj = SVK::Project->create_from_prop($target);
 	# XXX: what if it still failed here? How to rollback the prop commits?
