@@ -153,6 +153,13 @@ sub _project_names {
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
 }
 
+sub _project_paths {
+    my ($self, $allprops) = @_;
+    return
+        map  { $allprops->{$_} => $_ }
+	grep { $_ =~ m/^svk:project/ } sort keys %{$allprops};
+}
+
 sub _create_from_prop {
     my ($self, $pathobj, $root, $prop_path, $pname, $from_local) = @_;
     my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
@@ -358,5 +365,31 @@ sub info {
 	    }
 	}
     }
+}
+
+sub in_which_project {
+    my ($self, $pathobj) = @_;
+
+    my $fs              = $pathobj->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
+    my $prop_path       = '/';
+    foreach my $m_path (@all_mirrors) {
+        if ($pathobj->path =~ m/^$m_path/) {
+            $prop_path = $m_path;
+            last;
+        }
+    }
+    my $from_local      = $pathobj->_to_pclass("/local")->subsumes($pathobj->path);
+    my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
+    my %projpaths       = $self->_project_paths($allprops);
+    for my $path (sort { $b ne $a } keys %projpaths) { # reverse sort to ensure subsume
+	if ($pathobj->_to_pclass($prop_path.$path)->subsumes($pathobj->path) or
+	    $pathobj->_to_pclass($pathobj->path)->subsumes($prop_path.$path)) {
+	    my ($pname) = $projpaths{$path} =~ m/^svk:project:(.*?):path/;
+	    return $pname;
+	}
+    }
+    return;
 }
 1;
