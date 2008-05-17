@@ -795,6 +795,7 @@ sub run {
 	#    }
 	#}
     if ($ans eq 'n') {
+	$proj = $self->load_project($self->arg_depotpath($target->depotpath));
 	if (!$proj) {
 	    $logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
 	} else {
