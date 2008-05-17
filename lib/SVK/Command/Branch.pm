@@ -84,14 +84,13 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
-    my $target;
+    my ($target,$proj);
     my $project_name = $self->{project};
     eval {
 	$target = $self->arg_co_maybe(pop @arg);
     };
     if ($@) { # then it means we need to find the project
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	my $proj;
 	foreach my $depot (@depots) {
 	    $depot =~ s{/}{}g;
 	    $target = eval { $self->arg_depotpath("/$depot/") };
@@ -233,15 +232,30 @@ sub parse_arg {
     die loc ("Copy source can't be URI.\n")
 	if is_uri ($arg[0]);
 
-    my $target;
-    eval {
+    my ($target,$proj);
+    my $project_name = $self->{project};
+    my $msg;
+    eval { # always try to eval current wc
 	$target = $self->arg_co_maybe($arg[0]);
     };
-    if ($@) { 
+    if ($@) { # then it means we must have a project
+	$msg = $@;
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
+	}
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+    }
+    if (!$proj) {
 	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
 	$logger->info("either run '$0 branch --create' from within an existing checkout or specify");
 	$logger->info("a project root using the --project flag");
-	die $@;
+	die $msg;
     }
     return ($target, $dst);
 }
@@ -507,7 +521,6 @@ sub parse_arg {
     };
     if ($@) { # then it means we must have a project
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	my $proj;
 	foreach my $depot (@depots) {
 	    $depot =~ s{/}{}g;
 	    $target = eval { $self->arg_depotpath("/$depot/") };
@@ -647,7 +660,6 @@ sub parse_arg {
     };
     if ($@) { # then it means we must have a project
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	my $proj;
 	foreach my $depot (@depots) {
 	    $depot =~ s{/}{}g;
 	    $target = eval { $self->arg_depotpath("/$depot/") };
@@ -690,7 +702,6 @@ sub parse_arg {
     };
     if ($@) { # then it means we must have a project
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	my $proj;
 	foreach my $depot (@depots) {
 	    $depot =~ s{/}{}g;
 	    $target = eval { $self->arg_depotpath("/$depot/") };
