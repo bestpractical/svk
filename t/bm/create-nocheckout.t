@@ -21,7 +21,7 @@ my ($copath, $corpath) = get_copath ('MyProject');
 
 is_output ($svk, 'branch', ['--create', 'feature/foo'],
     ["I can't figure out what project you'd like to create a branch in. Please",
-     "either run '$0 branch --create' from within an existing chekout or specify",
+     "either run '$0 branch --create' from within an existing checkout or specify",
      "a project root using the --project flag",
      qr/path \S+ is not a checkout path./]);
 

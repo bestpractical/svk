@@ -239,7 +239,7 @@ sub parse_arg {
     };
     if ($@) { 
 	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
-	$logger->info("either run '$0 branch --create' from within an existing chekout or specify");
+	$logger->info("either run '$0 branch --create' from within an existing checkout or specify");
 	$logger->info("a project root using the --project flag");
 	die $@;
     }
