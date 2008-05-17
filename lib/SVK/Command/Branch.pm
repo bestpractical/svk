@@ -234,7 +234,7 @@ sub parse_arg {
 
     my ($target,$proj);
     my $project_name = $self->{project};
-    my $msg;
+    my $msg = '';
     eval { # always try to eval current wc
 	$target = $self->arg_co_maybe($arg[0]);
     };
@@ -770,9 +770,10 @@ sub run {
 
     my $proj = $self->load_project($self->arg_depotpath('/'.$target->depot->depotname.$preceding_path));
 
+    $project_name = $proj->in_which_project($target) if $proj;
+
     my $ans = 'n';
-    if ($proj && $fromProp) {
-	$project_name = $proj->name;
+    if ($proj && $fromProp && $project_name) {
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
 	$ans = lc (get_prompt(
 	    loc("Is the project '%1' match? [Y/n]", $project_name)

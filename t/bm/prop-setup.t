@@ -52,7 +52,7 @@ is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/A'],
 
 chdir("..");
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/projectB'], []);
-$answer = ['n','', '','',''];
+$answer = ['', '','',''];
 is_output_like ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
     qr/Project detected in specified path./);
 $answer = [''];
