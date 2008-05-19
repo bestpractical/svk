@@ -121,22 +121,23 @@ $svk->commit ('-m', 'commit on local branch');
 $svk->sync ('//mirror/BK');
 
 is_output ($svk, 'push', ['-C'],
-    ['Auto-merging (0, 4) /local/BK to /mirror/BK (base /mirror/BK:2).',
+    ['Auto-merging (0, 5) /local/BK to /mirror/BK (base /mirror/BK:2).',
      '===> Auto-merging (0, 3) /local/BK to /mirror/BK (base /mirror/BK:2).',
      'Empty merge.',
-     '===> Auto-merging (3, 4) /local/BK to /mirror/BK (base /mirror/BK:2).',
+     '===> Auto-merging (3, 5) /local/BK to /mirror/BK (base /mirror/BK:2).',
      'U   data/N M/HOWTO.txt',
-     qr'New merge ticket: .*:/local/BK:4']);
+     qr'New merge ticket: .*:/local/BK:5']);
 
 is_output ($svk, 'push', [''],
-    ['Auto-merging (0, 4) /local/BK to /mirror/BK (base /mirror/BK:2).',
+    ['Auto-merging (0, 5) /local/BK to /mirror/BK (base /mirror/BK:2).',
      '===> Auto-merging (0, 3) /local/BK to /mirror/BK (base /mirror/BK:2).',
+     qr'Merging back to mirror source http://[^/]+/svn/B and K/A/N P1/trunk.',
      'Empty merge.',
-     '===> Auto-merging (3, 4) /local/BK to /mirror/BK (base /mirror/BK:2).',
+     '===> Auto-merging (3, 5) /local/BK to /mirror/BK (base /mirror/BK:2).',
+     qr'Merging back to mirror source http://[^/]+/svn/B and K/A/N P1/trunk.',
      'U   data/N M/HOWTO.txt',
-     qr'New merge ticket: .*:/local/BK:4']);
-
-warn $output;
-#Auto-merging (0, 4) /local/BK to /mirror/BK (base /mirror/BK:2).
-#===> Auto-merging (0, 3) /local/BK to /mirror/BK (base /mirror/BK:2).
-#Merging back to mirror source http://localhost:8529/svn/B and K/A/N P1/trunk.
+     qr'New merge ticket: .*:/local/BK:5',
+     'Merge back committed as revision 3.',
+     qr'Syncing http://[^/]+/svn/B and K/A/N P1/trunk',
+     'Retrieving log information from 3 to 3',
+     'Committed revision 6 from revision 3.']);
