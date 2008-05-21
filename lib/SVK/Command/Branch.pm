@@ -84,36 +84,16 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
-    my ($target,$proj, $msg);
-    my $project_name = $self->{project};
-    eval {
-	$target = $self->arg_co_maybe(pop @arg);
-    };
-    if ($@) { # then it means we need to find the project
-	$msg = $@;
-	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	foreach my $depot (@depots) {
-	    $depot =~ s{/}{}g;
-	    $target = eval { $self->arg_depotpath("/$depot/") };
-	    next if ($@);
-	    $proj = SVK::Project->create_from_prop($target, $project_name);
-	    last if ($proj) ;
-	}
-	die $msg unless $proj;
+    my ($proj,$target, $msg) = $self->locate_project(pop @arg);
+    unless ($proj) {
+	$logger->warn( loc ($msg) );
     }
-#    if ($arg[0] eq 'push') {
-#	shift @arg;
-#	local *$self->run = sub SVK::Command::Smerge::run;
-#	return SVK::Command::Branch::push::parse_arg($self,@arg);
-#    }
-    return ($target, @arg);
+    return ($proj, $target, @arg);
 }
 
 sub run {
-    my ( $self, $target, @options ) = @_;
+    my ( $self, $proj, $target, @options ) = @_;
 #    return SVK::Command::Branch::push::run($self,@options) if $target eq 'push';
-
-    my $proj = $self->load_project($target);
 
     if ($proj) {
         $proj->info($target);
@@ -160,6 +140,33 @@ sub load_project {
     return ;
 }
 
+sub locate_project {
+    my ($self, $copath) = @_;
+
+    my ($proj, $target, $msg);
+    my $project_name = $self->{project};
+
+    $copath ||= '';
+    eval {
+	$target = $self->arg_co_maybe($copath);
+    };
+    if ($@) { # then it means we need to find the project
+	$msg = $@;
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
+	}
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+	$msg = "No project found.";
+    }
+    return ($proj, $target, $msg);
+}
+
 sub expand_branch {
     my ($self, $proj, $arg) = @_;
     return $arg unless $arg =~ m/\*/;
@@ -183,14 +190,8 @@ use SVK::I18N;
 use SVK::Logger;
 
 sub run {
-    my ($self, $target) = @_;
-
-    my $proj = $self->load_project($target);
-
-    if (!$proj) {
-	$logger->info( loc("No project found.\n"));
-	return;
-    }
+    my ($self, $proj) = @_;
+    return unless $proj;
 
     if ($self->{all}) {
 	my $fmt = "%s%s\n"; # here to change layout
@@ -225,53 +226,33 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg > 1;
 
+    @arg = ('') if $#arg < 0;
+
     my $dst = shift (@arg);
     die loc ("Copy destination can't be URI.\n")
 	if is_uri ($dst);
 
-    @arg = ('') if $#arg < 0;
-
-    die loc ("Copy source can't be URI.\n")
-	if is_uri ($arg[0]);
-
-    my ($target,$proj);
-    my $project_name = $self->{project};
-    my $msg = '';
-    eval { # always try to eval current wc
-	$target = $self->arg_co_maybe($arg[0]);
-    };
-    if ($@) { # then it means we must have a project
-	$msg = $@;
-	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	foreach my $depot (@depots) {
-	    $depot =~ s{/}{}g;
-	    $target = eval { $self->arg_depotpath("/$depot/") };
-	    next if ($@);
-	    $proj = SVK::Project->create_from_prop($target, $project_name);
-	    last if ($proj) ;
-	}
-    } else {
-	$proj = $self->load_project($target, $self->{project});
-    }
+    # always try to eval current wc
+    my ($proj,$target, $msg) = $self->locate_project($arg[0]);
     if (!$proj) {
 	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
 	$logger->info("either run '$0 branch --create' from within an existing checkout or specify");
 	$logger->info("a project root using the --project flag");
 	die $msg;
     }
-    return ($target, $dst);
+    return ($proj, $target, $dst);
 }
 
 
 sub run {
-    my ($self, $target, $branch_name) = @_;
+    my ($self, $proj, $target, $branch_name) = @_;
 
-    my $proj = $self->load_project($target);
+#    my $proj = $self->load_project($target);
 
-    if (!$proj) {
-	$logger->info( loc("No project found.\n"));
-	return;
-    }
+#    if (!$proj) {
+#	$logger->info( loc("No project found.\n"));
+#	return;
+#    }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
@@ -900,14 +881,16 @@ sub parse_arg {
     die loc ("Destination can't be URI.\n")
 	if $arg and is_uri ($arg);
 
-    my $target = $self->arg_co_maybe('');
+    my ($proj,$target, $msg) = $self->locate_project('');
     $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
     # XXX: should we verbose the branch_name here?
 #    die loc ("Current branch '%1' already online\n", $self->{branch_name})
     die loc ("Current branch already online\n")
 	if (!$target->_to_pclass("/local")->subsumes($target->path));
 
-    my $proj = $self->load_project($target);
+    unless ($proj) {
+	$logger->warn( loc ($msg) );
+    }
 
     # local
     $self->{branch_name} = $arg if $arg;
@@ -960,20 +943,19 @@ use SVK::Logger;
 # --offline (at checkout of branch FOO
 #   --create FOO --from FOO --local
 
-sub parse_arg {
-    my ($self, @arg) = @_;
-
-    push @arg, '' unless @arg;
-    return $self->SUPER::parse_arg(@arg);
-}
+#sub parse_arg {
+#    my ($self, @arg) = @_;
+#
+#    push @arg, '' unless @arg;
+#    return $self->SUPER::parse_arg(@arg);
+#}
 
 sub run {
-    my ($self, $target, $branch_name) = @_;
+    my ($self, $proj, $target, $branch_name) = @_;
 
     die loc ("Current branch already offline\n")
 	if ($target->_to_pclass("/local")->subsumes($target->path));
 
-    my $proj = $self->load_project($target);
     if (!$branch_name) { # no branch_name means using current branch(trunk) as src
 	$branch_name = $proj->branch_name($target->path);
 	$self->{from} = $branch_name;
@@ -999,7 +981,7 @@ sub run {
 	$self->{rev} = undef;
 	$self->SVK::Command::Switch::run($local, $target) if $target->isa('SVK::Path::Checkout');
     } else {
-	$self->SUPER::run($target, $branch_name);
+	$self->SUPER::run($proj, $target, $branch_name);
     }
 }
 
