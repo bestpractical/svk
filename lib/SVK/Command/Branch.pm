@@ -93,7 +93,6 @@ sub parse_arg {
 
 sub run {
     my ( $self, $proj, $target, @options ) = @_;
-#    return SVK::Command::Branch::push::run($self,@options) if $target eq 'push';
 
     if ($proj) {
         $proj->info($target);
@@ -246,13 +245,6 @@ sub parse_arg {
 
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
-
-#    my $proj = $self->load_project($target);
-
-#    if (!$proj) {
-#	$logger->info( loc("No project found.\n"));
-#	return;
-#    }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
@@ -702,22 +694,6 @@ sub run {
 	    loc("Is the project '%1' match? [Y/n]", $project_name)
 	) );
     }
-#	my $proplist = $local_root->root->node_proplist('/');
-#	if (!exists $proplist->{"svk:project:$project_name:path-trunk"}) {
-#	    my $ans = lc (get_prompt(
-#		loc("Would you like to pull the project '%1' settings? [Y/n]", $project_name)
-#	    ) );
-#	    if ($ans ne 'n') {
-#		$self->{message} = "- Mirror properties for project $project_name";
-	#
-	#	$proplist = $local_root->root->node_proplist($preceding_path);
-	#	for my $p ( map {'svk:project:'.$project_name.':'.$_}
-	#	    ('path-trunk', 'path-branches', 'path-tags')) {
-	#	    $self->do_propset($p,$proplist->{$p}, $local_root);
-	#	}
-	#	$self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
-	#    }
-	#}
     if ($ans eq 'n') {
 	$proj = $self->load_project($self->arg_depotpath($target->depotpath));
 	if (!$proj) {
