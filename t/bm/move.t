@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 19;
+use Test::More tests => 20;
 use SVK::Test;
 use File::Path;
 
@@ -129,3 +129,5 @@ is_output ($svk, 'branch', ['--create', 'localbar', '--local'],
     ["Committed revision 21.",
      "Project branch created: localbar (in local)"]);
 
+is_output ($svk, 'branch', ['--move', 'hasbugs/bar', 'hasbugs/mar'],
+    ['Project branch already exists: hasbugs/mar']);

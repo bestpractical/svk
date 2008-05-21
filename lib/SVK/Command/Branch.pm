@@ -173,6 +173,16 @@ sub expand_branch {
     return grep { m/$match/ } @{ $proj->branches };
 }
 
+sub dst_name {
+    my ( $self, $proj, $branch_path ) = @_;
+
+    if ( $self->{tag} ) {
+        $proj->tag_name($branch_path);
+    } else {
+        $proj->branch_name($branch_path, $self->{local});
+    }
+}
+
 sub dst_path {
     my ( $self, $proj, $branch_name ) = @_;
 
@@ -311,14 +321,17 @@ sub run {
 
     my $depot_root = '/'.$proj->depot->depotname;
     my $branch_path = $depot_root.$proj->branch_location;
-    my $dst_branch_path = $dst_path;
-    $dst_branch_path = $branch_path.'/'.$dst_path.'/'
-	unless $dst_path =~ m#^$depot_root/#;
+    # Normalize name and path
+    my $dst_name = $self->dst_name($proj, $dst_path);
+    my $dst_branch_path = $self->dst_path($proj, $dst_name);
     my $dst = $self->arg_depotpath($dst_branch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or $SVN::Node::dir == $dst->root->check_path($dst->path)
-	or die loc("Project branch already exists: %1 %2\n",
-	    $branch_path, $self->{local} ? '(in local)' : '');
+	or die loc("Project branch already exists: %1%2\n",
+	    $branch_path, $self->{local} ? ' (in local)' : '');
+    die loc("Project branch already exists: %1%2\n",
+	$dst_name, $self->{local} ? ' (in local)' : '')
+        if grep /$dst_name/,@{$proj->branches};
 
     $self->{parent} = 1;
     for my $src_path (@src_paths) {
