@@ -261,7 +261,7 @@ sub run {
     my $newbranch_path = $self->dst_path($proj, $branch_name);
 
     my $src = $self->arg_uri_maybe($src_path);
-    die loc("Invalid --from argument") if
+    die loc("Path %1 does not exist.\n",$src->depotpath) if
 	$SVN::Node::none == $src->root->check_path($src->path);
     my $dst = $self->arg_uri_maybe($newbranch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
