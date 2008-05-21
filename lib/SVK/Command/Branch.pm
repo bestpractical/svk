@@ -293,6 +293,7 @@ package SVK::Command::Branch::move;
 use base qw( SVK::Command::Move SVK::Command::Smerge SVK::Command::Delete SVK::Command::Branch::create );
 use SVK::I18N;
 use SVK::Util qw( is_uri );
+use SVK::Logger;
 use Path::Class;
 
 sub lock { $_[0]->lock_coroot ($_[1]); };
@@ -335,11 +336,15 @@ sub run {
 
     $self->{parent} = 1;
     for my $src_path (@src_paths) {
-	my $src_branch_path = $src_path;
-	$src_branch_path = $branch_path.'/'.$src_path.'/'
-	    unless $src_path =~ m#^$depot_root/#;
-	$src_branch_path = $depot_root.$target->source->path
-	    unless ($src_path);
+	$src_path = $target->path unless $src_path;
+	$src_path = $target->_to_pclass("$src_path");
+	if ($target->_to_pclass("/local")->subsumes($src_path)) {
+	    $self->{local}++;
+	} else {
+	    $self->{local} = 0;
+	}
+	my $src_name = $self->dst_name($proj,$src_path);
+	my $src_branch_path = $self->dst_path($proj, $src_name);
 	my $src = $self->arg_co_maybe($src_branch_path);
 
 	if ( !$dst->same_source($src) ) {
@@ -349,6 +354,10 @@ sub run {
 	    $self->{rev} = $which_rev_we_branch;
 	    $src = $self->arg_uri_maybe($depot_root.'/'.$which_depotpath);
 	    $self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
+#	    if ($self->{check_only}) {
+#		$logger->info(
+#		    loc ("We will copy branch %1 to %2"), $
+#	    }
 	    local *handle_direct_item = sub {
 		my $self = shift;
 		$self->SVK::Command::Copy::handle_direct_item(@_);
