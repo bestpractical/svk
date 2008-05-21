@@ -84,12 +84,13 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
-    my ($target,$proj);
+    my ($target,$proj, $msg);
     my $project_name = $self->{project};
     eval {
 	$target = $self->arg_co_maybe(pop @arg);
     };
     if ($@) { # then it means we need to find the project
+	$msg = $@;
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
 	foreach my $depot (@depots) {
 	    $depot =~ s{/}{}g;
@@ -98,6 +99,7 @@ sub parse_arg {
 	    $proj = SVK::Project->create_from_prop($target, $project_name);
 	    last if ($proj) ;
 	}
+	die $msg unless $proj;
     }
 #    if ($arg[0] eq 'push') {
 #	shift @arg;
