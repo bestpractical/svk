@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 19;
 use SVK::Test;
 use File::Path;
 
@@ -99,7 +99,10 @@ is_output ($svk, 'branch', ['--move', '//local/MyProject/localbar', 'feature/rem
      'Auto-merging (0, 15) /local/MyProject/localbar to /mirror/MyProject/branches/feature/remotefoo (base /mirror/MyProject/trunk:6).',
      '===> Auto-merging (0, 15) /local/MyProject/localbar to /mirror/MyProject/branches/feature/remotefoo (base /mirror/MyProject/trunk:6).',
      "Merging back to mirror source $uri.",'Empty merge.',
-     "Different source."]);
+     "Committed revision 17."]);
+
+is_output ($svk, 'info', ['//local/MyProject/localbar'],
+    ['Path //local/MyProject/localbar does not exist.']);
 
 is_output ($svk, 'branch', ['--list'],
     ['feature/bar','feature/mar','feature/remotebar','feature/remotefoo'],
@@ -111,13 +114,18 @@ is_output ($svk, 'branch', ['--move', 'feature/bar', 'feature/mar', 'hasbugs/'],
      "Merge back committed as revision 14.",
      "Syncing $uri",
      "Retrieving log information from 14 to 14",
-     "Committed revision 18 from revision 14.",
+     "Committed revision 19 from revision 14.",
      "Merging back to mirror source $uri.",
      "Merge back committed as revision 15.",
      "Syncing $uri",
      "Retrieving log information from 15 to 15",
-     "Committed revision 19 from revision 15."]);
+     "Committed revision 20 from revision 15."]);
 
 is_output ($svk, 'branch', ['--list'],
     ['feature/remotebar','feature/remotefoo', 'hasbugs/bar','hasbugs/mar'],
-    'Move localbar to remotefoo, cross depot move w/o switch to local');
+    'Move feature/bar,mar to hasbugs/');
+
+is_output ($svk, 'branch', ['--create', 'localbar', '--local'],
+    ["Committed revision 21.",
+     "Project branch created: localbar (in local)"]);
+

@@ -350,7 +350,7 @@ sub run {
 	    $self->{incremental} = 1;
 	    $self->SVK::Command::Smerge::run($src, $dst);
 	    $self->{message} = "- Delete branch $src_branch_path, because it move to $dst_branch_path";
-	    $self->SVK::Command::Delete::run($src, $target);
+	    $self->SVK::Command::Delete::run($src);
 	    $dst->refresh_revision;
 	} else {
 	    $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
