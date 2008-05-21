@@ -255,6 +255,12 @@ sub parse_arg {
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
     return unless $proj;
+    unless ($branch_name) {
+	$logger->info(
+	    loc("To create a branch, please specify svk branch --create <name>")
+	);
+	return;
+    }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
