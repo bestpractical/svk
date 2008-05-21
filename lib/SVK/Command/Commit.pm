@@ -57,7 +57,6 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Logger;
 use SVK::Editor::Status;
-use SVK::Editor::Sign;
 use SVK::Editor::Dynamic;
 use SVK::Command::Sync;
 use SVK::Editor::InteractiveCommitter;
