@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 18;
+plan tests => 21;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -37,7 +37,13 @@ is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
 append_file('A/be', "fnordorz\n");
 $svk->commit(-m => 'orz');
 
-$svk->br('--online'); # XXX: check output
+is_output($svk, 'br', ['--online', '-C'],
+    ["We will copy branch //local/MyProject/foo to //mirror/MyProject/branches/foo",
+     "Then do a smerge on //mirror/MyProject/branches/foo",
+     "Finally delete the src branch //local/MyProject/foo"]);
+
+is_output_like ($svk, 'branch', ['--online'],
+    qr|U   A/be|);
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/foo|);
@@ -45,6 +51,8 @@ is_output_like ($svk, 'info', [],
 # since branch name is not the same, just do move and switch
 is_output ($svk, 'info', ['//local/MyProject/foo'],
     ["Path //local/MyProject/foo does not exist."]);
+#warn $output;
+#exit;
 
 is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
 
@@ -70,6 +78,9 @@ append_file ('B/S/Q/qu', "\nappend CBA on local branch feature/foobar\n");
 $svk->commit ('-m', 'commit message on local branch','');
 
 # now should do smerge first, then sw to the branch 
+is_output_like ($svk, 'branch', ['--online', '-C'],
+    qr|U   B/S/Q/qu|);
+
 is_output_like ($svk, 'branch', ['--online'],
     qr|U   B/S/Q/qu|);
 

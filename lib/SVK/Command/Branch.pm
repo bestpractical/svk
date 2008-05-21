@@ -354,10 +354,18 @@ sub run {
 	    $self->{rev} = $which_rev_we_branch;
 	    $src = $self->arg_uri_maybe($depot_root.'/'.$which_depotpath);
 	    $self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
-#	    if ($self->{check_only}) {
-#		$logger->info(
-#		    loc ("We will copy branch %1 to %2"), $
-#	    }
+	    if ($self->{check_only}) {
+		$logger->info(
+		    loc ("We will copy branch %1 to %2", $src_branch_path, $dst_branch_path)
+		);
+		$logger->info(
+		    loc ("Then do a smerge on %1", $dst_branch_path)
+		);
+		$logger->info(
+		    loc ("Finally delete the src branch %1", $src_branch_path)
+		);
+		return;
+	    }
 	    local *handle_direct_item = sub {
 		my $self = shift;
 		$self->SVK::Command::Copy::handle_direct_item(@_);
@@ -864,7 +872,8 @@ sub run {
 
 	# XXX: we have a little conflict in private hash argname.
 	$self->{rev} = undef;
-	$self->SVK::Command::Switch::run($dst, $target) if $target->isa('SVK::Path::Checkout');
+	$self->SVK::Command::Switch::run($dst, $target)
+	    if $target->isa('SVK::Path::Checkout') and !$self->{check_only};
     } else {
 	$self->SUPER::run($target, @args);
     }
@@ -917,7 +926,8 @@ sub run {
 
 	# XXX: we have a little conflict in private hash argname.
 	$self->{rev} = undef;
-	$self->SVK::Command::Switch::run($local, $target) if $target->isa('SVK::Path::Checkout');
+	$self->SVK::Command::Switch::run($local, $target)
+	    if $target->isa('SVK::Path::Checkout') and !$self->{check_only};
     } else {
 	$self->SUPER::run($proj, $target, $branch_name);
     }
