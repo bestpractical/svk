@@ -247,7 +247,7 @@ sub parse_arg {
 	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
 	$logger->info("either run '$0 branch --create' from within an existing checkout or specify");
 	$logger->info("a project root using the --project flag");
-	die $msg;
+	exit;
     }
     return ($proj, $target, $dst);
 }
@@ -715,10 +715,11 @@ sub run {
 
     my $proj = $self->load_project($self->arg_depotpath('/'.$target->depot->depotname.$preceding_path));
 
-    $project_name = $proj->in_which_project($target) if $proj;
+    my $which_project = $proj->in_which_project($target) if $proj;
 
     my $ans = 'n';
-    if ($proj && $fromProp && $project_name) {
+    if ($proj && $fromProp && $which_project) {
+	$project_name = $which_project;
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
 	$ans = lc (get_prompt(
 	    loc("Is the project '%1' match? [Y/n]", $project_name)
