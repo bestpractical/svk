@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 13;
+plan tests => 16;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -54,12 +54,11 @@ $svk->branch('--remove', '*');
 
 is_output($svk, 'br', ['-l', '//mirror/MyProject'], []);
 
-#$svk->log('//mirror/MyProject');
-#warn $output;
 $svk->branch('--create', 'foobar5');
 $svk->branch('--create', 'foobar6');
 $svk->branch('--create', 'feature/foobar7');
 $svk->branch('--create', 'bugfix/foobar8');
+$svk->branch('--create', 'localfoo', '--local');
 
 is_output($svk, 'br', ['-l', '//mirror/MyProject'],
           ['bugfix/foobar8', 'feature/foobar7', 'foobar5', 'foobar6']);
@@ -75,6 +74,16 @@ is_output($svk, 'br', ['-l', '//mirror/MyProject'], []);
 
 is_output($svk, 'br', ['--remove', 'fake2'],
     ["No such branch exists: fake2 "]);
+
+is_output($svk, 'br', ['-l', '--all', '//mirror/MyProject'],
+    ['localfoo (in local)']);
+
+is_output($svk, 'br', ['--remove', 'localfoo'],
+    ["No such branch exists: localfoo "]);
+
+$svk->branch('--remove', 'localfoo', '--local');
+
+is_output($svk, 'br', ['-l', '--all', '//mirror/MyProject'], []);
 
 $svk->branch('--create', 'feature/foobar9');
 chdir('..');
