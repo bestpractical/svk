@@ -497,25 +497,10 @@ use SVK::Logger;
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    my ($target, $proj, $dst);
-    my $project_name = $self->{project};
-    eval { # always try to eval current wc
-	$target = $self->arg_co_maybe('');
-    };
-    if ($@) { # then it means we must have a project
-	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	foreach my $depot (@depots) {
-	    $depot =~ s{/}{}g;
-	    $target = eval { $self->arg_depotpath("/$depot/") };
-	    next if ($@);
-	    $proj = SVK::Project->create_from_prop($target, $project_name);
-	    last if ($proj) ;
-	}
-    } else {
-	$proj = $self->load_project($target, $self->{project});
-    }
+    # always try to eval current wc
+    my ($proj,$target, $msg) = $self->locate_project('');
     if (!$proj) {
-	$logger->info( loc("Project not found."));
+	$logger->warn( loc($msg) );
 	return ;
     }
     $target = $target->source if $target->isa('SVK::Path::Checkout');
@@ -562,25 +547,11 @@ sub parse_arg {
 	}
     }
 
-    my ($target, $proj);
-    eval { 
-	$target = $self->arg_co_maybe($project_path);
-    };
-    if ($@) { # then it means we must have a project
-	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	foreach my $depot (@depots) {
-	    $depot =~ s{/}{}g;
-	    $target = eval { $self->arg_depotpath("/$depot/") };
-	    next if ($@);
-	    $proj = SVK::Project->create_from_prop($target, $self->{project});
-	    last if ($proj) ;
-	}
-    } else {
-	$proj = $self->load_project($target, $self->{project});
-    }
+    my ($proj,$target, $msg) = $self->locate_project($project_path);
+
     if (!$proj) {
         $logger->info(
-            loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n")
+            loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n",$msg)
         );
 	return ;
     }
@@ -636,25 +607,10 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg > 1;
 
-    my ($target, $proj, $dst);
-    my $project_name = $self->{project};
-    eval { # always try to eval current wc
-	$target = $self->arg_co_maybe('');
-    };
-    if ($@) { # then it means we must have a project
-	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	foreach my $depot (@depots) {
-	    $depot =~ s{/}{}g;
-	    $target = eval { $self->arg_depotpath("/$depot/") };
-	    next if ($@);
-	    $proj = SVK::Project->create_from_prop($target, $project_name);
-	    last if ($proj) ;
-	}
-    } else {
-	$proj = $self->load_project($target, $self->{project});
-    }
+    my $dst;
+    my ($proj,$target, $msg) = $self->locate_project('');
     if (!$proj) {
-	$logger->info( loc("Project not found."));
+	$logger->warn( loc($msg));
 	return ;
     }
     if (@arg) {
@@ -678,25 +634,9 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
-    my ($target, $proj, $dst);
-    my $project_name = $self->{project};
-    eval { # always try to eval current wc
-	$target = $self->arg_co_maybe($arg[0]);
-    };
-    if ($@) { # then it means we must have a project
-	my @depots =  sort keys %{ $self->{xd}{depotmap} };
-	foreach my $depot (@depots) {
-	    $depot =~ s{/}{}g;
-	    $target = eval { $self->arg_depotpath("/$depot/") };
-	    next if ($@);
-	    $proj = SVK::Project->create_from_prop($target, $project_name);
-	    last if ($proj) ;
-	}
-    } else {
-	$proj = $self->load_project($target, $self->{project});
-    }
+    my ($proj,$target, $msg) = $self->locate_project($arg[0]);
     if (!$proj) {
-	$logger->info( loc("Project not found."));
+	$logger->warn( loc($msg));
 	return ;
     }
 
