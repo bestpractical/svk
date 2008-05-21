@@ -229,7 +229,7 @@ use SVK::I18N;
 use SVK::Util qw( is_uri );
 use SVK::Logger;
 
-sub lock { $_[0]->lock_target ($_[1]); };
+sub lock { $_[0]->lock_target ($_[2]); };
 
 sub parse_arg {
     my ($self, @arg) = @_;
@@ -244,10 +244,9 @@ sub parse_arg {
     # always try to eval current wc
     my ($proj,$target, $msg) = $self->locate_project($arg[0]);
     if (!$proj) {
-	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
-	$logger->info("either run '$0 branch --create' from within an existing checkout or specify");
-	$logger->info("a project root using the --project flag");
-	exit;
+	$logger->warn( "I can't figure out what project you'd like to create a branch in. Please");
+	$logger->warn("either run '$0 branch --create' from within an existing checkout or specify");
+	$logger->warn("a project root using the --project flag");
     }
     return ($proj, $target, $dst);
 }
@@ -255,6 +254,7 @@ sub parse_arg {
 
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
+    return unless $proj;
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
