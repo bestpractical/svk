@@ -342,8 +342,9 @@ prevent other instances from modifying locked paths.
 
 sub lock {
     my ($self, $path) = @_;
-    if ($self->{checkout}->get ($path, 1)->{lock}) {
-	die loc("%1 already locked, use 'svk cleanup' if lock is stalled\n", $path);
+    if (my $lock = $self->{checkout}->get ($path, 1)->{lock}) {
+        my @paths = $self->{checkout}->find('', {lock => $lock});
+	die loc("%1 already locked at %2, use 'svk cleanup' if lock is stalled\n", $path, $paths[0]);
     }
     $self->{checkout}->store ($path, {lock => $$});
     $self->{modified} = 1;
