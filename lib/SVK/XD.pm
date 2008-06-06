@@ -815,7 +815,7 @@ sub do_add {
             my ($editor, $path) = @_;
             to_native($path, 'path');
             my $copath = $target->copath($path);
-            my $report = $target->report->subdir($path);
+            my $report = $target->_to_pclass($target->report)->subdir($path);
             lstat ($copath);
             $self->_do_add('A', $copath, $report, !-d _, %arg);
         },

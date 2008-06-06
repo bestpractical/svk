@@ -323,7 +323,7 @@ is_output ($svk, 'status', [],
         __('?   A/verbose')]);
 
 is_output ($svk, 'commit', [],
-	   ['Waiting for editor...',
+	   ['Waiting for editor...', 'A   A/verbose',
 	    'Committed revision 18.'], 'we got a commit by replacing a ? with an A');
 
 is_output ($svk, 'status', [],
