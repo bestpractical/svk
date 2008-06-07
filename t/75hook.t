@@ -34,7 +34,7 @@ $svk->add ("$copath/newfile");
 is_output ($svk, 'ci', ['-m', 'test commit', $copath],
 	   ['Commit into mirrored path: merging back directly.',
 	    "Merging back to mirror source $uri/A.",
-	    qr"A repository hook failed: 'pre-commit' hook failed .* error output.*:",
+	    qr"A repository hook failed: .*'?pre-commit'? hook .* output.*:",
 	    'foo', ''
 	   ]);
 1;
