@@ -239,15 +239,22 @@ sub detach {
 sub bootstrap {
     my ($self, $dumpfile, $file_hint) = @_;
     $file_hint ||= $dumpfile;
-    # XXX make these all 'require' not 'use' and fail optionally
+    my $fh;
     # XXX requires unreleased SVN::Dump that removes binmode() in ::reader
     #     for compressed streams to work
-    use SVN::Dump;
-    use PerlIO::via::Bzip2;
-    use PerlIO::gzip;
-    open my $fh, '<', $dumpfile or die $!;
-    binmode($fh, ':via(Bzip2)') if $file_hint =~ m/bz2/i;
-    binmode($fh, ':gzip')  if $file_hint =~ m/gz/i;
+    require SVN::Dump;
+    # XXX make these fail optionally
+    require PerlIO::via::Bzip2;
+    require PerlIO::gzip;
+
+    if ($dumpfile eq '-') {
+        $fh = \*STDIN;
+    }
+    else {
+        open $fh, '<', $dumpfile or die $!;
+    }
+    binmode($fh, ':via(Bzip2)') if $file_hint =~ m/bz2$/i;
+    binmode($fh, ':gzip(lazy)') if $file_hint =~ m/gz$/i;
 
     my $dump = SVN::Dump->new( { fh => $fh } );
     my $prefix = $self->path.'/';

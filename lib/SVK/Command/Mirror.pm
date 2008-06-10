@@ -218,7 +218,7 @@ sub run {
     }
 
     die loc("No such dump file: %1.\n", $self->{bootstrap})
-	unless -f ($self->{bootstrap});
+        unless $self->{bootstrap} eq '-' || -f ($self->{bootstrap});
 
     $logger->info( loc("Bootstrapping mirror from dump") );
     $m->bootstrap($self->{bootstrap}, $hint); # load from dumpfile
