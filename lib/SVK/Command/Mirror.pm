@@ -158,6 +158,10 @@ sub run {
     my ($self, $target, $uri, @options) = @_;
     my ($m, $mpath) = $target->is_mirrored;
 
+    die loc("No such dump file: %1.\n", $self->{bootstrap})
+        unless $self->{bootstrap} eq '-' ||
+	$self->{bootstrap} eq 'auto' || -f ($self->{bootstrap});
+
     if (!$m) {
 	$self->SUPER::run($target,$uri, @options);
 	($m, $mpath) = $target->is_mirrored;
@@ -216,9 +220,6 @@ sub run {
         }
 
     }
-
-    die loc("No such dump file: %1.\n", $self->{bootstrap})
-        unless $self->{bootstrap} eq '-' || -f ($self->{bootstrap});
 
     $logger->info( loc("Bootstrapping mirror from dump") );
     $m->bootstrap($self->{bootstrap}, $hint); # load from dumpfile

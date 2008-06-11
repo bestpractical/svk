@@ -26,7 +26,8 @@ is_output($svk, mirror => ['/m2/m', $uri],
 $svk->sync('/m2/m');
 
 is_output($svk, mirror => ['--bootstrap='.$dump, '//m', $uri],
-	  ['Mirror path \'//m\' synced from dumpfile.']);
+	  ['Bootstrapping mirror from dump',
+	   'Mirror path \'//m\' synced from dumpfile.']);
 
 # compare normal mirror result and bootstrap mirror result
 my ($exp_mirror, $boot_mirror);
@@ -50,7 +51,8 @@ is_output($svk, mirror => ['--bootstrap=./no-such-file', '/m3/m', $uri],
           ["No such dump file: ./no-such-file."]);
 # this is real test
 is_output($svk, mirror => ['--bootstrap',$dump->filename, '/m3/m', $uri],
-          ["Mirror initialized.",
+	  ['Mirror initialized.  Run svk sync /m3/m to start mirroring.'
+	   'Bootstrapping mirror from dump',
 	   "Mirror path '/m3/m' synced from dumpfile."]);
 
 # compare UUID
