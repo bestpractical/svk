@@ -188,12 +188,13 @@ sub _create_from_prop {
 		my $prop = $allprops->{'svk:project:'.$project_name.':'.$_};
 		$prop =~ s{/$}{};
 		$prop =~ s{^/}{};
-		$_ => $prop_path.'/'.$prop }
+		$_ => $prop ? $prop_path.'/'.$prop : '' }
 		('path-trunk', 'path-branches', 'path-tags');
     
 	# only the current path matches one of the branches/trunk/tags, the project
 	# is returned
 	for my $key (keys %props) {
+	    next unless $props{$key};
 	    return SVK::Project->new(
 		{   
 		    name            => $project_name,
