@@ -19,7 +19,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath ('MyProject');
+my ($copath, $corpath) = get_copath ('bm-merge');
 $svk->checkout('//mirror/MyProject/trunk',$copath);
 chdir($copath);
 

@@ -17,7 +17,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath('basic-trunk');
+my ($copath, $corpath) = get_copath('bm-online-offline');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 

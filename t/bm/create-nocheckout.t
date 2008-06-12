@@ -17,7 +17,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath ('MyProject');
+my ($copath, $corpath) = get_copath ('bm-create-nonwc');
 
 is_output ($svk, 'branch', ['--create', 'feature/foo'],
     ["I can't figure out what project you'd like to create a branch in. Please",

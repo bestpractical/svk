@@ -18,7 +18,7 @@ $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
 my $trunk = '/mirror/MyProject/trunk';
-my ($copath, $corpath) = get_copath ('MyProject');
+my ($copath, $corpath) = get_copath ('bm-move');
 $svk->checkout('/'.$trunk,$copath);
 chdir($copath);
 
