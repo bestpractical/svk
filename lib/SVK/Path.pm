@@ -53,7 +53,8 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel
-			       IS_WIN32 get_depot_anchor );
+			       IS_WIN32 get_depot_anchor
+			       uri_escape );
 use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup SVK::Editor::Tee);
 
 use SVN::Delta;
@@ -811,6 +812,7 @@ sub as_url {
         my ($m_path, $m_url) = ($m->path, $m->url);
 	$path =~ s/^\Q$m_path\E/$m_url/;
 	$path =~ s/%/%25/g;
+	$path = uri_escape($path);
         if (my $remote_rev = $m->find_remote_rev($rev)) {
             $rev = $remote_rev;
         } else {
