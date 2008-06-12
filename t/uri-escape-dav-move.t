@@ -134,7 +134,7 @@ is_output ($svk, 'push', [''],
      'A + data/N M/good.txt',
      'D   data/N M/HOWTO.txt',
      qr'New merge ticket: .*:/local/BK:4',
-     'Merge back committed as revision 3.',
+     'Merge back committed as revision 2.',
      qr'Syncing http://[^/]+/svn/B and K/A/N P1/trunk',
-     'Retrieving log information from 3 to 3',
-     'Committed revision 6 from revision 3.']);
+     'Retrieving log information from 2 to 2',
+     'Committed revision 5 from revision 2.']);
