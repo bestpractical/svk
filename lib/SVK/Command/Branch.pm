@@ -86,7 +86,9 @@ sub parse_arg {
 
     my ($proj,$target, $msg) = $self->locate_project(pop @arg);
     unless ($proj) {
-	$logger->warn( loc ($msg) );
+	$logger->warn( $msg );
+        # XXX: should we simply bail out here rather than having
+        # individual subcommand do error checking?
     }
     return ($proj, $target, @arg);
 }
@@ -161,7 +163,7 @@ sub locate_project {
 	}
     } else {
 	$proj = $self->load_project($target, $self->{project});
-	$msg = "No project found.";
+	$msg = loc( "No project found." );
     }
     return ($proj, $target, $msg);
 }
