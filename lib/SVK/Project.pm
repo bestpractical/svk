@@ -139,6 +139,9 @@ sub create_from_prop {
 	if ($pathobj->path eq '/') { # in non-wc path
 	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
 	    return $proj if $proj;
+	} elsif ($pathobj->_to_pclass("/local")->subsumes($pathobj->path)) {
+	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
+	    return $proj if $proj;
 	} else {
 	    if ($pathobj->path =~ m/^$m_path/) {
 		$prop_path = $m_path;
