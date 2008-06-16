@@ -730,7 +730,7 @@ sub run {
 	$project_name = $which_project;
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
 	$ans = lc (get_prompt(
-	    loc("Is the project '%1' match? [Y/n]", $project_name)
+	    loc("Is the project '%1' a match? [Y/n]", $project_name)
 	) );
     }
     if ($ans eq 'n') {
