@@ -691,7 +691,7 @@ sub parse_arg {
     return if $#arg != 0;
 
     my $dst = shift(@arg);
-    die loc ("Copy destination can't be URI.\n")
+    die loc ("Target can't be URI.\n")
 	if $self->ensure_non_uri ($dst);
 
     return ($self->arg_co_maybe ($dst));
