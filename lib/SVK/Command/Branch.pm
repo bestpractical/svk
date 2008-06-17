@@ -149,7 +149,7 @@ sub locate_project {
 
     $copath ||= '';
     eval {
-	$target = $self->arg_co_maybe($copath);
+	$target = $self->arg_co_maybe($copath,'New mirror site not allowed here');
     };
     if ($@) { # then it means we need to find the project
 	$msg = $@;
@@ -195,6 +195,13 @@ sub dst_path {
     }
 }
 
+sub ensure_non_uri {
+    my ( $self, @paths ) = @_;
+
+    # return the number of uri (::switch need the number)
+    return (grep {$_ and is_uri($_)} @paths);
+}
+
 package SVK::Command::Branch::list;
 use base qw(SVK::Command::Branch);
 use SVK::I18N;
@@ -228,7 +235,6 @@ sub run {
 package SVK::Command::Branch::create;
 use base qw( SVK::Command::Copy SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
 use SVK::Logger;
 
 sub lock { $_[0]->lock_target ($_[2]); };
@@ -241,7 +247,7 @@ sub parse_arg {
 
     my $dst = shift (@arg);
     die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
+	if $self->ensure_non_uri ($dst);
 
     # always try to eval current wc
     my ($proj,$target, $msg) = $self->locate_project($arg[0]);
@@ -268,10 +274,10 @@ sub run {
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
     my $newbranch_path = $self->dst_path($proj, $branch_name);
 
-    my $src = $self->arg_uri_maybe($src_path);
+    my $src = $self->arg_uri_maybe($src_path, 'New mirror site not allowed here');
     die loc("Path %1 does not exist.\n",$src->depotpath) if
 	$SVN::Node::none == $src->root->check_path($src->path);
-    my $dst = $self->arg_uri_maybe($newbranch_path);
+    my $dst = $self->arg_uri_maybe($newbranch_path, 'New mirror site not allowed here');
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
 	    $branch_name, $self->{local} ? '(in local)' : '');
@@ -300,7 +306,6 @@ sub run {
 package SVK::Command::Branch::move;
 use base qw( SVK::Command::Move SVK::Command::Smerge SVK::Command::Delete SVK::Command::Branch::create );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
 use SVK::Logger;
 use Path::Class;
 
@@ -310,17 +315,13 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
+    die loc ("Copy destination or source can't be URI.\n")
+	if $self->ensure_non_uri (@arg);
     my $dst = pop(@arg);
-    die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
 
-    for (@arg) {
-	die loc ("Copy source can't be URI.\n")
-	    if is_uri ($_);
-    }
     push @arg, '' unless @arg;
 
-    return ($self->arg_co_maybe (''), $dst, @arg);
+    return ($self->arg_co_maybe ('', 'New mirror site not allowed here'), $dst, @arg);
 }
 
 sub run {
@@ -353,7 +354,7 @@ sub run {
 	}
 	my $src_name = $self->dst_name($proj,$src_path);
 	my $src_branch_path = $self->dst_path($proj, $src_name);
-	my $src = $self->arg_co_maybe($src_branch_path);
+	my $src = $self->arg_co_maybe($src_branch_path, 'New mirror site not allowed here');
 
 	if ( !$dst->same_source($src) ) {
 	    # branch first, then sm -I
@@ -380,7 +381,7 @@ sub run {
 	    };
 	    $self->SVK::Command::Copy::run($src, $dst);
 	    # now we do sm -I
-	    $src = $self->arg_uri_maybe($src_branch_path);
+	    $src = $self->arg_uri_maybe($src_branch_path, 'New mirror site not allowed here');
 	    $self->{message} = ''; # incremental does not need message
 	    # w/o reassign $dst = ..., we will have changes 'XXX - skipped'
 	    $dst->refresh_revision;
@@ -407,7 +408,7 @@ sub run {
 package SVK::Command::Branch::remove;
 use base qw( SVK::Command::Delete SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri is_depotpath);
+use SVK::Util qw( is_depotpath);
 use SVK::Logger;
 
 sub lock { $_[0]->lock_target ($_[1]); };
@@ -416,15 +417,14 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
-    for (@arg) {
-	die loc ("Copy source can't be URI.\n")
-	    if is_uri ($_);
-    }
+    die loc ("Copy source can't be URI.\n")
+	if $self->ensure_non_uri (@arg);
 
     # if specified project path at the end
     my $project_path = pop @arg if $#arg > 0 and is_depotpath($arg[$#arg]);
     $project_path = '' unless $project_path;
-    return ($self->arg_co_maybe ($project_path), @arg);
+    return ($self->arg_co_maybe ($project_path,'New mirror site not allowed here'), @arg);
+	    
 }
 
 
@@ -438,7 +438,7 @@ sub run {
     @dsts = grep { defined($_) } map { 
 	my $target_path = $proj->branch_path($_, $self->{local});
 
-	my $target = $self->arg_uri_maybe($target_path);
+	my $target = $self->arg_uri_maybe($target_path,'New mirror site not allowed here');
 	$target = $target->root->check_path($target->path) ? $target : undef;
 	$target ? 
 	    $self->{message} .= "- Delete branch ".$target->path."\n" :
@@ -457,7 +457,7 @@ sub run {
 package SVK::Command::Branch::merge;
 use base qw( SVK::Command::Smerge SVK::Command::Branch);
 use SVK::I18N;
-use SVK::Util qw( is_uri abs_path );
+use SVK::Util qw( abs_path );
 use Path::Class;
 
 use constant narg => 1;
@@ -468,14 +468,9 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 1;
 
+    die loc ("Copy destination or source can't be URI.\n")
+	if $self->ensure_non_uri (@arg);
     my $dst = pop(@arg);
-    die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
-
-    for (@arg) {
-	die loc ("Copy source can't be URI.\n")
-	    if is_uri ($_);
-    }
 
     return ($self->arg_co_maybe (''), $dst, @arg);
 }
@@ -595,7 +590,6 @@ sub parse_arg {
 package SVK::Command::Branch::switch;
 use base qw( SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
 
 sub lock { $_[0]->lock_target ($_[1]); };
 
@@ -605,10 +599,10 @@ sub parse_arg {
 
     my $dst = shift(@arg);
     die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
+	if $self->ensure_non_uri ($dst);
 
     die loc ("More than one URI found.\n")
-	if (grep {is_uri($_)} @arg) > 1;
+	if ($self->ensure_non_uri (@arg) > 1);
 
     return ($self->arg_co_maybe (''), $dst);
 }
@@ -622,7 +616,7 @@ sub run {
     my $newtarget_path = $proj->branch_path($new_path, $self->{local});
 
     $self->SUPER::run(
-	$self->arg_uri_maybe($newtarget_path),
+	$self->arg_uri_maybe($newtarget_path,'New mirror site not allowed here'),
 	$target
     );
     return;
@@ -645,10 +639,10 @@ sub parse_arg {
     }
     if (@arg) {
 	my $dst_branch_path = $proj->branch_path(pop(@arg));
-	$dst = $self->arg_co_maybe($dst_branch_path);
+	$dst = $self->arg_co_maybe($dst_branch_path,'New mirror site not allowed here');
 	if (@arg) {
 	    my $src_branch_path = $proj->branch_path(pop(@arg));
-	    $target = $self->arg_co_maybe($src_branch_path);
+	    $target = $self->arg_co_maybe($src_branch_path,'New mirror site not allowed here');
 	}
     }
 
@@ -672,13 +666,13 @@ sub parse_arg {
 
     undef $self->{recursive};
     $self->{local}++ if ($target->_to_pclass("/local")->subsumes($target->path));
-    return map {$self->arg_co_maybe ($self->dst_path($proj,$_))} @arg;
+    return map {$self->arg_co_maybe ($self->dst_path($proj,$_),'New mirror site not allowed here')} @arg;
 }
 
 package SVK::Command::Branch::setup;
 use base qw( SVK::Command::Propset SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri get_prompt );
+use SVK::Util qw( get_prompt );
 use SVK::Logger;
 
 sub can_write_remote_proj_prop {
@@ -698,7 +692,7 @@ sub parse_arg {
 
     my $dst = shift(@arg);
     die loc ("Copy destination can't be URI.\n")
-        if is_uri ($dst);
+	if $self->ensure_non_uri ($dst);
 
     return ($self->arg_co_maybe ($dst));
 }
@@ -827,14 +821,13 @@ package SVK::Command::Branch::online;
 use base qw( SVK::Command::Branch::move SVK::Command::Smerge SVK::Command::Switch );
 use SVK::I18N;
 use SVK::Logger;
-use SVK::Util qw( is_uri );
 
 sub lock { $_[0]->lock_target ($_[1]); };
 
 sub parse_arg {
     my ($self, $arg) = @_;
     die loc ("Destination can't be URI.\n")
-	if $arg and is_uri ($arg);
+	if $self->ensure_non_uri ($arg);
 
     my ($proj,$target, $msg) = $self->locate_project('');
     $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
