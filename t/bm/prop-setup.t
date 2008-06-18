@@ -46,6 +46,7 @@ is_output_like ($svk, 'branch', ['--create', 'bar'], qr'Project branch created: 
 is_output ($svk, 'branch', ['--list'], ['bar']);
 is_output ($svk, 'list', ['//mirror/nomeans/A-b/bar'],
     ['Q/' ,'be']);
+$answer = [''];
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/A'],
     ['Project already set in properties: //mirror/nomeans/A']);
 
@@ -54,6 +55,7 @@ is_output ($svk, 'branch', ['--list', '//mirror/nomeans/projectB'], []);
 $answer = ['', '','',''];
 is_output_like ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
     qr/Project detected in specified path./);
+$answer = [''];
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/projectB'],
     ['Project already set in properties: //mirror/nomeans/projectB']);
 #}

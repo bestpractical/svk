@@ -48,61 +48,29 @@
 # and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
-package SVK::Editor::Sign;
+package SVK::Resolve::WinMerge;
+use strict;
+use base 'SVK::Resolve';
+use SVK::Util qw( catdir );
 
-require SVN::Delta;
-use base 'SVK::Editor::ByPass';
-use SVK::I18N;
-use autouse 'SVK::Util' => qw (tmpfile);
+sub commands { 'WinMergeU' }
 
-sub add_file {
-    my ($self, $path, @arg) = @_;
-    my $baton = $self->SUPER::add_file ($path, @arg);
-    $self->{filename}{$baton} = $path;
-    return $baton;
+sub paths {
+    return catdir(
+	($ENV{ProgramFiles} || 'C:\Program Files'), 
+	'WinMerge',
+    );
 }
 
-sub open_file {
-    my ($self, $path, @arg) = @_;
-    my $baton = $self->SUPER::open_file ($path, @arg);
-    $self->{filename}{$baton} = $path;
-    return $baton;
-}
-
-sub close_file {
+sub arguments {
     my $self = shift;
-    my ($baton, $checksum, $pool) = @_;
-    push @{$self->{checksum}}, [$checksum, $self->{filename}{$baton}];
-    $self->SUPER::close_file (@_);
-}
-
-sub close_edit {
-    my ($self, $baton) = @_;
-    $self->{sig} =_sign_gpg
-	(join("\n", "ANCHOR: $self->{anchor}",
-	      (map {"MD5 $_->[0] $_->[1]"} @{$self->{checksum}})),'');
-    $self->SUPER::close_edit ($baton);
-}
-
-sub _sign_gpg {
-    my ($plaintext) = @_;
-    my $sigfile = tmpfile("sig-", OPEN => 0);
-    local *D;
-    my $pgp = $ENV{SVKPGP} || 'gpg';
-    open D, "| $pgp --clearsign > $sigfile" or die loc("could not call gpg: %1", $!);
-    print D $plaintext;
-    close D;
-
-    (-e "$sigfile" and -s "$sigfile") or do {
-	unlink "$sigfile";
-	die loc("cannot find %1, signing aborted", $sigfile);
-    };
-
-    open D, "$sigfile" or die loc("cannot open %1: %2", $sigfile, $!);
-    local $/;
-    my $buf = <D>;
-    unlink($sigfile);
-    return $buf;
+    return (
+        "/dl \"$self->{label_yours}\"",
+        "/dr \"$self->{label_theirs}\"",
+        "$self->{yours}",
+        "$self->{theirs}",
+        "$self->{merged}",
+    );
 }
 
 1;

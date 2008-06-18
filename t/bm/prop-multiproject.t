@@ -26,7 +26,7 @@ $svk->cp(-m => 'branch Foo in projectA', '//mirror/twoProject/projectA/trunk',
 $svk->cp(-m => 'branch Bar in projectB', '//mirror/twoProject/projectB/trunk',
     '//mirror/twoProject/projectB/branches/Bar');
 
-my ($copath, $corpath) = get_copath('basic-trunk');
+my ($copath, $corpath) = get_copath('prop-multiproject');
 
 # set prop for project A
 my $proppath = { 'trunk' => '/mirror/twoProject/projectA/trunk', 

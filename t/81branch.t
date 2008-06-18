@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use SVK::Test;
 use File::Path;
 
@@ -36,3 +36,4 @@ is_output_like ($svk, 'branch', ['--create', 'feature/foobar', '--switch-to', '-
     qr'Project branch created: feature/foobar \(in local\)');
 is_output_like ($svk, 'info', [], qr'Copied From: /mirror/MyProject/trunk, Rev. \d+');
 
+is_output_like ($svk, 'branch', ['--create', '--tag', 'bar'], qr'Project tag created: bar');

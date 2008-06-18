@@ -130,15 +130,26 @@ sub create_from_prop {
 
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
-    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror');
+    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
     my $prop_path = '/';
+    my $proj;
+
+    return unless $pathobj->path ne '/' or $pname;
     foreach my $m_path (@all_mirrors) {
-        if ($pathobj->path =~ m/^$m_path/) {
-            $prop_path = $m_path;
-            last;
-        }
+	if ($pathobj->path eq '/') { # in non-wc path
+	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
+	    return $proj if $proj;
+	} elsif ($pathobj->_to_pclass("/local")->subsumes($pathobj->path)) {
+	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
+	    return $proj if $proj;
+	} else {
+	    if ($pathobj->path =~ m/^$m_path/) {
+		$prop_path = $m_path;
+		last;
+	    }
+	}
     }
-    my $proj = $self->_create_from_prop($pathobj, $root, $prop_path, $pname);
+    $proj = $self->_create_from_prop($pathobj, $root, $prop_path, $pname);
     return $proj if $proj;
     return $self->_create_from_prop($pathobj, $root, $prop_path, $pname, 1);
 }
@@ -147,33 +158,46 @@ sub _project_names {
     my ($self, $allprops, $pname) = @_;
     my ($depotroot)     = '/';
     return
+        map  { $_ => 1}
 	grep { (1 and !$pname) or ($_ eq $pname)  } # if specified pname, the grep it only
 	grep { $_ =~ s/^svk:project:([^:]+):.*$/$1/ }
 	grep { $allprops->{$_} =~ /$depotroot/ } sort keys %{$allprops};
 }
 
+sub _project_paths {
+    my ($self, $allprops) = @_;
+    return
+        map  { $allprops->{$_} => $_ }
+	grep { $_ =~ m/^svk:project/ } sort keys %{$allprops};
+}
+
 sub _create_from_prop {
     my ($self, $pathobj, $root, $prop_path, $pname, $from_local) = @_;
     my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
-    my @projnames = $self->_project_names($allprops);
-    return unless @projnames;
+    my %projnames = $self->_project_names($allprops, $pname);
+    return unless %projnames;
     
     # Given a lists of projects: 'rt32', 'rt34', 'rt38' in lexcialorder
     # if the suffix of prop_path matches $project_name like /mirror/rt38 matches rt38
     # then 'rt38' should be used to try before 'rt36', 'rt32'... 
-    for my $project_name ( sort { $prop_path =~ m/$b$/ } @projnames)  {
+
+    for my $project_name ( sort { $prop_path =~ m/$b$/ } keys %projnames)  {
+	$prop_path = $allprops->{'svk:project:'.$project_name.':root'}
+	    if ($allprops->{'svk:project:'.$project_name.':root'} and
+		($from_local || $prop_path eq '/'));
 	my %props = 
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
 		my $prop = $allprops->{'svk:project:'.$project_name.':'.$_};
 		$prop =~ s{/$}{};
 		$prop =~ s{^/}{};
-		$_ => $prop_path.'/'.$prop }
+		$_ => $prop ? $prop_path.'/'.$prop : '' }
 		('path-trunk', 'path-branches', 'path-tags');
     
 	# only the current path matches one of the branches/trunk/tags, the project
 	# is returned
 	for my $key (keys %props) {
+	    next unless $props{$key};
 	    return SVK::Project->new(
 		{   
 		    name            => $project_name,
@@ -299,6 +323,7 @@ sub depotpath_in_branch_or_tag {
 
 sub branch_name {
     my ($self, $bpath, $is_local) = @_;
+    return 'trunk' if (dir($self->trunk)->subsumes($bpath));
     my $branch_location = $is_local ? $self->local_root : $self->branch_location;
     $bpath =~ s{^\Q$branch_location\E/}{};
     return $bpath;
@@ -317,36 +342,66 @@ sub branch_path {
     return $branch_path;
 }
 
+sub tag_path {
+    my ($self, $tname) = @_;
+    my $tag_path = ($tname ne 'trunk' ?  $self->tag_location . "/$tname" : $self->trunk);
+    $tag_path = '/'.dir($self->depot->depotname)->subdir($tag_path);
+    return $tag_path;
+}
+
 sub info {
     my ($self, $target) = @_;
 
-    $logger->info ( loc("Project name: %1.\n", $self->name));
-    if ($target) {
-	my $where;
-	my $bname;
+    $logger->info ( loc("Project name: %1\n", $self->name));
+    if ($target->isa('SVK::Path::Checkout')) {
+	my $where = "online";
+	my $bname = '';
 	if (dir($self->trunk)->subsumes($target->path)) {
-	    $where = 'trunk';
 	    $bname = 'trunk';
 	} elsif (dir($self->branch_location)->subsumes($target->path)) {
-	    $where = 'branch';
 	    $bname = $target->_to_pclass($target->path)->relative($self->branch_location)->dir_list(0);
 	} elsif ($self->tag_location and dir($self->tag_location)->subsumes($target->path)) {
-	    $where = 'tag';
 	    $bname = $target->_to_pclass($target->path)->relative($self->tag_location)->dir_list(0);
 	} elsif (dir($self->local_root)->subsumes($target->path)) {
-	    $where = 'local branch';
+	    $where = 'offline';
 	    $bname = $target->_to_pclass($target->path)->relative($self->local_root)->dir_list(0);
 	}
 
 	if ($where) {
-	    $logger->info ( loc("Current Branch: %1 (%2)\n", $bname, $where ));
-	    $logger->info ( loc("Depot Path: (%1)\n", $target->depotpath ));
+	    $logger->info ( loc("Branch: %1 (%2)\n", $bname, $where ));
+	    $logger->info ( loc("Repository path: %1\n", $target->depotpath ));
 	    if ($where ne 'trunk') { # project trunk should not have Copied info
-		for ($target->copy_ancestors) {
-		    $logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
+		if (my $copy_ancestor = ($target->copy_ancestors)[0]) {
+		    $logger->info( loc("Copied From: %1@%2\n", $self->branch_name($copy_ancestor->[0]), $copy_ancestor->[1]));
 		}
 	    }
 	}
     }
+}
+
+sub in_which_project {
+    my ($self, $pathobj) = @_;
+
+    my $fs              = $pathobj->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
+    my $prop_path       = '/';
+    foreach my $m_path (@all_mirrors) {
+        if ($pathobj->path =~ m/^$m_path/) {
+            $prop_path = $m_path;
+            last;
+        }
+    }
+    my $from_local      = $pathobj->_to_pclass("/local")->subsumes($pathobj->path);
+    my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
+    my %projpaths       = $self->_project_paths($allprops);
+    for my $path (sort { $b ne $a } keys %projpaths) { # reverse sort to ensure subsume
+	if ($pathobj->_to_pclass($prop_path.$path)->subsumes($pathobj->path) or
+	    $pathobj->_to_pclass($pathobj->path)->subsumes($prop_path.$path)) {
+	    my ($pname) = $projpaths{$path} =~ m/^svk:project:(.*?):path/;
+	    return $pname;
+	}
+    }
+    return;
 }
 1;

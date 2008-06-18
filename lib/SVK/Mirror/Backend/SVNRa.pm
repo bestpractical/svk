@@ -332,6 +332,7 @@ sub _new_ra {
         }
     }
     $self->_initialize_svn;
+    $args{url} = uri_escape($args{url}) if $args{url};
     return SVN::Ra->new(
         url    => uri_escape($self->mirror->url),
         auth   => $self->_auth_baton,

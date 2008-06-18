@@ -19,7 +19,7 @@ $svk->sync('//mirror/MyProject');
 
 $svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/branches/Foo');
 
-my ($copath, $corpath) = get_copath('basic-trunk');
+my ($copath, $corpath) = get_copath('bm-prop');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 

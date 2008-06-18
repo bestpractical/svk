@@ -19,7 +19,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath ('MyProject');
+my ($copath, $corpath) = get_copath ('bm-merge');
 $svk->checkout('//mirror/MyProject/trunk',$copath);
 chdir($copath);
 
@@ -204,5 +204,5 @@ is_output ($svk, 'branch', ['--merge', '-C', 'merge/foo3', '.'],
      "Checking locally against mirror source $uri.", 'U   B/S/Q/qu',
      qr'New merge ticket: [\w\d-]+:/branches/merge/foo3:25']);
 
-is_output ($svk, 'branch', ['--push', '-C', '--from', 'merge/foo3'],
+is_output ($svk, 'branch', ['--push', '-C', 'merge/foo3'],
     [(split /\n/, $pushOutputs)]);

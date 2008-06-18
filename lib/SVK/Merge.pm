@@ -240,6 +240,10 @@ sub find_merge_base {
 	my ($path) = m/:(.*)$/;
 	my $rev = $joint_info->{$_};
 
+        # if the candidate is condensed (like being part of a skip-to
+        # sync), we can't really use it as base
+        next if $rev == -1;
+
 	# when the base is one of src or dst, make sure the base is
 	# still the same node (not removed and replaced)
 	if ($rev && $path eq $dst->path) {

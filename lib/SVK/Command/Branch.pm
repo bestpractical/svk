@@ -61,7 +61,7 @@ use SVK::Logger;
 our $fromProp;
 use constant narg => undef;
 
-my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create setup online offline);
+my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff info setup online offline);
 
 sub options {
     ('l|list'           => 'list',
@@ -72,6 +72,7 @@ sub options {
      'local'            => 'local',
      'project=s'        => 'project',
      'switch-to'        => 'switch',
+     'tag'              => "tag",
      'verbose'          => 'verbose', # TODO
      map { my $cmd = $_; s/\|.*$//; ($cmd => $_) } @SUBCOMMANDS
     );
@@ -83,19 +84,17 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
-#    if ($arg[0] eq 'push') {
-#	shift @arg;
-#	local *$self->run = sub SVK::Command::Smerge::run;
-#	return SVK::Command::Branch::push::parse_arg($self,@arg);
-#    }
-    return map {$self->arg_co_maybe ($_)} @arg;
+    my ($proj,$target, $msg) = $self->locate_project(pop @arg);
+    unless ($proj) {
+	$logger->warn( $msg );
+        # XXX: should we simply bail out here rather than having
+        # individual subcommand do error checking?
+    }
+    return ($proj, $target, @arg);
 }
 
 sub run {
-    my ( $self, $target, @options ) = @_;
-#    return SVK::Command::Branch::push::run($self,@options) if $target eq 'push';
-
-    my $proj = $self->load_project($target);
+    my ( $self, $proj, $target, @options ) = @_;
 
     if ($proj) {
         $proj->info($target);
@@ -142,11 +141,65 @@ sub load_project {
     return ;
 }
 
+sub locate_project {
+    my ($self, $copath) = @_;
+
+    my ($proj, $target, $msg);
+    my $project_name = $self->{project};
+
+    $copath ||= '';
+    eval {
+	$target = $self->arg_co_maybe($copath,'New mirror site not allowed here');
+    };
+    if ($@) { # then it means we need to find the project
+	$msg = $@;
+	my @depots =  sort keys %{ $self->{xd}{depotmap} };
+	foreach my $depot (@depots) {
+	    $depot =~ s{/}{}g;
+	    $target = eval { $self->arg_depotpath("/$depot/") };
+	    next if ($@);
+	    $proj = SVK::Project->create_from_prop($target, $project_name);
+	    last if ($proj) ;
+	}
+    } else {
+	$proj = $self->load_project($target, $self->{project});
+	$msg = loc( "No project found." );
+    }
+    return ($proj, $target, $msg);
+}
+
 sub expand_branch {
     my ($self, $proj, $arg) = @_;
     return $arg unless $arg =~ m/\*/;
     my $match = SVK::XD::compile_apr_fnmatch($arg);
     return grep { m/$match/ } @{ $proj->branches };
+}
+
+sub dst_name {
+    my ( $self, $proj, $branch_path ) = @_;
+
+    if ( $self->{tag} ) {
+        $proj->tag_name($branch_path);
+    } else {
+        $proj->branch_name($branch_path, $self->{local});
+    }
+}
+
+sub dst_path {
+    my ( $self, $proj, $branch_name ) = @_;
+
+    if ( $self->{tag} ) {
+        $proj->tag_path($branch_name);
+    } else {
+        $proj->branch_path($branch_name, $self->{local});
+    }
+}
+
+sub ensure_non_uri {
+    my ( $self, @paths ) = @_;
+
+    # return the number of uri (::switch need the number)
+    return (grep {$_ and is_uri($_)} @paths);
 }
 
 package SVK::Command::Branch::list;
@@ -155,14 +208,8 @@ use SVK::I18N;
 use SVK::Logger;
 
 sub run {
-    my ($self, $target) = @_;
-
-    my $proj = $self->load_project($target);
-
-    if (!$proj) {
-	$logger->info( loc("No project found.\n"));
-	return;
-    }
+    my ($self, $proj) = @_;
+    return unless $proj;
 
     if ($self->{all}) {
 	my $fmt = "%s%s\n"; # here to change layout
@@ -188,56 +235,49 @@ sub run {
 package SVK::Command::Branch::create;
 use base qw( SVK::Command::Copy SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
 use SVK::Logger;
 
-sub lock { $_[0]->lock_target ($_[1]); };
+sub lock { $_[0]->lock_target ($_[2]); };
 
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg > 1;
 
-    my $dst = shift (@arg);
-    die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
-
     @arg = ('') if $#arg < 0;
 
-    die loc ("Copy source can't be URI.\n")
-	if is_uri ($arg[0]);
+    my $dst = shift (@arg);
+    die loc ("Copy destination can't be URI.\n")
+	if $self->ensure_non_uri ($dst);
 
-    my $target;
-    eval {
-	$target = $self->arg_co_maybe($arg[0]);
-    };
-    if ($@) { 
-	$logger->info( "I can't figure out what project you'd like to create a branch in. Please");
-	$logger->info("either run '$0 branch --create' from within an existing chekout or specify");
-	$logger->info("a project root using the --project flag");
-	die $@;
+    # always try to eval current wc
+    my ($proj,$target, $msg) = $self->locate_project($arg[0]);
+    if (!$proj) {
+	$logger->warn( "I can't figure out what project you'd like to create a branch in. Please");
+	$logger->warn("either run '$0 branch --create' from within an existing checkout or specify");
+	$logger->warn("a project root using the --project flag");
     }
-    return ($target, $dst);
+    return ($proj, $target, $dst);
 }
 
 
 sub run {
-    my ($self, $target, $branch_name) = @_;
-
-    my $proj = $self->load_project($target);
-
-    if (!$proj) {
-	$logger->info( loc("No project found.\n"));
+    my ($self, $proj, $target, $branch_name) = @_;
+    return unless $proj;
+    unless ($branch_name) {
+	$logger->info(
+	    loc("To create a branch, please specify svk branch --create <name>")
+	);
 	return;
     }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
     my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
-    my $newbranch_path = $proj->branch_path($branch_name, $self->{local});
+    my $newbranch_path = $self->dst_path($proj, $branch_name);
 
-    my $src = $self->arg_uri_maybe($src_path);
-    die loc("Invalid --from argument") if
+    my $src = $self->arg_uri_maybe($src_path, 'New mirror site not allowed here');
+    die loc("Path %1 does not exist.\n",$src->depotpath) if
 	$SVN::Node::none == $src->root->check_path($src->path);
-    my $dst = $self->arg_uri_maybe($newbranch_path);
+    my $dst = $self->arg_uri_maybe($newbranch_path, 'New mirror site not allowed here');
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
 	    $branch_name, $self->{local} ? '(in local)' : '');
@@ -247,7 +287,8 @@ sub run {
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
-	$logger->info( loc("Project branch created: %1%2%3\n",
+	$logger->info( loc("Project %1 created: %2%3%4\n",
+        $self->{tag} ? "tag" : "branch",
 	    $branch_name,
 	    $self->{local} ? ' (in local)' : '',
 	    $self->{from} ? " (from $self->{from})" : '',
@@ -265,7 +306,7 @@ sub run {
 package SVK::Command::Branch::move;
 use base qw( SVK::Command::Move SVK::Command::Smerge SVK::Command::Delete SVK::Command::Branch::create );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
+use SVK::Logger;
 use Path::Class;
 
 sub lock { $_[0]->lock_coroot ($_[1]); };
@@ -274,17 +315,13 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
+    die loc ("Copy destination or source can't be URI.\n")
+	if $self->ensure_non_uri (@arg);
     my $dst = pop(@arg);
-    die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
 
-    for (@arg) {
-	die loc ("Copy source can't be URI.\n")
-	    if is_uri ($_);
-    }
     push @arg, '' unless @arg;
 
-    return ($self->arg_co_maybe (''), $dst, @arg);
+    return ($self->arg_co_maybe ('', 'New mirror site not allowed here'), $dst, @arg);
 }
 
 sub run {
@@ -294,37 +331,57 @@ sub run {
 
     my $depot_root = '/'.$proj->depot->depotname;
     my $branch_path = $depot_root.$proj->branch_location;
-    my $dst_branch_path = $dst_path;
-    $dst_branch_path = $branch_path.'/'.$dst_path.'/'
-	unless $dst_path =~ m#^$depot_root/#;
+    # Normalize name and path
+    my $dst_name = $self->dst_name($proj, $dst_path);
+    my $dst_branch_path = $self->dst_path($proj, $dst_name);
     my $dst = $self->arg_depotpath($dst_branch_path);
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or $SVN::Node::dir == $dst->root->check_path($dst->path)
-	or die loc("Project branch already exists: %1 %2\n",
-	    $branch_path, $self->{local} ? '(in local)' : '');
+	or die loc("Project branch already exists: %1%2\n",
+	    $branch_path, $self->{local} ? ' (in local)' : '');
+    die loc("Project branch already exists: %1%2\n",
+	$dst_name, $self->{local} ? ' (in local)' : '')
+        if grep /$dst_name/,@{$proj->branches};
 
     $self->{parent} = 1;
     for my $src_path (@src_paths) {
-	my $src_branch_path = $src_path;
-	$src_branch_path = $branch_path.'/'.$src_path.'/'
-	    unless $src_path =~ m#^$depot_root/#;
-	$src_branch_path = $depot_root.$target->source->path
-	    unless ($src_path);
-	my $src = $self->arg_co_maybe($src_branch_path);
+	$src_path = $target->path unless $src_path;
+	$src_path = $target->_to_pclass("$src_path");
+	if ($target->_to_pclass("/local")->subsumes($src_path)) {
+	    $self->{local}++;
+	} else {
+	    $self->{local} = 0;
+	}
+	my $src_name = $self->dst_name($proj,$src_path);
+	my $src_branch_path = $self->dst_path($proj, $src_name);
+	my $src = $self->arg_co_maybe($src_branch_path, 'New mirror site not allowed here');
 
 	if ( !$dst->same_source($src) ) {
 	    # branch first, then sm -I
-	    my $which_rev_we_branch = ($src->copy_ancestors)[0]->[1];
+	    my ($which_depotpath, $which_rev_we_branch) =
+		(($src->copy_ancestors)[0]->[0], ($src->copy_ancestors)[0]->[1]);
 	    $self->{rev} = $which_rev_we_branch;
-	    $src = $self->arg_uri_maybe($depot_root.'/'.$proj->trunk);
+	    $src = $self->arg_uri_maybe($depot_root.'/'.$which_depotpath);
 	    $self->{message} = "- Create branch $src_branch_path to $dst_branch_path";
+	    if ($self->{check_only}) {
+		$logger->info(
+		    loc ("We will copy branch %1 to %2", $src_branch_path, $dst_branch_path)
+		);
+		$logger->info(
+		    loc ("Then do a smerge on %1", $dst_branch_path)
+		);
+		$logger->info(
+		    loc ("Finally delete the src branch %1", $src_branch_path)
+		);
+		return;
+	    }
 	    local *handle_direct_item = sub {
 		my $self = shift;
 		$self->SVK::Command::Copy::handle_direct_item(@_);
 	    };
 	    $self->SVK::Command::Copy::run($src, $dst);
 	    # now we do sm -I
-	    $src = $self->arg_uri_maybe($src_branch_path);
+	    $src = $self->arg_uri_maybe($src_branch_path, 'New mirror site not allowed here');
 	    $self->{message} = ''; # incremental does not need message
 	    # w/o reassign $dst = ..., we will have changes 'XXX - skipped'
 	    $dst->refresh_revision;
@@ -332,7 +389,7 @@ sub run {
 	    $self->{incremental} = 1;
 	    $self->SVK::Command::Smerge::run($src, $dst);
 	    $self->{message} = "- Delete branch $src_branch_path, because it move to $dst_branch_path";
-	    $self->SVK::Command::Delete::run($src, $target);
+	    $self->SVK::Command::Delete::run($src);
 	    $dst->refresh_revision;
 	} else {
 	    $self->{message} = "- Move branch $src_branch_path to $dst_branch_path";
@@ -351,7 +408,7 @@ sub run {
 package SVK::Command::Branch::remove;
 use base qw( SVK::Command::Delete SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri is_depotpath);
+use SVK::Util qw( is_depotpath);
 use SVK::Logger;
 
 sub lock { $_[0]->lock_target ($_[1]); };
@@ -360,15 +417,14 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
-    for (@arg) {
-	die loc ("Copy source can't be URI.\n")
-	    if is_uri ($_);
-    }
+    die loc ("Copy source can't be URI.\n")
+	if $self->ensure_non_uri (@arg);
 
     # if specified project path at the end
     my $project_path = pop @arg if $#arg > 0 and is_depotpath($arg[$#arg]);
     $project_path = '' unless $project_path;
-    return ($self->arg_co_maybe ($project_path), @arg);
+    return ($self->arg_co_maybe ($project_path,'New mirror site not allowed here'), @arg);
+	    
 }
 
 
@@ -382,7 +438,7 @@ sub run {
     @dsts = grep { defined($_) } map { 
 	my $target_path = $proj->branch_path($_, $self->{local});
 
-	my $target = $self->arg_uri_maybe($target_path);
+	my $target = $self->arg_uri_maybe($target_path,'New mirror site not allowed here');
 	$target = $target->root->check_path($target->path) ? $target : undef;
 	$target ? 
 	    $self->{message} .= "- Delete branch ".$target->path."\n" :
@@ -401,7 +457,7 @@ sub run {
 package SVK::Command::Branch::merge;
 use base qw( SVK::Command::Smerge SVK::Command::Branch);
 use SVK::I18N;
-use SVK::Util qw( is_uri abs_path );
+use SVK::Util qw( abs_path );
 use Path::Class;
 
 use constant narg => 1;
@@ -412,14 +468,9 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 1;
 
+    die loc ("Copy destination or source can't be URI.\n")
+	if $self->ensure_non_uri (@arg);
     my $dst = pop(@arg);
-    die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
-
-    for (@arg) {
-	die loc ("Copy source can't be URI.\n")
-	    if is_uri ($_);
-    }
 
     return ($self->arg_co_maybe (''), $dst, @arg);
 }
@@ -466,24 +517,28 @@ sub run {
 package SVK::Command::Branch::push;
 use base qw( SVK::Command::Push SVK::Command::Branch);
 use SVK::I18N;
+use SVK::Logger;
 
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    if ($self->{from}) {
-	my $target = $self->arg_co_maybe ('');
-	$target = $target->source if $target->isa('SVK::Path::Checkout');
-	my $proj = $self->load_project($target);
-	my $depot_root = '/'.$proj->depot->depotname;
-	my $branch_path = $depot_root.'/'.$proj->branch_location;
-	my $from_path = $branch_path.'/'.$self->{from};
-	if ($SVN::Node::dir != $target->root->check_path($from_path)) {
-	    my $tag_path = $depot_root.'/'.$proj->tag_location;
-	    $from_path = $tag_path.'/'.$self->{from};
-	    die loc("No such branch/tag exists: %1\n", $self->{from})
-		if ($SVN::Node::dir != $target->root->check_path($from_path)) ;
+    # always try to eval current wc
+    my ($proj,$target, $msg) = $self->locate_project('');
+    if (!$proj) {
+	$logger->warn( loc($msg) );
+	return ;
+    }
+    $target = $target->source if $target->isa('SVK::Path::Checkout');
+    if (@arg) {
+	my $src_bname = pop (@arg);
+	my $src = $self->arg_depotpath($proj->branch_path($src_bname));
+	if ($SVN::Node::dir != $target->root->check_path($src->path)) {
+	    $src = $self->arg_depotpath($proj->tag_path($src_bname));
+	    die loc("No such branch/tag exists: %1\n", $src->path)
+		if ($SVN::Node::dir != $target->root->check_path($src->path)) ;
 	}
-	$self->{from_path} = $from_path;
+	$self->{from}++;
+	$self->{from_path} = $src->depotpath;
     }
 
     $self->SUPER::parse_arg (@arg);
@@ -517,12 +572,11 @@ sub parse_arg {
 	}
     }
 
-    my $target = $self->arg_co_maybe ($project_path);
-    my $proj = $self->load_project($target);
+    my ($proj,$target, $msg) = $self->locate_project($project_path);
 
     if (!$proj) {
         $logger->info(
-            loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n")
+            loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n",$msg)
         );
 	return ;
     }
@@ -536,7 +590,6 @@ sub parse_arg {
 package SVK::Command::Branch::switch;
 use base qw( SVK::Command::Switch SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri );
 
 sub lock { $_[0]->lock_target ($_[1]); };
 
@@ -546,10 +599,10 @@ sub parse_arg {
 
     my $dst = shift(@arg);
     die loc ("Copy destination can't be URI.\n")
-	if is_uri ($dst);
+	if $self->ensure_non_uri ($dst);
 
     die loc ("More than one URI found.\n")
-	if (grep {is_uri($_)} @arg) > 1;
+	if ($self->ensure_non_uri (@arg) > 1);
 
     return ($self->arg_co_maybe (''), $dst);
 }
@@ -563,49 +616,119 @@ sub run {
     my $newtarget_path = $proj->branch_path($new_path, $self->{local});
 
     $self->SUPER::run(
-	$self->arg_uri_maybe($newtarget_path),
+	$self->arg_uri_maybe($newtarget_path,'New mirror site not allowed here'),
 	$target
     );
     return;
 }
 
+package SVK::Command::Branch::diff;
+use base qw( SVK::Command::Diff SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    return if $#arg > 1;
+
+    my $dst;
+    my ($proj,$target, $msg) = $self->locate_project('');
+    if (!$proj) {
+	$logger->warn( loc($msg));
+	return ;
+    }
+    if (@arg) {
+	my $dst_branch_path = $proj->branch_path(pop(@arg));
+	$dst = $self->arg_co_maybe($dst_branch_path,'New mirror site not allowed here');
+	if (@arg) {
+	    my $src_branch_path = $proj->branch_path(pop(@arg));
+	    $target = $self->arg_co_maybe($src_branch_path,'New mirror site not allowed here');
+	}
+    }
+
+    return ($target, $dst);
+}
+
+package SVK::Command::Branch::info;
+use base qw( SVK::Command::Info SVK::Command::Branch );
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+    @arg = ('') if $#arg < 0;
+
+    my ($proj,$target, $msg) = $self->locate_project($arg[0]);
+    if (!$proj) {
+	$logger->warn( loc($msg));
+	return ;
+    }
+
+    undef $self->{recursive};
+    $self->{local}++ if ($target->_to_pclass("/local")->subsumes($target->path));
+    return map {$self->arg_co_maybe ($self->dst_path($proj,$_),'New mirror site not allowed here')} @arg;
+}
+
 package SVK::Command::Branch::setup;
 use base qw( SVK::Command::Propset SVK::Command::Branch );
 use SVK::I18N;
-use SVK::Util qw( is_uri get_prompt );
+use SVK::Util qw( get_prompt );
 use SVK::Logger;
+
+sub can_write_remote_proj_prop {
+    my ($self, $remote_depot, %arg) = @_;
+    eval {
+	for my $key (keys %arg) {
+	    $self->do_propset($key,$arg{$key}, $remote_depot);
+	}
+    };
+    return 1 if ($@);
+    return 0;
+}
 
 sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg != 0;
 
     my $dst = shift(@arg);
-    die loc ("Copy destination can't be URI.\n")
-        if is_uri ($dst);
+    die loc ("Target can't be URI.\n")
+	if $self->ensure_non_uri ($dst);
 
     return ($self->arg_co_maybe ($dst));
 }
 
-
 sub run {
     my ($self, $target) = @_;
 
-    my $proj = $self->load_project($target);
+    my $local_root = $self->arg_depotpath('/'.$target->depot->depotname.'/');
+    my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
+    my $source_root = $target->is_mirrored->_backend->source_root;
+    my $url = $target->is_mirrored->url;
 
-    if ($proj && $fromProp) {
+    for my $path ($target->depot->mirror->entries) {
+	next unless $target->path =~ m{^$path};
+	($trunk_path) = $target->path =~ m{^$path(/?.*)$};
+	$project_name = $target->_to_pclass($target->path)->dir_list(-1);
+	$project_name = $target->_to_pclass($target->path)->dir_list(-2)
+	    if $project_name eq 'trunk';
+	$preceding_path = $path;
+	last if $trunk_path;
+    }
+
+    my $proj = $self->load_project($self->arg_depotpath('/'.$target->depot->depotname.$preceding_path));
+
+    my $which_project = $proj->in_which_project($target) if $proj;
+
+    my $ans = 'n';
+    if ($proj && $fromProp && $which_project) {
+	$project_name = $which_project;
 	$logger->info( loc("Project already set in properties: %1\n", $target->depotpath));
-    } else {
-	my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
-	for my $path ($target->depot->mirror->entries) {
-	    next unless $target->path =~ m{^$path};
-	    ($trunk_path) = $target->path =~ m{^$path(/?.*)$};
-	    $project_name = $target->_to_pclass($target->path)->dir_list(-1);
-	    $project_name = $target->_to_pclass($target->path)->dir_list(-2)
-		if $project_name eq 'trunk';
-	    $preceding_path = $path;
-	    last if $trunk_path;
-	}
-	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
+	$ans = lc (get_prompt(
+	    loc("Is the project '%1' a match? [Y/n]", $project_name)
+	) );
+    }
+    if ($ans eq 'n') {
+	$proj = $self->load_project($self->arg_depotpath($target->depotpath));
 	if (!$proj) {
 	    $logger->info( loc("New Project depotpath encountered: %1\n", $target->path));
 	} else {
@@ -619,7 +742,7 @@ sub run {
 	    $tag_path =~ s{^/?$preceding_path}{};
 	}
 	{
-	    my $ans = get_prompt(
+	    $ans = get_prompt(
 		loc("Specify a project name (enter to use '%1'): ", $project_name),
 		qr/^(?:[A-Za-z][-+_A-Za-z0-9]*|$)/
 	    );
@@ -630,8 +753,8 @@ sub run {
 	}
 	$trunk_path ||= $target->_to_pclass('/')->subdir('trunk');
 	{
-	    my $ans = get_prompt(
-		loc("It has no trunk, where is the trunk/? (press enter to use %1)\n=>", $trunk_path),
+	    $ans = get_prompt(
+		loc("What directory shall we use for the project's trunk? (Press ENTER to use %1)\n=>", $trunk_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 
 	    );
@@ -642,8 +765,8 @@ sub run {
 	}
 	$branch_path ||= $target->_to_pclass($trunk_path)->parent->subdir('branches');
 	{
-	    my $ans = get_prompt(
-		loc("And where is the branches/? (%1)\n=> ", $branch_path),
+	    $ans = get_prompt(
+		loc("What directory shall we use for the project's branches? (Press ENTER to use %1)\n=>", $branch_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|^\/|$)/
 	    );
 	    if (length($ans)) {
@@ -653,8 +776,8 @@ sub run {
 	}
 	$tag_path ||= $target->_to_pclass($trunk_path)->parent->subdir('tags');
 	{
-	    my $ans = get_prompt(
-		loc("And where is the tags/? (%1) (or 's' to skip)", $tag_path),
+	    $ans = get_prompt(
+		loc("What directory shall we use for the project's tags? (Press ENTER to use %1, or 's' to skip)\n=>", $tag_path),
 		qr/^(?:\/?[A-Za-z][-+.A-Za-z0-9]*|$)/
 	    );
 	    if (length($ans)) {
@@ -665,10 +788,24 @@ sub run {
 	}
 	#XXX implement setting properties of project here
 	$self->{message} = "- Setup properties for project $project_name";
-	$self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $root_depot);
-	$self->do_propset("svk:project:$project_name:path-branches",$branch_path, $root_depot);
-	$self->do_propset("svk:project:$project_name:path-tags",$tag_path, $root_depot);
-	my $proj = SVK::Project->create_from_prop($target);
+	# always set to local first
+	my $root_depot = $self->arg_depotpath('/'.$target->depot->depotname.$preceding_path);
+	my $ret = $source_root ne $url or $self->can_write_remote_proj_prop($root_depot,
+	    "svk:project:$project_name:path-trunk" => $trunk_path,
+	    "svk:project:$project_name:path-branches" => $branch_path,
+	    "svk:project:$project_name:path-tags" => $tag_path);
+	if ($ret) { # we have problem to write to remote
+	    if ($source_root ne $url) {
+		$logger->info( loc("Can't write project props to remote root. Save in local instead."));
+	    } else {
+		$logger->info( loc("Can't write project props to remote server. Save in local instead."));
+	    }
+	    $self->do_propset("svk:project:$project_name:path-trunk",$trunk_path, $local_root);
+	    $self->do_propset("svk:project:$project_name:path-branches",$branch_path, $local_root);
+	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
+	    $self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
+	}
+	$proj = SVK::Project->create_from_prop($target);
 	# XXX: what if it still failed here? How to rollback the prop commits?
 	if (!$proj) {
 	    $logger->info( loc("Project setup failed.\n"));
@@ -689,20 +826,33 @@ sub lock { $_[0]->lock_target ($_[1]); };
 
 sub parse_arg {
     my ($self, $arg) = @_;
-    my $target = $self->arg_co_maybe($arg || '');
+    die loc ("Destination can't be URI.\n")
+	if $self->ensure_non_uri ($arg);
+
+    my ($proj,$target, $msg) = $self->locate_project('');
     $self->{switch} = 1 if $target->isa('SVK::Path::Checkout');
     # XXX: should we verbose the branch_name here?
 #    die loc ("Current branch '%1' already online\n", $self->{branch_name})
     die loc ("Current branch already online\n")
 	if (!$target->_to_pclass("/local")->subsumes($target->path));
 
-    # XXX: if the remote branch of the same name already exists, do a
-    # smerge instead
-    my $proj = $self->load_project($target);
-    $self->{branch_name} = $proj->branch_name($target->path, 1);
+    unless ($proj) {
+	$logger->warn( loc ($msg) );
+    }
+
+    # local
+    $self->{branch_name} = $arg if $arg;
+    $self->{branch_name} = $proj->branch_name($target->path, 1)
+	unless $arg;
 
     # check existence of remote branch
-    my $dst = $self->arg_depotpath($proj->branch_path($self->{branch_name}));
+    my $dst;
+#    if ($arg) { # user specify a new target branch
+	$dst = $self->arg_depotpath($proj->branch_path($self->{branch_name}));
+#    } else { # otherwise, merge back to its ancestor
+#	my $copy_ancestor = ($target->copy_ancestors)[0]->[0];
+#	$dst = $self->arg_depotpath('/'.$target->depotname.$copy_ancestor);
+#    }
     if ($SVN::Node::none != $dst->root->check_path($dst->path)) {
 	$self->{go_smerge} = $dst->depotpath if $target->related_to($dst);
     }
@@ -716,15 +866,16 @@ sub run {
     if ($self->{go_smerge}) {
 	my $dst = $self->arg_depotpath($self->{go_smerge});
 	
-	$self->{message} = "- Merged from local";
-	$self->{log} = 1;
+	$self->{message} = "";
+	$self->{incremental} = 1;
 	$self->SVK::Command::Smerge::run($target->source, $dst);
 
 	$dst->refresh_revision;
 
 	# XXX: we have a little conflict in private hash argname.
 	$self->{rev} = undef;
-	$self->SVK::Command::Switch::run($dst, $target) if $target->isa('SVK::Path::Checkout');
+	$self->SVK::Command::Switch::run($dst, $target)
+	    if $target->isa('SVK::Path::Checkout') and !$self->{check_only};
     } else {
 	$self->SUPER::run($target, @args);
     }
@@ -741,20 +892,19 @@ use SVK::Logger;
 # --offline (at checkout of branch FOO
 #   --create FOO --from FOO --local
 
-sub parse_arg {
-    my ($self, @arg) = @_;
-
-    push @arg, '' unless @arg;
-    return $self->SUPER::parse_arg(@arg);
-}
+#sub parse_arg {
+#    my ($self, @arg) = @_;
+#
+#    push @arg, '' unless @arg;
+#    return $self->SUPER::parse_arg(@arg);
+#}
 
 sub run {
-    my ($self, $target, $branch_name) = @_;
+    my ($self, $proj, $target, $branch_name) = @_;
 
     die loc ("Current branch already offline\n")
 	if ($target->_to_pclass("/local")->subsumes($target->path));
 
-    my $proj = $self->load_project($target);
     if (!$branch_name) { # no branch_name means using current branch(trunk) as src
 	$branch_name = $proj->branch_name($target->path);
 	$self->{from} = $branch_name;
@@ -769,18 +919,19 @@ sub run {
     if ($SVN::Node::none != $local->root->check_path($local->path)  and
 	$target->related_to($local)) {
 
-	$self->{message} = "- Merged to local";
+	$self->{message} = "";
 	# XXX: Following copy from ::online, maybe need refactoring
-	$self->{log} = 1;
+	$self->{incremental} = 1;
 	$self->SVK::Command::Smerge::run($target->source, $local);
 
 	$local->refresh_revision;
 
 	# XXX: we have a little conflict in private hash argname.
 	$self->{rev} = undef;
-	$self->SVK::Command::Switch::run($local, $target) if $target->isa('SVK::Path::Checkout');
+	$self->SVK::Command::Switch::run($local, $target)
+	    if $target->isa('SVK::Path::Checkout') and !$self->{check_only};
     } else {
-	$self->SUPER::run($target, $branch_name);
+	$self->SUPER::run($proj, $target, $branch_name);
     }
 }
 
@@ -797,30 +948,31 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [DEPOTPATH]
 
  branch --list [--all]
- branch --create BRANCH [--local] [--switch-to] [DEPOTPATH]
+ branch --create BRANCH [--tag] [--local] [--switch-to] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --checkout BRANCH [PATH] [DEPOTPATH]
  branch --delete BRANCH1 BRANCH2 ...
  branch --setup DEPOTPATH
- branch --push [--from BRANCH]
+ branch --push [BRANCH]
 
 =head1 OPTIONS
 
- -l [--list]            : list branches for this project
- --create               : create a new branch
- --local                : targets in local branch
- --delete               : delete BRANCH(s)
- --checkout             : checkout BRANCH in current directory
- --switch               : switch the current checkout to another branch
+ -l [--list]        : list branches for this project
+ --create           : create a new branch
+ --tag              : create in the tags directory
+ --local            : targets in local branch
+ --delete           : delete BRANCH(s)
+ --checkout         : checkout BRANCH in current directory
+ --switch           : switch the current checkout to another branch
                           (can be paired with --create)
- --merge                : automatically merge all changes from BRANCH1, BRANCH2,
+ --merge            : automatically merge all changes from BRANCH1, BRANCH2,
                           etc, to TARGET
- --project              : specify the target project name 
- --push                 : move changes to wherever this branch was copied from
- --setup                : setup a project for a specified DEPOTPATH
- -C [--check-only]      : try a create, move or merge operation but make no     
-                          changes
+ --project          : specify the target project name 
+ --push             : move changes to wherever this branch was copied from
+ --setup            : setup a project for a specified DEPOTPATH
+ -C [--check-only]  : try a create, move or merge operation but make no     
+                      changes
 
 
 =head1 DESCRIPTION

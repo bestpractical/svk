@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 12;
+plan tests => 21;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -17,7 +17,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath('basic-trunk');
+my ($copath, $corpath) = get_copath('bm-online-offline');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 
@@ -37,7 +37,13 @@ is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
 append_file('A/be', "fnordorz\n");
 $svk->commit(-m => 'orz');
 
-$svk->br('--online'); # XXX: check output
+is_output($svk, 'br', ['--online', '-C'],
+    ["We will copy branch //local/MyProject/foo to //mirror/MyProject/branches/foo",
+     "Then do a smerge on //mirror/MyProject/branches/foo",
+     "Finally delete the src branch //local/MyProject/foo"]);
+
+is_output_like ($svk, 'branch', ['--online'],
+    qr|U   A/be|);
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/foo|);
@@ -45,12 +51,10 @@ is_output_like ($svk, 'info', [],
 # since branch name is not the same, just do move and switch
 is_output ($svk, 'info', ['//local/MyProject/foo'],
     ["Path //local/MyProject/foo does not exist."]);
+#warn $output;
+#exit;
 
 is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
-
-
-TODO: {
-# should online need an argument ?
 
 # let's play with feature/foobar branch now
 
@@ -71,10 +75,17 @@ is_output_like ($svk, 'info', [],
    qr|Depot Path: //local/MyProject/feature/foobar|);
 
 append_file ('B/S/Q/qu', "\nappend CBA on local branch feature/foobar\n");
-$svk->commit ('-m', 'commit message','');
+$svk->commit ('-m', 'commit message on local branch','');
 
 # now should do smerge first, then sw to the branch 
-$svk->br('--online');
+is_output_like ($svk, 'branch', ['--online', '-C'],
+    qr|U   B/S/Q/qu|);
+
+is_output_like ($svk, 'branch', ['--online'],
+    qr|U   B/S/Q/qu|);
+
+is_output_like ($svk, 'log', [],
+    qr|commit message on local branch|);
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/feature/foobar|);
@@ -83,5 +94,22 @@ is_output_like ($svk, 'info', [],
 is_output_like ($svk, 'info', ['//local/MyProject/feature/foobar'],
    qr|Depot Path: //local/MyProject/feature/foobar|);
 
-# need more message to test
-}
+$svk->delete ("A/Q/qu");
+overwrite_file ("A/Q/qz", "orz\n");
+$svk->commit (-m => '- changes in remote');
+
+is_output_like ($svk, 'branch', ['--offline'],
+    qr|U   A/Q/qz\nD   A/Q/qu|);
+
+is_output_like ($svk, 'log', [],
+    qr|- changes in remote|);
+
+# online with a new branch name
+
+$svk->br('--online', 'release/abc'); # offline the feature/foobar branch
+
+is_output_like ($svk, 'info', [],
+   qr|Depot Path: //mirror/MyProject/branches/release/abc|);
+
+is_output_like ($svk, 'br', [],
+   qr|Copied From: feature/foobar@\d+|);

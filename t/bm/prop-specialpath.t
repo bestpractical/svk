@@ -15,7 +15,7 @@ my $tree = create_basic_tree($xd, '/test/trunk/proj');
 my $depot = $xd->find_depot('test');
 my $uri = uri($depot->repospath);
 
-my ($copath, $corpath) = get_copath('basic-trunk');
+my ($copath, $corpath) = get_copath('bm-prop-specialpath');
 
 my $props = { 
     'svk:project:projectA:path-trunk' => '/trunk/proj',
