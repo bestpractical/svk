@@ -149,6 +149,7 @@ lib/SVK/Resolve/P4WinMerge.pm
 lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
+lib/SVK/Resolve/WinMerge.pm
 lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Root.pm
 lib/SVK/Root/Checkout.pm
