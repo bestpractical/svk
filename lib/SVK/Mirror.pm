@@ -240,12 +240,7 @@ sub bootstrap {
     my ($self, $dumpfile, $file_hint) = @_;
     $file_hint ||= $dumpfile;
     my $fh;
-    # XXX requires unreleased SVN::Dump that removes binmode() in ::reader
-    #     for compressed streams to work
     require SVN::Dump;
-    # XXX make these fail optionally
-    require PerlIO::via::Bzip2;
-    require PerlIO::gzip;
 
     if ($dumpfile eq '-') {
         $fh = \*STDIN;
@@ -253,8 +248,16 @@ sub bootstrap {
     else {
         open $fh, '<', $dumpfile or die $!;
     }
-    binmode($fh, ':via(Bzip2)') if $file_hint =~ m/bz2$/i;
-    binmode($fh, ':gzip(lazy)') if $file_hint =~ m/gz$/i;
+
+    # XXX make these fail optionally
+    if ($file_hint =~ m/bz2$/i) {
+        require PerlIO::via::Bzip2;
+        binmode($fh, ':via(Bzip2)');
+    }
+    elsif ($file_hint =~ m/gz$/i) {
+        require PerlIO::gzip;
+        binmode($fh, ':gzip(lazy)');
+    }
 
     my $dump = SVN::Dump->new( { fh => $fh } );
     my $prefix = $self->path.'/';
@@ -265,6 +268,9 @@ sub bootstrap {
     my $header;
     my $progress = SVK::Notify->new->progress( { count => 1024, ETA => 'linear' } );
     $progress->target( $self->_backend->_new_ra->get_latest_revnum ) if $progress;
+    if ($self->fromrev) {
+        $logger->info(loc("Skipping dumpstream up to revision %1", $self->fromrev));
+    }
     while ( my $record = $dump->next_record() ) {
 	if ($record->type eq 'format' || $record->type eq 'uuid') {
 	    $header = $header.$record->as_string;
@@ -302,7 +308,7 @@ sub bootstrap {
 	$translate->( $inc ) if $inc;
 
 	if ($rev and $prev != $rev) {
-	    $self->_import_repos($header,$buf);
+	    $self->_import_repos($header,$buf) if $prev > $self->fromrev;
 	    $buf = "";
 	    $prev = $rev;
 	}
@@ -311,7 +317,7 @@ sub bootstrap {
     }
     # last one
     if ($rev) {
-	$self->_import_repos($header, $buf)
+	$self->_import_repos($header, $buf)  if $prev > $self->fromrev;
     }
 
 }
