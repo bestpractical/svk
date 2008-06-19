@@ -211,11 +211,10 @@ sub flush_dir {
 
 sub progress {
     my $self = shift;
-    require Term::ProgressBar;
+    require Time::Progress;
     return if $self->{quiet};
-    my $progress = Term::ProgressBar->new(@_);
-    $progress->minor(0);
-    $progress->max_update_rate(1);
+    my $progress = Time::Progress->new();
+    $progress->attr (@_);
     return $progress;
 
 }

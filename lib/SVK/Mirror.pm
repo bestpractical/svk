@@ -266,8 +266,7 @@ sub bootstrap {
     my $rev = 0;
     my $buf;
     my $header;
-    my $progress = SVK::Notify->new->progress( { count => 1024, ETA => 'linear' } );
-    $progress->target( $self->_backend->_new_ra->get_latest_revnum ) if $progress;
+    my $progress = SVK::Notify->new->progress( min => 0, max => $self->_backend->_new_ra->get_latest_revnum );
     if ($self->fromrev) {
         $logger->info(loc("Skipping dumpstream up to revision %1", $self->fromrev));
     }
@@ -290,10 +289,11 @@ sub bootstrap {
 	    }
 	    
 	    if ($rec->get_header('Revision-number')) {
+		$| = 1;
 		$rev = $rec->get_header('Revision-number');
 		$prev = $rev if !$prev;
 		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
-                $progress->update($rev);
+		printf STDERR "%s rev:%d\r",$progress->report( "%45b",$rev),$rev;
 	    }
 
 

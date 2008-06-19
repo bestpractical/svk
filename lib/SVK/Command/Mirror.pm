@@ -189,8 +189,8 @@ sub run {
             # of quiet and gui variants.
             my $progress = SVK::Notify->new->progress(
                 {
-                    count => 1024,
-                    ETA   => 'linear',
+                    min => 0,
+                    max => 1024,
                 }
             );
             $ua->get(
@@ -201,19 +201,22 @@ sub run {
                     if ($progress) {
                         unless ($did_set_target) {
                             if ( my $content_length = $cb_response->content_length ) {
-                                $progress->target($content_length);
+                                $progress->attr(max => $content_length);
                                 $did_set_target = 1;
                             }
                             else {
-                                $progress->target(
+                                $progress->attr(max => 
                                                   $received_size + 2 * length $data );
                             }
                         }
                     }
                     $received_size += length $data;
                     print { $self->{bootstrap} } $data;
-                    $next_update = $progress->update($received_size)
-                        if $progress && $received_size >= $next_update;
+		    if ($progress && $received_size >= $next_update) {
+			local $| = 1;
+			print STDERR $progress->report( "%45b %p\r", $received_size );
+			$next_update = $received_size + 1;
+		    }
                 },
                 ':read_size_hint' => 16384,
             );

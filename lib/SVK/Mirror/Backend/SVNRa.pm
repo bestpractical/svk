@@ -781,7 +781,7 @@ sub _sync_changesets {
     }
     my $progress =
       $self->mirror->{use_progress}
-      ? SVK::Notify->new->progress( { count => scalar @$revs } )
+      ? SVK::Notify->new->progress( max => scalar @$revs )
       : undef;
     my $pool = SVN::Pool->new_default;
     my $i = 0;
@@ -802,7 +802,8 @@ sub _sync_changesets {
                 $ra->replay( $changeset, 0, 1, $editor );
                 $self->_after_replay($ra, $editor);
             }, $translate_from );
-        $progress->update( ++$i ) if $progress;
+        local $| = 1;
+        print STDERR $progress->report( "%45b %p\r", ++$i ) if $progress;
     }
     $self->_ra_finished($ra);
 }
