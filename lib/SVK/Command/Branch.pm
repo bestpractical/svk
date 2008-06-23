@@ -68,6 +68,7 @@ sub options {
      'C|check-only'     => 'check_only',
      'P|patch=s'        => 'patch',
      'all'              => 'all',
+     'export'           => 'export',
      'from=s'           => 'from',
      'local'            => 'local',
      'project=s'        => 'project',
@@ -224,7 +225,7 @@ sub run {
 	$logger->info (sprintf $fmt, $_, ' (in local)') for @{$branches};
 
     } else {
-	my $branches = $proj->branches ($self->{local});
+	my $branches = $self->{tag} ? $proj->tags() : $proj->branches ($self->{local});
 
 	my $fmt = "%s\n"; # here to change layout
 	$logger->info (sprintf $fmt, $_) for @{$branches};
@@ -581,7 +582,7 @@ sub parse_arg {
 	return ;
     }
 
-    my $newtarget_path = $proj->branch_path($branch_name, $self->{local});
+    my $newtarget_path = $self->dst_path($proj, $branch_name);
     unshift @arg, $newtarget_path, $checkout_path;
     return $self->SUPER::parse_arg(@arg);
 }
