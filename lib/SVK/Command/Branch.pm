@@ -283,7 +283,7 @@ sub run {
 	    $branch_name, $self->{local} ? '(in local)' : '');
 
     $self->{parent} = 1;
-    $self->{message} ||= "- Create branch $branch_name";
+    $self->{message} ||= join(" ", "- Create", ($self->{tag} ? "tag" : "branch"), $branch_name);
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
