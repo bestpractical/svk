@@ -64,7 +64,7 @@ use constant narg => undef;
 my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff info setup online offline);
 
 sub options {
-    ('l|list'           => 'list',
+    ('l|list|ls'        => 'list',
      'C|check-only'     => 'check_only',
      'P|patch=s'        => 'patch',
      'all'              => 'all',

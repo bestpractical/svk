@@ -131,10 +131,9 @@ sub create_from_prop {
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
     my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
-    my $prop_path = '/';
+    my $prop_path = '';
     my $proj;
 
-    return unless $pathobj->path ne '/' or $pname;
     foreach my $m_path (@all_mirrors) {
 	if ($pathobj->path eq '/') { # in non-wc path
 	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
