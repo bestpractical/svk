@@ -534,7 +534,6 @@ sub track_rename {
 	    my $dstkey = $self->{dst}->universal->ukey;
 	    my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
 
-	    use Data::Dumper;
 	    if ($srcinfo->{$dstkey}) {
 		$base = $srcinfo->{$dstkey}->local($self->{src}->depot);
 	    }
