@@ -341,6 +341,14 @@ sub branch_path {
     return $branch_path;
 }
 
+sub tag_name {
+    my ($self, $bpath) = @_;
+    return 'trunk' if (dir($self->trunk)->subsumes($bpath));
+    my $tag_location = $self->tag_location;
+    $bpath =~ s{^\Q$tag_location\E/}{};
+    return $bpath;
+}
+
 sub tag_path {
     my ($self, $tname) = @_;
     my $tag_path = ($tname ne 'trunk' ?  $self->tag_location . "/$tname" : $self->trunk);

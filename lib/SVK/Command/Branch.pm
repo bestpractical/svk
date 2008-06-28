@@ -70,6 +70,7 @@ sub options {
      'all'              => 'all',
      'export'           => 'export',
      'from=s'           => 'from',
+     'from-tag=s'       => 'fromtag',
      'local'            => 'local',
      'project=s'        => 'project',
      'switch-to'        => 'switch',
@@ -270,9 +271,18 @@ sub run {
 	);
 	return;
     }
+    if ($self->{from} and $self->{fromtag}) {
+	$logger->info(
+	    loc("You can not specify both --from and --fromtag")
+	);
+	return;
+    }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
-    my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
+    delete $self->{fromtag} if $self->{fromtag} and $self->{fromtag} eq 'trunk';
+    my $src_path = $self->{fromtag} ?
+	$proj->tag_path($self->{fromtag}) :
+	$proj->branch_path($self->{from} ? $self->{from} : 'trunk');
     my $newbranch_path = $self->dst_path($proj, $branch_name);
 
     my $src = $self->arg_uri_maybe($src_path, 'New mirror site not allowed here');
@@ -292,7 +302,8 @@ sub run {
         $self->{tag} ? "tag" : "branch",
 	    $branch_name,
 	    $self->{local} ? ' (in local)' : '',
-	    $self->{from} ? " (from $self->{from})" : '',
+	    $self->{fromtag} ? " (from tag $self->{fromtag})" :
+		$self->{from} ? " (from branch $self->{from})" : '',
 	  )
 	);
 	# call SVK::Command::Switch here if --switch-to
@@ -951,7 +962,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [DEPOTPATH]
 
  branch --list [--all]
- branch --create BRANCH [--tag] [--local] [--switch-to] [DEPOTPATH]
+ branch --create BRANCH [--tag] [--local] [--switch-to] [--from|--from-tag BRANCH|TAG] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --checkout BRANCH [PATH] [DEPOTPATH]

@@ -36,7 +36,7 @@ is_output ($svk, 'branch',
      "Syncing $uri",
      'Retrieving log information from 7 to 7',
      'Committed revision 8 from revision 7.',
-     "Project branch created: feature/foobar (from feature/foo)"]);
+     "Project branch created: feature/foobar (from branch feature/foo)"]);
 
 is_output ($svk, 'info',['//mirror/MyProject/branches/feature/foobar'],
     ["Depot Path: //mirror/MyProject/branches/feature/foobar",
