@@ -703,7 +703,9 @@ sub run {
 
     my $local_root = $self->arg_depotpath('/'.$target->depot->depotname.'/');
     my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
-    my $source_root = $target->is_mirrored->_backend->source_root;
+    my $m = $target->is_mirrored;
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    my $source_root = $m->_backend->source_root;
     my $url = $target->is_mirrored->url;
 
     for my $path ($target->depot->mirror->entries) {
