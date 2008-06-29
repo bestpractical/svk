@@ -808,7 +808,7 @@ sub run {
 	    "svk:project:$project_name:path-trunk" => $trunk_path,
 	    "svk:project:$project_name:path-branches" => $branch_path,
 	    "svk:project:$project_name:path-tags" => $tag_path);
-	if ($ret) { # we have problem to write to remote
+	if ($ret or $@) { # we have problem to write to remote
 	    if ($source_root ne $url) {
 		$logger->info( loc("Can't write project props to remote root. Save in local instead."));
 	    } else {
@@ -819,7 +819,7 @@ sub run {
 	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
 	    $self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
 	}
-	$proj = SVK::Project->create_from_prop($target);
+	$proj = SVK::Project->create_from_prop($target,$project_name);
 	# XXX: what if it still failed here? How to rollback the prop commits?
 	if (!$proj) {
 	    $logger->info( loc("Project setup failed.\n"));
