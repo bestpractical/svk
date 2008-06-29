@@ -188,10 +188,8 @@ sub run {
             # XXX: switch to a default notify object that takes care
             # of quiet and gui variants.
             my $progress = SVK::Notify->new->progress(
-                {
                     min => 0,
                     max => 1024,
-                }
             );
             $ua->get(
                 $hint,
