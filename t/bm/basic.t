@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 13;
+plan tests => 16;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -67,3 +67,11 @@ is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
 is_output($svk, 'br', ['-l', '--all', '//mirror/MyProject'],
           ['Foo', 'feature/foo', 'feature/foobar (in local)']);
 
+is_output_like ($svk, 'branch', ['--create', 'tagA', '--tag'],
+    qr'Project tag created: tagA');
+
+is_output($svk, 'br', ['-l', '--all', '//mirror/MyProject'],
+          ['Foo', 'feature/foo', 'tagA (tags)', 'feature/foobar (in local)']);
+
+is_output($svk, 'br', ['-l', '--tag', '//mirror/MyProject'],
+          ['tagA']);

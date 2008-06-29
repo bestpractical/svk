@@ -131,10 +131,9 @@ sub create_from_prop {
     my $fs              = $pathobj->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
     my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
-    my $prop_path = '/';
+    my $prop_path = '';
     my $proj;
 
-    return unless $pathobj->path ne '/' or $pname;
     foreach my $m_path (@all_mirrors) {
 	if ($pathobj->path eq '/') { # in non-wc path
 	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
@@ -206,7 +205,7 @@ sub _create_from_prop {
 		    branch_location => $props{'path-branches'},
 		    tag_location    => $props{'path-tags'},
 		    local_root      => "/local/${project_name}",
-		}) if $pathobj->path =~ m/^$props{$key}/ or $props{$key} =~ m/^$pathobj->{path}/
+		}) if $pathobj->path =~ m/^$props{$key}/ or $props{$key} =~ m/^$pathobj->{'path'}/
 		      or $pathobj->path =~ m{^/local/$project_name};
 	}
     }
@@ -340,6 +339,14 @@ sub branch_path {
         );
     $branch_path = '/'.dir($self->depot->depotname)->subdir($branch_path);
     return $branch_path;
+}
+
+sub tag_name {
+    my ($self, $bpath) = @_;
+    return 'trunk' if (dir($self->trunk)->subsumes($bpath));
+    my $tag_location = $self->tag_location;
+    $bpath =~ s{^\Q$tag_location\E/}{};
+    return $bpath;
 }
 
 sub tag_path {

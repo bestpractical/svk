@@ -858,7 +858,7 @@ sub brief_usage {
     local $/=undef;
     my $buf = <$podfh>;
     if($buf =~ /^=head1\s+NAME\s*SVK::Command::(\w+ - .+)$/m) {
-	$logger->info( "   ",loc(lcfirst($1)),"\n");
+	$logger->info( "   ",loc(lcfirst($1)));
     }
     close $podfh;
 }

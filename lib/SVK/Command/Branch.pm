@@ -64,11 +64,13 @@ use constant narg => undef;
 my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff info setup online offline);
 
 sub options {
-    ('l|list'           => 'list',
+    ('l|list|ls'        => 'list',
      'C|check-only'     => 'check_only',
      'P|patch=s'        => 'patch',
      'all'              => 'all',
+     'export'           => 'export',
      'from=s'           => 'from',
+     'from-tag=s'       => 'fromtag',
      'local'            => 'local',
      'project=s'        => 'project',
      'switch-to'        => 'switch',
@@ -224,7 +226,7 @@ sub run {
 	$logger->info (sprintf $fmt, $_, ' (in local)') for @{$branches};
 
     } else {
-	my $branches = $proj->branches ($self->{local});
+	my $branches = $self->{tag} ? $proj->tags() : $proj->branches ($self->{local});
 
 	my $fmt = "%s\n"; # here to change layout
 	$logger->info (sprintf $fmt, $_) for @{$branches};
@@ -269,9 +271,18 @@ sub run {
 	);
 	return;
     }
+    if ($self->{from} and $self->{fromtag}) {
+	$logger->info(
+	    loc("You can not specify both --from and --fromtag")
+	);
+	return;
+    }
 
     delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
-    my $src_path = $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
+    delete $self->{fromtag} if $self->{fromtag} and $self->{fromtag} eq 'trunk';
+    my $src_path = $self->{fromtag} ?
+	$proj->tag_path($self->{fromtag}) :
+	$proj->branch_path($self->{from} ? $self->{from} : 'trunk');
     my $newbranch_path = $self->dst_path($proj, $branch_name);
 
     my $src = $self->arg_uri_maybe($src_path, 'New mirror site not allowed here');
@@ -283,7 +294,7 @@ sub run {
 	    $branch_name, $self->{local} ? '(in local)' : '');
 
     $self->{parent} = 1;
-    $self->{message} ||= "- Create branch $branch_name";
+    $self->{message} ||= join(" ", "- Create", ($self->{tag} ? "tag" : "branch"), $branch_name);
     my $ret = $self->SUPER::run($src, $dst);
 
     if (!$ret) {
@@ -291,7 +302,8 @@ sub run {
         $self->{tag} ? "tag" : "branch",
 	    $branch_name,
 	    $self->{local} ? ' (in local)' : '',
-	    $self->{from} ? " (from $self->{from})" : '',
+	    $self->{fromtag} ? " (from tag $self->{fromtag})" :
+		$self->{from} ? " (from branch $self->{from})" : '',
 	  )
 	);
 	# call SVK::Command::Switch here if --switch-to
@@ -581,7 +593,7 @@ sub parse_arg {
 	return ;
     }
 
-    my $newtarget_path = $proj->branch_path($branch_name, $self->{local});
+    my $newtarget_path = $self->dst_path($proj, $branch_name);
     unshift @arg, $newtarget_path, $checkout_path;
     return $self->SUPER::parse_arg(@arg);
 }
@@ -702,7 +714,9 @@ sub run {
 
     my $local_root = $self->arg_depotpath('/'.$target->depot->depotname.'/');
     my ($trunk_path, $branch_path, $tag_path, $project_name, $preceding_path);
-    my $source_root = $target->is_mirrored->_backend->source_root;
+    my $m = $target->is_mirrored;
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    my $source_root = $m->_backend->source_root;
     my $url = $target->is_mirrored->url;
 
     for my $path ($target->depot->mirror->entries) {
@@ -794,7 +808,7 @@ sub run {
 	    "svk:project:$project_name:path-trunk" => $trunk_path,
 	    "svk:project:$project_name:path-branches" => $branch_path,
 	    "svk:project:$project_name:path-tags" => $tag_path);
-	if ($ret) { # we have problem to write to remote
+	if ($ret or $@) { # we have problem to write to remote
 	    if ($source_root ne $url) {
 		$logger->info( loc("Can't write project props to remote root. Save in local instead."));
 	    } else {
@@ -805,7 +819,7 @@ sub run {
 	    $self->do_propset("svk:project:$project_name:path-tags",$tag_path, $local_root);
 	    $self->do_propset("svk:project:$project_name:root",$preceding_path, $local_root);
 	}
-	$proj = SVK::Project->create_from_prop($target);
+	$proj = SVK::Project->create_from_prop($target,$project_name);
 	# XXX: what if it still failed here? How to rollback the prop commits?
 	if (!$proj) {
 	    $logger->info( loc("Project setup failed.\n"));
@@ -948,7 +962,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --create BRANCH [DEPOTPATH]
 
  branch --list [--all]
- branch --create BRANCH [--tag] [--local] [--switch-to] [DEPOTPATH]
+ branch --create BRANCH [--tag] [--local] [--switch-to] [--from|--from-tag BRANCH|TAG] [DEPOTPATH]
  branch --move BRANCH1 BRANCH2
  branch --merge BRANCH1 BRANCH2 ... TARGET
  branch --checkout BRANCH [PATH] [DEPOTPATH]
