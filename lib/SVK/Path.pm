@@ -128,6 +128,7 @@ sub report { Carp::cluck if defined $_[1]; $_[0]->depotpath }
 =head2 same_repos
 
 Returns true if all C<@other> targets are from the same repository
+as this one.
 
 =cut
 
