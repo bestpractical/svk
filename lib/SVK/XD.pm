@@ -615,6 +615,8 @@ sub create_path_object {
     if (defined (my $copath = delete $arg{copath_anchor})) {
 	require SVK::Path::Checkout;
 	my $report = delete $arg{report};
+        $arg{'revision'} = ($self->get_entry( $copath ))[0]->{'revision'}
+            unless defined $arg{'revision'};
 	return SVK::Path::Checkout->real_new
 	    ({ xd => $self,
 	       report => $report,
