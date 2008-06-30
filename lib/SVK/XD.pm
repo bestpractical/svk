@@ -622,13 +622,14 @@ sub create_path_object {
 	       source => $self->create_path_object(%arg) });
     }
 
-    my $path;
     unless ($arg{depot}) {
         my $depotname = delete $arg{depotname};
         my $repospath = delete $arg{repospath};
         my $repos     = delete $arg{repos};
         $arg{depot} = SVK::Depot->new({ depotname => $depotname, repos => $repos, repospath => $repospath });
     }
+
+    my $path;
     if (defined (my $view = delete $arg{view})) {
 	require SVK::Path::View;
         $path = SVK::Path::View->real_new
