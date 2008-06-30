@@ -606,6 +606,29 @@ sub target_from_copath_maybe {
     return $ret;
 }
 
+=head2 create_path_object
+
+Creates and returns a new path object. It can be either L<SVK::Path::Checkout>,
+L<SVK::Path::View> or L<SVK::Path>.
+
+Takes a hash with arguments.
+
+If "copath_anchor" argument is defined then L<SVK::Path::Checkout> is created
+and other arguments are used to build its L<SVK::Path::Checkout/source>
+using this method. If "revision" argument is not defined then the one checkout
+path is based on is used.
+
+If "view" argument is defined then L<SVK::Path::View> is created
+and other arguments are used to build its L<SVK::Path::Checkout/source> using
+this method.
+
+Otherwise L<SVK::Path> is created.
+
+Depot can be passed as L<SVK::Depot> object in "depot" argument or using
+"depotname", "repospath" and "repos" arguments. Object takes precendence.
+
+=cut
+
 sub create_path_object {
     my ($self, %arg) = @_;
     if (my $depotpath = delete $arg{depotpath}) {
