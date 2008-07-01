@@ -100,7 +100,7 @@ meta data needs to be updated in update mode.
 
 =item xd
 
-XD object.
+L<SVK::XD> object.
 
 =item oldroot
 
@@ -120,7 +120,7 @@ A callback to translate paths in editor calls to path in depot.
 
 =item ignore_keywords
 
-Don't do keyword translations.
+Don't do keyword translations (svn:keywords property).
 
 =back
 
