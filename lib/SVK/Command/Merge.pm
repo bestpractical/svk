@@ -244,7 +244,7 @@ sub run {
 	delete $self->{save_message};
     }
 
-    if ( $self->{log} && $dst->isa('SVK::Path::Checkout') ) {
+    if ( $self->{log} && !$self->{check_only} && $dst->isa('SVK::Path::Checkout') ) {
         my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
         print $fh $merge->log(1);
         $logger->warn(loc ("Log message saved in %1.", $file));
