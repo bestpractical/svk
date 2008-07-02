@@ -700,7 +700,7 @@ sub open_directory {
     my $baton = $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);
-    $self->set_ticket->($baton, 'dir', $pool)
+    $self->set_ticket($baton, 'dir', $pool)
 	if $path eq $self->{target} && $self->ticket;
 
     return $path;
