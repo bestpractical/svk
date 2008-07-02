@@ -154,8 +154,8 @@ status.
 
 =item cb_merged
 
-Called right before closing the top directory with storage editor,
-root baton, and pool.
+Called right before closing the target with changes flag, node type and
+ticket.
 
 =item cb_closed
 
