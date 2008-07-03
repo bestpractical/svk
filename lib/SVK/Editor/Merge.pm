@@ -954,11 +954,7 @@ sub _merge_prop_content {
     $self->prepare_fh ($fh);
 
     my ($conflict, $mfh) = $self->_merge_text_change ($fh, loc ("Property %1 of %2", $propname, $path), $pool);
-    if (!$conflict) {
-	local $/;
-	$mfh = <$mfh>;
-    }
-    return ($conflict ? 'C' : 'G', $mfh);
+    return ($conflict ? 'C' : 'G', do { local $/; <$mfh> });
 }
 
 sub _merge_prop_change {
@@ -991,15 +987,15 @@ sub _merge_prop_change {
 
     return if $skipped;
 
-    if ($status eq 'C') {
-	$self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
-	++$self->{conflicts};
-    }
-    elsif ($status eq 'g') {
+    if ($status eq 'g') {
 	$self->{cb_prop_merged}->($path, $_[0])
 	    if $self->{cb_prop_merged};
     }
     else {
+        if ($status eq 'C') {
+            $self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
+            ++$self->{conflicts};
+        }
 	$_[1] = $merged;
     }
     $self->{notify}->prop_status ($path, $status);
