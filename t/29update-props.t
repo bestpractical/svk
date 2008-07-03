@@ -84,23 +84,21 @@ flush_co();
         " C  t/checkout/smerge/me",
     ] );
     }
-    TODO: {
-    local $TODO = "we don't have interactive prop resolver";
-    # don't remember exact markup for conflicts but should be something like:
+
+    # XXX: this looks wierd a littl without line endings
     is_output($svk, 'di', [$copath], [
         "",
         "Property changes on: $copath/me",
         "___________________________________________________________________",
         "Name: prop",
-        " +<<< NEW",
-        " +another-value",
-        " +=== BASE",
-        " +=== OLD",
-        " +value",
-        " +>>>",
+        " -value",
+        qr" \+>>>> YOUR VERSION Property prop of me \(/trunk\) \d+",
+        qr" \+another-value==== ORIGINAL VERSION Property prop of me \d+",
+        qr" \+==== THEIR VERSION Property prop of me \(/trunk\) \d+",
+        qr" \+value<<<< \d+",
+        " +",
         "",
     ] );
-    }
 }
 
 # flush to required state: revert, update to revision before propset on //trunk
