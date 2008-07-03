@@ -10,6 +10,9 @@ use SVK::Test;
 my ($xd, $svk) = build_test();
 our $output;
 my ($copath, $corpath) = get_copath ('smerge');
+my (undef, undef, $repos) = $xd->find_repos ('//', 1);
+my $uuid = $repos->fs->get_uuid;
+
 $svk->mkdir ('-m', 'trunk', '//trunk');
 my $tree = create_basic_tree ($xd, '//trunk');
 $svk->cp ('-m', 'branch', '//trunk', '//local');
@@ -41,8 +44,9 @@ is_output($svk, 'diff', [$copath],
     'Property changes on: t/checkout/smerge',
     '___________________________________________________________________',
     'Name: svk:merge',
-    ' -006e7783-1232-49bc-9c32-34e58aa7cb2d:/trunk:3',
-    ' +006e7783-1232-49bc-9c32-34e58aa7cb2d:/trunk:6',
+    "  $uuid:/local-another:7",
+    " -$uuid:/trunk:3",
+    " +$uuid:/trunk:6",
+    ""
     ]
 );
-
