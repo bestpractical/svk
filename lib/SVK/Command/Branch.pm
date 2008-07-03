@@ -61,7 +61,7 @@ use SVK::Logger;
 our $fromProp;
 use constant narg => undef;
 
-my @SUBCOMMANDS = qw(merge move push remove|rm|del|delete checkout|co create diff info setup online offline);
+my @SUBCOMMANDS = qw(merge move push pull remove|rm|del|delete checkout|co create diff info setup online offline);
 
 sub options {
     ('l|list|ls'        => 'list',
@@ -556,6 +556,36 @@ sub parse_arg {
     $self->SUPER::parse_arg (@arg);
 }
 
+package SVK::Command::Branch::pull;
+use base qw( SVK::Command::Pull SVK::Command::Branch);
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    # always try to eval current wc
+    my ($proj,$target, $msg) = $self->locate_project('');
+    if (!$proj) {
+	$logger->warn( loc($msg) );
+	return ;
+    }
+    $target = $target->source if $target->isa('SVK::Path::Checkout');
+    $self->{all} = ''; # will we need --all?
+    if (@arg) {
+	my $src_bname = pop (@arg);
+	my $src = $self->arg_depotpath($proj->branch_path($src_bname));
+	if ($SVN::Node::dir != $target->root->check_path($src->path)) {
+	    $src = $self->arg_depotpath($proj->tag_path($src_bname));
+	    die loc("No such branch/tag exists: %1\n", $src->path)
+		if ($SVN::Node::dir != $target->root->check_path($src->path)) ;
+	}
+	push @arg, $src->depotpath;
+    }
+
+    $self->SUPER::parse_arg (@arg);
+}
+
 package SVK::Command::Branch::checkout;
 use base qw( SVK::Command::Checkout SVK::Command::Branch );
 use SVK::I18N;
@@ -969,6 +999,7 @@ SVK::Command::Branch - Manage a project with its branches
  branch --delete BRANCH1 BRANCH2 ...
  branch --setup DEPOTPATH
  branch --push [BRANCH]
+ branch --pull [BRANCH]
 
 =head1 OPTIONS
 
@@ -984,6 +1015,7 @@ SVK::Command::Branch - Manage a project with its branches
                           etc, to TARGET
  --project          : specify the target project name 
  --push             : move changes to wherever this branch was copied from
+ --pull             : sync changes from wherever this branch was copied from
  --setup            : setup a project for a specified DEPOTPATH
  -C [--check-only]  : try a create, move or merge operation but make no     
                       changes
