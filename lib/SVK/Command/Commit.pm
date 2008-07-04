@@ -324,8 +324,11 @@ sub get_committable {
             my ($path, $status) = @_;
             to_native ($path, 'path', $encoder);
             my $copath = $target->copath ($path);
-            push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
-                $copath];
+            push @$targets, [
+                (($status->[0]||'') eq 'C' || ($status->[1]||'') eq 'C')? 'C'
+                    : ($status->[0] || ($status->[1]? 'P' : '')),
+                $copath
+            ];
             no warnings 'uninitialized';
             push @targets, sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath);
         }
