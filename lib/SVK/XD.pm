@@ -1291,7 +1291,7 @@ sub _delta_file {
 
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
 	++$modified;
-	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton});
+	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton}, $cinfo->{'.conflict'});
     }
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
@@ -1389,7 +1389,7 @@ sub _delta_dir {
     # don't use depth when we are still traversing through targets
     my $descend = defined $targets || !(defined $arg{depth} && $arg{depth} == 0);
     # XXX: the top level entry is undefined, which should be fixed.
-    $arg{cb_conflict}->($arg{editor}, defined $arg{entry} ? $arg{entry} : '', $arg{baton})
+    $arg{cb_conflict}->($arg{editor}, defined $arg{entry} ? $arg{entry} : '', $arg{baton}, $cinfo->{'.conflict'})
 	if $thisdir && $arg{cb_conflict} && $cinfo->{'.conflict'};
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
@@ -1537,7 +1537,7 @@ sub _delta_dir {
 	    }
 	}
 	if ($ccinfo->{'.conflict'}) {
-	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton})
+	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton}, $cinfo->{'.conflict'})
 		if $arg{cb_conflict};
 	}
 	unless ($add || $ccinfo->{'.conflict'}) {
