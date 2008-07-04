@@ -145,7 +145,9 @@ Check the revision of the given path.
 
 =item cb_conflict
 
-Called when a conflict is detected.
+When a conflict is detected called with path and conflict
+type as argument. At this point type can be either 'node' or
+'prop'.
 
 =item cb_prop_merged
 
@@ -380,7 +382,7 @@ sub ensure_close {
 
 sub node_conflict {
     my ($self, $path) = @_;
-    $self->{cb_conflict}->($path) if $self->{cb_conflict};
+    $self->{cb_conflict}->($path, 'node') if $self->{cb_conflict};
     ++$self->{conflicts};
     $self->{notify}->node_status ($path, 'C');
 }
@@ -993,7 +995,7 @@ sub _merge_prop_change {
     }
     else {
         if ($status eq 'C') {
-            $self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
+            $self->{cb_conflict}->($path, 'prop') if $self->{cb_conflict};
             ++$self->{conflicts};
         }
 	$_[1] = $merged;
