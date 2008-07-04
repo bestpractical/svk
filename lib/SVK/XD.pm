@@ -1643,7 +1643,7 @@ sub do_resolved {
     my ($self, %arg) = @_;
 
     if ($arg{recursive}) {
-	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => 1})) {
+	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => qr/.*/})) {
 	    $self->resolved_entry ($_);
 	}
     }
