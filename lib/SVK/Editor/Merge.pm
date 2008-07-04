@@ -967,7 +967,7 @@ sub _merge_prop_change {
     if ($self->{added}{$path} or
 	(!length ($path) and $self->{base_root}->is_revision_root
 	 and $self->{base_root}->revision_root_revision == 0)) {
-	$self->{notify}->prop_status ($path, 'U');
+	$self->{notify}->prop_status ($path, 'U') unless $self->{added}{$path};
 	return 1;
     }
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
