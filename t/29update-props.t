@@ -78,12 +78,9 @@ flush_co();
         " C  t/checkout/smerge/me",
         "1 conflict found.",
     ] );
-    TODO: {
-    local $TODO = "prop conflict should be stated as prop conflict";
     is_output($svk, 'st', [$copath], [
         " C  t/checkout/smerge/me",
     ] );
-    }
 
     # XXX: this looks wierd a littl without line endings
     is_output($svk, 'di', [$copath], [
