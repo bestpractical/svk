@@ -197,8 +197,11 @@ sub absent_directory {
 }
 
 sub conflict {
-    my ($self, $path) = @_;
-    $self->notify->node_status ($path, 'C');
+    my ($self, $path, $baton, $type) = @_;
+    # backward compatibility
+    $type = 'node' if !$type || $type eq '1';
+    $self->notify->$_ ($path, 'C')
+        foreach map $_ ."_status", split /,/, $type;
 }
 
 sub obstruct {
