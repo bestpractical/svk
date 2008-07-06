@@ -877,7 +877,7 @@ sub do_propset {
     my ($entry, $schedule) = $self->get_entry($target->copath);
     $entry->{'.newprop'} ||= {};
 
-    unless ( $schedule eq 'add' ) {
+    if ( $schedule ne 'add' && !$arg{'adjust_only'} ) {
         my $xdroot = $target->create_xd_root;
         my ( $source_path, $source_root )
             = $self->_copy_source( $entry, $target->copath, $xdroot );
@@ -889,16 +889,29 @@ sub do_propset {
 
     #XXX: support working on multiple paths and recursive
     die loc("%1 is already scheduled for delete.\n", $target->report)
-	if $schedule eq 'delete';
-    my %values = %{$entry->{'.newprop'}}
-	if exists $entry->{'.schedule'};
+	if $schedule eq 'delete' && !$arg{'adjust_only'};
+    my %values;
+    %values = %{$entry->{'.newprop'}} if exists $entry->{'.schedule'};
     my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
+
+    if ( $arg{'adjust_only'} ) {
+        return unless defined $values{ $arg{propname} };
+
+        if ( defined $arg{propvalue} && $values{$arg{propname}} eq $pvalue ) {
+            delete $values{ $arg{propname} };
+        }
+        elsif ( !defined $arg{propvalue} && (!defined $values{$arg{propname}} || (ref $values{$arg{propname}} && !defined $values{$arg{propname}}) )) {
+            delete $values{ $arg{propname} };
+        } else {
+            $values{ $arg{propname} } = $pvalue;
+        }
+    } else {
+        $values{ $arg{propname} } = $pvalue;
+    }
 
     $self->{checkout}->store ($target->copath,
 			      { '.schedule' => $schedule || 'prop',
-				'.newprop' => {%values,
-					    $arg{propname} => $pvalue
-					      }});
+				'.newprop' => \%values, });
     print " M  ".$target->report."\n" unless $arg{quiet};
 
     $self->fix_permission($target->copath, $arg{propvalue})
