@@ -296,25 +296,25 @@ sub change_file_prop {
     $self->{props}{$path}{$name} = $value
 	if $self->{added}{$path};
     return if $self->{check_only};
+
     my $copath = $path;
     $self->{get_copath}($copath);
-    if ($self->{update}) {
-	$self->{exe}{$path} = $value
-	    if $name eq 'svn:executable';
-    }
-    else {
-        $self->{get_path}($path);
-        $self->{xd}->do_propset(
-            $self->{xd}->create_path_object(
-                copath_anchor => $copath,
-                path          => $path,
-                repos         => $self->{repos}
-            ),
-            quiet     => 1,
-            propname  => $name,
-            propvalue => $value,
-        );
-    }
+
+    $self->{exe}{$path} = $value
+        if $name eq 'svn:executable' && $self->{update};
+
+    $self->{get_path}($path);
+    $self->{xd}->do_propset(
+        $self->{xd}->create_path_object(
+            copath_anchor => $copath,
+            path          => $path,
+            repos         => $self->{repos}
+        ),
+        quiet     => 1,
+        propname  => $name,
+        propvalue => $value,
+        adjust_only => $self->{update},
+    );
 }
 
 sub change_dir_prop {
