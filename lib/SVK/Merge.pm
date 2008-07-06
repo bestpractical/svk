@@ -617,7 +617,7 @@ sub run {
                 $storage->$func( $baton, 'svk:merge', undef );
                 return;
             }
-            $self->print_new_ticket( $dstinfo, $ticket ) if !$self->{quiet} && !$self->{ticket_quiet};
+            $self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
 	};
     } else {
         $ticket_options{prop_resolver} = {
