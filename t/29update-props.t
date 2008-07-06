@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 21;
+use Test::More tests => 42;
 use File::Path;
 use Cwd;
 use SVK::Test;
@@ -96,11 +96,100 @@ flush_co();
         " +",
         "",
     ] );
+    # TODO: test resolved command, test ps command
+}
+
+# TODO: test props resolver on update
+
+
+### The same tests on a dir instead of file
+
+$svk->ps ('-m', 'set prop', 'prop', 'value', '//trunk/A');
+flush_co_dir();
+
+# the same prop on a dir in outdated checkout
+{
+    $svk->ps ('prop', 'value', "$copath/A");
+    is_output($svk, 'up', ['-C', $copath], [
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " g  t/checkout/smerge/A",
+    ] );
+    is_output($svk, 'up', [$copath], [
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " g  t/checkout/smerge/A",
+    ] );
+    is_output($svk, 'st', [$copath], [
+    ] );
+    is_output($svk, 'di', [$copath], [
+    ] );
+}
+
+flush_co_dir();
+
+# different prop in outdated checkout
+{
+    $svk->ps ('another-prop', 'value', "$copath/A");
+    is_output($svk, 'up', ['-C', $copath], [
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " U  t/checkout/smerge/A",
+    ] );
+    is_output($svk, 'up', [$copath], [
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " U  t/checkout/smerge/A",
+    ] );
+    is_output($svk, 'st', [$copath], [
+        " M  t/checkout/smerge/A",
+    ] );
+    is_output($svk, 'di', [$copath], [
+        "",
+        "Property changes on: $copath/A",
+        "___________________________________________________________________",
+        "Name: another-prop",
+        " +value",
+        "",
+    ] );
+}
+
+flush_co_dir();
+
+# conflict on update
+{
+    $svk->ps ('prop', 'another-value', "$copath/A");
+    is_output($svk, 'up', ['-C', $copath], [
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " C  t/checkout/smerge/A",
+        "1 conflict found.",
+    ] );
+    is_output($svk, 'up', [$copath], [
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " C  t/checkout/smerge/A",
+        "1 conflict found.",
+    ] );
+    is_output($svk, 'st', [$copath], [
+        " C  t/checkout/smerge/A",
+    ] );
+
+    # XXX: this looks wierd a littl without line endings
+    is_output($svk, 'di', [$copath], [
+        "",
+        "Property changes on: $copath/A",
+        "___________________________________________________________________",
+        "Name: prop",
+        " -value",
+        qr" \+>>>> YOUR VERSION Property prop of A \(/trunk\) \d+",
+        qr" \+another-value==== ORIGINAL VERSION Property prop of A \d+",
+        qr" \+==== THEIR VERSION Property prop of A \(/trunk\) \d+",
+        qr" \+value<<<< \d+",
+        " +",
+        "",
+    ] );
+    # TODO: test resolved command, test ps command
 }
 
 # flush to required state: revert, update to revision before propset on //trunk
 sub flush_co {
     $svk->revert('-R', $copath);
+    $svk->up($copath);
     $svk->up('-r3', $copath);
     is_output($svk, 'up', ['-C', $copath], [
         #XXX, TODO: why it's corpath instead copath?
@@ -112,3 +201,19 @@ sub flush_co {
     is_output($svk, 'di', [$copath], [
     ] );
 }
+
+sub flush_co_dir {
+    $svk->revert('-R', $copath);
+    $svk->up($copath);
+    $svk->up('-r4', $copath);
+    is_output($svk, 'up', ['-C', $copath], [
+        #XXX, TODO: why it's corpath instead copath?
+        "Syncing //trunk(/trunk) in $corpath to 5.",
+        " U  t/checkout/smerge/A",
+    ] );
+    is_output($svk, 'st', [$copath], [
+    ] );
+    is_output($svk, 'di', [$copath], [
+    ] );
+}
+
