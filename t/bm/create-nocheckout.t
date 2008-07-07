@@ -40,6 +40,7 @@ is_output ($svk, 'branch',
 
 is_output ($svk, 'info',['//mirror/MyProject/branches/feature/foobar'],
     ["Depot Path: //mirror/MyProject/branches/feature/foobar",
+     "Project name: MyProject",
      "Revision: 8", "Last Changed Rev.: 8",
      qr/Last Changed Date: \d{4}-\d{2}-\d{2}/,
      "Mirrored From: $uri, Rev. 7",

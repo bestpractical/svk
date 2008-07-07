@@ -357,7 +357,7 @@ sub tag_path {
 }
 
 sub info {
-    my ($self, $target) = @_;
+    my ($self, $target, $verbose) = @_;
 
     $logger->info ( loc("Project name: %1\n", $self->name));
     if ($target->isa('SVK::Path::Checkout')) {
@@ -376,6 +376,7 @@ sub info {
 
 	if ($where) {
 	    $logger->info ( loc("Branch: %1 (%2)\n", $bname, $where ));
+	    return unless $verbose;
 	    $logger->info ( loc("Repository path: %1\n", $target->depotpath ));
 	    if ($where ne 'trunk') { # project trunk should not have Copied info
 		if (my $copy_ancestor = ($target->copy_ancestors)[0]) {

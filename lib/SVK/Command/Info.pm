@@ -59,6 +59,7 @@ use SVK::Merge;
 use SVK::I18N;
 use YAML::Syck;
 use SVK::Logger;
+use SVK::Project;
 use autouse 'SVK::Util' => qw( reformat_svn_date );
 
 # XXX: provide -r which walks peg to the specified revision based on
@@ -94,9 +95,13 @@ sub _do_info {
 
     my ($m, $mpath) = $target->is_mirrored;
 
+    my ($proj) = SVK::Project->create_from_path(
+	         $target->depot, $target->path );
+
     $logger->info( loc("Checkout Path: %1\n",$target->copath))
 	if $target->isa('SVK::Path::Checkout');
     $logger->info( loc("Depot Path: %1\n", $target->depotpath));
+    $proj->info($target) if $proj;
     $logger->info( loc("Revision: %1\n", $target->revision));
     if (defined( my $lastchanged = $target->root->node_created_rev( $target->path ))) {
         $logger->info( loc( "Last Changed Rev.: %1\n", $lastchanged ));

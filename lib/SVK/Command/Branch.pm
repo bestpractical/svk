@@ -99,7 +99,7 @@ sub run {
     my ( $self, $proj, $target, @options ) = @_;
 
     if ($proj) {
-        $proj->info($target);
+        $proj->info($target, 1);
     } else {
         $target->root->check_path($target->path)
             or die loc("Path %1 does not exist.\n", $target->depotpath);
