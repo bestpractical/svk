@@ -72,6 +72,7 @@ sub options {
      'from=s'           => 'from',
      'from-tag=s'       => 'fromtag',
      'local'            => 'local',
+     'lump'             => 'lump',
      'project=s'        => 'project',
      'switch-to'        => 'switch',
      'tag'              => "tag",
@@ -542,15 +543,25 @@ sub parse_arg {
     }
     $target = $target->source if $target->isa('SVK::Path::Checkout');
     if (@arg) {
-	my $src_bname = pop (@arg);
-	my $src = $self->arg_depotpath($proj->branch_path($src_bname));
-	if ($SVN::Node::dir != $target->root->check_path($src->path)) {
-	    $src = $self->arg_depotpath($proj->tag_path($src_bname));
-	    die loc("No such branch/tag exists: %1\n", $src->path)
-		if ($SVN::Node::dir != $target->root->check_path($src->path)) ;
+	my $dst_bname = pop (@arg);
+	my $dst = $self->arg_depotpath($proj->branch_path($dst_bname,$self->{local}));
+	if ($SVN::Node::dir != $target->root->check_path($dst->path)) {
+	    $dst = $self->arg_depotpath($proj->tag_path($dst_bname));
+	    die loc("No such branch/tag exists: %1\n", $dst->path)
+		if ($SVN::Node::dir != $target->root->check_path($dst->path)) ;
 	}
+	push @arg, $dst->depotpath;
+    }
+    if ($self->{from} or $self->{fromtag}) {
+	delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
+	delete $self->{fromtag} if $self->{fromtag} and $self->{fromtag} eq 'trunk';
+	my $src_path = $self->{fromtag} ?
+	    $proj->tag_path($self->{fromtag}) :
+	    $proj->branch_path($self->{from} ? $self->{from} : 'trunk');
+	$self->{from_path} = $src_path;
+    } else {
+	delete $self->{from};
 	$self->{from}++;
-	$self->{from_path} = $src->depotpath;
     }
 
     $self->SUPER::parse_arg (@arg);
