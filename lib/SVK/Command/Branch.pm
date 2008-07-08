@@ -67,7 +67,7 @@ sub options {
     ('l|list|ls'        => 'list',
      'C|check-only'     => 'check_only',
      'P|patch=s'        => 'patch',
-     'all'              => 'all',
+     'a|all'            => 'all',
      'export'           => 'export',
      'from=s'           => 'from',
      'from-tag=s'       => 'fromtag',
@@ -585,7 +585,7 @@ sub parse_arg {
     $self->{all} = ''; # will we need --all?
     if (@arg) {
 	my $src_bname = pop (@arg);
-	my $src = $self->arg_depotpath($proj->branch_path($src_bname));
+	my $src = $self->arg_depotpath($proj->branch_path($src_bname,$self->{local}));
 	if ($SVN::Node::dir != $target->root->check_path($src->path)) {
 	    $src = $self->arg_depotpath($proj->tag_path($src_bname));
 	    die loc("No such branch/tag exists: %1\n", $src->path)
