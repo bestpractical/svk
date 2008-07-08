@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 7;
+use Test::More tests => 9;
 use SVK::Test;
 use File::Path;
 
@@ -50,3 +50,11 @@ chdir('../C');
 
 is_output_like ($svk, 'info',[],
     qr'Depot Path: //mirror/MyProject/trunk');
+
+is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject', $corpath.'/D'],
+    qr'Syncing \S+ in \S+D to \d.+');
+
+chdir('../D');
+
+is_output_like ($svk, 'info',[],
+    qr'Depot Path: //mirror/MyProject/branches/feature/foo');

@@ -598,8 +598,15 @@ sub parse_arg {
 
     my $branch_name = shift(@arg);
     my ($project_path, $checkout_path) = ('','');
+    my ($proj, $target, $msg);
     if (@arg and is_depotpath($arg[$#arg])) {
 	$project_path = pop(@arg);
+	my $ppath = eval {$self->arg_depotpath($project_path) };
+	if ($@) {
+	    push @arg, $project_path;
+	} else {
+	    ($proj,$target, $msg) = $self->locate_project($project_path);
+	}
     }
     $checkout_path = pop(@arg);
     $checkout_path = $branch_name unless $checkout_path;
@@ -614,7 +621,7 @@ sub parse_arg {
 	}
     }
 
-    my ($proj,$target, $msg) = $self->locate_project($project_path);
+    ($proj,$target, $msg) = $self->locate_project($project_path);
 
     if (!$proj) {
         $logger->info(
