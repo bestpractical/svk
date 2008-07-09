@@ -277,7 +277,7 @@ sub _find_project_path {
     if ($path) {
         ($mirror_path, $project_name) = # always assume the last entry the projectname
             $path =~ m{^(.*/)?(?:trunk|branches|tags)/(.+)$}; 
-        if ($project_name) {
+        if ($project_name and $path_obj->root->check_path($mirror_path) == $SVN::Node::dir) {
             ($trunk_path, $branch_path, $tag_path) = 
                 map { $mirror_path.$_.'/'.$project_name } ('trunk', 'branches', 'tags');
             my $result = $self->_check_project_path ($path_obj, $trunk_path, $branch_path, $tag_path);
@@ -298,6 +298,7 @@ sub _find_project_path {
 
 	($trunk_path, $branch_path, $tag_path) = 
 	    map { $mirror_path.$project_name."/".$_ } ('trunk', 'branches', 'tags');
+        return undef unless ($path_obj->root->check_path($mirror_path.$project_name) == $SVN::Node::dir);
 	my $result = $self->_check_project_path ($path_obj, $trunk_path, $branch_path, $tag_path);
 	# if not the last entry, then the mirror_path should contains
 	# trunk/branches/tags, otherwise no need to test
