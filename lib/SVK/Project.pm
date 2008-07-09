@@ -269,7 +269,7 @@ sub _find_project_path {
     if ($path_obj->_to_pclass("/local")->subsumes($current_path)) { # guess if in local branch
 	# should only be 1 entry
 	$current_path = ($path_obj->copy_ancestors)[0]->[0];
-	$path_obj = $path_obj->copied_from;
+	$path_obj = $path_obj->copied_from if $path_obj->copied_from;
     }
 
     # Finding inverse layout first
