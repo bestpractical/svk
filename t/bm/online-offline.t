@@ -114,9 +114,13 @@ is_output_like ($svk, 'br', [],
 
 $svk->br('--offline'); # offline the feature/foobar branch
 
+chdir ("C");
 TODO: {
 
     local $TODO = "test case for http://task.hm/FFAW";
-is_output_like ($svk, 'br', [],
-   qr|Copied From: feature/foobar@\d+|);
+is_output ($svk, 'br', [],
+    ["Project name: MyProject",
+     "Branch: release/abc (offline)",
+     "Repository path: //local/MyProject/release/abc/C",
+     'Copied From: feature/foobar@12']);
 }

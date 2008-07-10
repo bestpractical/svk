@@ -326,6 +326,9 @@ sub branch_name {
     return 'trunk' if (dir($self->trunk)->subsumes($bpath));
     my $branch_location = $is_local ? $self->local_root : $self->branch_location;
     $bpath =~ s{^\Q$branch_location\E/}{};
+    my $pbname;
+    ($pbname) = grep { $bpath =~ m#^$_(/|$)# } @{$self->branches};
+    return $pbname if $pbname;
     return $bpath;
 }
 
@@ -347,6 +350,9 @@ sub tag_name {
     return 'trunk' if (dir($self->trunk)->subsumes($bpath));
     my $tag_location = $self->tag_location;
     $bpath =~ s{^\Q$tag_location\E/}{};
+    my $pbname;
+    ($pbname) = grep { $bpath =~ m#^$_(/|$)# } @{$self->tags};
+    return $pbname if $pbname;
     return $bpath;
 }
 
@@ -367,12 +373,12 @@ sub info {
 	if (dir($self->trunk)->subsumes($target->path)) {
 	    $bname = 'trunk';
 	} elsif (dir($self->branch_location)->subsumes($target->path)) {
-	    $bname = $target->_to_pclass($target->path)->relative($self->branch_location)->dir_list(0);
+	    $bname = $self->branch_name($target->path);
 	} elsif ($self->tag_location and dir($self->tag_location)->subsumes($target->path)) {
-	    $bname = $target->_to_pclass($target->path)->relative($self->tag_location)->dir_list(0);
+	    $bname = $self->tag_name($target->path);
 	} elsif (dir($self->local_root)->subsumes($target->path)) {
 	    $where = 'offline';
-	    $bname = $target->_to_pclass($target->path)->relative($self->local_root)->dir_list(0);
+	    $bname = $self->branch_name($target->path,1);
 	}
 
 	if ($where) {
@@ -380,8 +386,10 @@ sub info {
 	    return unless $verbose;
 	    $logger->info ( loc("Repository path: %1\n", $target->depotpath ));
 	    if ($where ne 'trunk') { # project trunk should not have Copied info
-		if (my $copy_ancestor = ($target->copy_ancestors)[0]) {
-		    $logger->info( loc("Copied From: %1@%2\n", $self->branch_name($copy_ancestor->[0]), $copy_ancestor->[1]));
+		for ($target->copy_ancestors) {
+		    next if $bname eq $self->branch_name($_->[0]);
+		    $logger->info( loc("Copied From: %1@%2\n", $self->branch_name($_->[0]), $_->[1]));
+		    last;
 		}
 	    }
 	}
