@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 21;
+plan tests => 22;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -51,8 +51,6 @@ is_output_like ($svk, 'info', [],
 # since branch name is not the same, just do move and switch
 is_output ($svk, 'info', ['//local/MyProject/foo'],
     ["Path //local/MyProject/foo does not exist."]);
-#warn $output;
-#exit;
 
 is_ancestor($svk, '//mirror/MyProject/branches/foo', '/mirror/MyProject/trunk', 6);
 
@@ -106,10 +104,19 @@ is_output_like ($svk, 'log', [],
 
 # online with a new branch name
 
-$svk->br('--online', 'release/abc'); # offline the feature/foobar branch
+$svk->br('--online', 'release/abc'); # online the release/abc branch
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/release/abc|);
 
 is_output_like ($svk, 'br', [],
    qr|Copied From: feature/foobar@\d+|);
+
+$svk->br('--offline'); # offline the feature/foobar branch
+
+TODO: {
+
+    local $TODO = "test case for http://task.hm/FFAW";
+is_output_like ($svk, 'br', [],
+   qr|Copied From: feature/foobar@\d+|);
+}
