@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 22;
+plan tests => 24;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -115,12 +115,18 @@ is_output_like ($svk, 'br', [],
 $svk->br('--offline'); # offline the feature/foobar branch
 
 chdir ("C");
-TODO: {
-
-    local $TODO = "test case for http://task.hm/FFAW";
 is_output ($svk, 'br', [],
     ["Project name: MyProject",
      "Branch: release/abc (offline)",
      "Repository path: //local/MyProject/release/abc/C",
      'Copied From: feature/foobar@12']);
-}
+
+is_output ($svk, 'br', ['--offline'],
+    ["Current branch already offline"]);
+
+is_output ($svk, 'br', [],
+    ["Project name: MyProject",
+     "Branch: release/abc (offline)",
+     "Repository path: //local/MyProject/release/abc/C",
+     'Copied From: feature/foobar@12']);
+
