@@ -64,7 +64,7 @@ SVK::Editor::Translate - An editor that translates path names
 
  my $editor = ...
  # stack the translate editor on
- $editor = SVK::Editor::Translated-> (_editor => [$editor], translate => sub {$_[0]})
+ $editor = SVK::Editor::Translate->(_editor => [$editor], translate => sub {$_[0]})
 
 =cut
 
