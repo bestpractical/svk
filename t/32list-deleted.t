@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 11;
+use Test::More tests => 17;
 use File::Path;
 use Cwd;
 use SVK::Test;
@@ -54,12 +54,44 @@ is_output($svk, 'ls', ['-R', '//trunk/'],
     ]
 );
 
+is_output($svk, 'cat', ['//trunk/A/Q/qu'],
+    [
+        'first line in qu',
+        '2nd line in qu',
+    ]
+);
+
+is_output($svk, 'ann', ['//trunk/A/Q/qu'],
+    [
+        'Annotations for /trunk/A/Q/qu (1 active revisions):',
+        '****************',
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\tfirst line in qu},
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\t2nd line in qu},
+    ]
+);
+
 is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/A'],
     [
         'Q/',
         ' qu',
         ' qz',
         'be',
+    ]
+);
+
+is_output($svk, 'cat', ['-r', '3', '//trunk/A/Q/qu'],
+    [
+        'first line in qu',
+        '2nd line in qu',
+    ]
+);
+
+is_output($svk, 'ann', ['-r', '3', '//trunk/A/Q/qu'],
+    [
+        'Annotations for /trunk/A/Q/qu (1 active revisions):',
+        '****************',
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\tfirst line in qu},
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\t2nd line in qu},
     ]
 );
 
@@ -143,6 +175,22 @@ is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/A'],
         ' qu',
         ' qz',
         'be',
+    ]
+);
+
+is_output($svk, 'cat', ['-r', '3', '//trunk/A/Q/qu'],
+    [
+        'first line in qu',
+        '2nd line in qu',
+    ]
+);
+
+is_output($svk, 'ann', ['-r', '3', '//trunk/A/Q/qu'],
+    [
+        'Annotations for /trunk/A/Q/qu (1 active revisions):',
+        '****************',
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\tfirst line in qu},
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\t2nd line in qu},
     ]
 );
 
