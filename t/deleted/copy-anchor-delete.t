@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 11;
+use Test::More tests => 18;
 use File::Path;
 use Cwd;
 use SVK::Test;
@@ -54,6 +54,22 @@ is_output($svk, 'ls', ['-R', '//trunk/'],
     ]
 );
 
+is_output($svk, 'cat', ['//trunk/A/Q/qu'],
+    [
+        'first line in qu',
+        '2nd line in qu',
+    ]
+);
+
+is_output($svk, 'ann', ['//trunk/A/Q/qu'],
+    [
+        'Annotations for /trunk/A/Q/qu (1 active revisions):',
+        '****************',
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\tfirst line in qu},
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\t2nd line in qu},
+    ]
+);
+
 is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/A'],
     [
         'Q/',
@@ -63,13 +79,35 @@ is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/A'],
     ]
 );
 
-is_output($svk, 'rm', ['-m', 'remove //trunk/A', '//trunk/A'],
+is_output($svk, 'cat', ['-r', '3', '//trunk/A/Q/qu'],
+    [
+        'first line in qu',
+        '2nd line in qu',
+    ]
+);
+
+is_output($svk, 'ann', ['-r', '3', '//trunk/A/Q/qu'],
+    [
+        'Annotations for /trunk/A/Q/qu (1 active revisions):',
+        '****************',
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\tfirst line in qu},
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\t2nd line in qu},
+    ]
+);
+
+is_output($svk, 'cp', ['-m', 'copy //local from //trunk', '//trunk', '//local'],
     [
         'Committed revision 4.',
     ]
 );
 
-is_output($svk, 'ls', ['//trunk/'],
+is_output($svk, 'rm', ['-m', 'remove //local/A', '//local/A'],
+    [
+        'Committed revision 5.',
+    ]
+);
+
+is_output($svk, 'ls', ['//local/'],
     [
         'B/',
         'C/',
@@ -77,7 +115,7 @@ is_output($svk, 'ls', ['//trunk/'],
         'me',
     ]
 );
-is_output($svk, 'ls', ['-R', '//trunk/'],
+is_output($svk, 'ls', ['-R', '//local/'],
     [
         'B/',
         ' S/',
@@ -96,7 +134,7 @@ is_output($svk, 'ls', ['-R', '//trunk/'],
     ]
 );
 
-is_output($svk, 'ls', ['-r', '3', '//trunk/'],
+is_output($svk, 'ls', ['-r', '3', '//local/'],
     [
         'A/',
         'B/',
@@ -106,14 +144,14 @@ is_output($svk, 'ls', ['-r', '3', '//trunk/'],
     ]
 );
 
-is_output($svk, 'ls', ['-r', '3', '//trunk/A'],
+is_output($svk, 'ls', ['-r', '3', '//local/A'],
     [
         'Q/',
         'be',
     ]
 );
 
-is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/'],
+is_output($svk, 'ls', ['-R', '-r', '3', '//local/'],
     [
         'A/',
         ' Q/',
@@ -137,12 +175,28 @@ is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/'],
     ]
 );
 
-is_output($svk, 'ls', ['-R', '-r', '3', '//trunk/A'],
+is_output($svk, 'ls', ['-R', '-r', '3', '//local/A'],
     [
         'Q/',
         ' qu',
         ' qz',
         'be',
+    ]
+);
+
+is_output($svk, 'cat', ['-r', '3', '//local/A/Q/qu'],
+    [
+        'first line in qu',
+        '2nd line in qu',
+    ]
+);
+
+is_output($svk, 'ann', ['-r', '3', '//local/A/Q/qu'],
+    [
+        'Annotations for /trunk/A/Q/qu (1 active revisions):',
+        '****************',
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\tfirst line in qu},
+        qr{     2\t\(     \w+ \d{4}-\d{2}-\d{2}\):\t\t2nd line in qu},
     ]
 );
 
