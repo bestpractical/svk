@@ -82,7 +82,7 @@ if (eval {
   };
 
     # ... passed as a reference to init()
-    Log::Log4perl::init( \$conf );
+    Log::Log4perl::init( \$conf ) unless Log::Log4perl->initialized;
     *get_logger = sub { Log::Log4perl->get_logger(@_) };
 }
 else {
