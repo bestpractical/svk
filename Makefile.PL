@@ -104,7 +104,7 @@ features(
     -default => 1,
         'PerlIO::via::Bzip2'       => '0',
         'PerlIO::gzip'             => '0',
-        'Term::ProgressBar'        => '0',
+        'Time::Progress'           => '0',
         'SVN::Dump'                => '0.04',
     ],
     'Localized messages' => [
