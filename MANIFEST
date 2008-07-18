@@ -303,6 +303,7 @@ t/i18n/win32filename.t
 t/mirror/commit-copy.t
 t/mirror/dav-authz.t
 t/mirror/relocate.t
+t/mirror/sync-bootstrap.t
 t/mirror/sync-crazy-replace.t
 t/mirror/sync-empty.t
 t/mirror/sync-escape.t

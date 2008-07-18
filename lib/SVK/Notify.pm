@@ -209,5 +209,14 @@ sub flush_dir {
     $self->flush ($path, 1);
 }
 
+sub progress {
+    my $self = shift;
+    require Time::Progress;
+    return if $self->{quiet};
+    my $progress = Time::Progress->new();
+    $progress->attr (@_);
+    return $progress;
+
+}
 
 1;
