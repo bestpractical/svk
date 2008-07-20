@@ -90,6 +90,7 @@ requires(
     'Pod::Escapes'             => '0',       # in core since 5.9.3
     'Pod::Simple'              => '0',       # in core since 5.9.3
     'File::Spec'               => '3.19',    # in core since 5.9.3
+    'Time::Progress'           => '0',
 );
 
 
@@ -104,7 +105,6 @@ features(
     -default => 1,
         'PerlIO::via::Bzip2'       => '0',
         'PerlIO::gzip'             => '0',
-        'Time::Progress'           => '0',
         'SVN::Dump'                => '0.04',
     ],
     'Localized messages' => [
