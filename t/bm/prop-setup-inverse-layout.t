@@ -4,7 +4,7 @@
 # <clkao> it has trunk/[PROJNAME], branches/[PROJNAME]/* etc
 use strict;
 use SVK::Test;
-plan tests => 8;
+plan tests => 11;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -32,21 +32,24 @@ $svk->branch('--setup', '//mirror/nomeans/trunk/sushi');
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/trunk/sushi'], []);
 
 is_output ($svk, 'branch', ['--list', '--project', 'sushi', '//mirror/nomeans'], []);
-is_output_like ($svk, 'branch', ['--create','bar','--project','sushi','//mirror/nomeans'],
+is_output_like ($svk, 'branch', ['--create','bar','--project','sushi'],
     qr'Project branch created: bar');
 is_output ($svk, 'branch', ['--list', '--project', 'sushi', '//mirror/nomeans'], ['bar']);
 $answer = [''];
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/trunk/sushi'],
     ['Project already set in properties: //mirror/nomeans/trunk/sushi']);
 
-TODO: {
-local $TODO = 'no implemented yet';
 chdir($copath);
 
 is_output ($svk, 'branch', ['--list', '//mirror/nomeans/trunk/benshi'], []);
-$answer = ['', '','',''];
+$answer = ['n','','','','',''];
 is_output_like ($svk, 'branch', ['--setup', '//mirror/nomeans/trunk/benshi'],
     qr/Project detected in specified path./);
 is_output ($svk, 'branch', ['--setup', '//mirror/nomeans/trunk/benshi'],
     ['Project already set in properties: //mirror/nomeans/trunk/benshi']);
-}
+is_output_like ($svk, 'branch', ['--create','bar','--project','benshi'],
+    qr'Project branch created: bar');
+is_output_like ($svk, 'branch', ['--create','bar3','--project','benshi'],
+    qr'Project branch created: bar');
+is_output ($svk, 'branch', ['--list', '--project', 'benshi'],
+    ['bar','bar3']);

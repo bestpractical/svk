@@ -156,6 +156,25 @@ sub subset_of {
     return 1;
 }
 
+=item is_equal
+
+Takes a single L<SVK::Merge::Info> object as an argument.  Returns true if
+our set of merge tickets is equal to argument's. Otherwise, returns false.
+
+=cut
+
+sub is_equal {
+    my ( $self, $other ) = @_;
+    my $subset = 1;
+    for ( keys %$self, keys %$other ) {
+        return 0 unless
+            exists $other->{$_}
+            && exists $self->{$_}
+            && $self->{$_}{rev} == $other->{$_}{rev};
+    }
+    return 1;
+}
+
 =item union
 
 Return a new L<SVK::Merge::Info> object representing the union of ourself and

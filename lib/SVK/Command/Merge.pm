@@ -58,7 +58,7 @@ use SVK::I18N;
 use SVK::Command::Log;
 use SVK::Logger;
 use SVK::Merge;
-use SVK::Util qw( get_buffer_from_editor traverse_history );
+use SVK::Util qw( get_buffer_from_editor traverse_history tmpfile );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -193,6 +193,7 @@ sub run {
 	return;
     }
 
+    # for checkouts we save later into a file
     $self->get_commit_message ($self->{log} ? $merge->log(1) : undef)
 	unless $dst->isa('SVK::Path::Checkout');
 
@@ -242,6 +243,13 @@ sub run {
 	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
 	delete $self->{save_message};
     }
+
+    if ( $self->{log} && !$self->{check_only} && $dst->isa('SVK::Path::Checkout') ) {
+        my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
+        print $fh $merge->log(1);
+        $logger->warn(loc ("Log message saved in %1.", $file));
+    }
+
     return;
 }
 

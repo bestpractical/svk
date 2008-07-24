@@ -98,6 +98,7 @@ the following merge tools:
  TkDiff
  TortoiseMerge
  Vim
+ WinMerge
  XXDiff
 
 If you want svk to spawn a specific merge tool, set this variable to

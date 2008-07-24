@@ -240,6 +240,10 @@ sub find_merge_base {
 	my ($path) = m/:(.*)$/;
 	my $rev = $joint_info->{$_};
 
+        # if the candidate is condensed (like being part of a skip-to
+        # sync), we can't really use it as base
+        next if $rev == -1;
+
 	# when the base is one of src or dst, make sure the base is
 	# still the same node (not removed and replaced)
 	if ($rev && $path eq $dst->path) {
@@ -530,7 +534,6 @@ sub track_rename {
 	    my $dstkey = $self->{dst}->universal->ukey;
 	    my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
 
-	    use Data::Dumper;
 	    if ($srcinfo->{$dstkey}) {
 		$base = $srcinfo->{$dstkey}->local($self->{src}->depot);
 	    }
@@ -590,6 +593,38 @@ sub run {
 
     my $dstinfo = $self->merge_info($self->{dst});
 
+    my %ticket_options;
+    if ( $self->{ticket} ) {
+        $ticket_options{prop_resolver} = {
+            'svk:merge' => sub {
+                my ($path, $prop) = @_;
+		return (undef, undef, 1)
+		    if $path eq $target;
+		return ('G', SVK::Merge::Info->new($prop->{new})
+                    ->union(SVK::Merge::Info->new ($prop->{local}))
+                    ->as_string
+                );
+	    },
+	};
+	$ticket_options{ticket} = $self->_get_new_ticket(
+            $self->merge_info_with_copy($src)->add_target($src)
+        );
+        $ticket_options{cb_merged} = sub {
+            my ($changes, $type, $ticket) = @_;
+            if (!$changes) { # rollback all ticket
+                my $func = "change_${type}_prop";
+                my $baton = $storage->open_root ($cb{cb_rev}->($cb{target}||''));
+                $storage->$func( $baton, 'svk:merge', undef );
+                return;
+            }
+            $self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
+	};
+    } else {
+        $ticket_options{prop_resolver} = {
+            'svk:merge' => sub { return ('G', undef, 1) },
+        };
+    }
+
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->path_anchor,
 	  repospath => $src->repospath, # for stupid copyfrom url
@@ -607,31 +642,7 @@ sub run {
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},
 	  # XXX: make the prop resolver more pluggable
-	  $self->{ticket} ?
-	  ( prop_resolver => { 'svk:merge' =>
-			  sub { my ($path, $prop) = @_;
-				return (undef, undef, 1)
-				    if $path eq $target;
-				return ('G', SVK::Merge::Info->new
-					($prop->{new})->union
-					(SVK::Merge::Info->new ($prop->{local}))->as_string);
-			    }
-			},
-	    ticket =>
-	    $self->_get_new_ticket($self->merge_info_with_copy($src)->add_target($src)),
-	    cb_merged => sub {
-		my ($changes, $type, $ticket) = @_;
-		if (!$changes) { # rollback all ticket
-		    my $func = "change_${type}_prop";
-		    my $baton = $storage->open_root ($cb{cb_rev}->($cb{target}||''));
-		    $storage->$func( $baton, 'svk:merge', undef );
-		    return;
-		}
-		$self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
-	    }
-	  ) :
-	  ( prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} # skip
-			     }),
+          %ticket_options,
 	  %cb,
 	);
 

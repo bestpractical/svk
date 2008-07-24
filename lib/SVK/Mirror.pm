@@ -232,6 +232,110 @@ sub detach {
     $editor->close_edit;
 }
 
+=item bootstrap
+
+=cut
+
+sub bootstrap {
+    my ($self, $dumpfile, $file_hint) = @_;
+    $file_hint ||= $dumpfile;
+    my $fh;
+    require SVN::Dump;
+
+    if ($dumpfile eq '-') {
+        $fh = \*STDIN;
+    }
+    else {
+        open $fh, '<', $dumpfile or die $!;
+    }
+
+    # XXX make these fail optionally
+    if ($file_hint =~ m/bz2$/i) {
+        require PerlIO::via::Bzip2;
+        binmode($fh, ':via(Bzip2)');
+    }
+    elsif ($file_hint =~ m/gz$/i) {
+        require PerlIO::gzip;
+        binmode($fh, ':gzip(lazy)');
+    }
+
+    my $dump = SVN::Dump->new( { fh => $fh } );
+    my $prefix = $self->path.'/';
+
+    my $prev = undef;
+    my $rev = 0;
+    my $buf;
+    my $header;
+    my $progress = SVK::Notify->new->progress( min => 0, max => $self->_backend->_new_ra->get_latest_revnum );
+    if ($self->fromrev) {
+        $logger->info(loc("Skipping dumpstream up to revision %1", $self->fromrev));
+    }
+    while ( my $record = $dump->next_record() ) {
+	if ($record->type eq 'format' || $record->type eq 'uuid') {
+	    $header = $header.$record->as_string;
+	    next;
+	}
+
+	my $translate = sub {
+	    my $rec = shift;
+
+	    if (my $path = $rec->get_header('Node-copyfrom-path')) {
+		$path = $prefix.$path;
+		$rec->set_header('Node-copyfrom-path' => $path );
+	    }
+	    if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
+#		$rec->set_header('Node-copyfrom-rev' =>
+#		    scalar $self->find_local_rev( $rev, $self->source_uuid )  - 1);
+	    }
+	    
+	    if ($rec->get_header('Revision-number')) {
+		$| = 1;
+		$rev = $rec->get_header('Revision-number');
+		$prev = $rev if !$prev;
+		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
+		printf STDERR "%s rev:%d\r",$progress->report( "%45b",$rev),$rev;
+	    }
+
+
+	    if ( my $path = $rec->get_header('Node-path') ) {
+		$path = $prefix.$path;
+		$rec->set_header('Node-path' => $path);
+	    }
+
+	};
+	$translate->( $record );
+	my $inc = $record->get_included_record;
+	$translate->( $inc ) if $inc;
+
+	if ($rev and $prev != $rev) {
+	    $self->_import_repos($header,$buf) if $prev > $self->fromrev;
+	    $buf = "";
+	    $prev = $rev;
+	}
+
+	$buf = $buf.$record->as_string;
+    }
+    # last one
+    if ($rev) {
+	$self->_import_repos($header, $buf)  if $prev > $self->fromrev;
+    }
+
+}
+
+sub _import_repos {
+    my $self = shift;
+    my ($header, $buf) = @_;
+    $buf = $header.$buf;
+    open my $fh, '<', \$buf;
+    my $feedback = '';
+    open my $fstream, '>', \$feedback;
+    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, $fstream, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+    # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+    # XXX: display $feedback if we are in verbose / debug mode.
+    # and provide progress feedback in caller
+    return $ret;
+}
+
 =item relocate($newurl)
 
 =item with_lock($code)
@@ -369,10 +473,13 @@ sub run {
 
     $logger->info(loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1", $self->server_url) : ""));
 
+    $self->{use_progress} = 1 unless SVK::Test->can('is_output');
+
     $self->mirror_changesets($torev,
         sub {
             my ( $changeset, $rev ) = @_;
-            $logger->info("Committed revision $rev from revision $changeset.");
+            $logger->info("Committed revision $rev from revision $changeset.")
+                unless $self->{use_progress};
         }, $fake_last
     );
     die $@ if $@;

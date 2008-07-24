@@ -145,7 +145,9 @@ Check the revision of the given path.
 
 =item cb_conflict
 
-Called when a conflict is detected.
+When a conflict is detected called with path and conflict
+type as argument. At this point type can be either 'node' or
+'prop'.
 
 =item cb_prop_merged
 
@@ -433,7 +435,7 @@ sub ensure_close {
 
 sub node_conflict {
     my ($self, $path) = @_;
-    $self->{cb_conflict}->($path) if $self->{cb_conflict};
+    $self->{cb_conflict}->($path, 'node') if $self->{cb_conflict};
     ++$self->{conflicts};
     $self->{notify}->node_status ($path, 'C');
 }
@@ -832,7 +834,7 @@ sub open_directory {
     my $baton = $self->{storage_baton}{$path} =
 	$self->{storage}->open_directory ($path, $self->{storage_baton}{$pdir},
 					  $self->{cb_rev}->($path), @arg);
-    $self->set_ticket->($baton, 'dir', $pool)
+    $self->set_ticket($baton, 'dir', $pool)
 	if $path eq $self->{target} && $self->ticket;
 
     return $path;
@@ -1091,11 +1093,7 @@ sub _merge_prop_content {
     $self->prepare_fh ($fh);
 
     my ($conflict, $mfh) = $self->_merge_text_change ($fh, loc ("Property %1 of %2", $propname, $path), $pool);
-    if (!$conflict) {
-	local $/;
-	$mfh = <$mfh>;
-    }
-    return ($conflict ? 'C' : 'G', $mfh);
+    return ($conflict ? 'C' : 'G', do { local $/; <$mfh> });
 }
 
 sub _merge_prop_change {
@@ -1108,7 +1106,7 @@ sub _merge_prop_change {
     if ($self->{added}{$path} or
 	(!length ($path) and $self->{base_root}->is_revision_root
 	 and $self->{base_root}->revision_root_revision == 0)) {
-	$self->{notify}->prop_status ($path, 'U');
+	$self->{notify}->prop_status ($path, 'U') unless $self->{added}{$path};
 	return 1;
     }
     my $rpath = $self->{base_anchor} eq '/' ? "/$path" : "$self->{base_anchor}/$path";
@@ -1128,15 +1126,15 @@ sub _merge_prop_change {
 
     return if $skipped;
 
-    if ($status eq 'C') {
-	$self->{cb_conflict}->($path, $_[0]) if $self->{cb_conflict};
-	++$self->{conflicts};
-    }
-    elsif ($status eq 'g') {
+    if ($status eq 'g') {
 	$self->{cb_prop_merged}->($path, $_[0])
 	    if $self->{cb_prop_merged};
     }
     else {
+        if ($status eq 'C') {
+            $self->{cb_conflict}->($path, 'prop') if $self->{cb_conflict};
+            ++$self->{conflicts};
+        }
 	$_[1] = $merged;
     }
     $self->{notify}->prop_status ($path, $status);

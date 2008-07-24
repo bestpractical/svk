@@ -90,7 +90,10 @@ requires(
     'Pod::Escapes'             => '0',       # in core since 5.9.3
     'Pod::Simple'              => '0',       # in core since 5.9.3
     'File::Spec'               => '3.19',    # in core since 5.9.3
+    'Time::Progress'           => '0',
 );
+
+
 requires(
     'Date::Format'             => '',
 ) if ($^O eq 'MSWin32');
@@ -98,6 +101,12 @@ build_requires(
     'Test::More'               => '0.42',
 );
 features(
+    'Bootstrap support' => [
+    -default => 1,
+        'PerlIO::via::Bzip2'       => '0',
+        'PerlIO::gzip'             => '0',
+        'SVN::Dump'                => '0.04',
+    ],
     'Localized messages' => [
 	-default => 1,
         'Locale::Maketext::Lexicon' => '0.62',
@@ -139,7 +148,7 @@ include('ExtUtils::AutoInstall');
 auto_install();
 
 auto_provides();
-WriteAll( sign => 1 );
+WriteAll( sign => 0 );
 
 $::VERSION = $required_svn;
 die << "." unless eval {require SVN::Core; SVN::Core->VERSION >= main->VERSION };

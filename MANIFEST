@@ -149,6 +149,7 @@ lib/SVK/Resolve/P4WinMerge.pm
 lib/SVK/Resolve/TkDiff.pm
 lib/SVK/Resolve/TortoiseMerge.pm
 lib/SVK/Resolve/Vim.pm
+lib/SVK/Resolve/WinMerge.pm
 lib/SVK/Resolve/XXDiff.pm
 lib/SVK/Root.pm
 lib/SVK/Root/Checkout.pm
@@ -302,6 +303,7 @@ t/i18n/win32filename.t
 t/mirror/commit-copy.t
 t/mirror/dav-authz.t
 t/mirror/relocate.t
+t/mirror/sync-bootstrap.t
 t/mirror/sync-crazy-replace.t
 t/mirror/sync-empty.t
 t/mirror/sync-escape.t

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 18;
+plan tests => 24;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -17,7 +17,7 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath('basic-trunk');
+my ($copath, $corpath) = get_copath('bm-online-offline');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 
@@ -37,7 +37,13 @@ is_output($svk, 'br', ['-l', '--local', '//mirror/MyProject'],
 append_file('A/be', "fnordorz\n");
 $svk->commit(-m => 'orz');
 
-$svk->br('--online'); # XXX: check output
+is_output($svk, 'br', ['--online', '-C'],
+    ["We will copy branch //local/MyProject/foo to //mirror/MyProject/branches/foo",
+     "Then do a smerge on //mirror/MyProject/branches/foo",
+     "Finally delete the src branch //local/MyProject/foo"]);
+
+is_output_like ($svk, 'branch', ['--online'],
+    qr|U   A/be|);
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/foo|);
@@ -70,6 +76,9 @@ append_file ('B/S/Q/qu', "\nappend CBA on local branch feature/foobar\n");
 $svk->commit ('-m', 'commit message on local branch','');
 
 # now should do smerge first, then sw to the branch 
+is_output_like ($svk, 'branch', ['--online', '-C'],
+    qr|U   B/S/Q/qu|);
+
 is_output_like ($svk, 'branch', ['--online'],
     qr|U   B/S/Q/qu|);
 
@@ -95,10 +104,29 @@ is_output_like ($svk, 'log', [],
 
 # online with a new branch name
 
-$svk->br('--online', 'release/abc'); # offline the feature/foobar branch
+$svk->br('--online', 'release/abc'); # online the release/abc branch
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/release/abc|);
 
 is_output_like ($svk, 'br', [],
    qr|Copied From: feature/foobar@\d+|);
+
+$svk->br('--offline'); # offline the feature/foobar branch
+
+chdir ("C");
+is_output ($svk, 'br', [],
+    ["Project name: MyProject",
+     "Branch: release/abc (offline)",
+     "Repository path: //local/MyProject/release/abc/C",
+     'Copied From: feature/foobar@12']);
+
+is_output ($svk, 'br', ['--offline'],
+    ["Current branch already offline"]);
+
+is_output ($svk, 'br', [],
+    ["Project name: MyProject",
+     "Branch: release/abc (offline)",
+     "Repository path: //local/MyProject/release/abc/C",
+     'Copied From: feature/foobar@12']);
+

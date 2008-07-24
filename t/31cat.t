@@ -35,6 +35,6 @@ $svk->mv(-m => 'rename', '//A/foo' => '//A/foo.new');
 is_output ($svk, 'cat', ['-r1', '//A/foo.new'], ['foobar'],
 	   "cat -rN depotpath peg'ed");
 
-is_output_like($svk, 'cat', ['-r1', '//A/foo'], qr'not found');
+is_output($svk, 'cat', ['-r1', '//A/foo'], ['foobar']);
 
 is_output ($svk, 'cat', ['-r1', '//A/foo@2'], ['foobar']);

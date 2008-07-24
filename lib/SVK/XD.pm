@@ -342,8 +342,9 @@ prevent other instances from modifying locked paths.
 
 sub lock {
     my ($self, $path) = @_;
-    if ($self->{checkout}->get ($path, 1)->{lock}) {
-	die loc("%1 already locked, use 'svk cleanup' if lock is stalled\n", $path);
+    if (my $lock = $self->{checkout}->get ($path, 1)->{lock}) {
+        my @paths = $self->{checkout}->find('', {lock => $lock});
+	die loc("%1 already locked at %2, use 'svk cleanup' if lock is stalled\n", $path, $paths[0]);
     }
     $self->{checkout}->store ($path, {lock => $$});
     $self->{modified} = 1;
@@ -605,6 +606,29 @@ sub target_from_copath_maybe {
     return $ret;
 }
 
+=head2 create_path_object
+
+Creates and returns a new path object. It can be either L<SVK::Path::Checkout>,
+L<SVK::Path::View> or L<SVK::Path>.
+
+Takes a hash with arguments.
+
+If "copath_anchor" argument is defined then L<SVK::Path::Checkout> is created
+and other arguments are used to build its L<SVK::Path::Checkout/source>
+using this method. If "revision" argument is not defined then the one checkout
+path is based on is used.
+
+If "view" argument is defined then L<SVK::Path::View> is created
+and other arguments are used to build its L<SVK::Path::Checkout/source> using
+this method.
+
+Otherwise L<SVK::Path> is created.
+
+Depot can be passed as L<SVK::Depot> object in "depot" argument or using
+"depotname", "repospath" and "repos" arguments. Object takes precendence.
+
+=cut
+
 sub create_path_object {
     my ($self, %arg) = @_;
     if (my $depotpath = delete $arg{depotpath}) {
@@ -614,6 +638,8 @@ sub create_path_object {
     if (defined (my $copath = delete $arg{copath_anchor})) {
 	require SVK::Path::Checkout;
 	my $report = delete $arg{report};
+        $arg{'revision'} = ($self->get_entry( $copath ))[0]->{'revision'}
+            unless defined $arg{'revision'};
 	return SVK::Path::Checkout->real_new
 	    ({ xd => $self,
 	       report => $report,
@@ -621,13 +647,14 @@ sub create_path_object {
 	       source => $self->create_path_object(%arg) });
     }
 
-    my $path;
     unless ($arg{depot}) {
         my $depotname = delete $arg{depotname};
         my $repospath = delete $arg{repospath};
         my $repos     = delete $arg{repos};
         $arg{depot} = SVK::Depot->new({ depotname => $depotname, repos => $repos, repospath => $repospath });
     }
+
+    my $path;
     if (defined (my $view = delete $arg{view})) {
 	require SVK::Path::View;
         $path = SVK::Path::View->real_new
@@ -814,7 +841,7 @@ sub do_add {
             my ($editor, $path) = @_;
             to_native($path, 'path');
             my $copath = $target->copath($path);
-            my $report = $target->report->subdir($path);
+            my $report = $target->_to_pclass($target->report)->subdir($path);
             lstat ($copath);
             $self->_do_add('A', $copath, $report, !-d _, %arg);
         },
@@ -850,7 +877,7 @@ sub do_propset {
     my ($entry, $schedule) = $self->get_entry($target->copath);
     $entry->{'.newprop'} ||= {};
 
-    unless ( $schedule eq 'add' ) {
+    if ( $schedule ne 'add' && !$arg{'adjust_only'} ) {
         my $xdroot = $target->create_xd_root;
         my ( $source_path, $source_root )
             = $self->_copy_source( $entry, $target->copath, $xdroot );
@@ -862,16 +889,29 @@ sub do_propset {
 
     #XXX: support working on multiple paths and recursive
     die loc("%1 is already scheduled for delete.\n", $target->report)
-	if $schedule eq 'delete';
-    my %values = %{$entry->{'.newprop'}}
-	if exists $entry->{'.schedule'};
+	if $schedule eq 'delete' && !$arg{'adjust_only'};
+    my %values;
+    %values = %{$entry->{'.newprop'}} if exists $entry->{'.schedule'};
     my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
+
+    if ( $arg{'adjust_only'} ) {
+        return unless defined $values{ $arg{propname} };
+
+        if ( defined $arg{propvalue} && $values{$arg{propname}} eq $pvalue ) {
+            delete $values{ $arg{propname} };
+        }
+        elsif ( !defined $arg{propvalue} && (!defined $values{$arg{propname}} || (ref $values{$arg{propname}} && !defined $values{$arg{propname}}) )) {
+            delete $values{ $arg{propname} };
+        } else {
+            $values{ $arg{propname} } = $pvalue;
+        }
+    } else {
+        $values{ $arg{propname} } = $pvalue;
+    }
 
     $self->{checkout}->store ($target->copath,
 			      { '.schedule' => $schedule || 'prop',
-				'.newprop' => {%values,
-					    $arg{propname} => $pvalue
-					      }});
+				'.newprop' => \%values, });
     print " M  ".$target->report."\n" unless $arg{quiet};
 
     $self->fix_permission($target->copath, $arg{propvalue})
@@ -1264,7 +1304,7 @@ sub _delta_file {
 
     if ($arg{cb_conflict} && $cinfo->{'.conflict'}) {
 	++$modified;
-	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton});
+	$arg{cb_conflict}->($arg{editor}, $arg{entry}, $arg{baton}, $cinfo->{'.conflict'});
     }
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
@@ -1362,7 +1402,7 @@ sub _delta_dir {
     # don't use depth when we are still traversing through targets
     my $descend = defined $targets || !(defined $arg{depth} && $arg{depth} == 0);
     # XXX: the top level entry is undefined, which should be fixed.
-    $arg{cb_conflict}->($arg{editor}, defined $arg{entry} ? $arg{entry} : '', $arg{baton})
+    $arg{cb_conflict}->($arg{editor}, defined $arg{entry} ? $arg{entry} : '', $arg{baton}, $cinfo->{'.conflict'})
 	if $thisdir && $arg{cb_conflict} && $cinfo->{'.conflict'};
 
     return 1 if $self->_node_deleted_or_absent (%arg, pool => $pool);
@@ -1510,7 +1550,7 @@ sub _delta_dir {
 	    }
 	}
 	if ($ccinfo->{'.conflict'}) {
-	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton})
+	    $arg{cb_conflict}->($arg{editor}, $newpaths{entry}, $arg{baton}, $cinfo->{'.conflict'})
 		if $arg{cb_conflict};
 	}
 	unless ($add || $ccinfo->{'.conflict'}) {
@@ -1616,7 +1656,7 @@ sub do_resolved {
     my ($self, %arg) = @_;
 
     if ($arg{recursive}) {
-	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => 1})) {
+	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => qr/.*/})) {
 	    $self->resolved_entry ($_);
 	}
     }

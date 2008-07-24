@@ -17,13 +17,12 @@ my $uri = uri($depot->repospath);
 $svk->mirror('//mirror/MyProject', $uri);
 $svk->sync('//mirror/MyProject');
 
-my ($copath, $corpath) = get_copath ('MyProject');
+my ($copath, $corpath) = get_copath ('bm-create-nonwc');
 
 is_output ($svk, 'branch', ['--create', 'feature/foo'],
     ["I can't figure out what project you'd like to create a branch in. Please",
-     "either run '$0 branch --create' from within an existing chekout or specify",
-     "a project root using the --project flag",
-     qr/path \S+ is not a checkout path./]);
+     "either run '$0 branch --create' from within an existing checkout or specify",
+     "a project root using the --project flag"]);
 
 is_output_like ($svk, 'branch', ['--create', 'feature/foo', '//mirror/MyProject'],
     qr'Project branch created: feature/foo');
@@ -37,10 +36,11 @@ is_output ($svk, 'branch',
      "Syncing $uri",
      'Retrieving log information from 7 to 7',
      'Committed revision 8 from revision 7.',
-     "Project branch created: feature/foobar (from feature/foo)"]);
+     "Project branch created: feature/foobar (from branch feature/foo)"]);
 
 is_output ($svk, 'info',['//mirror/MyProject/branches/feature/foobar'],
     ["Depot Path: //mirror/MyProject/branches/feature/foobar",
+     "Project name: MyProject",
      "Revision: 8", "Last Changed Rev.: 8",
      qr/Last Changed Date: \d{4}-\d{2}-\d{2}/,
      "Mirrored From: $uri, Rev. 7",

@@ -48,78 +48,29 @@
 # and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
-package SVK::Command::Switch;
+package SVK::Resolve::WinMerge;
 use strict;
-use SVK::Version;  our $VERSION = $SVK::VERSION;
+use base 'SVK::Resolve';
+use SVK::Util qw( catdir );
 
-use base qw( SVK::Command::Update );
-use SVK::XD;
-use SVK::I18N;
-use File::Spec;
+sub commands { 'WinMergeU' }
 
-sub options {
-    ($_[0]->SUPER::options,
-     'd|delete|detach' => 'detach',
+sub paths {
+    return catdir(
+	($ENV{ProgramFiles} || 'C:\Program Files'), 
+	'WinMerge',
     );
 }
 
-sub parse_arg {
-    my ($self, @arg) = @_;
-
-    if ($self->{detach}) {
-        goto &{ $self->rebless ('checkout::detach')->can ('parse_arg') };
-    }
-
-    return if $#arg < 0 || $#arg > 1;
-    return ($self->arg_uri_maybe($arg[0]),
-	    $self->arg_copath($arg[1] || ''));
-}
-
-sub lock { $_[0]->lock_target ($_[2]) }
-
-sub run {
-    my ($self, $target, $cotarget) = @_;
-    die loc("different depot") unless $target->same_repos ($cotarget);
-
-    my ($entry, @where) = $self->{xd}{checkout}->get ($cotarget->copath_anchor);
-    die loc("Can only switch checkout root.\n")
-	unless $where[0] eq $cotarget->copath;
-
-    $target = $target->as_depotpath ($self->{rev});
-    die loc("Path %1 does not exist.\n", $target->report)
-	if $target->root->check_path ($target->path_anchor) == $SVN::Node::none;
-    SVK::Merge->auto (%$self, repos => $target->repos,
-		      src => $cotarget, dst => $target);
-#    switch to related_to once the api is ready
-    # check if the switch has a base at all
-#    die loc ("%1 is not related to %2.\n", $cotarget->{report}, $target->{report})
-#	unless $cotarget->new->as_depotpath->related_to ($target);
-
-    $self->do_update ($cotarget, $target);
-    $self->{xd}{checkout}->store ($cotarget->copath,
-				  {depotpath => $target->depotpath,
-				   revision => $target->revision});
-    return;
+sub arguments {
+    my $self = shift;
+    return (
+        "/dl \"$self->{label_yours}\"",
+        "/dr \"$self->{label_theirs}\"",
+        "$self->{yours}",
+        "$self->{theirs}",
+        "$self->{merged}",
+    );
 }
 
 1;
-
-__DATA__
-
-=head1 NAME
-
-SVK::Command::Switch - Switch to another branch and keep local changes
-
-=head1 SYNOPSIS
-
- switch DEPOTPATH [PATH]
-
-For information about how to change the mirrored location of a remote
-repository, please see the C<--relocate> option to C<svk mirror>.
-
-=head1 OPTIONS
-
- -r [--revision] REV    : act on revision REV instead of the head revision
- -d [--detach]          : mark a path as no longer checked out
- -q [--quiet]           : print as little as possible
-

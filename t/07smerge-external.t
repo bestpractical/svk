@@ -66,7 +66,8 @@ is_output ($svk, 'diff', ["//trunk/test.pl", "//local/test.pl"],
 	   ], 'svk-merge mine');
 is_output ($svk, 'up', ["$copath"],
 	   ["Syncing //local(/local) in $corpath to 6.",
-	    __"g   $copath/test.pl"], 'svk-merge theirs');
+	    __"g   $copath/test.pl",
+	    __" g  $copath"], 'svk-merge theirs');
 
 overwrite_file ("$copath/test.pl", "#!/usr/bin/perl -T -w\nsub { 'this is sub on trunk' }\n#local\n#common\n\nsub newsub { undef }\n");
 $svk->commit ('-m', 'change on local', $copath);

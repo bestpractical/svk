@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
-use Test::More tests => 7;
+use Test::More tests => 9;
 use SVK::Test;
 use File::Path;
 
@@ -27,8 +27,8 @@ $svk->br('--create', 'feature/foo', '//mirror/MyProject');
 is_output ($svk, 'branch', ['--list', '//mirror/MyProject'],
     ['feature/foo']);
 
-is_output ($svk, 'branch', ['--checkout', 'feature/foo'],
-    [qr/path \S+ is not a checkout path./]);
+is_output_like ($svk, 'branch', ['--checkout', 'feature/foo'],
+    qr'Project not found.');
 
 chdir($copath."/A");
 is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject'],
@@ -50,3 +50,11 @@ chdir('../C');
 
 is_output_like ($svk, 'info',[],
     qr'Depot Path: //mirror/MyProject/trunk');
+
+is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject', $corpath.'/D'],
+    qr'Syncing \S+ in \S+D to \d.+');
+
+chdir('../D');
+
+is_output_like ($svk, 'info',[],
+    qr'Depot Path: //mirror/MyProject/branches/feature/foo');
