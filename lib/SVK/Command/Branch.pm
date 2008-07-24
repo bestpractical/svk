@@ -729,7 +729,7 @@ sub parse_arg {
     my ($self, @arg) = @_;
     @arg = ('') if $#arg < 0;
 
-    my ($proj,$target, $msg) = $self->locate_project($arg[0]);
+    my ($proj,$target, $msg) = $self->locate_project(pop @arg);
     if (!$proj) {
 	$logger->warn( loc($msg));
 	return ;
@@ -737,6 +737,7 @@ sub parse_arg {
 
     undef $self->{recursive};
     $self->{local}++ if ($target->_to_pclass("/local")->subsumes($target->path));
+    push @arg, $self->dst_name($proj,$target->path);
     return map {$self->arg_co_maybe ($self->dst_path($proj,$_),'New mirror site not allowed here')} @arg;
 }
 
