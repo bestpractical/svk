@@ -21,15 +21,12 @@ $svk->cp(-m => 'branch Foo', '//mirror/MyProject/trunk', '//mirror/MyProject/bra
 
 my ($copath, $corpath) = get_copath('bm-local-create');
 
-$svk->cp(-m => 'local branch', '//mirror/MyProject/trunk', '//local/MyProject');
+$svk->cp(-m => 'local branch', '-p', '//mirror/MyProject/trunk', '//local/MyProject');
 
 $svk->checkout('//mirror/MyProject/trunk', $copath);
 
 chdir($copath);
 
-TODO: {
-local $TODO = 'see http://task.hm/FC2C';
 is_output ($svk, 'branch', ['--create', 'foobar', '--local'],
-    ['The local project path //local/MyProject is a branch.',
+    ['The local project root /local/MyProject is a branch itself.',
      'Please rename the directory and try again']);
-}

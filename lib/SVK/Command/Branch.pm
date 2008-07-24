@@ -293,6 +293,17 @@ sub run {
     $SVN::Node::none == $dst->root->check_path($dst->path)
 	or die loc("Project branch already exists: %1 %2\n",
 	    $branch_name, $self->{local} ? '(in local)' : '');
+    if ($self->{local} and $SVN::Node::none != $dst->root->check_path($proj->local_root)) {
+	my $trunk = SVK::Path->real_new(
+	    {   depot    => $proj->depot,
+		revision => $src->root->revision_root_revision,
+		path     => $proj->trunk
+	    }
+	);
+        my $lb = $trunk->mclone( path => $target->_to_pclass($proj->local_root) );
+	die loc("The local project root %1 is a branch itself.\n".
+	     "Please rename the directory and try again\n", $proj->local_root) if $lb->related_to($trunk);
+    }
 
     $self->{parent} = 1;
     $self->{message} ||= join(" ", "- Create", ($self->{tag} ? "tag" : "branch"), $branch_name);
