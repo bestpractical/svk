@@ -138,9 +138,8 @@ sub run {
 	);
 
     $oldroot ||= $target->root;
-    my $kind = $oldroot->check_path($target->path_anchor);
     if ($target2->isa('SVK::Path::Checkout')) {
-	if ($kind != $SVN::Node::dir) {
+	while ($oldroot->check_path($target->path_anchor) != $SVN::Node::dir) {
 	    $target2->anchorify;
 	    $target->anchorify;
 	    ($report) = get_anchor (0, $report) if defined $report;
@@ -159,6 +158,7 @@ sub run {
 	    );
     }
     else {
+        my $kind = $oldroot->check_path($target->path_anchor);
 	die loc("path %1 does not exist.\n", $target->report)
 	    if $kind == $SVN::Node::none;
 
