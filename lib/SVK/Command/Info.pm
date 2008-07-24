@@ -155,7 +155,7 @@ For example, here's the way to display the info of a checkout path:
  Last Changed Rev.: 447
  Last Changed Date: 2006-11-28
  Copied From: /svk/trunk, Rev. 434
- Merge From: /svk/trunk, Rev. 445
+ Merged From: /svk/trunk, Rev. 445
 
 You can see the result has some basic information: the actual depot path,
 and current revision. Next are advanced information about copy and merge
@@ -165,7 +165,7 @@ The result of C<svk info //svk/local> is almost the same as above,
 except for the C<Checkout Path:> line is not there, because
 you are not referring to a checkout path.
 
-Note that the revision numbers on C<Copied From:> and C<Merge From:> lines
+Note that the revision numbers on C<Copied From:> and C<Merged From:> lines
 are for the source path (//svk/trunk), not the target path (//svk/local).
 The example above state that, I<//svk/local is copied from the revision 434
 of //svk/trunk>, and I<//svk/local was merged from the revision 445 of
