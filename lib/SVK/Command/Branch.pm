@@ -1035,6 +1035,8 @@ SVK::Command::Branch - Manage a project with its branches
  --push             : move changes to wherever this branch was copied from
  --pull             : sync changes from wherever this branch was copied from
  --setup            : setup a project for a specified DEPOTPATH
+ --from BRANCH      : specify the source branch name
+ --from-tag TAG     : specify the source tag name
  -C [--check-only]  : try a create, move or merge operation but make no     
                       changes
 
