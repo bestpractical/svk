@@ -359,7 +359,7 @@ sub add_directory {
 				       '.copyfrom_rev' => $from_rev,
 				     });
     }
-    $self->output_diff_header($path, 1);
+    $self->output_diff_header($self->_report_path( $path ), 1);
     return $path;
 }
 
