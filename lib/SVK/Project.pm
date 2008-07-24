@@ -384,11 +384,19 @@ sub info {
 	if ($where) {
 	    $logger->info ( loc("Branch: %1 (%2)\n", $bname, $where ));
 	    return unless $verbose;
+	    $logger->info ( loc("Revision: %1\n", $target->revision));
 	    $logger->info ( loc("Repository path: %1\n", $target->depotpath ));
 	    if ($where ne 'trunk') { # project trunk should not have Copied info
 		for ($target->copy_ancestors) {
 		    next if $bname eq $self->branch_name($_->[0]);
 		    $logger->info( loc("Copied From: %1@%2\n", $self->branch_name($_->[0]), $_->[1]));
+		    last;
+		}
+		$self->{xd} = $target->{xd};
+		$self->{merge} = SVK::Merge->new (%$self);
+		my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
+		for (sort { $minfo->{$b} <=> $minfo->{$a} } keys %$minfo) {
+		    $logger->info( loc("Merged From: %1@%2\n",$self->branch_name((split/:/)[1]),$minfo->{$_}));
 		    last;
 		}
 	    }

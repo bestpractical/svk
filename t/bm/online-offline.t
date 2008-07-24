@@ -118,8 +118,10 @@ chdir ("C");
 is_output ($svk, 'br', [],
     ["Project name: MyProject",
      "Branch: release/abc (offline)",
+     "Revision: 22",
      "Repository path: //local/MyProject/release/abc/C",
-     'Copied From: feature/foobar@12']);
+     'Copied From: feature/foobar@12',
+     'Merged From: release/abc@18']);
 
 is_output ($svk, 'br', ['--offline'],
     ["Current branch already offline"]);
@@ -127,6 +129,8 @@ is_output ($svk, 'br', ['--offline'],
 is_output ($svk, 'br', [],
     ["Project name: MyProject",
      "Branch: release/abc (offline)",
+     "Revision: 22",
      "Repository path: //local/MyProject/release/abc/C",
-     'Copied From: feature/foobar@12']);
+     'Copied From: feature/foobar@12',
+     'Merged From: release/abc@18']);
 
