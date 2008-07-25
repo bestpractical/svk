@@ -982,6 +982,7 @@ sub run {
     if (!$branch_name) { # no branch_name means using current branch(trunk) as src
 	$branch_name = $proj->branch_name($target->path);
 	$self->{from} = $branch_name;
+	$branch_name = $proj->name."-trunk" if $branch_name eq 'trunk';
     }
     $self->{local} = 1;
     $self->{switch} = 1;

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 24;
+plan tests => 26;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -134,3 +134,14 @@ is_output ($svk, 'br', [],
      'Copied From: feature/foobar@12',
      'Merged From: release/abc@18']);
 
+chdir('..');
+$svk->br('--switch','trunk');
+
+is_output_like ($svk, 'info', [],
+   qr|Depot Path: //mirror/MyProject/trunk|);
+
+$svk->br('--offline'); # offline the trunk
+
+# w/o bname, will use <pname>-trunk as the local(offline) bname
+is_output_like ($svk, 'info', [],
+   qr|Depot Path: //local/MyProject/MyProject-trunk|);
