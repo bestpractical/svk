@@ -235,9 +235,9 @@ sub _get_inspector {
 }
 
 sub _get_remote_editor {
-    my ($self, $m, $mpath, $message, $mcallback) = @_;
+    my ($self, $m, $mpath, $message, $mcallback, $opts) = @_;
     my ($base_rev, $editor) = $m->get_merge_back_editor
-	($mpath, $message, $mcallback);
+	($mpath, $message, $mcallback, $opts);
     $editor = SVK::Editor::MapRev->wrap_without_copy($editor, $m->fromrev);
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
@@ -289,7 +289,8 @@ sub get_editor {
 	    $tee_callback->($rev) if $use_tee;
         };
 
-	$meditor = $self->_get_remote_editor($m, $mpath, $arg{message}, $mcallback);
+	$meditor = $self->_get_remote_editor($m, $mpath, $arg{message}, $mcallback,
+                                             { lock_tokens => $arg{lock_tokens} } );
 
 	# XXX: fix me, need local knowledge about txn as well
 	return ($meditor, $self->inspector,

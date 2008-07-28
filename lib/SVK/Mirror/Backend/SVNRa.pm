@@ -820,7 +820,7 @@ sub _relayed {
 }
 
 sub get_commit_editor {
-    my ($self, $path, $msg, $committed) = @_;
+    my ($self, $path, $msg, $committed, $opts) = @_;
     die loc("relayed merge back not supported yet.\n") if $self->_relayed;
     $self->{commit_ra} = $self->_new_ra( url => $self->mirror->url.$path );
 
@@ -832,7 +832,7 @@ sub get_commit_editor {
 		# only recycle the ra if we are committing from root
 		$self->_ra_finished($self->{commit_ra});
                 $committed->(@_);
-            }, undef, 0 ) );
+            }, $opts->{lock_tokens}, 0 ) );
 }
 
 sub change_rev_prop {
