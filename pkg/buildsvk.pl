@@ -148,7 +148,7 @@ sub build_module {
     my ($dir) = glob($self->build_dir."/$module-*");
     rmtree [$dir] if $dir;
 
-    my ($file) = glob("src/$module-*");
+    my ($file) = glob("src/$module-*") or die $module;
     $self->extract($file);
 
     ($dir) = glob($self->build_base."/$module-*");
