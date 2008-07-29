@@ -824,7 +824,7 @@ sub do_add {
                     my ($path, $status) = @_;
                     to_native($path, 'path');
                     my $copath = $target->copath($path);
-                    my $report = $target->report->subdir($path);
+                    my $report = $target->report ? $target->report->subdir($path) : $path;
 
                     $target->contains_copath ($copath) or return;
                     die loc ("%1 already added.\n", $report)

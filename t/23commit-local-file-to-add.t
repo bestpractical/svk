@@ -45,12 +45,9 @@ TMP
 }
 
 
-TODO: {
-local $TODO = 'change ? to A';
-
 set_editor_add();
 is_output($svk, 'commit',[],
 	  ['Waiting for editor...',
 	   'A   boo',
 	   'Committed revision 4.']);
-}
+
