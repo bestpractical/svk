@@ -2,7 +2,10 @@
 use strict;
 use SVK::Test;
 BEGIN {
-  -d '/proc' or
+    plan skip_all => "doesn't work on macosx"
+        if $^O eq 'darwin';
+
+  -d '/proc' or 
     eval { require BSD::Resource; } or
     plan( skip_all => "No /proc and no BSD::Resources" );
 }
