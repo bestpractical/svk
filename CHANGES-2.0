@@ -1,21 +1,3 @@
-[Changes for 2.1.0 - ]
-
-  New feature
-    * Branch support as 'svk branch' subcommand
-    * SVKBATCHMODE environemt variable
-
-  Mirror subsystem
-    * Fix a bug when mirroring a copy revision with unnormalized
-      revision outside mirror anchor and newer th an anchor head.
-
-  Merge subsystem
-    * Bugfixes for opened file handle passed to editor under win32,
-      causing file to be opened as read-only.
-    * Fix a problem that merge-ticket might be reverted on mirror
-      in some cases.
-    * Fix a bug when merging a copy with modification to the copied
-      source, it might cause checksum error.
-
 [Changes for 2.0.2 - 20 Jul, 2007]
 
   Mirror subsystem
