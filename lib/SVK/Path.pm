@@ -271,7 +271,7 @@ sub get_editor {
     my $use_tee;
     my $post_handler;
     if ($m) {
-	$use_tee = !$arg{notee} &&
+	$use_tee = !IS_WIN32 && !$arg{notee} &&
 	    SVN::TxDelta->can('invoke_window_handler') &&
 	    $m->_backend->has_replay;
         my $mcallback = sub {
