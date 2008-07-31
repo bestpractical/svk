@@ -309,7 +309,7 @@ t/mirror/sync-empty.t
 t/mirror/sync-escape.t
 t/mirror/sync-failed-hook.t
 t/mirror/sync-rebase-delta.t
-t/mirror/sync-rebase-mutli.t
+t/mirror/sync-rebase-multi.t
 t/mirror/sync-rebase.t
 t/mirror/sync-replaced-nocopy.t
 t/mirror/sync-replaced.t
