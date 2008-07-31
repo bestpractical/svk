@@ -59,6 +59,7 @@ use Sys::Hostname;
 use SVK::I18N;
 use SVK::Util qw(uri_escape uri_unescape);
 use Scalar::Util 'weaken';
+use File::Temp qw//;
 
 use base 'Class::Accessor::Fast';
 use SVK::Notify;
@@ -245,6 +246,48 @@ sub bootstrap {
 
     if ($dumpfile eq '-') {
         $fh = \*STDIN;
+    } elsif ($dumpfile =~ m{^(file|https?|ftp)://}) {
+        $logger->info( loc( "Downloading dump file: %1", $dumpfile ) );
+        my ($tmp, $path) = File::Temp::tempfile;
+
+        require LWP::UserAgent;
+        my $ua = LWP::UserAgent->new(agent => "SVK-bootstrap/$SVK::VERSION");
+        my ( $received_size, $next_update ) = ( 0, 0 );
+        my $did_set_target = 0;
+        # XXX: switch to a default notify object that takes care
+        # of quiet and gui variants.
+        my $progress = SVK::Notify->new->progress(
+                min => 0,
+                max => 1024,
+        );
+        my $response = $ua->get(
+            $dumpfile,
+            ':content_cb' => sub {
+                my ( $data, $cb_response, $protocol ) = @_;
+                if ($progress) {
+                    unless ($did_set_target) {
+                        if ( my $content_length = $cb_response->content_length ) {
+                            $progress->attr(max => $content_length);
+                            $did_set_target = 1;
+                        }
+                        else {
+                            $progress->attr(max => 
+                                              $received_size + 2 * length $data );
+                        }
+                    }
+                }
+                $received_size += length $data;
+                print { $tmp } $data;
+                if ($progress && $received_size >= $next_update) {
+                    local $| = 1;
+                    print STDERR $progress->report( "%45b %p\r", $received_size );
+                    $next_update = $received_size + 1;
+                }
+            },
+            ':read_size_hint' => 16384,
+        );
+        die $response->status_line unless $response->is_success;
+        open $fh, "<", $path or die $!;
     }
     else {
         open $fh, '<', $dumpfile or die $!;
