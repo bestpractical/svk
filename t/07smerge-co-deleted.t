@@ -21,12 +21,12 @@ $svk->switch ('//local@4', $copath);
 
 is_output($svk, 'sm', ['-C', '//trunk', $copath],
     ['Auto-merging (3, 6) /trunk to /local (base /trunk:3).',
-     'U   t/checkout/smerge/me',
+     __('U   t/checkout/smerge/me'),
      qr'New merge ticket: .*:/trunk:6']
 );
 is_output($svk, 'sm', ['//trunk', $copath],
     ['Auto-merging (3, 6) /trunk to /local (base /trunk:3).',
-     'U   t/checkout/smerge/me',
+     __('U   t/checkout/smerge/me'),
      qr'New merge ticket: .*:/trunk:6']
 );
 

@@ -25,11 +25,11 @@ flush_co();
     $svk->ps ('prop', 'value', "$copath/me");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " g  t/checkout/smerge/me",
+        __(" g  t/checkout/smerge/me"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " g  t/checkout/smerge/me",
+       __( " g  t/checkout/smerge/me"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
@@ -44,18 +44,18 @@ flush_co();
     $svk->ps ('another-prop', 'value', "$copath/me");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " U  t/checkout/smerge/me",
+        __(" U  t/checkout/smerge/me"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " U  t/checkout/smerge/me",
+        __(" U  t/checkout/smerge/me"),
     ] );
     is_output($svk, 'st', [$copath], [
-        " M  t/checkout/smerge/me",
+        __(" M  t/checkout/smerge/me"),
     ] );
     is_output($svk, 'di', [$copath], [
         "",
-        "Property changes on: $copath/me",
+        __("Property changes on: $copath/me"),
         "___________________________________________________________________",
         "Name: another-prop",
         " +value",
@@ -70,22 +70,22 @@ flush_co();
     $svk->ps ('prop', 'another-value', "$copath/me");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " C  t/checkout/smerge/me",
+        __(" C  t/checkout/smerge/me"),
         "1 conflict found.",
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " C  t/checkout/smerge/me",
+        __(" C  t/checkout/smerge/me"),
         "1 conflict found.",
     ] );
     is_output($svk, 'st', [$copath], [
-        " C  t/checkout/smerge/me",
+        __(" C  t/checkout/smerge/me"),
     ] );
 
     # XXX: this looks wierd a littl without line endings
     is_output($svk, 'di', [$copath], [
         "",
-        "Property changes on: $copath/me",
+        __("Property changes on: $copath/me"),
         "___________________________________________________________________",
         "Name: prop",
         " -value",
@@ -112,11 +112,11 @@ flush_co_dir();
     $svk->ps ('prop', 'value', "$copath/A");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " g  t/checkout/smerge/A",
+        __(" g  t/checkout/smerge/A"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " g  t/checkout/smerge/A",
+        __(" g  t/checkout/smerge/A"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
@@ -131,18 +131,18 @@ flush_co_dir();
     $svk->ps ('another-prop', 'value', "$copath/A");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " U  t/checkout/smerge/A",
+        __(" U  t/checkout/smerge/A"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " U  t/checkout/smerge/A",
+        __(" U  t/checkout/smerge/A"),
     ] );
     is_output($svk, 'st', [$copath], [
-        " M  t/checkout/smerge/A",
+        __(" M  t/checkout/smerge/A"),
     ] );
     is_output($svk, 'di', [$copath], [
         "",
-        "Property changes on: $copath/A",
+        __("Property changes on: $copath/A"),
         "___________________________________________________________________",
         "Name: another-prop",
         " +value",
@@ -157,22 +157,22 @@ flush_co_dir();
     $svk->ps ('prop', 'another-value', "$copath/A");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " C  t/checkout/smerge/A",
+        __(" C  t/checkout/smerge/A"),
         "1 conflict found.",
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " C  t/checkout/smerge/A",
+        __(" C  t/checkout/smerge/A"),
         "1 conflict found.",
     ] );
     is_output($svk, 'st', [$copath], [
-        " C  t/checkout/smerge/A",
+        __(" C  t/checkout/smerge/A"),
     ] );
 
     # XXX: this looks wierd a littl without line endings
     is_output($svk, 'di', [$copath], [
         "",
-        "Property changes on: $copath/A",
+        __("Property changes on: $copath/A"),
         "___________________________________________________________________",
         "Name: prop",
         " -value",
@@ -194,7 +194,7 @@ sub flush_co {
     is_output($svk, 'up', ['-C', $copath], [
         #XXX, TODO: why it's corpath instead copath?
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        " U  t/checkout/smerge/me",
+        __(" U  t/checkout/smerge/me"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
@@ -209,7 +209,7 @@ sub flush_co_dir {
     is_output($svk, 'up', ['-C', $copath], [
         #XXX, TODO: why it's corpath instead copath?
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        " U  t/checkout/smerge/A",
+        __(" U  t/checkout/smerge/A"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );

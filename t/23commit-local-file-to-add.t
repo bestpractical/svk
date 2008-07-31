@@ -10,10 +10,10 @@ mkdir($copath);
 chdir($copath);
 is_output ($svk, 'checkout', ['//V/A'],
 	   ["Syncing //V/A(/V/A) in ".__"$corpath/A to 3.",
-	    'A   A/Q',
-	    'A   A/Q/qu',
-	    'A   A/Q/qz',
-	    'A   A/be']);
+	    __('A   A/Q'),
+	    __('A   A/Q/qu'),
+            __('A   A/Q/qz'),
+            __('A   A/be')]);
 
 ok (-e 'A/Q/qu');
 
@@ -23,9 +23,9 @@ append_file("A/Q/qz", "to have commit work\n");
 
 chdir('A');
 is_output($svk, 'status', [],
-	  ['M   Q/qu',
-	   'M   Q/qz',
-	   '?   boo']);
+	  [__('M   Q/qu'),
+	   __('M   Q/qz'),
+	   __('?   boo')]);
 
 sub set_editor_add
 {

@@ -32,9 +32,9 @@ $svk->commit ('-m', 'add a dir', "$copath");
 # XXX: skipped is wrong, but anyway it must report things at least
 is_output ($svk, 'smerge', ['-C', '//trunk', '//local'],
 	   ['Auto-merging (2, 6) /trunk to /local (base /trunk:2).',
-	    __"    A - skipped",
-	    __"    A/a_file - skipped",
-	    __"    A/a_dir - skipped",
+	    "    A - skipped",
+	    "    A/a_file - skipped",
+	    "    A/a_dir - skipped",
 	    "Empty merge.",
 	   ]);
 

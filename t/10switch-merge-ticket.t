@@ -37,10 +37,10 @@ $svk->sm ('//trunk', $copath);
 $svk->switch ('//local-another', $copath);
 is_output($svk, 'diff', [$copath],
     [
-    '=== t/checkout/smerge/me',
+    __('=== t/checkout/smerge/me'),
     '==================================================================',
-    "--- t/checkout/smerge/me\t(revision 9)",
-    "+++ t/checkout/smerge/me\t(local)",
+     __("--- t/checkout/smerge/me\t(revision 9)"),
+     __("+++ t/checkout/smerge/me\t(local)"),
     '@@ -1,2 +1,3 @@',
     ' first line in me',
     ' 2nd line in me - mod',
