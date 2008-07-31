@@ -61,6 +61,7 @@ use SVK::Util qw(uri_escape uri_unescape);
 use Scalar::Util 'weaken';
 
 use base 'Class::Accessor::Fast';
+use SVK::Notify;
 
 __PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy _rev_cache));
 
