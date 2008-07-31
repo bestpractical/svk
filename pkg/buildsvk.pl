@@ -61,7 +61,7 @@ $build->build_module($_) for qw(Scalar-List-Utils Class-Autouse version Sub-Uple
 $build->build_module($_) for qw(Locale-Maketext-Lexicon TermReadKey IO-Pager);
 $build->build_module($_) for qw(File-chdir SVN-Mirror);
 $build->build_module($_) for qw(FreezeThaw);
-$build->build_module($_) for qw(PerlIO::via::Bzip2 PerlIO::gzip SVN::Dump);
+$build->build_module($_) for qw(PerlIO-via-Bzip2 PerlIO-gzip SVN-Dump);
 
 my $svkroot = shift;
 if ($svkroot) {
