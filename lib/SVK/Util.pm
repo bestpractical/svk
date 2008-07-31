@@ -814,6 +814,7 @@ sub can_run {
 
     for my $dir ((split /$Config::Config{path_sep}/, $ENV{PATH}), @path, '.') {
         my $abs = catfile($dir, $_[0]);
+        next if -d $abs;
         return $abs if (-x $abs or $abs = is_executable($abs));
     }
 
