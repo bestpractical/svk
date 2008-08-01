@@ -287,10 +287,10 @@ sub bootstrap {
             ':read_size_hint' => 16384,
         );
         die $response->status_line unless $response->is_success;
-        open $fh, "<", $path or die $!;
+        open $fh, "<:raw", $path or die $!;
     }
     else {
-        open $fh, '<', $dumpfile or die $!;
+        open $fh, '<:raw', $dumpfile or die $!;
     }
 
     # XXX make these fail optionally
