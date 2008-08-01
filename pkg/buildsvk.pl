@@ -113,9 +113,6 @@ sub prepare_svn_perl_binding {
 	    copy($file, $self->build_dir);
 	}
     }
-    my @SVNCoreModules = ( 'Base.pm', 'Client.pm', 'Core.pm',
-	'Delta.pm', 'Fs.pm', 'Ra.pm', 'Repos.pm', 'Wc.pm',
-	'_Core.bs', '_Core.so');
     my @SVNCoreModules = ( 'Base', 'Client', 'Core',
 	'Delta', 'Fs', 'Ra', 'Repos', 'Wc');
     for my $prefix (@INC) {
