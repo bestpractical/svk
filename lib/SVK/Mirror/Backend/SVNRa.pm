@@ -663,7 +663,7 @@ sub _find_edge_entry {
             my $entry = $paths->{$_};
             if ($entry->{action} eq 'A' && $entry->{copyfrom_path}) {
                 return ($entry,
-                        SVK::Util::abs2rel($translate_from, $_ => $entry->{copyfrom_path}),
+                        SVK::Util::abs2rel($translate_from, $_ => $entry->{copyfrom_path}, '/'),
                         $entry->{copyfrom_rev});
             }
         }
