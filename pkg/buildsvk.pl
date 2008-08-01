@@ -116,15 +116,28 @@ sub prepare_svn_perl_binding {
     my @SVNCoreModules = ( 'Base.pm', 'Client.pm', 'Core.pm',
 	'Delta.pm', 'Fs.pm', 'Ra.pm', 'Repos.pm', 'Wc.pm',
 	'_Core.bs', '_Core.so');
+    my @SVNCoreModules = ( 'Base', 'Client', 'Core',
+	'Delta', 'Fs', 'Ra', 'Repos', 'Wc');
     for my $prefix (@INC) {
-	for my $SVNdir ("/SVN/","/auto/SVN/","/auto/SVN/_Core/") {
+	for my $SVNdir ("/SVN/","/auto/SVN/") {
 	    my $fullpath = $prefix.$SVNdir;
 	    if (-d $fullpath) {
 		mkpath [$self->perldest.$SVNdir];
-		for my $file (@SVNCoreModules) {
-		    if (-f $fullpath.'/'.$file) {
-		    warn $file;
-		    warn copy($fullpath."/".$file, $self->perldest.$SVNdir);
+		for my $module (@SVNCoreModules) {
+		    my $file = $module.".pm";
+		    if (-f $fullpath.$file) {
+			warn $file;
+			copy($fullpath.$file, $self->perldest.$SVNdir);
+		    }
+		    if (-d $fullpath.'_'.$module) {
+			mkpath [$self->perldest.$SVNdir.'_'.$module];
+			for my $ext (".bs", ".so") {
+			    my $file = $fullpath.'_'.$module.'/_'.$module.$ext;
+			    if (-f $file) {
+				warn $file;
+				copy($file, $self->perldest.$SVNdir.'_'.$module);
+			    }
+			}
 		    }
 		}
 	    }
