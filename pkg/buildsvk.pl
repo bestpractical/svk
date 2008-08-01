@@ -295,7 +295,7 @@ use File::Path (qw(rmtree));
 use File::Spec;
 use File::Copy 'move';
 
-my $svn_version = '1.5.0';
+use constant svn_version => '1.5.0';
 
 sub build_dir {
     'c:/tmp/svk-build';
@@ -339,14 +339,13 @@ sub prepare_svn_core {
     my $self = shift;
     return 1 if -e File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'lib', 'SVN' );
 
-    $self->extract("svn-win32-${svn_version}.zip");
-    $self->extract("svn-win32-${svn_version}_pl.zip");
+    $self->extract("svn-win32-@{[svn_version]}.zip");
+    $self->extract("svn-win32-@{[svn_version]}_pl.zip");
 
-    my $svnperl = File::Spec->catfile($self->build_dir, "svn-win32-$svn_version", 'perl', 'site', 'lib' );
+    my $svnperl = File::Spec->catfile($self->build_dir, "svn-win32-@{[svn_version]}", 'perl', 'site', 'lib' );
 
     my $strperl = File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'lib' );
 
-warn "$svnperl / $strperl";
     rename(File::Spec->catfile($svnperl, "SVN") =>
 	   File::Spec->catfile($strperl, "SVN")) or die $!;
 
@@ -354,9 +353,9 @@ warn "$svnperl / $strperl";
 	   File::Spec->catfile($strperl, "auto", "SVN")) or die $!;
 
     move($_ => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'perl', 'bin'))
-	for glob($self->build_dir."/svn-win32-$svn_version/bin/*.dll");
+	for glob($self->build_dir."/svn-win32-@{[svn_version]}/bin/*.dll");
 
-    move($self->build_dir."/svn-win32-$svn_version/iconv" => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv'))
+    move($self->build_dir."/svn-win32-@{[svn_version]}/iconv" => File::Spec->catfile($self->build_dir, 'strawberry-perl', 'iconv'))
 }
 
 sub prepare_dist {
