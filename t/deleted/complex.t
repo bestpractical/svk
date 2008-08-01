@@ -28,7 +28,7 @@ is_output($svk, 'cp', ['-m', 'copy //local from //trunk', '//trunk', '//local'],
 );
 
 is_output($svk, 'switch', ['//local'],
-    [__"Syncing //trunk(/trunk) in $corpath to 5."]
+    ["Syncing //trunk(/trunk) in $corpath to 5."]
 );
 overwrite_file('A/Q/ql', "local A/Q/ql\n");
 $svk->add('A/Q/ql');
@@ -42,7 +42,7 @@ is_output($svk, 'cp', ['-m', 'copy //local-another from //trunk', '//trunk', '//
 
 is_output($svk, 'switch', ['//local-another'],
     [
-        __"Syncing //local(/local) in $corpath to 7.",
+        "Syncing //local(/local) in $corpath to 7.",
         __"U   A/Q/qu",
         __"D   A/Q/ql",
         __"U   A/be",
@@ -77,7 +77,7 @@ is_output($svk, 'cp', ['//local/A/Q', 'A/'],
     ]
 );
 is_output($svk, 'st', [],
-    ['R + A/Q']
+    [__('R + A/Q')]
 );
 is_output($svk, 'ci', ['-m', 'replace A/Q'],
     ['Committed revision 10.']
