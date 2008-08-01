@@ -81,7 +81,7 @@ exit 0;
 
 package SVK::Build;
 use Archive::Extract;
-           use Archive::Tar;
+use Archive::Tar;
 use Env::Path;
 use File::Path (qw(mkpath rmtree));
 use File::chdir;
@@ -99,6 +99,35 @@ sub prepare_svn_core {
 	if ($lib =~ m/libsvn_*/) {
 	warn "$lib $file";
 	    copy($file, $self->build_dir);
+	}
+    }
+    $self->prepare_svn_perl_binding();
+}
+sub prepare_svn_perl_binding {
+    my $self = shift;
+    my $output = `ldd \`locate -l 1 _Core.so\``;
+    for ($output =~ m/^.*$/mg) {
+	my ($lib, $file) = m/(\S.*?) => (\S.*?)\s/ or next;
+	if ($lib =~ m/libsvn_swig*/ || $lib =~ m/libapr*/) {
+	warn "$lib $file";
+	    copy($file, $self->build_dir);
+	}
+    }
+    my @SVNCoreModules = ( 'Base.pm', 'Client.pm', 'Core.pm',
+	'Delta.pm', 'Fs.pm', 'Ra.pm', 'Repos.pm', 'Wc.pm',
+	'_Core.bs', '_Core.so');
+    for my $prefix (@INC) {
+	for my $SVNdir ("/SVN/","/auto/SVN/","/auto/SVN/_Core/") {
+	    my $fullpath = $prefix.$SVNdir;
+	    if (-d $fullpath) {
+		mkpath [$self->perldest.$SVNdir];
+		for my $file (@SVNCoreModules) {
+		    if (-f $fullpath.'/'.$file) {
+		    warn $file;
+		    warn copy($fullpath."/".$file, $self->perldest.$SVNdir);
+		    }
+		}
+	    }
 	}
     }
 }
