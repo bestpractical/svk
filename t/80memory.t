@@ -47,6 +47,9 @@ $svk->smerge ('-Bm', 'merge init', '//mem-src', '//mem-dest');
 
 our ($copath, $corpath) = get_copath ('memory');
 
+TODO: {
+local $TODO = "Fix more leaks";
+
 no_leak('svk co', sub {
   $svk->checkout ('//mem-src', $copath);
 });
@@ -58,9 +61,6 @@ for my $name (@names) {
   append_file ("$copath/container/f-$name", "file $name");
 }
 
-
-TODO: {
-local $TODO = "Fix more leaks";
 
 no_leak('svk add', sub {
   $svk->add ("$copath/container");
