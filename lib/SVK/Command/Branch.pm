@@ -300,7 +300,7 @@ sub run {
 		path     => $proj->trunk
 	    }
 	);
-        my $lb = $trunk->mclone( path => $target->_to_pclass($proj->local_root) );
+        my $lb = $trunk->mclone( path => $target->_to_pclass($proj->local_root)->as_foreign('Unix') );
 	die loc("The local project root %1 is a branch itself.\n".
 	     "Please rename the directory and try again\n", $proj->local_root) if $lb->related_to($trunk);
     }
