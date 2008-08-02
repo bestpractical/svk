@@ -32,10 +32,10 @@ is_output_like ($svk, 'branch', ['--checkout', 'feature/foo'],
 
 chdir($copath."/A");
 is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject'],
-    qr'Syncing \S+ in \S+A/feature/foo to \d.+');
+    qr'Syncing \S+ in .+A.feature.foo to \d.+');
 
 is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject', '../B/'],
-    qr'Syncing \S+ in \S+B to \d.+');
+    qr'Syncing \S+ in .+B to \d.+');
 
 chdir('../B');
 
@@ -44,7 +44,7 @@ is_output_like ($svk, 'info',[],
 
 # swap the order, and co the trunk
 is_output_like ($svk, 'branch', ['--checkout', 'trunk', '../C', '//mirror/MyProject'],
-    qr'Syncing \S+ in \S+C to \d.+');
+    qr'Syncing \S+ in .+C to \d.+');
 
 chdir('../C');
 
