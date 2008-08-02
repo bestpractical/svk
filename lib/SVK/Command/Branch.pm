@@ -300,7 +300,7 @@ sub run {
 		path     => $proj->trunk
 	    }
 	);
-        my $lb = $trunk->mclone( path => $target->_to_pclass($proj->local_root)->as_foreign('Unix') );
+        my $lb = $trunk->mclone( path => $target->_to_pclass($proj->local_root,'Unix') );
 	die loc("The local project root %1 is a branch itself.\n".
 	     "Please rename the directory and try again\n", $proj->local_root) if $lb->related_to($trunk);
     }
@@ -423,7 +423,7 @@ sub run {
 	$self->SVK::Command::Switch::run(
 	    $self->arg_uri_maybe($dst_branch_path),
 	    $target
-	) if $target->_to_pclass($target->path) eq $target->_to_pclass($src_branch_path)
+	) if $target->_to_pclass($target->path,'Unix') eq $target->_to_pclass($src_branch_path,'Unix')
 	    and !$self->{check_only};
     }
     return;
