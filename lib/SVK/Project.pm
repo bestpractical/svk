@@ -341,7 +341,8 @@ sub branch_path {
             ($bname ne 'trunk' ?
                 $self->branch_location . "/$bname" : $self->trunk)
         );
-    $branch_path = '/'.dir($self->depot->depotname)->subdir($branch_path);
+    $branch_path =
+	'/'.dir($self->depot->depotname)->subdir($branch_path)->as_foreign('Unix');
     return $branch_path;
 }
 
@@ -359,7 +360,8 @@ sub tag_name {
 sub tag_path {
     my ($self, $tname) = @_;
     my $tag_path = ($tname ne 'trunk' ?  $self->tag_location . "/$tname" : $self->trunk);
-    $tag_path = '/'.dir($self->depot->depotname)->subdir($tag_path);
+    $tag_path =
+	'/'.dir($self->depot->depotname)->subdir($tag_path)->as_foreign('Unix');
     return $tag_path;
 }
 
