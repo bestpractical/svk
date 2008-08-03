@@ -52,7 +52,7 @@ is_output_like ($svk, 'info',[],
     qr'Depot Path: //mirror/MyProject/trunk');
 
 is_output_like ($svk, 'branch', ['--checkout', 'feature/foo', '//mirror/MyProject', $corpath.'/D'],
-    qr'Syncing \S+ in \S+D to \d.+');
+    qr'Syncing \S+ in .+D to \d.+');
 
 chdir('../D');
 
