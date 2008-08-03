@@ -370,7 +370,7 @@ sub run {
     $self->{parent} = 1;
     for my $src_path (@src_paths) {
 	$src_path = $target->path unless $src_path;
-	$src_path = $target->_to_pclass("$src_path");
+	$src_path = $target->_to_pclass("$src_path",'Unix');
 	if ($target->_to_pclass("/local")->subsumes($src_path)) {
 	    $self->{local}++;
 	} else {
@@ -527,7 +527,7 @@ sub run {
 
     for my $src (@srcs) {
 	my $src_branch_path = $proj->depotpath_in_branch_or_tag($src);
-	$src_branch_path =  '/'.dir($proj->depot->depotname,$proj->trunk)
+	$src_branch_path =  '/'.dir($proj->depot->depotname,$proj->trunk)->as_foreign('Unix')
 	    if $src eq 'trunk';
 	$src = $self->arg_depotpath($src_branch_path);
 

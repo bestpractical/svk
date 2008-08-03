@@ -314,9 +314,9 @@ sub _find_project_path {
 sub depotpath_in_branch_or_tag {
     my ($self, $name) = @_;
     # return 1 for branch, 2 for tag, others => 0
-    return '/'.dir($self->depot->depotname,$self->branch_location,$name)
+    return '/'.dir($self->depot->depotname,$self->branch_location,$name)->as_foreign('Unix')
 	if grep { $_ eq $name } @{$self->branches};
-    return '/'.dir($self->depot->depotname,$self->tag_location,$name)
+    return '/'.dir($self->depot->depotname,$self->tag_location,$name)->as_foreign('Unix')
 	if grep { $_ eq $name } @{$self->tags};
     return ;
 }
