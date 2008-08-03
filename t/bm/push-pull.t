@@ -117,7 +117,7 @@ is_output ($svk, "branch", ['--pull'], [
         "New merge ticket: $test_uuid:/A/trunk:12",
         "Committed revision 19.",
         "Syncing //local/A/lo2(/local/A/lo2) in $corpath_default to 19.",
-        "A   A/new-file"]);
+        __("A   A/new-file")]);
 
 # add a file to remote
 append_file ("$corpath_test/A/new-file", "some text\n");
