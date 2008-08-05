@@ -1,5 +1,6 @@
 ~$
 .gz$
+.bz2$
 .zip$
 .exe$
 .bak$
@@ -31,3 +32,4 @@ t/apache*
 tmp/*
 ^SVK-
 ^cover*
+\.patch$
