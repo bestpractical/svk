@@ -6,5 +6,13 @@ fi
 
 BASE=`echo $BASE | sed s/maketest$//`;
 PROVE=`which prove`
-cd /tmp
-LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl "$PROVE" -r ${BASE}t
+
+# canonicalize the cwd for test
+TMP=`readlink /tmp`
+if [ "x${BASE}" = x ]; then
+	TMP=tmp
+fi
+
+cd /${TMP}
+echo /${TMP}
+DYLD_LIBRARY_PATH=${BASE} LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl "$PROVE" -r ${BASE}t
