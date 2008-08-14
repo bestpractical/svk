@@ -378,7 +378,7 @@ sub info {
 	    $bname = $self->branch_name($target->path);
 	} elsif ($self->tag_location and dir($self->tag_location)->subsumes($target->path)) {
 	    $bname = $self->tag_name($target->path);
-	} elsif (dir($self->local_root)->subsumes($target->path)) {
+	} elsif ($target->_to_pclass("/local")->subsumes($target->path)) {
 	    $where = 'offline';
 	    $bname = $self->branch_name($target->path,1);
 	}
