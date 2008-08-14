@@ -3,6 +3,7 @@ use strict;
 use Test::More;
 use SVK::Test;
 eval { require SVN::Mirror; 1 } or plan skip_all => 'require SVN::Mirror';
+eval { require SVN::Dump; 1 } or plan skip_all => 'require SVN::Dump';
 plan tests => 7;
 
 my ($xd, $svk) = build_test('test', 'm2', );
