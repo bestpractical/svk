@@ -138,7 +138,7 @@ sub load_project {
 	);
     } else {
 	$logger->info(
-	    loc("Project not found. use 'svk branch --setup %1' to initial.\n", $target->depotpath)
+	    loc("Project not found. use 'svk branch --setup %1' to initialize.\n", $target->depotpath)
 	);
     }
     return ;
@@ -647,7 +647,7 @@ sub parse_arg {
 
     if (!$proj) {
         $logger->info(
-            loc("Project not found. use 'svk branch --setup mirror_path' to initial one.\n",$msg)
+            loc("Project not found. use 'svk branch --setup mirror_path' to initialize one.\n",$msg)
         );
 	return ;
     }
@@ -1038,8 +1038,8 @@ SVK::Command::Branch - Manage a project with its branches
  --create           : create a new branch
  --tag              : create in the tags directory
  --local            : targets in local branch
- --delete           : delete BRANCH(s)
- --checkout         : checkout BRANCH in current directory
+ --delete [--rm|del]: delete BRANCH(s)
+ --checkout [--co]  : checkout BRANCH in current directory
  --switch           : switch the current checkout to another branch
                           (can be paired with --create)
  --merge            : automatically merge all changes from BRANCH1, BRANCH2,
@@ -1052,6 +1052,7 @@ SVK::Command::Branch - Manage a project with its branches
  --from-tag TAG     : specify the source tag name
  -C [--check-only]  : try a create, move or merge operation but make no     
                       changes
+ --export           : used with --checkout to create a detached copy
 
 
 =head1 DESCRIPTION
@@ -1060,6 +1061,133 @@ SVK provides tools to more easily manage your project's branching
 and merging, so long as you use the standard "trunk/, branches/, tags/"
 directory layout for your project or specifically tell SVK where
 your branches live.
+
+=head1 Usage (without projects)
+
+A very simple sample usage might be to checkout the trunk from a project
+you want to work on but don't have upstream commit rights for.  This
+allows you to maintain a local branch and to send in patches.
+
+Assuming you have alread mirrored this repository to //mirror/Project
+
+    svk co //mirror/Project/trunk
+or
+    svk branch --co trunk //mirror/Project/
+
+and then 
+
+    svk branch --offline 
+
+You're now working in a local branch, make local commits and changes
+as you need to.  If you want to bring in changes from your remote
+repository, you can pull them down
+
+    svk branch --pull
+
+To see what changes you've made, you can create a patch between the
+local branch and the remote repository
+
+    svk branch -P - --push
+
+If you have commit rights to the remote repository, you can also
+
+    svk branch --push
+
+to send your changes.
+
+You can use svk branch's branching capability in this mode, but it
+will be much friendlier if you set up a project
+
+=head1 Usage (projects)
+
+To initialize a project in a repository, run the setup command
+
+    svk branch --setup //mirror/Project
+
+If you have the standard trunk branches tags directories svk
+will offer them as the starting point.  In fact, if you have
+trunk branches and tags directories, svk will try to use them
+without neeting --setup, but you won't be able to use the 
+--project flag and will need to use depotpaths in commands.
+
+The rest of this documentation assumes you've set up a project
+called Example in //mirror/Project
+
+If you're in a working copy of svk where it can work out the
+Project name, you can leave off the --project flag from the
+examples below, but you can branch/tag/merge without having
+working copies
+
+=head2 Branching
+
+To check out the trunk, you can run
+
+    svk branch --co trunk --project Example
+
+To create a branch for release engineering
+
+    svk branch --create Exmaple-1.0-releng --project Example
+
+Since you have a checkout of trunk already, you can convert that
+
+    cd trunk
+    svk branch --switch-to Example-1.0-releng
+
+Or you can get a clean checkout
+
+    svk branch --co Example-1.0-releng --project Example
+
+If changes are made on trunk and you wish to bring them down
+to the release engineering branch, you can do that with the 
+branch merge command
+
+    svk branch --merge trunk Example-1.0-releng
+
+If you're cautious, use the check flags first:
+
+    svk branch -C --merge trunk Example-1.0-releng
+    svk branch -P -  --merge trunk Example-1.0-releng
+
+These will show you what svk wants to do.
+
+Lets say you want to add a feature to trunk but work
+on a branch so you don't inconvenience others who
+are working on trunk:
+
+    svk branch --create Feature --project Example
+
+work on your feature, svk ci some changes
+
+    svk branch --merge Feature trunk --project Example
+
+continue to bring down changes several ways
+
+    svk branch --pull
+    svk branch --merge trunk Feature
+    svk branch --merge trunk .   (if you're in a working copy of the branch)
+
+and then merge back more feature work as you need to
+
+To get rid of a branch when you're done with it
+
+    svk branch --delete Feature --project Example
+
+To see all of your branches, you can do:
+
+    svk branch --list --project Example
+
+=head2 Tagging
+
+If you've been working on your releng branch and are ready to
+cut a release, you can easily create a tag
+
+    svk branch --tag --create 1.0rc1 --from Example-1.0-releng --project Example
+
+If you would like to check out this tag, use
+
+    svk branch --tag --co 1.0rc1 --project Example
+
+=head1 Project Property Details
 
 SVK branch also provides another project loading mechanism by setting
 properties on root path. Current usable properties for SVK branch are 
