@@ -213,7 +213,7 @@ sub _create_from_prop {
 }
 
 sub create_from_path {
-    my ($self, $depot, $path) = @_;
+    my ($self, $depot, $path, $pname) = @_;
     my $rev = undef;
 
     my $path_obj = SVK::Path->real_new(
@@ -221,12 +221,15 @@ sub create_from_path {
             path     => $path
         }
     );
+    use Data::Dumper;
+    warn Dumper $path_obj;
     $path_obj->refresh_revision;
 
     my ($project_name, $trunk_path, $branch_path, $tag_path) = 
 	$self->_find_project_path($path_obj);
 
     return undef unless $project_name;
+#    return undef if $pname and $pname ne $project_name;
     return SVK::Project->new(
 	{   
 	    name            => $project_name,

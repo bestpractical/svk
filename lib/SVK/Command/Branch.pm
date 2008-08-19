@@ -118,7 +118,7 @@ sub load_project {
     my $proj = SVK::Project->create_from_prop($target, $self->{project});
     $fromProp = 1 if $proj;
     $proj ||= SVK::Project->create_from_path(
-	    $target->depot, $target->path );
+	    $target->depot, $target->path, $self->{project});
     return $proj if $proj;
 
     return if $self->{setup};
