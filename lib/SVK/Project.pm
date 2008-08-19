@@ -229,7 +229,7 @@ sub create_from_path {
 	$self->_find_project_path($path_obj);
 
     return undef unless $project_name;
-#    return undef if $pname and $pname ne $project_name;
+    return undef if $pname and $pname ne $project_name;
     return SVK::Project->new(
 	{   
 	    name            => $project_name,
