@@ -135,7 +135,7 @@ sub create_from_prop {
     my $proj;
 
     foreach my $m_path (@all_mirrors) {
-	if ($pathobj->path eq '/') { # in non-wc path
+	if ($pathobj->path eq '/' and $pname) { # in non-wc path
 	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
 	    return $proj if $proj;
 	} elsif ($pathobj->_to_pclass("/local")->subsumes($pathobj->path)) {
@@ -221,8 +221,6 @@ sub create_from_path {
             path     => $path
         }
     );
-    use Data::Dumper;
-    warn Dumper $path_obj;
     $path_obj->refresh_revision;
 
     my ($project_name, $trunk_path, $branch_path, $tag_path) = 
