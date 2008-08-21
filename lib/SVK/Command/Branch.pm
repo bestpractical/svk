@@ -1031,6 +1031,8 @@ SVK::Command::Branch - Manage a project with its branches
  branch --setup DEPOTPATH
  branch --push [BRANCH]
  branch --pull [BRANCH]
+ branch --offline [BRANCH]
+ branch --online [BRANCH]
 
 =head1 OPTIONS
 
@@ -1040,7 +1042,7 @@ SVK::Command::Branch - Manage a project with its branches
  --local            : targets in local branch
  --delete [--rm|del]: delete BRANCH(s)
  --checkout [--co]  : checkout BRANCH in current directory
- --switch           : switch the current checkout to another branch
+ --switch-to        : switch the current checkout to another branch
                           (can be paired with --create)
  --merge            : automatically merge all changes from BRANCH1, BRANCH2,
                           etc, to TARGET
@@ -1052,7 +1054,13 @@ SVK::Command::Branch - Manage a project with its branches
  --from-tag TAG     : specify the source tag name
  -C [--check-only]  : try a create, move or merge operation but make no     
                       changes
+ -P [--patch] FILE  : Show the patch between the branch and where it was
+                      copied from
  --export           : used with --checkout to create a detached copy
+ --offline          : takes the current branch offline, making a copy
+                      under //local
+ --online           : takes the current branch online, pushing changes back
+                      to the mirror path, and then switches to the mirror
 
 
 =head1 DESCRIPTION
