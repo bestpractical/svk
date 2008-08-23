@@ -106,6 +106,7 @@ features(
         'PerlIO::via::Bzip2'       => '0',
         'PerlIO::gzip'             => '0',
         'SVN::Dump'                => '0.04',
+        'LWP::UserAgent'           => '0',
     ],
     'Localized messages' => [
 	-default => 1,
