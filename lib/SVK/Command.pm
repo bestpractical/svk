@@ -588,6 +588,25 @@ sub arg_co_maybe {
 	if is_uri($arg);
 
     my $rev = $arg =~ s/\@(\d+)$// ? $1 : undef;
+
+
+    # GIT: new method here for constructing path_object sanely
+
+    if (my ($depotname, $path) = $arg =~ m{^/(.*?)(/.*)}) {
+        if ( my $repospath = $self->{xd}->{depotmap}{$depotname} ) {
+            if ($repospath =~ m{\.git/?$}) {
+                require SVK::Path::Git;
+                my $p = SVK::Path::Git->real_new
+                    ({ depot => SVK::Depot->new({ repospath => $repospath, depotname => $depotname }),
+                       commit => 'HEAD',
+                       path => $path,
+                } );
+                return $p;
+            }
+        }
+
+    }
+
     my ($repospath, $path, $copath, $cinfo, $repos) =
 	$self->{xd}->find_repos_from_co_maybe ($arg, 1);
     from_native ($path, 'path', $self->{encoding});

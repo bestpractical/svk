@@ -87,6 +87,7 @@ sub mk_clonable_accessors {
 
 sub clonable_accessors {
     my $self = shift;
+    Carp::cluck unless defined $self->_clonable_accessors;
     return (@{$self->_clonable_accessors});
 }
 
