@@ -175,7 +175,7 @@ sub expand_branch {
     my ($self, $proj, $arg) = @_;
     return $arg unless $arg =~ m/\*/;
     my $match = SVK::XD::compile_apr_fnmatch($arg);
-    return grep { m/$match/ } @{ $proj->branches };
+    return map {$_->[0]} grep {$_->[0] =~  m/$match/ } @{ $proj->branches } ;
 }
 
 sub dst_name {
@@ -214,23 +214,24 @@ sub run {
     my ($self, $proj) = @_;
     return unless $proj;
 
+    $proj->{verbose} = $self->{verbose};
     if ($self->{all}) {
-	my $fmt = "%s%s\n"; # here to change layout
+	my $fmt = "%s%s%s\n"; # here to change layout
 
 	my $branches = $proj->branches (0); # branches
-	$logger->info (sprintf $fmt, $_, '') for @{$branches};
+	$logger->info (sprintf $fmt, $_->[0], '', $_->[1]) for @{$branches};
 	
 	$branches = $proj->tags ();         # tags
-	$logger->info (sprintf $fmt, $_, ' (tags)') for @{$branches};
+	$logger->info (sprintf $fmt, $_->[0], ' (tags)', $_->[1]) for @{$branches};
 
 	$branches = $proj->branches (1);    # local branches
-	$logger->info (sprintf $fmt, $_, ' (in local)') for @{$branches};
+	$logger->info (sprintf $fmt, $_->[0], ' (in local)', $_->[1]) for @{$branches};
 
     } else {
 	my $branches = $self->{tag} ? $proj->tags() : $proj->branches ($self->{local});
 
-	my $fmt = "%s\n"; # here to change layout
-	$logger->info (sprintf $fmt, $_) for @{$branches};
+	my $fmt = "%s%s\n"; # here to change layout
+	$logger->info (sprintf $fmt, $_->[0], $_->[1]) for @{$branches};
     }
     return;
 }
@@ -365,7 +366,7 @@ sub run {
 	    $branch_path, $self->{local} ? ' (in local)' : '');
     die loc("Project branch already exists: %1%2\n",
 	$dst_name, $self->{local} ? ' (in local)' : '')
-        if grep /$dst_name/,@{$proj->branches};
+        if grep {$_->[0] =~ m/$dst_name/} @{$proj->branches};
 
     $self->{parent} = 1;
     for my $src_path (@src_paths) {
@@ -631,8 +632,6 @@ sub parse_arg {
 	}
     }
     $checkout_path = pop(@arg);
-    $checkout_path = $branch_name unless $checkout_path;
-    
     if (@arg) { # this must be a project path, or error it
 	$project_path = pop(@arg);
 	if (!is_depotpath($project_path)) {
@@ -651,6 +650,9 @@ sub parse_arg {
         );
 	return ;
     }
+    $branch_name = $proj->name."-trunk"
+	if ($branch_name eq 'trunk' and $self->{local}) ;
+    $checkout_path = $branch_name unless $checkout_path;
 
     my $newtarget_path = $self->dst_path($proj, $branch_name);
     unshift @arg, $newtarget_path, $checkout_path;
@@ -976,6 +978,7 @@ use SVK::Logger;
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
 
+    return unless $proj;
     die loc ("Current branch already offline\n")
 	if ($target->_to_pclass("/local")->subsumes($target->path));
 
