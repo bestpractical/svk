@@ -57,6 +57,7 @@ use SVK::I18N;
 use SVK::Util qw( is_uri get_prompt );
 use SVK::Project;
 use SVK::Logger;
+use Path::Class;
 
 our $fromProp;
 use constant narg => undef;
@@ -102,7 +103,12 @@ sub run {
     if ($proj) {
         $proj->info($target, 1);
     } else {
-        $target->root->check_path($target->path)
+	# XXX: here just a shorthand if one calls svk br help
+	if ('help' eq file($target->path)->basename) {
+	    select STDERR unless $self->{output};
+	    $self->usage; return;
+	}
+	$target->root->check_path($target->path)
             or die loc("Path %1 does not exist.\n", $target->depotpath);
     }
 
@@ -165,7 +171,8 @@ sub locate_project {
 	    last if ($proj) ;
 	}
     } else {
-	$proj = $self->load_project($target, $self->{project});
+	$proj = $self->load_project($target, $self->{project}) unless
+	    $SVN::Node::none == $target->root->check_path($target->path);
 	$msg = loc( "No project found." );
     }
     return ($proj, $target, $msg);
@@ -622,6 +629,7 @@ sub parse_arg {
     my $branch_name = shift(@arg);
     my ($project_path, $checkout_path) = ('','');
     my ($proj, $target, $msg);
+    $self->{setup}++;
     if (@arg and is_depotpath($arg[$#arg])) {
 	$project_path = pop(@arg);
 	my $ppath = eval {$self->arg_depotpath($project_path) };
@@ -635,21 +643,15 @@ sub parse_arg {
     if (@arg) { # this must be a project path, or error it
 	$project_path = pop(@arg);
 	if (!is_depotpath($project_path)) {
-	    $logger->info(
-		loc("No avaliable Projects found in %1.\n", $project_path )
-	    );
-	    return;
+	    die loc("No avaliable Projects found in %1.\n", $project_path );
 	}
     }
+    $self->{setup}--;
 
     ($proj,$target, $msg) = $self->locate_project($project_path);
 
-    if (!$proj) {
-        $logger->info(
-            loc("Project not found. use 'svk branch --setup mirror_path' to initialize one.\n",$msg)
-        );
-	return ;
-    }
+    die loc("Project not found. use 'svk branch --setup mirror_path' to initialize one.\n",$msg)
+	unless $proj;
     $branch_name = $proj->name."-trunk"
 	if ($branch_name eq 'trunk' and $self->{local}) ;
     $checkout_path = $branch_name unless $checkout_path;
@@ -920,6 +922,8 @@ sub parse_arg {
     $self->{branch_name} = $arg if $arg;
     $self->{branch_name} = $proj->branch_name($target->path, 1)
 	unless $arg;
+    # XXX: should provide a more generalized function for local/remote trunk switching
+    $self->{branch_name} = 'trunk' if $self->{branch_name} eq $proj->name."-trunk";
 
     # check existence of remote branch
     my $dst;
