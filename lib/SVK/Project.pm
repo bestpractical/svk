@@ -142,6 +142,24 @@ sub lastchanged_info {
     }
 }
 
+sub allprojects {
+    my ($self, $pathobj) = @_;
+
+    my $fs              = $pathobj->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
+    my $prop_path = '';
+    my @projects;
+
+    foreach my $m_path (@all_mirrors) {
+	if ($pathobj->path eq '/') {
+	    my $proj = $self->_create_from_prop($pathobj, $root, $m_path);
+	    push @projects, $proj if $proj;
+	}
+    }
+    return \@projects;
+}
+
 sub create_from_prop {
     my ($self, $pathobj, $pname) = @_;
 

@@ -72,6 +72,7 @@ sub options {
      'export'           => 'export',
      'from=s'           => 'from',
      'from-tag=s'       => 'fromtag',
+     'list-projects'    => 'listprojects',
      'local'            => 'local',
      'lump'             => 'lump',
      'project=s'        => 'project',
@@ -239,6 +240,35 @@ sub run {
 
 	my $fmt = "%s%s\n"; # here to change layout
 	$logger->info (sprintf $fmt, $_->[0], $_->[1]) for @{$branches};
+    }
+    return;
+}
+
+package SVK::Command::Branch::listprojects;
+use base qw(SVK::Command::Branch);
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    return ('');
+}
+
+sub run {
+    my $self = shift;
+
+    my ($target, $proj);
+    my @depots =  sort keys %{ $self->{xd}{depotmap} };
+    my $fmt = "%s (depot: %s)\n"; # here to change layout
+    foreach my $depot (@depots) {
+	$depot =~ s{/}{}g;
+	$target = eval { $self->arg_depotpath("/$depot/") };
+	next if ($@);
+	my $projs = SVK::Project->allprojects($target);
+	foreach my $proj (@{$projs}) {
+	    $logger->info (sprintf $fmt, $proj->name, $depot);
+	}
     }
     return;
 }
@@ -1044,6 +1074,7 @@ SVK::Command::Branch - Manage a project with its branches
 =head1 OPTIONS
 
  -l [--list]        : list branches for this project
+ --listprojects     : list avaliable projects
  --create           : create a new branch
  --tag              : create in the tags directory
  --local            : targets in local branch

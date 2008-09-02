@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 6;
+plan tests => 10;
 our $output;
 
 my ($xd, $svk) = build_test('test');
@@ -46,5 +46,25 @@ is_output_like ($svk, 'branch', ['--online'],
     qr|U   A/be|);
 
 is_output_like ($svk, 'info', [],
-   qr|Depot Path: //mirror/myproj/trunk|);
+    qr|Depot Path: //mirror/myproj/trunk|);
 
+is_output_like ($svk, 'branch', ['--offline','foo'],
+    qr|Project branch created: foo .in local.|);
+
+is_output ($svk, 'branch', [],
+    ["Project name: myproj",
+     "Branch: foo (offline)",
+     "Revision: 10",
+     "Repository path: //local/myproj/foo",
+     'Copied From: trunk@9',
+     'Merged From: trunk@9']);
+
+is_output ($svk, 'branch', ['--online','-C'],
+    ["We will copy branch //local/myproj/foo to //mirror/myproj/branches/foo",
+     "Then do a smerge on //mirror/myproj/branches/foo",
+     "Finally delete the src branch //local/myproj/foo"]);
+
+is_output ($svk, 'branch', ['--online', 'trunk', '-C'],
+    ["Auto-merging (0, 10) /local/myproj/foo to /mirror/myproj/trunk (base /mirror/myproj/trunk:9).",
+    "===> Auto-merging (0, 10) /local/myproj/foo to /mirror/myproj/trunk (base /mirror/myproj/trunk:9).",
+    "Empty merge."]);
