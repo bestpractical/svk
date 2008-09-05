@@ -8,7 +8,7 @@ plan(skip_all => 'symlink not supported') if !HAS_SYMLINK;
 plan tests => 5;
 
 my ($xd, $svk) = build_test('test', 'test2');
-my ($copath, $corpath) = get_copath ('sync-replicate');
+my ($copath, $corpath) = get_copath();
 
 our $output;
 

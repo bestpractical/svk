@@ -7,7 +7,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge-rename');
+my ($copath, $corpath) = get_copath();
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->checkout ('//trunk', $copath);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
@@ -75,7 +75,7 @@ is_output ($svk, 'smerge', ['--track-rename', '//trunk', '//local', -m => 'merge
 	    'Empty merge.',
 	    '2 conflicts found.']);
 
-my ($lcopath, $lcorpath) = get_copath ('smerge-moved');
+my ($lcopath, $lcorpath) = get_copath ('smerge-rename-moved');
 $svk->checkout ('//local', $lcopath);
 is_output ($svk, 'smerge', ['--track-rename', '//trunk', $lcopath],
 	   ['Auto-merging (2, 8) /trunk to /local (base /trunk:2).',

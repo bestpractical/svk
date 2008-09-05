@@ -7,7 +7,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-our ($copath, $corpath) = get_copath ('smerge-delete');
+our ($copath, $corpath) = get_copath();
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->checkout ('//trunk', $copath);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);

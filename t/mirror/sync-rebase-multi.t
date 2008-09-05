@@ -15,7 +15,7 @@ my $tree = create_basic_tree ($xd, '/test/foo/bar/proj/trunk');
 
 $svk->cp('-m' => 'branch', '/test/foo/bar/proj/trunk' => '/test/foo/bar/proj/branches/branchA');
 
-my ($copath, $corpath) = get_copath ('sync-rebase-delta');
+my ($copath, $corpath) = get_copath();
 
 $svk->mv(-m => 'move it', '/test/foo' => '/test/blah');
 

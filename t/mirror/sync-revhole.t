@@ -8,7 +8,7 @@ use SVK::Mirror::Backend::SVNSync;
 my ($xd, $svk) = build_test('test');
 my $depot = $xd->find_depot('test');
 
-my ($copath, $corpath) = get_copath('sync-revhole');
+my ($copath, $corpath) = get_copath();
 our $output;
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);

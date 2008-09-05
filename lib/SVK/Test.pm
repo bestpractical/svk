@@ -224,6 +224,11 @@ sub build_floating_test {
 
 sub get_copath {
     my ($name) = @_;
+    unless ($name) {
+        $name = lc($0);
+        $name =~ s/\.t$//;
+        $name =~ s/(\W|[_-])+//g;
+    }
     my $copath = SVK::Path::Checkout->copath ('t', "checkout/$name");
     mkpath [$copath] unless -d $copath;
     rmtree [$copath] if -e $copath;

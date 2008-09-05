@@ -7,7 +7,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge-moved');
+my ($copath, $corpath) = get_copath();
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->checkout ('//trunk', $copath);
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
@@ -23,7 +23,7 @@ $svk->cp ('-m', 'branch', '//trunk', '//local');
 
 $svk->mv ('-m', 'move foo', '//trunk/foo', '//trunk/deep/foo');
 
-($copath, $corpath) = get_copath ('smerge-moved');
+($copath, $corpath) = get_copath();
 $svk->checkout ('//local', $copath);
 
 is_output ($svk, 'smerge', ['//trunk', $copath],

@@ -9,7 +9,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge');
+my ($copath, $corpath) = get_copath();
 my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
 

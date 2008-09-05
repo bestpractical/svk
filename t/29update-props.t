@@ -9,7 +9,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge');
+my ($copath, $corpath) = get_copath();
 my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
 
@@ -25,11 +25,11 @@ flush_co();
     $svk->ps ('prop', 'value', "$copath/me");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        __(" g  t/checkout/smerge/me"),
+        __(" g  $copath/me"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-       __( " g  t/checkout/smerge/me"),
+       __( " g  $copath/me"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
@@ -44,14 +44,14 @@ flush_co();
     $svk->ps ('another-prop', 'value', "$copath/me");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        __(" U  t/checkout/smerge/me"),
+        __(" U  $copath/me"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        __(" U  t/checkout/smerge/me"),
+        __(" U  $copath/me"),
     ] );
     is_output($svk, 'st', [$copath], [
-        __(" M  t/checkout/smerge/me"),
+        __(" M  $copath/me"),
     ] );
     is_output($svk, 'di', [$copath], [
         "",
@@ -70,16 +70,16 @@ flush_co();
     $svk->ps ('prop', 'another-value', "$copath/me");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        __(" C  t/checkout/smerge/me"),
+        __(" C  $copath/me"),
         "1 conflict found.",
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        __(" C  t/checkout/smerge/me"),
+        __(" C  $copath/me"),
         "1 conflict found.",
     ] );
     is_output($svk, 'st', [$copath], [
-        __(" C  t/checkout/smerge/me"),
+        __(" C  $copath/me"),
     ] );
 
     # XXX: this looks wierd a littl without line endings
@@ -112,11 +112,11 @@ flush_co_dir();
     $svk->ps ('prop', 'value', "$copath/A");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" g  t/checkout/smerge/A"),
+        __(" g  $copath/A"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" g  t/checkout/smerge/A"),
+        __(" g  $copath/A"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
@@ -131,14 +131,14 @@ flush_co_dir();
     $svk->ps ('another-prop', 'value', "$copath/A");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" U  t/checkout/smerge/A"),
+        __(" U  $copath/A"),
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" U  t/checkout/smerge/A"),
+        __(" U  $copath/A"),
     ] );
     is_output($svk, 'st', [$copath], [
-        __(" M  t/checkout/smerge/A"),
+        __(" M  $copath/A"),
     ] );
     is_output($svk, 'di', [$copath], [
         "",
@@ -157,16 +157,16 @@ flush_co_dir();
     $svk->ps ('prop', 'another-value', "$copath/A");
     is_output($svk, 'up', ['-C', $copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" C  t/checkout/smerge/A"),
+        __(" C  $copath/A"),
         "1 conflict found.",
     ] );
     is_output($svk, 'up', [$copath], [
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" C  t/checkout/smerge/A"),
+        __(" C  $copath/A"),
         "1 conflict found.",
     ] );
     is_output($svk, 'st', [$copath], [
-        __(" C  t/checkout/smerge/A"),
+        __(" C  $copath/A"),
     ] );
 
     # XXX: this looks wierd a littl without line endings
@@ -194,7 +194,7 @@ sub flush_co {
     is_output($svk, 'up', ['-C', $copath], [
         #XXX, TODO: why it's corpath instead copath?
         "Syncing //trunk(/trunk) in $corpath to 4.",
-        __(" U  t/checkout/smerge/me"),
+        __(" U  $copath/me"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
@@ -209,7 +209,7 @@ sub flush_co_dir {
     is_output($svk, 'up', ['-C', $copath], [
         #XXX, TODO: why it's corpath instead copath?
         "Syncing //trunk(/trunk) in $corpath to 5.",
-        __(" U  t/checkout/smerge/A"),
+        __(" U  $copath/A"),
     ] );
     is_output($svk, 'st', [$copath], [
     ] );
