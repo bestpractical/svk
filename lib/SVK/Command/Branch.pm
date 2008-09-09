@@ -480,21 +480,22 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
-    die loc ("Copy source can't be URI.\n")
+    die loc ("Target can't be URI.\n")
 	if $self->ensure_non_uri (@arg);
 
     # if specified project path at the end
     my $project_path = pop @arg if $#arg > 0 and is_depotpath($arg[$#arg]);
     $project_path = '' unless $project_path;
-    return ($self->arg_co_maybe ($project_path,'New mirror site not allowed here'), @arg);
+    my ($proj, $target, $msg) = $self->locate_project($project_path);
+    die $msg unless $target;
+
+    return ($proj, $target, @arg);
 	    
 }
 
 
 sub run {
-    my ($self, $target, @dsts) = @_;
-
-    my $proj = $self->load_project($target);
+    my ($self, $proj, $target, @dsts) = @_;
 
     @dsts = map { $self->expand_branch($proj, $_) } @dsts;
 
