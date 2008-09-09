@@ -103,7 +103,7 @@ sub run {
 
     if ($proj) {
         $proj->info($target, 1);
-    } else {
+    } elsif ($target) {
 	# XXX: here just a shorthand if one calls svk br help
 	if ('help' eq file($target->path)->basename) {
 	    select STDERR unless $self->{output};
@@ -165,6 +165,7 @@ sub locate_project {
 	$msg = $@;
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
 	foreach my $depot (@depots) {
+            last unless $project_name;
 	    $depot =~ s{/}{}g;
 	    $target = eval { $self->arg_depotpath("/$depot/") };
 	    next if ($@);
@@ -293,9 +294,9 @@ sub parse_arg {
     # always try to eval current wc
     my ($proj,$target, $msg) = $self->locate_project($arg[0]);
     if (!$proj) {
-	$logger->warn( "I can't figure out what project you'd like to create a branch in. Please");
-	$logger->warn("either run '$0 branch --create' from within an existing checkout or specify");
-	$logger->warn("a project root using the --project flag");
+	die loc("I can't figure out what project you'd like to create a branch in. Please\n").
+	    loc("either run '$0 branch --create' from within an existing checkout or specify\n").
+	    loc("a project root using the --project flag\n");
     }
     return ($proj, $target, $dst);
 }
