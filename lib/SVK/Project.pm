@@ -223,8 +223,8 @@ sub _create_from_prop {
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
 		my $prop = $allprops->{'svk:project:'.$project_name.':'.$_};
-		$prop =~ s{/$}{};
-		$prop =~ s{^/}{};
+		$prop =~ s{/$}{} if $prop;
+		$prop =~ s{^/}{} if $prop;
 		$_ => $prop ? $prop_path.'/'.$prop : '' }
 		('path-trunk', 'path-branches', 'path-tags');
     
