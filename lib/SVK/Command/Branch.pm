@@ -304,7 +304,7 @@ sub parse_arg {
 
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
-    return unless $proj;
+
     unless ($branch_name) {
 	$logger->info(
 	    loc("To create a branch, please specify svk branch --create <name>")
@@ -358,10 +358,18 @@ sub run {
 	  )
 	);
 	# call SVK::Command::Switch here if --switch-to
-	$self->SVK::Command::Switch::run(
-	    $self->arg_uri_maybe($newbranch_path),
-	    $target
-	) if $self->{switch} and !$self->{check_only};
+        if ($self->{switch} and !$self->{check_only}) {
+            $dst = $self->arg_uri_maybe($newbranch_path);
+            if ($target->related_to($dst)) {
+                $self->SVK::Command::Switch::run(
+                    $dst, $target
+                );
+            } else {
+                $logger->info(
+                    loc("Can't switch to the branch because current dir is not a working copy.")
+                );
+            }
+        }
     }
     return;
 }
@@ -684,6 +692,8 @@ sub parse_arg {
 
     die loc("Project not found. use 'svk branch --setup mirror_path' to initialize one.\n",$msg)
 	unless $proj;
+    $self->{local}++
+        if $project_path and ($target->_to_pclass("/local")->subsumes($project_path));
     $branch_name = $proj->name."-trunk"
 	if ($branch_name eq 'trunk' and $self->{local}) ;
     $checkout_path = $branch_name unless $checkout_path;
