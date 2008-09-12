@@ -257,6 +257,18 @@ sub edit_file {
 			: DEFAULT_EDITOR; # fall back to something
     my @editor = split (/ /, $editor);
 
+    if ( IS_WIN32 ) {
+        my $o;
+        my $e = shift @editor;
+        $e =~ s/^"//;
+        while ( !defined($o = can_run ($e)) ) {
+            die loc ("Can not find the editor: %1\n", $e) unless @editor;
+            $e .= " ".shift @editor;
+            $e =~ s/"$//;
+        }
+        unshift @editor, $o;
+    }
+
     $logger->info(loc("Waiting for editor..."));
 
     # XXX: check $?
