@@ -318,8 +318,14 @@ sub run {
 	return;
     }
 
-    delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
-    delete $self->{fromtag} if $self->{fromtag} and $self->{fromtag} eq 'trunk';
+    if ($self->{from}) {
+        $self->{from} = $proj->branch_name ($target->path) if $self->{from} eq '.';
+        delete $self->{from} if $self->{from} eq 'trunk';
+    }
+    if ($self->{fromtag}) {
+        $self->{fromtag} = $proj->tag_name ($target->path) if $self->{fromtag} eq '.';
+        delete $self->{fromtag} if $self->{fromtag} eq 'trunk';
+    }
     my $src_path = $self->{fromtag} ?
 	$proj->tag_path($self->{fromtag}) :
 	$proj->branch_path($self->{from} ? $self->{from} : 'trunk');

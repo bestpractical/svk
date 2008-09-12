@@ -36,9 +36,6 @@ $svk->br('--create','Bar','--tag','--from','Foo');
 is_output ($svk, 'branch', ['--list', '--tag'],
     ['Bar']);
 
-TODO: {
-local $TODO = 'incorrect from locating';
 $svk->br('--create','Bar2','--tag','--from','.');
 is_output ($svk, 'branch', ['--list', '--tag'],
     ['Bar','Bar2']);
-}
