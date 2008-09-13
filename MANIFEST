@@ -19,7 +19,6 @@ inc/Module/Install/Fetch.pm
 inc/Module/Install/Include.pm
 inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
-inc/Module/Install/Scripts.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/SVK.pm
@@ -311,12 +310,14 @@ t/bm/basic.t
 t/bm/checkout.t
 t/bm/create-nocheckout.t
 t/bm/create.t
+t/bm/list-projects.t
 t/bm/local-create.t
 t/bm/local.t
 t/bm/merge.t
 t/bm/move.t
 t/bm/non-uri.t
 t/bm/online-offline.t
+t/bm/online-offline-trunk.t
 t/bm/prop-autoload.t
 t/bm/prop-multiproject-sepcialpath.t
 t/bm/prop-multiproject.t
@@ -327,8 +328,10 @@ t/bm/prop-specialpath2.t
 t/bm/prop.t
 t/bm/push-pull.t
 t/bm/remove.t
+t/bm/remove-via-project.t
 t/bm/root-basic.t
 t/bm/switch.t
+t/bm/tag-from-wc.t
 t/copy-escape.t
 t/copy-move.t
 t/copy-replace.t

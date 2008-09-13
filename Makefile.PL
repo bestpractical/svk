@@ -149,7 +149,7 @@ include('ExtUtils::AutoInstall');
 auto_install();
 
 auto_provides();
-WriteAll( sign => 0 );
+WriteAll( sign => 1 );
 
 $::VERSION = $required_svn;
 die << "." unless eval {require SVN::Core; SVN::Core->VERSION >= main->VERSION };
