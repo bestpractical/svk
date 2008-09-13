@@ -805,7 +805,7 @@ sub _sync_changesets {
         local $| = 1;
         print STDERR $progress->report( "%45b %p\r", ++$i ) if $progress;
     }
-    print STDERR "\n"; # forced newline
+    print STDERR "\n" if $progress; # forced newline
     $self->_ra_finished($ra);
 }
 

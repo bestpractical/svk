@@ -7,7 +7,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge-copy');
+my ($copath, $corpath) = get_copath();
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->cp ('-m', 'branch', '//trunk', '//branch');
 my $tree = create_basic_tree ($xd, '//trunk');

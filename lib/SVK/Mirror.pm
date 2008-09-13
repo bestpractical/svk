@@ -248,46 +248,29 @@ sub bootstrap {
         $fh = \*STDIN;
     } elsif ($dumpfile =~ m{^(file|https?|ftp)://}) {
         $logger->info( loc( "Downloading dump file: %1", $dumpfile ) );
-        my ($tmp, $path) = File::Temp::tempfile;
 
         require LWP::UserAgent;
         my $ua = LWP::UserAgent->new(agent => "SVK-bootstrap/$SVK::VERSION");
-        my ( $received_size, $next_update ) = ( 0, 0 );
-        my $did_set_target = 0;
-        # XXX: switch to a default notify object that takes care
-        # of quiet and gui variants.
-        my $progress = SVK::Notify->new->progress(
-                min => 0,
-                max => 1024,
-        );
-        my $response = $ua->get(
-            $dumpfile,
-            ':content_cb' => sub {
-                my ( $data, $cb_response, $protocol ) = @_;
-                if ($progress) {
-                    unless ($did_set_target) {
-                        if ( my $content_length = $cb_response->content_length ) {
-                            $progress->attr(max => $content_length);
-                            $did_set_target = 1;
-                        }
-                        else {
-                            $progress->attr(max => 
-                                              $received_size + 2 * length $data );
-                        }
-                    }
-                }
-                $received_size += length $data;
-                print { $tmp } $data;
-                if ($progress && $received_size >= $next_update) {
-                    local $| = 1;
-                    print STDERR $progress->report( "%45b %p\r", $received_size );
-                    $next_update = $received_size + 1;
-                }
-            },
-            ':read_size_hint' => 16384,
-        );
+        my $response = $ua->head( $dumpfile );
         die $response->status_line unless $response->is_success;
-        open $fh, "<:raw", $path or die $!;
+
+        my $writer;
+        pipe( $fh, $writer );
+        unless (fork) {
+            close $fh;
+            $ua->get(
+                $dumpfile,
+                ':content_cb' => sub {
+                    my ( $data, $cb_response, $protocol ) = @_;
+                    print { $writer } $data;
+                },
+                ':read_size_hint' => 16384,
+            );
+            close $writer;
+            exit;
+        }
+        close $writer;
+        binmode($fh, ":raw");
     }
     else {
         open $fh, '<:raw', $dumpfile or die $!;

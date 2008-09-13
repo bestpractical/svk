@@ -9,7 +9,7 @@ my ($xd, $svk) = build_test('mv');
 $svk->mkdir(-m => 'trunk', '/mv/T');
 $svk->mkdir(-m => 'trunk', '/mv/B');
 my $tree = create_basic_tree($xd, '/mv/T');
-my ($copath, $corpath) = get_copath ('moving');
+my ($copath, $corpath) = get_copath();
 
 my $depot = $xd->find_depot('mv');
 my $uri = uri($depot->repospath);

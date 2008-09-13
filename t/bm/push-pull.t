@@ -38,7 +38,7 @@ $svk->br('--setup', '//m/A',);
 
 $svk->br('--create','lo2','--local','--project','A');
 
-$svk->br('--checkout','--local','lo2', $corpath_default);
+$svk->br('--checkout','--local','lo2', '--project','A',$corpath_default);
 
 ok (-e "$corpath_default/A/be");
 append_file ("$corpath_default/A/be", "from local branch\n");
@@ -148,12 +148,15 @@ $svk->switch ("//m/A/trunk", $corpath_default);
 append_file ("$corpath_default/A/new-file", "some text\n");
 $svk->commit ('-m', 'modification to mirror', "$corpath_default");
 
+my $oldwd = Cwd::getcwd;
+chdir $corpath_default;
 #is_output ($svk, "pull", ["//local/A/lo2"], [
 is_output ($svk, "br", ['--pull', '--local', "lo2"], [
         "Auto-merging (20, 22) /m/A/trunk to /local/A/lo2 (base /m/A/trunk:20).",
         "U   A/new-file",
         "New merge ticket: $test_uuid:/A/trunk:14",
         "Committed revision 23."]);
+chdir $oldwd;
 
 #$svk->copy ('-m', '2nd branch', '//m', '//l2');
 $svk->br('--create','lo3','--local','--project','A');
@@ -179,8 +182,9 @@ append_file ("$corpath_default/A/new-file", "some text\n");
 $svk->commit ('-m', 'modification to mirror', "$corpath_default");
 
 #is_output ($svk, "pull", ['--lump', "//local/A/lo2"], [
-is_output ($svk, "branch", ['--pull', '--lump', "--local", "lo2"], [
-        "Auto-merging (22, 25) /m/A/trunk to /local/A/lo2 (base /m/A/trunk:22).",
+is_output ($svk, "branch",
+       ['--pull', '--lump', "--local", "lo2", '--project', 'A'],
+       ["Auto-merging (22, 25) /m/A/trunk to /local/A/lo2 (base /m/A/trunk:22).",
         "U   A/new-file",
         "New merge ticket: $test_uuid:/A/trunk:15",
         "Committed revision 26."]);

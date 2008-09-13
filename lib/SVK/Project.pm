@@ -55,6 +55,7 @@ use Path::Class;
 use SVK::Logger;
 use SVK::I18N;
 use base 'Class::Accessor::Fast';
+use autouse 'SVK::Util' => qw( reformat_svn_date );
 
 __PACKAGE__->mk_accessors(
     qw(name trunk branch_location tag_location local_root depot));
@@ -82,19 +83,19 @@ sub branches {
     my $root            = $fs->revision_root( $fs->youngest_rev );
     my $branch_location = $local ? $self->local_root : $self->branch_location;
 
-    return [ apply {s{^\Q$branch_location\E/}{}}
+    return [ apply {$_->[0] =~ s{^\Q$branch_location\E/}{}}
         @{ $self->_find_branches( $root, $branch_location ) } ];
 }
 
 sub tags {
-    my $self = shift;
+    my ( $self ) = @_;
     return [] unless $self->tag_location;
 
     my $fs              = $self->depot->repos->fs;
     my $root            = $fs->revision_root( $fs->youngest_rev );
     my $tag_location    = $self->tag_location;
 
-    return [ apply {s{^\Q$tag_location\E/}{}}
+    return [ apply {$_->[0] =~ s{^\Q$tag_location\E/}{}}
         @{ $self->_find_branches( $root, $tag_location ) } ];
 }
 
@@ -119,10 +120,44 @@ sub _find_branches {
         next if $b->path eq $trunk->path;
 
         push @branches, $b->related_to($trunk)
-            ? $b->path
+            ? [$b->path, $self->{verbose} ? ":\n    ".$self->lastchanged_info($b) : ""]
             : @{ $self->_find_branches( $root, $path . '/' . $entry ) };
     }
     return \@branches;
+}
+
+sub lastchanged_info {
+    my ($self, $target) = @_;
+    if (defined( my $lastchanged = $target->root->node_created_rev( $target->path ))) {
+	my $date
+	    = $target->root->fs->revision_prop( $lastchanged, 'svn:date' );
+	my $author
+	    = $target->root->fs->revision_prop( $lastchanged, 'svn:author' );
+	return sprintf (
+	    "Last Changed Rev: %s (%s, by %s)",
+	    $lastchanged,
+	    reformat_svn_date( "%Y-%m-%d", $date ),
+	    $author
+	);
+    }
+}
+
+sub allprojects {
+    my ($self, $pathobj) = @_;
+
+    my $fs              = $pathobj->depot->repos->fs;
+    my $root            = $fs->revision_root( $fs->youngest_rev );
+    my @all_mirrors     = split "\n", $root->node_prop('/','svm:mirror') || '';
+    my $prop_path = '';
+    my @projects;
+
+    foreach my $m_path (@all_mirrors) {
+	if ($pathobj->path eq '/') {
+	    my $proj = $self->_create_from_prop($pathobj, $root, $m_path);
+	    push @projects, $proj if $proj;
+	}
+    }
+    return \@projects;
 }
 
 sub create_from_prop {
@@ -135,7 +170,7 @@ sub create_from_prop {
     my $proj;
 
     foreach my $m_path (@all_mirrors) {
-	if ($pathobj->path eq '/') { # in non-wc path
+	if ($pathobj->path eq '/' and $pname) { # in non-wc path
 	    $proj = $self->_create_from_prop($pathobj, $root, $m_path, $pname);
 	    return $proj if $proj;
 	} elsif ($pathobj->_to_pclass("/local")->subsumes($pathobj->path)) {
@@ -188,8 +223,8 @@ sub _create_from_prop {
 #	    map { $_ => '/'.$allprops->{'svk:project:'.$project_name.':'.$_} }
 	    map {
 		my $prop = $allprops->{'svk:project:'.$project_name.':'.$_};
-		$prop =~ s{/$}{};
-		$prop =~ s{^/}{};
+		$prop =~ s{/$}{} if $prop;
+		$prop =~ s{^/}{} if $prop;
 		$_ => $prop ? $prop_path.'/'.$prop : '' }
 		('path-trunk', 'path-branches', 'path-tags');
     
@@ -213,7 +248,7 @@ sub _create_from_prop {
 }
 
 sub create_from_path {
-    my ($self, $depot, $path) = @_;
+    my ($self, $depot, $path, $pname) = @_;
     my $rev = undef;
 
     my $path_obj = SVK::Path->real_new(
@@ -227,6 +262,7 @@ sub create_from_path {
 	$self->_find_project_path($path_obj);
 
     return undef unless $project_name;
+    return undef if $pname and $pname ne $project_name;
     return SVK::Project->new(
 	{   
 	    name            => $project_name,
@@ -268,7 +304,7 @@ sub _find_project_path {
 
     if ($path_obj->_to_pclass("/local")->subsumes($current_path)) { # guess if in local branch
 	# should only be 1 entry
-	$current_path = ($path_obj->copy_ancestors)[0]->[0];
+	$current_path = ($path_obj->copy_ancestors)[0]->[0] if $path_obj->copy_ancestors;
 	$path_obj = $path_obj->copied_from if $path_obj->copied_from;
     }
 
@@ -315,7 +351,7 @@ sub depotpath_in_branch_or_tag {
     my ($self, $name) = @_;
     # return 1 for branch, 2 for tag, others => 0
     return '/'.dir($self->depot->depotname,$self->branch_location,$name)->as_foreign('Unix')
-	if grep { $_ eq $name } @{$self->branches};
+	if grep { $_->[0] eq $name } @{$self->branches};
     return '/'.dir($self->depot->depotname,$self->tag_location,$name)->as_foreign('Unix')
 	if grep { $_ eq $name } @{$self->tags};
     return ;
@@ -327,8 +363,8 @@ sub branch_name {
     my $branch_location = $is_local ? $self->local_root : $self->branch_location;
     $bpath =~ s{^\Q$branch_location\E/}{};
     my $pbname;
-    ($pbname) = grep { $bpath =~ m#^$_(/|$)# } @{$self->branches};
-    return $pbname if $pbname;
+    ($pbname) = grep { my $base = $_->[0]; $bpath =~ m#^$base(/|$)# } @{$self->branches};
+    return $pbname->[0] if $pbname;
     return $bpath;
 }
 
@@ -378,7 +414,7 @@ sub info {
 	    $bname = $self->branch_name($target->path);
 	} elsif ($self->tag_location and dir($self->tag_location)->subsumes($target->path)) {
 	    $bname = $self->tag_name($target->path);
-	} elsif (dir($self->local_root)->subsumes($target->path)) {
+	} elsif ($target->_to_pclass("/local")->subsumes($target->path)) {
 	    $where = 'offline';
 	    $bname = $self->branch_name($target->path,1);
 	}

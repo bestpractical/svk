@@ -48,6 +48,14 @@ unless ($cfg->can('find_and_load_module') and
     plan skip_all => "Can't find mod_dav_svn";
 }
 
+if ($^O eq 'darwin') {
+    no warnings 'redefine';
+    my $start_cmd = \&Apache::TestServer::start_cmd;
+    *Apache::TestServer::start_cmd = sub {
+        return "arch -i386 ".$start_cmd->(@_);
+    };
+}
+
 plan tests => 13;
 
 my $utf8 = SVK::Util::get_encoding;

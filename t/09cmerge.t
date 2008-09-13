@@ -4,7 +4,7 @@ use strict;
 use SVK::Test;
 
 my ($xd, $svk) = build_test();
-my ($copath, $corpath) = get_copath ('cherrypicking');
+my ($copath, $corpath) = get_copath();
 
 $svk->checkout ('//', $copath);
 mkdir "$copath/trunk";

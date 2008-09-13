@@ -123,7 +123,7 @@ is_output ($svk, 'branch', ['--move', 'feature/bar', 'feature/mar', 'hasbugs/'],
 
 is_output ($svk, 'branch', ['--list'],
     ['feature/remotebar','feature/remotefoo', 'hasbugs/bar','hasbugs/mar'],
-    'Move feature/bar,mar to hasbugs/');
+    'branch --list. check if feature/bar,mar moved to hasbugs/');
 
 is_output ($svk, 'branch', ['--create', 'localbar', '--local'],
     ["Committed revision 21.",

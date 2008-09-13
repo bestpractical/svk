@@ -6,7 +6,7 @@ plan tests => 24;
 # working copy initialization
 our $output;
 my ($xd, $svk) = build_test('test');
-my ($copath, $corpath) = get_copath ('log-xml');
+my ($copath, $corpath) = get_copath();
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 chdir ($copath);

@@ -104,7 +104,7 @@ is_output_like ($svk, 'log', [],
 
 # online with a new branch name
 
-$svk->br('--online', 'release/abc'); # online the release/abc branch
+$svk->br('--online', 'release/abc'); # online and rename to the release/abc branch
 
 is_output_like ($svk, 'info', [],
    qr|Depot Path: //mirror/MyProject/branches/release/abc|);
