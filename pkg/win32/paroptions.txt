@@ -18,6 +18,9 @@
 -M Encode::KR
 -M Encode::CN
 -M POSIX
+-M App::Prove
+-M TAP::Formatter::Console
+-M TAP::Formatter::Console::Session
 # exclude some not-needed dependencies
 -X ExtUtils::CBuilder
 -X LWP::Authen::Ntlm
