@@ -297,45 +297,38 @@ sub bootstrap {
     if ($self->fromrev) {
         $logger->info(loc("Skipping dumpstream up to revision %1", $self->fromrev));
     }
+
+    my $pool = SVN::Pool->new_default;
     while ( my $record = $dump->next_record() ) {
-	if ($record->type eq 'format' || $record->type eq 'uuid') {
+	if ($record->type eq 'format' or $record->type eq 'uuid') {
 	    $header = $header.$record->as_string;
 	    next;
 	}
 
-	my $translate = sub {
-	    my $rec = shift;
+	for my $r ($record, $record->get_included_record) {
+	    next unless $r;
 
-	    if (my $path = $rec->get_header('Node-copyfrom-path')) {
+	    if (my $path = $r->get_header('Node-copyfrom-path')) {
 		$path = $prefix.$path;
-		$rec->set_header('Node-copyfrom-path' => $path );
+		$r->set_header('Node-copyfrom-path' => $path );
 	    }
-	    if (my $rev = $rec->get_header('Node-copyfrom-rev')) {
-#		$rec->set_header('Node-copyfrom-rev' =>
-#		    scalar $self->find_local_rev( $rev, $self->source_uuid )  - 1);
-	    }
-	    
-	    if ($rec->get_header('Revision-number')) {
-		$| = 1;
-		$rev = $rec->get_header('Revision-number');
-		$prev = $rev if !$prev;
-		$rec->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
+
+	    if ($r->get_header('Revision-number')) {
 		printf STDERR "%s rev:%d\r",$progress->report( "%45b",$rev),$rev;
+		$rev = $r->get_header('Revision-number');
+		$prev = $rev if !$prev;
+		$r->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
 	    }
 
-
-	    if ( my $path = $rec->get_header('Node-path') ) {
+	    if ( my $path = $r->get_header('Node-path') ) {
 		$path = $prefix.$path;
-		$rec->set_header('Node-path' => $path);
+		$r->set_header('Node-path' => $path);
 	    }
-
-	};
-	$translate->( $record );
-	my $inc = $record->get_included_record;
-	$translate->( $inc ) if $inc;
+	}
 
 	if ($rev and $prev != $rev) {
-	    $self->_import_repos($header,$buf) if $prev > $self->fromrev;
+	    $self->_import_repos($header, $buf, $pool) if $prev > $self->fromrev;
+	    $pool->clear;
 	    $buf = "";
 	    $prev = $rev;
 	}
@@ -344,19 +337,19 @@ sub bootstrap {
     }
     # last one
     if ($rev) {
-	$self->_import_repos($header, $buf)  if $prev > $self->fromrev;
+	$self->_import_repos($header, $buf, $pool) if $prev > $self->fromrev;
     }
 
 }
 
 sub _import_repos {
     my $self = shift;
-    my ($header, $buf) = @_;
+    my ($header, $buf, $pool) = @_;
     $buf = $header.$buf;
     open my $fh, '<', \$buf;
     my $feedback = '';
     open my $fstream, '>', \$feedback;
-    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, $fstream, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef );
+    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, $fstream, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef, $pool );
     # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
     # XXX: display $feedback if we are in verbose / debug mode.
     # and provide progress feedback in caller
