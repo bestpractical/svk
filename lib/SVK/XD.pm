@@ -452,6 +452,15 @@ sub find_repos {
 
     $path = Path::Class::foreign_dir('Unix', $path)->stringify;
     my $repospath = $self->{depotmap}{$depot} or die loc("No such depot: %1.\n", $depot);
+    if ($repospath =~ m{\.git/?$}) {
+        require SVK::Path::Git;
+        my $p = SVK::Path::Git->real_new
+            ({ depot => SVK::Depot->new({ repospath => $repospath, depotname => $depot }),
+                commit => 'HEAD',
+                path => $path,
+        } );
+        return ($repospath, $path, $p);
+    }
 
     return ($repospath, $path, $open && _open_repos ($repospath));
 }
@@ -469,6 +478,9 @@ sub find_depotpath {
 sub find_depot {
     my ($self, $depotname) = @_;
     my $repospath = $self->{depotmap}{$depotname} or die loc("No such depot: %1.\n", $depotname);
+    if ($repospath =~ m{\.git/?$}) {
+        return SVK::Depot->new({ repospath => $repospath, depotname => $depotname });
+    }
 
     return SVK::Depot->new( { depotname => $depotname,
                               repospath => $repospath,
