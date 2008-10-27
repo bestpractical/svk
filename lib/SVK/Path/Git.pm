@@ -59,4 +59,17 @@ sub fs {
 sub youngest_rev {
     return 1;
 }
+
+sub depotname {
+    return $_[0]->depot->depotname;
+}
+
+sub depotpath {
+    my $self = shift;
+
+    Carp::cluck unless defined $self->depotname;
+
+    return '/'.$self->depotname.$self->{path};
+}
+
 1;
