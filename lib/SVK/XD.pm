@@ -1274,7 +1274,8 @@ sub get_props {
     my $schedule = $entry->{'.schedule'} || '';
 
     if (my ($source_path, $source_root) = $self->_copy_source ($entry, $copath, $root)) {
-	$props = $source_root->node_proplist ($source_path);
+        # the node we are checking might be a new node under somewhere copied, so we need to check the path again.
+	$props = $source_root->check_path($source_path) ? $source_root->node_proplist($source_path) : {};
     }
     elsif ($schedule ne 'add' && $schedule ne 'replace') {
 	Carp::cluck 'hate' unless defined $path;

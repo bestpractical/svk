@@ -211,7 +211,7 @@ sub _delta_dir2 {
     # don't use depth when we are still traversing through targets
     my $descend = defined $targets || !(defined $arg{depth} && $arg{depth} == 0);
     # XXX: the top level entry is undefined, which should be fixed.
-    $self->cb_conflict->($editor, defined $arg{entry} ? $arg{entry} : '', $arg{baton})
+    $self->cb_conflict->($editor, defined $arg{entry} ? $arg{entry} : '', $arg{baton}, $cinfo->{'.conflict'})
 	if $thisdir && $self->cb_conflict && $cinfo->{'.conflict'};
 
     # XXX: later
@@ -354,7 +354,7 @@ sub _delta_dir2 {
 	    }
 	}
 	if ($ccinfo->{'.conflict'}) {
-	    $self->cb_conflict->($editor, $newpaths{entry}, $arg{baton})
+	    $self->cb_conflict->($editor, $newpaths{entry}, $arg{baton}, $ccinfo->{'.conflict'})
 		if $self->cb_conflict;
 	}
 	unless ($add || $ccinfo->{'.conflict'}) {
