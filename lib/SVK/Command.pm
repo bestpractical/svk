@@ -740,6 +740,23 @@ sub arg_depotpath {
 	($path, $view) = $self->create_view($depot->repos, $view, $rev);
     }
 
+    # GIT: new method here for constructing path_object sanely
+
+    if (my ($depotname, $path) = $arg =~ m{^/(.*?)(/.*)}) {
+        if ( my $repospath = $self->{xd}->{depotmap}{$depotname} ) {
+            if ($repospath =~ m{\.git/?$}) {
+                require SVK::Path::Git;
+                my $p = SVK::Path::Git->real_new
+                    ({ depot => SVK::Depot::Git->new({ repospath => $repospath, depotname => $depotname }),
+                       commit => 'HEAD',
+                       path => $path,
+                } );
+                return $p;
+            }
+        }
+
+    }
+
     return $self->{xd}->create_path_object
 	( depot => $depot,
 	  path => $path,
