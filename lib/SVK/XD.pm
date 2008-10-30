@@ -71,6 +71,7 @@ use PerlIO::via::symlink;
 use Class::Autouse qw( Path::Class SVK::Editor::Delay );
 use Fcntl qw(:flock);
 use SVK::Depot;
+use SVK::Depot::Git;
 use SVK::Config;
 
 use SVK::Logger;
@@ -475,7 +476,7 @@ sub find_depot {
     my ($self, $depotname) = @_;
     my $repospath = $self->{depotmap}{$depotname} or die loc("No such depot: %1.\n", $depotname);
     if ($repospath =~ m{\.git/?$}) {
-        return SVK::Depot->new({ repospath => $repospath, depotname => $depotname });
+        return SVK::Depot::Git->new({ repospath => $repospath, depotname => $depotname });
     }
 
     return SVK::Depot->new( { depotname => $depotname,

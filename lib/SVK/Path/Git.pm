@@ -13,6 +13,11 @@ __PACKAGE__->mk_shared_accessors
 __PACKAGE__->mk_clonable_accessors();
 push @{__PACKAGE__->_clonable_accessors}, 'path_anchor';
 
+for my $proxy (qw/depotname repospath/) {
+    no strict 'refs';
+    *{$proxy} = sub { my $self = shift; $self->depot; $self->depot->$proxy(@_) }
+}
+
 *path = *path_anchor;
 
 #__PACKAGE__->mk_accessors(qw(path));
@@ -58,10 +63,6 @@ sub fs {
 
 sub youngest_rev {
     return 1;
-}
-
-sub depotname {
-    return $_[0]->depot->depotname;
 }
 
 sub depotpath {

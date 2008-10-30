@@ -60,13 +60,13 @@ use base 'Exporter';
 
 use SVK::Logger;
 
-our @EXPORT = qw(plan_svm new_repos build_test build_git_test build_floating_test
+our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
 		 get_copath append_file overwrite_file
 		 overwrite_file_raw is_file_content
 		 is_file_content_raw _do_run is_output
 		 is_sorted_output is_deeply_like is_output_like
 		 is_output_unlike is_ancestor status_native status
-		 get_editor create_basic_tree create_basic_git_tree waste_rev
+		 get_editor create_basic_tree waste_rev
 		 tree_from_fsroot tree_from_xdroot __ _x not_x _l
 		 not_l uri set_editor replace_file glob_mime_samples
 		 create_mime_samples chmod_probably_useless
@@ -217,19 +217,7 @@ sub new_repos_git {
 sub build_test {
     my (@depot) = @_;
 
-    my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
-    my $xd = SVK::XD->new (depotmap => $depotmap,
-			   svkpath => $depotmap->{''});
-    my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
-    push @TOCLEAN, [$xd, $svk];
-    return ($xd, $svk);
-}
-
-# XXX: redundant code of build_test, should have a better way
-sub build_git_test {
-    my (@depot) = @_;
-
-    my $depotmap = {map {$_ => (new_repos_git())[0]} '',@depot};
+    my $depotmap = {map {$_ => ($ENV{SVKTESTGIT} ? new_repos_git() : new_repos())[0]} '',@depot};
     my $xd = SVK::XD->new (depotmap => $depotmap,
 			   svkpath => $depotmap->{''});
     my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
@@ -485,6 +473,7 @@ sub get_editor {
 
 sub create_basic_tree {
     my ($xd, $depotpath) = @_;
+    goto &create_basic_git_tree if ($ENV{SVKTESTGIT});
     my $pool = SVN::Pool->new_default;
     my ($depot, $path) = $xd->find_depotpath($depotpath);
 
