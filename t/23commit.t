@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use SVK::Test;
-plan tests => 69;
+plan tests => 70;
 
 our $output;
 my ($xd, $svk) = build_test();
@@ -91,6 +91,7 @@ overwrite_file ("A/deep/la/no", "foobar");
 is_output ($svk, 'commit', [], ['No targets to commit.'], 'commit - no target');
 $svk->add ('A');
 $svk->commit ('-m', 'foo');
+is_deeply($xd->{checkout}{sticky}, {});
 
 is_output ($svk, 'status', [], []);
 overwrite_file ("A/deep/baz", "fnord");
@@ -322,7 +323,7 @@ is_output ($svk, 'status', [],
         __('?   A/verbose')]);
 
 is_output ($svk, 'commit', [],
-	   ['Waiting for editor...',
+	   ['Waiting for editor...', __('A   A/verbose'),
 	    'Committed revision 18.'], 'we got a commit by replacing a ? with an A');
 
 is_output ($svk, 'status', [],

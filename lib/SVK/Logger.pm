@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -59,10 +59,21 @@ if (eval {
         Log::Log4perl->import(':levels');
         1;
     } ) {
-    my $level = { map { $_ => uc $_ } qw( debug info warn error fatal ) }
-        ->{ lc $ENV{SVKLOGLEVEL} } || 'INFO';
+    my $level = lc($ENV{SVKLOGLEVEL} || "info");
+    $level = { map { $_ => uc $_ } qw( debug info warn error fatal ) }
+        ->{ $level } || 'INFO';
 
-    my $conf = qq{
+    my $conf_file = $ENV{SVKLOGCONFFILE};
+    my $conf;
+    if ( defined($conf_file) and -e $conf_file ) {
+	my $fh;
+	open $fh, $conf_file or die $!;
+	local $/;
+	$conf = <$fh>;
+	close $fh;
+    }
+    #warn $conf unless $Log::Log4perl::Logger::INITIALIZED;
+    $conf ||= qq{
   log4perl.rootLogger=$level, Screen
   log4perl.appender.Screen = Log::Log4perl::Appender::Screen
   log4perl.appender.Screen.stderr = 0
@@ -71,9 +82,8 @@ if (eval {
   };
 
     # ... passed as a reference to init()
-    Log::Log4perl::init( \$conf );
+    Log::Log4perl::init( \$conf ) unless Log::Log4perl->initialized;
     *get_logger = sub { Log::Log4perl->get_logger(@_) };
-
 }
 else {
     *get_logger = sub { 'SVK::Logger::Compat' };
@@ -109,12 +119,14 @@ my $level;
 BEGIN {
 my $i;
 $level = { map { $_ => ++$i } reverse qw( debug info warn error fatal ) };
-$current_level = $level->{lc $ENV{SVKLOGLEVEL}} || $level->{info};
+$current_level = $level->{lc($ENV{SVKLOGLEVEL} || "info")} || $level->{info};
 
 my $ignore  = sub { return };
 my $warn = sub {
-    $_[1] .= "\n" unless substr( $_[1], -1, 1 ) eq "\n";
-    print $_[1];
+    shift;
+    my $s = join "", @_;
+    chomp $s;
+    print "$s\n";
 };
 my $die     = sub { shift; die $_[0]."\n"; };
 my $carp    = sub { shift; goto \&Carp::carp };

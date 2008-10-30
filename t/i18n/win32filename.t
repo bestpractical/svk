@@ -9,7 +9,7 @@ our $output;
 mkpath ["t/checkout/filenames"], 0, 0700 unless -d "t/checkout/filenames";
 
 my ($xd, $svk) = build_test('filename_enc');
-my ($copath, $corpath) = get_copath ('filenames');
+my ($copath, $corpath) = get_copath();
 my ($repospath, $path, $repos) = $xd->find_repos ('/filename_enc/', 1);
 sub copath { SVK::Path::Checkout->copath($copath, @_) }
 

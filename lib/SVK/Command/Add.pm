@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -56,6 +56,7 @@ use base qw( SVK::Command );
 use constant opt_recursive => 1;
 use SVK::XD;
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Util qw( $SEP is_symlink mimetype_is_text to_native);
 
 sub options {
@@ -87,63 +88,14 @@ sub run {
 	}
     }
 
-    $target->run_delta(
-        SVK::Editor::Status->new(
-            notify => SVK::Notify->new(
-                cb_flush => sub {
-                    my ( $path, $status ) = @_;
-                    to_native( $path, 'path' );
-                    my $copath = $target->copath($path);
-                    my $report = $target->report->subdir($path);
-
-                    $target->contains_copath($copath) or return;
-                    die loc( "%1 already added.\n", $report )
-                        if !$self->{recursive}
-                        && ( $status->[0] eq 'R' || $status->[0] eq 'A' );
-
-                    return unless $status->[0] eq 'D';
-                    lstat($copath);
-                    $self->_do_add( 'R', $copath, $report, !-d _ )
-                        if -e _;
-                }
-            )
-        ),
-        {   delete_verbose  => 1,
-            unknown_verbose => $self->{recursive},
-            cb_unknown      => sub {
-                my ( $editor, $path ) = @_;
-                to_native( $path, 'path' );
-                my $copath = $target->copath($path);
-                my $report = $target->report->subdir($path);
-                lstat($copath);
-                $self->_do_add( 'A', $copath, $report, !-d _ );
-                }
-        },
+    $self->{xd}->do_add(
+        $target,
+        recursive       => $self->{recursive},
+        quiet           => $self->{quiet},
+        unknown_verbose => $self->{recursive},
     );
 
     return;
-}
-
-my %sch = (A => 'add', 'R' => 'replace');
-
-sub _do_add {
-    my ($self, $st, $copath, $report, $autoprop) = @_;
-    my $newprop;
-    $newprop = $self->{xd}->auto_prop($copath) if $autoprop;
-
-    $self->{xd}{checkout}->store ($copath,
-				  { '.schedule' => $sch{$st},
-				    $autoprop ?
-				    ('.newprop'  => $newprop) : ()});
-    return if $self->{quiet};
-
-    # determine whether the path is binary
-    my $bin = q{};
-    if ( ref $newprop && $newprop->{'svn:mime-type'} ) {
-        $bin = ' - (bin)' if !mimetype_is_text( $newprop->{'svn:mime-type'} );
-    }
-
-    print "$st   $report$bin\n";
 }
 
 1;

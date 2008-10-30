@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -80,9 +80,8 @@ sub handle_direct_item {
     }
     $self->SUPER::handle_direct_item (@_, $call);
 
-    $editor->delete_entry (abs2rel ($src->path, $anchor => undef, '/'),
-			   $m ? scalar $m->find_remote_rev ($src->revision)
-			      : $src->revision, 0);
+    $editor->delete_entry(abs2rel ($src->path, $anchor => undef, '/'),
+                          $src->revision, 0);
     $self->adjust_anchor ($editor);
 }
 

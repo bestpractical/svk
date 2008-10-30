@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -100,7 +100,7 @@ meta data needs to be updated in update mode.
 
 =item xd
 
-XD object.
+L<SVK::XD> object.
 
 =item oldroot
 
@@ -120,7 +120,7 @@ A callback to translate paths in editor calls to path in depot.
 
 =item ignore_keywords
 
-Don't do keyword translations.
+Don't do keyword translations (svn:keywords property).
 
 =back
 
@@ -296,25 +296,25 @@ sub change_file_prop {
     $self->{props}{$path}{$name} = $value
 	if $self->{added}{$path};
     return if $self->{check_only};
+
     my $copath = $path;
     $self->{get_copath}($copath);
-    if ($self->{update}) {
-	$self->{exe}{$path} = $value
-	    if $name eq 'svn:executable';
-    }
-    else {
-        $self->{get_path}($path);
-        $self->{xd}->do_propset(
-            $self->{xd}->create_path_object(
-                copath_anchor => $copath,
-                path          => $path,
-                repos         => $self->{repos}
-            ),
-            quiet     => 1,
-            propname  => $name,
-            propvalue => $value,
-        );
-    }
+
+    $self->{exe}{$path} = $value
+        if $name eq 'svn:executable' && $self->{update};
+
+    $self->{get_path}($path);
+    $self->{xd}->do_propset(
+        $self->{xd}->create_path_object(
+            copath_anchor => $copath,
+            path          => $path,
+            repos         => $self->{repos}
+        ),
+        quiet     => 1,
+        propname  => $name,
+        propvalue => $value,
+        adjust_only => $self->{update},
+    );
 }
 
 sub change_dir_prop {

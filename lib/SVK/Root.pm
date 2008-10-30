@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -89,7 +89,7 @@ sub DESTROY {
     # txn also, we need to use a new pool, otherwise it segfaults for
     # doing allocation in a pool that is being destroyed.
     $_[0]->txn->abort( SVN::Pool->new )
-        if $_[0]->txn && ( $_[0]->cleanup_pid || $$ ) == $$;
+        if ( $_[0]->cleanup_pid || $$ ) == $$;
 }
 
 # return the root and path on the given revnum, the returned path is

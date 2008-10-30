@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -96,6 +96,7 @@ sub do_delete_direct {
 
     $self->get_commit_message;
     $target->normalize;
+    $target->refresh_revision;
     my ( $anchor, $editor ) = $self->get_dynamic_editor($target);
     for (@args) {
         $editor->delete_entry( abs2rel( $_->path, $anchor => undef, '/' ),

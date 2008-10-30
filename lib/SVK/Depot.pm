@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -106,6 +106,11 @@ sub _has_local {
 	my $mpath = $spec;
 	return ($m, '') if $mpath eq $mspec;
 	next unless $mpath =~ s{^\Q$mspec\E/}{/};
+
+        # the common usage for $mpath is $m->path . $mpath, so if the
+        # mirror is anchored on /, we need to get rid of the leading /
+        # in $mpath.
+        $mpath = substr($mpath, 1) if $m->path eq '/';
 	$mpath = '' if $mpath eq '/'; # XXX: why still need this?
 	return ($m, $mpath);
     }

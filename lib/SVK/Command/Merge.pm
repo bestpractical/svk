@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -56,8 +56,9 @@ use base qw( SVK::Command::Commit );
 use SVK::XD;
 use SVK::I18N;
 use SVK::Command::Log;
+use SVK::Logger;
 use SVK::Merge;
-use SVK::Util qw( get_buffer_from_editor traverse_history );
+use SVK::Util qw( get_buffer_from_editor traverse_history tmpfile );
 
 sub options {
     ($_[0]->SUPER::options,
@@ -169,8 +170,8 @@ sub run {
 	$merge = SVK::Merge->auto (%$self, repos => $repos, target => '',
 				   ticket => !$self->{no_ticket},
 				   src => $src, dst => $dst);
-	print $merge->info;
-	print $merge->log(1) if $self->{summary};
+	$logger->info( $merge->info);
+	$logger->info( $merge->log(1)) if $self->{summary};
     }
     else {
 	die loc("Incremental merge not supported\n") if $self->{incremental};
@@ -188,17 +189,18 @@ sub run {
 
     $merge->{notice_copy} = 1;
     if ($merge->{fromrev} == $merge->{src}->revision) {
-	print loc ("Empty merge.\n");
+	$logger->info( loc ("Empty merge."));
 	return;
     }
 
+    # for checkouts we save later into a file
     $self->get_commit_message ($self->{log} ? $merge->log(1) : undef)
 	unless $dst->isa('SVK::Path::Checkout');
 
     if ($self->{incremental}) {
 	die loc ("Not possible to do incremental merge without a merge ticket.\n")
 	    if $self->{no_ticket};
-	print loc ("-m ignored in incremental merge\n") if $self->{message};
+	$logger->info( loc ("-m ignored in incremental merge")) if $self->{message};
 	my @rev;
 
         traverse_history (
@@ -226,7 +228,7 @@ sub run {
 		$merge->{fromrev} = $previous_base;
 	    }
 
-	    print '===> '.$merge->info;
+	    $logger->info( '===> '.$merge->info);
 	    $self->{message} = $merge->log (1);
 	    $self->decode_commit_message;
 
@@ -241,6 +243,13 @@ sub run {
 	$merge->run ($self->get_editor ($dst, undef, $self->{auto} ? $src : undef));
 	delete $self->{save_message};
     }
+
+    if ( $self->{log} && !$self->{check_only} && $dst->isa('SVK::Path::Checkout') ) {
+        my ($fh, $file) = tmpfile ('commit', DIR => '', TEXT => 1, UNLINK => 0);
+        print $fh $merge->log(1);
+        $logger->warn(loc ("Log message saved in %1.", $file));
+    }
+
     return;
 }
 

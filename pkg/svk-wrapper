@@ -6,4 +6,4 @@ fi
 
 BASE=`echo $BASE | sed s/svk$//`;
 
-LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl ${BASE}bin/svk $@
+DYLD_LIBRARY_PATH=${BASE} LD_LIBRARY_PATH=${BASE} perl -I${BASE}perl ${BASE}bin/svk "$@"

@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -359,7 +359,7 @@ sub add_directory {
 				       '.copyfrom_rev' => $from_rev,
 				     });
     }
-    $self->output_diff_header($path, 1);
+    $self->output_diff_header($self->_report_path( $path ), 1);
     return $path;
 }
 

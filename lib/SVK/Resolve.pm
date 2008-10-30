@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -132,7 +132,10 @@ sub do_resolve {
 sub edit {
     my $self = shift;
 
-    edit_file ($self->{merged});
+    eval { edit_file ($self->{merged}) };
+    if (my $err = $@) {
+        $logger->error(loc("External editor reported an error: %1.", $err));
+    }
     $self->{has_conflict} = index (read_file ($self->{merged}), $self->{marker}) >= 0;
 
     return 0;

@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -342,8 +342,9 @@ prevent other instances from modifying locked paths.
 
 sub lock {
     my ($self, $path) = @_;
-    if ($self->{checkout}->get ($path, 1)->{lock}) {
-	die loc("%1 already locked, use 'svk cleanup' if lock is stalled\n", $path);
+    if (my $lock = $self->{checkout}->get ($path, 1)->{lock}) {
+        my @paths = $self->{checkout}->find('', {lock => $lock});
+	die loc("%1 already locked at %2, use 'svk cleanup' if lock is stalled\n", $path, $paths[0]);
     }
     $self->{checkout}->store ($path, {lock => $$});
     $self->{modified} = 1;
@@ -577,14 +578,15 @@ sub target_from_copath_maybe {
 	my ($cinfo, $coroot) = $self->{checkout}->get ($copath);
 	die loc("path %1 is not a checkout path.\n", $copath) unless %$cinfo;
 	($repospath, $path, $repos) = $self->find_repos ($cinfo->{depotpath}, 1);
-	my ($rev, $subpath);
-	if (($view, $rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
-	    ($path, $view) = SVK::Command->create_view ($repos, $view, $rev, $subpath);
+	my ($view_rev, $subpath);
+	if (($view, $view_rev, $subpath) = $path =~ m{^/\^([\w/\-_]+)(?:\@(\d+)(.*))?$}) {
+	    ($path, $view) = SVK::Command->create_view ($repos, $view, $view_rev, $subpath);
 	}
 
 	$path = abs2rel ($copath, $coroot => $path, '/');
 
 	($depotpath) = $cinfo->{depotpath} =~ m|^/(.*?)/|;
+        $rev = $cinfo->{revision} unless defined $rev;
 	$depotpath = "/$depotpath$path";
     }
 
@@ -604,6 +606,29 @@ sub target_from_copath_maybe {
     return $ret;
 }
 
+=head2 create_path_object
+
+Creates and returns a new path object. It can be either L<SVK::Path::Checkout>,
+L<SVK::Path::View> or L<SVK::Path>.
+
+Takes a hash with arguments.
+
+If "copath_anchor" argument is defined then L<SVK::Path::Checkout> is created
+and other arguments are used to build its L<SVK::Path::Checkout/source>
+using this method. If "revision" argument is not defined then the one checkout
+path is based on is used.
+
+If "view" argument is defined then L<SVK::Path::View> is created
+and other arguments are used to build its L<SVK::Path::Checkout/source> using
+this method.
+
+Otherwise L<SVK::Path> is created.
+
+Depot can be passed as L<SVK::Depot> object in "depot" argument or using
+"depotname", "repospath" and "repos" arguments. Object takes precendence.
+
+=cut
+
 sub create_path_object {
     my ($self, %arg) = @_;
     if (my $depotpath = delete $arg{depotpath}) {
@@ -613,6 +638,8 @@ sub create_path_object {
     if (defined (my $copath = delete $arg{copath_anchor})) {
 	require SVK::Path::Checkout;
 	my $report = delete $arg{report};
+        $arg{'revision'} = ($self->get_entry( $copath ))[0]->{'revision'}
+            unless defined $arg{'revision'};
 	return SVK::Path::Checkout->real_new
 	    ({ xd => $self,
 	       report => $report,
@@ -620,13 +647,14 @@ sub create_path_object {
 	       source => $self->create_path_object(%arg) });
     }
 
-    my $path;
     unless ($arg{depot}) {
         my $depotname = delete $arg{depotname};
         my $repospath = delete $arg{repospath};
         my $repos     = delete $arg{repos};
         $arg{depot} = SVK::Depot->new({ depotname => $depotname, repos => $repos, repospath => $repospath });
     }
+
+    my $path;
     if (defined (my $view = delete $arg{view})) {
 	require SVK::Path::View;
         $path = SVK::Path::View->real_new
@@ -782,12 +810,83 @@ sub do_delete {
     rmtree (\@paths) if @paths;
 }
 
+sub do_add {
+    my ($self, $target, %arg) = @_;
+
+#    $target->run_delta(
+#        SVK::Editor::Status->new(
+#            notify => SVK::Notify->new(
+#                cb_flush => sub {
+#                    my ( $path, $status ) = @_;
+#                    to_native( $path, 'path' );
+#                    my $copath = $target->copath($path);
+#                    my $report = $target->report->subdir($path);
+
+    $self->checkout_delta(
+        $target->for_checkout_delta,
+        %arg,
+        xdroot => $target->create_xd_root,
+        delete_verbose => 1,
+        editor => SVK::Editor::Status->new(
+            notify => SVK::Notify->new(
+                cb_flush => sub {
+                    my ($path, $status) = @_;
+                    to_native($path, 'path');
+                    my $copath = $target->copath($path);
+                    my $report = $target->report ? $target->report->subdir($path) : $path;
+
+                    $target->contains_copath ($copath) or return;
+                    die loc ("%1 already added.\n", $report)
+                        if !$arg{recursive} && ($status->[0] eq 'R' || $status->[0] eq 'A');
+
+                    return unless $status->[0] eq 'D';
+                    lstat ($copath);
+                    $self->_do_add('R', $copath, $report, !-d _, %arg)
+                        if -e _;
+                },
+            ),
+        ),
+        cb_unknown => sub {
+            my ($editor, $path) = @_;
+            to_native($path, 'path');
+            my $copath = $target->copath($path);
+            my $report = $target->_to_pclass($target->report)->subdir($path);
+            lstat ($copath);
+            $self->_do_add('A', $copath, $report, !-d _, %arg);
+        },
+	);
+    return;
+}
+
+my %sch = (A => 'add', 'R' => 'replace');
+
+sub _do_add {
+    my ($self, $st, $copath, $report, $autoprop, %arg) = @_;
+    my $newprop;
+    $newprop = $self->auto_prop($copath) if $autoprop;
+
+    $self->{checkout}->store($copath, {
+            '.schedule' => $sch{$st},
+            $autoprop ? ('.newprop' => $newprop) : ()
+    });
+
+    return if $arg{quiet};
+
+    # determine whether the path is binary
+    my $bin = q{};
+    if ( ref $newprop && $newprop->{'svn:mime-type'} ) {
+        $bin = ' - (bin)' if !mimetype_is_text( $newprop->{'svn:mime-type'} );
+    }
+
+    $logger->info( "$st   $report$bin");
+}
+
 sub do_propset {
     my ($self, $target, %arg) = @_;
     my ($entry, $schedule) = $self->get_entry($target->copath);
     $entry->{'.newprop'} ||= {};
 
-    unless ( $schedule eq 'add' ) {
+    if ( $schedule ne 'add' && !$arg{'adjust_only'} ) {
         my $xdroot = $target->create_xd_root;
         my ( $source_path, $source_root )
             = $self->_copy_source( $entry, $target->copath, $xdroot );
@@ -799,16 +898,29 @@ sub do_propset {
 
     #XXX: support working on multiple paths and recursive
     die loc("%1 is already scheduled for delete.\n", $target->report)
-	if $schedule eq 'delete';
-    my %values = %{$entry->{'.newprop'}}
-	if exists $entry->{'.schedule'};
+	if $schedule eq 'delete' && !$arg{'adjust_only'};
+    my %values;
+    %values = %{$entry->{'.newprop'}} if exists $entry->{'.schedule'};
     my $pvalue = defined $arg{propvalue} ? $arg{propvalue} : \undef;
+
+    if ( $arg{'adjust_only'} ) {
+        return unless defined $values{ $arg{propname} };
+
+        if ( defined $arg{propvalue} && $values{$arg{propname}} eq $pvalue ) {
+            delete $values{ $arg{propname} };
+        }
+        elsif ( !defined $arg{propvalue} && (!defined $values{$arg{propname}} || (ref $values{$arg{propname}} && !defined $values{$arg{propname}}) )) {
+            delete $values{ $arg{propname} };
+        } else {
+            $values{ $arg{propname} } = $pvalue;
+        }
+    } else {
+        $values{ $arg{propname} } = $pvalue;
+    }
 
     $self->{checkout}->store ($target->copath,
 			      { '.schedule' => $schedule || 'prop',
-				'.newprop' => {%values,
-					    $arg{propname} => $pvalue
-					      }});
+				'.newprop' => \%values, });
     print " M  ".$target->report."\n" unless $arg{quiet};
 
     $self->fix_permission($target->copath, $arg{propvalue})
@@ -933,6 +1045,10 @@ sub ignore {
 }
 
 require SVK::DeltaOld;
+# Emulates APR's apr_fnmatch function with flags=0, which is what
+# Subversion uses.  Converts a string in fnmatch format to a Perl regexp.
+# Code is based on Barrie Slaymaker's Regexp::Shellish.
+
 sub checkout_delta {
     goto \&SVK::DeltaOld::checkout_delta;
 }
@@ -961,7 +1077,7 @@ sub do_resolved {
     my ($self, %arg) = @_;
 
     if ($arg{recursive}) {
-	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => 1})) {
+	for ($self->{checkout}->find ($arg{copath}, {'.conflict' => qr/.*/})) {
 	    $self->resolved_entry ($_);
 	}
     }

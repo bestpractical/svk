@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -138,7 +138,7 @@ sub as_depotpath {
 	$self = $self->new;
 	$self->source->revision($revision);
 	$self->revision($revision);
-	$self->_recreate_view;
+	eval { $self->_recreate_view; } or return undef;
     }
     return $self;
 }

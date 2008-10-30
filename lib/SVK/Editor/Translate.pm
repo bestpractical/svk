@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -64,7 +64,7 @@ SVK::Editor::Translate - An editor that translates path names
 
  my $editor = ...
  # stack the translate editor on
- $editor = SVK::Editor::Translated-> (_editor => [$editor], translate => sub {$_[0]})
+ $editor = SVK::Editor::Translate->(_editor => [$editor], translate => sub {$_[0]})
 
 =cut
 

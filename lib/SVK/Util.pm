@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -68,7 +68,9 @@ our @EXPORT_OK = qw(
     move_path make_path splitpath splitdir tmpdir tmpfile get_depot_anchor
     catdepot abs_path_noexist 
 
-    is_symlink is_executable is_uri can_run is_path_inside
+    is_symlink is_executable is_uri can_run is_path_inside is_depotpath
+
+    uri_escape uri_unescape
 
     str2time time2str reformat_svn_date
 
@@ -175,6 +177,8 @@ the regular expression pattern.  Returns the chomped answer line.
 sub get_prompt { {
     my ($prompt, $pattern) = @_;
 
+    return '' if ($ENV{'SVKBATCHMODE'});
+
     local $| = 1;
     print $prompt;
 
@@ -193,7 +197,7 @@ sub get_prompt { {
     my $out = (IS_WIN32 ? sub { 1 } : sub { print @_ });
 
     my $erase;
-    if (!IS_WIN32) {
+    if (!IS_WIN32 && -t) {
        my %keys = Term::ReadKey::GetControlChars();
        $erase = $keys{ERASE};
     }
@@ -255,6 +259,18 @@ sub edit_file {
 			: DEFAULT_EDITOR; # fall back to something
     my @editor = split (/ /, $editor);
 
+    if ( IS_WIN32 ) {
+        my $o;
+        my $e = shift @editor;
+        $e =~ s/^"//;
+        while ( !defined($o = can_run ($e)) ) {
+            die loc ("Can not find the editor: %1\n", $e) unless @editor;
+            $e .= " ".shift @editor;
+            $e =~ s/"$//;
+        }
+        unshift @editor, $o;
+    }
+
     $logger->info(loc("Waiting for editor..."));
 
     # XXX: check $?
@@ -268,69 +284,76 @@ XXX Undocumented
 =cut
 
 sub get_buffer_from_editor {
-    my ($what, $sep, $content, $file, $anchor, $targets_ref) = @_;
+    my ( $what, $sep, $content, $file, $anchor, $targets_ref ) = @_;
     my $fh;
-    if (defined $content) {
-	($fh, $file) = tmpfile ($file, TEXT => 1, UNLINK => 0);
-	print $fh $content;
-	close $fh;
-    }
-    else {
-	open $fh, $file or die $!;
-	local $/;
-	$content = <$fh>;
+    if ( defined $content ) {
+        ( $fh, $file ) = tmpfile( $file, TEXT => 1, UNLINK => 0 );
+        print $fh $content;
+        close $fh;
+    } else {
+        open $fh, $file or die $!;
+        local $/;
+        $content = <$fh>;
+        close $fh;
     }
 
     my $time = time;
 
-    while (1) {
+    while (!$ENV{'SVKBATCHMODE'} && 1) {
         open my $fh, '<', $file or die $!;
         my $md5 = md5_fh($fh);
         close $fh;
 
-	edit_file ($file);
+        edit_file($file);
 
         open $fh, '<', $file or die $!;
-        last if ($md5 ne md5_fh($fh));
+        last if ( $md5 ne md5_fh($fh) );
         close $fh;
 
-	my $ans = get_prompt(
-	    loc("%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what)),
-	    qr/^[aec]/,
-	);
-	last if $ans =~ /^c/;
-	# XXX: save the file somewhere
-	unlink ($file), die loc("Aborted.\n") if $ans =~ /^a/;
+        my $ans = get_prompt(
+            loc( "%1 not modified: a)bort, e)dit, c)ommit?", ucfirst($what) ),
+            qr/^[aec]/,
+        );
+        last if $ans =~ /^c/;
+
+        # XXX: save the file somewhere
+        unlink($file), die loc("Aborted.\n") if $ans =~ /^a/;
     }
 
     open $fh, $file or die $!;
     local $/;
-    my @ret = defined $sep ? split (/\n\Q$sep\E\n/, <$fh>, 2) : (<$fh>);
+    my @ret = defined $sep ? split( /\n\Q$sep\E\n/, <$fh>, 2 ) : (<$fh>);
     close $fh;
     unlink $file;
 
     die loc("Cannot find separator; aborted.\n")
-        if defined($sep) and !defined($ret[1]);
+        if defined($sep)
+            and !defined( $ret[1] );
 
     return $ret[0] unless wantarray;
 
     # Compare targets in commit message
-    my $old_targets = (split (/\n\Q$sep\E\n/, $content, 2))[1];
-    $old_targets =~ s/^\?.*//mg; # remove unversioned files
+    my $old_targets = ( split( /\n\Q$sep\E\n/, $content, 2 ) )[1];
+    $old_targets =~ s/^\?.*//mg;    # remove unversioned files
 
-    my @new_targets =
-               map {
-                   s/^\s+//; # proponly change will have leading spacs
-			       [split(/[\s\+]+/, $_, 2)]}
-               grep {!/^\?/m} # remove unversioned fils
-               grep {/\S/}
-               split(/\n+/, $ret[1]);
+    my @new_targets
+        = map {
+        s/^\s+//;                   # proponly change will have leading spacs
+        [ split( /[\s\+]+/, $_, 2 ) ]
+        }
+        grep {
+        !/^\?/m
+        }    # remove unversioned fils
+        grep {/\S/}
+        split( /\n+/, $ret[1] );
 
-    if ($old_targets ne $ret[1]) {
-        # Assign new targets 
-	@$targets_ref = map abs2rel($_->[1], $anchor, undef, '/'), @new_targets;
+    if ( $old_targets ne $ret[1] ) {
+
+        # Assign new targets
+        @$targets_ref = map abs2rel( $_->[1], $anchor, undef, '/' ),
+            @new_targets;
     }
-    return ($ret[0], \@new_targets);
+    return ( $ret[0], \@new_targets );
 }
 
 =head3 get_encoding
@@ -805,6 +828,7 @@ sub can_run {
 
     for my $dir ((split /$Config::Config{path_sep}/, $ENV{PATH}), @path, '.') {
         my $abs = catfile($dir, $_[0]);
+        next if -d $abs;
         return $abs if (-x $abs or $abs = is_executable($abs));
     }
 
@@ -1058,6 +1082,40 @@ sub compile_apr_fnmatch {
     @gexs ;
 
     return qr/\A$re\Z/s;
+}
+
+=head3 uri_escape($uri)
+
+Returns escaped URI.
+
+=cut
+
+sub uri_escape {
+    my ($uri) = @_;
+    $uri =~ s/([^0-9A-Za-z@%+\-\/:_.!~*'()])/sprintf("%%%02X", ord($1))/eg;
+    return $uri;
+}
+
+=head3 uri_unescape($uri)
+
+Unescape escaped URI and return it.
+
+=cut
+
+sub uri_unescape {
+    my ($uri) = @_;
+    $uri =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+    return $uri;
+}
+
+=head3 is_depotpath($path)
+
+Check if a string is a valid depotpath.
+
+=cut
+
+sub is_depotpath {
+    ($_[0] =~ m|^/([^/]*)(/.*?)/?$|)
 }
 
 1;

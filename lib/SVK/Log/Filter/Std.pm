@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -54,6 +54,7 @@ use base qw( SVK::Log::Filter::Output );
 
 use SVK::I18N;
 use SVK::Util qw( get_encoding reformat_svn_date );
+use SVK::Logger;
 
 our $sep;
 
@@ -62,7 +63,7 @@ sub setup {
     my $stash = $args->{stash};
 
     $sep = $stash->{verbatim} || $stash->{no_sep} ? '' : ('-' x 70)."\n";
-    print $sep;
+    $logger->info ($sep) if $sep;
 
     # avoid get_encoding() calls for each revision
     $self->{encoding} = get_encoding();
@@ -89,20 +90,20 @@ sub revision {
 
     $author = loc('(no author)') if !defined($author) or !length($author);
     if ( !$verbatim ) {
-        print $indent;
-        print fancy_rev( $stash, $rev, $args->{get_remoterev} );
-        print ":  $author | $date\n";
+        $logger->info ( $indent . 
+	    fancy_rev( $stash, $rev, $args->{get_remoterev} ) .
+	    ":  $author | $date");
     }
 
     # display the paths that were modified by this revision
     if ( $stash->{verbose} ) {
-        print build_changed_details( $stash, $args->{paths}, $self->{encoding} );
+        $logger->info ( build_changed_details( $stash, $args->{paths}, $self->{encoding} ));
     }
 
     $message =~ s/^/$indent/mg if $indent and !$verbatim;
     require Encode;
     Encode::from_to( $message, 'UTF-8', $self->{encoding} );
-    print($message);
+    $logger->info($message);
 }
 
 sub fancy_rev {

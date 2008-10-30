@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -48,61 +48,27 @@
 # and any derivatives thereof.
 # 
 # END BPS TAGGED BLOCK }}}
-package SVK::Editor::Sign;
+package SVK::Editor::FilterProp;
+use strict;
+use warnings;
 
-require SVN::Delta;
 use base 'SVK::Editor::ByPass';
-use SVK::I18N;
-use autouse 'SVK::Util' => qw (tmpfile);
 
-sub add_file {
-    my ($self, $path, @arg) = @_;
-    my $baton = $self->SUPER::add_file ($path, @arg);
-    $self->{filename}{$baton} = $path;
-    return $baton;
-}
+__PACKAGE__->mk_accessors(qw(cb_prop));
 
-sub open_file {
-    my ($self, $path, @arg) = @_;
-    my $baton = $self->SUPER::open_file ($path, @arg);
-    $self->{filename}{$baton} = $path;
-    return $baton;
-}
+sub AUTOLOAD {
+    my ($self, @arg) = @_;
+    my $func = our $AUTOLOAD;
+    $func =~ s/^.*:://;
+    return if $func =~ m/^[A-Z]+$/;
 
-sub close_file {
-    my $self = shift;
-    my ($baton, $checksum, $pool) = @_;
-    push @{$self->{checksum}}, [$checksum, $self->{filename}{$baton}];
-    $self->SUPER::close_file (@_);
-}
+    if ($func =~ m/^change.*prop/) {
+        $self->cb_prop->(@arg[1,2]) or return;
+        warn "==> $arg[1]";
+    }
 
-sub close_edit {
-    my ($self, $baton) = @_;
-    $self->{sig} =_sign_gpg
-	(join("\n", "ANCHOR: $self->{anchor}",
-	      (map {"MD5 $_->[0] $_->[1]"} @{$self->{checksum}})),'');
-    $self->SUPER::close_edit ($baton);
-}
-
-sub _sign_gpg {
-    my ($plaintext) = @_;
-    my $sigfile = tmpfile("sig-", OPEN => 0);
-    local *D;
-    my $pgp = $ENV{SVKPGP} || 'gpg';
-    open D, "| $pgp --clearsign > $sigfile" or die loc("could not call gpg: %1", $!);
-    print D $plaintext;
-    close D;
-
-    (-e "$sigfile" and -s "$sigfile") or do {
-	unlink "$sigfile";
-	die loc("cannot find %1, signing aborted", $sigfile);
-    };
-
-    open D, "$sigfile" or die loc("cannot open %1: %2", $sigfile, $!);
-    local $/;
-    my $buf = <D>;
-    unlink($sigfile);
-    return $buf;
+    $func = "SUPER::$func";
+    $self->$func(@arg);
 }
 
 1;

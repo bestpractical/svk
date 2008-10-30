@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -53,7 +53,9 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use SVK::I18N;
 use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel
-			       IS_WIN32 get_depot_anchor );
+			       IS_WIN32 get_depot_anchor
+			       uri_escape traverse_history );
+
 use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup SVK::Editor::Tee);
 
 use SVN::Delta;
@@ -127,6 +129,7 @@ sub report { Carp::cluck if defined $_[1]; $_[0]->depotpath }
 =head2 same_repos
 
 Returns true if all C<@other> targets are from the same repository
+as this one.
 
 =cut
 
@@ -232,9 +235,9 @@ sub _get_inspector {
 }
 
 sub _get_remote_editor {
-    my ($self, $m, $mpath, $message, $mcallback) = @_;
+    my ($self, $m, $mpath, $message, $mcallback, $opts) = @_;
     my ($base_rev, $editor) = $m->get_merge_back_editor
-	($mpath, $message, $mcallback);
+	($mpath, $message, $mcallback, $opts);
     $editor = SVK::Editor::MapRev->wrap_without_copy($editor, $m->fromrev);
     $editor = SVK::Editor::CopyHandler->new(
         _editor => $editor,
@@ -268,7 +271,7 @@ sub get_editor {
     my $use_tee;
     my $post_handler;
     if ($m) {
-	$use_tee = !$arg{notee} &&
+	$use_tee = !IS_WIN32 && !$arg{notee} &&
 	    SVN::TxDelta->can('invoke_window_handler') &&
 	    $m->_backend->has_replay;
         my $mcallback = sub {
@@ -286,7 +289,8 @@ sub get_editor {
 	    $tee_callback->($rev) if $use_tee;
         };
 
-	$meditor = $self->_get_remote_editor($m, $mpath, $arg{message}, $mcallback);
+	$meditor = $self->_get_remote_editor($m, $mpath, $arg{message}, $mcallback,
+                                             { lock_tokens => $arg{lock_tokens} } );
 
 	# XXX: fix me, need local knowledge about txn as well
 	return ($meditor, $self->inspector,
@@ -769,15 +773,76 @@ In other words, assuming C<foo@N> for C<-r N foo@M> when N > M.
 sub seek_to {
     my ($self, $revision) = @_;
 
-    if ($revision < $self->revision) {
-	while (my ($toroot, $fromroot, $path) = $self->nearest_copy) {
-	    last if $toroot->revision_root_revision <= $revision;
-	    $self = $self->mclone( path => $path,
-				   revision => $fromroot->revision_root_revision );
-	}
+    return $self->mclone( revision => $revision )
+        if $revision >= $self->revision;
+
+    # if the path not exist then we should trace back history and watch copies
+    # and descedants
+    if ( $self->root->check_path( $self->path ) == $SVN::Node::none ) {
+        # find a parent that exist
+        my $tmp = $self->mclone( path_anchor => $self->path, targets => undef );
+        while ( $tmp->root->check_path( $tmp->path_anchor ) == $SVN::Node::none ) {
+            $tmp->anchorify;
+        }
+        my $res = $tmp->_seek_to_by_anchor( $revision );
+        return $res if $res;
     }
 
-    return $self->mclone( revision => $revision );
+    while (my ($toroot, $fromroot, $path) = $self->nearest_copy) {
+        last if $toroot->revision_root_revision <= $revision;
+        $self = $self->mclone( path => $path,
+                               revision => $fromroot->revision_root_revision );
+    }
+    return $self->mclone( revision => $revision )
+}
+
+sub _seek_to_by_anchor {
+    my ($self, $revision) = @_;
+
+    my $anchor = $self->path_anchor;
+
+    my ($found_at_rev, $switch_to) = (undef, undef);
+    traverse_history (
+        root  => $self->root,
+        path  => $anchor,
+        cross => 1,
+        callback => sub {
+            my ($path, $rev) = @_;
+            if ($path ne $anchor) {
+                $anchor = $self->path_anchor( $path );
+            }
+
+            if ( $self->as_depotpath( $rev )->root->check_path( $self->path ) != $SVN::Node::none ) {
+                $found_at_rev = $rev < $revision? $revision : $rev;
+                return 0;
+            }
+            return 0 if $rev < $revision;
+            
+            my @target = split m{/}, $self->path_target;
+            return 1 if @target < 2;
+
+            my @left = (shift @target);
+            my @right = (@target);
+
+            while ( @right >= 1 ) {
+                my $deanchored = $self->mclone(
+                    path_anchor => $self->path_anchor .'/'. join( '/', @left ),
+                    targets     => [ join '/', @right ],
+                    revision    => $rev,
+                    _root       => undef,
+                );
+                if ( $deanchored->root->check_path( $deanchored->path_anchor ) == $SVN::Node::none ) {
+                    last;
+                }
+                $switch_to = $deanchored;
+                push @left, shift @right;
+            }
+            return $switch_to? 0 : 1;
+        },
+    );
+    return $switch_to->_seek_to_by_anchor( $revision ) if $switch_to;
+    return $self->mclone( path => $self->path, targets => undef, revision => $found_at_rev )->seek_to( $revision )
+        if defined $found_at_rev;
 }
 
 *path_anchor = __PACKAGE__->make_accessor('path');
@@ -811,6 +876,7 @@ sub as_url {
         my ($m_path, $m_url) = ($m->path, $m->url);
 	$path =~ s/^\Q$m_path\E/$m_url/;
 	$path =~ s/%/%25/g;
+	$path = uri_escape($path);
         if (my $remote_rev = $m->find_remote_rev($rev)) {
             $rev = $remote_rev;
         } else {

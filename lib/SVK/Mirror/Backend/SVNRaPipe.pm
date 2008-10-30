@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -241,6 +241,14 @@ sub rev_proplist {
     return $data->[0];
 }
 
+sub reparent {
+    my $self = shift;
+    $self->ensure_client_cmd('reparent', @_);
+    # read synchronous msg
+    my $data = thaw( ${$self->read_msg} );
+    die 'inconsistent response' unless $data->[1] eq 'reparent';
+    return $data->[0];
+}
 
 sub replay {
     my $self = shift;

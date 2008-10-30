@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -334,11 +334,16 @@ sub get_editor {
         },
 
         cb_conflict => sub {
-            my ($path) = @_;
+            my ($path, $type) = @_;
+            return if $arg{check_only};
+
             my $copath;
             ($path, $copath) = $self->_get_paths($path);
-            $self->xd->{checkout}->store ($copath, {'.conflict' => 1})
-                unless $arg{check_only};
+            my $conflict = $self->xd->{checkout}->get ($copath, 1)->{'.conflict'} || '';
+            $conflict = 'node' if $conflict eq '1';
+            my %seen;
+            $conflict = join ',', grep !$seen{$_}++, $type, split /,/, $conflict;
+            $self->xd->{checkout}->store ($copath, {'.conflict' => $conflict});
         },
         cb_add_merged => sub { 
             return if $arg{check_only};

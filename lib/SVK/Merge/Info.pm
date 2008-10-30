@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -156,6 +156,25 @@ sub subset_of {
     return 1;
 }
 
+=item is_equal
+
+Takes a single L<SVK::Merge::Info> object as an argument.  Returns true if
+our set of merge tickets is equal to argument's. Otherwise, returns false.
+
+=cut
+
+sub is_equal {
+    my ( $self, $other ) = @_;
+    my $subset = 1;
+    for ( keys %$self, keys %$other ) {
+        return 0 unless
+            exists $other->{$_}
+            && exists $self->{$_}
+            && $self->{$_}{rev} == $other->{$_}{rev};
+    }
+    return 1;
+}
+
 =item union
 
 Return a new L<SVK::Merge::Info> object representing the union of ourself and
@@ -181,12 +200,27 @@ sub union {
     return $new;
 }
 
+sub intersect {
+    my ($self, $other) = @_;
+    # bring merge history up to date as from source
+    my $new = SVK::Merge::Info->new;
+    for ( keys %{ { %$self, %$other } } ) {
+        if ( $self->{$_} && $other->{$_} ) {
+            $new->{$_} = $self->{$_}{rev} < $other->{$_}{rev}
+                ? $self->{$_}
+                : $other->{$_};
+        }
+    }
+    return $new;
+}
+
 =item resolve
 
 =cut
 
 sub resolve {
     my ( $self, $depot ) = @_;
+
     my $uuid = $depot->repos->fs->get_uuid;
     return {
         map {

@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -98,6 +98,7 @@ sub add_or_replace {
     else {
 	$self->notify->node_status ($path, 'A');
     }
+    $self->{info}{$path}{added_or_replaced} = 1;
 }
 
 sub add_file {
@@ -123,12 +124,14 @@ sub apply_textdelta {
 
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
-    $self->notify->prop_status ($path, 'M');
+    $self->notify->prop_status ($path, 'M')
+        unless $self->{info}{$path}{added_or_replaced};
 }
 
 sub close_file {
     my ($self, $path) = @_;
     $self->notify->flush ($path);
+    delete $self->{info}{$path};
 }
 
 sub absent_file {
@@ -165,12 +168,14 @@ sub open_directory {
 
 sub change_dir_prop {
     my ($self, $path, $name, $value) = @_;
-    $self->notify->prop_status ($path, 'M');
+    $self->notify->prop_status ($path, 'M')
+        unless $self->{info}{$path}{added_or_replaced};
 }
 
 sub close_directory {
     my ($self, $path) = @_;
     $self->notify->flush_dir ($path);
+    delete $self->{info}{$path};
 }
 
 sub open_node {
@@ -192,8 +197,11 @@ sub absent_directory {
 }
 
 sub conflict {
-    my ($self, $path) = @_;
-    $self->notify->node_status ($path, 'C');
+    my ($self, $path, $baton, $type) = @_;
+    # backward compatibility
+    $type = 'node' if !$type || $type eq '1';
+    $self->notify->$_ ($path, 'C')
+        foreach map $_ ."_status", split /,/, $type;
 }
 
 sub obstruct {

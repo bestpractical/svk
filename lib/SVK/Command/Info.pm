@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -58,6 +58,8 @@ use SVK::XD;
 use SVK::Merge;
 use SVK::I18N;
 use YAML::Syck;
+use SVK::Logger;
+use SVK::Project;
 use autouse 'SVK::Util' => qw( reformat_svn_date );
 
 # XXX: provide -r which walks peg to the specified revision based on
@@ -93,33 +95,37 @@ sub _do_info {
 
     my ($m, $mpath) = $target->is_mirrored;
 
-    print loc("Checkout Path: %1\n",$target->copath)
+    my ($proj) = SVK::Project->create_from_path(
+	         $target->depot, $target->path );
+
+    $logger->info( loc("Checkout Path: %1\n",$target->copath))
 	if $target->isa('SVK::Path::Checkout');
-    print loc("Depot Path: %1\n", $target->depotpath);
-    print loc("Revision: %1\n", $target->revision);
+    $logger->info( loc("Depot Path: %1\n", $target->depotpath));
+    $proj->info($target) if $proj;
+    $logger->info( loc("Revision: %1\n", $target->revision));
     if (defined( my $lastchanged = $target->root->node_created_rev( $target->path ))) {
-        print loc( "Last Changed Rev.: %1\n", $lastchanged );
+        $logger->info( loc( "Last Changed Rev.: %1\n", $lastchanged ));
         my $date
             = $target->root->fs->revision_prop( $lastchanged, 'svn:date' );
-        print loc(
+        $logger->info( loc(
             "Last Changed Date: %1\n",
             reformat_svn_date( "%Y-%m-%d", $date )
-        );
+        ));
     }
 
-    print loc("Mirrored From: %1, Rev. %2\n",$m->url, $m->fromrev)
+    $logger->info( loc("Mirrored From: %1, Rev. %2\n",$m->url, $m->fromrev))
 	if $m;
 
     for ($target->copy_ancestors) {
-	print loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]);
+	$logger->info( loc("Copied From: %1, Rev. %2\n", $_->[0], $_->[1]));
     }
 
     $self->{merge} = SVK::Merge->new (%$self);
     my $minfo = $self->{merge}->find_merge_sources ($target, 0,1);
     for (sort { $minfo->{$b} <=> $minfo->{$a} } keys %$minfo) {
-	print loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_});
+	$logger->info( loc("Merged From: %1, Rev. %2\n",(split/:/)[1],$minfo->{$_}));
     }
-    print "\n";
+    $logger->info( "\n");
 }
 
 1;
@@ -149,7 +155,7 @@ For example, here's the way to display the info of a checkout path:
  Last Changed Rev.: 447
  Last Changed Date: 2006-11-28
  Copied From: /svk/trunk, Rev. 434
- Merge From: /svk/trunk, Rev. 445
+ Merged From: /svk/trunk, Rev. 445
 
 You can see the result has some basic information: the actual depot path,
 and current revision. Next are advanced information about copy and merge
@@ -159,7 +165,7 @@ The result of C<svk info //svk/local> is almost the same as above,
 except for the C<Checkout Path:> line is not there, because
 you are not referring to a checkout path.
 
-Note that the revision numbers on C<Copied From:> and C<Merge From:> lines
+Note that the revision numbers on C<Copied From:> and C<Merged From:> lines
 are for the source path (//svk/trunk), not the target path (//svk/local).
 The example above state that, I<//svk/local is copied from the revision 434
 of //svk/trunk>, and I<//svk/local was merged from the revision 445 of

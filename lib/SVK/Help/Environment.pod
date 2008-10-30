@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -98,6 +98,7 @@ the following merge tools:
  TkDiff
  TortoiseMerge
  Vim
+ WinMerge
  XXDiff
 
 If you want svk to spawn a specific merge tool, set this variable to
@@ -140,12 +141,11 @@ By specifying this variable, you change the default output filter used by the
 C<svk log> command.  The value of this variable can be anything that you can
 pass to C<svk log>'s C<--output> option.
 
-=item $SVKPGP
+=item SVKBATCHMODE
 
-svk supports signing and verifying changesets using the Gnu Privacy Guard.
-By default, svk tries to run the first program called B<gpg> in your
-path. To tell svk to use a specific gpg executable, set this variable
-to the executable's name or path.
+When you set this variable to a true value, SVK should never prompt the user for an 
+interactive response. 
+
 
 =item $SVNFSTYPE
 
@@ -166,6 +166,14 @@ module to do mirroring.
 (For debugging use only.) If this environment variable is set to a
 true value, any error message which comes from the Subversion
 libraries will be accompanied by a stack backtrace.
+
+=item $SVKPGP
+
+svk supports the verification of historical changesets using the Gnu Privacy 
+Guard. Note that SVK no longer allows users to sign new changesets.
+By default, svk tries to run the first program called B<gpg> in your
+path. To tell svk to use a specific gpg executable, set this variable
+to the executable's name or path.
 
 =back
 

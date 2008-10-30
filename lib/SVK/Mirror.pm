@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -57,11 +57,14 @@ use SVK::Logger;
 
 use Sys::Hostname;
 use SVK::I18N;
+use SVK::Util qw(uri_escape uri_unescape);
 use Scalar::Util 'weaken';
+use File::Temp qw//;
 
 use base 'Class::Accessor::Fast';
+use SVK::Notify;
 
-__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked));
+__PACKAGE__->mk_accessors(qw(depot path server_uuid source_uuid pool url _backend _locked follow_anchor_copy _rev_cache));
 
 *repos = sub { Carp::cluck unless $_[0]->depot; shift->depot->repos };
 
@@ -118,6 +121,7 @@ sub create {
     my $self = $class->SUPER::new($args);
 
     $self->{url} =~ s{/+$}{}g;
+    $self->{url} = uri_unescape($self->{url});
 
     $self->pool( SVN::Pool->new(undef) )
         unless $self->pool;
@@ -228,6 +232,128 @@ sub detach {
     }
 
     $editor->close_edit;
+}
+
+=item bootstrap
+
+=cut
+
+sub bootstrap {
+    my ($self, $dumpfile, $file_hint) = @_;
+    $file_hint ||= $dumpfile;
+    my $fh;
+    require SVN::Dump;
+
+    if ($dumpfile eq '-') {
+        $fh = \*STDIN;
+    } elsif ($dumpfile =~ m{^(file|https?|ftp)://}) {
+        $logger->info( loc( "Downloading dump file: %1", $dumpfile ) );
+
+        require LWP::UserAgent;
+        my $ua = LWP::UserAgent->new(agent => "SVK-bootstrap/$SVK::VERSION");
+        my $response = $ua->head( $dumpfile );
+        die $response->status_line unless $response->is_success;
+
+        my $writer;
+        pipe( $fh, $writer );
+        unless (fork) {
+            close $fh;
+            $ua->get(
+                $dumpfile,
+                ':content_cb' => sub {
+                    my ( $data, $cb_response, $protocol ) = @_;
+                    print { $writer } $data;
+                },
+                ':read_size_hint' => 16384,
+            );
+            close $writer;
+            exit;
+        }
+        close $writer;
+        binmode($fh, ":raw");
+    }
+    else {
+        open $fh, '<:raw', $dumpfile or die $!;
+    }
+
+    # XXX make these fail optionally
+    if ($file_hint =~ m/bz2$/i) {
+        require PerlIO::via::Bzip2;
+        binmode($fh, ':via(Bzip2)');
+    }
+    elsif ($file_hint =~ m/gz$/i) {
+        require PerlIO::gzip;
+        binmode($fh, ':gzip(lazy)');
+    }
+
+    my $dump = SVN::Dump->new( { fh => $fh } );
+    my $prefix = $self->path.'/';
+
+    my $prev = undef;
+    my $rev = 0;
+    my $buf;
+    my $header;
+    my $progress = SVK::Notify->new->progress( min => 0, max => $self->_backend->_new_ra->get_latest_revnum );
+    if ($self->fromrev) {
+        $logger->info(loc("Skipping dumpstream up to revision %1", $self->fromrev));
+    }
+
+    my $pool = SVN::Pool->new_default;
+    while ( my $record = $dump->next_record() ) {
+	if ($record->type eq 'format' or $record->type eq 'uuid') {
+	    $header = $header.$record->as_string;
+	    next;
+	}
+
+	for my $r ($record, $record->get_included_record) {
+	    next unless $r;
+
+	    if (my $path = $r->get_header('Node-copyfrom-path')) {
+		$path = $prefix.$path;
+		$r->set_header('Node-copyfrom-path' => $path );
+	    }
+
+	    if ($r->get_header('Revision-number')) {
+		printf STDERR "%s rev:%d\r",$progress->report( "%45b",$rev),$rev;
+		$rev = $r->get_header('Revision-number');
+		$prev = $rev if !$prev;
+		$r->set_property('svm:headrev',$self->source_uuid.':'.$rev."\n");
+	    }
+
+	    if ( my $path = $r->get_header('Node-path') ) {
+		$path = $prefix.$path;
+		$r->set_header('Node-path' => $path);
+	    }
+	}
+
+	if ($rev and $prev != $rev) {
+	    $self->_import_repos($header, $buf, $pool) if $prev > $self->fromrev;
+	    $pool->clear;
+	    $buf = "";
+	    $prev = $rev;
+	}
+
+	$buf = $buf.$record->as_string;
+    }
+    # last one
+    if ($rev) {
+	$self->_import_repos($header, $buf, $pool) if $prev > $self->fromrev;
+    }
+
+}
+
+sub _import_repos {
+    my $self = shift;
+    my ($header, $buf, $pool) = @_;
+    $buf = $header.$buf;
+    open my $fh, '<', \$buf;
+    my $feedback = '';
+    open my $fstream, '>', \$feedback;
+    my $ret = SVN::Repos::load_fs2( $self->repos, $fh, $fstream, $SVN::Repos::load_uuid_default, undef, 0, 0, undef, undef, $pool );
+    # (repos,dumpstream,feedback_stream,uuid_action,parent_dir,use_pre_commit_hook,use_post_commit_hook,cancel_func,cancel_baton,pool);
+    # XXX: display $feedback if we are in verbose / debug mode.
+    # and provide progress feedback in caller
+    return $ret;
 }
 
 =item relocate($newurl)
@@ -347,7 +473,9 @@ sub spec {
 
 sub find_local_rev {
     my ($self, $changeset, $uuid) = @_;
-    $self->find_rev_from_changeset($changeset, $uuid);
+    $self->_rev_cache({}) unless $self->_rev_cache;
+    $self->_rev_cache->{$uuid || ''}{$changeset}
+        ||= $self->find_rev_from_changeset($changeset, $uuid);
 }
 
 sub find_remote_rev {
@@ -365,10 +493,13 @@ sub run {
 
     $logger->info(loc("Syncing %1", $self->url).($self->_backend->_relayed ? loc(" via %1", $self->server_url) : ""));
 
+    $self->{use_progress} = 1 unless SVK::Test->can('is_output');
+
     $self->mirror_changesets($torev,
         sub {
             my ( $changeset, $rev ) = @_;
-            $logger->info("Committed revision $rev from revision $changeset.");
+            $logger->info("Committed revision $rev from revision $changeset.")
+                unless $self->{use_progress};
         }, $fake_last
     );
     die $@ if $@;
@@ -424,7 +555,11 @@ sub run_svnmirror_sync {
     my $target = $self->get_svkpath;
 
     my $lock_message = $self->_lock_message;
+    my $escaped_url = uri_escape($self->url);
+	    
+    # XXX if SVN::Mirror do uri_escape in future, then we can remove 'source => $escaped_url' line
     my $svm = SVN::Mirror->new(
+        source => $escaped_url,
         target_path    => $self->path,
         repos          => $self->depot->repos,
         config         => SVK::Config->svnconfig,

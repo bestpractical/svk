@@ -18,7 +18,7 @@ my $file2 = "\x{b6}\x{7d}\x{b7}\x{7c}.txt"; # meeting
 mkpath ["t/checkout/filenames/$big5dir"], 0, 0700 unless -d "t/checkout/filenames/$big5dir";
 
 my ($xd, $svk) = build_test('dirname_enc');
-my ($copath, $corpath) = get_copath ("filenames/$big5dir");
+my ($copath, $corpath) = get_copath();
 my ($repospath, $path, $repos) = $xd->find_repos ('/dirname_enc/', 1);
 sub copath { SVK::Path::Checkout->copath($copath, @_) }
 

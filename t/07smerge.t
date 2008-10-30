@@ -10,8 +10,8 @@ my ($xd, $svk) = build_test('test', 'client2');
 my $tree = create_basic_tree ($xd, '/test/');
 my $pool = SVN::Pool->new_default;
 
-my ($copath, $corpath) = get_copath ('smerge');
-my ($scopath, $scorpath) = get_copath ('smerge-source');
+my ($copath, $corpath) = get_copath('smerge');
+my ($scopath, $scorpath) = get_copath('smerge-source');
 
 my ($srepospath, $spath, $srepos) = $xd->find_repos ('/test/A', 1);
 my $depot = $xd->find_depot('');
@@ -162,6 +162,7 @@ is_output ($svk, 'smerge', ['//m', $copath],
 	    __"    $copath/Q/qz - skipped",
 	    __"C   $copath/be",
 	    __"    $copath/newdir - skipped",
+	    __"    $copath/newdir/deepnewfile - skipped",
 	    __"g   $copath/newfile",
 	    __"A   $copath/newdir2",
 	    __"    $copath/newfile2 - skipped",

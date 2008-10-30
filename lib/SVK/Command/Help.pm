@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -54,6 +54,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 
 use base qw( SVK::Command );
 use SVK::I18N;
+use SVK::Logger;
 use SVK::Util qw( get_encoder can_run );
 use autouse 'File::Find' => qw(find);
 
@@ -74,7 +75,7 @@ sub run {
             my @cmd;
             my $dir = $INC{'SVK/Command.pm'};
             $dir =~ s/\.pm$//;
-            print loc("Available commands:\n");
+            $logger->info( loc("Available commands:"));
             find (
                 sub { push @cmd, $File::Find::name if m/\.pm$/ }, $dir,
             );
@@ -92,7 +93,7 @@ sub run {
 
             $buf =~ s/^NAME\s+SVK::Help::\S+ - (.+)\s+DESCRIPTION/    $1:/;
 
-            print get_encoder->encode($buf);
+            $logger->info( get_encoder->encode($buf));
         }
         else {
             die loc("Cannot find help topic '%1'.\n", $topic);
@@ -143,9 +144,10 @@ SVK::Command::Help - Show help
 
 =head1 OPTIONS
 
-Optionally svk helps can pipe through a pager, for it is easier to
-read if the output is too long. For using this feature, please
-set environment variable SVKPAGER to some pager program.
+Optionally, svk help can pipe output through a pager, which is
+easier to read if the output is long. To use this feature, set the
+environmental variable SVKPAGER to some pager program.
+
 For example:
 
     # bash, zsh users

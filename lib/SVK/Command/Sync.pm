@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -59,6 +59,7 @@ use SVK::Logger;
 sub options {
     ('s|skipto=s'	=> 'skip_to',
      'a|all'		=> 'sync_all',
+     'follow-anchor-copy' => 'follow_anchor_copy',
      't|torev=s'	=> 'torev');
 }
 
@@ -87,7 +88,7 @@ sub run {
                 $logger->error(loc( "%1 does not contain a valid depotname",
                     $orig_arg ));
                 next;
-            }
+           }
 
             my @tempnewarg = grep { SVK::Path->_to_pclass( "/$path", 'Unix' )->subsumes($_) }
                 $depot->mirror->entries;
@@ -104,6 +105,9 @@ sub run {
 
     my $error;
     for my $m (@mirrors) {
+        # XXX: in svk::mirrorcatalog, mirror objects are cached. we
+        # might want per-instance options applied when using ->get.
+        $m->follow_anchor_copy(1) if $self->{follow_anchor_copy};
 	my $run_sync = sub {
 	    $m->sync_snapshot($self->{skip_to}) if $self->{skip_to};
 	    $m->run( $self->{torev} );

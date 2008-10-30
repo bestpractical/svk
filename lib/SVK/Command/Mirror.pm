@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -55,12 +55,14 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command::Commit );
 use SVK::I18N;
 use SVK::Util qw( is_uri get_prompt traverse_history );
+use SVK::Logger;
 
 use constant narg => undef;
 
 sub options {
     ('l|list'  => 'list',
      'd|delete|detach'=> 'detach',
+     'b|bootstrap=s' => 'bootstrap',
      'upgrade' => 'upgrade',
      'relocate'=> 'relocate',
      'unlock'=> 'unlock',
@@ -83,7 +85,7 @@ sub parse_arg {
     }
 
     if (defined (my $narg = $self->narg)) {
-	return unless $narg == (scalar @arg + 1);
+        return unless $narg == (scalar @arg + 1);
     }
 
     return ($self->arg_depotpath ($path), @arg);
@@ -102,12 +104,13 @@ sub run {
         }
     );
 
-    print loc("Mirror initialized.  Run svk sync %1 to start mirroring.\n", $target->report);
+    $logger->info( loc("Mirror initialized.  Run svk sync %1 to start mirroring.\n", $target->report));
 
     return;
 }
 
 package SVK::Command::Mirror::relocate;
+use SVK::Logger;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 
@@ -121,7 +124,7 @@ sub run {
 
     $m->relocate($source, @options);
 
-    print loc("Mirror relocated.\n");
+    $logger->info( loc("Mirror relocated."));
     return;
 }
 
@@ -129,6 +132,7 @@ package SVK::Command::Mirror::detach;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
 
+use SVK::Logger;
 use constant narg => 1;
 
 sub run {
@@ -139,38 +143,80 @@ sub run {
     die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
 
     $m->detach(1); # remove svm:source and svm:uuid too
-    print loc("Mirror path '%1' detached.\n", $target->depotpath);
+    $logger->info( loc("Mirror path '%1' detached.\n", $target->depotpath));
+    return;
+}
+
+package SVK::Command::Mirror::bootstrap;
+use base qw(SVK::Command::Mirror);
+use SVK::I18N;
+use SVK::Logger;
+
+use constant narg => 2;
+
+sub run {
+    my ($self, $target, $uri, @options) = @_;
+    my ($m, $mpath) = $target->is_mirrored;
+
+    die loc("No such dump file: %1.\n", $self->{bootstrap})
+        unless $self->{bootstrap} eq '-' ||
+        $self->{bootstrap} =~ m{^(file|https?|ftp)://} ||
+        $self->{bootstrap} eq 'auto' || -f ($self->{bootstrap});
+
+    if (!$m) {
+        $self->SUPER::run($target,$uri, @options);
+        ($m, $mpath) = $target->is_mirrored;
+    }
+    # XXX: make sure the mirror is fresh and not synced at all
+
+    die loc("%1 is not a mirrored path.\n", $target->depotpath) if !$m;
+    die loc("%1 is inside a mirrored path.\n", $target->depotpath) if $mpath;
+
+    if ( $self->{bootstrap} eq 'auto' ) {
+        my $ra = $m->_backend->_new_ra;
+        $ra->reparent( $ra->get_repos_root() );
+        my %prop = %{ ( $ra->get_file( '', $ra->get_latest_revnum, undef ) )[1] };
+        $m->_backend->_ra_finished($ra);
+        $self->{bootstrap} = $prop{'svk:dump-url'};
+    }
+
+    $logger->info( loc("Bootstrapping mirror from dump") );
+    $m->bootstrap($self->{bootstrap}); # load from dumpfile
+    print loc("Mirror path '%1' synced from dumpfile.\n", $target->depotpath);
     return;
 }
 
 package SVK::Command::Mirror::upgrade;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
+use SVK::Logger;
 
 use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
-    print loc("nothing to upgrade\n");
+    $logger->info( loc("nothing to upgrade"));
     return;
 }
 
 package SVK::Command::Mirror::unlock;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
+use SVK::Logger;
 
 use constant narg => 1;
 
 sub run {
     my ($self, $target) = @_;
     $target->depot->mirror->unlock($target->path_anchor);
-    print loc ("mirror locks on %1 removed.\n", $target->report);
+    $logger->info( loc ("mirror locks on %1 removed.\n", $target->report));
     return;
 }
 
 package SVK::Command::Mirror::list;
 use base qw(SVK::Command::Mirror);
 use SVK::I18N;
+use SVK::Logger;
 use List::Util qw( max );
 
 sub parse_arg {
@@ -208,10 +254,10 @@ sub run {
     my $max_uri        = max map { length $_->[1] } @mirror_columns;
 
     my $fmt = "%-${max_depot_path}s   %-s\n";
-    printf $fmt, loc('Path'), loc('Source');
-    print '=' x ( $max_depot_path + $max_uri + 3 ), "\n";
+    $logger->info(sprintf $fmt, loc('Path'), loc('Source'));
+    $logger->info( '=' x ( $max_depot_path + $max_uri + 3 ));
 
-    printf $fmt, @$_ for @mirror_columns;
+    $logger->info(sprintf $fmt, @$_ )for @mirror_columns;
 
     return;
 }
@@ -295,7 +341,7 @@ sub recover_headrev {
         propset => { direct  => 1, revprop => 1 },
     )->run($_ => $props->{$_}, $target) for sort grep {m/^sv[nm]/} keys %$props;
 
-    print loc("Mirror state successfully recovered.\n");
+    $logger->info( loc("Mirror state successfully recovered."));
     return;
 }
 
@@ -311,7 +357,7 @@ sub recover_list_entry {
         $self->arg_depotpath ('/'.$target->depotname.'/'),
     );
 
-    print loc("%1 added back to the list of mirrored paths.\n", $target->report);
+    $logger->info( loc("%1 added back to the list of mirrored paths.\n", $target->report));
     return;
 }
 
@@ -330,6 +376,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
  # You may also list the target part first:
  mirror DEPOTPATH [http|svn]://host/path
 
+ mirror --bootstrap=DUMPFILE DEPOTPATH [http|svn]://host/path 
  mirror --list [DEPOTNAME...]
  mirror --relocate DEPOTPATH [http|svn]://host/path 
  mirror --detach DEPOTPATH
@@ -340,6 +387,7 @@ SVK::Command::Mirror - Initialize a mirrored depotpath
 
 =head1 OPTIONS
 
+ -b [--bootstrap]       : mirror from a dump file
  -l [--list]            : list mirrored paths
  -d [--detach]          : mark a depotpath as no longer mirrored
  --relocate             : change the upstream URI for the mirrored depotpath

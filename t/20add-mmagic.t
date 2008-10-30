@@ -4,7 +4,7 @@ use strict;
 use SVK::Test;
 our $output;
 my ($xd, $svk) = build_test();
-my ($copath, $corpath) = get_copath ('add-mime');
+my ($copath, $corpath) = get_copath();
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 

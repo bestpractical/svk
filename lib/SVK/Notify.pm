@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -159,13 +159,13 @@ my %prop = ( 'U' => 0, 'g' => 1, 'G' => 2, 'M' => 3, 'C' => 4);
 
 sub prop_status {
     my ($self, $path, $s) = @_;
-    my $st = $self->{status}{$path};
+    my $st = $self->{status}{$path} ||= ['', ''];
     $st->[1] = $s if defined $s
 	# node status allow prop
 	&& !($st->[0] && ($st->[0] eq 'A' || $st->[0] eq 'R'))
 	    # not overriding things more informative
 	    && (!$st->[1] || $prop{$s} > $prop{$st->[1]});
-    return defined $st ? $st->[1] : undef;
+    return $st->[1];
 }
 
 sub hist_status {
@@ -209,5 +209,14 @@ sub flush_dir {
     $self->flush ($path, 1);
 }
 
+sub progress {
+    my $self = shift;
+    require Time::Progress;
+    return if $self->{quiet};
+    my $progress = Time::Progress->new();
+    $progress->attr (@_);
+    return $progress;
+
+}
 
 1;

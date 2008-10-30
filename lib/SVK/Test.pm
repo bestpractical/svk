@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -70,6 +70,7 @@ our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
 		 tree_from_fsroot tree_from_xdroot __ _x not_x _l
 		 not_l uri set_editor replace_file glob_mime_samples
 		 create_mime_samples chmod_probably_useless
+		 add_prop_to_basic_tree
 
 		 catdir HAS_SVN_MIRROR IS_WIN32 install_perl_hook
 
@@ -223,6 +224,11 @@ sub build_floating_test {
 
 sub get_copath {
     my ($name) = @_;
+    unless ($name) {
+        $name = lc($0);
+        $name =~ s/\.t$//;
+        $name =~ s/(\W|[_-])+//g;
+    }
     my $copath = SVK::Path::Checkout->copath ('t', "checkout/$name");
     mkpath [$copath] unless -d $copath;
     rmtree [$copath] if -e $copath;
@@ -293,6 +299,10 @@ sub overwrite_file_raw {
 
 sub is_file_content {
     my ($file, $content, $test) = @_;
+    unless (-e $file) {
+	@_ = (undef, $content, $test);
+	goto &is;
+    }
     open my ($fh), '<', $file or confess "Cannot read from $file: $!";
     my $actual_content = do { local $/; <$fh> };
 
@@ -500,6 +510,22 @@ sub create_basic_tree {
     $tree->{child}{D}{child}{de} = {};
 
     return $tree;
+}
+
+sub add_prop_to_basic_tree {
+    my ($xd, $depotpath, $props) = @_;
+    my $pool = SVN::Pool->new_default;
+    my ($depot, $path) = $xd->find_depotpath($depotpath);
+
+    local $/ = $EOL;
+    my $edit = get_editor ($depot->repospath, $path, $depot->repos);
+    $edit->open_root ();
+
+    my %prop = %{$props};
+    for my $key (keys %prop) {
+	$edit->change_dir_prop ('/', $key, $prop{$key});
+    }
+    $edit->close_edit ();
 }
 
 sub waste_rev {

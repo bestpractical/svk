@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -57,7 +57,6 @@ use SVK::XD;
 use SVK::I18N;
 use SVK::Logger;
 use SVK::Editor::Status;
-use SVK::Editor::Sign;
 use SVK::Editor::Dynamic;
 use SVK::Command::Sync;
 use SVK::Editor::InteractiveCommitter;
@@ -73,7 +72,6 @@ sub options {
     ('m|message=s'    => 'message',
      'F|file=s'       => 'message_file',
      'C|check-only'   => 'check_only',
-     'S|sign'         => 'sign',
      'P|patch=s'      => 'patch',
      'import'         => 'import',
      'direct'         => 'direct',
@@ -270,25 +268,6 @@ sub get_editor {
 	}
     }
 
-    if ($self->{sign}) {
-	$editor = SVK::Editor::Sign->new
-	    ( _editor => [$editor],
-	      anchor => $target->universal->ukey );
-	my $post_handler = $cb{post_handler};
-	if (my $m = $cb{mirror}) {
-	    $$post_handler = sub {
-                $m->change_rev_prop( $_[0], 'svk:signature', $editor->{sig} );
-		1;
-	    }
-	}
-	else {
-	    my $fs = $target->repos->fs;
-	    $$post_handler = sub {
-		$fs->change_rev_prop($_[0], 'svk:signature', $editor->{sig});
-		1;
-	    }
-	}
-    }
 
     unless ($self->{check_only}) {
 	my $txn = $cb{txn};
@@ -345,8 +324,11 @@ sub get_committable {
             my ($path, $status) = @_;
             to_native ($path, 'path', $encoder);
             my $copath = $target->copath ($path);
-            push @$targets, [$status->[0] || ($status->[1] ? 'P' : ''),
-                $copath];
+            push @$targets, [
+                (($status->[0]||'') eq 'C' || ($status->[1]||'') eq 'C')? 'C'
+                    : ($status->[0] || ($status->[1]? 'P' : '')),
+                $copath
+            ];
             no warnings 'uninitialized';
             push @targets, sprintf ("%1s%1s%1s \%s\n", @{$status}[0..2], $copath);
         }
@@ -376,6 +358,7 @@ sub get_committable {
         $status_editor = SVK::Editor::Status->new(notify => $notify);
     }
 
+    my %may_need_to_add;
     $target->run_delta(
         $status_editor,
         {   depth => $self->{recursive} ? undef: 0,
@@ -386,6 +369,8 @@ sub get_committable {
             cb_conflict    => sub { shift->conflict(@_) },
             cb_unknown  => sub {
               my ($self, $path) = @_;
+              $path = $target->copath($path);
+              $may_need_to_add{$path} = 1;
               push @unversioned, "?   $path\n";
             },
         }
@@ -463,23 +448,18 @@ sub get_committable {
 
     $self->decode_commit_message;
 
-    my @need_to_add = map  {$target->copath($_->[1])}
-                      grep {$_->[0] eq 'A'}
+    my @need_to_add = map  { $_->[1] }
+                      grep { $may_need_to_add{ $_->[1] } }
+                      grep { $_->[0] eq 'A' }
                       @$targets;
-    for (@need_to_add)
-    {
-        my $newprop;
-        my $autoprop = !-d $_;
 
-        $newprop = $self->{xd}->auto_prop($_)
-            if $autoprop;
-
-        # seems to work even if the file is already there (say the user changes
-        # an M to an A), but there really should be some kind of check
-        $self->{xd}{checkout}->store ($_,
-                    { '.schedule' => 'add',
-                        $autoprop ?
-                        ('.newprop'  => $newprop) : ()});
+    if (@need_to_add) {
+        my $old_targets = $target->{targets};
+        $target->{targets} = \@need_to_add;
+        $self->{xd}->do_add($target,
+            unknown_verbose => 1,
+        );
+        $target->{targets} = $old_targets;
     }
 
     return ($commit_editor, [sort {$a->[1] cmp $b->[1]} @$targets]);
@@ -687,7 +667,6 @@ SVK::Command::Commit - Commit changes to depot
  --encoding ENC         : treat -m/-F value as being in charset encoding ENC
  --template             : use the specified message as the template to edit
  -P [--patch] NAME      : instead of commit, save this change as a patch
- -S [--sign]            : sign this change
  -C [--check-only]      : try operation but make no changes
  -N [--non-recursive]   : operate on single directory only
  --set-revprop P=V      : set revision property on the commit

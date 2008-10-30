@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -53,6 +53,8 @@ use strict;
 use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base 'SVK::Editor';
 
+__PACKAGE__->mk_accessors(qw(master_editor));
+
 =head1 NAME
 
 SVK::Editor::Composite - composite editor
@@ -75,11 +77,14 @@ sub AUTOLOAD {
     $func =~ s/^.*:://;
     return if $func =~ m/^[A-Z]/;
 
-    if ($func =~ m/^(?:add|open|delete)/) {
+    if ($func eq 'open_root') {
+    }
+    elsif ($func =~ m/^(?:add|open|delete)/) {
 	return $self->{target_baton}
 	    if defined $self->{target} && $arg[0] eq $self->{target};
 	$arg[0] = length $arg[0] ?
-	    "$self->{anchor}/$arg[0]" : $self->{anchor};
+	    "$self->{anchor}/$arg[0]" : $self->{anchor}
+                if defined $self->{anchor};
     }
     elsif ($func =~ m/^close_(?:file|directory)/) {
 	if (defined $arg[0]) {
@@ -90,14 +95,16 @@ sub AUTOLOAD {
 	}
     }
 
-    $self->{master_editor}->$func(@arg);
+    $self->master_editor->$func(@arg);
 }
 
 sub set_target_revision {}
 
 sub open_root {
-    my ($self, $base_revision) = @_;
-    return $self->{anchor_baton};
+    my $self = shift;
+    return $self->{anchor_baton} if exists $self->{anchor_baton};
+
+    return $self->master_editor->open_root(@_)
 }
 
 sub close_edit {}

@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -50,7 +50,7 @@
 # END BPS TAGGED BLOCK }}}
 package SVK;
 
-use version; our $VERSION = qv(2.0.99_01);
+use version; our $VERSION = qv(2.1.99_01);
 
 =head1 NAME
 

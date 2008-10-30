@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -117,42 +117,44 @@ sub new {
 sub auto {
     my $self = new (@_);
     @{$self}{qw/base fromrev/} = $self->find_merge_base(@{$self}{qw/src dst/});
-    $self->_rebase;
 
     return $self;
 }
 
-sub _rebase {
+sub _rebase2 {
     my $self = shift;
+    my ($src, $dst, $base) = @_;
 
-    return unless $self->{base}->path eq $self->{dst}->path;
+    return unless $base->path eq $dst->path;
 
-    $self->{src}->is_merged_from($self->{base})
+    $src->is_merged_from($base)
 	or return;
 
-    my $dst = $self->{src}->prev or return;
-    $dst->root->check_path($dst->path) or return;
+    my $ddst = $src->prev or return;
+    $ddst->root->check_path($ddst->path) or return;
 
     # If the previous source hasn't been merged, use the original base
     # logic.  Otherwise we are merging changes between the alleged
     # merge and actual revision.
-    $self->{dst}->is_merged_from($dst) or return;
+    $dst->is_merged_from($ddst) or return;
 
     require SVK::Path::Txn;
-    $dst = $dst->clone;
-    bless $dst, 'SVK::Path::Txn'; # XXX: need a saner api for this
+    $ddst = $ddst->clone;
+    bless $ddst, 'SVK::Path::Txn'; # XXX: need a saner api for this
 
     my $xmerge = SVK::Merge->auto(%$self, quiet => 1,
-				  src => $self->{base},
-				  dst => $dst);
+				  src => $base,
+				  dst => $ddst);
 
     my ($editor, $inspector, %cb) = $xmerge->{dst}->get_editor();
     local $ENV{SVKRESOLVE} = 's';
     unless ($xmerge->run( $editor, inspector => $inspector, %cb )) {
 	# XXX why isn't the txnroot uptodate??
-	$self->{base} = $xmerge->{dst};
-	$self->{base}->inspector->root($self->{base}->txn->root($self->{base}->pool));
+        my $new_base = $xmerge->{dst};
+	$new_base->inspector->root($new_base->txn->root($new_base->pool));
+        return $new_base;
     }
+    return;
 }
 
 # DEPRECATED
@@ -201,10 +203,13 @@ sub find_merge_base {
     my $repos = $self->{repos};
     my $fs = $repos->fs;
     my $yrev = $fs->youngest_rev;
-    my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
+    my ($srcinfo2, $dstinfo2) = map {$self->find_merge_sources2($_)} ($src, $dst);
+    my $joint_info = $srcinfo2->intersect($dstinfo2)->resolve($src->depot);
     my ($basepath, $baserev, $baseentry);
     my ($merge_base, $merge_baserev) = $self->{merge_base} ?
 	split(/:/, $self->{merge_base}) : ('', undef);
+    die loc("Invalid merge base:'%1'\n", $self->{merge_base} )
+	if $merge_baserev && $merge_baserev !~ /^\d+$/;
     ($merge_base, $merge_baserev) = (undef, $merge_base)
         if $merge_base =~ /^\d+$/;
 
@@ -214,24 +219,30 @@ sub find_merge_base {
 	if $merge_base && $merge_baserev;
 
     if ($merge_base) {
-        my %allowed = map { ($_ =~ /:(.*)$/) => $_ }
-            grep exists $srcinfo->{$_} && exists $dstinfo->{$_},
-            keys %{ { %$srcinfo, %$dstinfo } };
+        my %allowed = map { ($_ =~ /:(.*)$/) => $_ } sort keys %$joint_info;
 
         unless ($allowed{$merge_base}) {
 	    die loc("base '%1' is not allowed without revision specification.\nUse one of the next or provide revision:%2\n",
                 $merge_base, (join '', map "\n    $_", sort keys %allowed) );
         }
-	my $rev = min ($srcinfo->{$allowed{$merge_base}}, $dstinfo->{$allowed{$merge_base}});
+	my $rev = $joint_info->{$allowed{$merge_base}};
 	return ($src->as_depotpath->new
 		(path => $merge_base, revision => $rev, targets => undef),
 		$rev);
     }
 
-    for (grep {exists $srcinfo->{$_} && exists $dstinfo->{$_}}
-	 (sort keys %{ { %$srcinfo, %$dstinfo } })) {
+    return ($src->new (revision => $merge_baserev), $merge_baserev)
+        if $merge_baserev;
+
+    my @preempt_result;
+
+    for (sort keys %{$joint_info}) {
 	my ($path) = m/:(.*)$/;
-	my $rev = min ($srcinfo->{$_}, $dstinfo->{$_});
+	my $rev = $joint_info->{$_};
+
+        # if the candidate is condensed (like being part of a skip-to
+        # sync), we can't really use it as base
+        next if $rev == -1;
 
 	# when the base is one of src or dst, make sure the base is
 	# still the same node (not removed and replaced)
@@ -242,17 +253,30 @@ sub find_merge_base {
 	    next unless $src->related_to($src->as_depotpath->seek_to($rev));
 	}
 
-	if ($path eq $dst->path &&
-	    (my $src_base = $src->is_merged_from($src->mclone(path => $path, revision => $rev)))) {
-	    ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
-	    last;
-	}
-	($basepath, $baserev, $baseentry) = ($path, $rev, $_)
-	    if !$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date');
+        if (!$basepath || $fs->revision_prop($rev, 'svn:date') gt $fs->revision_prop($baserev, 'svn:date')) {
+            ($basepath, $baserev, $baseentry) = ($path, $rev, $_);
+            if ($path eq $dst->path &&
+                $src->is_merged_from($dst->mclone(revision => $rev))) {
+
+                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo2, $basepath, $baserev );
+                # this takes precedence than other potential base or
+                # rebasable base that is on src.
+                if (my $rebased = $self->_rebase2( $src, $dst, $base)) {
+                    return ($rebased, $from);
+                }
+            }
+            elsif ($path eq $src->path && $dst->is_merged_from($src->mclone(revision => $rev))) {
+                my ($base, $from) = $self->_mk_base_and_from( $src, $dstinfo2, $basepath, $baserev );
+                $base = $self->_rebase2( $dst, $src, $base) || $base;
+                @preempt_result = ($base, $from);
+            }
+            else {
+                @preempt_result = ();
+            }
+        }
     }
 
-    return ($src->new (revision => $merge_baserev), $merge_baserev)
-        if $merge_baserev;
+    return @preempt_result if @preempt_result;
 
     unless ($basepath) {
 	return ($src->new (path => '/', revision => 0), 0)
@@ -262,6 +286,8 @@ sub find_merge_base {
 
     # XXX: document this, cf t/07smerge-foreign.t
     if ($basepath ne $src->path && $basepath ne $dst->path) {
+        my ($srcinfo, $dstinfo) = map {$self->find_merge_sources ($_)} ($src, $dst);
+
 	my ($fromrev, $torev) = ($srcinfo->{$baseentry}, $dstinfo->{$baseentry});
 	($fromrev, $torev) = ($torev, $fromrev) if $torev < $fromrev;
 	if (my ($mrev, $merge) =
@@ -274,6 +300,12 @@ sub find_merge_base {
 		if $minfo->subset_of ($srcinfo) && $minfo->subset_of ($dstinfo);
 	}
     }
+    return $self->_mk_base_and_from( $src, $dstinfo2, $basepath, $baserev );
+}
+
+sub _mk_base_and_from {
+    my $self = shift;
+    my ($src, $dstinfo2, $basepath, $baserev) = @_;
 
     my $base = $src->as_depotpath->new
 	(path => $basepath, revision => $baserev, targets => undef);
@@ -282,7 +314,8 @@ sub find_merge_base {
 
     # When /A:1 is copied to /B:2, then removed, /B:2 copied to /A:5
     # the fromrev shouldn't be /A:1, as it confuses the copy detection during merge.
-    my $from = $dstinfo->{$fs->get_uuid.':'.$src->path};
+    my $from = $dstinfo2->{$src->universal->ukey};
+    $from = $from->local($src->depot)->revision if $from;
     if ($from) {
 	my ($toroot, $fromroot) = $src->nearest_copy;
 	$from = 0 if $toroot && $from < $toroot->revision_root_revision;
@@ -346,18 +379,48 @@ sub find_merge_sources {
     return $minfo;
 }
 
+sub find_merge_sources2 {
+    my ($self, $target) = @_;
+    my $pool = SVN::Pool->new_default;
+    my $info = $self->merge_info ($target->new);
+
+    $target = $target->new->as_depotpath ($self->{xd}{checkout}->get ($target->copath. 1)->{revision})
+	if $target->isa('SVK::Path::Checkout');
+    $info->add_target($target);
+
+    return $info if !$target->root->check_path($target->path);
+
+    for (reverse $target->copy_ancestors) {
+	my ($path, $rev) = @$_;
+        # XXX: short circuit it when we have the ancestor already.
+        my $t = $target->mclone( targets => undef, path => $path, revision => $rev)->universal;
+        $info->add_target( $t )
+            if !$info->{ $t->ukey } || $info->{ $t->ukey }->rev < $t->rev;
+    }
+    return $info;
+}
+
+sub _get_new_ticket {
+    my ($self, $srcinfo) = @_;
+    my $dstinfo = $self->merge_info($self->{dst});
+    # We want the ticket representing src, but not dst.
+    return $dstinfo->union ($srcinfo)->del_target($self->{dst});
+}
+
+# deprecated
 sub get_new_ticket {
     my ($self, $srcinfo) = @_;
-    my $dstinfo = $self->merge_info ($self->{dst});
-    # We want the ticket representing src, but not dst.
-    my $newinfo = $dstinfo->union ($srcinfo)->del_target ($self->{dst});
-    unless ($self->{quiet}) {
-	for (sort keys %$newinfo) {
-	    $logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
-		if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
-	}
-    }
+    my $newinfo = $self->_get_new_ticket($srcinfo);
+    $self->print_new_ticket($newinfo);
     return $newinfo->as_string;
+}
+
+sub print_new_ticket {
+    my ($self, $dstinfo, $newinfo) = @_;
+    for (sort keys %$newinfo) {
+	$logger->info(loc("New merge ticket: %1:%2", $_, $newinfo->{$_}{rev}))
+	    if !$dstinfo->{$_} || $newinfo->{$_}{rev} > $dstinfo->{$_}{rev};
+    }
 }
 
 sub log {
@@ -471,7 +534,6 @@ sub track_rename {
 	    my $dstkey = $self->{dst}->universal->ukey;
 	    my $srcinfo = $self->merge_info_with_copy($self->{src}->new);
 
-	    use Data::Dumper;
 	    if ($srcinfo->{$dstkey}) {
 		$base = $srcinfo->{$dstkey}->local($self->{src}->depot);
 	    }
@@ -529,9 +591,44 @@ sub run {
     # $cb{inspector} = $self->{dst}->inspector
     # unless ref($cb{inspector}) eq 'SVK::Inspector::Compat' ;
 
+    my $dstinfo = $self->merge_info($self->{dst});
+
+    my %ticket_options;
+    if ( $self->{ticket} ) {
+        $ticket_options{prop_resolver} = {
+            'svk:merge' => sub {
+                my ($path, $prop) = @_;
+		return (undef, undef, 1)
+		    if $path eq $target;
+		return ('G', SVK::Merge::Info->new($prop->{new})
+                    ->union(SVK::Merge::Info->new ($prop->{local}))
+                    ->as_string
+                );
+	    },
+	};
+	$ticket_options{ticket} = $self->_get_new_ticket(
+            $self->merge_info_with_copy($src)->add_target($src)
+        );
+        $ticket_options{cb_merged} = sub {
+            my ($changes, $type, $ticket) = @_;
+            if (!$changes) { # rollback all ticket
+                my $func = "change_${type}_prop";
+                my $baton = $storage->open_root ($cb{cb_rev}->($cb{target}||''));
+                $storage->$func( $baton, 'svk:merge', undef );
+                return;
+            }
+            $self->print_new_ticket( $dstinfo, $ticket ) unless $self->{quiet};
+	};
+    } else {
+        $ticket_options{prop_resolver} = {
+            'svk:merge' => sub { return ('G', undef, 1) },
+        };
+    }
+
     my $meditor = SVK::Editor::Merge->new
 	( anchor => $src->path_anchor,
 	  repospath => $src->repospath, # for stupid copyfrom url
+	  static_inspector => $self->{dst}->inspector,
 	  base_anchor => $base->path_anchor,
 	  base_root => $base_root,
 	  target => $target,
@@ -545,21 +642,7 @@ sub run {
 	  resolve => $self->resolver,
 	  open_nonexist => $self->{track_rename},
 	  # XXX: make the prop resolver more pluggable
-	  $self->{ticket} ?
-	  ( prop_resolver => { 'svk:merge' =>
-			  sub { my ($path, $prop) = @_;
-				return (undef, undef, 1)
-				    if $path eq $target;
-				return ('G', SVK::Merge::Info->new
-					($prop->{new})->union
-					(SVK::Merge::Info->new ($prop->{local}))->as_string);
-			    }
-			},
-	    ticket => 
-	    sub { $self->get_new_ticket ($self->merge_info_with_copy ($src)->add_target ($src)) }
-	  ) :
-	  ( prop_resolver => { 'svk:merge' => sub { ('G', undef, 1)} # skip
-			     }),
+          %ticket_options,
 	  %cb,
 	);
 
@@ -579,8 +662,18 @@ sub run {
 	    my $usrc = $src->universal;
 	    my $srckey = join(':', $usrc->{uuid}, $usrc->{path});
 	    if ($dstinfo->{$srckey}) {
+                # find which rev on src is merged from the base.
 		$boundry_rev = $src->merged_from
 		    ($self->{base}, $self, $self->{base}{path});
+                # however if src is removed and later copied again
+                # from base, we need the later one as boundry
+                my $t = $src;
+                while (my ($toroot, $fromroot, $path) = $t->nearest_copy) {
+                    if ($path eq $self->{base}->path_anchor) {
+                        $boundry_rev = List::Util::max( grep { defined $_ } $boundry_rev, $toroot->revision_root_revision );
+                    }
+                    $t = $t->mclone( path => $path, revision => $fromroot->revision_root_revision );
+                }
 	    }
 	    else {
 		# when did the branch first got created?

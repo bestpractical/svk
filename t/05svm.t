@@ -98,7 +98,7 @@ is_output($svk, 'update', ['--sync', '--merge', $copath2], [
         "Syncing $uri/A-99",
         'Retrieving log information from 1 to 28',
         'Committed revision 13 from revision 28.',
-        'Auto-merging (10, 13) /m-99 to /m-99-copy (base /m-99:10).',
+        'Auto-merging (0, 13) /m-99 to /m-99-copy (base /:0).',
         'A   Q',
         'A   Q/qz',
         'A   T',
@@ -147,7 +147,7 @@ is_output($svk, 'update', ['--sync', '--merge', '--incremental', "$copath2/T"], 
 
 
 is_output_like ($svk, 'mirror', ['--list'],
-            qr"//m.*$uri/A\n//m-99.*$uri/A-99");
+            qr"//m.*\Q$uri\E/A\n//m-99.*\Q$uri\E/A-99");
 
 is_output_like ($svk, 'mirror', ['//m-99', "$uri/A-99"],
             qr"already", 'repeated mirror failed');

@@ -1,7 +1,7 @@
 # BEGIN BPS TAGGED BLOCK {{{
 # COPYRIGHT:
 # 
-# This software is Copyright (c) 2003-2006 Best Practical Solutions, LLC
+# This software is Copyright (c) 2003-2008 Best Practical Solutions, LLC
 #                                          <clkao@bestpractical.com>
 # 
 # (Except where explicitly superseded by other copyright notices)
@@ -198,7 +198,8 @@ sub do_update {
 	 no_recurse => !$self->{recursive}, notify => $notify, nodelay => 1,
 	 src => $update_target, dst => $cotarget, check_only => $self->{check_only},
 	 auto => 1, # not to print track-rename hint
-	 xd => $self->{xd});
+	 xd => $self->{xd},
+    );
     my ($editor, $inspector, %cb) = $cotarget->get_editor
 	( ignore_checksum => 1,
 	  check_only => $self->{check_only},
@@ -207,6 +208,14 @@ sub do_update {
 	  newroot => $newroot,
 	  revision => $content_revision,
 	);
+    $cb{'prop_resolver'}{'svk:merge'} = sub {
+        my ($path, $prop) = @_;
+        my %info;
+        $info{$_} = SVK::Merge::Info->new($prop->{$_}) foreach (qw(base local new));
+        return ('G', undef, 1) if $info{local}->is_equal($info{base});
+        return ('g', $info{new}->as_string) if $info{local}->is_equal($info{new});
+        return ('G', $info{new}->union($info{local})->as_string);
+    };
     $merge->run($editor, %cb, inspector => $inspector);
 
     if ($update_target->isa('SVK::Path::View')) {
