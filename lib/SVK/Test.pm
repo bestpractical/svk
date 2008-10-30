@@ -60,13 +60,13 @@ use base 'Exporter';
 
 use SVK::Logger;
 
-our @EXPORT = qw(plan_svm new_repos build_test build_floating_test
+our @EXPORT = qw(plan_svm new_repos build_test build_git_test build_floating_test
 		 get_copath append_file overwrite_file
 		 overwrite_file_raw is_file_content
 		 is_file_content_raw _do_run is_output
 		 is_sorted_output is_deeply_like is_output_like
 		 is_output_unlike is_ancestor status_native status
-		 get_editor create_basic_tree waste_rev
+		 get_editor create_basic_tree create_basic_git_tree waste_rev
 		 tree_from_fsroot tree_from_xdroot __ _x not_x _l
 		 not_l uri set_editor replace_file glob_mime_samples
 		 create_mime_samples chmod_probably_useless
@@ -100,8 +100,10 @@ use SVK;
 use File::Path;
 use File::Temp;
 use SVK::Util qw( dirname catdir tmpdir can_run abs_path $SEP $EOL IS_WIN32 HAS_SVN_MIRROR );
+use Cwd;
 require Storable;
 use SVK::Path::Checkout;
+use File::Copy::Recursive qw(dircopy);
 
 # Fake standard input
 our $answer = [];
@@ -197,10 +199,37 @@ sub new_repos {
     return $repospath;
 }
 
+sub new_repos_git {
+    my $repospath = catdir(tmpdir(), "svk-git-$$");
+    my $reposbase = $repospath;
+    my $repos;
+    my $i = 0;
+    while (-e $repospath) {
+	$repospath = $reposbase . '-'. (++$i);
+    }
+    my $pool = SVN::Pool->new_default;
+    #chdir catdir(abs_path(dirname(__FILE__)), '..' );
+    mkdir $repospath;
+    my $response = `chdir $repospath; git init`;
+    return $repospath."/.git";
+}
+
 sub build_test {
     my (@depot) = @_;
 
     my $depotmap = {map {$_ => (new_repos())[0]} '',@depot};
+    my $xd = SVK::XD->new (depotmap => $depotmap,
+			   svkpath => $depotmap->{''});
+    my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
+    push @TOCLEAN, [$xd, $svk];
+    return ($xd, $svk);
+}
+
+# XXX: redundant code of build_test, should have a better way
+sub build_git_test {
+    my (@depot) = @_;
+
+    my $depotmap = {map {$_ => (new_repos_git())[0]} '',@depot};
     my $xd = SVK::XD->new (depotmap => $depotmap,
 			   svkpath => $depotmap->{''});
     my $svk = SVK->new (xd => $xd, $ENV{DEBUG_INTERACTIVE} ? () : (output => \$output));
@@ -249,6 +278,7 @@ sub cleanup_test {
     for my $depotname (sort keys %{$xd->{depotmap}}) {
 	my $pool = SVN::Pool->new_default;
         my $depot = eval { $xd->find_depot($depotname) } or next;
+        next unless $depot->repos;
         my @txns = @{ $depot->repos->fs->list_transactions };
         if (@txns) {
             my $how_many = @txns;
@@ -508,6 +538,75 @@ sub create_basic_tree {
 				      history => '/A:1');
     delete $tree->{child}{A}{child}{P};
     $tree->{child}{D}{child}{de} = {};
+
+    return $tree;
+}
+
+sub create_basic_git_tree {
+    my ($xd, $depotpath) = @_;
+    my $pool = SVN::Pool->new_default;
+    my ($depot, $path) = $xd->find_depotpath($depotpath);
+
+    local $/ = $EOL;
+    my $repospath = $depot->repospath;
+    my $response;
+    my $initial_cwd = getcwd;
+    $repospath =~ s{/\.git/?$}{};
+
+    overwrite_file($repospath.'/me',
+			"first line in me$/2nd line in me$/");
+    mkdir ($repospath.'/A');
+    mkdir ($repospath.'/A/P');
+    overwrite_file($repospath.'/A/be',
+			"\$Rev\$ \$Revision\$$/\$FileRev\$$/first line in be$/2nd line in be$/");
+    #$edit->change_file_prop ('/A/be', 'svn:keywords', 'Rev URL Revision FileRev');
+    overwrite_file($repospath.'/A/P/pe',
+			"first line in pe$/2nd line in pe$/");
+    mkdir ($repospath.'/B');
+    mkdir ($repospath.'/C');
+    mkdir ($repospath.'/A/Q');
+    #$edit->change_dir_prop ('/A/Q', 'foo', 'prop on A/Q');
+    overwrite_file($repospath.'/A/Q/qu',
+			"first line in qu$/2nd line in qu$/");
+    overwrite_file($repospath.'/A/Q/qz',
+			"first line in qz$/2nd line in qz$/");
+    mkdir ($repospath.'/C/R');
+    chdir ($repospath);
+    $response = `git add .`;
+    $response = `git commit -m "- initial basic_tree"`;
+    my $tree = { child => { me => {},
+			    A => { child => { be => {},
+					      P => { child => {pe => {},
+							      }},
+					      Q => { child => {qu => {},
+							       ez => {},
+							      }},
+					    }},
+			    B => {},
+			    C => { child => { R => { child => {}}}}
+			  }};
+    # XXX: skip all the revision work here.
+    overwrite_file('me',
+                        "first line in me$/2nd line in me - mod$/");
+    overwrite_file('B/fe',
+			"file fe added later$/");
+    $response = `git add .`;
+    $response = `git rm -r A/P`;
+    $response = `git commit -m "- add one file and remove one dir and modify one file"`;
+    dircopy('A', 'B/S');
+    $response = `git add .`;
+    mkdir ('D');
+    overwrite_file('D/de',
+			"file de added later$/");
+    $response = `git commit -m "- copy one dir and add one file"`;
+
+    $tree->{child}{B}{child}{fe} = {};
+    # XXX: have to clone this...
+    %{$tree->{child}{B}{child}{S}} = (child => {%{$tree->{child}{A}{child}}},
+				      history => '/A:1'); # XXX: no history indeed here (git)
+    delete $tree->{child}{A}{child}{P};
+    $tree->{child}{D}{child}{de} = {};
+    chdir $initial_cwd;
 
     return $tree;
 }
