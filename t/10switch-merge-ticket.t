@@ -9,7 +9,7 @@ use SVK::Test;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('smerge');
+my ($copath, $corpath) = get_copath();
 my (undef, undef, $repos) = $xd->find_repos ('//', 1);
 my $uuid = $repos->fs->get_uuid;
 
@@ -37,16 +37,16 @@ $svk->sm ('//trunk', $copath);
 $svk->switch ('//local-another', $copath);
 is_output($svk, 'diff', [$copath],
     [
-    __('=== t/checkout/smerge/me'),
+    __("=== $copath/me"),
     '==================================================================',
-     __("--- t/checkout/smerge/me\t(revision 9)"),
-     __("+++ t/checkout/smerge/me\t(local)"),
+     __("--- $copath/me\t(revision 9)"),
+     __("+++ $copath/me\t(local)"),
     '@@ -1,2 +1,3 @@',
     ' first line in me',
     ' 2nd line in me - mod',
     '+a change',
     '',
-    __('Property changes on: t/checkout/smerge'),
+    __("Property changes on: $copath"),
     '___________________________________________________________________',
     'Name: svk:merge',
     "  $uuid:/local:4",

@@ -6,7 +6,7 @@ use Cwd;
 use SVK::Test;
 
 my ($xd, $svk) = build_test();
-my ($copath, $corpath) = get_copath ('smerge-delete');
+my ($copath, $corpath) = get_copath();
 
 $svk->mkdir ('-m', 'trunk', '//trunk');
 $svk->checkout ('//trunk', $copath);

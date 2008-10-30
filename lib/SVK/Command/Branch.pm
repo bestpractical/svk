@@ -57,6 +57,7 @@ use SVK::I18N;
 use SVK::Util qw( is_uri get_prompt );
 use SVK::Project;
 use SVK::Logger;
+use Path::Class;
 
 our $fromProp;
 use constant narg => undef;
@@ -71,6 +72,7 @@ sub options {
      'export'           => 'export',
      'from=s'           => 'from',
      'from-tag=s'       => 'fromtag',
+     'list-projects'    => 'listprojects',
      'local'            => 'local',
      'lump'             => 'lump',
      'project=s'        => 'project',
@@ -101,8 +103,13 @@ sub run {
 
     if ($proj) {
         $proj->info($target, 1);
-    } else {
-        $target->root->check_path($target->path)
+    } elsif ($target) {
+	# XXX: here just a shorthand if one calls svk br help
+	if ('help' eq file($target->path)->basename) {
+	    select STDERR unless $self->{output};
+	    $self->usage; return;
+	}
+	$target->root->check_path($target->path)
             or die loc("Path %1 does not exist.\n", $target->depotpath);
     }
 
@@ -158,6 +165,7 @@ sub locate_project {
 	$msg = $@;
 	my @depots =  sort keys %{ $self->{xd}{depotmap} };
 	foreach my $depot (@depots) {
+            last unless $project_name;
 	    $depot =~ s{/}{}g;
 	    $target = eval { $self->arg_depotpath("/$depot/") };
 	    next if ($@);
@@ -165,7 +173,8 @@ sub locate_project {
 	    last if ($proj) ;
 	}
     } else {
-	$proj = $self->load_project($target, $self->{project});
+	$proj = $self->load_project($target, $self->{project}) unless
+	    $SVN::Node::none == $target->root->check_path($target->path);
 	$msg = loc( "No project found." );
     }
     return ($proj, $target, $msg);
@@ -175,7 +184,7 @@ sub expand_branch {
     my ($self, $proj, $arg) = @_;
     return $arg unless $arg =~ m/\*/;
     my $match = SVK::XD::compile_apr_fnmatch($arg);
-    return grep { m/$match/ } @{ $proj->branches };
+    return map {$_->[0]} grep {$_->[0] =~  m/$match/ } @{ $proj->branches } ;
 }
 
 sub dst_name {
@@ -214,23 +223,53 @@ sub run {
     my ($self, $proj) = @_;
     return unless $proj;
 
+    $proj->{verbose} = $self->{verbose};
     if ($self->{all}) {
-	my $fmt = "%s%s\n"; # here to change layout
+	my $fmt = "%s%s%s\n"; # here to change layout
 
 	my $branches = $proj->branches (0); # branches
-	$logger->info (sprintf $fmt, $_, '') for @{$branches};
+	$logger->info (sprintf $fmt, $_->[0], '', $_->[1]) for @{$branches};
 	
 	$branches = $proj->tags ();         # tags
-	$logger->info (sprintf $fmt, $_, ' (tags)') for @{$branches};
+	$logger->info (sprintf $fmt, $_->[0], ' (tags)', $_->[1]) for @{$branches};
 
 	$branches = $proj->branches (1);    # local branches
-	$logger->info (sprintf $fmt, $_, ' (in local)') for @{$branches};
+	$logger->info (sprintf $fmt, $_->[0], ' (in local)', $_->[1]) for @{$branches};
 
     } else {
 	my $branches = $self->{tag} ? $proj->tags() : $proj->branches ($self->{local});
 
-	my $fmt = "%s\n"; # here to change layout
-	$logger->info (sprintf $fmt, $_) for @{$branches};
+	my $fmt = "%s%s\n"; # here to change layout
+	$logger->info (sprintf $fmt, $_->[0], $_->[1]) for @{$branches};
+    }
+    return;
+}
+
+package SVK::Command::Branch::listprojects;
+use base qw(SVK::Command::Branch);
+use SVK::I18N;
+use SVK::Logger;
+
+sub parse_arg {
+    my ($self, @arg) = @_;
+
+    return ('');
+}
+
+sub run {
+    my $self = shift;
+
+    my ($target, $proj);
+    my @depots =  sort keys %{ $self->{xd}{depotmap} };
+    my $fmt = "%s (depot: %s)\n"; # here to change layout
+    foreach my $depot (@depots) {
+	$depot =~ s{/}{}g;
+	$target = eval { $self->arg_depotpath("/$depot/") };
+	next if ($@);
+	my $projs = SVK::Project->allprojects($target);
+	foreach my $proj (@{$projs}) {
+	    $logger->info (sprintf $fmt, $proj->name, $depot);
+	}
     }
     return;
 }
@@ -255,9 +294,9 @@ sub parse_arg {
     # always try to eval current wc
     my ($proj,$target, $msg) = $self->locate_project($arg[0]);
     if (!$proj) {
-	$logger->warn( "I can't figure out what project you'd like to create a branch in. Please");
-	$logger->warn("either run '$0 branch --create' from within an existing checkout or specify");
-	$logger->warn("a project root using the --project flag");
+	die loc("I can't figure out what project you'd like to create a branch in. Please\n").
+	    loc("either run '$0 branch --create' from within an existing checkout or specify\n").
+	    loc("a project root using the --project flag\n");
     }
     return ($proj, $target, $dst);
 }
@@ -265,7 +304,7 @@ sub parse_arg {
 
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
-    return unless $proj;
+
     unless ($branch_name) {
 	$logger->info(
 	    loc("To create a branch, please specify svk branch --create <name>")
@@ -279,8 +318,14 @@ sub run {
 	return;
     }
 
-    delete $self->{from} if $self->{from} and $self->{from} eq 'trunk';
-    delete $self->{fromtag} if $self->{fromtag} and $self->{fromtag} eq 'trunk';
+    if ($self->{from}) {
+        $self->{from} = $proj->branch_name ($target->path) if $self->{from} eq '.';
+        delete $self->{from} if $self->{from} eq 'trunk';
+    }
+    if ($self->{fromtag}) {
+        $self->{fromtag} = $proj->tag_name ($target->path) if $self->{fromtag} eq '.';
+        delete $self->{fromtag} if $self->{fromtag} eq 'trunk';
+    }
     my $src_path = $self->{fromtag} ?
 	$proj->tag_path($self->{fromtag}) :
 	$proj->branch_path($self->{from} ? $self->{from} : 'trunk');
@@ -319,10 +364,18 @@ sub run {
 	  )
 	);
 	# call SVK::Command::Switch here if --switch-to
-	$self->SVK::Command::Switch::run(
-	    $self->arg_uri_maybe($newbranch_path),
-	    $target
-	) if $self->{switch} and !$self->{check_only};
+        if ($self->{switch} and !$self->{check_only}) {
+            $dst = $self->arg_uri_maybe($newbranch_path);
+            if ($target->related_to($dst)) {
+                $self->SVK::Command::Switch::run(
+                    $dst, $target
+                );
+            } else {
+                $logger->info(
+                    loc("Can't switch to the branch because current dir is not a working copy.")
+                );
+            }
+        }
     }
     return;
 }
@@ -365,7 +418,7 @@ sub run {
 	    $branch_path, $self->{local} ? ' (in local)' : '');
     die loc("Project branch already exists: %1%2\n",
 	$dst_name, $self->{local} ? ' (in local)' : '')
-        if grep /$dst_name/,@{$proj->branches};
+        if grep {$_->[0] =~ m/$dst_name/} @{$proj->branches};
 
     $self->{parent} = 1;
     for my $src_path (@src_paths) {
@@ -441,21 +494,22 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg < 0;
 
-    die loc ("Copy source can't be URI.\n")
+    die loc ("Target can't be URI.\n")
 	if $self->ensure_non_uri (@arg);
 
     # if specified project path at the end
     my $project_path = pop @arg if $#arg > 0 and is_depotpath($arg[$#arg]);
     $project_path = '' unless $project_path;
-    return ($self->arg_co_maybe ($project_path,'New mirror site not allowed here'), @arg);
+    my ($proj, $target, $msg) = $self->locate_project($project_path);
+    die $msg unless $target;
+
+    return ($proj, $target, @arg);
 	    
 }
 
 
 sub run {
-    my ($self, $target, @dsts) = @_;
-
-    my $proj = $self->load_project($target);
+    my ($self, $proj, $target, @dsts) = @_;
 
     @dsts = map { $self->expand_branch($proj, $_) } @dsts;
 
@@ -621,6 +675,7 @@ sub parse_arg {
     my $branch_name = shift(@arg);
     my ($project_path, $checkout_path) = ('','');
     my ($proj, $target, $msg);
+    $self->{setup}++;
     if (@arg and is_depotpath($arg[$#arg])) {
 	$project_path = pop(@arg);
 	my $ppath = eval {$self->arg_depotpath($project_path) };
@@ -631,26 +686,23 @@ sub parse_arg {
 	}
     }
     $checkout_path = pop(@arg);
-    $checkout_path = $branch_name unless $checkout_path;
-    
     if (@arg) { # this must be a project path, or error it
 	$project_path = pop(@arg);
 	if (!is_depotpath($project_path)) {
-	    $logger->info(
-		loc("No avaliable Projects found in %1.\n", $project_path )
-	    );
-	    return;
+	    die loc("No avaliable Projects found in %1.\n", $project_path );
 	}
     }
+    $self->{setup}--;
 
     ($proj,$target, $msg) = $self->locate_project($project_path);
 
-    if (!$proj) {
-        $logger->info(
-            loc("Project not found. use 'svk branch --setup mirror_path' to initialize one.\n",$msg)
-        );
-	return ;
-    }
+    die loc("Project not found. use 'svk branch --setup mirror_path' to initialize one.\n",$msg)
+	unless $proj;
+    $self->{local}++
+        if $project_path and ($target->_to_pclass("/local")->subsumes($project_path));
+    $branch_name = $proj->name."-trunk"
+	if ($branch_name eq 'trunk' and $self->{local}) ;
+    $checkout_path = $branch_name unless $checkout_path;
 
     my $newtarget_path = $self->dst_path($proj, $branch_name);
     unshift @arg, $newtarget_path, $checkout_path;
@@ -918,6 +970,8 @@ sub parse_arg {
     $self->{branch_name} = $arg if $arg;
     $self->{branch_name} = $proj->branch_name($target->path, 1)
 	unless $arg;
+    # XXX: should provide a more generalized function for local/remote trunk switching
+    $self->{branch_name} = 'trunk' if $self->{branch_name} eq $proj->name."-trunk";
 
     # check existence of remote branch
     my $dst;
@@ -976,6 +1030,7 @@ use SVK::Logger;
 sub run {
     my ($self, $proj, $target, $branch_name) = @_;
 
+    return unless $proj;
     die loc ("Current branch already offline\n")
 	if ($target->_to_pclass("/local")->subsumes($target->path));
 
@@ -1037,6 +1092,7 @@ SVK::Command::Branch - Manage a project with its branches
 =head1 OPTIONS
 
  -l [--list]        : list branches for this project
+ --listprojects     : list avaliable projects
  --create           : create a new branch
  --tag              : create in the tags directory
  --local            : targets in local branch

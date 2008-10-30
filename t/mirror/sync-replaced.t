@@ -11,7 +11,7 @@ our $output;
 
 my $tree = create_basic_tree ($xd, '/test/');
 
-my ($copath, $corpath) = get_copath ('sync-replaced');
+my ($copath, $corpath) = get_copath();
 
 $svk->checkout ('/test/', $copath);
 

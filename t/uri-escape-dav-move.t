@@ -104,8 +104,8 @@ is_output ($svk, 'sync', ['//mirror/BK'], [
 
 $svk->copy ('-p', '-m', 'branch', '//mirror/BK', '//local/BK');
 
-my ($copath, $corpath) = get_copath ('uri-smerge');
-my ($scopath, $scorpath) = get_copath ('uri-smerge-source');
+my ($copath, $corpath) = get_copath('uri-escape-dav-move');
+my ($scopath, $scorpath) = get_copath('uri-escape-dav-move-source');
 
 $svk->checkout ('//local/BK', $copath);
 
