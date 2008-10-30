@@ -64,6 +64,28 @@ SVK::Depot - Depot class in SVK
 
 =head1 DESCRIPTION
 
+=cut
+
+my %REPOS;
+my $REPOSPOOL = SVN::Pool->new;
+
+sub _open_repos {
+    my ($repospath) = @_;
+    $REPOS{$repospath} ||= SVN::Repos::open ($repospath, $REPOSPOOL);
+}
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->setup;
+    return $self;
+}
+
+sub setup {
+    my $self = shift;
+    $self->repos(_open_repos($self->repospath)) unless $self->repos;
+}
+
 =over
 
 =item mirror

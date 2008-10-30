@@ -597,7 +597,7 @@ sub arg_co_maybe {
             if ($repospath =~ m{\.git/?$}) {
                 require SVK::Path::Git;
                 my $p = SVK::Path::Git->real_new
-                    ({ depot => SVK::Depot->new({ repospath => $repospath, depotname => $depotname }),
+                    ({ depot => SVK::Depot::Git->new({ repospath => $repospath, depotname => $depotname }),
                        commit => 'HEAD',
                        path => $path,
                 } );

@@ -426,12 +426,8 @@ sub giant_unlock {
 
 =cut
 
-my %REPOS;
-my $REPOSPOOL = SVN::Pool->new;
-
 sub _open_repos {
-    my ($repospath) = @_;
-    $REPOS{$repospath} ||= SVN::Repos::open ($repospath, $REPOSPOOL);
+    goto \&SVK::Depot::_open_repos;
 }
 
 =item find_repos
@@ -483,8 +479,7 @@ sub find_depot {
     }
 
     return SVK::Depot->new( { depotname => $depotname,
-                              repospath => $repospath,
-                              repos => _open_repos($repospath) } );
+                              repospath => $repospath } );
 }
 
 =item find_repos_from_co
