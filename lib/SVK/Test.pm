@@ -210,7 +210,7 @@ sub new_repos_git {
     my $pool = SVN::Pool->new_default;
     #chdir catdir(abs_path(dirname(__FILE__)), '..' );
     mkdir $repospath;
-    my $response = `chdir $repospath; git init`;
+    my $response = `git --git-dir $repospath/.git init`;
     return $repospath."/.git";
 }
 
