@@ -8,11 +8,15 @@ sub _get_path {
     my $refs = [ map { m/.*? (.*)/ }
                      $self->depot->run_cmd('show-ref') =~ m/^.*$/mg ];
     my $re = join('|', @$refs);
-    if (my ($tree, $path) = $full_path =~ m{^/($re)(?:/(.*))?$}) {
+    my ($tree, $path);
+    if (($tree, $path) = $full_path =~ m{^/($re)(?:/(.*))?$}) {
         $path = '' unless defined $path;
-        my ($ref) = $self->depot->run_cmd("show-ref $tree") =~ m/^(.*?) /;
-        return ($ref, $path);
+    } else {
+        $tree = 'refs/heads/master';
+        $path = substr($full_path,1);
     }
+    my ($ref) = $self->depot->run_cmd("show-ref $tree") =~ m/^(.*?) /;
+    return ($ref, $path);
 }
 
 sub file_contents {

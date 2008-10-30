@@ -266,7 +266,7 @@ sub cleanup_test {
     for my $depotname (sort keys %{$xd->{depotmap}}) {
 	my $pool = SVN::Pool->new_default;
         my $depot = eval { $xd->find_depot($depotname) } or next;
-        next unless $depot->repos;
+        next if $depot->isa('SVK::Depot::Git');
         my @txns = @{ $depot->repos->fs->list_transactions };
         if (@txns) {
             my $how_many = @txns;

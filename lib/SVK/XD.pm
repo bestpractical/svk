@@ -966,6 +966,7 @@ Don't generate text deltas in C<apply_textdelta> calls.
 
 sub depot_delta {
     my ($self, %arg) = @_;
+    return $self->depot_git_delta(%arg) if $arg{oldroot}->isa ('SVK::Root::Git');
     my @root = map {$_->isa ('SVK::Root') ? $_->root : $_} @arg{qw/oldroot newroot/};
     my $editor = $arg{editor};
     SVN::Repos::dir_delta ($root[0], @{$arg{oldpath}},
@@ -976,6 +977,16 @@ sub depot_delta {
 			   0, # we never need entry props
 			   $arg{notice_ancestry} ? 0 : 1,
 			   $arg{pool});
+}
+
+sub depot_git_delta {
+    my ($self, %arg) = @_;
+    my $oldroot = $arg{oldroot};
+    my $editor = $arg{editor};
+    # XXX: how about new root?
+    # XXX: Git use git diff EMPTY_TREE to generate the whole delta
+    my $textdiff = 
+        $oldroot->depot->run_cmd('diff '.SVK::Depot::Git::EMPTY_TREE.' master') ;
 }
 
 =item checkout_delta
