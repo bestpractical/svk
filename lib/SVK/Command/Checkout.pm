@@ -133,8 +133,6 @@ sub run {
 
     my $xd;
     if ($self->{floating}) {
-	my ($depotname) = $self->{xd}->find_depotname ($target->depotpath, 0);
-	my ($depotpath) = ($self->{xd}->find_repos ($target->depotpath, 0));
 	my $svkpath = catfile($copath, '.svk');
 
 	mkdir($copath)
@@ -143,7 +141,7 @@ sub run {
 	$xd = SVK::XD->new ( giantlock => catfile($svkpath, 'lock'),
 			     statefile => catfile($svkpath, 'config'),
 			     svkpath => $svkpath,
-			     depotmap => { $depotname => $depotpath },
+			     depotmap => { $target->depotname => $target->repospath },
 			     floating => $copath,
 			   );
 	$xd->giant_lock;
