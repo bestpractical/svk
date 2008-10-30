@@ -8,4 +8,9 @@ sub repos {
     Carp::confess "should not access git depot repos";
 }
 
+sub run_cmd {
+    my $self = shift;
+    return `git --git-dir @{[ $self->repospath ]} @_`;
+}
+
 1;

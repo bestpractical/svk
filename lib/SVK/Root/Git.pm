@@ -5,11 +5,12 @@ __PACKAGE__->mk_accessors(qw(depot commit));
 
 sub _get_path {
     my ($self, $full_path) = @_;
-    my $refs = [ map { m/.*? (.*)/ } `git --git-dir @{[ $self->depot->repospath ]} show-ref` =~ m/^.*$/mg ];
+    my $refs = [ map { m/.*? (.*)/ }
+                     $self->depot->run_cmd('show-ref') =~ m/^.*$/mg ];
     my $re = join('|', @$refs);
     if (my ($tree, $path) = $full_path =~ m{^/($re)(?:/(.*))?$}) {
         $path = '' unless defined $path;
-        my ($ref) = `git --git-dir @{[ $self->depot->repospath ]} show-ref $tree` =~ m/^(.*?) /;
+        my ($ref) = $self->depot->run_cmd("show-ref $tree") =~ m/^(.*?) /;
         return ($ref, $path);
     }
 }
