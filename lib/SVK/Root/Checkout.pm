@@ -73,11 +73,23 @@ sub check_path {
     my ($copath,$root) = $self->_get_copath($path, $pool);
 
     lstat ($copath);
-    return $SVN::Node::none unless -e _;
+    my $sche;
+
+    if (!-e _) {
+        # If the path exist in the base of the checkout, and is not scheduled for deletion,
+        # make it unknown
+        return $SVN::Node::none
+            if !$root->check_path($path, $pool);
+        $sche = $self->path->xd->{checkout}->get($copath, 1)->{'.schedule'} || '';
+        return $sche eq 'delete' ? $SVN::Node::none : $SVN::Node::unknown;
+    }
+
+    $sche = $self->path->xd->{checkout}->get($copath, 1)->{'.schedule'}
+        unless defined $sche;
 
     return (is_symlink || -f _) ? $SVN::Node::file : $SVN::Node::dir
 	if $self->path->xd->{checkout}->get($copath, 1)->{'.schedule'} or
-	    $root->check_path($path, $pool);
+	    $root->check_path($path, $pool) ;
     return $SVN::Node::unknown;
 }
 
@@ -150,11 +162,12 @@ sub dir_entries {
 	next if m/^\.+$/;
 	lstat $_;
 	my $kind = -d _ ? $SVN::Node::dir : $SVN::Node::file;
-	if ($entries->{$_}) {
+	if ($entries->{$_} && $kind == $entries->{$_}->kind) {
 	    $coentries->{$_} = $entries->{$_};
 	}
 	else {
-	    # Do we know about the node?
+	    # See if we know about the node.  If type mismatch, we
+	    # make it unknown to represent obstruct node
 	    $coentries->{$_} = SVK::Root::Checkout::Entry->new
 		({ kind => $self->path->xd->{checkout}->get("$copath/$_", 1)->{'.schedule'} ?
 		   $kind : $SVN::Node::unknown });
