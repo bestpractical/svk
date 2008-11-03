@@ -225,6 +225,149 @@ sub _delta_file2 {
     $self->SUPER::_delta_file(%arg, %compatarg);
 }
 
+sub _delta_entry {
+    my ($self, $base_root, $base_path, $target, $editor, $opt, $ctx) = @_;
+    my $targets = $opt->{targets};
+    my $entries = $opt->{entries};
+    my $entry = $opt->{entry};
+    my $baton = $opt->{baton};
+    my $signature = $opt->{signature};
+    my $ignore = $opt->{ignore};
+    my %arg = %$ctx;
+
+    if ($opt->{existing}) {
+	my $newtarget;
+	if (defined $targets) {
+	    return unless exists $targets->{$entry};
+	    $newtarget = delete $targets->{$entry};
+	}
+	my $kind = $entries->{$entry}->kind;
+	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
+	my $entry_target = $target->clone->descend($entry);
+	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
+
+	# a replace with history node requires handling the copy anchor in the
+	# latter direntries loop.  we should really merge the two.
+	if ($sche eq 'replace' && $ccinfo->{'.copyfrom'}) {
+	    delete $entries->{$entry};
+	    $targets->{$entry} = $newtarget if defined $targets;
+	    return;
+	}
+	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
+	my $newpath = $entry_target->path_anchor;
+	if ($unchanged && !$sche && !$ccinfo->{'.conflict'}) {
+	    $self->cb_unchanged->($editor, $newentry, $baton,
+				 $self->_delta_rev2($target, $ccinfo)
+				) if $arg{cb_unchanged};
+	    return;
+	}
+	my ($type, $st) = _node_type($entry_target->copath);
+	return unless defined $type;
+
+	my $delta = $type ? $type eq 'directory' ? '_delta_dir' : '_delta_file'
+	                  : $kind == $SVN::Node::file ? '_delta_file' : '_delta_dir';
+	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
+	# if the sub-delta returns 1 it means the node is modified. invlidate
+	# the signature cache
+	my $ret;
+	$delta .= '2';
+	$ret = $self->$delta($base_root, $base_path eq '/' ? "/$entry" : "$base_path/$entry",
+			     $entry_target,
+			     $editor, { %arg,
+			add => $arg{in_copy} || ($obs && $arg{obstruct_as_replace}),
+			type => $type,
+			# if copath exist, we have base only if they are of the same type
+			base => !$obs,
+			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
+			entry => $newentry,
+			kind => $arg{base_root_is_xd} ? $kind : $self->_compat_xdroot->check_path ($newpath),
+			base_kind => $kind,
+			targets => $newtarget,
+			baton => $baton,
+			root => 0,
+			st => $st,
+			cinfo => $ccinfo });
+
+	$ret and ($signature && $signature->invalidate ($entry));
+
+    }
+    else {
+	my $newtarget;
+	if (defined $targets) {
+	    return unless exists $targets->{$entry};
+	    $newtarget = delete $targets->{$entry};
+	}
+	my $entry_target = $target->clone->descend($entry);
+	my %newpaths = ( entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
+			 targets => $newtarget, base_kind => $SVN::Node::none);
+
+	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
+	    $self->_compat_xdroot->check_path($entry_target->path_anchor);
+
+	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
+
+	my $add = $sche || $arg{auto_add} || $newpaths{kind};
+	# If we are not at intermediate path, process ignore
+	# for unknowns, as well as the case of auto_add (import)
+	if (!defined $targets) {
+	    if ((!$add || $arg{auto_add}) && $entry =~ m/$ignore/) { 
+		$self->cb_ignored->($editor, $newpaths{entry}, $arg{baton})
+		    if $self->cb_ignored;
+		return;
+	    }
+	}
+	if ($ccinfo->{'.conflict'}) {
+	    $self->cb_conflict->($editor, $newpaths{entry}, $arg{baton}, $ccinfo->{'.conflict'})
+		if $self->cb_conflict;
+	}
+	unless ($add || $ccinfo->{'.conflict'}) {
+	    if ($self->cb_unknown) {
+		$self->cb_unknown->($editor, $newpaths{entry}, $arg{baton});
+		$self->_unknown_verbose(%arg, %newpaths, %{$opt->{compatarg}},
+					copath => $entry_target->copath,
+					path => $target->path_anchor,
+					base_path => $base_path eq '/' ? "/$entry" : "$base_path/$entry")
+		    if $arg{unknown_verbose};
+	    }
+	    return;
+	}
+	my ($type, $st) = _node_type($entry_target->copath) or return;
+	my $delta = $type eq 'directory' ? '_delta_dir': '_delta_file';
+	my $copyfrom = $ccinfo->{'.copyfrom'};
+	my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
+	# XXX: actually we want to rerun the delta with base being the copy root,
+	# figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
+	$delta .= '2';
+	if ($copyfrom) {
+	    $self->$delta($fromroot, $copyfrom, $entry_target, $editor,
+				   { %arg, %newpaths,
+				     add => 1,
+				     baton => $baton,
+				     root => 0, base => 0, cinfo => $ccinfo,
+				     type => $type,
+				     st => $st,
+				     depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
+				     base => 1,
+				     _really_in_copy => 1,
+				     in_copy => $arg{expand_copy},
+				     base_kind => $fromroot->check_path ($copyfrom),
+				     base_root_is_xd => 0 });
+	}
+	else {
+	    $self->$delta($base_root, $entry_target->path, $entry_target, $editor,
+				   { %arg, %newpaths,
+				     add => 1,
+				     baton => $baton,
+				     root => 0, base => 0, cinfo => $ccinfo,
+				     type => $type,
+				     st => $st,
+				     depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef });
+
+        }
+    }
+
+}
+
 sub _delta_dir2 {
     my ($self, $base_root, $base_path, $target, $editor, $ctx) = @_;
 
@@ -308,149 +451,41 @@ sub _delta_dir2 {
 	$signature->{keepold} = 1 if defined $targets
     }
 
-    # XXX: Merge this with @direntries so we have single entry to descendents
     for my $entry (sort keys %$entries) {
-	my $newtarget;
-	if (defined $targets) {
-	    next unless exists $targets->{$entry};
-	    $newtarget = delete $targets->{$entry};
-	}
-	my $kind = $entries->{$entry}->kind;
-	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
-	my $entry_target = $target->clone->descend($entry);
-	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
-
-	# a replace with history node requires handling the copy anchor in the
-	# latter direntries loop.  we should really merge the two.
-	if ($sche eq 'replace' && $ccinfo->{'.copyfrom'}) {
-	    delete $entries->{$entry};
-	    $targets->{$entry} = $newtarget if defined $targets;
-	    next;
-	}
-	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
-	my $newpath = $entry_target->path_anchor;
-	if ($unchanged && !$sche && !$ccinfo->{'.conflict'}) {
-	    $self->cb_unchanged->($editor, $newentry, $baton,
-				 $self->_delta_rev2($target, $ccinfo)
-				) if $arg{cb_unchanged};
-	    next;
-	}
-	my ($type, $st) = _node_type($entry_target->copath);
-	next unless defined $type;
-
-	my $delta = $type ? $type eq 'directory' ? '_delta_dir' : '_delta_file'
-	                  : $kind == $SVN::Node::file ? '_delta_file' : '_delta_dir';
-	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
-	# if the sub-delta returns 1 it means the node is modified. invlidate
-	# the signature cache
-	my $ret;
-	$delta .= '2';
-	$ret = $self->$delta($base_root, $base_path eq '/' ? "/$entry" : "$base_path/$entry",
-			     $entry_target,
-			     $editor, { %arg,
-			add => $arg{in_copy} || ($obs && $arg{obstruct_as_replace}),
-			type => $type,
-			# if copath exist, we have base only if they are of the same type
-			base => !$obs,
-			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
-			entry => $newentry,
-			kind => $arg{base_root_is_xd} ? $kind : $self->_compat_xdroot->check_path ($newpath),
-			base_kind => $kind,
-			targets => $newtarget,
-			baton => $baton,
-			root => 0,
-			st => $st,
-			cinfo => $ccinfo });
-
-	$ret and ($signature && $signature->invalidate ($entry));
+        $self->_delta_entry( $base_root, $base_path, $target, $editor,
+            { existing  => 1,
+              targets   => $targets,
+              entries   => $entries,
+              entry     => $entry,
+              baton     => $baton,
+              signature => $signature,
+            },
+            \%arg );
     }
 
     if ($signature) {
 	$signature->flush;
 	undef $signature;
     }
-    my $ignore = $self->xd->ignore($fullprops->{'svn:ignore'});
 
-    my $new_entries;
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
-    if ($arg{type} && !(defined $targets && !keys %$targets)) {
-        $new_entries = $target->root->dir_entries($target->path_anchor, $pool);
-        ;
+    if ( $arg{type} && !( defined $targets && !keys %$targets ) ) {
+        my $ignore = $self->xd->ignore($fullprops->{'svn:ignore'});
+        my $new_entries = $target->root->dir_entries( $target->path_anchor, $pool );
+
+        for my $entry ( sort grep { !exists $entries->{$_} } keys %$new_entries ) {
+            $self->_delta_entry( $base_root, $base_path, $target, $editor,
+                { targets   => $targets,
+                  entries   => $new_entries,
+                  entry     => $entry,
+                  baton     => $baton,
+                  ignore    => $ignore,
+                  compatarg => \%compatarg,
+                },
+                \%arg );
+        }
     }
 
-    for my $entry (sort grep { !exists $entries->{$_} } keys %$new_entries) {
-	my $newtarget;
-	if (defined $targets) {
-	    next unless exists $targets->{$entry};
-	    $newtarget = delete $targets->{$entry};
-	}
-	my $entry_target = $target->clone->descend($entry);
-	my %newpaths = ( entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
-			 targets => $newtarget, base_kind => $SVN::Node::none);
-
-	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
-	    $self->_compat_xdroot->check_path($entry_target->path_anchor);
-
-	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
-
-	my $add = $sche || $arg{auto_add} || $newpaths{kind};
-	# If we are not at intermediate path, process ignore
-	# for unknowns, as well as the case of auto_add (import)
-	if (!defined $targets) {
-	    if ((!$add || $arg{auto_add}) && $entry =~ m/$ignore/) { 
-		$self->cb_ignored->($editor, $newpaths{entry}, $arg{baton})
-		    if $self->cb_ignored;
-		next;
-	    }
-	}
-	if ($ccinfo->{'.conflict'}) {
-	    $self->cb_conflict->($editor, $newpaths{entry}, $arg{baton}, $ccinfo->{'.conflict'})
-		if $self->cb_conflict;
-	}
-	unless ($add || $ccinfo->{'.conflict'}) {
-	    if ($self->cb_unknown) {
-		$self->cb_unknown->($editor, $newpaths{entry}, $arg{baton});
-		$self->_unknown_verbose(%arg, %newpaths, %compatarg,
-					copath => $entry_target->copath,
-					path => $target->path_anchor,
-					base_path => $base_path eq '/' ? "/$entry" : "$base_path/$entry")
-		    if $arg{unknown_verbose};
-	    }
-	    next;
-	}
-	my ($type, $st) = _node_type($entry_target->copath) or next;
-	my $delta = $type eq 'directory' ? '_delta_dir': '_delta_file';
-	my $copyfrom = $ccinfo->{'.copyfrom'};
-	my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
-	# XXX: actually we want to rerun the delta with base being the copy root,
-	# figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
-	$delta .= '2';
-	if ($copyfrom) {
-	    $self->$delta($fromroot, $copyfrom, $entry_target, $editor,
-				   { %arg, %newpaths,
-				     add => 1,
-				     baton => $baton,
-				     root => 0, base => 0, cinfo => $ccinfo,
-				     type => $type,
-				     st => $st,
-				     depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
-				     base => 1,
-				     _really_in_copy => 1,
-				     in_copy => $arg{expand_copy},
-				     base_kind => $fromroot->check_path ($copyfrom),
-				     base_root_is_xd => 0 });
-	}
-	else {
-	    $self->$delta($base_root, $entry_target->path, $entry_target, $editor,
-				   { %arg, %newpaths,
-				     add => 1,
-				     baton => $baton,
-				     root => 0, base => 0, cinfo => $ccinfo,
-				     type => $type,
-				     st => $st,
-				     depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef });
-	}
-    }
     }
 
     if ($thisdir) {
