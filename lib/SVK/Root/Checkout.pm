@@ -50,7 +50,8 @@
 # END BPS TAGGED BLOCK }}}
 package SVK::Root::Checkout;
 use strict;
-use SVK::Util qw(abs2rel md5_fh is_symlink from_native to_native );
+use SVK::Util qw(abs2rel md5_fh is_symlink from_native to_native get_encoder );
+use SVK::Logger;
 
 use base qw{ Class::Accessor::Fast };
 
@@ -154,12 +155,20 @@ sub node_history {
 sub dir_entries {
     my ($self, $path, $pool) = @_;
     my ($copath,$root) = $self->_get_copath($path, $pool);
-
-    my $entries = $root->dir_entries($path, $pool);
+    my $entries = $root->check_path($path, $pool) == $SVN::Node::dir
+        ? $root->dir_entries($path, $pool)  : {};
     my $coentries;
     opendir my ($dir), $copath or die "$copath: $!";
     for (readdir($dir)) {
 	next if m/^\.+$/;
+        next if $_ eq '.svk' and $self->path->xd->{floating};
+
+        unless (eval {from_native($_, 'path', get_encoder()); 1}) {
+            # XXX: warning etc, and make it possible to become fatal in some case
+            $logger->warn("$_: $@");
+            next;
+        }
+
 	lstat $_;
 	my $kind = -d _ ? $SVN::Node::dir : $SVN::Node::file;
 	if ($entries->{$_} && $kind == $entries->{$_}->kind) {

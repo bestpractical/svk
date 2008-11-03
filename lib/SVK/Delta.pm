@@ -374,23 +374,8 @@ sub _delta_dir2 {
     my @direntries;
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
-	opendir my ($dir), $target->copath or Carp::confess "$target->copath: $!";
-	for (readdir($dir)) {
-	    # Completely deny the existance of .svk; we shouldn't
-	    # show this even with e.g. --no-ignore.
-	    next if $_ eq '.svk' and $self->xd->{floating};
-
-	    if (eval {from_native($_, 'path', $arg{encoder}); 1}) {
-		push @direntries, $_;
-	    }
-	    elsif ($arg{auto_add}) { # fatal for auto_add
-		die "$_: $@";
-	    }
-	    else {
-		print "$_: $@";
-	    }
-	}
-	@direntries = sort grep { !m/^\.+$/ && !exists $entries->{$_} } @direntries;
+        my $new_entries = $target->root->dir_entries($target->path_anchor, $pool);
+        @direntries = sort grep { !exists $entries->{$_} } keys %$new_entries;
     }
 
     for my $entry (@direntries) {
