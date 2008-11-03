@@ -245,57 +245,45 @@ sub _delta_entry {
 
     my %newpaths = ( entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
                      targets => $newtarget,
-                     depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
+                     depth => defined $arg{depth} ? defined $targets ?
+                                                    $arg{depth} : $arg{depth} - 1
+                                                  : undef,
                      baton => $baton,
-
-                     cinfo => $ccinfo
+                     cinfo => $ccinfo,
+                     root => 0, base => 0,
                  );
 
     $newpaths{base_kind} = $opt->{existing} ? $entries->{$entry}->kind : $SVN::Node::none;
+
+    if ($sche eq 'replace' && $ccinfo->{'.copyfrom'}) {
+        $newpaths{base_kind} = $SVN::Node::none;
+    }
+
     $newpaths{kind} = $arg{base_root_is_xd} ? $newpaths{base_kind} :
         $self->_compat_xdroot->check_path($entry_target->path_anchor);
+    $newpaths{add} = !$newpaths{base_kind};
 
     my $entry_path = $base_path eq '/' ? "/$entry" : "$base_path/$entry";
+    my ($delta, $type, $st);
 
-    if ($opt->{existing}) {
+
+    if ($newpaths{base_kind}) {
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 
-	# a replace with history node requires handling the copy anchor in the
-	# latter direntries loop.  we should really merge the two.
-	if ($sche eq 'replace' && $ccinfo->{'.copyfrom'}) {
-	    delete $entries->{$entry};
-	    $targets->{$entry} = $newtarget if defined $targets;
-	    return;
-	}
 	if ($unchanged && !$sche && !$ccinfo->{'.conflict'}) {
 	    $self->cb_unchanged->($editor, $newpaths{entry}, $baton,
 				 $self->_delta_rev2($target, $ccinfo)
 				) if $self->cb_unchanged;
 	    return;
 	}
-	my ($type, $st) = _node_type($entry_target->copath);
-	return unless defined $type;
+	($type, $st) = _node_type($entry_target->copath) or return;
 
-	my $delta = $type ? $type eq 'directory' ? '_delta_dir' : '_delta_file'
-	                  : $kind == $SVN::Node::file ? '_delta_file' : '_delta_dir';
+        $delta = $type ? $type eq 'directory' ? '_delta_dir2' : '_delta_file2'
+            : $kind == $SVN::Node::file ? '_delta_file2' : '_delta_dir2';
 	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
-	# if the sub-delta returns 1 it means the node is modified. invlidate
-	# the signature cache
-	my $ret;
-	$delta .= '2';
-	$ret = $self->$delta($base_root, $entry_path,
-			     $entry_target,
-			     $editor, { %arg, %newpaths,
-			add => $arg{in_copy} || ($obs && $arg{obstruct_as_replace}),
-			type => $type,
-			# if copath exist, we have base only if they are of the same type
-			base => !$obs,
-			root => 0,
-			st => $st,
-                                    });
-
-	$ret and ($signature && $signature->invalidate ($entry));
+        $newpaths{add} = $arg{in_copy} || ($obs && $arg{obstruct_as_replace});
+        $newpaths{base} = !$obs;
 
     }
     else {
@@ -324,40 +312,27 @@ sub _delta_entry {
 	    }
 	    return;
 	}
-	my ($type, $st) = _node_type($entry_target->copath) or return;
-	my $delta = $type eq 'directory' ? '_delta_dir': '_delta_file';
-	my $copyfrom = $ccinfo->{'.copyfrom'};
-	my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
-	# XXX: actually we want to rerun the delta with base being the copy root,
-	# figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
-	$delta .= '2';
-	if ($copyfrom) {
-            ($base_root, $entry_path) = ($fromroot, $copyfrom);
-	    $self->$delta($base_root, $entry_path, $entry_target, $editor,
-				   { %arg, %newpaths,
-				     add => 1,
-				     root => 0, base => 0,
-				     type => $type,
-				     st => $st,
-
-				     base => 1,
-				     _really_in_copy => 1,
-				     in_copy => $arg{expand_copy},
-				     base_kind => $fromroot->check_path ($copyfrom),
-				     base_root_is_xd => 0 });
-	}
-	else {
-	    $self->$delta($base_root, $entry_path, $entry_target, $editor,
-				   { %arg, %newpaths,
-				     add => 1,
-				     root => 0, base => 0,
-				     type => $type,
-				     st => $st,
-                                 });
-
-        }
+	($type, $st) = _node_type($entry_target->copath) or return;
+	$delta = $type eq 'directory' ? '_delta_dir2': '_delta_file2';
     }
 
+    my $copyfrom = $ccinfo->{'.copyfrom'};
+    my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
+    # XXX: figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
+    if ($copyfrom) {
+        ($base_root, $entry_path) = ($fromroot, $copyfrom);
+        $newpaths{base_root_is_xd} = 0;
+        $newpaths{base_kind} = $fromroot->check_path ($copyfrom);
+        $newpaths{in_copy} =  $arg{expand_copy};
+        $newpaths{base} = 1;
+        $newpaths{_really_in_copy} = 1;
+    }
+
+    $self->$delta($base_root, $entry_path, $entry_target, $editor,
+                  { %arg, %newpaths,
+                    type => $type,
+                    st => $st,
+                });
 }
 
 sub _delta_dir2 {
@@ -444,15 +419,21 @@ sub _delta_dir2 {
     }
 
     for my $entry (sort keys %$entries) {
-        $self->_delta_entry( $base_root, $base_path, $target, $editor,
+	# if the sub-delta returns 1 it means the node is modified. invlidate
+	# the signature cache
+        my $ret = $self->_delta_entry( $base_root, $base_path, $target, $editor,
             { existing  => 1,
               targets   => $targets,
               entries   => $entries,
               entry     => $entry,
               baton     => $baton,
               signature => $signature,
+              compatarg => \%compatarg,
             },
             \%arg );
+
+	$ret and ($signature && $signature->invalidate ($entry));
+
     }
 
     if ($signature) {
