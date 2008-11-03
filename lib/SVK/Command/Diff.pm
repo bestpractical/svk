@@ -145,17 +145,20 @@ sub run {
 	    ($report) = get_anchor (0, $report) if defined $report;
 	}
 	$editor->{report} = $report;
-	$self->{xd}->checkout_delta
-	    ( $target2->for_checkout_delta,
+        $target2->run_delta(
+            $editor,
+            {
+              use_old_delta => 1,
+              xdroot => $target2->create_xd_root,
+              base_root => $oldroot,
+              base_path => $target->path_anchor,
+	      $self->{recursive} ? () : (depth => 1),
 	      $self->{expand}
 	      ? ( expand_copy => 1 )
 	      : ( cb_copyfrom => sub { @_ } ),
-	      base_root => $oldroot,
-	      base_path => $target->path_anchor,
-	      xdroot => $target2->create_xd_root,
-	      editor => $editor,
-	      $self->{recursive} ? () : (depth => 1),
-	    );
+
+            }
+        );
     }
     else {
         my $kind = $oldroot->check_path($target->path_anchor);

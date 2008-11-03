@@ -72,14 +72,14 @@ sub checkout_delta2 {
 
     # objective: move behaviour-related info into $self, and pass around context only
     my $source = $target->source;
-    my $base_root = $target->create_xd_root;
+    my $base_root = $opt->{base_root} || $target->create_xd_root;
     my $base_kind = $base_root->check_path($source->path_anchor);
 
     die "checkout_delta called with non-dir node"
 	unless $base_kind == $SVN::Node::dir;
 
     my %arg = (
-		base_root_is_xd => 1,
+		base_root_is_xd => $opt->{xdroot} ? 0 : 1,
 		encoder => get_encoder,
 		kind => $base_kind,
 		base_kind => $base_kind,
@@ -147,12 +147,13 @@ sub _compat_args {
         repospath => $source->repospath,
         report    => $target->report,
 
-		     cb_conflict => $self->cb_conflict,
-		     cb_unchanged => $self->cb_unchanged,
-		     cb_ignored => $self->cb_ignored,
+        cb_conflict => $self->cb_conflict,
+        cb_unchanged => $self->cb_unchanged,
+        cb_ignored => $self->cb_ignored,
 
         # compat for now
         editor => $editor,
+        xdroot => $base_root,
     );
 
 }
@@ -162,8 +163,7 @@ sub _delta_file2 {
 
     my $source = $target->source;
     my %arg    = (
-        %$ctx,
-        xdroot    => $base_root,
+        %$ctx
     );
     my %compatarg = _compat_args(@_);
 
@@ -175,8 +175,7 @@ sub _delta_dir2 {
 
     my $source = $target->source;
     my %arg    = (
-        %$ctx,
-        xdroot    => $base_root,
+        %$ctx
     );
 
     my %compatarg = _compat_args(@_);
@@ -299,7 +298,7 @@ sub _delta_dir2 {
 			base => !$obs,
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			entry => $newentry,
-			kind => $arg{base_root_is_xd} ? $kind : $arg{xdroot}->check_path ($newpath),
+			kind => $arg{base_root_is_xd} ? $kind : $base_root->check_path ($newpath),
 			base_kind => $kind,
 			targets => $newtarget,
 			baton => $baton,
@@ -349,7 +348,7 @@ sub _delta_dir2 {
 			 targets => $newtarget, base_kind => $SVN::Node::none);
 	# XXX: what is this != thing in trinary?
 	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
-	    $arg{xdroot}->check_path($target->path_anchor) != $SVN::Node::none;
+	    $base_root->check_path($target->path_anchor) != $SVN::Node::none;
 	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
 
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
@@ -380,7 +379,7 @@ sub _delta_dir2 {
 	my ($type, $st) = _node_type($entry_target->copath) or next;
 	my $delta = $type eq 'directory' ? '_delta_dir': '_delta_file';
 	my $copyfrom = $ccinfo->{'.copyfrom'};
-	my ($fromroot) = $copyfrom ? $arg{xdroot}->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
+	my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
 	# XXX: actually we want to rerun the delta with base being the copy root,
 	# figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
 	$delta .= '2';
@@ -400,7 +399,7 @@ sub _delta_dir2 {
 				     base_root_is_xd => 0 });
 	}
 	else {
-	    $self->$delta($base_root, $base_path eq '/' ? "/$entry" : "$base_path/$entry", $entry_target, $editor,
+	    $self->$delta($base_root, $entry_target->path, $entry_target, $editor,
 				   { %arg, %newpaths,
 				     add => 1,
 				     baton => $baton,
@@ -460,7 +459,7 @@ sub _node_props2 {
             if $ctx->{kind}
             && $ctx->{base_kind}
             && $self->can('_prop_changed')->(
-            $base_root, $base_path, $ctx->{ xdroot },
+            $base_root, $base_path, $target->root,
             $target->path_anchor
             );
     }

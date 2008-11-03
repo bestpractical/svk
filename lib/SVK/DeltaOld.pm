@@ -233,6 +233,8 @@ sub _prop_delta {
 sub _prop_changed {
     my ($root1, $path1, $root2, $path2) = @_;
     ($root1, $root2) = map {$_->isa ('SVK::Root') ? $_->root : $_} ($root1, $root2);
+    # XXX: do better check for this case, or make this a root helper method.
+    return 1 if $root1->isa('SVK::Root::Checkout') || $root2->isa('SVK::Root::Checkout');
     return SVN::Fs::props_changed ($root1, $path1, $root2, $path2);
 }
 
@@ -620,7 +622,8 @@ sub checkout_delta1 {
     my ($self, $target, $editor, $opt) = @_;
 
     my $source = $target->source;
-    my $base_root = $target->create_xd_root;
+    my $xdroot = $target->create_xd_root;
+    my $base_root = $opt->{base_root} || $xdroot;
     my $base_kind = $base_root->check_path($source->path_anchor);
 
     die "checkout_delta called with non-dir node"
@@ -628,8 +631,8 @@ sub checkout_delta1 {
 
     my %arg = ( 
                 base_root => $base_root,
-                xdroot => $base_root,
-                base_root_is_xd => 1,
+                xdroot => $opt->{xdroot} || $base_root,
+                base_root_is_xd => $opt->{xdroot} ? 0 : 1,
                 encoder => get_encoder,
 
                 copath => $target->copath,
