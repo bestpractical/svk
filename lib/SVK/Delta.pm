@@ -261,17 +261,17 @@ sub _delta_entry {
         $self->_compat_xdroot->check_path($entry_target->path_anchor);
     $newpaths{add} = !$newpaths{base_kind} || $arg{in_copy};
 
-    if (my $kind = $newpaths{base_kind}) {
-	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
-
-	if ($unchanged && !$sche && !$ccinfo->{'.conflict'}) {
+    if (my $unchanged = ($newpaths{base_kind} == $SVN::Node::file &&
+                         $signature && !$signature->changed($entry))) {
+        # XXX: need to see prop-changed-ness to know if we can call cb_unchanged.
+	if (!$ccinfo->{'.conflict'}) {
 	    $self->cb_unchanged->($editor, $newpaths{entry}, $baton,
 				 $self->_delta_rev2($target, $ccinfo)
 				) if $self->cb_unchanged;
 	    return;
 	}
     }
-    else {
+    if (!$newpaths{base_kind}) {
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	# If we are not at intermediate path, process ignore
 	# for unknowns, as well as the case of auto_add (import)
