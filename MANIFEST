@@ -66,6 +66,8 @@ lib/SVK/Command/Sync.pm
 lib/SVK/Command/Update.pm
 lib/SVK/Command/Verify.pm
 lib/SVK/Config.pm
+lib/SVK/Delta.pm
+lib/SVK/DeltaOld.pm
 lib/SVK/Depot.pm
 lib/SVK/Editor.pm
 lib/SVK/Editor/ByPass.pm
