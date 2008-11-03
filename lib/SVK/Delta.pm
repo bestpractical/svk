@@ -235,16 +235,14 @@ sub _delta_entry {
     my $ignore = $opt->{ignore};
     my %arg = %$ctx;
 
-    my $newtarget;
-    if (defined $targets) {
-        return unless exists $targets->{$entry};
-        $newtarget = delete $targets->{$entry};
-    }
+    my $entry_path = $base_path eq '/' ? "/$entry" : "$base_path/$entry";
+    return if defined $targets && !exists $targets->{$entry};
+
     my $entry_target = $target->clone->descend($entry);
     my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
 
     my %newpaths = ( entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
-                     targets => $newtarget,
+                     targets => defined $targets ? delete $targets->{$entry} : undef,
                      depth => defined $arg{depth} ? defined $targets ?
                                                     $arg{depth} : $arg{depth} - 1
                                                   : undef,
@@ -261,14 +259,9 @@ sub _delta_entry {
 
     $newpaths{kind} = $arg{base_root_is_xd} ? $newpaths{base_kind} :
         $self->_compat_xdroot->check_path($entry_target->path_anchor);
-    $newpaths{add} = !$newpaths{base_kind};
+    $newpaths{add} = !$newpaths{base_kind} || $arg{in_copy};
 
-    my $entry_path = $base_path eq '/' ? "/$entry" : "$base_path/$entry";
-    my ($delta, $type, $st);
-
-
-    if ($newpaths{base_kind}) {
-	my $kind = $entries->{$entry}->kind;
+    if (my $kind = $newpaths{base_kind}) {
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 
 	if ($unchanged && !$sche && !$ccinfo->{'.conflict'}) {
@@ -277,14 +270,6 @@ sub _delta_entry {
 				) if $self->cb_unchanged;
 	    return;
 	}
-	($type, $st) = _node_type($entry_target->copath) or return;
-
-        $delta = $type ? $type eq 'directory' ? '_delta_dir2' : '_delta_file2'
-            : $kind == $SVN::Node::file ? '_delta_file2' : '_delta_dir2';
-	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
-        $newpaths{add} = $arg{in_copy} || ($obs && $arg{obstruct_as_replace});
-        $newpaths{base} = !$obs;
-
     }
     else {
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
@@ -312,10 +297,21 @@ sub _delta_entry {
 	    }
 	    return;
 	}
-	($type, $st) = _node_type($entry_target->copath) or return;
-	$delta = $type eq 'directory' ? '_delta_dir2': '_delta_file2';
     }
 
+    my ($type, $st) = _node_type($entry_target->copath) or return;
+
+    my $pkind = $entry_target->root->check_path($entry_target->path_anchor); # XXX: get from new_entry hash directly once it's passed in
+    my $opkind = $pkind;
+    $pkind = $newpaths{base_kind} if !$pkind || $pkind == $SVN::Node::unknown;
+
+    my $delta = $pkind == $SVN::Node::file ? '_delta_file2' : '_delta_dir2';
+    my $obs = $type ? ($newpaths{base_kind} == $SVN::Node::dir xor $pkind == $SVN::Node::dir) : 0;
+    $newpaths{add} ||= ($obs && $arg{obstruct_as_replace});
+    $newpaths{base} = $newpaths{base_kind} && !$obs;
+    if (!$newpaths{base_kind}) {
+	$delta = $type eq 'directory' ? '_delta_dir2': '_delta_file2';
+    }
     my $copyfrom = $ccinfo->{'.copyfrom'};
     my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
     # XXX: figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
@@ -442,7 +438,7 @@ sub _delta_dir2 {
     }
 
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
-    if ( $arg{type} && !( defined $targets && !keys %$targets ) ) {
+    if ( $arg{type} ) {
         my $ignore = $self->xd->ignore($fullprops->{'svn:ignore'});
         my $new_entries = $target->root->dir_entries( $target->path_anchor, $pool );
 
