@@ -371,14 +371,14 @@ sub _delta_dir2 {
     }
     my $ignore = $self->xd->ignore($fullprops->{'svn:ignore'});
 
-    my @direntries;
+    my $new_entries;
     # if we are at somewhere arg{copath} not exist, $arg{type} is empty
     if ($arg{type} && !(defined $targets && !keys %$targets)) {
-        my $new_entries = $target->root->dir_entries($target->path_anchor, $pool);
-        @direntries = sort grep { !exists $entries->{$_} } keys %$new_entries;
+        $new_entries = $target->root->dir_entries($target->path_anchor, $pool);
+        ;
     }
 
-    for my $entry (@direntries) {
+    for my $entry (sort grep { !exists $entries->{$_} } keys %$new_entries) {
 	my $newtarget;
 	if (defined $targets) {
 	    next unless exists $targets->{$entry};
