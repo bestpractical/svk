@@ -100,8 +100,8 @@ sub checkout_delta2 {
 	   unless $arg{nodelay};
 
     # XXX: translate $repospath to use '/'
-    my ($entry) = $self->xd->get_entry($target->copath, 1);
-    my $rev = $self->cb_resolve_rev->($source->path_anchor, $entry->{revision});
+    my ($cinfo) = $self->_compose_cinfo($target);
+    my $rev = $self->cb_resolve_rev->($source->path_anchor, $cinfo->{revision});
     local $SIG{INT} = sub {
 	$editor->abort_edit;
 	die loc("Interrupted.\n");
@@ -117,13 +117,19 @@ sub checkout_delta2 {
             baton => $baton,
             root  => 1,
             base  => 1,
-            type  => 'directory'
+            type  => 'directory',
+            cinfo => $cinfo,
         }
     );
     $editor->close_directory($baton);
     $editor->close_edit();
-
 }
+
+sub _compose_cinfo {
+    my ($self, $target) = @_;
+    $self->xd->get_entry($target->copath, 1);
+}
+
 
 sub _compat_args {
     my ($self, $base_root, $base_path, $target, $editor, $ctx) = @_;
@@ -180,7 +186,7 @@ sub _delta_dir2 {
 	return;
     }
     my $pool = SVN::Pool->new_default (undef);
-    my $cinfo = $arg{cinfo} ||= $self->checkout->get($target->copath);
+    my $cinfo = $arg{cinfo};
     my $schedule = $cinfo->{'.schedule'} || '';
     $arg{add} = 1 if $arg{auto_add} && $arg{base_kind} == $SVN::Node::none ||
 	$schedule eq 'replace';
@@ -198,7 +204,7 @@ sub _delta_dir2 {
 	    $targets->{$file} = undef;
 	}
     }
-    my $thisdir;
+    my $thisdir; # if we are performing delta on the this dir itself
     if ($targets) {
 	if (exists $targets->{''}) {
 	    delete $targets->{''};
@@ -208,6 +214,7 @@ sub _delta_dir2 {
     else {
 	$thisdir = 1;
     }
+    # if we are descending into children
     # don't use depth when we are still traversing through targets
     my $descend = defined $targets || !(defined $arg{depth} && $arg{depth} == 0);
     # XXX: the top level entry is undefined, which should be fixed.
@@ -257,17 +264,18 @@ sub _delta_dir2 {
 	my $kind = $entries->{$entry}->kind;
 	my $unchanged = ($kind == $SVN::Node::file && $signature && !$signature->changed ($entry));
 	my $entry_target = $target->clone->descend($entry);
-	my ($ccinfo, $ccschedule) = $self->xd->get_entry($entry_target->copath, 1);
+	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
+
 	# a replace with history node requires handling the copy anchor in the
 	# latter direntries loop.  we should really merge the two.
-	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
+	if ($sche eq 'replace' && $ccinfo->{'.copyfrom'}) {
 	    delete $entries->{$entry};
 	    $targets->{$entry} = $newtarget if defined $targets;
 	    next;
 	}
 	my $newentry = defined $arg{entry} ? "$arg{entry}/$entry" : $entry;
 	my $newpath = $entry_target->path_anchor;
-	if ($unchanged && !$ccschedule && !$ccinfo->{'.conflict'}) {
+	if ($unchanged && !$sche && !$ccinfo->{'.conflict'}) {
 	    $self->cb_unchanged->($editor, $newentry, $baton,
 				 $self->_delta_rev2($target, $ccinfo)
 				) if $arg{cb_unchanged};
@@ -342,7 +350,8 @@ sub _delta_dir2 {
 	# XXX: what is this != thing in trinary?
 	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
 	    $arg{xdroot}->check_path($target->path_anchor) != $SVN::Node::none;
-	my ($ccinfo, $sche) = $self->xd->get_entry($entry_target->copath, 1);
+	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
+
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	# If we are not at intermediate path, process ignore
 	# for unknowns, as well as the case of auto_add (import)
