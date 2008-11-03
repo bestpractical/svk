@@ -515,6 +515,7 @@ sub _delta_dir {
 			 targets => $newtarget, base_kind => $SVN::Node::none);
 	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
 	    $arg{xdroot}->check_path ($newpaths{path}) != $SVN::Node::none;
+
 	my ($ccinfo, $sche) = $self->xd->get_entry($newpaths{copath}, 1);
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};
 	# If we are not at intermediate path, process ignore
@@ -596,8 +597,8 @@ sub checkout_delta1 {
 
     my %arg = ( 
                 base_root => $base_root,
-                xdroot => $opt->{xdroot} || $base_root,
-                base_root_is_xd => $opt->{xdroot} ? 0 : 1,
+                xdroot => $xdroot,
+                base_root_is_xd => $opt->{base_root} ? 0 : 1,
                 encoder => get_encoder,
 
                 copath => $target->copath,

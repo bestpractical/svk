@@ -60,7 +60,9 @@ use SVK::Logger;
 
 use base 'SVK::DeltaOld';
 
-__PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev cb_unknown));
+__PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev cb_unknown
+                             _compat_xdroot
+                        ));
 
 *_node_type = *SVK::DeltaOld::_node_type;
 
@@ -120,14 +122,17 @@ sub checkout_delta2 {
 
     # objective: move behaviour-related info into $self, and pass around context only
     my $source = $target->source;
-    my $base_root = $opt->{base_root} || $target->create_xd_root;
+    my $xdroot = $target->create_xd_root; # XXX: shouldn't exist anymore
+    my $base_root = $opt->{base_root} || $xdroot;
     my $base_kind = $base_root->check_path($source->path_anchor);
+
+    $self->_compat_xdroot($xdroot);
 
     die "checkout_delta called with non-dir node"
 	unless $base_kind == $SVN::Node::dir;
 
     my %arg = (
-		base_root_is_xd => $opt->{xdroot} ? 0 : 1,
+		base_root_is_xd => $opt->{base_root} ? 0 : 1,
 		encoder => get_encoder,
 		kind => $base_kind,
 		base_kind => $base_kind,
@@ -159,7 +164,7 @@ sub checkout_delta2 {
     my $baton = $editor->open_root($rev);
     $self->_delta_dir2(
         $base_root,
-        $target->path_anchor,
+        $opt->{base_path} || $target->path_anchor,
         $target, $editor,
         {   targets => $source->{targets},
             %arg,
@@ -203,7 +208,7 @@ sub _compat_args {
 
         # compat for now
         editor => $editor,
-        xdroot => $base_root,
+        xdroot => $self->_compat_xdroot,
     );
 
 }
@@ -332,6 +337,7 @@ sub _delta_dir2 {
 	}
 	my ($type, $st) = _node_type($entry_target->copath);
 	next unless defined $type;
+
 	my $delta = $type ? $type eq 'directory' ? '_delta_dir' : '_delta_file'
 	                  : $kind == $SVN::Node::file ? '_delta_file' : '_delta_dir';
 	my $obs = $type ? ($kind == $SVN::Node::dir xor $type eq 'directory') : 0;
@@ -348,7 +354,7 @@ sub _delta_dir2 {
 			base => !$obs,
 			depth => defined $arg{depth} ? defined $targets ? $arg{depth} : $arg{depth} - 1: undef,
 			entry => $newentry,
-			kind => $arg{base_root_is_xd} ? $kind : $base_root->check_path ($newpath),
+			kind => $arg{base_root_is_xd} ? $kind : $self->_compat_xdroot->check_path ($newpath),
 			base_kind => $kind,
 			targets => $newtarget,
 			baton => $baton,
@@ -396,9 +402,10 @@ sub _delta_dir2 {
 	my $entry_target = $target->clone->descend($entry);
 	my %newpaths = ( entry => defined $arg{entry} ? "$arg{entry}/$entry" : $entry,
 			 targets => $newtarget, base_kind => $SVN::Node::none);
-	# XXX: what is this != thing in trinary?
+
 	$newpaths{kind} = $arg{base_root_is_xd} ? $SVN::Node::none :
-	    $base_root->check_path($target->path_anchor) != $SVN::Node::none;
+	    $self->_compat_xdroot->check_path($entry_target->path_anchor);
+
 	my ($ccinfo, $sche) = $self->_compose_cinfo($entry_target);
 
 	my $add = $sche || $arg{auto_add} || $newpaths{kind};

@@ -148,8 +148,6 @@ sub run {
         $target2->run_delta(
             $editor,
             {
-              use_old_delta => 1,
-              xdroot => $target2->create_xd_root,
               base_root => $oldroot,
               base_path => $target->path_anchor,
 	      $self->{recursive} ? () : (depth => 1),
