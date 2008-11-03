@@ -635,7 +635,6 @@ sub run_delta {
                 )
             : ( absent_ignore => 1 ),
             cb_copyfrom => $cb{cb_copyfrom},
-            use_old_delta => ($self->{check_only} || $self->{import}),
         }
     );
     delete $self->{save_message};

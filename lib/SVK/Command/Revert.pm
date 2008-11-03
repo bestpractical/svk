@@ -126,11 +126,6 @@ sub run {
             cb_unknown => sub {
                 shift->unknown(@_);
             },
-	    # XXX: we are unscheduling things a bit too early that
-	    # interferes with the new delta code.  this might be
-	    # solved if we don't flush add_directory as soon as we get
-	    # the editor calls.
-            use_old_delta => 1,
         }
     );
 
