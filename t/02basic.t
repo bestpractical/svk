@@ -5,7 +5,7 @@ plan tests => 19;
 
 my ($xd, $svk) = build_test();
 our $output;
-my ($copath, $corpath) = get_copath ('basic');
+my ($copath, $corpath) = get_copath();
 my ($repospath, undef, $repos) = $xd->find_repos ('//', 1);
 $svk->checkout ('//', $copath);
 mkdir "$copath/A";
