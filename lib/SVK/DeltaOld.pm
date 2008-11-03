@@ -577,41 +577,6 @@ sub _get_rev {
     $_[0]->{checkout}->get ($_[1])->{revision};
 }
 
-sub checkout_delta {
-    my ($xd, %arg) = @_;
-    my $self = __PACKAGE__->new(\%arg);
-    $self->xd($xd);
-    $self->checkout($xd->{checkout});
-    $arg{base_root} ||= $arg{xdroot}; # xdroot is the  
-    $arg{base_path} ||= $arg{path};   # path is  ->  string name of file in repo
-    $arg{encoder} = get_encoder;
-    Carp::cluck unless defined $arg{base_path};
-    my $kind = $arg{base_kind} = $arg{base_root}->check_path ($arg{base_path});
-    $arg{base_root_is_xd} = $arg{base_root}->same_root($arg{xdroot});
-    $arg{kind} = $arg{base_root_is_xd} ? $kind : $arg{xdroot}->check_path ($arg{path});
-    die "checkout_delta called with non-dir node"
-	   unless $kind == $SVN::Node::dir;
-    my ($copath, $repospath) = @arg{qw/copath repospath/};
-    $arg{editor}{_debug}++
-	if $arg{debug};
-    $arg{editor} = SVK::Editor::Delay->new ($arg{editor})
-	   unless $arg{nodelay};
-
-    # XXX: translate $repospath to use '/'
-    $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
-	: sub { my $path = $_[0]; $path =~ s/%/%25/g; ("file://$repospath$path", $_[1]) };
-    local $SIG{INT} = sub {
-	$arg{editor}->abort_edit;
-	die loc("Interrupted.\n");
-    };
-
-    my ($entry) = $self->get_entry($arg{copath}, 1);
-    my $baton = $arg{editor}->open_root ($entry->{revision});
-    $self->_delta_dir (%arg, baton => $baton, root => 1, base => 1, type => 'directory');
-    $arg{editor}->close_directory ($baton);
-    $arg{editor}->close_edit ();
-}
-
 sub get_entry {
     my ($self, $copath, $dont_clone) = @_;
     my $entry = $self->checkout->get($copath, $dont_clone);

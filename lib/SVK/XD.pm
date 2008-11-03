@@ -813,25 +813,12 @@ sub do_delete {
 sub do_add {
     my ($self, $target, %arg) = @_;
 
-#    $target->run_delta(
-#        SVK::Editor::Status->new(
-#            notify => SVK::Notify->new(
-#                cb_flush => sub {
-#                    my ( $path, $status ) = @_;
-#                    to_native( $path, 'path' );
-#                    my $copath = $target->copath($path);
-#                    my $report = $target->report->subdir($path);
-
-    $self->checkout_delta(
-        $target->for_checkout_delta,
-        %arg,
-        xdroot => $target->create_xd_root,
-        delete_verbose => 1,
-        editor => SVK::Editor::Status->new(
+    $target->run_delta(
+        SVK::Editor::Status->new(
             notify => SVK::Notify->new(
                 cb_flush => sub {
-                    my ($path, $status) = @_;
-                    to_native($path, 'path');
+                    my ( $path, $status ) = @_;
+                    to_native( $path, 'path' );
                     my $copath = $target->copath($path);
                     my $report = $target->report ? $target->report->subdir($path) : $path;
 
@@ -846,15 +833,20 @@ sub do_add {
                 },
             ),
         ),
-        cb_unknown => sub {
-            my ($editor, $path) = @_;
-            to_native($path, 'path');
-            my $copath = $target->copath($path);
-            my $report = $target->_to_pclass($target->report)->subdir($path);
-            lstat ($copath);
-            $self->_do_add('A', $copath, $report, !-d _, %arg);
-        },
-	);
+        {
+            %arg,
+            delete_verbose => 1,
+            cb_unknown => sub {
+                my ($editor, $path) = @_;
+                to_native($path, 'path');
+                my $copath = $target->copath($path);
+                my $report = $target->_to_pclass($target->report)->subdir($path);
+                lstat ($copath);
+                $self->_do_add('A', $copath, $report, !-d _, %arg);
+            },
+            use_old_delta => 1,
+        }
+    );
     return;
 }
 
@@ -979,48 +971,6 @@ sub depot_delta {
 			   $arg{pool});
 }
 
-=item checkout_delta
-
-Generate C<SVN::Delta::Editor> calls to represent the local changes
-made to the checked out revision.
-
-Options:
-
-=over
-
-=item delete_verbose
-
-Generate delete_entry calls for sub-entries within deleted entry.
-
-=item absent_verbose
-
-Generate absent_* calls for sub-entries within absent entry.
-
-=item unknown_verbose
-
-generate cb_unknown calls for sub-entries within absent entry.
-
-=item absent_ignore
-
-Don't generate absent_* calls.
-
-=item expand_copy
-
-Mimic the behavior like SVN::Repos::dir_delta, lose copy information
-and treat all copied descendents as added too.
-
-=item cb_ignored
-
-Called for ignored items if defined.
-
-=item cb_unchanged
-
-Called for unchanged files if defined.
-
-=back
-
-=cut
-
 my %ignore_cache;
 
 sub ignore {
@@ -1042,15 +992,6 @@ sub ignore {
     }
 
     return join('|', map {$ignore_cache{$_} ||= compile_apr_fnmatch($_)} (@ignore));
-}
-
-require SVK::DeltaOld;
-# Emulates APR's apr_fnmatch function with flags=0, which is what
-# Subversion uses.  Converts a string in fnmatch format to a Perl regexp.
-# Code is based on Barrie Slaymaker's Regexp::Shellish.
-
-sub checkout_delta {
-    goto \&SVK::DeltaOld::checkout_delta;
 }
 
 =item get_entry($copath)

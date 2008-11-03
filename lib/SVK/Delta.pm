@@ -60,9 +60,57 @@ use SVK::Logger;
 
 use base 'SVK::DeltaOld';
 
-__PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev));
+__PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev cb_unknown));
 
 *_node_type = *SVK::DeltaOld::_node_type;
+
+=head1 NAME
+
+SVK::Delta - 
+
+=head1 SYNOPSIS
+
+
+
+=head1 DESCRIPTION
+
+Options:
+
+=over
+
+=item delete_verbose
+
+Generate delete_entry calls for sub-entries within deleted entry.
+
+=item absent_verbose
+
+Generate absent_* calls for sub-entries within absent entry.
+
+=item unknown_verbose
+
+generate cb_unknown calls for sub-entries within absent entry.
+
+=item absent_ignore
+
+Don't generate absent_* calls.
+
+=item expand_copy
+
+Mimic the behavior like SVN::Repos::dir_delta, lose copy information
+and treat all copied descendents as added too.
+
+=item cb_ignored
+
+Called for ignored items if defined.
+
+=item cb_unchanged
+
+Called for unchanged files if defined.
+
+=back
+
+
+=cut
 
 sub run {
     my ($self, $t1, $t2) = @_;
@@ -90,6 +138,7 @@ sub checkout_delta2 {
     $self->cb_conflict(delete $arg{cb_conflict});
     $self->cb_unchanged(delete $arg{cb_unchanged});
     $self->cb_ignored(delete $arg{cb_ignored});
+    $self->cb_unknown(delete $arg{cb_unknown});
 
     $self->cb_resolve_rev($arg{cb_resolve_rev});
 
@@ -150,6 +199,7 @@ sub _compat_args {
         cb_conflict => $self->cb_conflict,
         cb_unchanged => $self->cb_unchanged,
         cb_ignored => $self->cb_ignored,
+        cb_unknown => $self->cb_unknown,
 
         # compat for now
         editor => $editor,
@@ -366,9 +416,9 @@ sub _delta_dir2 {
 		if $self->cb_conflict;
 	}
 	unless ($add || $ccinfo->{'.conflict'}) {
-	    if ($arg{cb_unknown}) {
-		$arg{cb_unknown}->($editor, $newpaths{entry}, $arg{baton});
-		$self->_unknown_verbose(%arg, %newpaths,
+	    if ($self->cb_unknown) {
+		$self->cb_unknown->($editor, $newpaths{entry}, $arg{baton});
+		$self->_unknown_verbose(%arg, %newpaths, %compatarg,
 					copath => $entry_target->copath,
 					path => $target->path_anchor,
 					base_path => $base_path eq '/' ? "/$entry" : "$base_path/$entry")
