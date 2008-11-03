@@ -300,18 +300,19 @@ sub _delta_entry {
     }
 
     my ($type, $st) = _node_type($entry_target->copath) or return;
-
-    my $pkind = $entry_target->root->check_path($entry_target->path_anchor); # XXX: get from new_entry hash directly once it's passed in
-    my $opkind = $pkind;
+    # XXX: get this from new_entry hash directly once it's passed in
+    my $pkind = $entry_target->root->check_path($entry_target->path_anchor);
     $pkind = $newpaths{base_kind} if !$pkind || $pkind == $SVN::Node::unknown;
 
-    my $delta = $pkind == $SVN::Node::file ? '_delta_file2' : '_delta_dir2';
+    my $delta = $pkind == $SVN::Node::dir  ? '_delta_dir2'
+              : $pkind == $SVN::Node::file ? '_delta_file2'
+              # XXX: this is for auto_add, caller should supply fallback handler
+              : $type eq 'file'            ? '_delta_file2'
+              :                              '_delta_dir2';
+
     my $obs = $type ? ($newpaths{base_kind} == $SVN::Node::dir xor $pkind == $SVN::Node::dir) : 0;
     $newpaths{add} ||= ($obs && $arg{obstruct_as_replace});
     $newpaths{base} = $newpaths{base_kind} && !$obs;
-    if (!$newpaths{base_kind}) {
-	$delta = $type eq 'directory' ? '_delta_dir2': '_delta_file2';
-    }
     my $copyfrom = $ccinfo->{'.copyfrom'};
     my ($fromroot) = $copyfrom ? $base_root->get_revision_root($target->path_anchor, $ccinfo->{'.copyfrom_rev'}) : undef;
     # XXX: figure out why it needs to be in xdroot to work (see mirror/sync-crazy-replace.t)
