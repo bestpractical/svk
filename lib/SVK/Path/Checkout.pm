@@ -394,7 +394,7 @@ sub run_delta {
     my ( $self, $editor, $opt ) = @_;
     require SVK::Delta;
     my $delta = SVK::Delta->new( { xd => $self->xd, checkout => $self->xd->{checkout} } );
-    $opt->{use_old_delta}
+    $ENV{_USE_OLD_DELTA}
         ? $delta->checkout_delta1( $self, $editor, $opt )
 	: $delta->checkout_delta2( $self, $editor, $opt );
 }

@@ -844,7 +844,6 @@ sub do_add {
                 lstat ($copath);
                 $self->_do_add('A', $copath, $report, !-d _, %arg);
             },
-            use_old_delta => 1,
         }
     );
     return;
