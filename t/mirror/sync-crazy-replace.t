@@ -115,7 +115,7 @@ is_output($svk, cp => ["$copath/A/Q/qu", "$copath/A-copy/Q/qu"],
           ]);
 append_file("$copath/A-copy/Q/qu", "R + M changed\n");
 
-is_output($svk, st => [$copath],
+is_sorted_output($svk, st => [$copath],
           [
            __("R + $copath/A-copy"),
            __("R + $copath/A-copy/Q/qu"),
