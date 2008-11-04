@@ -61,7 +61,7 @@ use SVK::Logger;
 use base 'SVK::DeltaOld';
 
 __PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev cb_unknown
-                             _compat_xdroot
+                             _compat_xdroot cb_unknown_node_type
                         ));
 
 *_node_type = *SVK::DeltaOld::_node_type;
@@ -144,7 +144,7 @@ sub checkout_delta2 {
     $self->cb_unchanged(delete $arg{cb_unchanged});
     $self->cb_ignored(delete $arg{cb_ignored});
     $self->cb_unknown(delete $arg{cb_unknown});
-
+    $self->cb_unknown_node_type(delete $arg{cb_unknown_node_type});
     $self->cb_resolve_rev($arg{cb_resolve_rev});
 
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
@@ -302,13 +302,15 @@ sub _delta_entry {
     my ($type, $st) = _node_type($entry_target->copath) or return;
     # XXX: get this from new_entry hash directly once it's passed in
     my $pkind = $entry_target->root->check_path($entry_target->path_anchor);
-    $pkind = $newpaths{base_kind} if !$pkind || $pkind == $SVN::Node::unknown;
+    $pkind = $newpaths{base_kind} if $newpaths{base_kind} && (!$pkind || $pkind == $SVN::Node::unknown);
+
+    if ($pkind == $SVN::Node::unknown && $self->cb_unknown_node_type) {
+        $pkind = $self->cb_unknown_node_type->($editor, $newpaths{entry}, $arg{baton});
+        return if $pkind == $SVN::Node::unknown;
+    }
 
     my $delta = $pkind == $SVN::Node::dir  ? '_delta_dir2'
-              : $pkind == $SVN::Node::file ? '_delta_file2'
-              # XXX: this is for auto_add, caller should supply fallback handler
-              : $type eq 'file'            ? '_delta_file2'
-              :                              '_delta_dir2';
+              :                              '_delta_file2';
 
     my $obs = $type ? ($newpaths{base_kind} == $SVN::Node::dir xor $pkind == $SVN::Node::dir) : 0;
     $newpaths{add} ||= ($obs && $arg{obstruct_as_replace});

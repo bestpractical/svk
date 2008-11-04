@@ -107,7 +107,7 @@ sub node_proplist {
 
 sub node_created_rev {
     my ($self, $path, $pool) = @_;
-    my ($copath, $root) = $self->_get_copath($path, $pool);
+    my ($copath, $root) = $self->_get_copath($path, $pool, 'nocp');
     # ({ kind => $self->path->xd->{checkout}->get($copath)->{'.schedule'} ?
     # XXX: fails on really unknown?
     return $root->check_path($path, $pool) ? $root->node_created_rev($path, $pool) : undef;
@@ -126,7 +126,7 @@ sub closest_copy {
 
 sub copied_from {
     my ($self, $path, $pool) = @_;
-    my ($copath, $root) = $self->_get_copath($path, $pool);
+    my ($copath, $root) = $self->_get_copath($path, $pool, 'nocp');
     my $entry = $self->path->xd->{checkout}->get($copath, 1);
     my $kind = $entry->{'.schedule'};
 
@@ -137,7 +137,7 @@ sub copied_from {
 
 sub node_history {
     my ($self, $path, $pool) = @_;
-    my ($copath, $root) = $self->_get_copath($path, $pool);
+    my ($copath, $root) = $self->_get_copath($path, $pool, 'nocp');
     my $entry = $self->path->xd->{checkout}->get($copath, 1);
     my $kind = $entry->{'.schedule'} || '';
 
@@ -200,15 +200,22 @@ sub AUTOLOAD {
 }
 
 sub _get_copath {
-    my ($self, $path, $pool) = @_;
+    my ($self, $path, $pool, $nocp) = @_;
     # XXX: copath shouldn't be copath_anchor!
     my $copath = $self->path->copath; $copath = "$copath";
     from_native($copath);
     $copath = abs2rel($path, $self->path->path_anchor => $copath);
     to_native($copath);
     my $root;
+    my $entry = $self->path->xd->{checkout}->get($copath, 1);
     ($root, $_[1]) = $self->path->source->root->get_revision_root
-	($path, $self->path->xd->{checkout}->get($copath, 1)->{revision}, $pool);
+	($path, $entry->{revision}, $pool);
+
+    if (!$nocp &&
+        (my ($source_path, $source_root) = $self->path->xd->_copy_source($entry, $copath, $root))) {
+        ($root, $_[1]) = ($source_root, $source_path);
+    }
+
     return ($copath, $root);
 }
 

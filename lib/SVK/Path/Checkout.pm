@@ -393,6 +393,14 @@ Run delta between base of checkout and the checkout through $editor.
 sub run_delta {
     my ( $self, $editor, $opt ) = @_;
     require SVK::Delta;
+    $opt->{cb_unknown_node_type} = sub {
+        my ( $editor, $path ) = @_;
+        $path = $self->copath($path);
+        lstat $path;
+        return $SVN::Node::none unless -e _;
+        return -d _ ? $SVN::Node::dir : $SVN::Node::file;
+    };
+
     my $delta = SVK::Delta->new( { xd => $self->xd, checkout => $self->xd->{checkout} } );
     $ENV{_USE_OLD_DELTA}
         ? $delta->checkout_delta1( $self, $editor, $opt )
