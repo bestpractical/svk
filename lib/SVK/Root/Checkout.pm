@@ -184,6 +184,8 @@ sub _get_copath {
     from_native($copath);
     $copath = abs2rel($path, $self->path->path_anchor => $copath);
     to_native($copath);
+    return ($copath, $self->path->source->root)
+        if $self->path->source->root->isa ('SVK::Root::Git');
     my $root;
     ($root, $_[1]) = $self->path->source->root->get_revision_root
 	($path, $self->path->xd->{checkout}->get($copath, 1)->{revision}, $pool);

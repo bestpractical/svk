@@ -541,6 +541,8 @@ sub create_basic_git_tree {
     my $response;
     my $initial_cwd = getcwd;
     $repospath =~ s{/\.git/?$}{};
+    $repospath = $repospath . "$path";
+    mkdir ($repospath);
 
     overwrite_file($repospath.'/me',
 			"first line in me$/2nd line in me$/");
