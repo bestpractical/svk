@@ -987,6 +987,37 @@ sub depot_git_delta {
     # XXX: Git use git diff EMPTY_TREE to generate the whole delta
     my $textdiff = 
         $oldroot->depot->run_cmd('diff '.SVK::Depot::Git::EMPTY_TREE.' master') ;
+
+    # XXX: basically the Git root delta
+    $editor->open_root ('GIT');
+
+    my @files = grep { $_ =~ s/^\+\+\+ b\/(.+)$/$1/; } split /\n/,$textdiff;
+    my %dirs;
+    for my $file (@files) {
+        my $dir = Path::Class::file($file)->dir();
+        push @{$dirs{$dir}}, $file;
+        do {
+            if ($dir !~ m/^\./) {
+                push @{$dirs{$dir}}, '' unless $dirs{$dir};
+            }
+            $dir = $dir->parent;
+        } while ( $dir ne '.' and $dir ne '..' );
+    }
+    for my $dir (sort keys %dirs) {
+        my $botan = $editor->add_directory ($dir, -1, undef, undef);
+        for my $file (sort @{$dirs{$dir}}) {
+            next unless $file;
+            $editor->add_file($file);
+#	my $fname = $self->{files}{$_}->filename;
+#	my $fh;
+#	$edit->add_file ($_)
+#	    if $self->{added}{$_};
+#	open $fh, '<:raw', $fname or die $!;
+#	$edit->modify_file ($_, $fh, $self->{md5}{$_});
+        }
+        $editor->close_directory($botan);
+    }
+    $editor->close_edit;
 }
 
 =item checkout_delta
