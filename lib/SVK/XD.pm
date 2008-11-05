@@ -1003,11 +1003,12 @@ sub depot_git_delta {
             $dir = $dir->parent;
         } while ( $dir ne '.' and $dir ne '..' );
     }
+    $editor->open_root();
     for my $dir (sort keys %dirs) {
-        my $botan = $editor->add_directory ($dir, -1, undef, undef);
+        my $botan = $editor->add_directory ($dir, '', undef, undef);
         for my $file (sort @{$dirs{$dir}}) {
             next unless $file;
-            $editor->add_file($file);
+            $editor->add_file($file, $dir);
 #	my $fname = $self->{files}{$_}->filename;
 #	my $fh;
 #	$edit->add_file ($_)
