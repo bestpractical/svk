@@ -1003,18 +1003,17 @@ sub depot_git_delta {
             $dir = $dir->parent;
         } while ( $dir ne '.' and $dir ne '..' );
     }
-    $editor->open_root();
     for my $dir (sort keys %dirs) {
         my $botan = $editor->add_directory ($dir, '', undef, undef);
         for my $file (sort @{$dirs{$dir}}) {
             next unless $file;
-            $editor->add_file($file, $dir);
-#	my $fname = $self->{files}{$_}->filename;
-#	my $fh;
-#	$edit->add_file ($_)
-#	    if $self->{added}{$_};
-#	open $fh, '<:raw', $fname or die $!;
-#	$edit->modify_file ($_, $fh, $self->{md5}{$_});
+            my $botan2 = $editor->add_file($file, $dir);
+            my $glob = $oldroot->file_contents($file);
+            my $handle = $editor->apply_textdelta($file);
+            if ($handle && $#{$handle} >= 0) {
+                SVN::TxDelta::send_stream ($glob, @$handle,undef);
+            }
+            $editor->close_file($botan2);
         }
         $editor->close_directory($botan);
     }

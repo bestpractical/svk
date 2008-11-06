@@ -13,7 +13,9 @@ sub _get_path {
         $path = '' unless defined $path;
     } else {
         $tree = 'refs/heads/master';
-        $path = substr($full_path,1);
+#        $path = substr($full_path,2);
+        $path = $full_path;
+        $path =~ s#^/##;
     }
     my ($ref) = $self->depot->run_cmd("show-ref $tree") =~ m/^(.*?) /;
     return ($ref, $path);
