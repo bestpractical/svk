@@ -452,7 +452,7 @@ sub find_repos {
     if ($repospath =~ m{\.git/?$}) {
         require SVK::Path::Git;
         my $p = SVK::Path::Git->real_new
-            ({ depot => SVK::Depot->new({ repospath => $repospath, depotname => $depot }),
+            ({ depot => SVK::Depot::Git->new({ repospath => $repospath, depotname => $depot }),
                 commit => 'HEAD',
                 path => $path,
         } );
