@@ -991,7 +991,9 @@ sub depot_git_delta {
     # XXX: basically the Git root delta
     $editor->open_root ('GIT');
 
-    my @files = grep { $_ =~ s/^\+\+\+ b\/(.+)$/$1/; } split /\n/,$textdiff;
+    my $src_parent_dir = $arg{oldpath}[0];
+    $src_parent_dir =~ s#^/##;
+    my @files = grep { $_ =~ s/^\+\+\+ b\/$src_parent_dir\/?(.+)$/$1/; } split /\n/,$textdiff;
     my %dirs;
     for my $file (@files) {
         my $dir = Path::Class::file($file)->dir();
@@ -1004,11 +1006,13 @@ sub depot_git_delta {
         } while ( $dir ne '.' and $dir ne '..' );
     }
     for my $dir (sort keys %dirs) {
-        my $botan = $editor->add_directory ($dir, '', undef, undef);
+        my $botan = $dir eq '.' ?
+            $editor->open_directory ($dir, '', undef, undef) :
+            $editor->add_directory ($dir, '', undef, undef);
         for my $file (sort @{$dirs{$dir}}) {
             next unless $file;
             my $botan2 = $editor->add_file($file, $dir);
-            my $glob = $oldroot->file_contents($file);
+            my $glob = $oldroot->file_contents($src_parent_dir.'/'.$file);
             my $handle = $editor->apply_textdelta($file);
             if ($handle && $#{$handle} >= 0) {
                 SVN::TxDelta::send_stream ($glob, @$handle,undef);

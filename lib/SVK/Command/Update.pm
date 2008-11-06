@@ -185,7 +185,7 @@ sub do_update {
     unless (-e $cotarget->copath) {
 	die loc ("Checkout directory gone. Use 'checkout %1 %2' instead.\n",
 		 $update_target->depotpath, $cotarget->report)
-	    unless $base->path_anchor eq '/';
+	    unless $base->path_anchor eq '/' or $xdroot->isa('SVK::Root::Git');
 	mkdir ($cotarget->copath) or
 	    die loc ("Can't create directory %1 for checkout: %2.\n", $cotarget->report, $!);
     }
