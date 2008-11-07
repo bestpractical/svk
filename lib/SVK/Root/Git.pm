@@ -45,7 +45,7 @@ sub check_path {
 
     return $type ? $type eq 'blob' ? $SVN::Node::file
                                    : $SVN::Node::dir
-                 : $SVN::Node::unknown;
+                 : $SVN::Node::none;
 }
 
 sub dir_entries {
