@@ -118,6 +118,7 @@ sub root {
     my $self = shift;
     my $pool = @_ ? undef : $self->pool;
     Carp::cluck unless defined $self->revision;
+    return $self->repos->root if $self->repos->isa('SVK::Path::Git');
     $self->_root(SVK::Root->new({ root => $self->repos->fs->revision_root
 				  ($self->revision, $pool) }))
 	unless $self->_root;
