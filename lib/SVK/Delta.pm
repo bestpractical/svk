@@ -237,17 +237,15 @@ sub _node_deleted_or_absent2 {
     my ($self, $base_root, $base_path, $target, $editor, $ctx) = @_;
     my $schedule = $ctx->{cinfo}{'.schedule'} || '';
 
-    # XXX: use a new pool here
     local $ctx->{pool} = SVN::Pool->new;
-    my %arg = _compat_args(@_);
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
 	my $should_do_delete = !$ctx->{_really_in_copy} || $target->copath eq ($ctx->{cinfo}{scheduleanchor} || '');
-	$self->_node_deleted(%arg, %$ctx)
+	$self->_node_deleted2($target, $editor, $ctx)
 	    if $should_do_delete;
 	# when doing add over deleted entry, descend into it
 	if ($schedule eq 'delete') {
-	    $self->_unknown_verbose(%arg, %$ctx)
+	    $self->_unknown_verbose(%$ctx, _compat_args(@_))
 		if $self->cb_unknown && $ctx->{unknown_verbose};
 	    return $should_do_delete;
 	}
@@ -257,7 +255,7 @@ sub _node_deleted_or_absent2 {
 	if ($ctx->{kind} && !$schedule &&
 	    (($ctx->{type} eq 'file') xor ($ctx->{kind} == $SVN::Node::file))) {
 	    if ($ctx->{obstruct_as_replace}) {
-		$self->_node_deleted(%arg, %$ctx);
+                $self->_node_deleted2($target, $editor, $ctx);
 	    }
 	    else {
 		$self->cb_obstruct->($editor, $ctx->{entry}, $ctx->{baton})
@@ -269,7 +267,7 @@ sub _node_deleted_or_absent2 {
     else {
 	# deleted during base_root -> xdroot
 	if (!$ctx->{base_root_is_xd} && $ctx->{kind} == $SVN::Node::none) {
-	    $self->_node_deleted(%arg, %$ctx);
+            $self->_node_deleted2($target, $editor, $ctx);
 	    return 1;
 	}
 	return 1 if $ctx->{absent_ignore};
@@ -277,7 +275,7 @@ sub _node_deleted_or_absent2 {
 	my $type = $ctx->{kind} == $SVN::Node::dir ? 'directory' : 'file';
 
 	if ($ctx->{absent_as_delete}) {
-	    $self->_node_deleted(%arg, %$ctx);
+            $self->_node_deleted2($target, $editor, $ctx);
 	}
 	else {
 	    my $func = "absent_$type";
