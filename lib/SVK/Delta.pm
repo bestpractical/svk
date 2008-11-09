@@ -60,7 +60,7 @@ use SVK::Logger;
 
 use base 'SVK::DeltaOld';
 
-__PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev cb_unknown
+__PACKAGE__->mk_accessors(qw(cb_conflict cb_ignored cb_unchanged cb_resolve_rev cb_unknown cb_obstruct
                              _compat_xdroot cb_unknown_node_type
                         ));
 
@@ -146,6 +146,7 @@ sub checkout_delta2 {
     $self->cb_unknown(delete $arg{cb_unknown});
     $self->cb_unknown_node_type(delete $arg{cb_unknown_node_type});
     $self->cb_resolve_rev($arg{cb_resolve_rev});
+    $self->cb_obstruct(delete $arg{cb_obstruct});
 
     $arg{cb_copyfrom} ||= $arg{expand_copy} ? sub { (undef, -1) }
 	: sub { my $path = $_[0]; $path =~ s/%/%25/g; ("file://".$source->repospath.$path, $_[1]) };
@@ -205,12 +206,86 @@ sub _compat_args {
         cb_unchanged => $self->cb_unchanged,
         cb_ignored => $self->cb_ignored,
         cb_unknown => $self->cb_unknown,
+        cb_obstruct => $self->cb_obstruct,
 
         # compat for now
         editor => $editor,
         xdroot => $self->_compat_xdroot,
     );
 
+}
+
+sub _node_deleted2 {
+    my ($self, $target, $editor, $ctx) = @_;
+    my %arg = %$ctx;
+    $arg{rev} = $self->_delta_rev2($target, $ctx->{cinfo});
+    $editor->delete_entry(@arg{qw/entry rev baton pool/});
+
+    # XXX probably belong to a external callback
+    if ($arg{kind} == $SVN::Node::dir && $ctx->{delete_verbose}) {
+	foreach my $file (sort $self->{checkout}->find
+			  ($target->copath, {'.schedule' => 'delete'})) {
+	    next if $file eq $target->copath;
+	    $file = abs2rel($file, $target->copath => undef, '/');
+	    from_native($file, 'path', $arg{encoder});
+	    $editor->delete_entry("$arg{entry}/$file", @arg{qw/rev baton pool/});
+	}
+    }
+}
+
+sub _node_deleted_or_absent2 {
+    my ($self, $base_root, $base_path, $target, $editor, $ctx) = @_;
+    my $schedule = $ctx->{cinfo}{'.schedule'} || '';
+
+    # XXX: use a new pool here
+    local $ctx->{pool} = SVN::Pool->new;
+    my %arg = _compat_args(@_);
+
+    if ($schedule eq 'delete' || $schedule eq 'replace') {
+	my $should_do_delete = !$ctx->{_really_in_copy} || $target->copath eq ($ctx->{cinfo}{scheduleanchor} || '');
+	$self->_node_deleted(%arg, %$ctx)
+	    if $should_do_delete;
+	# when doing add over deleted entry, descend into it
+	if ($schedule eq 'delete') {
+	    $self->_unknown_verbose(%arg, %$ctx)
+		if $self->cb_unknown && $ctx->{unknown_verbose};
+	    return $should_do_delete;
+	}
+    }
+
+    if ($ctx->{type}) {
+	if ($ctx->{kind} && !$schedule &&
+	    (($ctx->{type} eq 'file') xor ($ctx->{kind} == $SVN::Node::file))) {
+	    if ($ctx->{obstruct_as_replace}) {
+		$self->_node_deleted(%arg, %$ctx);
+	    }
+	    else {
+		$self->cb_obstruct->($editor, $ctx->{entry}, $ctx->{baton})
+		    if $self->cb_obstruct;
+		return 1;
+	    }
+	}
+    }
+    else {
+	# deleted during base_root -> xdroot
+	if (!$ctx->{base_root_is_xd} && $ctx->{kind} == $SVN::Node::none) {
+	    $self->_node_deleted(%arg, %$ctx);
+	    return 1;
+	}
+	return 1 if $ctx->{absent_ignore};
+	# absent
+	my $type = $ctx->{kind} == $SVN::Node::dir ? 'directory' : 'file';
+
+	if ($ctx->{absent_as_delete}) {
+	    $self->_node_deleted(%arg, %$ctx);
+	}
+	else {
+	    my $func = "absent_$type";
+	    $editor->$func(@{$ctx}{qw/entry baton pool/});
+	}
+	return 1 unless $type ne 'file' && $ctx->{absent_verbose};
+    }
+    return 0;
 }
 
 sub _delta_file2 {
@@ -384,8 +459,9 @@ sub _delta_dir2 {
     $self->cb_conflict->($editor, defined $arg{entry} ? $arg{entry} : '', $arg{baton}, $cinfo->{'.conflict'})
 	if $thisdir && $self->cb_conflict && $cinfo->{'.conflict'};
 
-    # XXX: later
-    return 1 if $self->_node_deleted_or_absent(%compatarg, %arg, pool => $pool);
+    return 1
+        if $self->_node_deleted_or_absent2($base_root, $base_path, $target, $editor, $ctx);
+
     # if a node is replaced, it has no base, unless it was replaced with history.
     $arg{base} = 0 if $schedule eq 'replace' && !$cinfo->{'.copyfrom'};
     my ($entries, $baton) = ({});
