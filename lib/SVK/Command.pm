@@ -651,6 +651,14 @@ sub arg_copath {
     }
 
     from_native ($path, 'path', $self->{encoding});
+    if ($repos->isa('SVK::Path::Git')) {
+        $repos->path($path);
+        return SVK::Path::Checkout->real_new
+            ({ report => File::Spec->canonpath ($arg),
+            copath_anchor => $copath,
+            xd => $self->{xd},
+            source => $repos });
+    }
     return SVK::Path::Checkout->real_new
 	({ report => File::Spec->canonpath ($arg),
 	   copath_anchor => $copath,
