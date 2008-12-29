@@ -55,7 +55,7 @@ use SVK::Version;  our $VERSION = $SVK::VERSION;
 use base qw( SVK::Command );
 use SVK::XD;
 use SVK::I18N;
-use SVK::Util qw( traverse_history get_encoding reformat_svn_date );
+use SVK::Util qw( traverse_history get_encoding reformat_svn_date can_run );
 use List::Util qw(max min);
 use SVK::Logger;
 
@@ -152,6 +152,11 @@ sub run {
         quiet         => $self->{quiet},
         verbose       => $self->{verbose},
     );
+
+    if($ENV{SVKPAGER} && can_run($ENV{SVKPAGER})){
+        eval '$ENV{PAGER}=$ENV{SVKPAGER};use IO::Pager;IO::Pager->new(*STDOUT)';
+    }
+
     _get_logs(
         root     => $target->root,
         path     => $target->path_anchor,
