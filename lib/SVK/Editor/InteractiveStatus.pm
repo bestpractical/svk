@@ -562,7 +562,7 @@ use base qw(SVK::Editor::InteractiveStatus::Action);
 
 use List::Util qw(min max);
 use Digest::MD5 qw(md5_hex);
-use SVK::Util qw(mimetype_is_text);
+use SVK::Util qw(mimetype_is_text $EOL);
 use SVK::I18N;
 
 sub new {
@@ -732,18 +732,18 @@ sub split_diff_into_chunks {
             ($b1, $b2) = (max(0, $d1 - CONTEXT), max(-1, $d1 - 1));
             ($a1, $a2) = (min($lo + 1, $d2 + 1), min($lo, $d2 + CONTEXT));
         }
-        $di = "--- $self->{path}\t(revision $self->{rev})\n";
-        $di.= "+++ $self->{path}\t(local)\n";
+        $di = "--- $self->{path}\t(revision $self->{rev})".$EOL;
+        $di.= "+++ $self->{path}\t(local)".$EOL;
         my ($l1, $l2) = map {$_ < 1 ? "" : ",$_" } $a2-$b1, $i2-$i1+$a2-$b1;
-        $di.= "@@ -$b1$l1 +@{[$i1+$b1-$d1]}$l2 @@\n";
+        $di.= "@@ -$b1$l1 +@{[$i1+$b1-$d1]}$l2 @@".$EOL;
         $di.= join " ","",@old_content[$b1..$b2] if $b1 <= $b2;
         if ($d1 <= $d2) {
             $di.= join "-","",@old_content[$d1..$d2];
-            $di.= "\n\\ No newline at end of file\n" if $lln and $d2 == $lo;
+            $di.= "\n\\ No newline at end of file".$EOL if $lln and $d2 == $lo;
         }
         if ($i1 <= $i2) {
             $di.= join "+","",@new_content[$i1..$i2];
-            $di.= "\n\\ No newline at end of file\n" if $rln and $i2 == $ln;
+            $di.= "\n\\ No newline at end of file".$EOL if $rln and $i2 == $ln;
         }
         $di.= join " ","",@old_content[$a1..$a2] if $a1 <= $a2;
 
