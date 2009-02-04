@@ -459,6 +459,7 @@ sub in_which_project {
     my $allprops        = $root->node_proplist($from_local ? '/' : $prop_path);
     my %projpaths       = $self->_project_paths($allprops);
     for my $path (sort { $b ne $a } keys %projpaths) { # reverse sort to ensure subsume
+        next unless length($path);
 	if ($pathobj->_to_pclass($prop_path.$path)->subsumes($pathobj->path) or
 	    $pathobj->_to_pclass($pathobj->path)->subsumes($prop_path.$path)) {
 	    my ($pname) = $projpaths{$path} =~ m/^svk:project:(.*?):path/;
