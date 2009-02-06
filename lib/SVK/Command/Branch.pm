@@ -1092,7 +1092,7 @@ SVK::Command::Branch - Manage a project with its branches
 =head1 OPTIONS
 
  -l [--list]        : list branches for this project
- --listprojects     : list avaliable projects
+ --list-projects    : list avaliable projects
  --create           : create a new branch
  --tag              : create in the tags directory
  --local            : targets in local branch
