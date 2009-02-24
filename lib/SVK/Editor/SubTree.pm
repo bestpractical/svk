@@ -81,10 +81,16 @@ sub AUTOLOAD {
 	    ++$self->{needs_touch} if $func eq 'add_directory';
 	    return $self->anchor_baton;
 	}
-	return $self->anchor_baton unless $arg[0] =~ s{^\Q$self->{anchor}/}{};
+	unless ($arg[0] =~ s{^\Q$self->{anchor}/}{}) {
+            return undef;
+            return $func =~ m/file$/ ? undef : $self->anchor_baton;
+        }
     }
     elsif ($func =~ m/^close_(?:file|directory)/) {
+	return unless defined $arg[0];
 	return if $arg[0] eq $self->anchor_baton;
+    }
+    elsif ($func ne 'close_edit') {
 	return unless defined $arg[0];
     }
 

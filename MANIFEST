@@ -346,6 +346,7 @@ t/mirror/relocate.t
 t/mirror/sync-bootstrap-resume.t
 t/mirror/sync-bootstrap.t
 t/mirror/sync-crazy-replace.t
+t/mirror/sync-edge-subtree.t
 t/mirror/sync-empty.t
 t/mirror/sync-escape.t
 t/mirror/sync-failed-hook.t
