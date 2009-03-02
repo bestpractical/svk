@@ -87,7 +87,7 @@ sub lock {} # override commit's locking
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    @arg = ('') if $#arg < 0;
+    @arg = ('.') if $#arg < 0;
 
     my ($proj,$target, $msg) = $self->locate_project(pop @arg);
     unless ($proj) {
@@ -285,7 +285,7 @@ sub parse_arg {
     my ($self, @arg) = @_;
     return if $#arg > 1;
 
-    @arg = ('') if $#arg < 0;
+    @arg = ('.') if $#arg < 0;
 
     my $dst = shift (@arg);
     die loc ("Copy destination can't be URI.\n")

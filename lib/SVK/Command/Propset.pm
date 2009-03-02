@@ -69,7 +69,7 @@ sub options {
 sub parse_arg {
     my ($self, @arg) = @_;
     return if @arg < 2;
-    push @arg, ('') if @arg == 2;
+    push @arg, ('.') if @arg == 2;
     return (@arg[0,1], map {$self->_arg_revprop ($_)} @arg[2..$#arg]);
 }
 

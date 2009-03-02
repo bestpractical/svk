@@ -64,7 +64,7 @@ sub parse_arg {
     my ($self, @arg) = @_;
     ++$self->{hold_giant};
     return undef if $self->{all};
-    @arg = ('') if $#arg < 0;
+    @arg = ('.') if $#arg < 0;
     return map {$self->arg_copath ($_)} @arg;
 }
 
