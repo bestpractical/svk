@@ -79,6 +79,7 @@ sub run {
     my ($self, $target) = @_;
     my $xdroot = $target->create_xd_root;
 
+    my @replaced;
 	$self->{xd}->checkout_delta
 	    ( $target->for_checkout_delta,
 	      xdroot => $xdroot,
@@ -92,11 +93,11 @@ sub run {
 	      ( notify => SVK::Notify->new
 		( cb_flush => sub {
 		      my ($path, $status) = @_;
+		      my $st = $status->[0];
+                      push @replaced, $path if $st eq 'R';
 		      my $dpath = length $path ? $target->path_anchor."/$path" : $target->path_anchor;
 	              to_native($path);
-		      my $st = $status->[0];
 		      my $copath = $target->copath ($path);
-
                       if ($st =~ /[DMRC!]/) {
 			  # conflicted items do not necessarily exist
 			  return $self->do_unschedule ($target, $copath)
@@ -116,6 +117,11 @@ sub run {
 		  },
 		),
 	      ));
+
+    if (@replaced) {
+        $target->source->targets(\@replaced);
+        $self->run($target);
+    }
 
     return;
 }

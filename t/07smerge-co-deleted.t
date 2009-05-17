@@ -13,7 +13,7 @@ my ($copath, $corpath) = get_copath();
 $svk->mkdir ('-m', 'trunk', '//trunk');
 my $tree = create_basic_tree ($xd, '//trunk');
 $svk->cp ('-m', 'branch', '//trunk', '//local');
-$svk->rm ('-m', 'remove branch', '//local', '//local-moved');
+$svk->rm ('-m', 'remove branch', '//local');
 $svk->co ('//trunk', $copath);
 append_file("$copath/me", "a change\n");
 $svk->ci ('-m', 'change file', $copath );

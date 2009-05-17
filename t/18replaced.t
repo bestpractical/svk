@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use Test::More tests => 28;
+use Test::More tests => 31;
 use strict;
 our $output;
 use SVK::Test;
@@ -21,28 +21,49 @@ mkdir ("$copath/A");
 overwrite_file ("$copath/A/be", "foobar\n2nd replace\n");
 overwrite_file ("$copath/A/neu", "foobar\n2nd replace\n");
 # XXX: notify flush and cb_unknown ordering
-# XXX: A/be shouldn't be replace, it's actually an add. but this
-# requires more .scheudle fix with anchor.
 is_output ($svk, 'add', ["$copath/A"],
-	   [__"A   $copath/A/neu",
-	    __"R   $copath/A",
-	    __"R   $copath/A/be"]);
+	   [
+	    __"A   $copath/A/be",
+            __"A   $copath/A/neu",
+            __"R   $copath/A",
+        ]);
+
+is_output ($svk, 'status', ["$copath/A"],
+	   [__"R   $copath/A",
+	    __"A   $copath/A/be",
+            __"A   $copath/A/neu",
+        ]);
+
 overwrite_file ("$copath/A/unused", "foobar\n2nd replace\n");
 is_output ($svk, 'status', ["$copath"],
 	   [__"R   $copath/A",
-	    __"R   $copath/A/be",
+	    __"A   $copath/A/be",
 	    __"A   $copath/A/neu",
 	    __"?   $copath/A/unused",
-	    __"D   $copath/A/Q",
-	    __"D   $copath/A/Q/qu",
-	    __"D   $copath/A/Q/qz"]);
+        ]);
 
 is_output ($svk, 'add', ['-N', "$copath/A"],
 	   [__("$copath/A already added.")]);
-$svk->revert ('-R', $copath);
+
+is_output($svk, 'revert', ['-R', $copath],
+          ['Reverted '.__('t/checkout/replaced/A'),
+           'Reverted '.__('t/checkout/replaced/A/be'),
+           'Reverted '.__('t/checkout/replaced/A/neu'),
+           __('t/checkout/replaced/A/unused').' is not versioned; ignored.',
+           'Reverted '.__('t/checkout/replaced/A/Q'),
+           'Reverted '.__('t/checkout/replaced/A/Q/qu'),
+           'Reverted '.__('t/checkout/replaced/A/Q/qz'),
+           'Reverted '.__('t/checkout/replaced/A/be'),
+           __('t/checkout/replaced/A/neu').' is not versioned; ignored.',
+           __('t/checkout/replaced/A/unused').' is not versioned; ignored.',
+       ]);
+
+
 is_output ($svk, 'status', [$copath],
 	   [__"?   $copath/A/neu",
 	    __"?   $copath/A/unused"], 'revert replaced tree items');
+ok(-d "$copath/A/Q");
+
 unlink ("$copath/A/neu");
 unlink ("$copath/A/unused");
 $svk->rm ("$copath/A");
@@ -50,8 +71,10 @@ mkdir ("$copath/A");
 overwrite_file ("$copath/A/be", "foobar\n2nd replace\n");
 overwrite_file ("$copath/A/neu", "foobar\n2nd replace\n");
 $svk->add ("$copath/A");
+
 is_output ($svk, 'commit', ['-m', 'replace A/be', $copath],
 	   ['Committed revision 5.']);
+
 $svk->rm ("$copath/A");
 $svk->status ($copath);
 overwrite_file ("$copath/A", "dir replaced as file\n");
@@ -60,9 +83,8 @@ is_output ($svk, 'add', ["$copath/A"],
 	   [__"R   $copath/A"]);
 
 is_output ($svk, 'status', [$copath],
-	   [__"R   $copath/A",
-	    __"D   $copath/A/be",
-	    __"D   $copath/A/neu"], 'file replacing dir');
+	   [__"R   $copath/A"],
+           'file replacing dir');
 $svk->commit ('-m', 'commit the replace', $copath);
 
 mkdir ("$copath/T1");
@@ -127,10 +149,7 @@ is_output($svk, 'merge', [-c => 11, '//Y'],
 	  ['R   A']);
 
 is_output($svk, 'st', [],
-	  ['R   A',
-	   __('D   A/be'),
-	   __('D   A/neu'),
-	  ]);
+	  ['R   A' ]);
 ok(-f 'A');
 is_output($svk, 'ci', [-m => 'message'],
 	  ['Committed revision 13.']);

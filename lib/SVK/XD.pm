@@ -729,6 +729,9 @@ sub do_delete {
 
     $target->anchorify unless $target->source->{targets};
 
+    my @paths = grep {is_symlink($_) || -e $_} $target->copath_targets;
+    my @to_schedule = @paths;
+
     # check for if the file/dir is modified.
     $self->checkout_delta ( $target->for_checkout_delta,
 			    %arg,
@@ -748,6 +751,8 @@ sub do_delete {
 				    	push @modified, $copath;
 				    }
 				    elsif ($st eq 'D') {
+                                        push @to_schedule, $copath
+                                            unless -e $copath;
 					push @deleted, $copath;
 				    }
 				    else {
@@ -771,8 +776,6 @@ sub do_delete {
     }
 
     # actually remove it from checkout path
-    my @paths = grep {is_symlink($_) || -e $_} $target->copath_targets;
-    
     my $ignore = $self->ignore;
     find(sub {
 	     return if m/$ignore/;
@@ -789,8 +792,9 @@ sub do_delete {
     for (@deleted) {
 	print "D   ".$target->report_copath($_)."\n"
 	    unless $arg{quiet};
-	
+    }	
 	# don't schedule unknown/added files for deletion as this confuses revert.    
+    for (@to_schedule) {
 	$self->{checkout}->store ($_, {'.schedule' => 'delete'})
 	    unless $noschedule{$_};
     }
@@ -817,7 +821,6 @@ sub do_add {
         $target->for_checkout_delta,
         %arg,
         xdroot => $target->create_xd_root,
-        delete_verbose => 1,
         editor => SVK::Editor::Status->new(
             notify => SVK::Notify->new(
                 cb_flush => sub {
@@ -1176,15 +1179,23 @@ sub _node_deleted {
     my ($self, %arg) = @_;
     $arg{rev} = $self->_delta_rev(\%arg);
     $arg{editor}->delete_entry (@arg{qw/entry rev baton pool/});
-
     if ($arg{kind} == $SVN::Node::dir && $arg{delete_verbose}) {
-	foreach my $file (sort $self->{checkout}->find
-			  ($arg{copath}, {'.schedule' => 'delete'})) {
-	    next if $file eq $arg{copath};
-	    $file = abs2rel($file, $arg{copath} => undef, '/');
-	    from_native($file, 'path', $arg{encoder});
-	    $arg{editor}->delete_entry ("$arg{entry}/$file", @arg{qw/rev baton pool/});
-	}
+        my @paths;
+        $self->depot_delta( oldroot => $arg{base_root}->fs->revision_root(0),
+                            newroot => $arg{base_root},
+                            oldpath => ['/', ''],
+                            newpath => $arg{path},
+                            no_textdela => 1,
+			    editor => SVK::Editor::Status->new
+			    ( notify => SVK::Notify->new
+			      ( cb_flush => sub {
+				    my ($path, $status) = @_;
+                                    push @paths, $path
+                                        if $status->[0] eq 'A';
+                                }))
+                        );
+        $arg{editor}->delete_entry("$arg{entry}/$_", @arg{qw/rev baton pool/})
+            for sort @paths;
     }
 }
 
@@ -1452,7 +1463,8 @@ sub _delta_dir {
 	my ($ccinfo, $ccschedule) = $self->get_entry($copath, 1);
 	# a replace with history node requires handling the copy anchor in the
 	# latter direntries loop.  we should really merge the two.
-	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
+        if ($ccschedule eq 'replace') {# && $ccinfo->{'.copyfrom'}) {
+#	if ($ccschedule eq 'replace' && $ccinfo->{'.copyfrom'}) {
 	    delete $entries->{$entry};
 	    $targets->{$entry} = $newtarget if defined $targets;
 	    next;
