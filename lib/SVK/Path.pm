@@ -56,7 +56,7 @@ use autouse 'SVK::Util' => qw( get_anchor catfile abs2rel
 			       IS_WIN32 get_depot_anchor
 			       uri_escape traverse_history );
 
-use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup SVK::Editor::Tee);
+use Class::Autouse qw(SVK::Editor::Dynamic SVK::Editor::TxnCleanup SVK::Editor::Tee SVK::Editor::PropEol);
 
 use SVN::Delta;
 
@@ -206,6 +206,8 @@ sub _get_local_editor {
 	$self->_commit_editor($txn, $callback);
 
     $editor = SVK::Editor::TxnCleanup->new(_editor => [$editor], txn => $txn);
+
+    $editor = SVK::Editor::PropEol->new(_editor => [$editor]);
 
     return ($txn, $editor, $post_handler_ref);
 }
