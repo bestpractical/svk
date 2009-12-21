@@ -1204,7 +1204,8 @@ sub _node_deleted_or_absent {
     my $schedule = $arg{cinfo}{'.schedule'} || '';
 
     if ($schedule eq 'delete' || $schedule eq 'replace') {
-	my $should_do_delete = !$arg{_really_in_copy} || $arg{copath} eq ($arg{cinfo}{scheduleanchor} || '');
+	my $should_do_delete = (!$arg{_really_in_copy} && !$arg{base})
+            || $arg{copath} eq ($arg{cinfo}{scheduleanchor} || '');
 	$self->_node_deleted (%arg)
 	    if $should_do_delete;
 	# when doing add over deleted entry, descend into it
