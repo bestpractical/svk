@@ -70,7 +70,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    @arg = ('.') if $#arg < 0;
+    @arg = ('') if $#arg < 0;
     return map {$self->arg_copath ($_)} @arg;
 }
 

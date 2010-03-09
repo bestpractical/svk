@@ -58,16 +58,16 @@ use base qw( SVK::Command::Update );
 use SVK::XD;
 
 sub options {
-   ('a|all'             => 'all',
+   ('a|all'		=> 'all',
     'force-incremental' => 'force_incremental',
-    'no-sync'           => 'no_sync',
-    'l|lump'            => 'lump');
+    'no-sync'       => 'no_sync',
+    'l|lump'		=> 'lump');
 }
 
 sub parse_arg {
     my ($self, @arg) = @_;
 
-    @arg = ('.') if $#arg < 0;
+    @arg = ('') if $#arg < 0;
 
     # -- XXX -- will break otherwise -- XXX ---
     # (Possibly fixed now, so we'll add an undocumented option to override

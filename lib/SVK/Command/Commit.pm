@@ -83,7 +83,7 @@ sub options {
 
 sub parse_arg {
     my ($self, @arg) = @_;
-    @arg = ('.') if $#arg < 0;
+    @arg = ('') if $#arg < 0;
 
     return $self->arg_condensed (@arg);
 }

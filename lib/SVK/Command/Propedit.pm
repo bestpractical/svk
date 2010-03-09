@@ -60,7 +60,7 @@ use SVK::Util qw(get_buffer_from_editor);
 sub parse_arg {
     my ($self, @arg) = @_;
     return if @arg < 1 or @arg > 2;
-    push @arg, ('.') if @arg == 1;
+    push @arg, ('') if @arg == 1;
     return ($arg[0], $self->_arg_revprop ($arg[1]));
 }
 
