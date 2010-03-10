@@ -90,25 +90,21 @@ is_output($svk, cp => ["$copath/A/Q/qu", "$copath/A-copy/qu-copy"],
           ]);
 
 
-TODO: {
-local $TODO = 'BUG svk rm report';
 is_output($svk, rm => ["$copath/A-copy/be"],
           [
            __("D   $copath/A-copy/be"),
           ]);
-}
+
 is_output($svk, cp => ["$copath/A/Q/qu", "$copath/A-copy/be"],
           [
            __("A   $copath/A-copy/be"),
           ]);
 
-TODO: {
-local $TODO = 'BUG svk rm report';
 is_output($svk, rm => ["$copath/A-copy/Q/qu"],
           [
            __("D   $copath/A-copy/Q/qu"),
           ]);
-}
+
 is_output($svk, cp => ["$copath/A/Q/qu", "$copath/A-copy/Q/qu"],
           [
            __("A   $copath/A-copy/Q/qu"),
