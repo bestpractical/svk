@@ -67,14 +67,14 @@ SVK::Editor::PropEol - An editor that normalizes eol for svn: properties
 sub change_file_prop {
     my ($self, $path, $name, $value) = @_;
     $value =~ s/\r\n/\n/g
-        if $name =~ m'^svn:';
+        if defined $value && $name =~ m'^svn:';
     $self->SUPER::change_file_prop($path, $name, $value);
 }
 
 sub change_dir_prop {
     my ($self, $path, $name, $value) = @_;
     $value =~ s/\r\n/\n/g
-        if $name =~ m'^svn:';
+        if defined $value && $name =~ m'^svn:';
     $self->SUPER::change_dir_prop($path, $name, $value);
 }
 
