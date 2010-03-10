@@ -40,7 +40,7 @@ is_output($svk, 'cp', ['-m', 'copy //local-another from //trunk', '//trunk', '//
     ['Committed revision 7.']
 );
 
-is_output($svk, 'switch', ['//local-another'],
+is_sorted_output($svk, 'switch', ['//local-another'],
     [
         "Syncing //local(/local) in $corpath to 7.",
         __"U   A/Q/qu",
@@ -62,14 +62,14 @@ is_output($svk, 'rm', [ '-m', 'remove A/Q/ql in //local', '//local/A/Q/ql'],
     ['Committed revision 9.']
 );
 
-is_output($svk, 'rm', ['A/Q'],
+is_sorted_output($svk, 'rm', ['A/Q'],
     [
         __"D   A/Q",
         __"D   A/Q/qu",
         __"D   A/Q/qz",
     ]
 );
-is_output($svk, 'cp', ['//local/A/Q', 'A/'],
+is_sorted_output($svk, 'cp', ['//local/A/Q', 'A/'],
     [
         __"A   A/Q",
         __"A   A/Q/qu",
