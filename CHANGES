@@ -1,4 +1,8 @@
-[Changes for 2.2.1 - 10 Mar, 2010]
+[Changes for 2.2.3 - 21 Mar, 2010]
+
+  Fix META.yml.
+
+[Changes for 2.2.2 - 10 Mar, 2010]
 
   Subversion 1.6.x compatiblity fixes.
 
